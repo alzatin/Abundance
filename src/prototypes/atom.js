@@ -79,7 +79,7 @@ export default class Atom {
      */
     this.name = "name0";
     /**
-     * This atom's parent, usually the molecule which contains this atom
+     * This atom's parent, usually the molecule which contains this atom...how is this different from this.parent?
      * @type {object}
      */
     this.parentMolecule = null;
@@ -662,7 +662,6 @@ export default class Atom {
   sendToRender() {
     //Send code to JSxCAD to render
     try {
-      console.log(this);
       GlobalVariables.writeToDisplay(this.uniqueID);
     } catch (err) {
       this.setAlert(err);

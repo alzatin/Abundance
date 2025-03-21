@@ -16,6 +16,8 @@ const fonts = {
 
   OPEN_SANS:
     "http://fonts.gstatic.com/s/opensans/v13/IgZJs4-7SA1XX_edsoXWog.ttf",
+  INCONSOLATA:
+    "http://fonts.gstatic.com/s/inconsolata/v15/AIed271kqQlcIRSOnQH0yXe1Pd76Vl7zRpE7NLJQ7XU.ttf",
 };
 
 export default fonts;

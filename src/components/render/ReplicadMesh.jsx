@@ -69,6 +69,26 @@ export default React.memo(function ShapeMeshes({
     [invalidate]
   );
 
+  const wireframeProps = {
+    // Other props
+    simplify: false, // Remove some edges from wireframes
+    //fill: m.color, // Color of the inside of the wireframe
+    fillMix: 0, // Mix between the base color and the Wireframe 'fill'. 0 = base; 1 = wireframe
+    fillOpacity: 0.5, // Opacity of the inner fill
+    stroke: "#ff0000", // Color of the stroke
+    strokeOpacity: 1, // Opacity of the stroke
+    thickness: 0.05, // Thickness of the lines
+    colorBackfaces: false, // Whether to draw lines that are facing away from the camera
+    backfaceStroke: "#0000ff", // Color of the lines that are facing away from the camera
+    dashInvert: true, // Invert the dashes
+    dash: false, // Whether to draw lines as dashes
+    dashRepeats: 4, // Number of dashes in one segment
+    dashLength: 0.5, // Length of each dash
+    squeeze: false, // Narrow the centers of each line segment
+    squeezeMin: 0.2, // Smallest width to squeeze to
+    squeezeMax: 1, // Largest width to squeeze from
+  };
+
   return (
     <>
       {fullMesh.map((m, index) => {
@@ -86,29 +106,25 @@ export default React.memo(function ShapeMeshes({
                     polygonOffsetUnits={1.0}
                   />
                 ) : (
-                  <Wireframe
+                  <meshBasicMaterial
                     geometry={m.body}
-                    stroke={m.color}
-                    squeeze={true}
-                    dash={false}
-                    simplify={true}
-                    fill={m.color}
-                    fillOpacity={0.2}
-                    strokeOpacity={0.5}
-                  />
+                    transparent={true}
+                    opacity={0.5}
+                    color={m.color}
+                  >
+                    <Wireframe geometry={m.body} {...wireframeProps} />
+                  </meshBasicMaterial>
                 )}
               </mesh>
             ) : (
-              <Wireframe
+              <meshBasicMaterial
                 geometry={m.body}
-                stroke={m.color}
-                squeeze={true}
-                dash={false}
-                simplify={true}
-                fill={m.color}
-                fillOpacity={0.2}
-                strokeOpacity={0.5}
-              />
+                transparent={true}
+                opacity={0.7}
+                color={m.color}
+              >
+                <Wireframe geometry={m.body} {...wireframeProps} />
+              </meshBasicMaterial>
             )}
             <lineSegments
               key={"lines" + m.color}

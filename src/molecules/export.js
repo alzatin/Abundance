@@ -45,9 +45,9 @@ export default class Export extends Atom {
     this.resolution = 96;
 
     this.addIO("input", "geometry", this, "geometry", "");
-    this.addIO("input", "Resolution (dpi)", this, "number", 72);
+    this.addIO("input", "Resolution (dpi)", this, "number", this.resolution);
 
-    this.addIO("input", "Part Name", this, "string", "Part Name");
+    this.addIO("input", "Part Name", this, "string", this.parent.name);
 
     this.addIO("input", "File Type", this, "string", "SVG");
 

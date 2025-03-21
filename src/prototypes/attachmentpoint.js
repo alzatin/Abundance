@@ -8,7 +8,7 @@ export default class AttachmentPoint {
   // Constant dictates how far from the parent molecule APs are rendered when in a hover position.
   // Expressed as a multiple of the parents radius.
   static get DIST_FROM_PARENT() {
-    return 3.5;
+    return 2;
   }
 
   // Constant dictates how much larger an AP becomes when it's activated for selection, ie, when clicking

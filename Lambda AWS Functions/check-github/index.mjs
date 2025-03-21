@@ -22,13 +22,15 @@ export const handler = async (event, context) => {
 
   /*Scans parameter to returns attributes owner, repoName, fork from all repositories in table*/
   const command = new ScanCommand({
-    ProjectionExpression: "#ow, #repoName, #forks, #lastFoundGit, #privateRepo",
+    ProjectionExpression:
+      "#ow, #repoName, #forks, #lastFoundGit, #privateRepo, #contentURL",
     ExpressionAttributeNames: {
       "#ow": "owner",
       "#repoName": "repoName",
       "#forks": "forks",
       "#lastFoundGit": "lastFoundGit",
       "#privateRepo": "privateRepo",
+      "#contentURL": "contentURL",
     },
     TableName: tableName,
   });
@@ -60,7 +62,8 @@ export const handler = async (event, context) => {
         repo.owner,
         repo.repoName,
         repo.forks,
-        repo.lastFoundGit
+        repo.lastFoundGit,
+        repo.contentURL
       );
     });
 
@@ -97,14 +100,30 @@ export const handler = async (event, context) => {
   }
 
   /* Makes request to github to check if repo exists, if it doesn't deletes from table, it it does updates in table*/
-  async function checkGithub(owner, repoName, forks, lastFoundGit) {
-    return octokit.rest.repos
+  async function checkGithub(owner, repoName, forks, lastFoundGit, contentURL) {
+    const response = await fetch(contentURL);
+    if (!response.ok) {
+      console.log(owner + "," + repoName + "not found");
+      //when was the last time it was found, compare times
+      let currentTime = new Date();
+      let expireTime = new Date(lastFoundGit);
+
+      let minutes = (expireTime - currentTime) / (1000 * 60);
+      let days = minutes / 1440;
+      //remove from table if you haven't found in 3 days
+      if (days < -3.5) {
+        // deleting must be broken , alzatin projects getting randomly erased
+        //deleteFromTable(owner, repoName);
+      }
+    } else {
+      /*if repo exists fetch from github/ exceeding requests :( which is probably why delete was breaking)
+      return octokit.rest.repos
       .get({
         owner: owner,
         repo: repoName,
       })
       .then((response) => {
-        console.log(response);
+        console.log(response)
         return checkUpdate(
           owner,
           repoName,
@@ -113,21 +132,8 @@ export const handler = async (event, context) => {
         ).then((response) => {
           return response;
         });
-      })
-      .catch((error) => {
-        console.log(`${repoName} was not found in github`);
-        //when was the last time it was found, compare times
-
-        let currentTime = new Date();
-        let expireTime = new Date(lastFoundGit);
-
-        let minutes = (expireTime - currentTime) / (1000 * 60);
-        let days = minutes / 1440;
-        //remove from table if you haven't found in 3 days
-        if (days < -3.5) {
-          deleteFromTable(owner, repoName);
-        }
-      });
+      })*/
+    }
   }
   /*Removes non existent repos from table */
   async function deleteFromTable(owner, repoName) {

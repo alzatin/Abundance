@@ -10,7 +10,7 @@ import { AnyNest, FloatPolygon } from "any-nest";
 import { re } from "mathjs";
 
 var library = {};
-let defaultColor = "#aad7f2"
+let defaultColor = "#aad7f2";
 
 // This is the logic to load the web assembly code into replicad
 let loaded = false;
@@ -159,27 +159,30 @@ function regularPolygon(id, radius, numberOfSides) {
 async function text(id, text, fontSize, fontFamily) {
   await replicad
     .loadFont(Fonts[fontFamily])
-    .then(() => console.log("Font loaded"))
-    .catch((err) => console.error("Error loading font: ", err));
+    .then(() => {
+      console.log("Font loaded");
+      return started.then(() => {
+        const newPlane = new Plane().pivot(0, "Y");
 
-  return started.then(() => {
-    const newPlane = new Plane().pivot(0, "Y");
-
-    const textGeometry = replicad.drawText(text, {
-      startX: 0,
-      startY: 0,
-      fontSize: fontSize,
-      font: fontFamily,
+        const textGeometry = replicad.drawText(text, {
+          startX: 0,
+          startY: 0,
+          fontSize: fontSize,
+          font: fontFamily,
+        });
+        library[id] = {
+          geometry: [textGeometry],
+          tags: [],
+          plane: newPlane,
+          color: defaultColor,
+          bom: [],
+        };
+        return true;
+      });
+    })
+    .catch((err) => {
+      throw new Error("Error loading font: ", err);
     });
-    library[id] = {
-      geometry: [textGeometry],
-      tags: [],
-      plane: newPlane,
-      color: defaultColor,
-      bom: [],
-    };
-    return true;
-  });
 }
 
 function loftShapes(targetID, inputsIDs) {
@@ -260,18 +263,15 @@ function move(inputID, x, y, z, targetID = null) {
         return result;
       }
     } else {
-      let result = actOnLeafs(
-        library[inputID],
-        (leaf) => {
-          return {
-            geometry: [leaf.geometry[0].clone().translate([x, y])],
-            tags: leaf.tags,
-            plane: leaf.plane.translate([0, 0, z]),
-            color: leaf.color,
-            bom: leaf.bom,
-          };
-        },
-      );
+      let result = actOnLeafs(library[inputID], (leaf) => {
+        return {
+          geometry: [leaf.geometry[0].clone().translate([x, y])],
+          tags: leaf.tags,
+          plane: leaf.plane.translate([0, 0, z]),
+          color: leaf.color,
+          bom: leaf.bom,
+        };
+      });
       if (targetID) {
         library[targetID] = result;
         //library[inputID].plane.translate([0, 0, z]); //@Alzatin what is this line for?
@@ -1498,7 +1498,7 @@ function digFuse(assembly) {
 }
 
 let colorOptions = {
-  "Default": defaultColor,
+  Default: defaultColor,
   Red: "#FF9065",
   Orange: "#FFB458",
   Yellow: "#FFD600",

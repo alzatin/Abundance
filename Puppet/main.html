@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Comparison</title>
+    <style>
+      .container {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        margin-top: 50px;
+        flex-direction: column;
+      }
+      .image-wrapper {
+        text-align: center;
+      }
+      .image-wrapper img {
+        max-width: 100%;
+        height: auto;
+      }
+
+      .project-container {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="comparison-container" class="container"></div>
+    <script src="projects_to_test.js"></script>
+    <script>
+      const container = document.getElementById("comparison-container");
+
+      projects_to_test.forEach((project) => {
+        const projectContainer = document.createElement("div");
+        projectContainer.className = "project-container";
+
+        const testDiv = document.createElement("div");
+        testDiv.className = "image-wrapper";
+        testDiv.innerHTML = `<p>Test</p><img src="images/${project}-Test.png" alt="Test Image">`;
+
+        const deployedDiv = document.createElement("div");
+        deployedDiv.className = "image-wrapper";
+        deployedDiv.innerHTML = `<p>Deployed</p><img src="images/${project}-Deployed.png" alt="Deployed Image">`;
+
+        projectContainer.appendChild(testDiv);
+        projectContainer.appendChild(deployedDiv);
+        container.appendChild(projectContainer);
+      });
+    </script>
+  </body>
+</html>

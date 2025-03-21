@@ -49,6 +49,14 @@ export default function ReplicadApp() {
     GlobalVariables.displayShortcuts
   );
 
+  /* Creates an element to check with Puppeteer if the molecule is fully loaded*/
+  const createPuppeteerDiv = () => {
+    const invisibleDiv = document.createElement("div");
+    invisibleDiv.id = "molecule-fully-render-puppeteer";
+    invisibleDiv.style.display = "none";
+    document.body.appendChild(invisibleDiv);
+  };
+
   useEffect(() => {
     GlobalVariables.writeToDisplay = (id, resetView = false) => {
       console.log("write to display running " + id);
@@ -77,13 +85,18 @@ export default function ReplicadApp() {
             console.error("Can't display Mesh " + e);
             activeAtom.setAlert("Can't display Mesh " + e);
           });
-        // if something is connected to the output, set a wireframe mesh
+        /*Set wireMesh*/
+
+        //Exception: Don't display the mesh if the thing we are displaying is already the output
         if (GlobalVariables.currentMolecule.output.value != id) {
-          //Don't display the mesh if the thing we are displaying is already the output
           cad
             .generateDisplayMesh(GlobalVariables.currentMolecule.output.value)
-            .then((w) => setWireMesh(w))
+            .then((w) => {
+              setWireMesh(w);
+              createPuppeteerDiv();
+            })
             .catch((e) => {
+              createPuppeteerDiv();
               console.error("Can't comput Wireframe/No output " + e);
             });
         } else {
@@ -93,13 +106,10 @@ export default function ReplicadApp() {
             .resetView()
             .then((m) => {
               setWireMesh(m);
-              /* Creates an element to check with Puppeteer if the molecule is fully loaded*/
-              const invisibleDiv = document.createElement("div");
-              invisibleDiv.id = "molecule-fully-render-puppeteer";
-              invisibleDiv.style.display = "none";
-              document.body.appendChild(invisibleDiv);
+              createPuppeteerDiv();
             })
             .catch((e) => {
+              createPuppeteerDiv();
               console.error("reset view not working" + e);
             });
         }
