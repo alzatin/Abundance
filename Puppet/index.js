@@ -60,7 +60,7 @@ async function loadPuppeteerAndExec(browser, date) {
     console.log(`Screenshot: Puppet/images/${projectName}-Test-${date}.png `);
 
     await page.goto(
-      "https://barboursmith.github.io/Abundance" +
+      "https://abundance.maslowcnc.com" +
         "/run/" +
         projectUser +
         "/" +
