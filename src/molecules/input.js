@@ -134,7 +134,7 @@ export default class Input extends Atom {
     GlobalVariables.c.beginPath();
     GlobalVariables.c.moveTo(0, yInPixels + this.height / 2);
     GlobalVariables.c.lineTo(this.width, yInPixels + this.height / 2);
-    GlobalVariables.c.lineTo(this.width + radiusInPixels, yInPixels);
+    GlobalVariables.c.lineTo(this.width + radiusInPixels / 2, yInPixels);
     GlobalVariables.c.lineTo(this.width, yInPixels - this.height / 2);
     GlobalVariables.c.lineTo(0, yInPixels - this.height / 2);
     GlobalVariables.c.lineWidth = 1;
