@@ -133,15 +133,4 @@ export default class Tag extends Atom {
 
     return superSerialObject;
   }
-
-  /**
-   * Call super delete node and then delete tag from dictionary.
-   */
-  deleteNode() {
-    super.deleteNode();
-    // Remove the tag from the global tag dictionary if it exists
-    if (GlobalVariables.topLevelMolecule.tagDictionary[this.uniqueID]) {
-      delete GlobalVariables.topLevelMolecule.tagDictionary[this.uniqueID];
-    }
-  }
 }
