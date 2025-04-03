@@ -393,6 +393,34 @@ function tag(targetID, inputID, TAG) {
   });
 }
 
+function extractAllTags(inputID) {
+  return started.then(() => {
+    // Recursive helper function to collect tags
+    function collectTags(geometry) {
+      let tags = new Set(geometry.tags || []); // Use a Set to ensure uniqueness
+
+      // If the geometry is an assembly, recursively collect tags from subassemblies
+      if (isAssembly(geometry)) {
+        geometry.geometry.forEach((subAssembly) => {
+          const subTags = collectTags(subAssembly);
+          subTags.forEach((tag) => tags.add(tag)); // Add tags from subassemblies
+        });
+      }
+
+      return tags;
+    }
+
+    // Start collecting tags from the input geometry
+    const inputGeometry = library[inputID];
+    if (!inputGeometry) {
+      throw new Error(`Geometry with ID ${inputID} not found in library`);
+    }
+
+    const allTags = collectTags(inputGeometry);
+    return Array.from(allTags); // Convert the Set to an array
+  });
+}
+
 //---------------------Functions for the code atom---------------------
 
 /**
@@ -1691,6 +1719,7 @@ expose({
   rotate,
   difference,
   tag,
+  extractAllTags,
   layout,
   displayLayout,
   output,

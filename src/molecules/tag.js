@@ -40,9 +40,6 @@ export default class Tag extends Atom {
     /** Array of tags for this atom */
     this.tags = [""];
 
-    /** Flag for cutlist tag */
-    this.cutTag = false;
-
     this.setValues(values);
   }
 
@@ -93,7 +90,7 @@ export default class Tag extends Atom {
       disabled: false,
       onChange: (value) => {
         this.tags = [];
-        this.tags.push(value);
+        this.tags.push(value); // Add the new tag to the array
         this.name = this.tags.toString();
         this.updateValue();
       },
@@ -111,7 +108,6 @@ export default class Tag extends Atom {
       this.processing = true;
       var inputID = this.findIOValue("geometry");
       var tags = this.tags;
-      this.addTagsToAvailableTags();
       GlobalVariables.cad
         .tag(this.uniqueID, inputID, tags)
         .then(() => {
@@ -134,7 +130,6 @@ export default class Tag extends Atom {
   serialize(offset = { x: 0, y: 0 }) {
     var superSerialObject = super.serialize(offset);
     superSerialObject.tags = this.tags;
-    superSerialObject.cutTag = this.cutTag;
 
     return superSerialObject;
   }
