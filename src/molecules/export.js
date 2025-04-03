@@ -53,9 +53,9 @@ export default class Export extends Atom {
 
     this.setValues(values);
 
-    this.fileName = null;
-
     this.importIndex = 0;
+
+    this.partName = this.parent.name;
   }
 
   /**
@@ -138,12 +138,13 @@ export default class Export extends Atom {
         }
         if (input.name == "Part Name") {
           inputParams[this.uniqueID + input.name] = {
-            value: input.value,
+            value: this.partName,
             label: input.name,
             disabled: checkConnector(),
             onChange: (value) => {
               if (input.value !== value) {
                 input.setValue(value);
+                this.partName = value;
               }
             },
           };
@@ -188,7 +189,7 @@ export default class Export extends Atom {
     superSerialObject.type = this.type;
     superSerialObject.resolution = this.resolution;
     superSerialObject.importIndex = this.importIndex;
-    superSerialObject.fileName = this.fileName;
+    superSerialObject.partName = this.partName;
 
     return superSerialObject;
   }

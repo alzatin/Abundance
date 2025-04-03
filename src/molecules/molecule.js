@@ -233,33 +233,15 @@ export default class Molecule extends Atom {
     const exportAtoms = this.nodesOnTheScreen.filter(
       (node) => node.atomType === "Export"
     );
-    console.log("exportAtoms");
-    console.log(exportAtoms);
 
-    exportParams[this.uniqueID + "part_ops"] = {
-      value: this.partToExport
-        ? this.partToExport.fileName
-        : "Pick a part to export",
-      options: exportAtoms.map(
-        (option) =>
-          option.inputs.filter((input) => input.name === "Part Name")[0].value
-      ),
-      label: "Part",
-      onChange: (value) => {
-        this.partToExport = exportAtoms.find(
-          (atom) =>
-            atom.inputs.filter((input) => input.name === "Part Name")[0]
-              .value === value
-        );
-        console.log("this.partToExport");
-        console.log(this.partToExport);
-
-        this.updateValue();
-      },
-    };
-
-    exportParams["Export"] = button(() => {
-      this.partToExport.exportFile();
+    exportAtoms.forEach((atom) => {
+      const partName =
+        atom.inputs.filter((input) => input.name === "Part Name")[0]?.value ||
+        "Unnamed Part";
+      exportParams[`Export ${partName}`] = button(() => {
+        atom.exportFile();
+        console.log(`Exporting: ${partName}`);
+      });
     });
 
     return exportParams;
