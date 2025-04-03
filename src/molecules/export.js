@@ -117,6 +117,7 @@ export default class Export extends Atom {
             label: "File Type",
             onChange: (value) => {
               if (input.value !== value) {
+                this.type = value;
                 input.setValue(value);
               }
             },
