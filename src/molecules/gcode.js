@@ -115,19 +115,47 @@ export default class Gcode extends Atom {
       });
     }
 
-    inputParams["Download Gcode"] = button(() => this.runKirimoto());
+    inputParams["Download Gcode"] = button(() => this.clickKiriButton());
 
     return inputParams;
   }
 
-  runKirimoto() {
-    console.log("running kurimoto");
-    //generate an stl file from the geometry
+  runKirimoto(kiriEngine) {
+    console.log("kiriEngine");
+    console.log(kiriEngine);
+    if (!kiriEngine) {
+      console.error("Kiri:Moto engine is not initialized yet.");
+      return;
+    }
+
+    kiriEngine
+      .setListener((message) => console.log("Kiri:Moto Message:", message))
+      .load("/obj/cube.stl") // Replace with your STL file path
+      .then((eng) =>
+        eng.setProcess({
+          sliceShells: 1,
+          sliceFillSparse: 0.25,
+          sliceTopLayers: 2,
+          sliceBottomLayers: 2,
+        })
+      )
+      .then((eng) =>
+        eng.setDevice({
+          gcodePre: ["M82", "M104 S220"],
+          gcodePost: ["M107"],
+        })
+      )
+      .then((eng) => eng.slice())
+      .then((eng) => eng.prepare())
+      .then((eng) => eng.export())
+      .then((gcode) => console.log("Generated GCode:", gcode))
+      .catch((error) => console.error("Kiri:Moto Error:", error));
+  }
+
+  clickKiriButton() {
     let kirimotoButton = document.getElementById("kirimoto-button");
     console.log(kirimotoButton);
     kirimotoButton.click();
-    //call the kurimoto api to generate gcode
-    //save the gcode to a file
   }
   /**
    * The function which is called when you press the download button.

@@ -492,7 +492,7 @@ function CreateMode({
           />
 
           <CodeWindow {...{ activeAtom }} />
-          <KiriMotoIntegration />
+          <KiriMotoIntegration {...{ activeAtom }} />
           <input
             type="file"
             id="fileLoaderInput"
