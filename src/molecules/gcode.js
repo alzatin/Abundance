@@ -129,27 +129,57 @@ export default class Gcode extends Atom {
     }
 
     kiriEngine
-      .setListener((message) => console.log("Kiri:Moto Message:", message))
-      .load("/obj/cube.stl") // Replace with your STL file path
-      .then((eng) =>
-        eng.setProcess({
+      .setListener((message) => {
+        console.log("Kiri:Moto Message:", message);
+        if (message.type === "progress") {
+          console.log(`Progress: ${message.progress * 100}%`);
+        }
+      })
+      .load("/Simple_cube.stl") // Replace with your STL file path
+      .then((eng) => {
+        console.log("STL file loaded");
+        return eng.setProcess({
           sliceShells: 1,
-          sliceFillSparse: 0.25,
-          sliceTopLayers: 2,
-          sliceBottomLayers: 2,
-        })
-      )
-      .then((eng) =>
-        eng.setDevice({
+          sliceFillSparse: 0.1,
+          sliceTopLayers: 1,
+          sliceBottomLayers: 1,
+        });
+      })
+      .catch((error) => {
+        console.error("Error loading STL file:", error);
+      })
+      .then((eng) => {
+        console.log("Process parameters set");
+        return eng.setDevice({
           gcodePre: ["M82", "M104 S220"],
           gcodePost: ["M107"],
-        })
-      )
-      .then((eng) => eng.slice())
-      .then((eng) => eng.prepare())
-      .then((eng) => eng.export())
-      .then((gcode) => console.log("Generated GCode:", gcode))
-      .catch((error) => console.error("Kiri:Moto Error:", error));
+        });
+      })
+      .then((eng) => {
+        console.log("Device parameters set");
+        return new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject("Slicing timed out"), 600000); //5min timeout
+          console.log(eng);
+          eng.slice().then(() => {
+            clearTimeout(timeout);
+            resolve(eng);
+          });
+        });
+      })
+      .then((eng) => {
+        console.log("Slicing completed");
+        return eng.prepare();
+      })
+      .then((eng) => {
+        console.log("Preparation completed");
+        return eng.export();
+      })
+      .then((gcode) => {
+        console.log("GCode generated:", gcode);
+      })
+      .catch((error) => {
+        console.error("Kiri:Moto Error:", error);
+      });
   }
 
   clickKiriButton() {

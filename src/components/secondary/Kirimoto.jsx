@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 
 const KiriMotoIntegration = ({ activeAtom }) => {
   const [kiriEngine, setKiriEngine] = useState(null);
-  console.log(activeAtom);
 
   useEffect(() => {
     // Dynamically load the Kiri:Moto script
