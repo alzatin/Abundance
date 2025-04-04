@@ -8,7 +8,7 @@ import LowerHalf from "./lowerHalf.jsx";
 import ParamsEditor from "../secondary/ParameterEditor.jsx";
 import CodeWindow from "../secondary/codeWindow.jsx";
 import { useAuth0 } from "@auth0/auth0-react";
-
+import KiriMotoIntegration from "../secondary/Kirimoto.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -332,7 +332,9 @@ function CreateMode({
     var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
 
     //Don't save again if nothing has changed
-    if (JSON.stringify(jsonRepOfProject) == JSON.stringify(lastSaveData.current)) {
+    if (
+      JSON.stringify(jsonRepOfProject) == JSON.stringify(lastSaveData.current)
+    ) {
       return;
     }
 
@@ -490,6 +492,7 @@ function CreateMode({
           />
 
           <CodeWindow {...{ activeAtom }} />
+          <KiriMotoIntegration />
           <input
             type="file"
             id="fileLoaderInput"

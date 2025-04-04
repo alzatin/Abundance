@@ -1,5 +1,6 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
+import { button } from "leva";
 //import saveAs from '../lib/FileSaver.js'
 
 /**
@@ -83,32 +84,51 @@ export default class Gcode extends Atom {
       var speed = this.findIOValue("speed");
       var tabs = this.findIOValue("tabs");
       var safeHeight = this.findIOValue("safe height");
-      const values = {
-        op: "gcode",
-        readPath: geometry,
-        toolSize: toolSize,
-        passes: passes,
-        speed: speed,
-        tabs: tabs,
-        safeHeight: safeHeight,
-        writePath: this.path,
-      };
-      this.gcodeString = this.basicThreadValueProcessing(values);
     } catch (err) {
       this.setAlert(err);
     }
   }
 
-  /**
-   * Create a button to download the .stl file.
-   */
-  updateSidebar() {
-    const list = super.updateSidebar();
-    this.createButton(list, this, "Download G-Code", () => {
-      this.downloadGCode();
-    });
+  createLevaInputs() {
+    let inputParams = {};
+
+    /** Runs through active atom inputs and adds IO parameters to default param*/
+    if (this.inputs) {
+      this.inputs.map((input) => {
+        const checkConnector = () => {
+          return input.connectors.length > 0;
+        };
+
+        /* Some input parameters (inlcuding equation and result) live in the parameter editor file so they can use the set, get functions */
+
+        /* Makes inputs for Io's other than geometry */
+        if (input.valueType !== "geometry") {
+          inputParams[input.name] = {
+            value: input.value,
+            disabled: checkConnector(),
+            onChange: (value) => {
+              input.setValue(value);
+            },
+            order: -2,
+          };
+        }
+      });
+    }
+
+    inputParams["Download Gcode"] = button(() => this.runKirimoto());
+
+    return inputParams;
   }
 
+  runKirimoto() {
+    console.log("running kurimoto");
+    //generate an stl file from the geometry
+    let kirimotoButton = document.getElementById("kirimoto-button");
+    console.log(kirimotoButton);
+    kirimotoButton.click();
+    //call the kurimoto api to generate gcode
+    //save the gcode to a file
+  }
   /**
    * The function which is called when you press the download button.
    */
@@ -120,21 +140,6 @@ export default class Gcode extends Atom {
       var speed = this.findIOValue("speed");
       var tabs = this.findIOValue("tabs");
       var safeHeight = this.findIOValue("safe height");
-      const values = {
-        op: "gcode",
-        readPath: geometry,
-        toolSize: toolSize,
-        passes: passes,
-        speed: speed,
-        tabs: tabs,
-        safeHeight: safeHeight,
-        writePath: this.path,
-      };
-      const { answer } = window.ask(values);
-      // answer.then( returnedAnswer => {
-      //     const blob = new Blob([returnedAnswer])
-      //     saveAs(blob, GlobalVariables.currentMolecule.name+'.nc')
-      // })
     } catch (err) {
       this.setAlert(err);
     }
