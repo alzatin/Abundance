@@ -234,42 +234,14 @@ export default class Molecule extends Atom {
       (node) => node.atomType === "Export"
     );
 
-    exportParams[this.uniqueID + "part_ops"] = {
-      value: this.partToExport
-        ? this.partToExport.fileName
-        : "Pick a part to export",
-      options: exportAtoms.map(
-        (option) =>
-          option.inputs.filter((input) => input.name === "Part Name")[0].value
-      ),
-      label: "Part",
-      onChange: (value) => {
-        this.partToExport = exportAtoms.find(
-          (atom) =>
-            atom.inputs.filter((input) => input.name === "Part Name")[0]
-              .value === value
-        );
-
-        this.updateValue();
-      },
-    };
-
-    exportParams[this.uniqueID + "file_ops"] = {
-      value: this.partToExport
-        ? this.partToExport.fileType
-        : "Pick a file type",
-      options: exportOptions,
-      label: "File Type",
-      onChange: (value) => {
-        if (this.partToExport) {
-          this.partToExport.type = value;
-        }
-        //atom.exportFile()
-      },
-    };
-
-    exportParams["Export As"] = button(() => {
-      this.partToExport.exportFile();
+    exportAtoms.forEach((atom) => {
+      const partName =
+        atom.inputs.filter((input) => input.name === "Part Name")[0]?.value ||
+        "Unnamed Part";
+      exportParams[`Export ${partName}`] = button(() => {
+        atom.exportFile();
+        console.log(`Exporting: ${partName}`);
+      });
     });
 
     return exportParams;
@@ -552,12 +524,10 @@ export default class Molecule extends Atom {
       centeredText.style.display = "flex";
 
       GlobalVariables.cad.molecule(this.uniqueID, outputID).then(() => {
-
         //If we're currently inside this molecule, we don't want to pass the update to the next level until we leave
         if (GlobalVariables.currentMolecule !== this) {
           this.basicThreadValueProcessing();
-        }
-        else{
+        } else {
           this.awaitingPropagationFlag = true;
         }
 
