@@ -3,246 +3,246 @@
 }
 
 .Actions {
-  background: url("/Abundance/imgs/actions.png");
+  background: url("/imgs/actions.png");
   width: 400%;
   height: 400%;
 }
 
 .Inputs {
-  background: url("/Abundance/imgs/Input.png");
+  background: url("/imgs/Input.png");
   width: 400%;
   height: 400%;
 }
 .Shapes {
-  background: url("/Abundance/imgs/Shapes.png");
+  background: url("/imgs/Shapes.png");
   width: 150%;
   height: 150%;
 }
 .Assembly {
-  background: url("/Abundance/imgs/Assembly.png");
+  background: url("/imgs/Assembly.png");
   width: 150%;
   height: 150%;
 }
 .Fusion {
-  background: url("/Abundance/imgs/fusion.png");
+  background: url("/imgs/fusion.png");
   width: 150%;
   height: 150%;
 }
 .Interaction {
-  background: url("/Abundance/imgs/interaction.png");
+  background: url("/imgs/interaction.png");
   width: 150%;
   height: 150%;
 }
 .Intersection {
-  background: url("/Abundance/imgs/intersection.png");
+  background: url("/imgs/intersection.png");
   width: 150%;
   height: 150%;
 }
 .ShrinkWrap {
-  background: url("/Abundance/imgs/shrinkwrap.png");
+  background: url("/imgs/shrinkwrap.png");
   width: 150%;
   height: 150%;
 }
 .Tags {
-  background: url("/Abundance/imgs/tag.png");
+  background: url("/imgs/tag.png");
   width: 150%;
   height: 150%;
 }
 
 .OverCut-Corners {
-  background: url("/Abundance/imgs/Overcut.png");
+  background: url("/imgs/Overcut.png");
   width: 150%;
   height: 150%;
 }
 
 .Import-Export {
-  background: url("/Abundance/imgs/import.png");
+  background: url("/imgs/import.png");
   width: 150%;
   height: 150%;
 }
 
 .Export {
-  background: url("/Abundance/imgs/Export_menu.svg");
+  background: url("/imgs/Export_menu.svg");
   width: 150%;
   height: 150%;
 }
 
 .Import {
-  background: url("/Abundance/imgs/Import_menu.svg");
+  background: url("/imgs/Import_menu.svg");
   width: 150%;
   height: 150%;
 }
 
 .Group {
-  background: url("/Abundance/imgs/Group.png");
+  background: url("/imgs/Group.png");
   width: 150%;
   height: 150%;
 }
 .Text {
-  background: url("/Abundance/imgs/text.png");
+  background: url("/imgs/text.png");
   width: 150%;
   height: 150%;
 }
 
 .Difference {
-  background: url("/Abundance/imgs/difference.png");
+  background: url("/imgs/difference.png");
   width: 150%;
   height: 150%;
 }
 
 .Rectangle {
-  background: url("/Abundance/imgs/rectangle.png");
+  background: url("/imgs/rectangle.png");
   width: 150%;
   height: 150%;
 }
 
 .Circle {
-  background: url("/Abundance/imgs/circle.png");
+  background: url("/imgs/circle.png");
   width: 150%;
   height: 150%;
 }
 
 .Code {
-  background: url("/Abundance/imgs/code.png");
+  background: url("/imgs/code.png");
   width: 150%;
   height: 150%;
 }
 .Gcode {
-  background: url("/Abundance/imgs/gcode.png");
+  background: url("/imgs/gcode.png");
   width: 150%;
   height: 150%;
 }
 
 .Scale {
-  background: url("/Abundance/imgs/scale.png");
+  background: url("/imgs/scale.png");
   width: 150%;
   height: 150%;
 }
 
 .RegularPolygon {
-  background: url("/Abundance/imgs/RegularPolygon.png");
+  background: url("/imgs/RegularPolygon.png");
   width: 150%;
   height: 150%;
 }
 
 .Extrude {
-  background: url("/Abundance/imgs/extrude.png");
+  background: url("/imgs/extrude.png");
   width: 150%;
   height: 150%;
 }
 .Move {
-  background: url("/Abundance/imgs/move.png");
+  background: url("/imgs/move.png");
   width: 150%;
   height: 150%;
 }
 .Molecule {
-  background: url("/Abundance/imgs/molecule.png");
+  background: url("/imgs/molecule.png");
   width: 150%;
   height: 150%;
 }
 .GitHubMolecule {
-  background: url("/Abundance/imgs/githubmolecule.png");
+  background: url("/imgs/githubmolecule.png");
   width: 250%;
   height: 250%;
 }
 .GeneticAlgorithm {
-  background: url("/Abundance/imgs/genetic.svg");
+  background: url("/imgs/genetic.svg");
   width: 150%;
   height: 150%;
 }
 
 .Color {
-  background: url("/Abundance/imgs/Color.png");
+  background: url("/imgs/Color.png");
   width: 150%;
   height: 150%;
 }
 
 .CutList {
-  background: url("/Abundance/imgs/Cutlist.png");
+  background: url("/imgs/Cutlist.png");
   width: 150%;
   height: 150%;
 }
 
 .Rotate {
-  background: url("/Abundance/imgs/Rotate.png");
+  background: url("/imgs/Rotate.png");
   width: 150%;
   height: 150%;
 }
 
 .Input {
-  background: url("/Abundance/imgs/Input.png");
+  background: url("/imgs/Input.png");
   width: 150%;
   height: 150%;
 }
 
 .Equation {
-  background: url("/Abundance/imgs/Equation.png");
+  background: url("/imgs/Equation.png");
   width: 150%;
   height: 150%;
 }
 
 .Loft {
-  background: url("/Abundance/imgs/loft.png");
+  background: url("/imgs/loft.png");
   width: 150%;
   height: 150%;
 }
 
 .Stretch {
-  background: url("/Abundance/imgs/Stretch.png");
+  background: url("/imgs/Stretch.png");
   width: 150%;
   height: 150%;
 }
 
 .Stl {
-  background: url("/Abundance/imgs/stl.png");
+  background: url("/imgs/stl.png");
   width: 150%;
   height: 150%;
 }
 
 .Svg {
-  background: url("/Abundance/imgs/svg.png");
+  background: url("/imgs/svg.png");
   width: 150%;
   height: 150%;
 }
 
 .CutAway {
-  background: url("/Abundance/imgs/CutAway.png");
+  background: url("/imgs/CutAway.png");
   width: 150%;
   height: 150%;
 }
 
 .Tag {
-  background: url("/Abundance/imgs/tag.png");
+  background: url("/imgs/tag.png");
   width: 150%;
   height: 150%;
 }
 
 .Add-BOM-Tag {
-  background: url("/Abundance/imgs/Bom.png");
+  background: url("/imgs/Bom.png");
   width: 150%;
   height: 150%;
 }
 
 .Readme {
-  background: url("/Abundance/imgs/readme.png");
+  background: url("/imgs/readme.png");
   width: 50%;
   height: 50%;
 }
 
 .CutLayout {
-  background: url("/Abundance/imgs/cutlayout.png");
+  background: url("/imgs/cutlayout.png");
   width: 150%;
   height: 150%;
 }
 
 .ExtractTag {
-  background: url("/Abundance/imgs/extracttag.png");
+  background: url("/imgs/extracttag.png");
   width: 150%;
   height: 150%;
 }
 
 .Constant {
-  background: url("/Abundance/imgs/Constant.png");
+  background: url("/imgs/Constant.png");
   width: 150%;
   height: 150%;
 }
