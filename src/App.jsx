@@ -86,10 +86,11 @@ export default function ReplicadApp() {
             activeAtom.setAlert("Can't display Mesh " + e);
           });
         /*Set wireMesh*/
+
         //Exception: Don't display the mesh if the thing we are displaying is already the output
-        if (GlobalVariables.currentMolecule.uniqueID != id) {
+        if (GlobalVariables.currentMolecule.output.value != id) {
           cad
-            .generateDisplayMesh(GlobalVariables.currentMolecule.uniqueID)
+            .generateDisplayMesh(GlobalVariables.currentMolecule.output.value)
             .then((w) => {
               setWireMesh(w);
               createPuppeteerDiv();
