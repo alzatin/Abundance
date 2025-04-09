@@ -537,8 +537,6 @@ export default class Molecule extends Atom {
         if (this.selected) {
           this.sendToRender();
         }
-        const loadingDots = document.querySelector(".loading");
-        loadingDots.style.display = "none";
       });
     } catch (err) {
       this.setAlert(err);

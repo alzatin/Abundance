@@ -51,10 +51,25 @@ export default function ReplicadApp() {
 
   /* Creates an element to check with Puppeteer if the molecule is fully loaded*/
   const createPuppeteerDiv = () => {
-    const invisibleDiv = document.createElement("div");
-    invisibleDiv.id = "molecule-fully-render-puppeteer";
-    invisibleDiv.style.display = "none";
-    document.body.appendChild(invisibleDiv);
+    // Check if the div already exists
+    const existingDiv = document.getElementById(
+      "molecule-fully-render-puppeteer"
+    );
+    if (!existingDiv) {
+      // If it doesn't exist, create it
+      const invisibleDiv = document.createElement("div");
+      invisibleDiv.id = "molecule-fully-render-puppeteer";
+      invisibleDiv.style.display = "none";
+      document.body.appendChild(invisibleDiv);
+    }
+  };
+  const loadingDotsNone = () => {
+    console.log("loading dots none");
+    const loadingDots = document.querySelector(".loading");
+    if (loadingDots) {
+      console.log("loading dots none exist");
+      loadingDots.style.display = "none";
+    }
   };
 
   useEffect(() => {
@@ -62,12 +77,14 @@ export default function ReplicadApp() {
       console.log("write to display running " + id);
       setOutdatedMesh(true);
       if (resetView) {
+        console.log("reset view");
         cad
           .resetView()
           .then((m) => {
             setMesh(m);
             setWireMesh(m);
             setOutdatedMesh(false);
+            loadingDotsNone();
           })
           .catch((e) => {
             console.error("reset view not working" + e);
@@ -78,8 +95,7 @@ export default function ReplicadApp() {
           .then((m) => {
             setMesh(m);
             setOutdatedMesh(false);
-            const loadingDots = document.querySelector(".loading");
-            loadingDots.style.display = "none";
+            loadingDotsNone();
           })
           .catch((e) => {
             console.error("Can't display Mesh " + e);
