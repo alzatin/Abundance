@@ -28,13 +28,72 @@ const KiriMotoIntegration = ({ activeAtom }) => {
     };
   }, []);
 
+  const runKirimoto = (kiriEngine) => {
+    console.log("kiriEngine");
+    console.log(kiriEngine);
+    if (!kiriEngine) {
+      console.error("Kiri:Moto engine is not initialized yet.");
+      return;
+    }
+
+    kiriEngine
+      .setListener((message) => {
+        console.log("Kiri:Moto Message:", message);
+        if (message.type === "progress") {
+          console.log(`Progress: ${message.progress * 100}%`);
+        }
+      })
+      .load("/Simple_cube.stl") // Replace with your STL file path
+      .then((eng) => {
+        console.log("STL file loaded");
+        return eng.setProcess({
+          sliceShells: 1,
+          sliceFillSparse: 0.1,
+          sliceTopLayers: 1,
+          sliceBottomLayers: 1,
+        });
+      })
+      .catch((error) => {
+        console.error("Error loading STL file:", error);
+      })
+      .then((eng) => {
+        console.log("Process parameters set");
+        return eng.setDevice({
+          gcodePre: ["M82", "M104 S220"],
+          gcodePost: ["M107"],
+        });
+      })
+      .then((eng) => {
+        console.log("Device parameters set");
+        return new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject("Slicing timed out"), 600000); //5min timeout
+          console.log(eng);
+          eng.slice().then(() => {
+            clearTimeout(timeout);
+            resolve(eng);
+          });
+        });
+      })
+      .then((eng) => {
+        console.log("Slicing completed");
+        return eng.prepare();
+      })
+      .then((eng) => {
+        console.log("Preparation completed");
+        return eng.export();
+      })
+      .then((gcode) => {
+        console.log("GCode generated:", gcode);
+      })
+      .catch((error) => {
+        console.error("Kiri:Moto Error:", error);
+      });
+  };
+
   return (
     <div style={{ display: "none" }}>
       <h1>Kiri:Moto Integration</h1>
-      <button
-        id="kirimoto-button"
-        onClick={() => activeAtom.runKirimoto(kiriEngine)}
-      >
+      <button id="kirimoto-button" onClick={() => runKirimoto(kiriEngine)}>
         Run Kiri:Moto
       </button>
     </div>

@@ -11,6 +11,7 @@ import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
 import ParamsEditor from "../secondary/ParameterEditor.jsx";
 import RunNavigation from "../secondary/RunNavigation.jsx";
 import Molecule from "../../molecules/molecule.js";
+import KiriMotoIntegration from "../secondary/Kirimoto.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -173,6 +174,8 @@ function runMode({
         />
       ) : null}
       <RunNavigation {...{ authorizedUserOcto, tryLogin, activeAtom }} />
+
+      <KiriMotoIntegration {...{ activeAtom }} />
       {globalvariables.currentRepo ? (
         <div className="info_run_div">
           <p>{"Project Name: " + globalvariables.currentRepo.repoName}</p>
