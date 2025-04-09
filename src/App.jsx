@@ -51,10 +51,17 @@ export default function ReplicadApp() {
 
   /* Creates an element to check with Puppeteer if the molecule is fully loaded*/
   const createPuppeteerDiv = () => {
-    const invisibleDiv = document.createElement("div");
-    invisibleDiv.id = "molecule-fully-render-puppeteer";
-    invisibleDiv.style.display = "none";
-    document.body.appendChild(invisibleDiv);
+    // Check if the div already exists
+    const existingDiv = document.getElementById(
+      "molecule-fully-render-puppeteer"
+    );
+    if (!existingDiv) {
+      // If it doesn't exist, create it
+      const invisibleDiv = document.createElement("div");
+      invisibleDiv.id = "molecule-fully-render-puppeteer";
+      invisibleDiv.style.display = "none";
+      document.body.appendChild(invisibleDiv);
+    }
   };
 
   useEffect(() => {
