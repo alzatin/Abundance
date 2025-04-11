@@ -419,7 +419,7 @@ function extractAllTags(inputID, tag) {
     const allTags = collectTags(inputGeometry);
     let returningArray = Array.from(allTags); // Convert the Set to an array
 
-    returningArray = [...new Set(returningArray)];
+    returningArray = ["Select Tag", ...new Set(returningArray)];
     return returningArray;
   });
 }
