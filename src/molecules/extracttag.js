@@ -88,7 +88,7 @@ export default class ExtractTag extends Atom {
 
   createLevaInputs(setInputChanged) {
     var inputID = this.findIOValue("geometry");
-    GlobalVariables.cad.extractAllTags(inputID).then((result) => {
+    GlobalVariables.cad.extractAllTags(inputID, this.tag).then((result) => {
       if (!this.arraysEqual(this.tagList, result)) {
         this.tagList = result;
         setInputChanged(this.tagList);
@@ -97,12 +97,18 @@ export default class ExtractTag extends Atom {
     let tagList = this.tagList;
     let inputParams = {};
 
-    inputParams[this.uniqueID + "tag_ops"] = {
+    inputParams[this.uniqueID + "extracting"] = {
       value: this.tag,
+      label: "Tag",
+      disabled: true,
+    };
+
+    inputParams[this.uniqueID + "tag_ops"] = {
+      value: "Select Tag",
       options: tagList,
       label: "Extract Tag",
       onChange: (value) => {
-        if (this.tag != value) {
+        if (this.tag != value && value != "Select Tag") {
           this.tag = value;
           this.updateValue();
           //this.sendToRender();

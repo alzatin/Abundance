@@ -393,7 +393,7 @@ function tag(targetID, inputID, TAG) {
   });
 }
 
-function extractAllTags(inputID) {
+function extractAllTags(inputID, tag) {
   return started.then(() => {
     // Recursive helper function to collect tags
     function collectTags(geometry) {
@@ -417,7 +417,10 @@ function extractAllTags(inputID) {
     }
 
     const allTags = collectTags(inputGeometry);
-    return Array.from(allTags); // Convert the Set to an array
+    let returningArray = Array.from(allTags); // Convert the Set to an array
+
+    returningArray = [...new Set(returningArray)];
+    return returningArray;
   });
 }
 
