@@ -10,6 +10,7 @@ import { BrowserRouter } from "react-router-dom";
 import "replicad-opencascadejs/src/replicad_single.wasm?url";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
+console.log("Vite Browser Router: ", import.meta.env.VITE_BROWSER_ROUTER);
 root.render(
   <BrowserRouter basename={import.meta.env.VITE_BROWSER_ROUTER}>
     <Auth0ProviderWithHistory>
