@@ -43,7 +43,7 @@ const KiriMotoIntegration = ({ activeAtom }) => {
           console.log(`Progress: ${message.progress * 100}%`);
         }
       })
-      .load("../../Simple_cube.stl") // Replace with your STL file path
+      .load("/Simple_cube.stl") // Replace with your STL file path
       .then((eng) => {
         console.log("STL file loaded");
         return eng.setProcess({
