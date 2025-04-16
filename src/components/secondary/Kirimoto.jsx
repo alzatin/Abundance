@@ -63,17 +63,7 @@ const KiriMotoIntegration = ({ activeAtom }) => {
           gcodePost: ["M107"],
         });
       })
-      .then((eng) => {
-        console.log("Device parameters set");
-        return new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject("Slicing timed out"), 600000); //5min timeout
-          console.log(eng);
-          eng.slice().then(() => {
-            clearTimeout(timeout);
-            resolve(eng);
-          });
-        });
-      })
+      .then((eng) => eng.slice())
       .then((eng) => {
         console.log("Slicing completed");
         return eng.prepare();
