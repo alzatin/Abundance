@@ -211,7 +211,7 @@ export default (function ParamsEditor({
             store={store4}
             fill
             hidden={false}
-            collapsed={true}
+            collapsed={false}
             hideCopyButton
             titleBar={{
               title: "Export Parts",
