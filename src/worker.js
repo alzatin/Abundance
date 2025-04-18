@@ -851,19 +851,23 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
   let localId = 0;
   let shapesForLayout = [];
 
-  //Split apart disjoint geometry into assemblies so they can be placed seperately
+  //TODO: revisit this? Split apart disjoint geometry into assemblies so they can be placed seperately
   // let splitGeometry = actOnLeafs(taggedGeometry, disjointGeometryToAssembly);
 
-  // console.log(splitGeometry);
+  // Algo overview:
+  // collect all prospective orientations for all parts
+  // come up with a best-guess material thickness or n/a
+  // select among candidates for each part based on either good fit to the
+  //    estimated material thickness, or just take thinnest orientation.
 
-  // Rotate all shapes to be most cuttable.
-  library[targetID] = actOnLeafs(geometryToLayout, (leaf) => {
+
+  // get candidates as {leaf_id: "abc", [candidate 1, candidate 2 etc]}
+  const all_candidates = []
+  actOnLeafs(geometryToLayout, (leaf) => {
     // For each face, consider it as the underside of the shape on the CNC bed.
     // In order to be considered, a face must be...
-    //  1) a flat PLANE, not a cylander, or sphere or other curved face type.
-    //  2) the thickness of the part normal to this plane must be less than or equal to
-    //     the raw material thickness
-    //  3) there must be no parts of the shape which protrude "below" this face
+    //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
+    //  2) there must be no parts of the shape which protrude "below" this face
     let candidates = [];
     let hasFlatFace = false;
     let faceIndex = 0;
@@ -872,34 +876,47 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
         hasFlatFace = true;
         let prospectiveGoem = moveFaceToCuttingPlane(leaf.geometry[0], face);
         let thickness = prospectiveGoem.boundingBox.depth;
-        if (thickness < layoutConfig.thickness + THICKNESS_TOLLERANCE) {
-          // Check for protrusions "below" the bottom of the raw material.
-          if (
-            prospectiveGoem.boundingBox.bounds[0][2] >
-            -1 * THICKNESS_TOLLERANCE
-          ) {
-            candidates.push({
-              face: face,
-              geom: prospectiveGoem,
-              faceIndex: faceIndex,
-            });
-          }
+//        if (thickness < layoutConfig.thickness + THICKNESS_TOLLERANCE) {
+        // Check for protrusions "below" the bottom of the raw material.
+        if (
+          prospectiveGoem.boundingBox.bounds[0][2] >
+          -1 * THICKNESS_TOLLERANCE
+        ) {
+          candidates.push({
+            face: face,
+            geom: prospectiveGoem,
+            faceIndex: faceIndex,
+            thickness: thickness,
+          });
         }
       }
       faceIndex++;
     });
 
-    let selected;
     if (candidates.length == 0) {
       if (!hasFlatFace) {
-        // TODO: how to specify which upstream object? We know which leaf we're dealing with here
-        // but I'm not sure how to back-track that to alerting on the relevant atom or
-        // providing a user visible indication of which geom is the problem.
+        // TODO: This should be a warning not an error
+        // also.. it'd be great to ID the upstream object in some user-interpretable way...
         throw new Error("Upstream object uncuttable, has no flat face");
-      } else {
-        throw new Error("Upstream object too thick for specified material");
       }
-    } else if (candidates.length == 1) {
+    }
+    all_candidates.push({"id": localId, "candidates": candidates})
+  });
+
+  // Heuristic here is... for each part get it's minimum thickness. If the largest of these is
+  // <= 1" then it's credibly the size of stock being used, so set that as our material
+  // thickness and select among candidates for each part.
+  let material_thickness = -1;
+  const min_thickness_per_part = all_candidates.map(part => Math.min(part.candidates.map(c => c.thickness)));
+  // TODO: we need to know units of the sheet in order to make this check.
+  if (Math.max(min_thickness_per_part) <= 1) {
+    material_thickness = Math.max(min_thickness_per_part);
+  }
+
+
+
+
+    else if (candidates.length == 1) {
       selected = candidates[0];
     } else {
       // The candidate selection here doesn't guarantee a printable piece. In particular there
