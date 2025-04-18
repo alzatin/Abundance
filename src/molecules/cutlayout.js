@@ -6,7 +6,16 @@ import { button, LevaInputs } from "leva";
 
 
 /**
- * The Cut Layout atom extracts a copy of each shape on the cutlist and places them optimally on a cut sheet.
+ * Rearrange all input geometries to fit on a sheet of material. Parts are packed
+ * as densely as possible while still respecting part padding. In general, all parts
+ * will be arranged to be as thin as possible, however there are some exceptions in
+ * order to fit into a sheet of stock with some uniform thickness.
+ * 
+ * Params:
+ * - geometry: The geometry or assembly to be arranged
+ * - width: The width of the sheet
+ * - height: The height of the sheet
+ * - partPadding: The padding between parts
  */
 export default class CutLayout extends Atom {
   /**
@@ -49,13 +58,6 @@ export default class CutLayout extends Atom {
 
     this.addIO("input", "geometry", this, "geometry", null);
 
-    this.addIO(
-      "input",
-      "Material Thickness",
-      this,
-      "number",
-      GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 19 : 0.75
-    );
     this.addIO(
       "input",
       "Sheet Width",
@@ -167,7 +169,6 @@ export default class CutLayout extends Atom {
     if (this.inputs.every((x) => x.ready)) {
       this.processing = true;
       var inputID = this.findIOValue("geometry");
-      var materialThickness = this.findIOValue("Material Thickness");
       var sheetWidth = this.findIOValue("Sheet Width");
       var sheetHeight = this.findIOValue("Sheet Height");
       var partPadding = this.findIOValue("Part Padding");
@@ -183,10 +184,10 @@ export default class CutLayout extends Atom {
           inputID,
           [this.placements],
           {
-            thickness: materialThickness,
             width: sheetWidth,
             height: sheetHeight,
-            partPadding: partPadding
+            partPadding: partPadding,
+            units: GlobalVariables.topLevelMolecule.units[GlobalVariables.topLevelMolecule.unitsKey],
           })
         .then((warning) => {
           this.basicThreadValueProcessing();
@@ -215,7 +216,6 @@ export default class CutLayout extends Atom {
       }
       this.processing = true;
       var inputID = this.findIOValue("geometry");
-      var materialThickness = this.findIOValue("Material Thickness");
       var sheetWidth = this.findIOValue("Sheet Width");
       var sheetHeight = this.findIOValue("Sheet Height");
       var partPadding = this.findIOValue("Part Padding");
@@ -237,10 +237,10 @@ export default class CutLayout extends Atom {
             this.placements = placements[0];
           }),
           {
-            thickness: materialThickness,
             width: sheetWidth,
             height: sheetHeight,
-            partPadding: partPadding
+            partPadding: partPadding,
+            units: GlobalVariables.topLevelMolecule.units[GlobalVariables.topLevelMolecule.unitsKey],
           })
         .then((warning) => {
           this.basicThreadValueProcessing();
