@@ -791,7 +791,6 @@ function extractKeepOut(inputGeometry) {
  *    - thickness - thickness of the stock material
  *    - width
  *    - height - together with width specifies the demensions of the stock material
- *    - sheetPadding - space from the edge of the material where no parts will be placed
  *    - partPadding - space between parts in the resulting placement
  */
 function layout(
@@ -1030,7 +1029,7 @@ function computePositions(
   // include tolerance * 2 to ensure padding is the minimum spacing between parts.
   const configWithDefaults = nestingEngine.config({
     spacing: layoutConfig.partPadding + tolerance * 2,
-    binSpacing: layoutConfig.sheetPadding,
+    binSpacing: 0,
     populationSize: populationSize,
     exploreConcave: false, // we eventually want this to be true, but it's unsupported right now
   });

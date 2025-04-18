@@ -170,7 +170,6 @@ export default class CutLayout extends Atom {
       var materialThickness = this.findIOValue("Material Thickness");
       var sheetWidth = this.findIOValue("Sheet Width");
       var sheetHeight = this.findIOValue("Sheet Height");
-      var sheetPadding = 0;//this.findIOValue("Sheet Padding"); //It's easier to just adjust the sheet size than to add padding
       var partPadding = this.findIOValue("Part Padding");
 
       if (!inputID) {
@@ -187,7 +186,6 @@ export default class CutLayout extends Atom {
             thickness: materialThickness,
             width: sheetWidth,
             height: sheetHeight,
-            sheetPadding: sheetPadding,
             partPadding: partPadding
           })
         .then((warning) => {
@@ -220,7 +218,6 @@ export default class CutLayout extends Atom {
       var materialThickness = this.findIOValue("Material Thickness");
       var sheetWidth = this.findIOValue("Sheet Width");
       var sheetHeight = this.findIOValue("Sheet Height");
-      var sheetPadding = 0;//this.findIOValue("Sheet Padding"); //It's easier to just adjust the sheet size than to add padding
       var partPadding = this.findIOValue("Part Padding");
 
       if (!inputID) {
@@ -243,7 +240,6 @@ export default class CutLayout extends Atom {
             thickness: materialThickness,
             width: sheetWidth,
             height: sheetHeight,
-            sheetPadding: sheetPadding,
             partPadding: partPadding
           })
         .then((warning) => {
