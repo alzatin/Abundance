@@ -797,6 +797,7 @@ function extractKeepOut(inputGeometry) {
 function layout(
   targetID,
   inputID,
+  tag,
   progressCallback,
   placementsCallback,
   layoutConfig
@@ -835,7 +836,7 @@ function layout(
 /**
  * Lay the input geometry flat and apply the transformations to display it
  */
-function displayLayout(targetID, inputID, positions, layoutConfig) {
+function displayLayout(targetID, inputID, positions, tag, layoutConfig) {
   rotateForLayout(targetID, inputID, layoutConfig);
 
   applyLayout(targetID, inputID, positions, layoutConfig);
