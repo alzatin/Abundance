@@ -64,7 +64,7 @@ function GitSearch({ searchingGitHub, setSearchingGitHub }) {
     }
   };
   const handleChange = function (e) {
-    searchBarValue = e.target.value;
+    searchBarValue = e.target.value.toLowerCase();
   };
 
   const handleMouseOver = (item, key) => {
