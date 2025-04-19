@@ -332,7 +332,9 @@ function CreateMode({
     var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
 
     //Don't save again if nothing has changed
-    if (JSON.stringify(jsonRepOfProject) == JSON.stringify(lastSaveData.current)) {
+    if (
+      JSON.stringify(jsonRepOfProject) == JSON.stringify(lastSaveData.current)
+    ) {
       return;
     }
 
@@ -463,7 +465,7 @@ function CreateMode({
           <ToggleRunCreate run={false} />
           {shortCutsOn ? (
             <div id="shortcutDiv">
-              <li style={{ fontSize: "14px" }}>(Cmmd +)</li>
+              <li style={{ fontSize: "14px" }}>(CTRL +)</li>
               {Object.entries(shortCuts).map(([key, value]) => {
                 return (
                   <li key={key} className="shortcut">
