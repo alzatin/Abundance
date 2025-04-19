@@ -133,7 +133,7 @@ body {
   left: calc(100% - 200px);
   top: 25px;
   color: var(--abundance-color-fontTransparentGrey);
-  z-index: 1000;
+  z-index: 4;
   padding: 10px;
 }
 #shortcutDiv li {
