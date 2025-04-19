@@ -998,7 +998,9 @@ function LoginMode({
     >
       <div>
         {" "}
-        {GlobalVariables.currentRepo && isAuthenticated ? (
+        {GlobalVariables.currentRepo &&
+        GlobalVariables.currentRepo.owner == GlobalVariables.currentUser &&
+        isAuthenticated ? (
           <Link
             to={`/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`}
           >
