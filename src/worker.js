@@ -487,7 +487,6 @@ async function code(targetID, code, argumentsArray) {
   );
 
   library[targetID] = result;
-
   // If the type of the result is a number return the number so it can be passed to the next atom
   if (typeof result === "number") {
     return result;
@@ -791,7 +790,6 @@ function extractKeepOut(inputGeometry) {
  *    - thickness - thickness of the stock material
  *    - width
  *    - height - together with width specifies the demensions of the stock material
- *    - sheetPadding - space from the edge of the material where no parts will be placed
  *    - partPadding - space between parts in the resulting placement
  */
 function layout(
@@ -853,55 +851,85 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
   let localId = 0;
   let shapesForLayout = [];
 
-  //Split apart disjoint geometry into assemblies so they can be placed seperately
+  //TODO: revisit this? Split apart disjoint geometry into assemblies so they can be placed seperately
   // let splitGeometry = actOnLeafs(taggedGeometry, disjointGeometryToAssembly);
 
-  // console.log(splitGeometry);
+  // Algo overview:
+  // collect all prospective orientations for all parts
+  // come up with a best-guess material thickness or n/a
+  // select among candidates for each part based on either good fit to the
+  //    estimated material thickness, or just take thinnest orientation.
 
-  // Rotate all shapes to be most cuttable.
-  library[targetID] = actOnLeafs(geometryToLayout, (leaf) => {
+
+  // get candidates as {leaf_id: "abc", [candidate 1, candidate 2 etc]}
+  const all_candidates = {}
+  const intermediate = actOnLeafs(geometryToLayout, (leaf) => {
     // For each face, consider it as the underside of the shape on the CNC bed.
     // In order to be considered, a face must be...
-    //  1) a flat PLANE, not a cylander, or sphere or other curved face type.
-    //  2) the thickness of the part normal to this plane must be less than or equal to
-    //     the raw material thickness
-    //  3) there must be no parts of the shape which protrude "below" this face
-    let candidates = [];
+    //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
+    //  2) there must be no parts of the shape which protrude "below" this face
+    const candidates = [];
     let hasFlatFace = false;
     let faceIndex = 0;
     leaf.geometry[0].faces.forEach((face) => {
       if (face.geomType == "PLANE") {
         hasFlatFace = true;
-        let prospectiveGoem = moveFaceToCuttingPlane(leaf.geometry[0], face);
-        let thickness = prospectiveGoem.boundingBox.depth;
-        if (thickness < layoutConfig.thickness + THICKNESS_TOLLERANCE) {
-          // Check for protrusions "below" the bottom of the raw material.
-          if (
-            prospectiveGoem.boundingBox.bounds[0][2] >
-            -1 * THICKNESS_TOLLERANCE
-          ) {
-            candidates.push({
-              face: face,
-              geom: prospectiveGoem,
-              faceIndex: faceIndex,
-            });
-          }
+        const prospectiveGoem = moveFaceToCuttingPlane(leaf.geometry[0], face);
+//        if (thickness < layoutConfig.thickness + THICKNESS_TOLLERANCE) {
+        // Check for protrusions "below" the bottom of the raw material.
+        if (
+          prospectiveGoem.boundingBox.bounds[0][2] >
+          -1 * THICKNESS_TOLLERANCE
+        ) {
+          candidates.push({
+            face: face,
+            geom: prospectiveGoem,
+            faceIndex: faceIndex,
+            thickness: prospectiveGoem.boundingBox.depth,
+          });
         }
       }
       faceIndex++;
     });
 
-    let selected;
     if (candidates.length == 0) {
       if (!hasFlatFace) {
-        // TODO: how to specify which upstream object? We know which leaf we're dealing with here
-        // but I'm not sure how to back-track that to alerting on the relevant atom or
-        // providing a user visible indication of which geom is the problem.
+        // TODO: This should be a warning not an error and we should fail over to placing
+        // objects on a curved side.
         throw new Error("Upstream object uncuttable, has no flat face");
-      } else {
-        throw new Error("Upstream object too thick for specified material");
       }
-    } else if (candidates.length == 1) {
+    }
+    all_candidates[localId]= candidates
+    const newLeaf = {
+      geometry: leaf.geometry,
+      id: localId,
+      tags: leaf.tags,
+      color: leaf.color,
+      plane: leaf.plane,
+      bom: leaf.bom,
+    };
+    localId++;
+    return newLeaf;
+
+  });
+
+  // Heuristic here is... for each part get it's minimum thickness. If the largest of these is
+  // <= 1" then it's credibly the size of stock being used, so set that as our material
+  // thickness and select among candidates for each part.
+
+  let material_thickness = -1;
+  if (layoutConfig.units) {
+    const LARGEST_PLAUSIBLE_STOCK = layoutConfig.units == "MM" ? 25.4 : 1    
+    const min_thickness_per_part = Object.values(all_candidates).map(s => Math.min(...s.map(c => c.thickness)));
+    if (Math.max(...min_thickness_per_part) <= LARGEST_PLAUSIBLE_STOCK + THICKNESS_TOLLERANCE) {
+      material_thickness = Math.max(...min_thickness_per_part);
+    }
+  }
+
+  library[targetID] = actOnLeafs(intermediate, (leaf) => {
+    let candidates = all_candidates[leaf.id]
+    let selected;
+    if (candidates.length == 1) {
       selected = candidates[0];
     } else {
       // The candidate selection here doesn't guarantee a printable piece. In particular there
@@ -925,14 +953,16 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
       }
 
       // prefer candidates whose thickness is equal to material thickness, if any.
-      let temp = candidates.filter((c) => {
-        return (
-          Math.abs(c.geom.boundingBox.depth - layoutConfig.thickness) <
-          THICKNESS_TOLLERANCE
-        );
-      });
-      if (temp.length > 0) {
-        candidates = temp;
+      if (material_thickness > 0) {
+        const temp = candidates.filter((c) => {
+          return (
+            Math.abs(c.geom.boundingBox.depth - material_thickness) <
+            THICKNESS_TOLLERANCE
+          );
+        });
+        if (temp.length > 0) {
+          candidates = temp;
+        }
       }
 
       // Pick the largest of the remaining candidates (note: it's not trivial to calculate area, so here we
@@ -1031,7 +1061,7 @@ function computePositions(
   // include tolerance * 2 to ensure padding is the minimum spacing between parts.
   const configWithDefaults = nestingEngine.config({
     spacing: layoutConfig.partPadding + tolerance * 2,
-    binSpacing: layoutConfig.sheetPadding,
+    binSpacing: 0,
     populationSize: populationSize,
     exploreConcave: false, // we eventually want this to be true, but it's unsupported right now
   });

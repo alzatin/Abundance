@@ -6,7 +6,16 @@ import { button, LevaInputs } from "leva";
 
 
 /**
- * The Cut Layout atom extracts a copy of each shape on the cutlist and places them optimally on a cut sheet.
+ * Rearrange all input geometries to fit on a sheet of material. Parts are packed
+ * as densely as possible while still respecting part padding. In general, all parts
+ * will be arranged to be as thin as possible, however there are some exceptions in
+ * order to fit into a sheet of stock with some uniform thickness.
+ * 
+ * Params:
+ * - geometry: The geometry or assembly to be arranged
+ * - width: The width of the sheet
+ * - height: The height of the sheet
+ * - partPadding: The padding between parts
  */
 export default class CutLayout extends Atom {
   /**
@@ -49,13 +58,6 @@ export default class CutLayout extends Atom {
 
     this.addIO("input", "geometry", this, "geometry", null);
 
-    this.addIO(
-      "input",
-      "Material Thickness",
-      this,
-      "number",
-      GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 19 : 0.75
-    );
     this.addIO(
       "input",
       "Sheet Width",
@@ -167,12 +169,9 @@ export default class CutLayout extends Atom {
     if (this.inputs.every((x) => x.ready)) {
       this.processing = true;
       var inputID = this.findIOValue("geometry");
-      var materialThickness = this.findIOValue("Material Thickness");
       var sheetWidth = this.findIOValue("Sheet Width");
       var sheetHeight = this.findIOValue("Sheet Height");
-      var sheetPadding = 0;//this.findIOValue("Sheet Padding"); //It's easier to just adjust the sheet size than to add padding
       var partPadding = this.findIOValue("Part Padding");
-      var tag = "cutLayout";
 
       if (!inputID) {
         this.setAlert('"geometry" input is missing');
@@ -184,13 +183,11 @@ export default class CutLayout extends Atom {
           this.uniqueID,
           inputID,
           [this.placements],
-          tag,
           {
-            thickness: materialThickness,
             width: sheetWidth,
             height: sheetHeight,
-            sheetPadding: sheetPadding,
-            partPadding: partPadding
+            partPadding: partPadding,
+            units: GlobalVariables.topLevelMolecule.units[GlobalVariables.topLevelMolecule.unitsKey],
           })
         .then((warning) => {
           this.basicThreadValueProcessing();
@@ -219,12 +216,9 @@ export default class CutLayout extends Atom {
       }
       this.processing = true;
       var inputID = this.findIOValue("geometry");
-      var materialThickness = this.findIOValue("Material Thickness");
       var sheetWidth = this.findIOValue("Sheet Width");
       var sheetHeight = this.findIOValue("Sheet Height");
-      var sheetPadding = 0;//this.findIOValue("Sheet Padding"); //It's easier to just adjust the sheet size than to add padding
       var partPadding = this.findIOValue("Part Padding");
-      var tag = "cutLayout";
 
       if (!inputID) {
         this.setAlert('"geometry" input is missing');
@@ -235,7 +229,6 @@ export default class CutLayout extends Atom {
         .layout(
           this.uniqueID,
           inputID,
-          tag,
           proxy((progress, cancelationHandle) => {
             this.progress = progress;
             this.cancelationHandle = cancelationHandle;
@@ -244,11 +237,10 @@ export default class CutLayout extends Atom {
             this.placements = placements[0];
           }),
           {
-            thickness: materialThickness,
             width: sheetWidth,
             height: sheetHeight,
-            sheetPadding: sheetPadding,
-            partPadding: partPadding
+            partPadding: partPadding,
+            units: GlobalVariables.topLevelMolecule.units[GlobalVariables.topLevelMolecule.unitsKey],
           })
         .then((warning) => {
           this.basicThreadValueProcessing();
