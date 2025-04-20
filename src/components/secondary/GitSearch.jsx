@@ -2,9 +2,13 @@ import React, { useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import topics from "../../js/maslowTopics.js";
 
-function GitSearch({ searchingGitHub, setSearchingGitHub }) {
+function GitSearch({
+  searchingGitHub,
+  setSearchingGitHub,
+  gitRepos,
+  setGitRepos,
+}) {
   let searchBarValue = "";
-  var [gitRepos, setGitRepos] = useState([]);
   var [loadingGit, setLoadingGit] = useState(false);
   const [lastKey, setLastKey] = useState("");
   const [yearShow, setYearShow] = useState("2024");
@@ -101,15 +105,16 @@ function GitSearch({ searchingGitHub, setSearchingGitHub }) {
             style={{
               top: GlobalVariables.lastClick
                 ? GlobalVariables.lastClick[1] + "px"
-                : "25%",
-              left: GlobalVariables.lastClick
+                : "37%",
+              right: GlobalVariables.lastClick
                 ? GlobalVariables.lastClick[0] + "px"
-                : "50%",
+                : "1%",
             }}
           >
             <input
               type="text"
               id="menuInput"
+              autoFocus
               //onBlur="value=''"
               onKeyDown={handleKeyDown}
               onChange={handleChange}
@@ -123,8 +128,13 @@ function GitSearch({ searchingGitHub, setSearchingGitHub }) {
             <div
               className="GitProjectInfoPanel"
               style={{
-                top: GlobalVariables.lastClick[1] - 50 + "px",
-                left: GlobalVariables.lastClick[0] - 375 + "px",
+                position: "absolute",
+                top: GlobalVariables.lastClick
+                  ? GlobalVariables.lastClick[1] + "px"
+                  : "35%",
+                left: GlobalVariables.lastClick
+                  ? GlobalVariables.lastClick[0] - 375 + "px"
+                  : "50%",
               }}
             >
               <div className="GitInfoLeft">
