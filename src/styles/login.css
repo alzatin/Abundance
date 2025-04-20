@@ -410,13 +410,11 @@
   position: absolute;
   top: 5px;
   right: 15px;
-  border: none;
   height: 1.5em;
   background-color: var(--settingsPopup-closeButton);
   font: 0.75em sans-serif;
-  cursor: pointer;
   margin-top: 3px;
-  border-color: var(--settingsPopup-text);
+  border-color: white;
   border-radius: 30px;
   padding: 0 15px 0 15px;
   color: var(--settingsPopup-text);

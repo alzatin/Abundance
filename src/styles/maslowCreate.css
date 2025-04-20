@@ -233,12 +233,12 @@ canvas {
 .GitProjectInfoPanel {
   padding: 10px;
   display: flex;
+  position: absolute;
   background-color: var(--gitsearch-Panel-background);
   border: 2px solid #c4a3d5;
   color: rgb(10, 9, 10);
   width: 340px;
-  position: absolute;
-  left: 0px;
+  right: 360px;
   top: 100px;
   z-index: 10;
   gap: 20px;
