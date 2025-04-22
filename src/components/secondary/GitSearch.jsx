@@ -106,9 +106,9 @@ function GitSearch({
               top: GlobalVariables.lastClick
                 ? GlobalVariables.lastClick[1] + "px"
                 : "37%",
-              right: GlobalVariables.lastClick
+              left: GlobalVariables.lastClick
                 ? GlobalVariables.lastClick[0] + "px"
-                : "1%",
+                : "75%",
             }}
           >
             <input
