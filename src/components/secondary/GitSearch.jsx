@@ -7,12 +7,13 @@ function GitSearch({
   setSearchingGitHub,
   gitRepos,
   setGitRepos,
+  isHovering,
+  setIsHovering,
 }) {
   let searchBarValue = "";
   var [loadingGit, setLoadingGit] = useState(false);
   const [lastKey, setLastKey] = useState("");
   const [yearShow, setYearShow] = useState("2024");
-  const [isHovering, setIsHovering] = useState(false);
   const [panelItem, setPanelItem] = useState({});
   const maslowTopic = useRef(null);
 
