@@ -487,6 +487,7 @@ function CreateMode({
               currentMoleculeTop,
               activeAtom,
               setActiveAtom,
+              shortCutsOn,
               setShortCuts,
             }}
           />

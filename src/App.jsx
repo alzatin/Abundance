@@ -46,7 +46,7 @@ export default function ReplicadApp() {
 
   const [authorizedUserOcto, setAuthorizedUserOcto] = useState(null);
   const [shortCutsOn, setShortCuts] = useState(
-    GlobalVariables.displayShortcuts
+    localStorage.getItem("shortcuts") === "true" ? true : false
   );
 
   /* Creates an element to check with Puppeteer if the molecule is fully loaded*/
@@ -71,6 +71,10 @@ export default function ReplicadApp() {
       loadingDots.style.display = "none";
     }
   };
+
+  useEffect(() => {
+    localStorage.setItem("shortcuts", shortCutsOn);
+  }, [shortCutsOn]);
 
   useEffect(() => {
     GlobalVariables.writeToDisplay = (id, resetView = false) => {
