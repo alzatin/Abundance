@@ -7,12 +7,13 @@ function GitSearch({
   setSearchingGitHub,
   gitRepos,
   setGitRepos,
+  isHovering,
+  setIsHovering,
 }) {
   let searchBarValue = "";
   var [loadingGit, setLoadingGit] = useState(false);
   const [lastKey, setLastKey] = useState("");
   const [yearShow, setYearShow] = useState("2024");
-  const [isHovering, setIsHovering] = useState(false);
   const [panelItem, setPanelItem] = useState({});
   const maslowTopic = useRef(null);
 
@@ -106,9 +107,9 @@ function GitSearch({
               top: GlobalVariables.lastClick
                 ? GlobalVariables.lastClick[1] + "px"
                 : "37%",
-              right: GlobalVariables.lastClick
+              left: GlobalVariables.lastClick
                 ? GlobalVariables.lastClick[0] + "px"
-                : "1%",
+                : "75%",
             }}
           >
             <input
