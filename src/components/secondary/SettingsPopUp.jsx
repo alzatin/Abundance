@@ -1,21 +1,23 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Globalvariables from "../../js/globalvariables.js";
 import CreatableSelect from "react-select/creatable";
 import topics from "../../js/maslowTopics.js";
+import { use } from "react";
 
-const SettingsPopUp = ({ setSettingsPopUp, setShortCuts }) => {
+const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
   let repoTopics = [];
   if (Globalvariables.currentRepo.topics.length > 0) {
     Globalvariables.currentRepo.topics.forEach((topic) => {
       repoTopics.push({ value: topic, label: topic });
     });
   }
+
   //const projectRef = useRef(Globalvariables.currentRepo.repoName);
   const projectTopicRef = useRef(repoTopics);
   const projectDescriptionRef = useRef(Globalvariables.currentRepo.description);
   //const projectLicenseRef = useRef();
   const projectUnitsRef = useRef(Globalvariables.topLevelMolecule.unitsKey);
-  const shortcutsRef = useRef(Globalvariables.displayShortcuts);
+  const shortcutsRef = useRef(shortCutsOn);
 
   const dateString = Globalvariables.currentRepo.dateCreated;
   const dateCreated = new Date(dateString);
@@ -35,7 +37,7 @@ const SettingsPopUp = ({ setSettingsPopUp, setShortCuts }) => {
     Globalvariables.currentRepo.description =
       projectDescriptionRef.current.value;
     Globalvariables.currentRepo.topics = projectTopic;
-    Globalvariables.displayShortcuts = shortcutsRef.current.checked;
+
     setShortCuts(shortcutsRef.current.checked);
   };
 
@@ -108,7 +110,7 @@ const SettingsPopUp = ({ setSettingsPopUp, setShortCuts }) => {
               className="checkbox shortcut-button"
               name={"shortcut-button"}
               id={"shortcut-button"}
-              defaultChecked={Globalvariables.displayShortcuts}
+              defaultChecked={shortCutsOn}
               ref={shortcutsRef}
             />
           </div>
