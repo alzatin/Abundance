@@ -795,7 +795,6 @@ function extractKeepOut(inputGeometry) {
 function layout(
   targetID,
   inputID,
-  tag,
   progressCallback,
   placementsCallback,
   layoutConfig
