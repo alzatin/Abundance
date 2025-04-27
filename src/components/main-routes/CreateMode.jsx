@@ -464,7 +464,7 @@ function CreateMode({
           ) : null}
           <ToggleRunCreate run={false} />
           {shortCutsOn ? (
-            <div id="shortcutDiv">
+            <div id="shortcutDiv" className="noselect">
               <li style={{ fontSize: "14px" }}>(CTRL +)</li>
               {Object.entries(shortCuts).map(([key, value]) => {
                 return (
