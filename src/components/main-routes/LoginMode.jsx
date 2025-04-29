@@ -938,7 +938,7 @@ function LoginMode({
         }}
       />
     );
-  } else if (isAuthenticated || isLoading) {
+  } else if (isLoading || isAuthenticated) {
     popUpContent = (
       <div className="login-page">
         <div className="form animate fadeInUp one">
@@ -961,8 +961,13 @@ function LoginMode({
                 className="login-logo"
               />
             </div>
-
-            <p> Redirecting you to your projects ... </p>
+            {isAuthenticated ? (
+              <p style={{ padding: "0 20px" }}>
+                Welcome. Redirecting you to your projects...
+              </p>
+            ) : (
+              <p style={{ padding: "0 20px" }}>Logging you in ...</p>
+            )}
           </div>
         </div>
       </div>
