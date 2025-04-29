@@ -15,6 +15,9 @@
   "dependencies": {
     "-": "^0.0.1",
     "@auth0/auth0-react": "^1.12.1",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^7.0.2",
     "@octokit/core": "^6.1.2",
     "@octokit/plugin-paginate-rest": "^11.3.5",
     "@octokit/rest": "^21.0.2",
