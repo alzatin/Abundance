@@ -25,6 +25,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
     });
   }
   const projectTopicRef = useRef(repoTopics);
+  const projectDescriptionRef = useRef(Globalvariables.currentRepo.description);
   const dateString = Globalvariables.currentRepo.dateCreated;
   const dateCreated = new Date(dateString);
 
@@ -36,12 +37,16 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
     projectTopicArray.forEach((topic) => {
       projectTopic.push(topic[`value`]);
     });
-    Globalvariables.topLevelMolecule.unitsKey = projectUnitsRef.current.value;
+    // Globalvariables.topLevelMolecule.unitsKey = projectUnitsRef.current.value;
     Globalvariables.currentRepo.description =
       projectDescriptionRef.current.value;
+    setState({
+      ...state,
+      projectDescription: projectDescriptionRef.current.value,
+    });
     Globalvariables.currentRepo.topics = projectTopic;
 
-    setShortCuts(shortcutsRef.current.checked);
+    //setShortCuts(shortcutsRef.current.checked);
   };
   const [value, setValue] = React.useState(0);
 
@@ -75,7 +80,19 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
     displaytheme: false,
     fontSize: 12,
     atomSize: 12,
+    projectDescription: Globalvariables.currentRepo.description,
   });
+
+  const handleValueChange = (event) => {
+    setState({
+      ...state,
+      [event.target.name]: event.target.value,
+    });
+    console.log(event.target.name);
+    if (event.target.name === "projectDescription") {
+      Globalvariables.currentRepo.description = event.target.value;
+    }
+  };
 
   const handleCheckChange = (event) => {
     setState({
@@ -201,19 +218,24 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
             </FormGroup>
           </CustomTabPanel>
           <CustomTabPanel value={value} index={2}>
-            <TextField
+            <label htmlFor="project-description">Project Description</label>
+            <input
+              id="project-description"
+              defaultValue={Globalvariables.currentRepo.description}
+              ref={projectDescriptionRef}
+              name="projectDescription"
+            />
+            {/* <TextField
               fullWidth
               label="Project Description and Tags"
-              color="red"
               id="project-description"
               multiline
               rows={4}
-              value={Globalvariables.currentRepo.description}
-              onChange={(event) => {
-                //setName(event.target.value);
-                Globalvariables.currentRepo.description = event.target.value;
-              }}
-            />
+              value={state.projectDescription}
+              ref={projectDescriptionRef}
+            />*/}
+
+            <label htmlFor="Project Topics">Project Tags</label>
             <CreatableSelect
               defaultValue={repoTopics}
               isMulti
@@ -224,8 +246,8 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
               ref={projectTopicRef}
             />
 
+            <label htmlFor="project-description">Project Units</label>
             <FormControl fullWidth>
-              <InputLabel id="measure-units-label">Project Units</InputLabel>
               <Select
                 labelId="measure-units-label"
                 id="measure-units"

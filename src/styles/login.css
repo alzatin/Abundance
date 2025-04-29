@@ -359,6 +359,7 @@
   margin-bottom: 5px;
   font-family: "Roboto", sans-serif;
   text-transform: uppercase;
+  display: inline-block;
 }
 
 .form select {
