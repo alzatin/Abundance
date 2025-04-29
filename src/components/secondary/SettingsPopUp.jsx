@@ -218,7 +218,13 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
             </FormGroup>
           </CustomTabPanel>
           <CustomTabPanel value={value} index={2}>
-            <label htmlFor="project-description">Project Description</label>
+            {" "}
+            <InputLabel
+              id="measure-units-label"
+              style={{ marginBottom: "15px" }}
+            >
+              Project Description
+            </InputLabel>
             <input
               id="project-description"
               defaultValue={Globalvariables.currentRepo.description}
@@ -234,7 +240,6 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
               value={state.projectDescription}
               ref={projectDescriptionRef}
             />*/}
-
             <label htmlFor="Project Topics">Project Tags</label>
             <CreatableSelect
               defaultValue={repoTopics}
@@ -245,9 +250,8 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
               classNamePrefix="select"
               ref={projectTopicRef}
             />
-
-            <label htmlFor="project-description">Project Units</label>
             <FormControl fullWidth>
+              <InputLabel id="measure-units-label">Project Units</InputLabel>
               <Select
                 labelId="measure-units-label"
                 id="measure-units"

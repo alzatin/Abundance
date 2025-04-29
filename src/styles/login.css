@@ -356,7 +356,7 @@
 .form label {
   color: var(--settingsPopup-text);
   font-size: 14px;
-  margin-bottom: 5px;
+  margin-bottom: 0px;
   font-family: "Roboto", sans-serif;
   text-transform: uppercase;
   display: inline-block;
