@@ -14,6 +14,8 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Slider from "@mui/material/Slider";
+import TextField from "@mui/material/TextField";
+import { Typography } from "@mui/material";
 
 const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
   let repoTopics = [];
@@ -22,12 +24,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
       repoTopics.push({ value: topic, label: topic });
     });
   }
-
   const projectTopicRef = useRef(repoTopics);
-  const projectDescriptionRef = useRef(Globalvariables.currentRepo.description);
-  const projectUnitsRef = useRef(Globalvariables.topLevelMolecule.unitsKey);
-  const shortcutsRef = useRef(shortCutsOn);
-
   const dateString = Globalvariables.currentRepo.dateCreated;
   const dateCreated = new Date(dateString);
 
@@ -74,7 +71,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
   };
 
   const [state, setState] = React.useState({
-    shortcut: true,
+    shortcut: shortCutsOn,
     displaytheme: false,
     fontSize: 12,
     atomSize: 12,
@@ -134,7 +131,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
             <Tabs
               value={value}
               onChange={handleChange}
-              aria-label="basic tabs example"
+              aria-label="setting-tabs"
             >
               <Tab label="Project Information" {...a11yProps(0)} />
               <Tab label="Canvas Settings" {...a11yProps(1)} />
@@ -178,42 +175,45 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                 }
                 label="Display light/dark"
               />
-              <FormControlLabel
-                control={
-                  <Slider
-                    aria-label="fontSize"
-                    value={state.fontSize}
-                    onChange={handleCheckChange}
-                    name="fontSize"
-                    min={8}
-                    max={30}
-                  />
-                }
-                label="Font Size"
+              <Typography id="input-slider" gutterBottom color="white">
+                Font Size
+              </Typography>
+              <Slider
+                aria-label="fontSize"
+                value={state.fontSize}
+                onChange={handleCheckChange}
+                name="fontSize"
+                min={8}
+                max={30}
               />
+              <Typography id="input-slider" gutterBottom color="white">
+                Atom Size
+              </Typography>
 
-              <FormControlLabel
-                control={
-                  <Slider
-                    aria-label="atomSize"
-                    value={state.atomSize}
-                    onChange={handleCheckChange}
-                    name="atomSize"
-                    min={10}
-                    max={30}
-                  />
-                }
-                label="Atom Size"
+              <Slider
+                aria-label="atomSize"
+                value={state.atomSize}
+                onChange={handleCheckChange}
+                name="atomSize"
+                min={10}
+                max={30}
               />
             </FormGroup>
           </CustomTabPanel>
           <CustomTabPanel value={value} index={2}>
-            <label htmlFor="project-description">Project Description</label>
-            <input
-              defaultValue={Globalvariables.currentRepo.description}
-              ref={projectDescriptionRef}
+            <TextField
+              fullWidth
+              label="Project Description and Tags"
+              color="red"
+              id="project-description"
+              multiline
+              rows={4}
+              value={Globalvariables.currentRepo.description}
+              onChange={(event) => {
+                //setName(event.target.value);
+                Globalvariables.currentRepo.description = event.target.value;
+              }}
             />
-            <label htmlFor="project-topics">Project Tags</label>
             <CreatableSelect
               defaultValue={repoTopics}
               isMulti
@@ -223,19 +223,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
               classNamePrefix="select"
               ref={projectTopicRef}
             />
-            <label htmlFor="measure-units">Units</label>
-            <select
-              id="measure-units"
-              defaultValue={Globalvariables.topLevelMolecule.unitsKey}
-              ref={projectUnitsRef}
-            >
-              <option key={"inchesop"} value={"Inches"}>
-                Inches
-              </option>
-              <option key={"millop"} value={"MM"}>
-                MM
-              </option>
-            </select>
+
             <FormControl fullWidth>
               <InputLabel id="measure-units-label">Project Units</InputLabel>
               <Select

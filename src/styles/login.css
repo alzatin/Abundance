@@ -374,7 +374,7 @@
 }
 .form h2 {
   color: var(--settingsPopup-text);
-  font-size: 20px;
+  font-size: 17px;
   margin-bottom: 5px;
   font-family: "Roboto", sans-serif;
   text-transform: uppercase;
@@ -646,7 +646,7 @@
 }
 
 .basic-multi-select {
-  margin: 0px 0px 5px 0px;
+  margin: 15px 0px 15px 0px;
   width: 100%;
 }
 
