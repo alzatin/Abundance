@@ -8,6 +8,10 @@ import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
 import Switch from "@mui/material/Switch";
 import FormGroup from "@mui/material/FormGroup";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Slider from "@mui/material/Slider";
 
@@ -65,7 +69,6 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
       </div>
     );
   }
-
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
@@ -86,7 +89,6 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
       setShortCuts(event.target.checked);
     }
     if (event.target.name === "fontSize") {
-      console.log(event.target.value);
       setState({
         ...state,
         [event.target.name]: event.target.value,
@@ -98,9 +100,16 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
         ...state,
         [event.target.name]: event.target.value,
       });
-      console.log(event.target.value);
       Globalvariables.atomSize = event.target.value / 1000;
     }
+  };
+
+  const handleSelectChange = (event) => {
+    setState({
+      ...state,
+      [event.target.name]: event.target.value,
+    });
+    Globalvariables.topLevelMolecule.unitsKey = event.target.value;
   };
 
   return (
@@ -197,13 +206,6 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                 label="Atom Size"
               />
             </FormGroup>
-            <label htmlFor="theme-toggle">Display Theme (placeholder)</label>
-            <input
-              type="checkbox"
-              className="checkbox "
-              name={"theme-toggle"}
-              id={"theme-toggle-light"}
-            />
           </CustomTabPanel>
           <CustomTabPanel value={value} index={2}>
             <label htmlFor="project-description">Project Description</label>
@@ -234,6 +236,19 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                 MM
               </option>
             </select>
+            <FormControl fullWidth>
+              <InputLabel id="measure-units-label">Project Units</InputLabel>
+              <Select
+                labelId="measure-units-label"
+                id="measure-units"
+                value={Globalvariables.topLevelMolecule.unitsKey}
+                label="Project Units"
+                onChange={handleSelectChange}
+              >
+                <MenuItem value={"MM"}>MM</MenuItem>
+                <MenuItem value={"Inches"}>Inches</MenuItem>
+              </Select>
+            </FormControl>
           </CustomTabPanel>
 
           <button className="submit-button" type="submit">
