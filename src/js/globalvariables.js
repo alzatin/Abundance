@@ -282,6 +282,10 @@ class GlobalVariables {
      */
     this.recentMoleculeRepresentation = [];
 
+    this.canvasFont = 12;
+
+    this.atomSize = 1 / 60;
+
     const math = create(all); //What does this do? I think it is used to evalue strings as math
     /**
      * An evaluator for strings as mathmatical equations which is sandboxed and secure.

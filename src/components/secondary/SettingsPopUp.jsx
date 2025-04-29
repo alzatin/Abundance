@@ -74,6 +74,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
     shortcut: true,
     displaytheme: false,
     fontSize: 12,
+    atomSize: 12,
   });
 
   const handleCheckChange = (event) => {
@@ -84,13 +85,21 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
     if (event.target.name === "shortcut") {
       setShortCuts(event.target.checked);
     }
-
     if (event.target.name === "fontSize") {
       console.log(event.target.value);
       setState({
         ...state,
-        fontSize: event.target.value,
+        [event.target.name]: event.target.value,
       });
+      Globalvariables.canvasFont = `${event.target.value}px Work Sans Bold`;
+    }
+    if (event.target.name === "atomSize") {
+      setState({
+        ...state,
+        [event.target.name]: event.target.value,
+      });
+      console.log(event.target.value);
+      Globalvariables.atomSize = event.target.value / 1000;
     }
   };
 
@@ -167,9 +176,25 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                     value={state.fontSize}
                     onChange={handleCheckChange}
                     name="fontSize"
+                    min={8}
+                    max={30}
                   />
                 }
                 label="Font Size"
+              />
+
+              <FormControlLabel
+                control={
+                  <Slider
+                    aria-label="atomSize"
+                    value={state.atomSize}
+                    onChange={handleCheckChange}
+                    name="atomSize"
+                    min={10}
+                    max={30}
+                  />
+                }
+                label="Atom Size"
               />
             </FormGroup>
             <label htmlFor="theme-toggle">Display Theme (placeholder)</label>
