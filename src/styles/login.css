@@ -393,7 +393,7 @@
   margin-top: 3px;
   outline: 0;
   background: var(--loginPopup-input);
-  width: 30%;
+  width: 100%;
   border: 1;
   border-radius: 2px;
   border-color: var(--settingsPopup-text);
