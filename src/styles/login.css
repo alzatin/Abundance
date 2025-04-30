@@ -254,7 +254,7 @@
 }
 
 .form {
-  background-color: var(--settingsPopup-background);
+  background-color: var(--loginPopup-border);
   display: flex;
   flex-direction: column;
   position: relative;
