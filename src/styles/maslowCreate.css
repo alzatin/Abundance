@@ -33,6 +33,9 @@
   --loginPopup-projectColorHover: var(
     --abundance-color-veryLightPurpleHighlight
   );
+
+  --submit-button-background: var(--abundance-color-fontWhite);
+  --submit-button-text: var(--abundance-color-darkGrey);
   --newProject-form-input: var(--abundance-color-hightlightOffWhite);
 
   --lowerCanvas-menu-background: var(--abundance-color-darkGrey);
@@ -81,6 +84,9 @@
   --loginPopup-projectColorHover: var(
     --abundance-color-veryLightPurpleHighlight
   );
+  --submit-button-text: var(--abundance-color-fontWhite);
+  --submit-button-background: var(--abundance-color-darkGrey);
+
   --lowerCanvas-menu-background: var(--abundance-color-darkGrey);
   --lowerCanvas-menu-text: var(--abundance-color-fontWhite);
   --lowerCanvas-menu-inputs: var(--abundance-color-mainPurple);

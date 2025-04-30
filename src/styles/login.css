@@ -356,7 +356,7 @@
   align-items: baseline;
   justify-content: left;
   gap: 20px;
-  color: var(--loginPopup-projectColor);
+  color: var(--settingsPopup-text);
   margin: -20px 0 10px 0;
 }
 .form input {
@@ -405,12 +405,12 @@
   text-transform: uppercase;
   margin-top: 3px;
   outline: 0;
-  background: var(--loginPopup-input);
+  background: var(--submit-button-background);
   width: 100%;
   border: 1;
   border-radius: 2px;
   border-color: var(--settingsPopup-text);
-  color: var(--settingsPopup-text);
+  color: var(--submit-button-text);
   font-size: 14px;
   -webkit-transition: all 0.3 ease;
   transition: all 0.3 ease;
