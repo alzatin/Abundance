@@ -130,7 +130,7 @@ let exportSvg = (
   </svg>
 );
 
-function RunNavigation({ authorizedUserOcto, tryLogin, activeAtom }) {
+function RunNavigation({ authorizedUserOcto, activeAtom }) {
   let [shareDialog, setShareDialog] = useState(false);
   let starred = false;
   let [dialogContent, setDialog] = useState("");
@@ -433,9 +433,6 @@ function RunNavigation({ authorizedUserOcto, tryLogin, activeAtom }) {
     } else {
       // user clicked cancel and is redirected to the run mode
     }
-    /* tryLogin().then((result) => {
-      likeProject(result);
-    });*/
   };
 
   /** Runs if fork is clicked but there's no logged in user */
