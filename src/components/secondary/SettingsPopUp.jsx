@@ -14,7 +14,6 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Slider from "@mui/material/Slider";
-import TextField from "@mui/material/TextField";
 import { Typography } from "@mui/material";
 import Divider from "@mui/material/Divider";
 
@@ -38,7 +37,6 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
     projectTopicArray.forEach((topic) => {
       projectTopic.push(topic[`value`]);
     });
-    // Globalvariables.topLevelMolecule.unitsKey = projectUnitsRef.current.value;
     Globalvariables.currentRepo.description =
       projectDescriptionRef.current.value;
     setState({
@@ -46,8 +44,6 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
       projectDescription: projectDescriptionRef.current.value,
     });
     Globalvariables.currentRepo.topics = projectTopic;
-
-    //setShortCuts(shortcutsRef.current.checked);
   };
   const [value, setValue] = React.useState(0);
 
