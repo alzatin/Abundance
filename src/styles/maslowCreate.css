@@ -58,6 +58,7 @@
 
   --run-project-info: var(--abundance-color-lightPurple);
   --loginPopup-project-border: var(--abundance-color-lightPurple);
+  --repo-name-path: var(--abundance-color-hightlightOffWhite);
 }
 
 .light-theme {
@@ -69,6 +70,40 @@
   --settingsPopup-hover-text: var(--abundance-color-fontWhite);
   --newProject-form-input: var(--abundance-color-mediumGrey);
   --newProject-form-input-text: var(--abundance-color-fontWhite);
+  --repo-name-path: var(--abundance-color-darkGrey);
+
+  --loginPopup-background: var(--abundance-color-veryLightPurple);
+  --loginPopup-text: var(--abundance-color-fontGrey);
+  --loginPopup-border: var(--abundance-color-darkGrey);
+  --loginPopup-input: var(--abundance-color-darkGrey);
+  --loginPopup-button: var(--abundance-color-darkGrey);
+  --loginPopup-projectColor: var(--abundance-color-hightlightOffWhite);
+  --loginPopup-projectColorHover: var(
+    --abundance-color-veryLightPurpleHighlight
+  );
+  --lowerCanvas-menu-background: var(--abundance-color-darkGrey);
+  --lowerCanvas-menu-text: var(--abundance-color-fontWhite);
+  --lowerCanvas-menu-inputs: var(--abundance-color-mainPurple);
+
+  --saveBar-background: var(--abundance-color-fontLightGrey);
+  --saveBar-text: var(--abundance-color-hightlightOffWhite);
+  --saveBar-progressColor: var(--abundance-color-brightPurple);
+
+  --gitSearch-border: var(--abundance-color-brightPurple);
+  --gitSearch-background: var(--abundance-color-darkGrey);
+  --gitSearch-text: var(--abundance-color-fontWhite);
+  --gitsearch-Panel-background: var(--abundance-color-hightlightOffWhite);
+  --gitsearch-Panel-text: var(--abundance-color-darkGrey);
+
+  --run-navigation-button: var(--abundance-color-hightlightOffWhite);
+  --run-navigation-button-hover: var(--abundance-color-transparentHighlight);
+
+  --dialog-background: var(--abundance-color-hightlightOffWhite);
+  --dialog-text: var(--abundance-color-darkGrey);
+  --dialog-border: var(--abundance-color-brightPurple);
+
+  --run-project-info: var(--abundance-color-lightPurple);
+  --loginPopup-project-border: var(--abundance-color-lightPurple);
 }
 
 /*
@@ -126,7 +161,7 @@ body {
 }
 
 .repo-name-path {
-  color: var(--abundance-color-fontLightGrey);
+  color: var(--repo-name-path);
   text-decoration: none;
 }
 .repo-name-path:hover {

@@ -23,6 +23,7 @@ import "./styles/maslowCreate.css";
 import "./styles//menuIcons.css";
 import "./styles//login.css";
 import "./styles//codemirror.css";
+import { e } from "mathjs";
 /**
  * The octokit instance which allows authenticated interaction with GitHub.
  * @type {object}
@@ -39,6 +40,16 @@ export default function ReplicadApp() {
     cad.createMesh(size).then((m) => setMesh(m));
     cad.createMesh(size).then((m) => setWireMesh(m));
   }, [size]);
+
+  useEffect(() => {
+    const element = document.querySelector("html");
+    const storedClass = localStorage.getItem("displayTheme");
+    console.log(element);
+    console.log("storedClass", storedClass);
+    if (element && storedClass) {
+      element.className = storedClass;
+    }
+  }, []);
 
   const [isloggedIn, setIsLoggedIn] = useState(false);
   const [activeAtom, setActiveAtom] = useState(null);

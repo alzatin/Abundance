@@ -117,10 +117,11 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
       const element = document.querySelector("html");
       if (element && element.className === "light-theme") {
         element.className = "dark-theme";
+        localStorage.setItem("displayTheme", "dark-theme");
       } else {
         element.className = "light-theme";
+        localStorage.setItem("displayTheme", "light-theme");
       }
-      //localStorage.setItem("displayTheme", event.target.checked);
     }
   };
 
