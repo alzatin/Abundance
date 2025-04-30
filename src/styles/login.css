@@ -269,6 +269,11 @@
 .form-row .submit-btn {
   width: 40%;
 }
+
+#settingsPopUp {
+  background-color: #545252;
+  border: 5px solid #c5c2c2;
+}
 .runSideBarDiv {
   display: flex;
   flex-direction: column;
@@ -388,7 +393,7 @@
   margin-top: 3px;
   outline: 0;
   background: var(--loginPopup-input);
-  width: 100%;
+  width: 30%;
   border: 1;
   border-radius: 2px;
   border-color: var(--settingsPopup-text);

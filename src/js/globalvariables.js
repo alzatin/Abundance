@@ -282,8 +282,15 @@ class GlobalVariables {
      */
     this.recentMoleculeRepresentation = [];
 
-    this.canvasFont = 12;
+    this.canvasFont = (() => {
+      const storedFont = localStorage.getItem("canvasFont");
+      return storedFont ? storedFont : `12px Work Sans Bold`;
+    })();
 
+    /*this.atomSize = (() => {
+      const storedSize = localStorage.getItem("atomSize");
+      return storedSize ? storedSize : 1 / 60;
+    })();*/
     this.atomSize = 1 / 60;
 
     const math = create(all); //What does this do? I think it is used to evalue strings as math
