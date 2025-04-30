@@ -422,16 +422,18 @@ function RunNavigation({ authorizedUserOcto, tryLogin, activeAtom }) {
 
   /** Runs if star is clicked but there's no logged in user */
   const loginLike = function () {
-    tryLogin().then((result) => {
+    console.log("no user logged in, needs new trylogin");
+    /* tryLogin().then((result) => {
       likeProject(result);
-    });
+    });*/
   };
 
   /** Runs if fork is clicked but there's no logged in user */
   const loginFork = function () {
-    tryLogin().then((result) => {
+    console.log("no user logged in, needs new trylogin");
+    /*tryLogin().then((result) => {
       forkProject(result);
-    });
+    });*/
   };
 
   return (
