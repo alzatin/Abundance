@@ -44,8 +44,7 @@ export default function ReplicadApp() {
   useEffect(() => {
     const element = document.querySelector("html");
     const storedClass = localStorage.getItem("displayTheme");
-    console.log(element);
-    console.log("storedClass", storedClass);
+
     if (element && storedClass) {
       element.className = storedClass;
     }
