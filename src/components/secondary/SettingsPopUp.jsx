@@ -16,6 +16,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Slider from "@mui/material/Slider";
 import TextField from "@mui/material/TextField";
 import { Typography } from "@mui/material";
+import Divider from "@mui/material/Divider";
 
 const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
   let repoTopics = [];
@@ -78,8 +79,8 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
   const [state, setState] = React.useState({
     shortcut: shortCutsOn,
     displaytheme: false,
-    fontSize: 12,
-    atomSize: 12,
+    fontSize: Globalvariables.canvasFont.replace("px Work Sans Bold", ""),
+    atomSize: Globalvariables.atomSize * 1000,
     projectDescription: Globalvariables.currentRepo.description,
   });
 
@@ -88,9 +89,19 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
       ...state,
       [event.target.name]: event.target.value,
     });
-    console.log(event.target.name);
+    if (event.target.name === "atomSize") {
+      Globalvariables.atomSize = event.target.value / 1000;
+      localStorage.setItem("atomSize", event.target.value / 1000);
+    }
     if (event.target.name === "projectDescription") {
       Globalvariables.currentRepo.description = event.target.value;
+    }
+    if (event.target.name === "fontSize") {
+      Globalvariables.canvasFont = `${event.target.value}px Work Sans Bold`;
+      localStorage.setItem(
+        "canvasFont",
+        `${event.target.value}px Work Sans Bold`
+      );
     }
   };
 
@@ -102,19 +113,14 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
     if (event.target.name === "shortcut") {
       setShortCuts(event.target.checked);
     }
-    if (event.target.name === "fontSize") {
-      setState({
-        ...state,
-        [event.target.name]: event.target.value,
-      });
-      Globalvariables.canvasFont = `${event.target.value}px Work Sans Bold`;
-    }
-    if (event.target.name === "atomSize") {
-      setState({
-        ...state,
-        [event.target.name]: event.target.value,
-      });
-      Globalvariables.atomSize = event.target.value / 1000;
+    if (event.target.name === "displaytheme") {
+      const element = document.querySelector("html");
+      if (element && element.className === "light-theme") {
+        element.className = "dark-theme";
+      } else {
+        element.className = "light-theme";
+      }
+      //localStorage.setItem("displayTheme", event.target.checked);
     }
   };
 
@@ -128,7 +134,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
 
   return (
     <div className="settingsDiv">
-      <div className="form animate fadeInUp one">
+      <div className="form animate fadeInUp one " id="settingsPopUp">
         <a
           onClick={() => {
             setSettingsPopUp(false);
@@ -149,6 +155,8 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
               value={value}
               onChange={handleChange}
               aria-label="setting-tabs"
+              textColor="#767676"
+              indicatorColor="#767676"
             >
               <Tab label="Project Information" {...a11yProps(0)} />
               <Tab label="Canvas Settings" {...a11yProps(1)} />
@@ -178,6 +186,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                     checked={state.shortcut}
                     onChange={handleCheckChange}
                     name="shortcut"
+                    color="white"
                   />
                 }
                 label="Shortcut Helper Show/Hide"
@@ -192,16 +201,18 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                 }
                 label="Display light/dark"
               />
+              <Divider flexItem />
               <Typography id="input-slider" gutterBottom color="white">
                 Font Size
               </Typography>
               <Slider
                 aria-label="fontSize"
                 value={state.fontSize}
-                onChange={handleCheckChange}
+                onChange={handleValueChange}
                 name="fontSize"
                 min={8}
                 max={30}
+                color="white"
               />
               <Typography id="input-slider" gutterBottom color="white">
                 Atom Size
@@ -210,10 +221,12 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
               <Slider
                 aria-label="atomSize"
                 value={state.atomSize}
-                onChange={handleCheckChange}
+                onChange={handleValueChange}
                 name="atomSize"
                 min={10}
                 max={30}
+                color="white"
+                defaultValue={Globalvariables.atomSize * 1000}
               />
             </FormGroup>
           </CustomTabPanel>
@@ -258,6 +271,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                 value={Globalvariables.topLevelMolecule.unitsKey}
                 label="Project Units"
                 onChange={handleSelectChange}
+                textColor="#767676"
               >
                 <MenuItem value={"MM"}>MM</MenuItem>
                 <MenuItem value={"Inches"}>Inches</MenuItem>
