@@ -155,6 +155,7 @@ export default class Atom {
    * Draws the atom on the screen
    */
   draw(drawType) {
+    this.radius = GlobalVariables.atomSize;
     let xInPixels = GlobalVariables.widthToPixels(this.x);
     let yInPixels = GlobalVariables.heightToPixels(this.y);
     let radiusInPixels = GlobalVariables.widthToPixels(this.radius);
@@ -164,7 +165,7 @@ export default class Atom {
     });
 
     GlobalVariables.c.beginPath();
-    GlobalVariables.c.font = "10px Work Sans";
+    GlobalVariables.c.font = GlobalVariables.canvasFont;
 
     if (this.processing) {
       GlobalVariables.c.fillStyle = "blue";

@@ -282,6 +282,25 @@ class GlobalVariables {
      */
     this.recentMoleculeRepresentation = [];
 
+    /**
+     * A string to indicate a stored user font for the canvas.
+     * @type {string}
+     */
+    this.canvasFont = (() => {
+      const storedFont = localStorage.getItem("canvasFont");
+      return storedFont ? storedFont : `12px Work Sans Bold`;
+    })();
+
+    /*this.atomSize = (() => {
+      const storedSize = localStorage.getItem("atomSize");
+      return storedSize ? storedSize : 1 / 60;
+    })();*/
+    /**
+     * A number to indicate the size of the atoms in the canvas. This is used to scale the atoms to fit on the canvas.
+     * @type {number}
+     */
+    this.atomSize = 1 / 60;
+
     const math = create(all); //What does this do? I think it is used to evalue strings as math
     /**
      * An evaluator for strings as mathmatical equations which is sandboxed and secure.
