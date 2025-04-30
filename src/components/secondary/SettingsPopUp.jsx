@@ -186,7 +186,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                     checked={state.shortcut}
                     onChange={handleCheckChange}
                     name="shortcut"
-                    color="white"
+                    color="secondary"
                   />
                 }
                 label="Shortcut Helper Show/Hide"
@@ -197,12 +197,18 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                     checked={state.displaytheme}
                     onChange={handleCheckChange}
                     name="displaytheme"
+                    color="secondary"
                   />
                 }
                 label="Display light/dark"
               />
               <Divider flexItem />
-              <Typography id="input-slider" gutterBottom color="white">
+              <Typography
+                id="input-slider"
+                style={{ margin: "10px" }}
+                gutterBottom
+                class="settings-labels"
+              >
                 Font Size
               </Typography>
               <Slider
@@ -213,8 +219,14 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                 min={8}
                 max={30}
                 color="white"
+                className="settings-sliders"
               />
-              <Typography id="input-slider" gutterBottom color="white">
+              <Typography
+                id="input-slider"
+                class="settings-labels"
+                gutterBottom
+                color="white"
+              >
                 Atom Size
               </Typography>
 
@@ -223,6 +235,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                 value={state.atomSize}
                 onChange={handleValueChange}
                 name="atomSize"
+                className="settings-sliders"
                 min={10}
                 max={30}
                 color="white"
@@ -271,7 +284,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                 value={Globalvariables.topLevelMolecule.unitsKey}
                 label="Project Units"
                 onChange={handleSelectChange}
-                textColor="#767676"
+                color="white"
               >
                 <MenuItem value={"MM"}>MM</MenuItem>
                 <MenuItem value={"Inches"}>Inches</MenuItem>

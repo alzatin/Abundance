@@ -271,8 +271,20 @@
 }
 
 #settingsPopUp {
-  background-color: #545252;
+  background-color: var(--settingsPopup-background);
   border: 5px solid #c5c2c2;
+}
+
+.settings-labels {
+  color: var(--settingsPopup-text);
+  font-size: 14px;
+  margin-bottom: 0px;
+  font-family: "Roboto", sans-serif;
+  text-transform: uppercase;
+  display: inline-block;
+}
+.settings-sliders {
+  color: var(--abundance-color-brightPurple);
 }
 .runSideBarDiv {
   display: flex;
@@ -357,6 +369,8 @@
   padding: 9px;
   box-sizing: border-box;
   font-size: 14px;
+  font-weight: 700;
+  color: var(--newProject-form-input-text);
 }
 .form label {
   color: var(--settingsPopup-text);
@@ -409,7 +423,7 @@
 .submit-btn:hover {
   background: var(--settingsPopup-text);
   border: 2px solid var(--loginPopup-border);
-  color: var(--loginPopup-button);
+  color: var(--settingsPopup-hover-text);
 }
 
 .closeButton {

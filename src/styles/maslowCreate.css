@@ -5,7 +5,7 @@
   --abundance-color-brightPurple: #be3fe5;
   --abundance-color-transparentHighlight: #c4a3d565;
   --abundance-color-lightPurple: #c4a3d5;
-  --abundance-color-fontLightGrey: rgb(255 255 255 / 34%);
+  --abundance-color-fontLightGrey: rgba(117, 116, 116, 0.98);
   --abundance-color-fontGrey: #333;
   --abundance-color-fontTransparentGrey: rgba(255, 255, 255, 0.289);
   --abundance-color-fontWhite: #f2f0f0;
@@ -13,6 +13,7 @@
   --abundance-color-veryLightPurple: rgb(248 243 251);
   --abundance-color-veryLightPurpleHighlight: rgba(233, 221, 242, 0.961);
   --abundance-color-hightlightOffWhite: #fffffff6;
+  --abundance-color-mediumGrey: #545252;
 }
 
 .dark-theme {
@@ -21,6 +22,7 @@
 
   --settingsPopup-text: var(--abundance-color-hightlightOffWhite);
   --settingsPopup-closeButton: var(--abundance-color-darkGrey);
+  --settingsPopup-background: var(--abundance-color-mediumGrey);
 
   --loginPopup-background: var(--abundance-color-veryLightPurple);
   --loginPopup-text: var(--abundance-color-fontGrey);
@@ -59,7 +61,14 @@
 }
 
 .light-theme {
-  --flowCanvas-background: var(--abundance-color-darkGrey);
+  --flowCanvas-background: var(--abundance-color-fontLightGrey);
+  --flowCanvas-text-hover: var(--abundance-color-darkGrey);
+  --settingsPopup-text: var(--abundance-color-darkGrey);
+  --settingsPopup-closeButton: var(--abundance-color-hightlightOffWhite);
+  --settingsPopup-background: var(--abundance-color-fontWhite);
+  --settingsPopup-hover-text: var(--abundance-color-fontWhite);
+  --newProject-form-input: var(--abundance-color-mediumGrey);
+  --newProject-form-input-text: var(--abundance-color-fontWhite);
 }
 
 /*
