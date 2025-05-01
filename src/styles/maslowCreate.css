@@ -14,6 +14,7 @@
   --abundance-color-veryLightPurpleHighlight: rgba(233, 221, 242, 0.961);
   --abundance-color-hightlightOffWhite: #fffffff6;
   --abundance-color-mediumGrey: #545252;
+  --abundance-color-veryLightPurpleHighlight: #f9e9fd;
 }
 
 .dark-theme {
@@ -37,6 +38,8 @@
   --submit-button-background: var(--abundance-color-fontWhite);
   --submit-button-text: var(--abundance-color-darkGrey);
   --newProject-form-input: var(--abundance-color-hightlightOffWhite);
+
+  --newProject-form-input-text: var(--abundance-color-fontWhite);
 
   --lowerCanvas-menu-background: var(--abundance-color-darkGrey);
   --lowerCanvas-menu-text: var(--abundance-color-fontWhite);
@@ -223,6 +226,14 @@ body {
 }
 .runContainer {
   display: flex;
+}
+
+#runMode_button {
+  font-size: 13px;
+  padding: 0 3px 0 3px;
+  color: var(--abundance-color-veryLightPurpleHighlight);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
 }
 
 #modelViewer {
@@ -434,11 +445,11 @@ canvas {
 .tooltip {
   display: block;
   pointer-events: none;
-  background-color: var(--abundance-color-fontTransparentGrey);
+  background-color: rgb(40, 39, 39);
   margin: auto;
   font-size: 0.9em;
   font-family: "Roboto", sans-serif;
-  color: white;
+  color: var(--abundance-color-veryLightPurpleHighlight);
   z-index: 1041;
   position: absolute;
   top: 100;
