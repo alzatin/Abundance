@@ -441,7 +441,7 @@ const ShowProjects = ({
   };
 
   useEffect(() => {
-    setProjectsToShow("recents");
+    setProjectsToShow(user ? "recents" : "featured");
   }, [GlobalVariables.currentUser]);
 
   const currentYear = new Date().getFullYear();
