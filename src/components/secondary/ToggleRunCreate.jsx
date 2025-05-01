@@ -36,17 +36,7 @@ function ToggleRunCreate({ run, isItOwned }) {
                   display: "flex",
                 }}
               >
-                <p
-                  style={{
-                    fontSize: "12px",
-                    padding: "0 5px 0 5px",
-                    color: "#c4a3d5",
-                    fontFamily:
-                      "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-                  }}
-                >
-                  Run Mode
-                </p>
+                <p id="runMode_button">Run Mode</p>
                 <svg
                   width="12"
                   height="8"

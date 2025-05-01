@@ -162,7 +162,6 @@ export default function (parent, data, index) {
         "left",
         self._container.offsetLeft + self._calc.radius - length + 100 + "px"
       );
-      style(div, "color", "#D7D5D560");
     });
 
     on(subMenu._container, "mouseleave", function (e) {
