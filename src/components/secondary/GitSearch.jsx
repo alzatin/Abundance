@@ -1,6 +1,8 @@
 import React, { useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import topics from "../../js/maslowTopics.js";
+import { useQuery } from "react-query";
+import useDebounce from "../../hooks/useDebounce.js";
 
 function GitSearch({
   searchingGitHub,
@@ -17,6 +19,43 @@ function GitSearch({
   const [panelItem, setPanelItem] = useState({});
   const maslowTopic = useRef(null);
 
+  const [search, setSearch] = useState("");
+  const debouncedSearchTerm = useDebounce(search, 200);
+
+  let lastKeyQuery = lastKey
+    ? "&lastKey=" + lastKey.repoName + "~" + lastKey.owner
+    : "&lastKey";
+
+  let searchQuery;
+  if (searchBarValue != "") {
+    searchQuery = "&query=" + searchBarValue + "&yearShow=" + yearShow;
+  } else {
+    searchQuery = "&query" + "&yearShow=" + yearShow;
+  }
+
+  // gitsearch searches by repoName and does not specify user, we could specify last key if we wanted to paginate
+
+  let query = "attribute=searchField" + searchQuery + "&user" + lastKeyQuery;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["search", debouncedSearchTerm],
+    queryFn: () => {
+      if (debouncedSearchTerm) {
+        console.log("fetching");
+        return fetch(
+          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/scan-search-abundance?" +
+            "attribute=searchField" +
+            "&query=" +
+            debouncedSearchTerm +
+            "&yearShow=" +
+            yearShow +
+            "&user" +
+            lastKeyQuery
+        ).then((res) => res.json());
+      }
+      return undefined;
+    },
+  });
   /**
    * Runs when a menu option is clicked to place a new atom from searching on GitHub.
    * @param {object} ev - The event triggered by clicking on a menu item.
@@ -44,6 +83,7 @@ function GitSearch({
 
       let query =
         "attribute=searchField" + searchQuery + "&user" + lastKeyQuery;
+
       const scanApiUrl =
         "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/scan-search-abundance?" +
         query;
@@ -52,6 +92,7 @@ function GitSearch({
 
       return awsRepos.json();
     };
+
     repoSearchRequest().then((result) => {
       let resultingRepos = [];
       result["repos"].forEach((repo) => {
@@ -70,10 +111,10 @@ function GitSearch({
   };
   const handleChange = function (e) {
     searchBarValue = e.target.value.toLowerCase();
+    setSearch(e.target.value.toLowerCase());
   };
 
   const handleMouseOver = (item, key) => {
-    console.log(item);
     setPanelItem(item);
     setIsHovering(true);
   };
@@ -83,18 +124,24 @@ function GitSearch({
   };
 
   const GitList = function () {
-    return gitRepos.map((item, key) => {
-      return (
-        <li
-          onClick={(e) => placeGitHubMolecule(e, item)}
-          key={item.id}
-          onMouseEnter={() => handleMouseOver(item, key)}
-          onMouseLeave={() => handleMouseOut()}
-        >
-          {item.repoName}
-        </li>
-      );
-    });
+    // console.log(data.repos);
+    console.log("data", data);
+    if (data !== undefined) {
+      return data.repos.map((item, key) => {
+        return (
+          <li
+            onClick={(e) => placeGitHubMolecule(e, item)}
+            key={item.id}
+            onMouseEnter={() => handleMouseOver(item, key)}
+            onMouseLeave={() => handleMouseOut()}
+          >
+            {item.repoName}
+          </li>
+        );
+      });
+    } else {
+      return <li> No results found</li>;
+    }
   };
 
   return (
