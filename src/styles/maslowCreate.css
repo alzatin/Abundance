@@ -39,6 +39,8 @@
   --submit-button-text: var(--abundance-color-darkGrey);
   --newProject-form-input: var(--abundance-color-hightlightOffWhite);
 
+  --newProject-form-input-text: var(--abundance-color-fontWhite);
+
   --lowerCanvas-menu-background: var(--abundance-color-darkGrey);
   --lowerCanvas-menu-text: var(--abundance-color-fontWhite);
   --lowerCanvas-menu-inputs: var(--abundance-color-mainPurple);
