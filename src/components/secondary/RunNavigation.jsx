@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import ShareDialog from "./ShareDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import GlobalVariables from "../../js/globalvariables.js";
+import { useAuth0 } from "@auth0/auth0-react";
 
 //navigation svg icons - turn into key pairs later
 let shareSvg = (
@@ -129,12 +130,13 @@ let exportSvg = (
   </svg>
 );
 
-function RunNavigation({ authorizedUserOcto, tryLogin, activeAtom }) {
+function RunNavigation({ authorizedUserOcto, activeAtom }) {
   let [shareDialog, setShareDialog] = useState(false);
   let starred = false;
   let [dialogContent, setDialog] = useState("");
 
   var navigate = useNavigate();
+  const { loginWithRedirect } = useAuth0();
 
   useEffect(() => {
     // check if the current user has starred the project
@@ -422,16 +424,31 @@ function RunNavigation({ authorizedUserOcto, tryLogin, activeAtom }) {
 
   /** Runs if star is clicked but there's no logged in user */
   const loginLike = function () {
-    tryLogin().then((result) => {
-      likeProject(result);
-    });
+    console.log("no user logged in, needs new trylogin");
+    const loginConfirm = confirm(
+      "You are not logged in. Would you like to log in?"
+    );
+    if (loginConfirm) {
+      loginWithRedirect();
+    } else {
+      // user clicked cancel and is redirected to the run mode
+    }
   };
 
   /** Runs if fork is clicked but there's no logged in user */
   const loginFork = function () {
-    tryLogin().then((result) => {
+    console.log("no user logged in, needs new trylogin");
+    const loginConfirm = confirm(
+      "You are not logged in. Would you like to log in?"
+    );
+    if (loginConfirm) {
+      loginWithRedirect();
+    } else {
+      // user clicked cancel and is redirected to the run mode
+    }
+    /*tryLogin().then((result) => {
       forkProject(result);
-    });
+    });*/
   };
 
   return (

@@ -151,42 +151,6 @@ export default function ReplicadApp() {
     GlobalVariables.cad = cad;
   }, [activeAtom]);
 
-  /**
-   * Tries initial log in and saves octokit in authorizedUserOcto.
-   */
-  /*DISABLED*/
-  /*DISABLED*/
-  const tryLogin = function () {
-    /*
-    return new Promise((resolve, reject) => {
-      // Initialize with OAuth.io app public key
-      if (window.location.href.includes("private")) {
-        OAuth.initialize("6CQQE8MMCBFjdWEjevnTBMCQpsw"); //app public key for repo scope
-      } else {
-        OAuth.initialize("BYP9iFpD7aTV9SDhnalvhZ4fwD8"); //app public key for public_repo scope
-      }
-
-      // Use popup for oauth
-      OAuth.popup("github").then((github) => {
-        /**
-         * Oktokit object to access github
-         * @type {object}
-         
-        authorizedUserOcto = new Octokit({
-          auth: github.access_token,
-        });
-        //getting current user post authetication
-        authorizedUserOcto.request("GET /user", {}).then((response) => {
-          GlobalVariables.currentUser = response.data.login;
-          if (GlobalVariables.currentUser) {
-            setIsLoggedIn(true);
-            resolve(authorizedUserOcto);
-          }
-        });
-      });
-    });*/
-  };
-
   // Loads project
   const loadProject = function (project, authorizedUser) {
     GlobalVariables.recentMoleculeRepresentation = [];
@@ -251,55 +215,52 @@ export default function ReplicadApp() {
             }
           />
 
-          <Route
-            path="/:owner/:repoName"
-            element={
-              <CreateMode
-                {...{
-                  activeAtom,
-                  setActiveAtom,
-                  authorizedUserOcto,
-                  tryLogin,
-                  loadProject,
-                  exportPopUp,
-                  setExportPopUp,
-                  shortCutsOn,
-                  setShortCuts,
-                  mesh,
-                  setMesh,
-                  size,
-                  cad,
-                  wireMesh,
-                  setWireMesh,
-                  outdatedMesh,
-                  setOutdatedMesh,
-                }}
-              />
-            }
-          />
-          <Route
-            path="/run/:owner/:repoName"
-            element={
-              <RunMode
-                {...{
-                  isloggedIn,
-                  setActiveAtom,
-                  activeAtom: GlobalVariables.currentMolecule,
-                  authorizedUserOcto,
-                  tryLogin,
-                  loadProject,
-                  mesh,
-                  wireMesh,
-                  setWireMesh,
-                  outdatedMesh,
-                  setOutdatedMesh,
-                }}
-              />
-            }
-          />
-          <Route path="/redirect" element={<div>redirect working</div>} />
-        </Routes>
-      </main>
-    </QueryClientProvider>
+        <Route
+          path="/:owner/:repoName"
+          element={
+            <CreateMode
+              {...{
+                activeAtom,
+                setActiveAtom,
+                authorizedUserOcto,
+                loadProject,
+                exportPopUp,
+                setExportPopUp,
+                shortCutsOn,
+                setShortCuts,
+                mesh,
+                setMesh,
+                size,
+                cad,
+                wireMesh,
+                setWireMesh,
+                outdatedMesh,
+                setOutdatedMesh,
+              }}
+            />
+          }
+        />
+        <Route
+          path="/run/:owner/:repoName"
+          element={
+            <RunMode
+              {...{
+                isloggedIn,
+                setActiveAtom,
+                activeAtom: GlobalVariables.currentMolecule,
+                authorizedUserOcto,
+                loadProject,
+                mesh,
+                wireMesh,
+                setWireMesh,
+                outdatedMesh,
+                setOutdatedMesh,
+              }}
+            />
+          }
+        />
+        <Route path="/redirect" element={<div>redirect working</div>} />
+      </Routes>
+    </main>
   );
 }

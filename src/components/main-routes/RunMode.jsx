@@ -47,7 +47,6 @@ function runMode({
   setActiveAtom,
   activeAtom,
   authorizedUserOcto,
-  tryLogin,
   loadProject,
   mesh,
   wireMesh,
@@ -172,7 +171,7 @@ function runMode({
           }}
         />
       ) : null}
-      <RunNavigation {...{ authorizedUserOcto, tryLogin, activeAtom }} />
+      <RunNavigation {...{ authorizedUserOcto, activeAtom }} />
       {globalvariables.currentRepo ? (
         <div className="info_run_div">
           <p>{"Project Name: " + globalvariables.currentRepo.repoName}</p>

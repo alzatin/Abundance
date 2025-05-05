@@ -441,7 +441,7 @@ const ShowProjects = ({
   };
 
   useEffect(() => {
-    setProjectsToShow("recents");
+    setProjectsToShow(user ? "recents" : "featured");
   }, [GlobalVariables.currentUser]);
 
   const currentYear = new Date().getFullYear();
@@ -862,7 +862,6 @@ const ShowProjects = ({
 };
 
 function LoginMode({
-  tryLogin,
   exportPopUp,
   setExportPopUp,
   setIsLoggedIn,
@@ -988,9 +987,7 @@ function LoginMode({
       />
     );
   } else {
-    popUpContent = (
-      <InitialLog {...{ loginWithRedirect, tryLogin, setNoUserBrowsing }} />
-    );
+    popUpContent = <InitialLog {...{ loginWithRedirect, setNoUserBrowsing }} />;
   }
   return (
     <div

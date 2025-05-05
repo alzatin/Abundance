@@ -29,7 +29,6 @@ function CreateMode({
   activeAtom,
   setActiveAtom,
   authorizedUserOcto,
-  tryLogin,
   loadProject,
   exportPopUp,
   setExportPopUp,
