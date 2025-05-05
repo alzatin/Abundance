@@ -92,7 +92,7 @@ export default class Gcode extends Atom {
       let inputID = this.findIOValue("geometry");
 
       GlobalVariables.cad
-        .visExport(this.uniqueID, inputID, fileType)
+        .visExport(this.uniqueID, inputID, "STL")
         .then((result) => {
           GlobalVariables.cad
             .downExport(this.uniqueID, "STL")
