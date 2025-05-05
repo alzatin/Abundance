@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
+import GlobalVariables from "../../js/globalvariables.js";
 
 const KiriMotoIntegration = ({ activeAtom }) => {
   const [kiriEngine, setKiriEngine] = useState(null);
+  const [kiriBlob, setKiriBlob] = useState(null);
+  const [blobPath, setBlobPath] = useState(null);
+  const [stlUrl, setStlUrl] = useState(null);
 
   useEffect(() => {
     // Dynamically load the Kiri:Moto script
@@ -28,11 +32,33 @@ const KiriMotoIntegration = ({ activeAtom }) => {
     };
   }, []);
 
+  useEffect(() => {
+    const handleBlobUpdate = (event) => {
+      const { uniqueID, blob } = event.detail;
+      console.log("Blob updated:", uniqueID, blob);
+
+      // Convert blob to a temporary file URL
+      const url = URL.createObjectURL(blob);
+      setStlUrl(url);
+    };
+
+    window.addEventListener("kirimotoBlobUpdated", handleBlobUpdate);
+
+    return () => {
+      window.removeEventListener("kirimotoBlobUpdated", handleBlobUpdate);
+    };
+  }, []);
+
   const runKirimoto = (kiriEngine) => {
     console.log("kiriEngine");
     console.log(kiriEngine);
     if (!kiriEngine) {
       console.error("Kiri:Moto engine is not initialized yet.");
+      return;
+    }
+
+    if (!stlUrl) {
+      console.error("STL URL is not available.");
       return;
     }
 
@@ -43,7 +69,7 @@ const KiriMotoIntegration = ({ activeAtom }) => {
           console.log(`Progress: ${message.progress * 100}%`);
         }
       })
-      .load("/Simple_cube.stl") // Replace with your STL file path
+      .load("/Simple_cube.stl") // Use the temporary file URL here // or stlUrl
       .then((eng) => {
         console.log("STL file loaded");
         console.log(eng);
@@ -66,12 +92,7 @@ const KiriMotoIntegration = ({ activeAtom }) => {
       })
       .then((eng) => {
         console.log("Device parameters set");
-        return new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject("Slicing timed out"), 600000); //5min timeout
-          eng.slice().then(() => {
-            clearTimeout(timeout);
-          });
-        });
+        return eng.slice();
       })
       .then((eng) => {
         console.log("Slicing completed");
@@ -86,6 +107,10 @@ const KiriMotoIntegration = ({ activeAtom }) => {
       })
       .catch((error) => {
         console.error("Kiri:Moto Error:", error);
+      })
+      .finally(() => {
+        // Clean up the temporary URL
+        URL.revokeObjectURL(stlUrl);
       });
   };
 
