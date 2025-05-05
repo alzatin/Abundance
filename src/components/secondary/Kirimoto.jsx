@@ -4,8 +4,6 @@ import { saveAs } from "file-saver";
 
 const KiriMotoIntegration = ({ activeAtom }) => {
   const [kiriEngine, setKiriEngine] = useState(null);
-  const [kiriBlob, setKiriBlob] = useState(null);
-  const [blobPath, setBlobPath] = useState(null);
   const [stlUrl, setStlUrl] = useState(null);
 
   useEffect(() => {
