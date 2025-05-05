@@ -1,13 +1,13 @@
 import React, { useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
-import { useQuery } from "react-query";
+import { isError, useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
 
 function GitSearch({
   searchingGitHub,
   setSearchingGitHub,
-  gitRepos,
-  setGitRepos,
+  search,
+  setSearch,
   isHovering,
   setIsHovering,
 }) {
@@ -16,7 +16,7 @@ function GitSearch({
   const [yearShow, setYearShow] = useState("2024");
   const [panelItem, setPanelItem] = useState({});
 
-  const [search, setSearch] = useState("");
+  //const [search, setSearch] = useState("");
   const debouncedSearchTerm = useDebounce(search, 200);
 
   let lastKeyQuery = lastKey
@@ -31,11 +31,10 @@ function GitSearch({
   }
   // let query = "attribute=searchField" + searchQuery + "&user" + lastKeyQuery;
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["search", debouncedSearchTerm],
     queryFn: () => {
       if (debouncedSearchTerm) {
-        console.log("fetching");
         return fetch(
           "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/scan-search-abundance?" +
             "attribute=searchField" +
@@ -55,6 +54,7 @@ function GitSearch({
    * @param {object} ev - The event triggered by clicking on a menu item.
    */
   function placeGitHubMolecule(e, item) {
+    console.log(data);
     GlobalVariables.currentMolecule.loadGithubMoleculeByName(item);
     setSearchingGitHub(false);
     setSearch("");
@@ -79,7 +79,13 @@ function GitSearch({
     if (isLoading) {
       return <li>Loading...</li>;
     }
+    if (isError) {
+      return <li>Error loading data</li>;
+    }
     if (data !== undefined) {
+      if (data.repos.length === 0) {
+        return <li>No results found</li>;
+      }
       return data.repos.map((item, key) => {
         return (
           <li
@@ -92,8 +98,6 @@ function GitSearch({
           </li>
         );
       });
-    } else {
-      return <li> No results found</li>;
     }
   };
 

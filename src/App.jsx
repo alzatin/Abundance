@@ -77,10 +77,8 @@ export default function ReplicadApp() {
     }
   };
   const loadingDotsNone = () => {
-    console.log("loading dots none");
     const loadingDots = document.querySelector(".loading");
     if (loadingDots) {
-      console.log("loading dots none exist");
       loadingDots.style.display = "none";
     }
   };
