@@ -215,52 +215,53 @@ export default function ReplicadApp() {
             }
           />
 
-        <Route
-          path="/:owner/:repoName"
-          element={
-            <CreateMode
-              {...{
-                activeAtom,
-                setActiveAtom,
-                authorizedUserOcto,
-                loadProject,
-                exportPopUp,
-                setExportPopUp,
-                shortCutsOn,
-                setShortCuts,
-                mesh,
-                setMesh,
-                size,
-                cad,
-                wireMesh,
-                setWireMesh,
-                outdatedMesh,
-                setOutdatedMesh,
-              }}
-            />
-          }
-        />
-        <Route
-          path="/run/:owner/:repoName"
-          element={
-            <RunMode
-              {...{
-                isloggedIn,
-                setActiveAtom,
-                activeAtom: GlobalVariables.currentMolecule,
-                authorizedUserOcto,
-                loadProject,
-                mesh,
-                wireMesh,
-                setWireMesh,
-                outdatedMesh,
-                setOutdatedMesh,
-              }}
-            />
-          }
-        />
-        <Route path="/redirect" element={<div>redirect working</div>} />
-      </Routes>
-    </main>
+          <Route
+            path="/:owner/:repoName"
+            element={
+              <CreateMode
+                {...{
+                  activeAtom,
+                  setActiveAtom,
+                  authorizedUserOcto,
+                  loadProject,
+                  exportPopUp,
+                  setExportPopUp,
+                  shortCutsOn,
+                  setShortCuts,
+                  mesh,
+                  setMesh,
+                  size,
+                  cad,
+                  wireMesh,
+                  setWireMesh,
+                  outdatedMesh,
+                  setOutdatedMesh,
+                }}
+              />
+            }
+          />
+          <Route
+            path="/run/:owner/:repoName"
+            element={
+              <RunMode
+                {...{
+                  isloggedIn,
+                  setActiveAtom,
+                  activeAtom: GlobalVariables.currentMolecule,
+                  authorizedUserOcto,
+                  loadProject,
+                  mesh,
+                  wireMesh,
+                  setWireMesh,
+                  outdatedMesh,
+                  setOutdatedMesh,
+                }}
+              />
+            }
+          />
+          <Route path="/redirect" element={<div>redirect working</div>} />
+        </Routes>
+      </main>
+    </QueryClientProvider>
   );
 }
