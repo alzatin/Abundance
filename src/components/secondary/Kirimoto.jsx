@@ -6,7 +6,7 @@ const KiriMotoIntegration = ({ activeAtom }) => {
   useEffect(() => {
     // Dynamically load the Kiri:Moto script
     const script = document.createElement("script");
-    script.src = "/code/engine.js"; // Kiri:Moto CDN
+    script.src = "https://grid.space/code/engine.js"; // Kiri:Moto CDN
     script.async = true;
     script.onload = () => {
       console.log("Kiri:Moto script loading");
@@ -46,6 +46,7 @@ const KiriMotoIntegration = ({ activeAtom }) => {
       .load("/Simple_cube.stl") // Replace with your STL file path
       .then((eng) => {
         console.log("STL file loaded");
+        console.log(eng);
         return eng.setProcess({
           sliceShells: 1,
           sliceFillSparse: 0.1,
@@ -67,10 +68,8 @@ const KiriMotoIntegration = ({ activeAtom }) => {
         console.log("Device parameters set");
         return new Promise((resolve, reject) => {
           const timeout = setTimeout(() => reject("Slicing timed out"), 600000); //5min timeout
-          console.log(eng);
           eng.slice().then(() => {
             clearTimeout(timeout);
-            resolve(eng);
           });
         });
       })

@@ -9,7 +9,7 @@ import { saveAs } from "file-saver";
  */
 export default class Export extends Atom {
   /**
-   * The constructor function.
+   * The stnstructor function.
    * @param {object} values An array of values passed in which will be assigned to the class as this.x
    */
   constructor(values) {
@@ -177,6 +177,9 @@ export default class Export extends Atom {
         GlobalVariables.topLevelMolecule.unitsKey
       )
       .then((result) => {
+        console.log("Export result");
+        console.log(result);
+        console.log("File type");
         saveAs(result, partName + "." + fileType.toLowerCase());
       })
       .catch(this.alertingErrorHandler());

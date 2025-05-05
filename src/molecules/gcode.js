@@ -84,6 +84,10 @@ export default class Gcode extends Atom {
       var speed = this.findIOValue("speed");
       var tabs = this.findIOValue("tabs");
       var safeHeight = this.findIOValue("safe height");
+
+      GlobalVariables.cad.downExport(this.uniqueID, "STL").then((result) => {
+        console.log(result);
+      });
     } catch (err) {
       this.setAlert(err);
     }
