@@ -43,11 +43,11 @@ export default class Gcode extends Atom {
     this.gcodeString = "";
 
     this.addIO("input", "geometry", this, "geometry", null);
-    this.addIO("input", "tool size", this, "number", 6.35);
-    this.addIO("input", "passes", this, "number", 6);
-    this.addIO("input", "speed", this, "number", 500);
-    this.addIO("input", "tabs", this, "string", "true");
-    this.addIO("input", "safe height", this, "number", 6);
+    //this.addIO("input", "tool size", this, "number", 6.35);
+    //this.addIO("input", "passes", this, "number", 6);
+    //this.addIO("input", "speed", this, "number", 500);
+    //this.addIO("input", "tabs", this, "string", "true");
+    //this.addIO("input", "safe height", this, "number", 6);
 
     this.addIO("output", "gcode", this, "geometry", "");
 
@@ -80,11 +80,11 @@ export default class Gcode extends Atom {
   updateValue() {
     super.updateValue();
     try {
-      var toolSize = this.findIOValue("tool size");
-      var passes = this.findIOValue("passes");
-      var speed = this.findIOValue("speed");
-      var tabs = this.findIOValue("tabs");
-      var safeHeight = this.findIOValue("safe height");
+      //var toolSize = this.findIOValue("tool size");
+      //var passes = this.findIOValue("passes");
+      // var speed = this.findIOValue("speed");
+      // var tabs = this.findIOValue("tabs");
+      //var safeHeight = this.findIOValue("safe height");
       /* We have to make an STL file to pass to the Kiri:Moto engine */
 
       let inputID = this.findIOValue("geometry");
@@ -149,20 +149,5 @@ export default class Gcode extends Atom {
     let kirimotoButton = document.getElementById("kirimoto-button");
     console.log(kirimotoButton);
     kirimotoButton.click();
-  }
-  /**
-   * The function which is called when you press the download button.
-   */
-  downloadGCode() {
-    try {
-      var geometry = this.findIOValue("geometry");
-      var toolSize = this.findIOValue("tool size");
-      var passes = this.findIOValue("passes");
-      var speed = this.findIOValue("speed");
-      var tabs = this.findIOValue("tabs");
-      var safeHeight = this.findIOValue("safe height");
-    } catch (err) {
-      this.setAlert(err);
-    }
   }
 }
