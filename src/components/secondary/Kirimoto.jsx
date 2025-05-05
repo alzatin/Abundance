@@ -66,9 +66,6 @@ const KiriMotoIntegration = ({ activeAtom }) => {
     kiriEngine
       .setListener((message) => {
         console.log("Kiri:Moto Message:", message);
-        if (message.type === "progress") {
-          console.log(`Progress: ${message.progress * 100}%`);
-        }
       })
       .load(stlUrl) // Use the temporary file URL here // or stlUrl
       .then((eng) => {
