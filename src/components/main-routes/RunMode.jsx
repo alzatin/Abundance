@@ -173,7 +173,6 @@ function runMode({
         />
       ) : null}
       <RunNavigation {...{ authorizedUserOcto, activeAtom }} />
-
       <KiriMotoIntegration {...{ activeAtom }} />
       {globalvariables.currentRepo ? (
         <div className="info_run_div">
