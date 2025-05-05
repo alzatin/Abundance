@@ -203,7 +203,6 @@ export default function ReplicadApp() {
             element={
               <LoginMode
                 {...{
-                  tryLogin,
                   setIsLoggedIn,
                   isloggedIn,
                   authorizedUserOcto,
