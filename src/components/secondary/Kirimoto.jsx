@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
+import { saveAs } from "file-saver";
 
 const KiriMotoIntegration = ({ activeAtom }) => {
   const [kiriEngine, setKiriEngine] = useState(null);
@@ -69,7 +70,7 @@ const KiriMotoIntegration = ({ activeAtom }) => {
           console.log(`Progress: ${message.progress * 100}%`);
         }
       })
-      .load("/Simple_cube.stl") // Use the temporary file URL here // or stlUrl
+      .load(stlUrl) // Use the temporary file URL here // or stlUrl
       .then((eng) => {
         console.log("STL file loaded");
         console.log(eng);
@@ -82,6 +83,10 @@ const KiriMotoIntegration = ({ activeAtom }) => {
       })
       .catch((error) => {
         console.error("Error loading STL file:", error);
+      })
+      .then((eng) => {
+        console.log("Process parameters set");
+        return eng.setMode("FDM");
       })
       .then((eng) => {
         console.log("Process parameters set");
@@ -104,6 +109,9 @@ const KiriMotoIntegration = ({ activeAtom }) => {
       })
       .then((gcode) => {
         console.log("GCode generated:", gcode);
+        const blob = new Blob([gcode], { type: "text/plain" });
+        const fileName = "output.gcode";
+        saveAs(blob, fileName); // Use FileSaver.js to save the GCode file
       })
       .catch((error) => {
         console.error("Kiri:Moto Error:", error);
