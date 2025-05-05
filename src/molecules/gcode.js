@@ -34,6 +34,8 @@ export default class Gcode extends Atom {
      * @type {string}
      */
     this.description = "Generates Maslow gcode from the input geometry.";
+
+    this.blob = null;
     /**
      * The generated gcode string
      * @type {string}
@@ -78,16 +80,35 @@ export default class Gcode extends Atom {
   updateValue() {
     super.updateValue();
     try {
-      var geometry = this.findIOValue("geometry");
       var toolSize = this.findIOValue("tool size");
       var passes = this.findIOValue("passes");
       var speed = this.findIOValue("speed");
       var tabs = this.findIOValue("tabs");
       var safeHeight = this.findIOValue("safe height");
+      /* We have to make an STL file to pass to the Kiri:Moto engine */
 
-      GlobalVariables.cad.downExport(this.uniqueID, "STL").then((result) => {
-        console.log(result);
-      });
+      let inputID = this.findIOValue("geometry");
+      let fileType = this.findIOValue("STL");
+
+      GlobalVariables.cad
+        .visExport(this.uniqueID, inputID, fileType)
+        .then((result) => {
+          GlobalVariables.cad
+            .downExport(this.uniqueID, "STL")
+            .then((result) => {
+              console.log(result);
+              if (!this.kirimotoBlobs) {
+                this.kirimotoBlobs = {};
+              }
+              this.kirimotoBlobs[this.uniqueID] = result; // Store the blob with a unique ID to avoid overriding
+
+              // Dispatch a custom event to notify React components
+              const event = new CustomEvent("kirimotoBlobUpdated", {
+                detail: { uniqueID: this.uniqueID, blob: result },
+              });
+              window.dispatchEvent(event);
+            });
+        });
     } catch (err) {
       this.setAlert(err);
     }
