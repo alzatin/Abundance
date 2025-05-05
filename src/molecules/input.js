@@ -48,7 +48,7 @@ export default class Input extends Atom {
      */
     this.oldName = this.name;
 
-    this.radius = this.radius * 1.3;
+    this.radius = 1 / 75;
 
     this.addIO("output", "number or geometry", this, this.type, this.value);
 
@@ -87,6 +87,7 @@ export default class Input extends Atom {
      * @type {number}
      */
     this.x = 0.04;
+    this.radius = GlobalVariables.atomSize * 1.3;
 
     let xInPixels = GlobalVariables.widthToPixels(this.x);
     let yInPixels = GlobalVariables.heightToPixels(this.y);
@@ -141,7 +142,7 @@ export default class Input extends Atom {
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
     GlobalVariables.c.stroke();
-    GlobalVariables.c.font = "11px Work Sans";
+    GlobalVariables.c.font = GlobalVariables.fontSize;
     GlobalVariables.c.textAlign = "start";
     GlobalVariables.c.fillStyle = "black";
     GlobalVariables.c.width = 20;

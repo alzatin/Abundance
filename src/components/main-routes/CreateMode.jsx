@@ -29,7 +29,6 @@ function CreateMode({
   activeAtom,
   setActiveAtom,
   authorizedUserOcto,
-  tryLogin,
   loadProject,
   exportPopUp,
   setExportPopUp,
@@ -464,8 +463,8 @@ function CreateMode({
           ) : null}
           <ToggleRunCreate run={false} />
           {shortCutsOn ? (
-            <div id="shortcutDiv">
-              <li style={{ fontSize: "14px" }}>(Cmmd +)</li>
+            <div id="shortcutDiv" className="noselect">
+              <li style={{ fontSize: "14px" }}>(CTRL +)</li>
               {Object.entries(shortCuts).map(([key, value]) => {
                 return (
                   <li key={key} className="shortcut">
@@ -487,6 +486,7 @@ function CreateMode({
               currentMoleculeTop,
               activeAtom,
               setActiveAtom,
+              shortCutsOn,
               setShortCuts,
             }}
           />

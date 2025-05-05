@@ -23,6 +23,7 @@ import "./styles/maslowCreate.css";
 import "./styles//menuIcons.css";
 import "./styles//login.css";
 import "./styles//codemirror.css";
+import { e } from "mathjs";
 /**
  * The octokit instance which allows authenticated interaction with GitHub.
  * @type {object}
@@ -40,13 +41,22 @@ export default function ReplicadApp() {
     cad.createMesh(size).then((m) => setWireMesh(m));
   }, [size]);
 
+  useEffect(() => {
+    const element = document.querySelector("html");
+    const storedClass = localStorage.getItem("displayTheme");
+
+    if (element && storedClass) {
+      element.className = storedClass;
+    }
+  }, []);
+
   const [isloggedIn, setIsLoggedIn] = useState(false);
   const [activeAtom, setActiveAtom] = useState(null);
   const [exportPopUp, setExportPopUp] = useState(false);
 
   const [authorizedUserOcto, setAuthorizedUserOcto] = useState(null);
   const [shortCutsOn, setShortCuts] = useState(
-    GlobalVariables.displayShortcuts
+    localStorage.getItem("shortcuts") === "true" ? true : false
   );
 
   /* Creates an element to check with Puppeteer if the molecule is fully loaded*/
@@ -71,6 +81,10 @@ export default function ReplicadApp() {
       loadingDots.style.display = "none";
     }
   };
+
+  useEffect(() => {
+    localStorage.setItem("shortcuts", shortCutsOn);
+  }, [shortCutsOn]);
 
   useEffect(() => {
     GlobalVariables.writeToDisplay = (id, resetView = false) => {
@@ -134,42 +148,6 @@ export default function ReplicadApp() {
     GlobalVariables.cad = cad;
   }, [activeAtom]);
 
-  /**
-   * Tries initial log in and saves octokit in authorizedUserOcto.
-   */
-  /*DISABLED*/
-  /*DISABLED*/
-  const tryLogin = function () {
-    /*
-    return new Promise((resolve, reject) => {
-      // Initialize with OAuth.io app public key
-      if (window.location.href.includes("private")) {
-        OAuth.initialize("6CQQE8MMCBFjdWEjevnTBMCQpsw"); //app public key for repo scope
-      } else {
-        OAuth.initialize("BYP9iFpD7aTV9SDhnalvhZ4fwD8"); //app public key for public_repo scope
-      }
-
-      // Use popup for oauth
-      OAuth.popup("github").then((github) => {
-        /**
-         * Oktokit object to access github
-         * @type {object}
-         
-        authorizedUserOcto = new Octokit({
-          auth: github.access_token,
-        });
-        //getting current user post authetication
-        authorizedUserOcto.request("GET /user", {}).then((response) => {
-          GlobalVariables.currentUser = response.data.login;
-          if (GlobalVariables.currentUser) {
-            setIsLoggedIn(true);
-            resolve(authorizedUserOcto);
-          }
-        });
-      });
-    });*/
-  };
-
   // Loads project
   const loadProject = function (project, authorizedUser) {
     GlobalVariables.recentMoleculeRepresentation = [];
@@ -221,7 +199,6 @@ export default function ReplicadApp() {
           element={
             <LoginMode
               {...{
-                tryLogin,
                 setIsLoggedIn,
                 isloggedIn,
                 authorizedUserOcto,
@@ -241,7 +218,6 @@ export default function ReplicadApp() {
                 activeAtom,
                 setActiveAtom,
                 authorizedUserOcto,
-                tryLogin,
                 loadProject,
                 exportPopUp,
                 setExportPopUp,
@@ -268,7 +244,6 @@ export default function ReplicadApp() {
                 setActiveAtom,
                 activeAtom: GlobalVariables.currentMolecule,
                 authorizedUserOcto,
-                tryLogin,
                 loadProject,
                 mesh,
                 wireMesh,

@@ -441,7 +441,7 @@ const ShowProjects = ({
   };
 
   useEffect(() => {
-    setProjectsToShow("recents");
+    setProjectsToShow(user ? "recents" : "featured");
   }, [GlobalVariables.currentUser]);
 
   const currentYear = new Date().getFullYear();
@@ -861,7 +861,6 @@ const ShowProjects = ({
 };
 
 function LoginMode({
-  tryLogin,
   exportPopUp,
   setExportPopUp,
   setIsLoggedIn,
@@ -937,7 +936,7 @@ function LoginMode({
         }}
       />
     );
-  } else if (isAuthenticated || isLoading) {
+  } else if (isLoading || isAuthenticated) {
     popUpContent = (
       <div className="login-page">
         <div className="form animate fadeInUp one">
@@ -960,8 +959,13 @@ function LoginMode({
                 className="login-logo"
               />
             </div>
-
-            <p> Redirecting you to your projects ... </p>
+            {isAuthenticated ? (
+              <p style={{ padding: "0 20px" }}>
+                Welcome. Redirecting you to your projects...
+              </p>
+            ) : (
+              <p style={{ padding: "0 20px" }}>Logging you in ...</p>
+            )}
           </div>
         </div>
       </div>
@@ -982,9 +986,7 @@ function LoginMode({
       />
     );
   } else {
-    popUpContent = (
-      <InitialLog {...{ loginWithRedirect, tryLogin, setNoUserBrowsing }} />
-    );
+    popUpContent = <InitialLog {...{ loginWithRedirect, setNoUserBrowsing }} />;
   }
   return (
     <div
@@ -997,7 +999,9 @@ function LoginMode({
     >
       <div>
         {" "}
-        {GlobalVariables.currentRepo && isAuthenticated ? (
+        {GlobalVariables.currentRepo &&
+        GlobalVariables.currentRepo.owner == GlobalVariables.currentUser &&
+        isAuthenticated ? (
           <Link
             to={`/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`}
           >
@@ -1018,7 +1022,7 @@ function LoginMode({
               logout({
                 returnTo: import.meta.env.VITE_APP_DEV
                   ? window.location.origin
-                  : "https://barboursmith.github.io/Abundance", // Redirect to home page or specified URL
+                  : "https://abundance.maslowcnc.com", // Redirect to home page or specified URL
               });
             }}
           >
@@ -1059,7 +1063,7 @@ function LoginMode({
                 logout({
                   returnTo: import.meta.env.VITE_APP_DEV
                     ? window.location.origin
-                    : "https://barboursmith.github.io/Abundance", // Redirect to home page or specified URL
+                    : "https://abundance.maslowcnc.com", // Redirect to home page or specified URL
                 });
               }}
             >

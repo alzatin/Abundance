@@ -120,7 +120,7 @@ export default class AttachmentPoint {
       radiusInPixels = radiusInPixels * AttachmentPoint.TARGET_SCALEUP;
     }
 
-    GlobalVariables.c.font = "10px Work Sans";
+    GlobalVariables.c.font = GlobalVariables.canvasFont;
     var textWidth = GlobalVariables.c.measureText(this.name).width;
 
     var bubbleColor =

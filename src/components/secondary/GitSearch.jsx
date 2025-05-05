@@ -2,13 +2,18 @@ import React, { useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import topics from "../../js/maslowTopics.js";
 
-function GitSearch({ searchingGitHub, setSearchingGitHub }) {
+function GitSearch({
+  searchingGitHub,
+  setSearchingGitHub,
+  gitRepos,
+  setGitRepos,
+  isHovering,
+  setIsHovering,
+}) {
   let searchBarValue = "";
-  var [gitRepos, setGitRepos] = useState([]);
   var [loadingGit, setLoadingGit] = useState(false);
   const [lastKey, setLastKey] = useState("");
   const [yearShow, setYearShow] = useState("2024");
-  const [isHovering, setIsHovering] = useState(false);
   const [panelItem, setPanelItem] = useState({});
   const maslowTopic = useRef(null);
 
@@ -64,7 +69,7 @@ function GitSearch({ searchingGitHub, setSearchingGitHub }) {
     }
   };
   const handleChange = function (e) {
-    searchBarValue = e.target.value;
+    searchBarValue = e.target.value.toLowerCase();
   };
 
   const handleMouseOver = (item, key) => {
@@ -101,15 +106,16 @@ function GitSearch({ searchingGitHub, setSearchingGitHub }) {
             style={{
               top: GlobalVariables.lastClick
                 ? GlobalVariables.lastClick[1] + "px"
-                : "25%",
+                : "37%",
               left: GlobalVariables.lastClick
                 ? GlobalVariables.lastClick[0] + "px"
-                : "50%",
+                : "75%",
             }}
           >
             <input
               type="text"
               id="menuInput"
+              autoFocus
               //onBlur="value=''"
               onKeyDown={handleKeyDown}
               onChange={handleChange}
@@ -123,8 +129,13 @@ function GitSearch({ searchingGitHub, setSearchingGitHub }) {
             <div
               className="GitProjectInfoPanel"
               style={{
-                top: GlobalVariables.lastClick[1] - 50 + "px",
-                left: GlobalVariables.lastClick[0] - 375 + "px",
+                position: "absolute",
+                top: GlobalVariables.lastClick
+                  ? GlobalVariables.lastClick[1] + "px"
+                  : "35%",
+                left: GlobalVariables.lastClick
+                  ? GlobalVariables.lastClick[0] - 375 + "px"
+                  : "50%",
               }}
             >
               <div className="GitInfoLeft">

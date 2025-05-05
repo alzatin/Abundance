@@ -802,11 +802,18 @@ export default class Molecule extends Atom {
             ioValues: oldObject.ioValues,
           };
         } else {
+          let xPos = 0.5;
+          let yPos = 0.6;
+          //If there's no last click default to middle of screen
+          if (GlobalVariables.lastClick) {
+            xPos = GlobalVariables.pixelsToWidth(GlobalVariables.lastClick[0]);
+            yPos = GlobalVariables.pixelsToHeight(GlobalVariables.lastClick[1]);
+          }
           valuesToOverwriteInLoadedVersion = {
             uniqueID: newMoleculeUniqueID,
             parentRepo: item,
-            x: GlobalVariables.pixelsToWidth(GlobalVariables.lastClick[0]),
-            y: GlobalVariables.pixelsToHeight(GlobalVariables.lastClick[1]),
+            x: xPos,
+            y: yPos,
             topLevel: false,
           };
         }

@@ -48,7 +48,6 @@ function runMode({
   setActiveAtom,
   activeAtom,
   authorizedUserOcto,
-  tryLogin,
   loadProject,
   mesh,
   wireMesh,
@@ -173,7 +172,7 @@ function runMode({
           }}
         />
       ) : null}
-      <RunNavigation {...{ authorizedUserOcto, tryLogin, activeAtom }} />
+      <RunNavigation {...{ authorizedUserOcto, activeAtom }} />
 
       <KiriMotoIntegration {...{ activeAtom }} />
       {globalvariables.currentRepo ? (

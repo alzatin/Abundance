@@ -319,13 +319,12 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
       <div className="login-page export-div">
         <div className="form animate fadeInUp one">
           <button
-            style={{ width: "3%", display: "block" }}
             onClick={() => {
               setExportPopUp(false);
             }}
             className="closeButton"
           >
-            <img></img>
+            X
           </button>
           <form
             className="new-project-form"

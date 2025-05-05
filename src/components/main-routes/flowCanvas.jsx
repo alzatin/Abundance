@@ -32,6 +32,8 @@ export default memo(function FlowCanvas({
 }) {
   /** State for github molecule search input */
   const [searchingGitHub, setSearchingGitHub] = useState(false);
+  const [gitRepos, setGitRepos] = useState([]);
+  const [isHovering, setIsHovering] = useState(false);
 
   const canvasRef = useRef(null);
   const circleMenu = useRef(null);
@@ -218,6 +220,8 @@ export default memo(function FlowCanvas({
     } else {
       cmenu.hide();
       setSearchingGitHub(false);
+      setGitRepos([]);
+      setIsHovering(false);
 
       var clickHandledByMolecule = false;
       /*Run through all the atoms on the screen and decide if one was clicked*/
@@ -373,7 +377,16 @@ export default memo(function FlowCanvas({
       </div>
       <div>
         <div id="circle-menu1" className="cn-menu1" ref={circleMenu}></div>
-        <GitSearch {...{ searchingGitHub, setSearchingGitHub }} />
+        <GitSearch
+          {...{
+            searchingGitHub,
+            setSearchingGitHub,
+            gitRepos,
+            setGitRepos,
+            isHovering,
+            setIsHovering,
+          }}
+        />
       </div>
     </>
   );

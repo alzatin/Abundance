@@ -3,6 +3,7 @@ import globalvariables from "../../js/globalvariables";
 
 import { useControls, useCreateStore, LevaPanel, button } from "leva";
 import { re } from "mathjs";
+import fonts from "../../js/fonts";
 //import { c } from "vite/dist/node/types.d-FdqQ54oU";
 
 /**Creates new collapsible sidebar with Leva - edited from Replicad's ParamsEditor.jsx */
@@ -134,7 +135,7 @@ export default (function ParamsEditor({
       elevation2: "var(--bg-color)",
       elevation3: "#C4A3D5", // bg color of the root panel (main title bar)
 
-      highlight1: "#C4A3D5",
+      highlight1: "#f9e9fd",
       highlight2: "#ededed",
       highlight3: "#ededed",
 
@@ -143,6 +144,9 @@ export default (function ParamsEditor({
       accent3: "#88748F",
 
       vivid1: "red",
+    },
+    fontSizes: {
+      root: "13px",
     },
   };
 
