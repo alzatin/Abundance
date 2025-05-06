@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
-import { isError, useQuery } from "react-query";
+import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
 
 function GitSearch({
