@@ -6,8 +6,9 @@ import { Plane, Solid } from "replicad";
 import shrinkWrap from "replicad-shrink-wrap";
 import { addSVG, drawSVG } from "replicad-decorate";
 import Fonts from "./js/fonts.js";
-import { AnyNest, FloatPolygon } from "any-nest";
-import { equal, re } from "mathjs";
+//import { AnyNest, FloatPolygon } from "any-nest";
+import { PolygonPacker,PlacementWrapper } from "polygon-packer";
+import { re } from "mathjs";
 
 var library = {};
 let defaultColor = "#aad7f2";
@@ -806,26 +807,28 @@ function layout(
       shapesForLayout,
       progressCallback,
       placementsCallback,
+      inputID,
+      targetID,
       layoutConfig
     );
     return positionsPromise.then((positions) => {
-      let warning;
       if (positions.length == 0) {
-        warning = "Failed to place any parts. Are sheet dimensions right?";
+        throw new Error("Failed to place any parts. Are sheet dimensions right?");
       } else {
         let unplacedParts = shapesForLayout.length - positions.flat().length;
         if (unplacedParts > 0) {
-          warning =
+          const warning =
             unplacedParts +
             " parts are too big to fit on this sheet size. Failed layout for " +
             unplacedParts +
             " part(s)";
+            throw new Error(warning);
         }
       }
 
       //This does the actual layout of the parts. We want to break this out into it's own function which can be passed a list of positions
       applyLayout(targetID, inputID, positions, layoutConfig);
-      return warning;
+      return positions;
     });
   });
 }
@@ -914,7 +917,6 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
     };
     localId++;
     return newLeaf;
-
   });
 
   // Heuristic here is... for each part get it's minimum thickness. If the largest of these is
@@ -988,7 +990,7 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
     }
     let newLeaf = {
       geometry: [selected.geom],
-      id: localId,
+      id: leaf.id,
       referencePoint: selected.face.center,
       tags: leaf.tags,
       color: leaf.color,
@@ -999,10 +1001,9 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
     // it's been moved to the xy cutting plane. Otherwise we can get weird skewed projections
     // of the face shape.
     shapesForLayout.push({
-      id: localId,
+      id: leaf.id,
       shape: newLeaf.geometry[0].faces[selected.faceIndex],
     });
-    localId++;
 
     return newLeaf;
   });
@@ -1057,98 +1058,174 @@ function applyLayout(targetID, inputID, positions, layoutConfig) {
   });
 }
 
+// where shape is a list of {x: x, y: y} points
+// returns a Float64Array of the points as [x1, y1, x2, y2, ...]
+function asFloat64(shape) {
+  const points = new Float64Array(shape.length * 2 + 2);
+  let i = 0;
+  shape.forEach((point) => {
+    points[i] = point.x;
+    points[i + 1] = point.y;
+    i += 2;
+  });
+  points[i] = shape[0].x;
+  points[i + 1] = shape[0].y; // close the polygon
+
+  if (points.filter((c) => !Number.isFinite(c)).length > 0) {
+    throw new Error("NaN points in Float64Array from: " + JSON.stringify(shape)); 
+  }
+
+  return points;  
+}
+
 /**
- * Use the packing engine, note this is potentially time consuming step. FIXME: Can this be moved into a different worker?
+ * Use the packing engine, note this is potentially time consuming step.
  */
 function computePositions(
   shapesForLayout,
   progressCallback,
   placementsCallback,
+  inputID,
+  targetID,
   layoutConfig
 ) {
-  const populationSize = 5;
-  const nestingEngine = new AnyNest();
+  console.log("Starting to compute positions for shapes: ")
+  console.log(shapesForLayout);
   const tolerance = 0.1;
-  // include tolerance * 2 to ensure padding is the minimum spacing between parts.
-  const configWithDefaults = nestingEngine.config({
+  const maxRuntime = 5000; // 10 seconds
+  const config = {
+    curveTolerance: 0.3,
     spacing: layoutConfig.partPadding + tolerance * 2,
-    binSpacing: 0,
-    populationSize: populationSize,
-    exploreConcave: false, // we eventually want this to be true, but it's unsupported right now
-  });
-  nestingEngine.setBin(
-    FloatPolygon.fromPoints(
-      [
-        { x: 0, y: 0 },
-        { x: layoutConfig.width, y: 0 },
-        { x: layoutConfig.width, y: layoutConfig.height },
-        { x: 0, y: layoutConfig.height },
-      ],
-      "bin"
-    )
-  );
+    rotations: 12, // TODO: this should be higher, like at least 8? idk
+    populationSize: 5,
+    mutationRate: 50,
+    useHoles: true,
+  };
+  // from the mesh format of [x1, y1, z1, x2, y2, z2, ...] to FloatPolygon friendly format of
+  // [{x: x1, y: y1}, {x: x2, y: y2}...]
+  const polygons = shapesForLayout.map((shape) => {
+      let face = shape.shape;
+      const mesh = face
+        .clone()
+        .outerWire()
+        .meshEdges({ tolerance: 0.5, angularTolerance: 5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
+      return asFloat64(preparePoints(mesh, tolerance)); // TODO: it's not actually clear that this tolerance should be the same..
+    });
 
-  let parts = [];
+  const bin = asFloat64([
+    { x: 0, y: 0 },
+    { x: layoutConfig.width, y: 0 },
+    { x: layoutConfig.width, y: layoutConfig.height },
+    { x: 0, y: layoutConfig.height },
+  ]);
 
-  shapesForLayout.forEach((shape) => {
-    let face = shape.shape;
-    const mesh = face
-      .clone()
-      .outerWire()
-      .meshEdges({ tolerance: 0.5, angularTolerance: 5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
-    const points = preparePoints(mesh, tolerance); // TOOD: it's not actually clear that this tolerance should be the same..
-    parts.push(FloatPolygon.fromPoints(points, shape.id));
-  });
-  nestingEngine.setParts(parts);
+  console.log("bin: ");
+  console.log([
+    { x: 0, y: 0 },
+    { x: layoutConfig.width, y: 0 },
+    { x: layoutConfig.width, y: layoutConfig.height },
+    { x: 0, y: layoutConfig.height },
+  ]);
+  console.log(bin);
+  console.log("polygons: ");
+  console.log(polygons);
 
-  console.log(
-    "Starting nesting task with configuration: " +
-      JSON.stringify(configWithDefaults)
-  );
-  let callbackCounter = 0;
-  const targetGenerations = 5;
-  return new Promise((resolve, reject) => {
+
+  const packer = new PolygonPacker();
+
+  let progressCallbackCounter = 0;
+  const callbackFunction = (num) => {
+    // Forward to the UI thread along with a cancelation handle.
+    // Expect a call every 0.1 seconds for this method. The num argument seems to be
+    // effectively meaningless
+    progressCallbackCounter++;
+    progressCallback(
+      0.1 + 0.9 * (progressCallbackCounter * 100 / maxRuntime),
+      proxy(() => {
+        packer.stop();
+      })
+    );
+  }
+
+  const result = new Promise((resolve, reject) => {
+    // See https://github.com/yuriilychak/SVGnest/blob/6ed19cf44cb458b11d7ae4abf1868a513c53420a/packages/polygon-packer/src/types.ts#L31
+    let callbackCounter = 0;
+    let bestPlacement = null;
+    const displayCallback = (placementsData, placementPercentage, placedParts, partCount) => {
+      callbackCounter++;
+      if (placedParts > 0) {
+        console.log("new placement received. " + placedParts + " of " + partCount + " parts placed");
+        console.log("placement percentage: " + placementPercentage);
+
+        let placements = translatePlacements(placementsData);
+        console.log("Timeout reached. Stopping packer with final placements: ");
+        console.log(placements);
+ 
+        placementsCallback(placements); // I think this should only be called at the end?
+       // applyLayout(targetID, inputID, placements, layoutConfig);
+        bestPlacement = placements;
+      }
+    };
+  
     try {
-      nestingEngine.start(
-        (num) => {
-          const fraction = 1 / (targetGenerations * populationSize);
-          // start at 0.1 to acknowledge the rotation computations which happed above.
-          progressCallback(
-            0.1 + 0.9 * (num + callbackCounter) * fraction,
-            proxy(() => {
-              nestingEngine.stop();
-            })
-          );
-        },
-        (placement, utilization) => {
-          callbackCounter++;
-          if (callbackCounter >= targetGenerations * populationSize) {
-            console.log(
-              "nesting search completed " +
-                targetGenerations +
-                " generations. Final result: " +
-                JSON.stringify(placement)
-            );
-            placementsCallback(placement);
-            nestingEngine.stop();
-            resolve(placement);
-          }
-        }
+      packer.start(
+        config,
+        polygons,
+        bin,
+        callbackFunction,
+        displayCallback
       );
+  
+      setTimeout(() => {
+        console.log("Timeout reached. Stopping packer.");
+        if (bestPlacement != null) {
+          packer.stop();
+          resolve(bestPlacement);
+        } else {
+          packer.stop();
+          reject(new Error("Failed to find placements within the time limit."));
+        }
+      }, maxRuntime);
+  
     } catch (err) {
       console.log("error in nesting engine: " + err);
-      nestingEngine.stop();
+      packer.stop();
       reject(err);
     }
   });
+  return result;
+}
+
+/**
+ * 
+ * @param {} placement 
+ * @returns List of placements as expected by applyLayout
+ *  ie. a list of list of transforms, where each entry in the outer list is for 1 sheet's worth of placement
+ *  Each transform follows the structure: {id: "part_id", rotate: degrees, translate: {x: x, y: y}}
+ */
+
+function translatePlacements(placement) {
+  const placements = new PlacementWrapper(placement.placementsData, placement.angleSplit);
+
+  const result = [];
+  for (let i = 0; i < placements.placementCount; i++) {
+    const sheet = []
+    placements.bindPlacement(i);
+    for (let j = 0; j < placements.size; j++) {
+      placements.bindData(j)
+      sheet.push({"id": placements.id, "rotate": placements.rotation, "translate": {"x": placements.x, "y": placements.y}});
+    }
+    result.push(sheet);
+  }
+
+  return result;
 }
 
 // from the mesh format of [x1, y1, z1, x2, y2, z2, ...] to FloatPolygon friendly format of
 // [{x: x1, y: y1}, {x: x2, y: y2}...]
 function preparePoints(mesh, tolerance) {
   // Unfortunately the "edges" of this mesh aren't always in sequential order. Here we re-sort them so we can
-  // pass the points into FloatPolygon in a looping order, ie, starting at one point and looping around the
-  // perimiter of the shape.
+  // provide them in a winding order, ie, starting at one point and winding around the perimeter of the shape.
 
   // create structure for lookup of line segments by start point or end point
   let edgeStarts = [];

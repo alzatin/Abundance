@@ -178,7 +178,7 @@ export default class CutLayout extends Atom {
         return;
       }
       
-      GlobalVariables.cad
+     /* GlobalVariables.cad
         .displayLayout(
           this.uniqueID,
           inputID,
@@ -199,6 +199,7 @@ export default class CutLayout extends Atom {
           this.processing = false;
         })
         .catch(this.alertingErrorHandler());
+      */
     }
   }
 
@@ -207,6 +208,28 @@ export default class CutLayout extends Atom {
    */
   updateValueButton() {
     super.updateValue();
+/*    const config = {
+      curveTolerance: 0.3,
+      spacing: 0.25,
+      rotations: 4, // TODO: this should be higher, like at least 8? idk
+      populationSize: 5,
+      mutationRate: 50,
+      useHoles: true,
+    };
+    const polygons = [Float64Array.from([0.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0])]
+    const bin = Float64Array.from([0.0,0.0,0.0,10.0,10.0,10.0,10.0,0.0,0.0,0.0])
+    const packer = new PolygonPacker();
+    packer.start(
+      config,
+      polygons,
+      bin,
+      (p) => {console.log("progress", p)},
+      (placements) => {
+        console.log("placements", placements);
+        this.placements = placements;
+      });
+*/
+
 
     if (this.inputs.every((x) => x.ready)) {
       if (this.cancelationHandle) {
@@ -231,10 +254,12 @@ export default class CutLayout extends Atom {
           inputID,
           proxy((progress, cancelationHandle) => {
             this.progress = progress;
+            console.log("progress", progress);
             this.cancelationHandle = cancelationHandle;
           }),
           proxy((placements) => {
-            this.placements = placements[0];
+            console.log("placements", placements);
+            this.placements = placements;
           }),
           {
             width: sheetWidth,
@@ -242,11 +267,11 @@ export default class CutLayout extends Atom {
             partPadding: partPadding,
             units: GlobalVariables.topLevelMolecule.units[GlobalVariables.topLevelMolecule.unitsKey],
           })
-        .then((warning) => {
+        .then((positions) => {
+          console.log("layout future has resolved with:");
+          console.log(positions);
+          this.positions = positions;
           this.basicThreadValueProcessing();
-          if (warning != undefined) {
-            this.setAlert(warning);
-          }
           this.progress = 1.0;
           this.cancelationHandle = undefined;
           this.processing = false;
@@ -265,17 +290,47 @@ export default class CutLayout extends Atom {
           this.updateValueButton();
       });
 
+      const sheetWidth = this.findIOValue("Sheet Width");
+
+
+      let prepare_label = (sheet, index, totalsheets) => {
+        if (totalsheets > 1) {
+          return " " + sheet + "." + index;
+        }
+        else {
+          return " " + index
+        }
+      };
+
+      let parse_label = (label) => {
+        if (label.includes('.')) {
+          const parts = label.split('.');
+          return {
+            sheet: parseInt(parts[0], 10),
+            index: parseInt(parts[1], 10)
+          };
+        } else {
+          return {
+            sheet: 0,
+            index: parseInt(label, 10)
+          };
+        }
+      };
+
+      /*
       //Expose the stored positions
-      this.placements.forEach((placement, index) => {
-        inputParams[this.uniqueID + "position" + index] = {
-          value: { x: placement.translate.x, y: placement.translate.y, z: placement.rotate },
-          label: " " + index,
-          onChange: (value, index) => {
-              const match = index.match(/position(\d+)/);
-              const indexNumber = match ? parseInt(match[1], 10) : null;
-          
-              if (indexNumber !== null) {
-                  const placement = this.placements[indexNumber];
+      this.placements.forEach((sheet, index) => {
+        sheet.forEach((placement, part_num) => {
+          inputParams[this.uniqueID + "position" + index] = {
+            value: { x: placement.translate.x, y: placement.translate.y + sheetWidth * index, z: placement.rotate },
+            label: prepare_label(index, part_num, sheet.length),
+            onChange: (value, index) => {
+                const match = index.match(/position(\d+)/);
+                const indexNumber = match ? parseInt(match[1], 10) : null;
+
+                if (indexNumber != null) {
+                  const placement = this.placements[indexNumber / this.placements.length][indexNumber % this.placements.length];
+                  //Update the placement with the new value];
                   //If anything has changed we need to update the value and recompute
                   if (placement.translate.x !== value.x || placement.translate.y !== value.y || placement.rotate !== value.z) {
                       placement.translate.x = value.x;
@@ -284,10 +339,11 @@ export default class CutLayout extends Atom {
           
                       this.updateValue();
                   }
-              }
-          },
-        };
-      });
+                }
+            },
+          }
+        });
+      });*/
 
 
       return inputParams;
