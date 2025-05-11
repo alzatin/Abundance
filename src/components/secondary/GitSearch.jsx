@@ -1,79 +1,72 @@
 import React, { useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
-import topics from "../../js/maslowTopics.js";
+import { useQuery } from "react-query";
+import useDebounce from "../../hooks/useDebounce.js";
 
 function GitSearch({
   searchingGitHub,
   setSearchingGitHub,
-  gitRepos,
-  setGitRepos,
+  search,
+  setSearch,
   isHovering,
   setIsHovering,
 }) {
   let searchBarValue = "";
-  var [loadingGit, setLoadingGit] = useState(false);
   const [lastKey, setLastKey] = useState("");
   const [yearShow, setYearShow] = useState("2024");
   const [panelItem, setPanelItem] = useState({});
-  const maslowTopic = useRef(null);
 
+  //const [search, setSearch] = useState("");
+  const debouncedSearchTerm = useDebounce(search, 200);
+
+  let lastKeyQuery = lastKey
+    ? "&lastKey=" + lastKey.repoName + "~" + lastKey.owner
+    : "&lastKey";
+
+  let searchQuery;
+  if (searchBarValue != "") {
+    searchQuery = "&query=" + searchBarValue + "&yearShow=" + yearShow;
+  } else {
+    searchQuery = "&query" + "&yearShow=" + yearShow;
+  }
+  // let query = "attribute=searchField" + searchQuery + "&user" + lastKeyQuery;
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["search", debouncedSearchTerm],
+    queryFn: () => {
+      if (debouncedSearchTerm) {
+        return fetch(
+          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/scan-search-abundance?" +
+            "attribute=searchField" +
+            "&query=" +
+            debouncedSearchTerm +
+            "&yearShow=" +
+            yearShow +
+            "&user" +
+            lastKeyQuery
+        ).then((res) => res.json());
+      }
+      return undefined;
+    },
+  });
   /**
    * Runs when a menu option is clicked to place a new atom from searching on GitHub.
    * @param {object} ev - The event triggered by clicking on a menu item.
    */
   function placeGitHubMolecule(e, item) {
+    console.log(data);
     GlobalVariables.currentMolecule.loadGithubMoleculeByName(item);
     setSearchingGitHub(false);
-    setGitRepos([]);
+    setSearch("");
     setIsHovering(false);
   }
-  // conditional query for maslow projects
-  const searchGitHub = function () {
-    const repoSearchRequest = async () => {
-      let lastKeyQuery = lastKey
-        ? "&lastKey=" + lastKey.repoName + "~" + lastKey.owner
-        : "&lastKey";
 
-      let searchQuery;
-      if (searchBarValue != "") {
-        searchQuery = "&query=" + searchBarValue + "&yearShow=" + yearShow;
-      } else {
-        searchQuery = "&query" + "&yearShow=" + yearShow;
-      }
-      // gitsearch searches by repoName and does not specify user, we could specify last key if we wanted to paginate
-
-      let query =
-        "attribute=searchField" + searchQuery + "&user" + lastKeyQuery;
-      const scanApiUrl =
-        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/scan-search-abundance?" +
-        query;
-
-      let awsRepos = await fetch(scanApiUrl);
-
-      return awsRepos.json();
-    };
-    repoSearchRequest().then((result) => {
-      let resultingRepos = [];
-      result["repos"].forEach((repo) => {
-        resultingRepos.push(repo);
-      });
-      setGitRepos(resultingRepos);
-      setLoadingGit(false);
-    });
-  };
-
-  const handleKeyDown = function (e) {
-    if (e.key === "Enter") {
-      setLoadingGit(true);
-      searchGitHub();
-    }
-  };
   const handleChange = function (e) {
     searchBarValue = e.target.value.toLowerCase();
+    setSearch(e.target.value.toLowerCase());
   };
 
   const handleMouseOver = (item, key) => {
-    console.log(item);
     setPanelItem(item);
     setIsHovering(true);
   };
@@ -83,18 +76,29 @@ function GitSearch({
   };
 
   const GitList = function () {
-    return gitRepos.map((item, key) => {
-      return (
-        <li
-          onClick={(e) => placeGitHubMolecule(e, item)}
-          key={item.id}
-          onMouseEnter={() => handleMouseOver(item, key)}
-          onMouseLeave={() => handleMouseOut()}
-        >
-          {item.repoName}
-        </li>
-      );
-    });
+    if (isLoading) {
+      return <li>Loading...</li>;
+    }
+    if (isError) {
+      return <li>Error loading data</li>;
+    }
+    if (data !== undefined) {
+      if (data.repos.length === 0) {
+        return <li>No results found</li>;
+      }
+      return data.repos.map((item, key) => {
+        return (
+          <li
+            onClick={(e) => placeGitHubMolecule(e, item)}
+            key={item.id}
+            onMouseEnter={() => handleMouseOver(item, key)}
+            onMouseLeave={() => handleMouseOut()}
+          >
+            {item.repoName}
+          </li>
+        );
+      });
+    }
   };
 
   return (
@@ -116,8 +120,6 @@ function GitSearch({
               type="text"
               id="menuInput"
               autoFocus
-              //onBlur="value=''"
-              onKeyDown={handleKeyDown}
               onChange={handleChange}
               placeholder="Search for atom.."
               className="menu_search_canvas"

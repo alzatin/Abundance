@@ -17,6 +17,7 @@ import RunMode from "./components/main-routes/RunMode.jsx";
 import CreateMode from "./components/main-routes/CreateMode.jsx";
 import cadWorker from "./worker.js?worker";
 import { button } from "leva";
+import { QueryClient, QueryClientProvider } from "react-query";
 
 /*Import style scripts*/
 import "./styles/maslowCreate.css";
@@ -24,6 +25,8 @@ import "./styles//menuIcons.css";
 import "./styles//login.css";
 import "./styles//codemirror.css";
 import { e } from "mathjs";
+
+const queryClient = new QueryClient();
 /**
  * The octokit instance which allows authenticated interaction with GitHub.
  * @type {object}
@@ -74,10 +77,8 @@ export default function ReplicadApp() {
     }
   };
   const loadingDotsNone = () => {
-    console.log("loading dots none");
     const loadingDots = document.querySelector(".loading");
     if (loadingDots) {
-      console.log("loading dots none exist");
       loadingDots.style.display = "none";
     }
   };
@@ -191,71 +192,73 @@ export default function ReplicadApp() {
   /* Toggle button to switch between run and create modes  */
 
   return (
-    <main>
-      <Routes>
-        <Route
-          exact
-          path=""
-          element={
-            <LoginMode
-              {...{
-                setIsLoggedIn,
-                isloggedIn,
-                authorizedUserOcto,
-                setAuthorizedUserOcto,
-                exportPopUp,
-                setExportPopUp,
-              }}
-            />
-          }
-        />
+    <QueryClientProvider client={queryClient}>
+      <main>
+        <Routes>
+          <Route
+            exact
+            path=""
+            element={
+              <LoginMode
+                {...{
+                  setIsLoggedIn,
+                  isloggedIn,
+                  authorizedUserOcto,
+                  setAuthorizedUserOcto,
+                  exportPopUp,
+                  setExportPopUp,
+                }}
+              />
+            }
+          />
 
-        <Route
-          path="/:owner/:repoName"
-          element={
-            <CreateMode
-              {...{
-                activeAtom,
-                setActiveAtom,
-                authorizedUserOcto,
-                loadProject,
-                exportPopUp,
-                setExportPopUp,
-                shortCutsOn,
-                setShortCuts,
-                mesh,
-                setMesh,
-                size,
-                cad,
-                wireMesh,
-                setWireMesh,
-                outdatedMesh,
-                setOutdatedMesh,
-              }}
-            />
-          }
-        />
-        <Route
-          path="/run/:owner/:repoName"
-          element={
-            <RunMode
-              {...{
-                isloggedIn,
-                setActiveAtom,
-                activeAtom: GlobalVariables.currentMolecule,
-                authorizedUserOcto,
-                loadProject,
-                mesh,
-                wireMesh,
-                setWireMesh,
-                outdatedMesh,
-                setOutdatedMesh,
-              }}
-            />
-          }
-        />
-        <Route path="/redirect" element={<div>redirect working</div>} />
-      </Routes>
-    </main>
+          <Route
+            path="/:owner/:repoName"
+            element={
+              <CreateMode
+                {...{
+                  activeAtom,
+                  setActiveAtom,
+                  authorizedUserOcto,
+                  loadProject,
+                  exportPopUp,
+                  setExportPopUp,
+                  shortCutsOn,
+                  setShortCuts,
+                  mesh,
+                  setMesh,
+                  size,
+                  cad,
+                  wireMesh,
+                  setWireMesh,
+                  outdatedMesh,
+                  setOutdatedMesh,
+                }}
+              />
+            }
+          />
+          <Route
+            path="/run/:owner/:repoName"
+            element={
+              <RunMode
+                {...{
+                  isloggedIn,
+                  setActiveAtom,
+                  activeAtom: GlobalVariables.currentMolecule,
+                  authorizedUserOcto,
+                  loadProject,
+                  mesh,
+                  wireMesh,
+                  setWireMesh,
+                  outdatedMesh,
+                  setOutdatedMesh,
+                }}
+              />
+            }
+          />
+          <Route path="/redirect" element={<div>redirect working</div>} />
+        </Routes>
+      </main>
+    </QueryClientProvider>
   );
 }
