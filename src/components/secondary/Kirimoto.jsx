@@ -9,7 +9,7 @@ const KiriMotoIntegration = ({ activeAtom }) => {
   useEffect(() => {
     // Dynamically load the Kiri:Moto script
     const script = document.createElement("script");
-    script.src = "https://grid.space/code/engine.js"; // Kiri:Moto CDN
+    script.src = "https://grid.space/code/engine.js"; // this comes from the grid.space Kiri:Moto API -- https://docs.grid.space/projects/kiri-moto/apis
     script.async = true;
     script.onload = () => {
       console.log("Kiri:Moto script loading");
