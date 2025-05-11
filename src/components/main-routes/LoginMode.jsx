@@ -611,7 +611,6 @@ const ShowProjects = ({
           setApiStatus(loadingMessages.noProjects);
           forkDummyProject(authorizedUserOcto).then(() => {
             repoSearchRequest().then((result) => {
-              //setBrowsing(true);
               setStateLoaded(result["repos"]);
             });
           });

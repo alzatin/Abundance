@@ -8,7 +8,7 @@ import LowerHalf from "./lowerHalf.jsx";
 import ParamsEditor from "../secondary/ParameterEditor.jsx";
 import CodeWindow from "../secondary/codeWindow.jsx";
 import { useAuth0 } from "@auth0/auth0-react";
-
+import KiriMotoIntegration from "../secondary/Kirimoto.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -492,6 +492,7 @@ function CreateMode({
           />
 
           <CodeWindow {...{ activeAtom }} />
+          <KiriMotoIntegration {...{ activeAtom }} />
           <input
             type="file"
             id="fileLoaderInput"

@@ -244,6 +244,16 @@ export default class Molecule extends Atom {
       });
     });
 
+    const gcodeAtoms = this.nodesOnTheScreen.filter(
+      (node) => node.atomType === "Gcode"
+    );
+    // this is wrong and only a placeholder for kiri forum questions
+    gcodeAtoms.forEach((atom) => {
+      exportParams[`Download Gcode – ${this.uniqueID}`] = button(() =>
+        atom.clickKiriButton()
+      );
+    });
+
     return exportParams;
   }
 
