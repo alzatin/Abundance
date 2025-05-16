@@ -801,7 +801,9 @@ function layout(
   layoutConfig
 ) {
   return started.then(() => {
-    var shapesForLayout = rotateForLayout(targetID, inputID, layoutConfig);
+    let rotateID = generateUniqueID();
+
+    var shapesForLayout = rotateForLayout(rotateID, inputID, layoutConfig);
 
     let positionsPromise = computePositions(
       shapesForLayout,
@@ -827,7 +829,9 @@ function layout(
       }
 
       //This does the actual layout of the parts. We want to break this out into it's own function which can be passed a list of positions
-      applyLayout(targetID, inputID, positions, layoutConfig);
+      console.log("final (?) layout called with:");
+      console.log(positions);
+      applyLayout(targetID, rotateID, positions, layoutConfig);
       return positions;
     });
   });
@@ -837,9 +841,10 @@ function layout(
  * Lay the input geometry flat and apply the transformations to display it
  */
 function displayLayout(targetID, inputID, positions, layoutConfig) {
-  rotateForLayout(targetID, inputID, layoutConfig);
+  let rotateID = generateUniqueID();
+  rotateForLayout(rotateID, inputID, layoutConfig);
 
-  applyLayout(targetID, inputID, positions, layoutConfig);
+  applyLayout(targetID, rotateID, positions, layoutConfig);
 }
 
 
@@ -1014,7 +1019,9 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
  * Apply the transformations to the geometry to apply the layout
  */
 function applyLayout(targetID, inputID, positions, layoutConfig) {
-  library[targetID] = actOnLeafs(library[targetID], (leaf) => {
+  console.log("Applying layout");
+  console.log(positions);
+  library[targetID] = actOnLeafs(library[inputID], (leaf) => {
     let transform, index;
     for (var i = 0; i < positions.length; i++) {
       let candidates = positions[i].filter(
@@ -1054,6 +1061,7 @@ function applyLayout(targetID, inputID, positions, layoutConfig) {
       color: leaf.color,
       plane: leaf.plane,
       bom: leaf.bom,
+      id: leaf.id,
     };
   });
 }
@@ -1162,7 +1170,6 @@ function computePositions(
         console.log(placements);
  
         placementsCallback(placements); // I think this should only be called at the end?
-       // applyLayout(targetID, inputID, placements, layoutConfig);
         bestPlacement = placements;
       }
     };
@@ -1206,6 +1213,7 @@ function computePositions(
 
 function translatePlacements(placement) {
   const placements = new PlacementWrapper(placement.placementsData, placement.angleSplit);
+  console.log("placement score: " + placement.placementsData[0])
 
   const result = [];
   for (let i = 0; i < placements.placementCount; i++) {

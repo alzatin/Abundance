@@ -178,11 +178,11 @@ export default class CutLayout extends Atom {
         return;
       }
       
-     /* GlobalVariables.cad
+      GlobalVariables.cad
         .displayLayout(
           this.uniqueID,
           inputID,
-          [this.placements],
+          this.placements,
           {
             width: sheetWidth,
             height: sheetHeight,
@@ -199,7 +199,7 @@ export default class CutLayout extends Atom {
           this.processing = false;
         })
         .catch(this.alertingErrorHandler());
-      */
+      
     }
   }
 
@@ -260,6 +260,7 @@ export default class CutLayout extends Atom {
           proxy((placements) => {
             console.log("placements", placements);
             this.placements = placements;
+            this.updateValue();
           }),
           {
             width: sheetWidth,
@@ -295,33 +296,19 @@ export default class CutLayout extends Atom {
 
       let prepare_label = (sheet, index, totalsheets) => {
         if (totalsheets > 1) {
-          return " " + sheet + "." + index;
+          return "sheet " + sheet + " p" + index;
         }
         else {
           return " " + index
         }
       };
 
-      let parse_label = (label) => {
-        if (label.includes('.')) {
-          const parts = label.split('.');
-          return {
-            sheet: parseInt(parts[0], 10),
-            index: parseInt(parts[1], 10)
-          };
-        } else {
-          return {
-            sheet: 0,
-            index: parseInt(label, 10)
-          };
-        }
-      };
-
-      /*
+      
       //Expose the stored positions
+      let part_counter = 0;
       this.placements.forEach((sheet, index) => {
         sheet.forEach((placement, part_num) => {
-          inputParams[this.uniqueID + "position" + index] = {
+          inputParams[this.uniqueID + "position" + part_counter] = {
             value: { x: placement.translate.x, y: placement.translate.y + sheetWidth * index, z: placement.rotate },
             label: prepare_label(index, part_num, sheet.length),
             onChange: (value, index) => {
@@ -329,7 +316,7 @@ export default class CutLayout extends Atom {
                 const indexNumber = match ? parseInt(match[1], 10) : null;
 
                 if (indexNumber != null) {
-                  const placement = this.placements[indexNumber / this.placements.length][indexNumber % this.placements.length];
+                  const placement = this.placements.flat()[indexNumber];
                   //Update the placement with the new value];
                   //If anything has changed we need to update the value and recompute
                   if (placement.translate.x !== value.x || placement.translate.y !== value.y || placement.rotate !== value.z) {
@@ -342,8 +329,9 @@ export default class CutLayout extends Atom {
                 }
             },
           }
+          part_counter++;
         });
-      });*/
+      });
 
 
       return inputParams;
