@@ -814,6 +814,16 @@ function layout(
       layoutConfig
     );
     return positionsPromise.then((positions) => {
+      //This does the actual layout of the parts. We want to break this out into it's own function which can be passed a list of positions
+      applyLayout(targetID, rotateID, positions, layoutConfig);
+
+
+      // TODO: tristan, instead of throwing these here, return the full suite of
+      // result which includes provided parts and placed part counts. Then all error warnings
+      // can be handled in the UI and can be re-rendered from serialized state
+      // this will require invisibly storing the number of input parts.
+
+      // These are soft failures, issue after the result has been applied
       if (positions.length == 0) {
         throw new Error("Failed to place any parts. Are sheet dimensions right?");
       } else {
@@ -828,10 +838,6 @@ function layout(
         }
       }
 
-      //This does the actual layout of the parts. We want to break this out into it's own function which can be passed a list of positions
-      console.log("final (?) layout called with:");
-      console.log(positions);
-      applyLayout(targetID, rotateID, positions, layoutConfig);
       return positions;
     });
   });
@@ -1117,7 +1123,9 @@ function computePositions(
         .clone()
         .outerWire()
         .meshEdges({ tolerance: 0.5, angularTolerance: 5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
-      return asFloat64(preparePoints(mesh, tolerance)); // TODO: it's not actually clear that this tolerance should be the same..
+      const temp = preparePoints(mesh, tolerance);
+      console.log(temp);
+      return asFloat64(temp); // TODO: it's not actually clear that this tolerance should be the same..
     });
 
   const bin = asFloat64([
@@ -1169,7 +1177,7 @@ function computePositions(
         console.log("Timeout reached. Stopping packer with final placements: ");
         console.log(placements);
  
-        placementsCallback(placements); // I think this should only be called at the end?
+        placementsCallback(placements);
         bestPlacement = placements;
       }
     };
