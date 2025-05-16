@@ -260,7 +260,9 @@ export default class CutLayout extends Atom {
           proxy((placements) => {
             console.log("placements", placements);
             this.placements = placements;
+            this.basicThreadValueProcessing();
             this.updateValue();
+
           }),
           {
             width: sheetWidth,
@@ -272,12 +274,15 @@ export default class CutLayout extends Atom {
           console.log("layout future has resolved with:");
           console.log(positions);
           this.positions = positions;
+          
           this.basicThreadValueProcessing();
+        })
+        .catch(this.alertingErrorHandler())
+        .finally(() => {
           this.progress = 1.0;
           this.cancelationHandle = undefined;
           this.processing = false;
-        })
-        .catch(this.alertingErrorHandler());
+        });
     }
   }
 
