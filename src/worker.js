@@ -856,7 +856,16 @@ function displayLayout(targetID, inputID, positions, layoutConfig) {
 
 
 /**
- * Rotate shapes to be placed on their most cuttable face (basically lay them flat)
+ * Rotates and moves all leafs into an orientation which can be fed into
+ * the nesting algorithm.
+ * 
+ * Specific criteria of this pre-layout step are as follows:
+ * 1) rotate the part such that the best possible face is aligned with the XY plane.
+ *    Criteria for the best face are as follows (in order):
+ *    a) face must be flat (eg: not the edge of a cylinder)
+ *    b) face must have no protrusions below the XY plane
+ *    c) face must be within the (inferred) thickness of the material
+ *    d) face should have minimal number of interior voids and have the largest bounding box
  */
 function rotateForLayout(targetID, inputID, layoutConfig) {
   var THICKNESS_TOLLERANCE = 0.001;
@@ -1004,8 +1013,18 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
       console.log(scores);
       selected = candidates[scores[0].candidate_index];
     }
+
+    // move so center of face is at (0, 0, 0)
+    const newGeom = selected.geom
+      .clone()
+      .translate(
+        -1 * selected.face.center.x,
+        -1 * selected.face.center.y,
+        0
+      );
+
     let newLeaf = {
-      geometry: [selected.geom],
+      geometry: [newGeom],
       id: leaf.id,
       referencePoint: selected.face.center,
       tags: leaf.tags,
@@ -1118,7 +1137,7 @@ function computePositions(
     rotations: 12, // TODO: this should be higher, like at least 8? idk
     populationSize: 5,
     mutationRate: 50,
-    useHoles: true,
+    useHoles: false,
   };
   // from the mesh format of [x1, y1, z1, x2, y2, z2, ...] to FloatPolygon friendly format of
   // [{x: x1, y: y1}, {x: x2, y: y2}...]
