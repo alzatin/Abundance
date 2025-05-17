@@ -1130,13 +1130,13 @@ function computePositions(
   console.log("Starting to compute positions for shapes: ")
   console.log(shapesForLayout);
   const tolerance = 0.1;
-  const maxRuntime = 5000; // 10 seconds
+  const maxRuntime = 15000; // 10 seconds
   const config = {
     curveTolerance: 0.3,
     spacing: layoutConfig.partPadding + tolerance * 2,
     rotations: 12, // TODO: this should be higher, like at least 8? idk
-    populationSize: 5,
-    mutationRate: 50,
+    populationSize: 8,
+    mutationRate: 25,
     useHoles: false,
   };
   // from the mesh format of [x1, y1, z1, x2, y2, z2, ...] to FloatPolygon friendly format of

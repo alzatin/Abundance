@@ -159,6 +159,15 @@ export default class CutLayout extends Atom {
       GlobalVariables.c.fill();
     }
   }
+
+  handleNewPlacements(placements) {
+    console.log("placements", placements);
+    this.placements = placements;
+    this.basicThreadValueProcessing();
+    this.updateValue();
+    this.createLevaInputs();
+  }
+
   /**
    * We only want the layout to update when the button is pressed not when the inputs update so we block the regular update value behavior
    */
@@ -212,28 +221,6 @@ export default class CutLayout extends Atom {
    */
   updateValueButton() {
     super.updateValue();
-/*    const config = {
-      curveTolerance: 0.3,
-      spacing: 0.25,
-      rotations: 4, // TODO: this should be higher, like at least 8? idk
-      populationSize: 5,
-      mutationRate: 50,
-      useHoles: true,
-    };
-    const polygons = [Float64Array.from([0.0,0.0,0.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0])]
-    const bin = Float64Array.from([0.0,0.0,0.0,10.0,10.0,10.0,10.0,0.0,0.0,0.0])
-    const packer = new PolygonPacker();
-    packer.start(
-      config,
-      polygons,
-      bin,
-      (p) => {console.log("progress", p)},
-      (placements) => {
-        console.log("placements", placements);
-        this.placements = placements;
-      });
-*/
-
 
     if (this.inputs.every((x) => x.ready)) {
       if (this.cancelationHandle) {
@@ -261,13 +248,7 @@ export default class CutLayout extends Atom {
             console.log("progress", progress);
             this.cancelationHandle = cancelationHandle;
           }),
-          proxy((placements) => {
-            console.log("placements", placements);
-            this.placements = placements;
-            this.basicThreadValueProcessing();
-            this.updateValue();
-
-          }),
+          proxy((placements) => {this.handleNewPlacements(placements)}),
           {
             width: sheetWidth,
             height: sheetHeight,
@@ -275,11 +256,7 @@ export default class CutLayout extends Atom {
             units: GlobalVariables.topLevelMolecule.units[GlobalVariables.topLevelMolecule.unitsKey],
           })
         .then((positions) => {
-          console.log("layout future has resolved with:");
-          console.log(positions);
-          this.positions = positions;
-          
-          this.basicThreadValueProcessing();
+          this.handleNewPlacements(positions);
         })
         .catch(this.alertingErrorHandler())
         .finally(() => {
