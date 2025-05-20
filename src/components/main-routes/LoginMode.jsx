@@ -622,20 +622,6 @@ const ShowProjects = ({
     await forkProject(authorizedUserOcto, "alzatin", "my-first-project");
   };
 
-  useEffect(() => {
-    /* aborting previous request */
-    if (controllerRef.current) {
-      controllerRef.current.abort();
-    }
-    controllerRef.current = new AbortController();
-    const signal = controllerRef.current.signal;
-    // setLastKey(result["lastKey"]);
-    /*forkDummyProject(authorizedUserOcto).then(() => {
-            repoSearchRequest().then((result) => {
-              setStateLoaded(result["repos"]);
-            });*/
-  }, [search, pageNumber, projectToShow, yearShow]);
-
   const handleSearchChange = (e) => {
     //searchBarValue = e.target.value.toLowerCase();
     setSearchBarValue(e.target.value);
