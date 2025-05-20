@@ -93,15 +93,9 @@ const InitialLog = ({ setNoUserBrowsing }) => {
 };
 
 // adds individual projects after API call
-const AddProject = ({
-  setYearShow,
-  projectsLoaded,
-  authorizedUserOcto,
-  projectToShow,
-}) => {
+const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
   const [browseType, setBrowseType] = useState("thumb");
   const nodes = projectsLoaded ? projectsLoaded["repos"] : [];
-  console.log(nodes);
   let initialOrder =
     projectToShow == "featured"
       ? "byStars"
@@ -555,7 +549,7 @@ const ShowProjects = ({
   });
 
   useEffect(() => {
-    setProjectsToShow(user ? "all" : "featured");
+    setProjectsToShow(user ? "owned" : "featured");
   }, [GlobalVariables.currentUser]);
 
   const forkProject = async function (authorizedUserOcto, owner, repo) {
@@ -629,37 +623,17 @@ const ShowProjects = ({
   };
 
   useEffect(() => {
-    const repoSearchRequest = async () => {
-      /* aborting previous request */
-      if (controllerRef.current) {
-        controllerRef.current.abort();
-      }
-      controllerRef.current = new AbortController();
-      const signal = controllerRef.current.signal;
-    };
-
-    repoSearchRequest(projectToShow).then((result) => {
-      console.log(result);
-      //setStateLoaded(result);
-      /* setStateLoaded([]);
-        setApiStatus(loadingMessages.loading);
-        if (
-          (result["repos"].length == 0 && projectToShow == "recents") ||
-          projectToShow == "owned"
-        ) {
-          setApiStatus(loadingMessages.noProjects);
-          forkDummyProject(authorizedUserOcto).then(() => {
+    /* aborting previous request */
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+    }
+    controllerRef.current = new AbortController();
+    const signal = controllerRef.current.signal;
+    // setLastKey(result["lastKey"]);
+    /*forkDummyProject(authorizedUserOcto).then(() => {
             repoSearchRequest().then((result) => {
               setStateLoaded(result["repos"]);
-            });
-          });
-        } else if (result["repos"].length == 0) {
-          setApiStatus(loadingMessages.noProjects);
-        } else {
-          setStateLoaded(result["repos"]);
-          setLastKey(result["lastKey"]);
-        }*/
-    });
+            });*/
   }, [search, pageNumber, projectToShow, yearShow]);
 
   const handleSearchChange = (e) => {
@@ -775,9 +749,7 @@ const ShowProjects = ({
 
   const PageComponent = (
     <>
-      {isLoading ? (
-        <p> nope </p>
-      ) : (
+      {isLoading ? null : (
         <div
           style={{
             display: "flex",
