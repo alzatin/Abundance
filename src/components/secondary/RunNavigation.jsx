@@ -469,28 +469,34 @@ function RunNavigation({ authorizedUserOcto, activeAtom }) {
         >
           {shareSvg}
         </button>
-        <button
-          className=" run-navigation-button"
-          id="Fork-button"
-          onClick={() => {
-            authorizedUserOcto ? forkProject(authorizedUserOcto) : loginFork();
-          }}
-        >
-          {forkSvg}
-        </button>
-        <button
-          className=" run-navigation-button"
-          id="Star-button"
-          onClick={() => {
-            authorizedUserOcto && !starred
-              ? likeProject(authorizedUserOcto)
-              : authorizedUserOcto && starred
-              ? unlikeProject(authorizedUserOcto)
-              : loginLike();
-          }}
-        >
-          {starSvg}
-        </button>
+        {authorizedUserOcto ? (
+          <button
+            className=" run-navigation-button"
+            id="Fork-button"
+            onClick={() => {
+              authorizedUserOcto
+                ? forkProject(authorizedUserOcto)
+                : loginFork();
+            }}
+          >
+            {forkSvg}
+          </button>
+        ) : null}
+        {authorizedUserOcto ? (
+          <button
+            className=" run-navigation-button"
+            id="Star-button"
+            onClick={() => {
+              authorizedUserOcto && !starred
+                ? likeProject(authorizedUserOcto)
+                : authorizedUserOcto && starred
+                ? unlikeProject(authorizedUserOcto)
+                : loginLike();
+            }}
+          >
+            {starSvg}
+          </button>
+        ) : null}
         <button
           onClick={() => {
             setDialog("export");
