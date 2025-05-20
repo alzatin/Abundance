@@ -449,7 +449,13 @@ const ShowProjects = ({
         "&user" +
         lastKeyQuery,
       { signal }
-    ).then((res) => res.json());
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("lastkey");
+        console.log(data["lastKey"]);
+        return data;
+      });
   };
   const fetchUserRepos = async ({ signal }) => {
     return fetch(
