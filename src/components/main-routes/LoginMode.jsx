@@ -4,8 +4,11 @@ import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import { Link } from "react-router-dom";
 import globalvariables from "../../js/globalvariables.js";
 import NewProjectPopUp from "../secondary/NewProjectPopUp.jsx";
+import { useQuery } from "react-query";
+import useDebounce from "../../hooks/useDebounce.js";
 
 import { useAuth0 } from "@auth0/auth0-react";
+import { all } from "mathjs";
 
 /**
  * The octokit instance which allows interaction with GitHub.
@@ -92,12 +95,13 @@ const InitialLog = ({ setNoUserBrowsing }) => {
 // adds individual projects after API call
 const AddProject = ({
   setYearShow,
-  nodes,
+  projectsLoaded,
   authorizedUserOcto,
   projectToShow,
 }) => {
   const [browseType, setBrowseType] = useState("thumb");
-
+  const nodes = projectsLoaded ? projectsLoaded["repos"] : [];
+  console.log(nodes);
   let initialOrder =
     projectToShow == "featured"
       ? "byStars"
@@ -434,27 +438,125 @@ const ShowProjects = ({
   loginWithRedirect,
   setNoUserBrowsing,
 }) => {
-  const loadingMessages = {
-    loading: "Loading projects...",
-    error: "Error",
-    noProjects: "No projects found",
-  };
-
-  useEffect(() => {
-    setProjectsToShow(user ? "recents" : "featured");
-  }, [GlobalVariables.currentUser]);
-
+  const [search, setSearch] = useState("");
+  const debouncedSearchTerm = useDebounce(search, 200);
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
-
-  const [projectsLoaded, setStateLoaded] = useState([]);
   const [lastKey, setLastKey] = useState("");
   const [pageNumber, setPageNumber] = useState(0);
   const [searchBarValue, setSearchBarValue] = useState("");
   const [yearShow, setYearShow] = useState(currentYear);
-  const [apiStatus, setApiStatus] = useState(loadingMessages.loading);
 
   const controllerRef = useRef(new AbortController());
+
+  let lastKeyQuery = lastKey
+    ? "&lastKey=" + lastKey.repoName + "~" + lastKey.owner
+    : "&lastKey";
+
+  const fetchAll = async ({ signal }) => {
+    return fetch(
+      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/scan-search-abundance?" +
+        "attribute=searchField" +
+        "&query=" +
+        debouncedSearchTerm +
+        "&yearShow=" +
+        yearShow +
+        "&user" +
+        lastKeyQuery,
+      { signal }
+    ).then((res) => res.json());
+  };
+  const fetchUserRepos = async ({ signal }) => {
+    return fetch(
+      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/scan-search-abundance?" +
+        "attribute=searchField" +
+        "&query=" +
+        debouncedSearchTerm +
+        "&yearShow=" +
+        yearShow +
+        "&user=" +
+        user +
+        lastKeyQuery,
+      { signal }
+    ).then((res) => res.json());
+  };
+  const fetchFeaturedRepos = async ({ signal }) => {
+    return fetch(
+      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/queryFeaturedProjects",
+      { signal }
+    ).then((res) => res.json());
+  };
+  const fetchRecents = async ({ signal }) => {
+    return fetch(
+      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/queryRecentProjects?" +
+        "attribute=searchField" +
+        "&query=" +
+        debouncedSearchTerm +
+        "&yearShow=" +
+        yearShow +
+        "&user=" +
+        user +
+        lastKeyQuery,
+      { signal }
+    ).then((res) => res.json());
+  };
+  const fetchLikedRepos = async ({ signal }) => {
+    return fetch(
+      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE?user=" +
+        user +
+        "&liked=true",
+      { signal }
+    ).then((res) => res.json());
+  };
+
+  const {
+    data: allRepos,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["search", debouncedSearchTerm],
+    queryFn: fetchAll,
+  });
+
+  const {
+    data: myRepos,
+    isLoading: isLoadingUser,
+    isError: isErrorUser,
+  } = useQuery({
+    queryKey: ["userRepos", debouncedSearchTerm],
+    queryFn: fetchUserRepos,
+  });
+
+  const {
+    data: featuredRepos,
+    isLoading: isLoadingFeatured,
+    isError: isErrorFeatured,
+  } = useQuery({
+    queryKey: ["featuredRepos", debouncedSearchTerm],
+    queryFn: fetchFeaturedRepos,
+  });
+
+  const {
+    data: recentRepos,
+    isLoading: isLoadingRecents,
+    isError: isErrorRecents,
+  } = useQuery({
+    queryKey: ["recentRepos", debouncedSearchTerm],
+    queryFn: fetchRecents,
+  });
+
+  const {
+    data: likedRepos,
+    isLoading: isLoadingLiked,
+    isError: isErrorLiked,
+  } = useQuery({
+    queryKey: ["likedRepos", debouncedSearchTerm],
+    queryFn: fetchLikedRepos,
+  });
+
+  useEffect(() => {
+    setProjectsToShow(user ? "all" : "featured");
+  }, [GlobalVariables.currentUser]);
 
   const forkProject = async function (authorizedUserOcto, owner, repo) {
     authorizedUserOcto
@@ -520,89 +622,26 @@ const ShowProjects = ({
       });
   };
 
+  /* Function to fork a dummy project if user has no projects */
+  const forkDummyProject = async function (authorizedUserOcto) {
+    console.log("User has no projects, forking dummy project");
+    await forkProject(authorizedUserOcto, "alzatin", "my-first-project");
+  };
+
   useEffect(() => {
-    octokit = new Octokit();
-    var query;
-
-    /* Function to fork a dummy project if user has no projects */
-    const forkDummyProject = async function (authorizedUserOcto) {
-      console.log("User has no projects, forking dummy project");
-      await forkProject(authorizedUserOcto, "alzatin", "my-first-project");
-    };
     const repoSearchRequest = async () => {
-      setStateLoaded([]); /*sets loading while fetching*/
-      //pageDict[pageNumber] = lastKey;
-
       /* aborting previous request */
       if (controllerRef.current) {
         controllerRef.current.abort();
       }
-
       controllerRef.current = new AbortController();
       const signal = controllerRef.current.signal;
-
-      let lastKeyQuery = lastKey
-        ? "&lastKey=" + lastKey.repoName + "~" + lastKey.owner
-        : "&lastKey";
-
-      let searchQuery;
-      if (searchBarValue != "") {
-        searchQuery = "&query=" + searchBarValue + "&yearShow=" + yearShow;
-      } else {
-        searchQuery = "&query" + "&yearShow=" + yearShow;
-      }
-
-      if (projectToShow == "all") {
-        query = "attribute=searchField" + searchQuery + "&user" + lastKeyQuery;
-      } else if (projectToShow == "owned") {
-        query =
-          "attribute=searchField" +
-          searchQuery +
-          "&user=" +
-          user +
-          lastKeyQuery;
-      } else if (projectToShow == "featured") {
-        // placeholder for featured projects
-        const scanFeaturedApi =
-          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/queryFeaturedProjects";
-        let awsRepos = await fetch(scanFeaturedApi, { signal });
-
-        return awsRepos.json();
-      } else if (projectToShow == "liked") {
-        // placeholder for liked projects
-        const scanUserApiUrl =
-          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE?user=" +
-          user +
-          "&liked=true";
-        let awsLikeRepos = await fetch(scanUserApiUrl, { signal });
-
-        return awsLikeRepos.json();
-      } else if (projectToShow == "recents") {
-        query =
-          "attribute=searchField" +
-          searchQuery +
-          "&user=" +
-          user +
-          lastKeyQuery;
-        const scanRecentApi =
-          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/queryRecentProjects?" +
-          query;
-        let awsRepos = await fetch(scanRecentApi, { signal });
-        return awsRepos.json();
-      }
-      //API URL for the scan-search-abundance endpoint and abundance-projects table
-      const scanApiUrl =
-        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/scan-search-abundance?" +
-        query;
-      let awsRepos = await fetch(scanApiUrl, { signal }); //< return result.json();[repos]
-      //let awsRepos = await fetch(scanUserApiUrl);
-
-      return awsRepos.json();
     };
 
-    repoSearchRequest(projectToShow)
-      .then((result) => {
-        setStateLoaded([]);
+    repoSearchRequest(projectToShow).then((result) => {
+      console.log(result);
+      //setStateLoaded(result);
+      /* setStateLoaded([]);
         setApiStatus(loadingMessages.loading);
         if (
           (result["repos"].length == 0 && projectToShow == "recents") ||
@@ -619,34 +658,15 @@ const ShowProjects = ({
         } else {
           setStateLoaded(result["repos"]);
           setLastKey(result["lastKey"]);
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-        if (err.name !== "AbortError") {
-          alert(
-            "Error loading projects from database. Please try again later. " +
-              err
-          );
-        }
-      });
-  }, [searchBarValue, pageNumber, projectToShow, yearShow]);
+        }*/
+    });
+  }, [search, pageNumber, projectToShow, yearShow]);
 
-  let nodes = [];
-
-  if (projectsLoaded.length > 0) {
-    var userRepos = [];
-    projectsLoaded /*[pageNumber].data.*/
-      .forEach((repo) => {
-        userRepos.push(repo);
-      });
-    nodes = [...userRepos];
-  }
   const handleSearchChange = (e) => {
-    if (e.code == "Enter") {
-      setSearchBarValue(e.target.value);
-      setPageNumber(0);
-    }
+    //searchBarValue = e.target.value.toLowerCase();
+    setSearchBarValue(e.target.value);
+    setSearch(e.target.value.toLowerCase());
+    setPageNumber(0);
   };
 
   const UserNavDiv = (
@@ -753,6 +773,81 @@ const ShowProjects = ({
     </div>
   );
 
+  const PageComponent = (
+    <>
+      {isLoading ? (
+        <p> nope </p>
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            margin: "0px 10px 0px 10px",
+          }}
+        >
+          {lastKey ? (
+            <button
+              onClick={() => {
+                if (pageNumber > 0) {
+                  setPageNumber(pageNumber - 1);
+                }
+              }}
+              className="page_back_button"
+            >
+              {"\u2190"}
+            </button>
+          ) : null}
+
+          {lastKey ? (
+            <button
+              className="page_forward_button"
+              onClick={() => {
+                if (lastKey != "") {
+                  setPageNumber(pageNumber + 1);
+                }
+              }}
+            >
+              {"\u2192"}
+            </button>
+          ) : null}
+        </div>
+      )}
+    </>
+  );
+
+  const showDict = {
+    all: {
+      label: "Browsing Projects",
+      data: allRepos,
+      loading: isLoading,
+      error: isError,
+    },
+    owned: {
+      label: "My Projects",
+      data: myRepos,
+      loading: isLoadingUser,
+      error: isErrorUser,
+    },
+    featured: {
+      label: "Featured Projects",
+      data: featuredRepos,
+      loading: isLoadingFeatured,
+      error: isErrorFeatured,
+    },
+    liked: {
+      label: "My Liked Projects",
+      data: likedRepos,
+      loading: isLoadingLiked,
+      error: isErrorLiked,
+    },
+    recents: {
+      label: "Recent Projects",
+      data: recentRepos,
+      loading: isLoadingRecents,
+      error: isErrorRecents,
+    },
+  };
+
   return (
     <>
       <div className="login-content-div">
@@ -761,58 +856,11 @@ const ShowProjects = ({
           <span style={{ fontFamily: "Roboto" }}>
             Welcome {GlobalVariables.currentUser}
           </span>
-          <div className="home-section">
-            {projectToShow == "owned"
-              ? "My Projects"
-              : projectToShow == "liked"
-              ? "My Liked Projects"
-              : projectToShow == "all"
-              ? "Browsing Projects"
-              : projectToShow == "featured"
-              ? "Featured Projects"
-              : projectToShow == "recents"
-              ? "Recent Projects"
-              : null}
-          </div>
+          <div className="home-section">{showDict[projectToShow]["label"]}</div>
           <hr width="100%" color="#D3D3D3" />
 
           <div className="search-bar-div">
-            {projectsLoaded.length > 1 ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  margin: "0px 10px 0px 10px",
-                }}
-              >
-                {lastKey ? (
-                  <button
-                    onClick={() => {
-                      if (pageNumber > 0) {
-                        setPageNumber(pageNumber - 1);
-                      }
-                    }}
-                    className="page_back_button"
-                  >
-                    {"\u2190"}
-                  </button>
-                ) : null}
-
-                {lastKey ? (
-                  <button
-                    className="page_forward_button"
-                    onClick={() => {
-                      if (lastKey != "") {
-                        setPageNumber(pageNumber + 1);
-                      }
-                    }}
-                  >
-                    {"\u2192"}
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-
+            {PageComponent}
             <input
               type="text"
               key="project-search-bar"
@@ -841,19 +889,23 @@ const ShowProjects = ({
               />
             </button>
           </div>
-          {projectsLoaded.length > 0 ? (
+          {showDict[projectToShow]["loading"] ? (
+            <p> Searching for projects </p>
+          ) : null}
+          {showDict[projectToShow]["error"] ? (
+            <p> There was an error: please try again </p>
+          ) : null}
+          {showDict[projectToShow]["data"] ? (
             <AddProject
               {...{
                 setYearShow,
-                nodes,
+                projectsLoaded: showDict[projectToShow]["data"],
                 authorizedUserOcto,
                 user,
                 projectToShow,
               }}
             />
-          ) : (
-            apiStatus
-          )}
+          ) : null}
         </div>
       </div>
     </>
@@ -879,7 +931,7 @@ function LoginMode({
     getAccessTokenSilently,
   } = useAuth0();
 
-  const [projectToShow, setProjectsToShow] = useState("featured");
+  const [projectToShow, setProjectsToShow] = useState("all");
 
   useEffect(() => {
     if (isAuthenticated) {
