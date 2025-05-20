@@ -823,9 +823,8 @@ const ShowProjects = ({
               type="text"
               key="project-search-bar"
               placeholder={searchBarValue}
-              //value={target.value}
-              //onChange={(e) => setSearchBarType(e.target.value)}
-              onKeyDown={(e) => {
+              value={searchBarValue}
+              onChange={(e) => {
                 handleSearchChange(e);
               }}
               className="menu_search searchButton"
