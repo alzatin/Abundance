@@ -430,9 +430,9 @@ const ShowProjects = ({
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
   const [lastKey, setLastKey] = useState("");
   const [pageNumber, setPageNumber] = useState(0);
-  const [yearShow, setYearShow] = useState(currentYear);
 
-  const controllerRef = useRef(new AbortController());
+  // not used by aws but need to update function before deleting
+  const [yearShow, setYearShow] = useState(currentYear);
 
   let lastKeyQuery = lastKey
     ? "&lastKey=" + lastKey.repoName + "~" + lastKey.owner
