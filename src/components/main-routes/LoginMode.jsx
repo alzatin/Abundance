@@ -11,12 +11,6 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { all } from "mathjs";
 
 /**
- * The octokit instance which allows interaction with GitHub.
- * @type {object}
- */
-var octokit = null;
-
-/**
  * Initial log component displays pop Up to either attempt Github login/browse projects
  *
  */
