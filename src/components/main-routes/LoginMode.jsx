@@ -862,7 +862,7 @@ const ShowProjects = ({
             </button>
           </div>
           {showDict[projectToShow]["loading"] ? (
-            <p> Searching for projects </p>
+            <p> Searching for projects ... </p>
           ) : null}
           {showDict[projectToShow]["error"] ? (
             <p> There was an error: please try again </p>
