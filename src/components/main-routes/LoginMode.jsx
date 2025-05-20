@@ -6,9 +6,7 @@ import globalvariables from "../../js/globalvariables.js";
 import NewProjectPopUp from "../secondary/NewProjectPopUp.jsx";
 import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
-
 import { useAuth0 } from "@auth0/auth0-react";
-import { all } from "mathjs";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -432,7 +430,6 @@ const ShowProjects = ({
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
   const [lastKey, setLastKey] = useState("");
   const [pageNumber, setPageNumber] = useState(0);
-  const [searchBarValue, setSearchBarValue] = useState("");
   const [yearShow, setYearShow] = useState(currentYear);
 
   const controllerRef = useRef(new AbortController());
@@ -617,8 +614,6 @@ const ShowProjects = ({
   };
 
   const handleSearchChange = (e) => {
-    //searchBarValue = e.target.value.toLowerCase();
-    setSearchBarValue(e.target.value);
     setSearch(e.target.value.toLowerCase());
     setPageNumber(0);
   };
@@ -816,8 +811,8 @@ const ShowProjects = ({
             <input
               type="text"
               key="project-search-bar"
-              placeholder={searchBarValue}
-              value={searchBarValue}
+              placeholder={search}
+              value={search}
               onChange={(e) => {
                 handleSearchChange(e);
               }}
