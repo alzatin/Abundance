@@ -54,7 +54,6 @@ function GitSearch({
    * @param {object} ev - The event triggered by clicking on a menu item.
    */
   function placeGitHubMolecule(e, item) {
-    console.log(data);
     GlobalVariables.currentMolecule.loadGithubMoleculeByName(item);
     setSearchingGitHub(false);
     setSearch("");
