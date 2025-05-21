@@ -7,7 +7,7 @@ import shrinkWrap from "replicad-shrink-wrap";
 import { addSVG, drawSVG } from "replicad-decorate";
 import Fonts from "./js/fonts.js";
 import { AnyNest, FloatPolygon } from "any-nest";
-import { re } from "mathjs";
+import { equal, re } from "mathjs";
 
 var library = {};
 let defaultColor = "#aad7f2";
@@ -839,11 +839,16 @@ function displayLayout(targetID, inputID, positions, layoutConfig) {
   applyLayout(targetID, inputID, positions, layoutConfig);
 }
 
+
 /**
  * Rotate shapes to be placed on their most cuttable face (basically lay them flat)
  */
 function rotateForLayout(targetID, inputID, layoutConfig) {
   var THICKNESS_TOLLERANCE = 0.001;
+
+  function equalThickness(a, b) {
+    return Math.abs(a - b) < THICKNESS_TOLLERANCE;
+  }
 
   let geometryToLayout = library[inputID];
 
@@ -931,48 +936,55 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
     if (candidates.length == 1) {
       selected = candidates[0];
     } else {
-      // The candidate selection here doesn't guarantee a printable piece. In particular there
-      // are shapes with overhangs which we cannot easily detect.
-      // These tie-break heuristics are designed to usually pick a printable orientation for
-      // this piece. (TODO) However, we should consider allowing user-modification of these
-      // orientations before the packing stage.
+      // For each candidate generate a descriptive struct with the properties we care about.
+      // namely:
+      //  - height
+      //  - area (approx)
+      //  - number of interior wires (if any)
+      const scores = candidates.map((c, index) => {
+        return {
+          candidate_index: index,
+          thickness: c.thickness,
+          area: areaApprox(c.face.UVBounds),
+          interiorWires: c.face.clone().innerWires().length,
+        }});
 
-      // Filter out faces with extra interiorWires, as these may indicate carve-outs which will
-      // be unreachable on the underside of the sheet.
-      let minInteriorWires = Math.min(
-        ...candidates.map((c) => {
-          return c.face.clone().innerWires().length;
-        })
+
+      // Sort in order of preference (scores[0] being best).
+      scores.sort((a, b) => {
+        // Thickness differences take priority over all other factors.
+        if (!equalThickness(a.thickness, b.thickness)) {
+          // Candidates with thickness exactly equal to material thickness always win.
+          if (equalThickness(a.thickness, material_thickness)) {
+            return -1;
+          } else if (equalThickness(b.thickness, material_thickness)) {
+            return 1;
+          } else {
+            // Neither candidate is equal to material thickness. Prefer thinnest
+            // candidate.
+            return b.thickness - a.thickness;
+          }
+        }
+
+        // Tie brakes for candidates of equal thickness.
+        
+        // First, look for interior wires, if unequal we prefer candidates with fewer since
+        // interior wires *might* indicate carve-outs which are unreachable on the underside of the sheet.
+        if (a.interiorWires != b.interiorWires) {
+          return a.interiorWires - b.interiorWires;
+        }
+
+        // Second (finally), perfer candidates with larger area.
+        if (Math.abs(a.area - b.area) > THICKNESS_TOLLERANCE) {
+          return b.area - a.area;
+        }
+
+        return 0; // we can't decide.
+      }
       );
-      candidates = candidates.filter((c) => {
-        return c.face.clone().innerWires().length === minInteriorWires;
-      });
-      if (candidates.length === 1) {
-        selected = candidates[0];
-      }
-
-      // prefer candidates whose thickness is equal to material thickness, if any.
-      if (material_thickness > 0) {
-        const temp = candidates.filter((c) => {
-          return (
-            Math.abs(c.geom.boundingBox.depth - material_thickness) <
-            THICKNESS_TOLLERANCE
-          );
-        });
-        if (temp.length > 0) {
-          candidates = temp;
-        }
-      }
-
-      // Pick the largest of the remaining candidates (note: it's not trivial to calculate area, so here we
-      // just compare bounding boxes)
-      let maxArea = 0;
-      candidates.forEach((c) => {
-        if (areaApprox(c.face.UVBounds) > maxArea) {
-          maxArea = areaApprox(c.face.UVBounds);
-          selected = c;
-        }
-      });
+      console.log("score");
+      console.log(scores);
+      selected = candidates[scores[0].candidate_index];
     }
     let newLeaf = {
       geometry: [selected.geom],
