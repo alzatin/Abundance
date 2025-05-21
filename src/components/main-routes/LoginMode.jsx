@@ -6,15 +6,12 @@ import globalvariables from "../../js/globalvariables.js";
 import NewProjectPopUp from "../secondary/NewProjectPopUp.jsx";
 import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
-import { useAuth0 } from "@auth0/auth0-react";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
  *
  */
 const InitialLog = ({ setNoUserBrowsing }) => {
-  const { loginWithRedirect } = useAuth0();
-
   const loginHandler = () => {
     // the client id from github
     const client_id = "Ov23liN8Q3iGPXSUHUsH";
@@ -891,22 +888,7 @@ function LoginMode({
 
   const [noUserBrowsing, setNoUserBrowsing] = useState(false);
 
-  const {
-    loginWithRedirect,
-    logout,
-    isAuthenticated,
-    isLoading,
-
-    getAccessTokenSilently,
-  } = useAuth0();
-
   const [projectToShow, setProjectsToShow] = useState("all");
-
-  useEffect(() => {
-    if (isAuthorized) {
-      console.log("isAuthenticated");
-    }
-  }, [isAuthorized, getAccessTokenSilently]);
 
   let popUpContent;
   if (exportPopUp && authorizedUserOcto) {
@@ -928,7 +910,7 @@ function LoginMode({
         }}
       />
     );
-  } else if (isLoading || isAuthorized) {
+  } else if (isAuthorized) {
     popUpContent = (
       <div className="login-page">
         <div className="form animate fadeInUp one">
@@ -978,7 +960,7 @@ function LoginMode({
       />
     );
   } else {
-    popUpContent = <InitialLog {...{ loginWithRedirect, setNoUserBrowsing }} />;
+    popUpContent = <InitialLog {...{ setNoUserBrowsing }} />;
   }
   return (
     <div
