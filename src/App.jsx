@@ -18,6 +18,7 @@ import CreateMode from "./components/main-routes/CreateMode.jsx";
 import cadWorker from "./worker.js?worker";
 import { button } from "leva";
 import { QueryClient, QueryClientProvider } from "react-query";
+import Callback from "./components/main-routes/CallBack.jsx";
 
 /*Import style scripts*/
 import "./styles/maslowCreate.css";
@@ -38,6 +39,7 @@ export default function ReplicadApp() {
   const [mesh, setMesh] = useState({});
   const [wireMesh, setWireMesh] = useState(null);
   const [outdatedMesh, setOutdatedMesh] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     cad.createMesh(size).then((m) => setMesh(m));
@@ -207,11 +209,22 @@ export default function ReplicadApp() {
                   setAuthorizedUserOcto,
                   exportPopUp,
                   setExportPopUp,
+                  isAuthorized,
                 }}
               />
             }
           />
-
+          <Route
+            path="/callback"
+            element={
+              <Callback
+                isAuthorized={isAuthorized}
+                setIsAuthorized={setIsAuthorized}
+                setIsLoggedIn={setIsLoggedIn}
+                setAuthorizedUserOcto={setAuthorizedUserOcto}
+              />
+            }
+          />
           <Route
             path="/:owner/:repoName"
             element={
@@ -256,7 +269,6 @@ export default function ReplicadApp() {
               />
             }
           />
-          <Route path="/redirect" element={<div>redirect working</div>} />
         </Routes>
       </main>
     </QueryClientProvider>

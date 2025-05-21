@@ -15,6 +15,21 @@ import { useAuth0 } from "@auth0/auth0-react";
 const InitialLog = ({ setNoUserBrowsing }) => {
   const { loginWithRedirect } = useAuth0();
 
+  const loginHandler = () => {
+    // the client id from github
+    const client_id = "Ov23liN8Q3iGPXSUHUsH";
+
+    // create a CSRF token and store it locally
+    const state = window.crypto
+      .getRandomValues(new Uint8Array(16))
+      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
+    localStorage.setItem("latestCSRFToken", state);
+
+    // redirect the user to github
+    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=http://localhost:4444/callback&state=${state}`;
+    window.location.assign(link);
+  };
+
   return (
     <div className="login-page">
       <div className="form animate fadeInUp one">
@@ -47,7 +62,7 @@ const InitialLog = ({ setNoUserBrowsing }) => {
               id="loginButton"
               style={{ height: "40px" }}
               className="submit-btn"
-              onClick={() => loginWithRedirect()}
+              onClick={() => loginHandler() /*loginWithRedirect()*/}
             >
               Login With GitHub
             </button>
@@ -870,6 +885,7 @@ function LoginMode({
   setIsLoggedIn,
   authorizedUserOcto,
   setAuthorizedUserOcto,
+  isAuthorized,
 }) {
   const pageDict = { 0: null };
 
@@ -880,45 +896,17 @@ function LoginMode({
     logout,
     isAuthenticated,
     isLoading,
+
     getAccessTokenSilently,
   } = useAuth0();
 
   const [projectToShow, setProjectsToShow] = useState("all");
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthorized) {
       console.log("isAuthenticated");
-
-      const serverUrl =
-        "https://n3i60kesu6.execute-api.us-east-2.amazonaws.com/prox";
-
-      const callSecureApi = async () => {
-        try {
-          const token = await getAccessTokenSilently();
-
-          //Returns authorized user from proxy server
-          const response = await fetch(`${serverUrl}/api/greet`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          const authResponse = await response.json();
-          const authorizedUser = new Octokit({
-            auth: authResponse.message,
-          });
-          const { data } = await authorizedUser.request("/user");
-          GlobalVariables.currentUser = data.login;
-          if (GlobalVariables.currentUser) {
-            setIsLoggedIn(true);
-            setAuthorizedUserOcto(authorizedUser);
-          }
-        } catch (error) {
-          console.error(error);
-        }
-      };
-      callSecureApi();
     }
-  }, [isAuthenticated, getAccessTokenSilently]);
+  }, [isAuthorized, getAccessTokenSilently]);
 
   let popUpContent;
   if (exportPopUp && authorizedUserOcto) {
@@ -927,7 +915,7 @@ function LoginMode({
         {...{ setExportPopUp, authorizedUserOcto, exporting: false }}
       />
     );
-  } else if (isAuthenticated && authorizedUserOcto) {
+  } else if (isAuthorized && authorizedUserOcto) {
     popUpContent = (
       <ShowProjects
         {...{
@@ -940,7 +928,7 @@ function LoginMode({
         }}
       />
     );
-  } else if (isLoading || isAuthenticated) {
+  } else if (isLoading || isAuthorized) {
     popUpContent = (
       <div className="login-page">
         <div className="form animate fadeInUp one">
@@ -963,7 +951,7 @@ function LoginMode({
                 className="login-logo"
               />
             </div>
-            {isAuthenticated ? (
+            {isAuthorized ? (
               <p style={{ padding: "0 20px" }}>
                 Welcome. Redirecting you to your projects...
               </p>
@@ -1005,7 +993,7 @@ function LoginMode({
         {" "}
         {GlobalVariables.currentRepo &&
         GlobalVariables.currentRepo.owner == GlobalVariables.currentUser &&
-        isAuthenticated ? (
+        isAuthorized ? (
           <Link
             to={`/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`}
           >
@@ -1019,7 +1007,7 @@ function LoginMode({
               <span> Return to project</span>
             </button>
           </Link>
-        ) : isAuthenticated ? (
+        ) : isAuthorized ? (
           <button
             className="closeButton"
             onClick={() => {
@@ -1055,7 +1043,7 @@ function LoginMode({
           />
         </div>
 
-        {isAuthenticated ? (
+        {isAuthorized ? (
           <section id="mobile-nav" className="top-nav">
             <input id="menu-toggle" type="checkbox" />
             <label className="menu-button-container" htmlFor="menu-toggle">
