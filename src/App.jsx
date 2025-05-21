@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { OAuth } from "oauthio-web";
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import {
   BrowserRouter,

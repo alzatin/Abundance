@@ -23,7 +23,9 @@ const InitialLog = ({ setNoUserBrowsing }) => {
     localStorage.setItem("latestCSRFToken", state);
 
     // redirect the user to github
-    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=http://localhost:4444/callback&state=${state}`;
+    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
+      import.meta.env.VITE_REDIRECT_URI
+    }callback&state=${state}`;
     window.location.assign(link);
   };
 

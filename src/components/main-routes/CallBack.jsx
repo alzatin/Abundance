@@ -19,9 +19,7 @@ const Callback = ({
     if (params.get("code")) {
       setIsAuthorized(true);
     }
-    console.log(params.get("code"));
     const serverEndpoint = import.meta.env.VITE_AUTHO_SERVER_ENDPOINT;
-    console.log(serverEndpoint);
 
     const serverUrl =
       "https://n3i60kesu6.execute-api.us-east-2.amazonaws.com/prox";
