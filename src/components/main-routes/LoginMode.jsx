@@ -14,7 +14,7 @@ import useDebounce from "../../hooks/useDebounce.js";
 const InitialLog = ({ setNoUserBrowsing }) => {
   const loginHandler = () => {
     // the client id from github
-    const client_id = "Ov23liN8Q3iGPXSUHUsH";
+    const client_id = import.meta.env.VITE_GH_OAUTH_CLIENT_ID;
 
     // create a CSRF token and store it locally
     const state = window.crypto
