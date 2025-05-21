@@ -177,6 +177,10 @@ export default class CutLayout extends Atom {
         this.setAlert('"geometry" input is missing');
         return;
       }
+      // if positions isn't a list of lists, nest it so that it is
+      if (this.placements != undefined && this.placements.length > 0 && !Array.isArray(this.placements[0])) {
+        this.placements = [this.placements];
+      }
       
       GlobalVariables.cad
         .displayLayout(
@@ -290,6 +294,11 @@ export default class CutLayout extends Atom {
    * Add the "Compute Layout" button to the leva inputs.
    */
   createLevaInputs() {
+      // if positions isn't a list of lists, nest it so that it is
+      if (this.placements != undefined && this.placements.length > 0 && !Array.isArray(this.placements[0])) {
+        this.placements = [this.placements];
+      }
+
       let inputParams = super.createLevaInputs();
   
       inputParams["Compute Layout"] = button(() => {
