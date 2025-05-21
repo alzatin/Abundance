@@ -54,6 +54,7 @@ const Callback = ({
         }
       } catch (error) {
         console.error(error);
+        +setIsAuthorized(false);
       }
     };
     callSecureApi();
