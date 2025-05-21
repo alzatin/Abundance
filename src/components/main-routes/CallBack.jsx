@@ -20,6 +20,8 @@ const Callback = ({
       setIsAuthorized(true);
     }
     console.log(params.get("code"));
+    const serverEndpoint = import.meta.env.VITE_AUTHO_SERVER_ENDPOINT;
+    console.log(serverEndpoint);
 
     const serverUrl =
       "https://n3i60kesu6.execute-api.us-east-2.amazonaws.com/prox";
@@ -29,8 +31,9 @@ const Callback = ({
         //const token = await getAccessTokenSilently();
 
         const code = params.get("code");
+
         const response = await fetch(
-          `${serverUrl}/api/ourAutho?code=${encodeURIComponent(code)}`,
+          `${serverUrl}/api/${serverEndpoint}?code=${encodeURIComponent(code)}`,
           {
             method: "GET",
             headers: {
