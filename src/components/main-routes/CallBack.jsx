@@ -21,8 +21,7 @@ const Callback = ({
     }
     const serverEndpoint = import.meta.env.VITE_AUTHO_SERVER_ENDPOINT;
 
-    const serverUrl =
-      "https://n3i60kesu6.execute-api.us-east-2.amazonaws.com/prox";
+    const serverUrl = import.meta.env.VITE_AUTHO_SERVER_URL;
 
     const callSecureApi = async () => {
       try {
