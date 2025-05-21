@@ -8,7 +8,7 @@ import { addSVG, drawSVG } from "replicad-decorate";
 import Fonts from "./js/fonts.js";
 //import { AnyNest, FloatPolygon } from "any-nest";
 import { PolygonPacker,PlacementWrapper } from "polygon-packer";
-import { re } from "mathjs";
+import { equal, re } from "mathjs";
 
 var library = {};
 let defaultColor = "#aad7f2";
@@ -854,11 +854,16 @@ function displayLayout(targetID, inputID, positions, layoutConfig) {
 }
 
 
+
 /**
  * Rotate shapes to be placed on their most cuttable face (basically lay them flat)
  */
 function rotateForLayout(targetID, inputID, layoutConfig) {
   var THICKNESS_TOLLERANCE = 0.001;
+
+  function equalThickness(a, b) {
+    return Math.abs(a - b) < THICKNESS_TOLLERANCE;
+  }
 
   function equalThickness(a, b) {
     return Math.abs(a - b) < THICKNESS_TOLLERANCE;
@@ -975,7 +980,7 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
           } else {
             // Neither candidate is equal to material thickness. Prefer thinnest
             // candidate.
-            return a.thickness - b.thickness;
+            return b.thickness - a.thickness;
           }
         }
 
@@ -987,7 +992,7 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
           return a.interiorWires - b.interiorWires;
         }
 
-        // Second (finally), prefer candidates with larger area.
+        // Second (finally), perfer candidates with larger area.
         if (Math.abs(a.area - b.area) > THICKNESS_TOLLERANCE) {
           return b.area - a.area;
         }
