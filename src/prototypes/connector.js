@@ -106,6 +106,8 @@ export default class Connector {
     if (this.isMoving) {
       //we only want to attach the connector which is currently moving
       var attachmentMade = false;
+      
+      // First, try the traditional way - check if mouse is directly over an input attachment point
       GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
         //For every molecule on the screen
         molecule.inputs.forEach((attachmentPoint) => {
@@ -142,8 +144,8 @@ export default class Connector {
               // Find the first available input attachment point
               for (let i = 0; i < atom.inputs.length; i++) {
                 const input = atom.inputs[i];
-                // Check if this input has no connectors
-                if (input.connectors.length === 0) {
+                // Check if this input has no connectors and is an input type
+                if (input.type === "input" && input.connectors.length === 0) {
                   attachmentMade = true;
                   this.attachmentPoint2 = input;
                   input.attach(this);
@@ -156,6 +158,7 @@ export default class Connector {
         });
       }
       
+      // If no attachment point was found or connection was made, delete the connector
       if (!attachmentMade) {
         this.deleteSelf();
       }
