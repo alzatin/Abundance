@@ -6,13 +6,23 @@ import globalvariables from "../../js/globalvariables.js";
 import NewProjectPopUp from "../secondary/NewProjectPopUp.jsx";
 import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
+import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
  *
  */
 const InitialLog = ({ setNoUserBrowsing }) => {
+  const location = useLocation();
+
   const loginHandler = () => {
+    const params = new URLSearchParams(location.search);
+    let scope = "public_repo";
+    if (params.has("private")) {
+      scope = "repo";
+    }
+
     // the client id from github
     const client_id = import.meta.env.VITE_GH_OAUTH_CLIENT_ID;
 
@@ -27,11 +37,10 @@ const InitialLog = ({ setNoUserBrowsing }) => {
       csrfToken: csrfToken,
       forking: false,
     });
-
     // redirect the user to github
     const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
       import.meta.env.VITE_REDIRECT_URI
-    }callback&state=${state}`;
+    }callback&state=${state}&scope=${scope}`;
     window.location.assign(link);
   };
 
