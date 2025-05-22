@@ -904,8 +904,12 @@ function LoginMode({
   const pageDict = { 0: null };
 
   const [noUserBrowsing, setNoUserBrowsing] = useState(false);
-
   const [projectToShow, setProjectsToShow] = useState("all");
+
+  const logoutHandler = () => {
+    localStorage.removeItem("latestCSRFToken");
+    window.location.assign("/");
+  };
 
   let popUpContent;
   if (exportPopUp && authorizedUserOcto) {
@@ -1010,11 +1014,7 @@ function LoginMode({
           <button
             className="closeButton"
             onClick={() => {
-              logout({
-                returnTo: import.meta.env.VITE_APP_DEV
-                  ? window.location.origin
-                  : "https://abundance.maslowcnc.com", // Redirect to home page or specified URL
-              });
+              logoutHandler();
             }}
           >
             <span> Log out </span>
@@ -1051,11 +1051,7 @@ function LoginMode({
             <button
               className="closeButtonmobile"
               onClick={() => {
-                logout({
-                  returnTo: import.meta.env.VITE_APP_DEV
-                    ? window.location.origin
-                    : "https://abundance.maslowcnc.com", // Redirect to home page or specified URL
-                });
+                logoutHandler();
               }}
             >
               <span> Log out </span>
