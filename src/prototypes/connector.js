@@ -96,7 +96,9 @@ export default class Connector {
   }
 
   /**
-   * clickUp checks to see if the mouse button has been released over an input attachment point. If it has then the connector is created there. If not, then the connector is deleted.
+   * clickUp checks to see if the mouse button has been released over an input attachment point. If it has then the connector is created there.
+   * If the mouse is over an atom, it will connect to the first available input attachment point on that atom.
+   * If not, then the connector is deleted.
    * @param {number} x - The x cordinate of the click
    * @param {number} y - The y cordinate of the click
    */
@@ -104,6 +106,8 @@ export default class Connector {
     if (this.isMoving) {
       //we only want to attach the connector which is currently moving
       var attachmentMade = false;
+      
+      // First, try the traditional way - check if mouse is directly over an input attachment point
       GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
         //For every molecule on the screen
         molecule.inputs.forEach((attachmentPoint) => {
@@ -123,6 +127,38 @@ export default class Connector {
           }
         });
       });
+      
+      // If no direct connection was made to an attachment point, check if we're over an atom
+      if (!attachmentMade) {
+        GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
+          // Check if the mouse is over this atom
+          const xInPixels = GlobalVariables.widthToPixels(atom.x);
+          const yInPixels = GlobalVariables.heightToPixels(atom.y);
+          const dist = GlobalVariables.distBetweenPoints(x, xInPixels, y, yInPixels);
+          const radiusInPixels = GlobalVariables.widthToPixels(atom.radius);
+          
+          // If mouse is over the atom and we haven't made a connection yet
+          if (dist <= radiusInPixels && !attachmentMade) {
+            // Ensure we're not trying to connect to the same atom
+            if (this.attachmentPoint1.parentMolecule !== atom) {
+              // Find the first available input attachment point
+              for (let i = 0; i < atom.inputs.length; i++) {
+                const input = atom.inputs[i];
+                // Check if this input has no connectors and is an input type
+                if (input.type === "input" && input.connectors.length === 0) {
+                  attachmentMade = true;
+                  this.attachmentPoint2 = input;
+                  input.attach(this);
+                  this.propogate();
+                  break; // Stop after finding the first available input
+                }
+              }
+            }
+          }
+        });
+      }
+      
+      // If no attachment point was found or connection was made, delete the connector
       if (!attachmentMade) {
         this.deleteSelf();
       }
