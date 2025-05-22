@@ -220,6 +220,7 @@ export default function ReplicadApp() {
                 isAuthorized={isAuthorized}
                 setIsAuthorized={setIsAuthorized}
                 setIsLoggedIn={setIsLoggedIn}
+                authorizedUserOcto={authorizedUserOcto}
                 setAuthorizedUserOcto={setAuthorizedUserOcto}
               />
             }

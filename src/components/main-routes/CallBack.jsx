@@ -8,6 +8,7 @@ const Callback = ({
   isAuthorized,
   setIsAuthorized,
   setIsLoggedIn,
+  authorizedUserOcto,
   setAuthorizedUserOcto,
 }) => {
   const location = useLocation();
@@ -20,13 +21,10 @@ const Callback = ({
       setIsAuthorized(true);
     }
     const serverEndpoint = import.meta.env.VITE_AUTHO_SERVER_ENDPOINT;
-
     const serverUrl = import.meta.env.VITE_AUTHO_SERVER_URL;
 
     const callSecureApi = async () => {
       try {
-        //const token = await getAccessTokenSilently();
-
         const code = params.get("code");
 
         const response = await fetch(
@@ -51,14 +49,31 @@ const Callback = ({
         if (GlobalVariables.currentUser) {
           setIsLoggedIn(true);
           setAuthorizedUserOcto(authorizedUser);
+
+          return authorizedUser;
         }
       } catch (error) {
         console.error(error);
-        +setIsAuthorized(false);
+        setIsAuthorized(false);
       }
     };
-    callSecureApi();
-    navigate("/");
+
+    // Call the function to fetch the access token
+    callSecureApi().then((authorizedUser) => {
+      try {
+        const stateParam = params.get("state");
+        const state = stateParam ? JSON.parse(stateParam) : {};
+        console.log("state", state);
+        if (state.forking && state.currentRepo && authorizedUser) {
+          navigate(`/run/${state.currentRepo}`);
+        } else {
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("Error parsing state parameter:", error);
+        navigate("/");
+      }
+    });
   }, [location, setIsAuthorized]);
 
   return <div>Redirecting...</div>;

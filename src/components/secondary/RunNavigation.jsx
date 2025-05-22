@@ -442,13 +442,40 @@ function RunNavigation({ authorizedUserOcto, activeAtom }) {
       "You are not logged in. Would you like to log in?"
     );
     if (loginConfirm) {
-      loginWithRedirect();
+      console.log("login with redirect");
+      loginHandler();
     } else {
       // user clicked cancel and is redirected to the run mode
     }
     /*tryLogin().then((result) => {
       forkProject(result);
     });*/
+  };
+  const loginHandler = () => {
+    // the client id from github
+    const client_id = import.meta.env.VITE_GH_OAUTH_CLIENT_ID;
+
+    // create a CSRF token and store it locally
+    const csrfToken = window.crypto
+      .getRandomValues(new Uint8Array(16))
+      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
+    localStorage.setItem("latestCSRFToken", csrfToken);
+    const repo =
+      GlobalVariables.currentRepo.owner +
+      "/" +
+      GlobalVariables.currentRepo.repoName;
+    // include currentRepo in the state parameter
+    const state = JSON.stringify({
+      csrfToken: csrfToken,
+      currentRepo: repo,
+      forking: true,
+    });
+
+    // redirect the user to github
+    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
+      import.meta.env.VITE_REDIRECT_URI
+    }callback&state=${encodeURIComponent(state)}`;
+    window.location.assign(link);
   };
 
   return (
@@ -469,34 +496,29 @@ function RunNavigation({ authorizedUserOcto, activeAtom }) {
         >
           {shareSvg}
         </button>
-        {authorizedUserOcto ? (
-          <button
-            className=" run-navigation-button"
-            id="Fork-button"
-            onClick={() => {
-              authorizedUserOcto
-                ? forkProject(authorizedUserOcto)
-                : loginFork();
-            }}
-          >
-            {forkSvg}
-          </button>
-        ) : null}
-        {authorizedUserOcto ? (
-          <button
-            className=" run-navigation-button"
-            id="Star-button"
-            onClick={() => {
-              authorizedUserOcto && !starred
-                ? likeProject(authorizedUserOcto)
-                : authorizedUserOcto && starred
-                ? unlikeProject(authorizedUserOcto)
-                : loginLike();
-            }}
-          >
-            {starSvg}
-          </button>
-        ) : null}
+        <button
+          className=" run-navigation-button"
+          id="Fork-button"
+          onClick={() => {
+            authorizedUserOcto ? forkProject(authorizedUserOcto) : loginFork();
+          }}
+        >
+          {forkSvg}
+        </button>
+
+        <button
+          className=" run-navigation-button"
+          id="Star-button"
+          onClick={() => {
+            authorizedUserOcto && !starred
+              ? likeProject(authorizedUserOcto)
+              : authorizedUserOcto && starred
+              ? unlikeProject(authorizedUserOcto)
+              : loginFork();
+          }}
+        >
+          {starSvg}
+        </button>
         <button
           onClick={() => {
             setDialog("export");
