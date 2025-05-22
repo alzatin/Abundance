@@ -60,12 +60,17 @@ const Callback = ({
 
     // Call the function to fetch the access token
     callSecureApi().then((authorizedUser) => {
-      // Redirect to the desired page after successful authentication
-      const state = JSON.parse(params.get("state")); // Parse state as JSON
-      console.log("state", state);
-      if (state.forking && state.currentRepo && authorizedUser) {
-        navigate(`/run/${state.currentRepo}`);
-      } else {
+      try {
+        const stateParam = params.get("state");
+        const state = stateParam ? JSON.parse(stateParam) : {};
+        console.log("state", state);
+        if (state.forking && state.currentRepo && authorizedUser) {
+          navigate(`/run/${state.currentRepo}`);
+        } else {
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("Error parsing state parameter:", error);
         navigate("/");
       }
     });

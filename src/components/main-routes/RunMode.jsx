@@ -68,9 +68,6 @@ function runMode({
   const navigate = useNavigate();
   const { owner, repoName } = useParams();
 
-  console.log("runMode", owner, repoName);
-  console.log("globalvariables.currentRepo", globalvariables.currentRepo);
-
   const [cameraZoom, setCameraZoom] = useState(1);
 
   useEffect(() => {

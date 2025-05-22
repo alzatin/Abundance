@@ -463,7 +463,7 @@ function RunNavigation({ authorizedUserOcto, activeAtom }) {
     const repo =
       GlobalVariables.currentRepo.owner +
       "/" +
-      GlobalVariables.currentRepo.name;
+      GlobalVariables.currentRepo.repoName;
     // include currentRepo in the state parameter
     const state = JSON.stringify({
       csrfToken: csrfToken,
