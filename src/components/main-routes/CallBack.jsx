@@ -8,7 +8,6 @@ const Callback = ({
   isAuthorized,
   setIsAuthorized,
   setIsLoggedIn,
-  authorizedUserOcto,
   setAuthorizedUserOcto,
 }) => {
   const location = useLocation();
