@@ -506,21 +506,19 @@ function RunNavigation({ authorizedUserOcto, activeAtom }) {
           {forkSvg}
         </button>
 
-        {authorizedUserOcto ? (
-          <button
-            className=" run-navigation-button"
-            id="Star-button"
-            onClick={() => {
-              authorizedUserOcto && !starred
-                ? likeProject(authorizedUserOcto)
-                : authorizedUserOcto && starred
-                ? unlikeProject(authorizedUserOcto)
-                : loginLike();
-            }}
-          >
-            {starSvg}
-          </button>
-        ) : null}
+        <button
+          className=" run-navigation-button"
+          id="Star-button"
+          onClick={() => {
+            authorizedUserOcto && !starred
+              ? likeProject(authorizedUserOcto)
+              : authorizedUserOcto && starred
+              ? unlikeProject(authorizedUserOcto)
+              : loginFork();
+          }}
+        >
+          {starSvg}
+        </button>
         <button
           onClick={() => {
             setDialog("export");
