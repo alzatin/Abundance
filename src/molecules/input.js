@@ -125,18 +125,6 @@ export default class Input extends Atom {
       this.color = this.defaultColor;
       this.strokeColor = this.selectedColor;
     }
-
-    // Position the output attachment point correctly before drawing
-    if (this.output) {
-      // Set the output position to be on the right side of the atom
-      this.output.x = this.x + this.width / GlobalVariables.canvas.current.width;
-      this.output.y = this.y;
-      // Make sure the attachment point is within canvas boundaries
-      [this.output.x, this.output.y] = GlobalVariables.constrainToCanvasBorders(
-        this.output.x, 
-        this.output.y
-      );
-    }
     
     // Draw the inputs
     this.inputs.forEach((input) => {
