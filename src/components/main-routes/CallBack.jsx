@@ -47,8 +47,9 @@ const Callback = ({
         const { data } = await authorizedUser.request("/user");
         GlobalVariables.currentUser = data.login;
         if (GlobalVariables.currentUser) {
-          setAuthorizedUserOcto(authorizedUser);
           setIsLoggedIn(true);
+          setAuthorizedUserOcto(authorizedUser);
+
           return authorizedUser;
         }
       } catch (error) {
