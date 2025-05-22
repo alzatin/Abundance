@@ -68,6 +68,9 @@ function runMode({
   const navigate = useNavigate();
   const { owner, repoName } = useParams();
 
+  console.log("runMode", owner, repoName);
+  console.log("globalvariables.currentRepo", globalvariables.currentRepo);
+
   const [cameraZoom, setCameraZoom] = useState(1);
 
   useEffect(() => {
@@ -100,6 +103,7 @@ function runMode({
       })
       .then((result) => {
         globalvariables.currentRepo = result.data;
+        console.log("globalvariables.currentRepo", globalvariables.currentRepo);
         /*temp variables while we change to aws*/
         globalvariables.currentRepo.repoName = globalvariables.currentRepo.name;
         globalvariables.currentRepo.owner =
@@ -172,7 +176,9 @@ function runMode({
           }}
         />
       ) : null}
-      <RunNavigation {...{ authorizedUserOcto, activeAtom }} />
+      {GlobalVariables.currentRepo ? (
+        <RunNavigation {...{ authorizedUserOcto, activeAtom }} />
+      ) : null}
       <KiriMotoIntegration {...{ activeAtom }} />
       {globalvariables.currentRepo ? (
         <div className="info_run_div">

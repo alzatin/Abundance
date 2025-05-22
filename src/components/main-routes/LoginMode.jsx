@@ -17,10 +17,16 @@ const InitialLog = ({ setNoUserBrowsing }) => {
     const client_id = import.meta.env.VITE_GH_OAUTH_CLIENT_ID;
 
     // create a CSRF token and store it locally
-    const state = window.crypto
+    const csrfToken = window.crypto
       .getRandomValues(new Uint8Array(16))
       .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
-    localStorage.setItem("latestCSRFToken", state);
+    localStorage.setItem("latestCSRFToken", csrfToken);
+
+    // include currentRepo in the state parameter
+    const state = JSON.stringify({
+      csrfToken: csrfToken,
+      forking: false,
+    });
 
     // redirect the user to github
     const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${

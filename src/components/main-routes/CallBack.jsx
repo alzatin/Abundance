@@ -8,6 +8,7 @@ const Callback = ({
   isAuthorized,
   setIsAuthorized,
   setIsLoggedIn,
+  authorizedUserOcto,
   setAuthorizedUserOcto,
 }) => {
   const location = useLocation();
@@ -20,13 +21,10 @@ const Callback = ({
       setIsAuthorized(true);
     }
     const serverEndpoint = import.meta.env.VITE_AUTHO_SERVER_ENDPOINT;
-
     const serverUrl = import.meta.env.VITE_AUTHO_SERVER_URL;
 
     const callSecureApi = async () => {
       try {
-        //const token = await getAccessTokenSilently();
-
         const code = params.get("code");
 
         const response = await fetch(
@@ -49,16 +47,27 @@ const Callback = ({
         const { data } = await authorizedUser.request("/user");
         GlobalVariables.currentUser = data.login;
         if (GlobalVariables.currentUser) {
-          setIsLoggedIn(true);
           setAuthorizedUserOcto(authorizedUser);
+          setIsLoggedIn(true);
+          return authorizedUser;
         }
       } catch (error) {
         console.error(error);
-        +setIsAuthorized(false);
+        setIsAuthorized(false);
       }
     };
-    callSecureApi();
-    navigate("/");
+
+    // Call the function to fetch the access token
+    callSecureApi().then((authorizedUser) => {
+      // Redirect to the desired page after successful authentication
+      const state = JSON.parse(params.get("state")); // Parse state as JSON
+      console.log("state", state);
+      if (state.forking && state.currentRepo && authorizedUser) {
+        navigate(`/run/${state.currentRepo}`);
+      } else {
+        navigate("/");
+      }
+    });
   }, [location, setIsAuthorized]);
 
   return <div>Redirecting...</div>;
