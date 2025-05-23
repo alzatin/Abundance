@@ -902,8 +902,8 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
     leaf.geometry[0].faces.forEach((face) => {
       if (face.geomType == "PLANE") {
         hasFlatFace = true;
+
         const prospectiveGoem = moveFaceToCuttingPlane(leaf.geometry[0], face);
-//        if (thickness < layoutConfig.thickness + THICKNESS_TOLLERANCE) {
         // Check for protrusions "below" the bottom of the raw material.
         if (
           prospectiveGoem.boundingBox.bounds[0][2] >
@@ -1126,7 +1126,7 @@ function computePositions(
   console.log("Starting to compute positions for shapes: ")
   console.log(shapesForLayout);
   const tolerance = 0.1;
-  const maxRuntime = 15000; // 10 seconds
+  const runtimeMs = 20000;
   const config = {
     curveTolerance: 0.3,
     spacing: layoutConfig.partPadding + tolerance * 2,
@@ -1143,9 +1143,7 @@ function computePositions(
         .clone()
         .outerWire()
         .meshEdges({ tolerance: 0.5, angularTolerance: 5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
-      const temp = preparePoints(mesh, tolerance);
-      console.log(temp);
-      return asFloat64(temp); // TODO: it's not actually clear that this tolerance should be the same..
+      return asFloat64(preparePoints(mesh, tolerance));
     });
 
   const bin = asFloat64([
@@ -1155,28 +1153,16 @@ function computePositions(
     { x: 0, y: layoutConfig.height },
   ]);
 
-  console.log("bin: ");
-  console.log([
-    { x: 0, y: 0 },
-    { x: layoutConfig.width, y: 0 },
-    { x: layoutConfig.width, y: layoutConfig.height },
-    { x: 0, y: layoutConfig.height },
-  ]);
-  console.log(bin);
-  console.log("polygons: ");
-  console.log(polygons);
-
-
   const packer = new PolygonPacker();
 
   let progressCallbackCounter = 0;
   const callbackFunction = (num) => {
     // Forward to the UI thread along with a cancelation handle.
-    // Expect a call every 0.1 seconds for this method. The num argument seems to be
-    // effectively meaningless
+    // Expect a call every 0.1 seconds for this method.
+    // Unclear what the num argument is supposed to represent
     progressCallbackCounter++;
     progressCallback(
-      0.1 + 0.9 * (progressCallbackCounter * 100 / maxRuntime),
+      0.1 + 0.9 * (progressCallbackCounter * 100 / runtimeMs),
       proxy(() => {
         packer.stop();
       })
@@ -1220,7 +1206,7 @@ function computePositions(
           packer.stop();
           reject(new Error("Failed to find placements within the time limit."));
         }
-      }, maxRuntime);
+      }, runtimeMs);
   
     } catch (err) {
       console.log("error in nesting engine: " + err);
@@ -1334,20 +1320,27 @@ function moveFaceToCuttingPlane(geom, face) {
   let pointOnSurface = face.pointOnSurface(0, 0);
   let faceNormal = face.normalAt();
 
-  // Always use "XY" plane as the cutting surface
-  // TODO(tristan): there's an inversion here I don't fully understand, hence using the negative Z vector.
-  let cutPlaneNormal = new replicad.Vector([0, 0, -1]);
+  // Always use "XY" plane as the cutting surface. Attempt to reorient
+  // the given face so it's normal vector points down the Z axis. Down because
+  // the normal vector points out of the surface of our 3d shape, and the interior
+  // of the 3D shape should be placed above the XY plane.
+  let targetOrientation = new replicad.Vector([0, 0, -1]);
 
-  let rotationAxis = faceNormal.cross(cutPlaneNormal);
+  let rotationAxis = faceNormal.cross(targetOrientation);
   if (rotationAxis.Length == 0) {
-    // Face already parallel to cut plane, no rotation necessary.
+    if (faceNormal.dot(targetOrientation) < 0) {
+      // Face points upward but is otherwise parallel to cut plane. flip 180 around x axis.
+      geom = geom.clone().rotate(180, pointOnSurface, new replicad.Vector([1,0,0]));
+    }
+
+    // Face already parallel to cut plane and on underside of the shape.
     return geom.clone().translate(0, 0, -1 * pointOnSurface.z);
   }
 
   let rotationDegrees =
     (Math.acos(
-      faceNormal.dot(cutPlaneNormal) /
-        (cutPlaneNormal.Length * faceNormal.Length)
+      faceNormal.dot(targetOrientation) /
+        (targetOrientation.Length * faceNormal.Length)
     ) *
       360) /
     (2 * Math.PI);

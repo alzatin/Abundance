@@ -282,9 +282,6 @@ export default class CutLayout extends Atom {
           this.updateValueButton();
       });
 
-      const sheetWidth = this.findIOValue("Sheet Width");
-
-
       let prepareLabel = (sheet, index, totalsheets) => {
         if (totalsheets > 1) {
           return "sheet " + sheet + " p" + index;
