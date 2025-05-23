@@ -26,7 +26,7 @@ export default class Point extends Atom {
      * A description of this atom
      * @type {string}
      */
-    this.description = "Creates a point in 3D space.";
+    this.description = "Creates a sketch point in 3D space.";
 
     // A point has only an output, no inputs to adjust as per requirements
     this.addIO("output", "geometry", this, "geometry", "");
@@ -56,7 +56,7 @@ export default class Point extends Atom {
   }
 
   /**
-   * Create a new point in a worker thread.
+   * Create a new sketch point in a worker thread.
    */
   updateValue() {
     super.updateValue();

@@ -111,11 +111,13 @@ function rectangle(id, x, y) {
 function point(id, x, y, z) {
   return started.then(() => {
     const newPlane = new Plane().pivot(0, "Y");
-    // Create a vertex at the specified point
+    // Create a sketch point (using a very small circle as a sketch)
+    // Using a small circle (0.01 diameter) to represent a point as a sketch
+    const pointSketch = replicad.drawCircle(0.01).translate([x, y]);
     library[id] = {
-      geometry: [replicad.makeVertex(new replicad.Vector(x, y, z))],
+      geometry: [pointSketch],
       tags: [],
-      plane: newPlane,
+      plane: newPlane.translate([0, 0, z]),
       color: defaultColor,
       bom: [],
     };
