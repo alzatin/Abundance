@@ -874,10 +874,6 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
     return Math.abs(a - b) < THICKNESS_TOLLERANCE;
   }
 
-  function equalThickness(a, b) {
-    return Math.abs(a - b) < THICKNESS_TOLLERANCE;
-  }
-
   let geometryToLayout = library[inputID];
 
   let localId = 0;
@@ -989,7 +985,7 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
           } else {
             // Neither candidate is equal to material thickness. Prefer thinnest
             // candidate.
-            return b.thickness - a.thickness;
+            return a.thickness - b.thickness;
           }
         }
 
@@ -1001,7 +997,7 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
           return a.interiorWires - b.interiorWires;
         }
 
-        // Second (finally), perfer candidates with larger area.
+        // Second (finally), prefer candidates with larger area.
         if (Math.abs(a.area - b.area) > THICKNESS_TOLLERANCE) {
           return b.area - a.area;
         }
