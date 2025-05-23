@@ -271,7 +271,7 @@ export default class CutLayout extends Atom {
    * Add the "Compute Layout" button to the leva inputs.
    */
   createLevaInputs() {
-      // if positions isn't a list of lists, nest it so that it is
+      // if positions isn't a list of lists, nest it so that it is. Required for back-compatibility
       if (this.placements != undefined && this.placements.length > 0 && !Array.isArray(this.placements[0])) {
         this.placements = [this.placements];
       }
@@ -285,7 +285,7 @@ export default class CutLayout extends Atom {
       const sheetWidth = this.findIOValue("Sheet Width");
 
 
-      let prepare_label = (sheet, index, totalsheets) => {
+      let prepareLabel = (sheet, index, totalsheets) => {
         if (totalsheets > 1) {
           return "sheet " + sheet + " p" + index;
         }
@@ -297,11 +297,12 @@ export default class CutLayout extends Atom {
       
       //Expose the stored positions
       let part_counter = 0;
+      const totalSheets = this.placements.length;
       this.placements.forEach((sheet, index) => {
         sheet.forEach((placement, part_num) => {
           inputParams[this.uniqueID + "position" + part_counter] = {
-            value: { x: placement.translate.x, y: placement.translate.y + sheetWidth * index, z: placement.rotate },
-            label: prepare_label(index, part_num, sheet.length),
+            value: { x: placement.translate.x, y: placement.translate.y, z: placement.rotate },
+            label: prepareLabel(index, part_num, totalSheets),
             onChange: (value, index) => {
                 const match = index.match(/position(\d+)/);
                 const indexNumber = match ? parseInt(match[1], 10) : null;
