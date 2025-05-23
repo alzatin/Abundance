@@ -2,7 +2,7 @@
  * This class defines the available default licenses when creating a new project
  */
 const licenses = {
-  CC0: `Creative Commons Legal Code
+  "CC0 - No Restrictions on Reuse": `Creative Commons Legal Code
 
 CC0 1.0 Universal
 
@@ -124,7 +124,7 @@ express Statement of Purpose.
     party to this document and has no duty or obligation with respect to
     this CC0 or use of the Work.`,
 
-  "CC-BY": `Attribution 4.0 International
+  "CC-BY - Reuse allowed, but only with credit": `Attribution 4.0 International
 
 =======================================================================
 

@@ -7,7 +7,7 @@ import shrinkWrap from "replicad-shrink-wrap";
 import { addSVG, drawSVG } from "replicad-decorate";
 import Fonts from "./js/fonts.js";
 import { AnyNest, FloatPolygon } from "any-nest";
-import { re } from "mathjs";
+import { equal, re } from "mathjs";
 
 var library = {};
 let defaultColor = "#aad7f2";
@@ -247,34 +247,40 @@ function is3D(inputs) {
 function move(inputID, x, y, z, targetID = null) {
   return started.then(() => {
     if (is3D(library[inputID])) {
-      let result = actOnLeafs(library[inputID], (leaf) => {
-        return {
-          geometry: [leaf.geometry[0].clone().translate(x, y, z)],
-          plane: leaf.plane,
-          tags: leaf.tags,
-          color: leaf.color,
-          bom: leaf.bom,
-        };
-      });
+      let result = actOnLeafs(
+        library[inputID],
+        (leaf) => {
+          return {
+            geometry: [leaf.geometry[0].clone().translate(x, y, z)],
+            plane: leaf.plane,
+            tags: leaf.tags,
+            color: leaf.color,
+            bom: leaf.bom,
+          };
+        },
+        library[inputID].plane
+      );
       if (targetID) {
         library[targetID] = result;
-        //library[inputID].plane.translate([0, 0, z]); //@Alzatin what is this line for?
       } else {
         return result;
       }
     } else {
-      let result = actOnLeafs(library[inputID], (leaf) => {
-        return {
-          geometry: [leaf.geometry[0].clone().translate([x, y])],
-          tags: leaf.tags,
-          plane: leaf.plane.translate([0, 0, z]),
-          color: leaf.color,
-          bom: leaf.bom,
-        };
-      });
+      let result = actOnLeafs(
+        library[inputID],
+        (leaf) => {
+          return {
+            geometry: [leaf.geometry[0].clone().translate([x, y])],
+            tags: leaf.tags,
+            plane: leaf.plane.translate([0, 0, z]),
+            color: leaf.color,
+            bom: leaf.bom,
+          };
+        },
+        library[inputID].plane.translate([0, 0, z])
+      );
       if (targetID) {
         library[targetID] = result;
-        //library[inputID].plane.translate([0, 0, z]); //@Alzatin what is this line for?
       } else {
         return result;
       }
@@ -422,6 +428,37 @@ function tag(targetID, inputID, TAG) {
   });
 }
 
+function extractAllTags(inputID, tag) {
+  return started.then(() => {
+    // Recursive helper function to collect tags
+    function collectTags(geometry) {
+      let tags = new Set(geometry.tags || []); // Use a Set to ensure uniqueness
+
+      // If the geometry is an assembly, recursively collect tags from subassemblies
+      if (isAssembly(geometry)) {
+        geometry.geometry.forEach((subAssembly) => {
+          const subTags = collectTags(subAssembly);
+          subTags.forEach((tag) => tags.add(tag)); // Add tags from subassemblies
+        });
+      }
+
+      return tags;
+    }
+
+    // Start collecting tags from the input geometry
+    const inputGeometry = library[inputID];
+    if (!inputGeometry) {
+      throw new Error(`Geometry with ID ${inputID} not found in library`);
+    }
+
+    const allTags = collectTags(inputGeometry);
+    let returningArray = Array.from(allTags); // Convert the Set to an array
+
+    returningArray = ["Select Tag", ...new Set(returningArray)];
+    return returningArray;
+  });
+}
+
 //---------------------Functions for the code atom---------------------
 
 /**
@@ -485,7 +522,6 @@ async function code(targetID, code, argumentsArray) {
   );
 
   library[targetID] = result;
-
   // If the type of the result is a number return the number so it can be passed to the next atom
   if (typeof result === "number") {
     return result;
@@ -789,19 +825,17 @@ function extractKeepOut(inputGeometry) {
  *    - thickness - thickness of the stock material
  *    - width
  *    - height - together with width specifies the demensions of the stock material
- *    - sheetPadding - space from the edge of the material where no parts will be placed
  *    - partPadding - space between parts in the resulting placement
  */
 function layout(
   targetID,
   inputID,
-  TAG,
   progressCallback,
   placementsCallback,
   layoutConfig
 ) {
   return started.then(() => {
-    var shapesForLayout = rotateForLayout(targetID, inputID, TAG, layoutConfig);
+    var shapesForLayout = rotateForLayout(targetID, inputID, layoutConfig);
 
     let positionsPromise = computePositions(
       shapesForLayout,
@@ -825,7 +859,7 @@ function layout(
       }
 
       //This does the actual layout of the parts. We want to break this out into it's own function which can be passed a list of positions
-      applyLayout(targetID, inputID, positions, TAG, layoutConfig);
+      applyLayout(targetID, inputID, positions, layoutConfig);
       return warning;
     });
   });
@@ -834,116 +868,158 @@ function layout(
 /**
  * Lay the input geometry flat and apply the transformations to display it
  */
-function displayLayout(targetID, inputID, positions, TAG, layoutConfig) {
-  rotateForLayout(targetID, inputID, TAG, layoutConfig);
+function displayLayout(targetID, inputID, positions, layoutConfig) {
+  rotateForLayout(targetID, inputID, layoutConfig);
 
-  applyLayout(targetID, inputID, positions, TAG, layoutConfig);
+  applyLayout(targetID, inputID, positions, layoutConfig);
 }
+
 
 /**
  * Rotate shapes to be placed on their most cuttable face (basically lay them flat)
  */
-function rotateForLayout(targetID, inputID, TAG, layoutConfig) {
+function rotateForLayout(targetID, inputID, layoutConfig) {
   var THICKNESS_TOLLERANCE = 0.001;
 
-  let taggedGeometry = extractTags(library[inputID], TAG);
-  if (!taggedGeometry) {
-    throw new Error("No Upstream Geometries Tagged for Cut");
+  function equalThickness(a, b) {
+    return Math.abs(a - b) < THICKNESS_TOLLERANCE;
   }
+
+  let geometryToLayout = library[inputID];
+
   let localId = 0;
   let shapesForLayout = [];
 
-  //Split apart disjoint geometry into assemblies so they can be placed seperately
+  //TODO: revisit this? Split apart disjoint geometry into assemblies so they can be placed seperately
   // let splitGeometry = actOnLeafs(taggedGeometry, disjointGeometryToAssembly);
 
-  // console.log(splitGeometry);
+  // Algo overview:
+  // collect all prospective orientations for all parts
+  // come up with a best-guess material thickness or n/a
+  // select among candidates for each part based on either good fit to the
+  //    estimated material thickness, or just take thinnest orientation.
 
-  // Rotate all shapes to be most cuttable.
-  library[targetID] = actOnLeafs(taggedGeometry, (leaf) => {
+
+  // get candidates as {leaf_id: "abc", [candidate 1, candidate 2 etc]}
+  const all_candidates = {}
+  const intermediate = actOnLeafs(geometryToLayout, (leaf) => {
     // For each face, consider it as the underside of the shape on the CNC bed.
     // In order to be considered, a face must be...
-    //  1) a flat PLANE, not a cylander, or sphere or other curved face type.
-    //  2) the thickness of the part normal to this plane must be less than or equal to
-    //     the raw material thickness
-    //  3) there must be no parts of the shape which protrude "below" this face
-    let candidates = [];
+    //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
+    //  2) there must be no parts of the shape which protrude "below" this face
+    const candidates = [];
     let hasFlatFace = false;
     let faceIndex = 0;
     leaf.geometry[0].faces.forEach((face) => {
       if (face.geomType == "PLANE") {
         hasFlatFace = true;
-        let prospectiveGoem = moveFaceToCuttingPlane(leaf.geometry[0], face);
-        let thickness = prospectiveGoem.boundingBox.depth;
-        if (thickness < layoutConfig.thickness + THICKNESS_TOLLERANCE) {
-          // Check for protrusions "below" the bottom of the raw material.
-          if (
-            prospectiveGoem.boundingBox.bounds[0][2] >
-            -1 * THICKNESS_TOLLERANCE
-          ) {
-            candidates.push({
-              face: face,
-              geom: prospectiveGoem,
-              faceIndex: faceIndex,
-            });
-          }
+        const prospectiveGoem = moveFaceToCuttingPlane(leaf.geometry[0], face);
+//        if (thickness < layoutConfig.thickness + THICKNESS_TOLLERANCE) {
+        // Check for protrusions "below" the bottom of the raw material.
+        if (
+          prospectiveGoem.boundingBox.bounds[0][2] >
+          -1 * THICKNESS_TOLLERANCE
+        ) {
+          candidates.push({
+            face: face,
+            geom: prospectiveGoem,
+            faceIndex: faceIndex,
+            thickness: prospectiveGoem.boundingBox.depth,
+          });
         }
       }
       faceIndex++;
     });
 
-    let selected;
     if (candidates.length == 0) {
       if (!hasFlatFace) {
-        // TODO: how to specify which upstream object? We know which leaf we're dealing with here
-        // but I'm not sure how to back-track that to alerting on the relevant atom or
-        // providing a user visible indication of which geom is the problem.
+        // TODO: This should be a warning not an error and we should fail over to placing
+        // objects on a curved side.
         throw new Error("Upstream object uncuttable, has no flat face");
-      } else {
-        throw new Error("Upstream object too thick for specified material");
       }
-    } else if (candidates.length == 1) {
+    }
+    all_candidates[localId]= candidates
+    const newLeaf = {
+      geometry: leaf.geometry,
+      id: localId,
+      tags: leaf.tags,
+      color: leaf.color,
+      plane: leaf.plane,
+      bom: leaf.bom,
+    };
+    localId++;
+    return newLeaf;
+
+  });
+
+  // Heuristic here is... for each part get it's minimum thickness. If the largest of these is
+  // <= 1" then it's credibly the size of stock being used, so set that as our material
+  // thickness and select among candidates for each part.
+
+  let material_thickness = -1;
+  if (layoutConfig.units) {
+    const LARGEST_PLAUSIBLE_STOCK = layoutConfig.units == "MM" ? 25.4 : 1    
+    const min_thickness_per_part = Object.values(all_candidates).map(s => Math.min(...s.map(c => c.thickness)));
+    if (Math.max(...min_thickness_per_part) <= LARGEST_PLAUSIBLE_STOCK + THICKNESS_TOLLERANCE) {
+      material_thickness = Math.max(...min_thickness_per_part);
+    }
+  }
+
+  library[targetID] = actOnLeafs(intermediate, (leaf) => {
+    let candidates = all_candidates[leaf.id]
+    let selected;
+    if (candidates.length == 1) {
       selected = candidates[0];
     } else {
-      // The candidate selection here doesn't guarantee a printable piece. In particular there
-      // are shapes with overhangs which we cannot easily detect.
-      // These tie-break heuristics are designed to usually pick a printable orientation for
-      // this piece. (TODO) However, we should consider allowing user-modification of these
-      // orientations before the packing stage.
+      // For each candidate generate a descriptive struct with the properties we care about.
+      // namely:
+      //  - height
+      //  - area (approx)
+      //  - number of interior wires (if any)
+      const scores = candidates.map((c, index) => {
+        return {
+          candidate_index: index,
+          thickness: c.thickness,
+          area: areaApprox(c.face.UVBounds),
+          interiorWires: c.face.clone().innerWires().length,
+        }});
 
-      // Filter out faces with extra interiorWires, as these may indicate carve-outs which will
-      // be unreachable on the underside of the sheet.
-      let minInteriorWires = Math.min(
-        ...candidates.map((c) => {
-          return c.face.clone().innerWires().length;
-        })
-      );
-      candidates = candidates.filter((c) => {
-        return c.face.clone().innerWires().length === minInteriorWires;
-      });
-      if (candidates.length === 1) {
-        selected = candidates[0];
-      }
 
-      // prefer candidates whose thickness is equal to material thickness, if any.
-      let temp = candidates.filter((c) => {
-        return (
-          Math.abs(c.geom.boundingBox.depth - layoutConfig.thickness) <
-          THICKNESS_TOLLERANCE
-        );
-      });
-      if (temp.length > 0) {
-        candidates = temp;
-      }
-
-      // Pick the largest of the remaining candidates (note: it's not trivial to calculate area, so here we
-      // just compare bounding boxes)
-      let maxArea = 0;
-      candidates.forEach((c) => {
-        if (areaApprox(c.face.UVBounds) > maxArea) {
-          maxArea = areaApprox(c.face.UVBounds);
-          selected = c;
+      // Sort in order of preference (scores[0] being best).
+      scores.sort((a, b) => {
+        // Thickness differences take priority over all other factors.
+        if (!equalThickness(a.thickness, b.thickness)) {
+          // Candidates with thickness exactly equal to material thickness always win.
+          if (equalThickness(a.thickness, material_thickness)) {
+            return -1;
+          } else if (equalThickness(b.thickness, material_thickness)) {
+            return 1;
+          } else {
+            // Neither candidate is equal to material thickness. Prefer thinnest
+            // candidate.
+            return a.thickness - b.thickness;
+          }
         }
-      });
+
+        // Tie brakes for candidates of equal thickness.
+        
+        // First, look for interior wires, if unequal we prefer candidates with fewer since
+        // interior wires *might* indicate carve-outs which are unreachable on the underside of the sheet.
+        if (a.interiorWires != b.interiorWires) {
+          return a.interiorWires - b.interiorWires;
+        }
+
+        // Second (finally), prefer candidates with larger area.
+        if (Math.abs(a.area - b.area) > THICKNESS_TOLLERANCE) {
+          return b.area - a.area;
+        }
+
+        return 0; // we can't decide.
+      }
+      );
+      console.log("score");
+      console.log(scores);
+      selected = candidates[scores[0].candidate_index];
     }
     let newLeaf = {
       geometry: [selected.geom],
@@ -971,52 +1047,49 @@ function rotateForLayout(targetID, inputID, TAG, layoutConfig) {
 /**
  * Apply the transformations to the geometry to apply the layout
  */
-function applyLayout(targetID, inputID, positions, TAG, layoutConfig) {
-  library[targetID] = actOnLeafs(
-    extractTags(library[targetID], TAG),
-    (leaf) => {
-      let transform, index;
-      for (var i = 0; i < positions.length; i++) {
-        let candidates = positions[i].filter(
-          (transform) => transform.id == leaf.id
-        );
-        if (candidates.length == 1) {
-          transform = candidates[0];
-          index = i;
-          break;
-        } else if (candidates.length > 1) {
-          console.warn("Found more than one transformation for same id");
-        }
+function applyLayout(targetID, inputID, positions, layoutConfig) {
+  library[targetID] = actOnLeafs(library[targetID], (leaf) => {
+    let transform, index;
+    for (var i = 0; i < positions.length; i++) {
+      let candidates = positions[i].filter(
+        (transform) => transform.id == leaf.id
+      );
+      if (candidates.length == 1) {
+        transform = candidates[0];
+        index = i;
+        break;
+      } else if (candidates.length > 1) {
+        console.warn("Found more than one transformation for same id");
       }
-      if (transform == undefined) {
-        console.log("didn't find transform for id: " + leaf.id);
-        return undefined;
-      }
-      // apply rotation first. All rotations are around (0, 0, 0)
-      // Additionally, shift by sheet-index * sheet height so that multiple
-      // sheet layouts are spaced out from one another.
-      let newGeom = leaf.geometry[0]
-        .clone()
-        .rotate(
-          transform.rotate,
-          new replicad.Vector([0, 0, 0]),
-          new replicad.Vector([0, 0, 1])
-        )
-        .translate(
-          transform.translate.x,
-          transform.translate.y + i * layoutConfig.height,
-          0
-        );
-
-      return {
-        geometry: [newGeom],
-        tags: leaf.tags,
-        color: leaf.color,
-        plane: leaf.plane,
-        bom: leaf.bom,
-      };
     }
-  );
+    if (transform == undefined) {
+      console.log("didn't find transform for id: " + leaf.id);
+      return undefined;
+    }
+    // apply rotation first. All rotations are around (0, 0, 0)
+    // Additionally, shift by sheet-index * sheet height so that multiple
+    // sheet layouts are spaced out from one another.
+    let newGeom = leaf.geometry[0]
+      .clone()
+      .rotate(
+        transform.rotate,
+        new replicad.Vector([0, 0, 0]),
+        new replicad.Vector([0, 0, 1])
+      )
+      .translate(
+        transform.translate.x,
+        transform.translate.y + i * layoutConfig.height,
+        0
+      );
+
+    return {
+      geometry: [newGeom],
+      tags: leaf.tags,
+      color: leaf.color,
+      plane: leaf.plane,
+      bom: leaf.bom,
+    };
+  });
 }
 
 /**
@@ -1031,11 +1104,10 @@ function computePositions(
   const populationSize = 5;
   const nestingEngine = new AnyNest();
   const tolerance = 0.1;
-
   // include tolerance * 2 to ensure padding is the minimum spacing between parts.
   const configWithDefaults = nestingEngine.config({
     spacing: layoutConfig.partPadding + tolerance * 2,
-    binSpacing: layoutConfig.sheetPadding,
+    binSpacing: 0,
     populationSize: populationSize,
     exploreConcave: false, // we eventually want this to be true, but it's unsupported right now
   });
@@ -1633,6 +1705,7 @@ function generateCameraPosition(meshArray) {
 
 function generateDisplayMesh(id) {
   return started.then(() => {
+    console.log("Generating display mesh for " + id);
     if (library[id] == undefined || id == undefined) {
       console.log("ID undefined or not found in library");
       //throw new Error("ID not found in library");
@@ -1731,6 +1804,7 @@ expose({
   rotate,
   difference,
   tag,
+  extractAllTags,
   layout,
   displayLayout,
   output,

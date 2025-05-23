@@ -234,42 +234,24 @@ export default class Molecule extends Atom {
       (node) => node.atomType === "Export"
     );
 
-    exportParams[this.uniqueID + "part_ops"] = {
-      value: this.partToExport
-        ? this.partToExport.fileName
-        : "Pick a part to export",
-      options: exportAtoms.map(
-        (option) =>
-          option.inputs.filter((input) => input.name === "Part Name")[0].value
-      ),
-      label: "Part",
-      onChange: (value) => {
-        this.partToExport = exportAtoms.find(
-          (atom) =>
-            atom.inputs.filter((input) => input.name === "Part Name")[0]
-              .value === value
-        );
+    exportAtoms.forEach((atom) => {
+      const partName =
+        atom.inputs.filter((input) => input.name === "Part Name")[0]?.value ||
+        "Unnamed Part";
+      exportParams[`Export ${partName}`] = button(() => {
+        atom.exportFile();
+        console.log(`Exporting: ${partName}`);
+      });
+    });
 
-        this.updateValue();
-      },
-    };
-
-    exportParams[this.uniqueID + "file_ops"] = {
-      value: this.partToExport
-        ? this.partToExport.fileType
-        : "Pick a file type",
-      options: exportOptions,
-      label: "File Type",
-      onChange: (value) => {
-        if (this.partToExport) {
-          this.partToExport.type = value;
-        }
-        //atom.exportFile()
-      },
-    };
-
-    exportParams["Export As"] = button(() => {
-      this.partToExport.exportFile();
+    const gcodeAtoms = this.nodesOnTheScreen.filter(
+      (node) => node.atomType === "Gcode"
+    );
+    // this is wrong and only a placeholder for kiri forum questions
+    gcodeAtoms.forEach((atom) => {
+      exportParams[`Download Gcode – ${this.uniqueID}`] = button(() =>
+        atom.clickKiriButton()
+      );
     });
 
     return exportParams;
@@ -552,12 +534,10 @@ export default class Molecule extends Atom {
       centeredText.style.display = "flex";
 
       GlobalVariables.cad.molecule(this.uniqueID, outputID).then(() => {
-
         //If we're currently inside this molecule, we don't want to pass the update to the next level until we leave
         if (GlobalVariables.currentMolecule !== this) {
           this.basicThreadValueProcessing();
-        }
-        else{
+        } else {
           this.awaitingPropagationFlag = true;
         }
 
@@ -567,8 +547,6 @@ export default class Molecule extends Atom {
         if (this.selected) {
           this.sendToRender();
         }
-        const loadingDots = document.querySelector(".loading");
-        loadingDots.style.display = "none";
       });
     } catch (err) {
       this.setAlert(err);
@@ -826,11 +804,18 @@ export default class Molecule extends Atom {
             ioValues: oldObject.ioValues,
           };
         } else {
+          let xPos = 0.5;
+          let yPos = 0.6;
+          //If there's no last click default to middle of screen
+          if (GlobalVariables.lastClick) {
+            xPos = GlobalVariables.pixelsToWidth(GlobalVariables.lastClick[0]);
+            yPos = GlobalVariables.pixelsToHeight(GlobalVariables.lastClick[1]);
+          }
           valuesToOverwriteInLoadedVersion = {
             uniqueID: newMoleculeUniqueID,
             parentRepo: item,
-            x: GlobalVariables.pixelsToWidth(GlobalVariables.lastClick[0]),
-            y: GlobalVariables.pixelsToHeight(GlobalVariables.lastClick[1]),
+            x: xPos,
+            y: yPos,
             topLevel: false,
           };
         }

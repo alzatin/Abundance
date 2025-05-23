@@ -11,6 +11,7 @@ import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
 import ParamsEditor from "../secondary/ParameterEditor.jsx";
 import RunNavigation from "../secondary/RunNavigation.jsx";
 import Molecule from "../../molecules/molecule.js";
+import KiriMotoIntegration from "../secondary/Kirimoto.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -47,7 +48,6 @@ function runMode({
   setActiveAtom,
   activeAtom,
   authorizedUserOcto,
-  tryLogin,
   loadProject,
   mesh,
   wireMesh,
@@ -100,6 +100,7 @@ function runMode({
       })
       .then((result) => {
         globalvariables.currentRepo = result.data;
+        console.log("globalvariables.currentRepo", globalvariables.currentRepo);
         /*temp variables while we change to aws*/
         globalvariables.currentRepo.repoName = globalvariables.currentRepo.name;
         globalvariables.currentRepo.owner =
@@ -172,7 +173,10 @@ function runMode({
           }}
         />
       ) : null}
-      <RunNavigation {...{ authorizedUserOcto, tryLogin, activeAtom }} />
+      {GlobalVariables.currentRepo ? (
+        <RunNavigation {...{ authorizedUserOcto, activeAtom }} />
+      ) : null}
+      <KiriMotoIntegration {...{ activeAtom }} />
       {globalvariables.currentRepo ? (
         <div className="info_run_div">
           <p>{"Project Name: " + globalvariables.currentRepo.repoName}</p>

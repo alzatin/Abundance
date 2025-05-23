@@ -9,7 +9,7 @@ import { saveAs } from "file-saver";
  */
 export default class Export extends Atom {
   /**
-   * The constructor function.
+   * The stnstructor function.
    * @param {object} values An array of values passed in which will be assigned to the class as this.x
    */
   constructor(values) {
@@ -53,9 +53,9 @@ export default class Export extends Atom {
 
     this.setValues(values);
 
-    this.fileName = null;
-
     this.importIndex = 0;
+
+    this.partName = this.parent.name;
   }
 
   /**
@@ -117,6 +117,7 @@ export default class Export extends Atom {
             label: "File Type",
             onChange: (value) => {
               if (input.value !== value) {
+                this.type = value;
                 input.setValue(value);
               }
             },
@@ -137,12 +138,13 @@ export default class Export extends Atom {
         }
         if (input.name == "Part Name") {
           inputParams[this.uniqueID + input.name] = {
-            value: input.value,
+            value: this.partName,
             label: input.name,
             disabled: checkConnector(),
             onChange: (value) => {
               if (input.value !== value) {
                 input.setValue(value);
+                this.partName = value;
               }
             },
           };
@@ -175,6 +177,9 @@ export default class Export extends Atom {
         GlobalVariables.topLevelMolecule.unitsKey
       )
       .then((result) => {
+        console.log("Export result");
+        console.log(result);
+        console.log("File type");
         saveAs(result, partName + "." + fileType.toLowerCase());
       })
       .catch(this.alertingErrorHandler());
@@ -187,7 +192,7 @@ export default class Export extends Atom {
     superSerialObject.type = this.type;
     superSerialObject.resolution = this.resolution;
     superSerialObject.importIndex = this.importIndex;
-    superSerialObject.fileName = this.fileName;
+    superSerialObject.partName = this.partName;
 
     return superSerialObject;
   }

@@ -15,6 +15,7 @@ function TopMenu({
   currentMoleculeTop,
   activeAtom,
   setActiveAtom,
+  shortCutsOn,
   setShortCuts,
 }) {
   let [shareDialog, setShareDialog] = useState(false);
@@ -248,7 +249,7 @@ function TopMenu({
         <SaveBar {...{ saveState, savePopUp, setSavePopUp }} />
       ) : null}
       {settingsPopUp ? (
-        <SettingsPopUp {...{ setSettingsPopUp, setShortCuts }} />
+        <SettingsPopUp {...{ setSettingsPopUp, shortCutsOn, setShortCuts }} />
       ) : null}
       {shareDialog ? (
         <ShareDialog

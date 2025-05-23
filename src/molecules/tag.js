@@ -40,9 +40,6 @@ export default class Tag extends Atom {
     /** Array of tags for this atom */
     this.tags = [""];
 
-    /** Flag for cutlist tag */
-    this.cutTag = false;
-
     this.setValues(values);
   }
 
@@ -87,32 +84,13 @@ export default class Tag extends Atom {
   createLevaInputs() {
     let inputParams = {};
 
-    inputParams[this.uniqueID + "cut_string"] = {
-      value: this.cutTag,
-      label: "Cut List Tag",
-      onChange: (value) => {
-        if (this.cutTag !== value) {
-          if (value === true) {
-            this.cutTag = true;
-            this.tags.push("cutLayout");
-            this.name = this.tags.toString();
-            this.updateValue();
-          } else {
-            this.cutTag = false;
-            this.tags = this.tags.filter((e) => e !== "cutLayout");
-            this.name = this.tags.toString();
-            this.updateValue();
-          }
-        }
-      },
-    };
     inputParams[this.uniqueID + "custom_string"] = {
-      value: this.tags.filter((e) => e !== "cutLayout")[0],
+      value: this.tags[0],
       label: "Add Tag",
       disabled: false,
       onChange: (value) => {
-        this.tags = this.cutTag ? ["cutLayout"] : [];
-        this.tags.push(value);
+        this.tags = [];
+        this.tags.push(value); // Add the new tag to the array
         this.name = this.tags.toString();
         this.updateValue();
       },
@@ -130,7 +108,6 @@ export default class Tag extends Atom {
       this.processing = true;
       var inputID = this.findIOValue("geometry");
       var tags = this.tags;
-      this.addTagsToAvailableTags();
       GlobalVariables.cad
         .tag(this.uniqueID, inputID, tags)
         .then(() => {
@@ -153,7 +130,6 @@ export default class Tag extends Atom {
   serialize(offset = { x: 0, y: 0 }) {
     var superSerialObject = super.serialize(offset);
     superSerialObject.tags = this.tags;
-    superSerialObject.cutTag = this.cutTag;
 
     return superSerialObject;
   }

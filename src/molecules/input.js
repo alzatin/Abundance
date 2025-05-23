@@ -48,7 +48,7 @@ export default class Input extends Atom {
      */
     this.oldName = this.name;
 
-    this.radius = this.radius * 1.3;
+    this.radius = 1 / 75;
 
     this.addIO("output", "number or geometry", this, this.type, this.value);
 
@@ -81,12 +81,13 @@ export default class Input extends Atom {
    * Draws the atom on the screen.
    */
   draw() {
-    // //Snap the inputs to the far right side
+    // Always lock the inputs to the left side
     /**
      * The x position of the atom
      * @type {number}
      */
     this.x = 0.04;
+    this.radius = GlobalVariables.atomSize * 1.3;
 
     let xInPixels = GlobalVariables.widthToPixels(this.x);
     let yInPixels = GlobalVariables.heightToPixels(this.y);
@@ -124,24 +125,28 @@ export default class Input extends Atom {
       this.color = this.defaultColor;
       this.strokeColor = this.selectedColor;
     }
-
+    
+    // Draw the inputs
     this.inputs.forEach((input) => {
       input.draw();
     });
+    
+    // Draw the output
     if (this.output) {
       this.output.draw();
     }
+    
     GlobalVariables.c.beginPath();
     GlobalVariables.c.moveTo(0, yInPixels + this.height / 2);
     GlobalVariables.c.lineTo(this.width, yInPixels + this.height / 2);
-    GlobalVariables.c.lineTo(this.width + radiusInPixels, yInPixels);
+    GlobalVariables.c.lineTo(this.width + radiusInPixels / 2, yInPixels);
     GlobalVariables.c.lineTo(this.width, yInPixels - this.height / 2);
     GlobalVariables.c.lineTo(0, yInPixels - this.height / 2);
     GlobalVariables.c.lineWidth = 1;
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
     GlobalVariables.c.stroke();
-    GlobalVariables.c.font = "11px Work Sans";
+    GlobalVariables.c.font = GlobalVariables.fontSize;
     GlobalVariables.c.textAlign = "start";
     GlobalVariables.c.fillStyle = "black";
     GlobalVariables.c.width = 20;

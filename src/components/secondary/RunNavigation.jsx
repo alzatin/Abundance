@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import ShareDialog from "./ShareDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import GlobalVariables from "../../js/globalvariables.js";
+import { useAuth0 } from "@auth0/auth0-react";
 
 //navigation svg icons - turn into key pairs later
 let shareSvg = (
@@ -129,12 +130,13 @@ let exportSvg = (
   </svg>
 );
 
-function RunNavigation({ authorizedUserOcto, tryLogin, activeAtom }) {
+function RunNavigation({ authorizedUserOcto, activeAtom }) {
   let [shareDialog, setShareDialog] = useState(false);
   let starred = false;
   let [dialogContent, setDialog] = useState("");
 
   var navigate = useNavigate();
+  const { loginWithRedirect } = useAuth0();
 
   useEffect(() => {
     // check if the current user has starred the project
@@ -422,16 +424,58 @@ function RunNavigation({ authorizedUserOcto, tryLogin, activeAtom }) {
 
   /** Runs if star is clicked but there's no logged in user */
   const loginLike = function () {
-    tryLogin().then((result) => {
-      likeProject(result);
-    });
+    console.log("no user logged in, needs new trylogin");
+    const loginConfirm = confirm(
+      "You are not logged in. Would you like to log in?"
+    );
+    if (loginConfirm) {
+      loginWithRedirect();
+    } else {
+      // user clicked cancel and is redirected to the run mode
+    }
   };
 
   /** Runs if fork is clicked but there's no logged in user */
   const loginFork = function () {
-    tryLogin().then((result) => {
+    console.log("no user logged in, needs new trylogin");
+    const loginConfirm = confirm(
+      "You are not logged in. Would you like to log in?"
+    );
+    if (loginConfirm) {
+      console.log("login with redirect");
+      loginHandler();
+    } else {
+      // user clicked cancel and is redirected to the run mode
+    }
+    /*tryLogin().then((result) => {
       forkProject(result);
+    });*/
+  };
+  const loginHandler = () => {
+    // the client id from github
+    const client_id = import.meta.env.VITE_GH_OAUTH_CLIENT_ID;
+
+    // create a CSRF token and store it locally
+    const csrfToken = window.crypto
+      .getRandomValues(new Uint8Array(16))
+      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
+    localStorage.setItem("latestCSRFToken", csrfToken);
+    const repo =
+      GlobalVariables.currentRepo.owner +
+      "/" +
+      GlobalVariables.currentRepo.repoName;
+    // include currentRepo in the state parameter
+    const state = JSON.stringify({
+      csrfToken: csrfToken,
+      currentRepo: repo,
+      forking: true,
     });
+
+    // redirect the user to github
+    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
+      import.meta.env.VITE_REDIRECT_URI
+    }callback&state=${encodeURIComponent(state)}`;
+    window.location.assign(link);
   };
 
   return (
@@ -461,6 +505,7 @@ function RunNavigation({ authorizedUserOcto, tryLogin, activeAtom }) {
         >
           {forkSvg}
         </button>
+
         <button
           className=" run-navigation-button"
           id="Star-button"
@@ -469,7 +514,7 @@ function RunNavigation({ authorizedUserOcto, tryLogin, activeAtom }) {
               ? likeProject(authorizedUserOcto)
               : authorizedUserOcto && starred
               ? unlikeProject(authorizedUserOcto)
-              : loginLike();
+              : loginFork();
           }}
         >
           {starSvg}

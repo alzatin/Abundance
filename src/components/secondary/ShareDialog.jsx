@@ -75,7 +75,7 @@ function ShareDialog({
               style={{ margin: "16px" }}
               href={
                 window.location.origin +
-                "/Abundance/run/" +
+                "/run/" +
                 GlobalVariables.currentRepo.owner +
                 "/" +
                 GlobalVariables.currentRepo.repoName

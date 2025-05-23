@@ -7,74 +7,83 @@ const projectUser = "moatmaslow";
 
 const puppeteer = require("puppeteer");
 const projects_to_test = require("./projects_to_test.js");
+// Get the current date
+const currentDate = new Date().toISOString().split("T")[0];
 
 // Launch the browser and open a new blank page
-//for each project in projects to test lauch puppeteer
+//for each project in projects to test launch puppeteer
 
 (async () => {
-  for (const project of projects_to_test) {
-    await loadPuppeterAndExec("http://localhost:4444", project, "Test");
-
-    await loadPuppeterAndExec(
-      "https://barboursmith.github.io/Abundance",
-      project,
-      "Deployed"
-    );
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    await loadPuppeteerAndExec(browser, currentDate);
+  } catch (error) {
+    console.error(`Error processing projects`);
+  } finally {
+    if (browser) {
+      console.log(`Closing browser `);
+      await browser.close();
+    }
   }
+  console.log("All projects processed:!");
 })();
 
-async function loadPuppeterAndExec(url, projectName, photoLabel) {
-  const browser = await puppeteer.launch({
-    headless: false,
-  });
+async function loadPuppeteerAndExec(browser, date) {
   const page = await browser.newPage();
-  // Navigate the page to a URL.
-  //await page.goto("https://barboursmith.github.io/Abundance/");
-  await page.goto(url + "/run/" + projectUser + "/" + projectName);
 
-  // Set screen size.
-  await page.setViewport({ width: 1080, height: 1024 });
+  for (const projectName of projects_to_test) {
+    console.log(projectName);
+    // Navigate the page to a localhost URL.
+    await page.goto(
+      "http://localhost:4444" + "/run/" + projectUser + "/" + projectName
+    );
+    console.log("navigated to: " + projectName);
+    // Set screen size.
+    await page.setViewport({ width: 1080, height: 1024 });
+    const selector = "#molecule-fully-render-puppeteer";
+    /*await page.waitForSelector("#molecule-fully-render-puppeteer", {
+      visible: true,
+      timeout: 120000,
+    });*/
+    await page.waitForFunction(
+      (selector) => !!document.querySelector(selector),
+      { timeout: 120000 }, // Increase timeout to 2 minutes
+      selector
+    );
+    await page.screenshot({
+      path: `Puppet/images/${projectName}-Test.png`,
+    });
+    console.log(`Screenshot: Puppet/images/${projectName}-Test-${date}.png `);
 
-  /*//  Authentication workflow - when not in run mode
-  Wait and click on login button.
-  await page.waitForSelector("#loginButton");
-  await page.click("#loginButton");
-  // Wait and click on login button.
-  await page.waitForSelector(
-    "body > div > main > section > div > div > div > div > form > button"
-  );
-  await page.click(
-    "body > div > main > section > div > div > div > div > form > button"
-  );
-  await page.waitForSelector('input[id="login_field"]');
-  await page.waitForSelector('input[id="password"]');
-  await page.waitForSelector(
-    "#login > div.auth-form-body.mt-3 > form > div > input.btn.btn-primary.btn-block.js-sign-in-button"
-  );
+    await page.goto(
+      "https://abundance.maslowcnc.com" +
+        "/run/" +
+        projectUser +
+        "/" +
+        projectName
+    );
+    await page.waitForFunction(
+      (selector) => !!document.querySelector(selector),
+      { timeout: 120000 }, // Increase timeout to 2 minutes
+      selector
+    );
+    await page.screenshot({
+      path: `Puppet/images/${projectName}-Deployed.png`,
+    });
 
-  if (envUserValue) {
-    await page.type('input[id="login_field"]', String(envUserValue));
-  } else {
-    console.warn("No GITHUB_USER environment variable set.");
+    console.log(
+      `Screenshot: Puppet/images/${projectName}-Deployed-${date}.png`
+    );
   }
-  await page.type('input[id="password"]', String(envPassValue));
-  await page.click(
-    "#login > div.auth-form-body.mt-3 > form > div > input.btn.btn-primary.btn-block.js-sign-in-button"
-  );
-  await page.waitForSelector(".project-item-div");
-  await page.click(`#${projectName}`);*/
-
-  const selector = "#molecule-fully-render-puppeteer";
-  await page.waitForFunction(
-    (selector) => !!document.querySelector(selector),
-    {},
-    selector
-  );
-
+  // Navigate to main.html
+  const path = require("path");
+  await page.goto(`file:${path.join(__dirname, "main.html")}`);
+  console.log("navigated to: main.html");
   await page.screenshot({
-    path: `Puppet/images/${projectName}-${photoLabel}.png`,
+    path: `Puppet/images/main.png`,
   });
-  console.log(`Puppet/images/${projectName}-${photoLabel}.png`);
-
-  await browser.close();
 }

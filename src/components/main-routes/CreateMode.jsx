@@ -8,7 +8,7 @@ import LowerHalf from "./lowerHalf.jsx";
 import ParamsEditor from "../secondary/ParameterEditor.jsx";
 import CodeWindow from "../secondary/codeWindow.jsx";
 import { useAuth0 } from "@auth0/auth0-react";
-
+import KiriMotoIntegration from "../secondary/Kirimoto.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -29,7 +29,6 @@ function CreateMode({
   activeAtom,
   setActiveAtom,
   authorizedUserOcto,
-  tryLogin,
   loadProject,
   exportPopUp,
   setExportPopUp,
@@ -332,7 +331,9 @@ function CreateMode({
     var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
 
     //Don't save again if nothing has changed
-    if (JSON.stringify(jsonRepOfProject) == JSON.stringify(lastSaveData.current)) {
+    if (
+      JSON.stringify(jsonRepOfProject) == JSON.stringify(lastSaveData.current)
+    ) {
       return;
     }
 
@@ -462,8 +463,8 @@ function CreateMode({
           ) : null}
           <ToggleRunCreate run={false} />
           {shortCutsOn ? (
-            <div id="shortcutDiv">
-              <li style={{ fontSize: "14px" }}>(Cmmd +)</li>
+            <div id="shortcutDiv" className="noselect">
+              <li style={{ fontSize: "14px" }}>(CTRL +)</li>
               {Object.entries(shortCuts).map(([key, value]) => {
                 return (
                   <li key={key} className="shortcut">
@@ -485,11 +486,13 @@ function CreateMode({
               currentMoleculeTop,
               activeAtom,
               setActiveAtom,
+              shortCutsOn,
               setShortCuts,
             }}
           />
 
           <CodeWindow {...{ activeAtom }} />
+          <KiriMotoIntegration {...{ activeAtom }} />
           <input
             type="file"
             id="fileLoaderInput"

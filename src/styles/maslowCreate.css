@@ -5,7 +5,7 @@
   --abundance-color-brightPurple: #be3fe5;
   --abundance-color-transparentHighlight: #c4a3d565;
   --abundance-color-lightPurple: #c4a3d5;
-  --abundance-color-fontLightGrey: rgb(255 255 255 / 34%);
+  --abundance-color-fontLightGrey: rgba(117, 116, 116, 0.98);
   --abundance-color-fontGrey: #333;
   --abundance-color-fontTransparentGrey: rgba(255, 255, 255, 0.289);
   --abundance-color-fontWhite: #f2f0f0;
@@ -13,6 +13,8 @@
   --abundance-color-veryLightPurple: rgb(248 243 251);
   --abundance-color-veryLightPurpleHighlight: rgba(233, 221, 242, 0.961);
   --abundance-color-hightlightOffWhite: #fffffff6;
+  --abundance-color-mediumGrey: #545252;
+  --abundance-color-veryLightPurpleHighlight: #f9e9fd;
 }
 
 .dark-theme {
@@ -21,6 +23,7 @@
 
   --settingsPopup-text: var(--abundance-color-hightlightOffWhite);
   --settingsPopup-closeButton: var(--abundance-color-darkGrey);
+  --settingsPopup-background: var(--abundance-color-mediumGrey);
 
   --loginPopup-background: var(--abundance-color-veryLightPurple);
   --loginPopup-text: var(--abundance-color-fontGrey);
@@ -31,7 +34,12 @@
   --loginPopup-projectColorHover: var(
     --abundance-color-veryLightPurpleHighlight
   );
+
+  --submit-button-background: var(--abundance-color-fontWhite);
+  --submit-button-text: var(--abundance-color-darkGrey);
   --newProject-form-input: var(--abundance-color-hightlightOffWhite);
+
+  --newProject-form-input-text: var(--abundance-color-fontGrey);
 
   --lowerCanvas-menu-background: var(--abundance-color-darkGrey);
   --lowerCanvas-menu-text: var(--abundance-color-fontWhite);
@@ -56,10 +64,55 @@
 
   --run-project-info: var(--abundance-color-lightPurple);
   --loginPopup-project-border: var(--abundance-color-lightPurple);
+  --repo-name-path: var(--abundance-color-hightlightOffWhite);
 }
 
 .light-theme {
-  --flowCanvas-background: var(--abundance-color-darkGrey);
+  --flowCanvas-background: var(--abundance-color-fontLightGrey);
+  --flowCanvas-text-hover: var(--abundance-color-darkGrey);
+  --settingsPopup-text: var(--abundance-color-darkGrey);
+  --settingsPopup-closeButton: var(--abundance-color-hightlightOffWhite);
+  --settingsPopup-background: var(--abundance-color-fontWhite);
+  --settingsPopup-hover-text: var(--abundance-color-fontWhite);
+  --newProject-form-input: var(--abundance-color-mediumGrey);
+  --newProject-form-input-text: var(--abundance-color-fontWhite);
+  --repo-name-path: var(--abundance-color-darkGrey);
+
+  --loginPopup-background: var(--abundance-color-veryLightPurple);
+  --loginPopup-text: var(--abundance-color-fontGrey);
+  --loginPopup-border: var(--abundance-color-darkGrey);
+  --loginPopup-input: var(--abundance-color-darkGrey);
+  --loginPopup-button: var(--abundance-color-darkGrey);
+  --loginPopup-projectColor: var(--abundance-color-hightlightOffWhite);
+  --loginPopup-projectColorHover: var(
+    --abundance-color-veryLightPurpleHighlight
+  );
+  --submit-button-text: var(--abundance-color-fontWhite);
+  --submit-button-background: var(--abundance-color-darkGrey);
+
+  --lowerCanvas-menu-background: var(--abundance-color-darkGrey);
+  --lowerCanvas-menu-text: var(--abundance-color-fontWhite);
+  --lowerCanvas-menu-inputs: var(--abundance-color-mainPurple);
+
+  --saveBar-background: var(--abundance-color-fontLightGrey);
+  --saveBar-text: var(--abundance-color-hightlightOffWhite);
+  --saveBar-progressColor: var(--abundance-color-brightPurple);
+
+  --gitSearch-border: var(--abundance-color-brightPurple);
+  --gitSearch-background: var(--abundance-color-darkGrey);
+  --gitSearch-text: var(--abundance-color-fontWhite);
+  --gitsearch-Panel-background: var(--abundance-color-hightlightOffWhite);
+  --gitsearch-Panel-text: var(--abundance-color-darkGrey);
+
+  --run-navigation-button: var(--abundance-color-hightlightOffWhite);
+  --run-navigation-button-hover: var(--abundance-color-transparentHighlight);
+
+  --dialog-background: var(--abundance-color-hightlightOffWhite);
+  --dialog-text: var(--abundance-color-darkGrey);
+  --dialog-border: var(--abundance-color-brightPurple);
+
+  --run-project-info: var(--abundance-color-lightPurple);
+  --loginPopup-project-border: var(--abundance-color-lightPurple);
 }
 
 /*
@@ -117,7 +170,7 @@ body {
 }
 
 .repo-name-path {
-  color: var(--abundance-color-fontLightGrey);
+  color: var(--repo-name-path);
   text-decoration: none;
 }
 .repo-name-path:hover {
@@ -133,7 +186,7 @@ body {
   left: calc(100% - 200px);
   top: 25px;
   color: var(--abundance-color-fontTransparentGrey);
-  z-index: 1000;
+  z-index: 4;
   padding: 10px;
 }
 #shortcutDiv li {
@@ -173,6 +226,14 @@ body {
 }
 .runContainer {
   display: flex;
+}
+
+#runMode_button {
+  font-size: 13px;
+  padding: 0 3px 0 3px;
+  color: var(--abundance-color-veryLightPurpleHighlight);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
 }
 
 #modelViewer {
@@ -233,12 +294,12 @@ canvas {
 .GitProjectInfoPanel {
   padding: 10px;
   display: flex;
+  position: absolute;
   background-color: var(--gitsearch-Panel-background);
   border: 2px solid #c4a3d5;
   color: rgb(10, 9, 10);
   width: 340px;
-  position: absolute;
-  left: 0px;
+  right: 360px;
   top: 100px;
   z-index: 10;
   gap: 20px;
@@ -384,11 +445,11 @@ canvas {
 .tooltip {
   display: block;
   pointer-events: none;
-  background-color: var(--abundance-color-fontTransparentGrey);
+  background-color: rgb(40, 39, 39);
   margin: auto;
   font-size: 0.9em;
   font-family: "Roboto", sans-serif;
-  color: white;
+  color: var(--abundance-color-veryLightPurpleHighlight);
   z-index: 1041;
   position: absolute;
   top: 100;
@@ -806,4 +867,15 @@ Sidebar navigation
   .share-dialog button:hover {
     background-color: var(--dialog-border);
   }
+}
+
+.noselect {
+  pointer-events: none;
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Old versions of Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
 }

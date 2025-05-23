@@ -4,21 +4,45 @@ import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import { Link } from "react-router-dom";
 import globalvariables from "../../js/globalvariables.js";
 import NewProjectPopUp from "../secondary/NewProjectPopUp.jsx";
-
-import { useAuth0 } from "@auth0/auth0-react";
-
-/**
- * The octokit instance which allows interaction with GitHub.
- * @type {object}
- */
-var octokit = null;
+import { useQuery } from "react-query";
+import useDebounce from "../../hooks/useDebounce.js";
+import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
  *
  */
 const InitialLog = ({ setNoUserBrowsing }) => {
-  const { loginWithRedirect } = useAuth0();
+  const location = useLocation();
+
+  const loginHandler = () => {
+    const params = new URLSearchParams(location.search);
+    let scope = "public_repo";
+    if (params.has("private")) {
+      scope = "repo";
+    }
+
+    // the client id from github
+    const client_id = import.meta.env.VITE_GH_OAUTH_CLIENT_ID;
+
+    // create a CSRF token and store it locally
+    const csrfToken = window.crypto
+      .getRandomValues(new Uint8Array(16))
+      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
+    localStorage.setItem("latestCSRFToken", csrfToken);
+
+    // include currentRepo in the state parameter
+    const state = JSON.stringify({
+      csrfToken: csrfToken,
+      forking: false,
+    });
+    // redirect the user to github
+    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
+      import.meta.env.VITE_REDIRECT_URI
+    }callback&state=${state}&scope=${scope}`;
+    window.location.assign(link);
+  };
 
   return (
     <div className="login-page">
@@ -52,7 +76,7 @@ const InitialLog = ({ setNoUserBrowsing }) => {
               id="loginButton"
               style={{ height: "40px" }}
               className="submit-btn"
-              onClick={() => loginWithRedirect()}
+              onClick={() => loginHandler() /*loginWithRedirect()*/}
             >
               Login With GitHub
             </button>
@@ -90,14 +114,9 @@ const InitialLog = ({ setNoUserBrowsing }) => {
 };
 
 // adds individual projects after API call
-const AddProject = ({
-  setYearShow,
-  nodes,
-  authorizedUserOcto,
-  projectToShow,
-}) => {
+const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
   const [browseType, setBrowseType] = useState("thumb");
-
+  const nodes = projectsLoaded ? projectsLoaded["repos"] : [];
   let initialOrder =
     projectToShow == "featured"
       ? "byStars"
@@ -434,27 +453,130 @@ const ShowProjects = ({
   loginWithRedirect,
   setNoUserBrowsing,
 }) => {
-  const loadingMessages = {
-    loading: "Loading projects...",
-    error: "Error",
-    noProjects: "No projects found",
-  };
-
-  useEffect(() => {
-    setProjectsToShow("recents");
-  }, [GlobalVariables.currentUser]);
-
+  const [search, setSearch] = useState("");
+  const debouncedSearchTerm = useDebounce(search, 200);
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
-
-  const [projectsLoaded, setStateLoaded] = useState([]);
   const [lastKey, setLastKey] = useState("");
   const [pageNumber, setPageNumber] = useState(0);
-  const [searchBarValue, setSearchBarValue] = useState("");
-  const [yearShow, setYearShow] = useState(currentYear);
-  const [apiStatus, setApiStatus] = useState(loadingMessages.loading);
 
-  const controllerRef = useRef(new AbortController());
+  // not used by aws but need to update function before deleting
+  const [yearShow, setYearShow] = useState(currentYear);
+
+  let lastKeyQuery = lastKey
+    ? "&lastKey=" + lastKey.repoName + "~" + lastKey.owner
+    : "&lastKey";
+
+  const fetchAll = async ({ signal }) => {
+    return fetch(
+      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/scan-search-abundance?" +
+        "attribute=searchField" +
+        "&query=" +
+        debouncedSearchTerm +
+        "&yearShow=" +
+        yearShow +
+        "&user" +
+        lastKeyQuery,
+      { signal }
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("lastkey");
+        console.log(data["lastKey"]);
+        return data;
+      });
+  };
+  const fetchUserRepos = async ({ signal }) => {
+    return fetch(
+      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/scan-search-abundance?" +
+        "attribute=searchField" +
+        "&query=" +
+        debouncedSearchTerm +
+        "&yearShow=" +
+        yearShow +
+        "&user=" +
+        user +
+        lastKeyQuery,
+      { signal }
+    ).then((res) => res.json());
+  };
+  const fetchFeaturedRepos = async ({ signal }) => {
+    return fetch(
+      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/queryFeaturedProjects",
+      { signal }
+    ).then((res) => res.json());
+  };
+  const fetchRecents = async ({ signal }) => {
+    return fetch(
+      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/queryRecentProjects?" +
+        "attribute=searchField" +
+        "&query=" +
+        debouncedSearchTerm +
+        "&yearShow=" +
+        yearShow +
+        "&user=" +
+        user +
+        lastKeyQuery,
+      { signal }
+    ).then((res) => res.json());
+  };
+  const fetchLikedRepos = async ({ signal }) => {
+    return fetch(
+      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE?user=" +
+        user +
+        "&liked=true",
+      { signal }
+    ).then((res) => res.json());
+  };
+
+  const {
+    data: allRepos,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["search", debouncedSearchTerm],
+    queryFn: fetchAll,
+  });
+
+  const {
+    data: myRepos,
+    isLoading: isLoadingUser,
+    isError: isErrorUser,
+  } = useQuery({
+    queryKey: ["userRepos", debouncedSearchTerm],
+    queryFn: fetchUserRepos,
+  });
+
+  const {
+    data: featuredRepos,
+    isLoading: isLoadingFeatured,
+    isError: isErrorFeatured,
+  } = useQuery({
+    queryKey: ["featuredRepos", debouncedSearchTerm],
+    queryFn: fetchFeaturedRepos,
+  });
+
+  const {
+    data: recentRepos,
+    isLoading: isLoadingRecents,
+    isError: isErrorRecents,
+  } = useQuery({
+    queryKey: ["recentRepos", debouncedSearchTerm],
+    queryFn: fetchRecents,
+  });
+
+  const {
+    data: likedRepos,
+    isLoading: isLoadingLiked,
+    isError: isErrorLiked,
+  } = useQuery({
+    queryKey: ["likedRepos", debouncedSearchTerm],
+    queryFn: fetchLikedRepos,
+  });
+
+  useEffect(() => {
+    setProjectsToShow(user ? "owned" : "featured");
+  }, [GlobalVariables.currentUser]);
 
   const forkProject = async function (authorizedUserOcto, owner, repo) {
     authorizedUserOcto
@@ -520,134 +642,15 @@ const ShowProjects = ({
       });
   };
 
-  useEffect(() => {
-    octokit = new Octokit();
-    var query;
+  /* Function to fork a dummy project if user has no projects */
+  const forkDummyProject = async function (authorizedUserOcto) {
+    console.log("User has no projects, forking dummy project");
+    await forkProject(authorizedUserOcto, "alzatin", "my-first-project");
+  };
 
-    /* Function to fork a dummy project if user has no projects */
-    const forkDummyProject = async function (authorizedUserOcto) {
-      console.log("User has no projects, forking dummy project");
-      await forkProject(authorizedUserOcto, "alzatin", "my-first-project");
-    };
-    const repoSearchRequest = async () => {
-      setStateLoaded([]); /*sets loading while fetching*/
-      //pageDict[pageNumber] = lastKey;
-
-      /* aborting previous request */
-      if (controllerRef.current) {
-        controllerRef.current.abort();
-      }
-
-      controllerRef.current = new AbortController();
-      const signal = controllerRef.current.signal;
-
-      let lastKeyQuery = lastKey
-        ? "&lastKey=" + lastKey.repoName + "~" + lastKey.owner
-        : "&lastKey";
-
-      let searchQuery;
-      if (searchBarValue != "") {
-        searchQuery = "&query=" + searchBarValue + "&yearShow=" + yearShow;
-      } else {
-        searchQuery = "&query" + "&yearShow=" + yearShow;
-      }
-
-      if (projectToShow == "all") {
-        query = "attribute=searchField" + searchQuery + "&user" + lastKeyQuery;
-      } else if (projectToShow == "owned") {
-        query =
-          "attribute=searchField" +
-          searchQuery +
-          "&user=" +
-          user +
-          lastKeyQuery;
-      } else if (projectToShow == "featured") {
-        // placeholder for featured projects
-        const scanFeaturedApi =
-          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/queryFeaturedProjects";
-        let awsRepos = await fetch(scanFeaturedApi, { signal });
-
-        return awsRepos.json();
-      } else if (projectToShow == "liked") {
-        // placeholder for liked projects
-        const scanUserApiUrl =
-          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE?user=" +
-          user +
-          "&liked=true";
-        let awsLikeRepos = await fetch(scanUserApiUrl, { signal });
-
-        return awsLikeRepos.json();
-      } else if (projectToShow == "recents") {
-        query =
-          "attribute=searchField" +
-          searchQuery +
-          "&user=" +
-          user +
-          lastKeyQuery;
-        const scanRecentApi =
-          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/queryRecentProjects?" +
-          query;
-        let awsRepos = await fetch(scanRecentApi, { signal });
-        return awsRepos.json();
-      }
-      //API URL for the scan-search-abundance endpoint and abundance-projects table
-      const scanApiUrl =
-        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/scan-search-abundance?" +
-        query;
-      let awsRepos = await fetch(scanApiUrl, { signal }); //< return result.json();[repos]
-      //let awsRepos = await fetch(scanUserApiUrl);
-
-      return awsRepos.json();
-    };
-
-    repoSearchRequest(projectToShow)
-      .then((result) => {
-        setStateLoaded([]);
-        setApiStatus(loadingMessages.loading);
-        if (
-          (result["repos"].length == 0 && projectToShow == "recents") ||
-          projectToShow == "owned"
-        ) {
-          setApiStatus(loadingMessages.noProjects);
-          forkDummyProject(authorizedUserOcto).then(() => {
-            repoSearchRequest().then((result) => {
-              //setBrowsing(true);
-              setStateLoaded(result["repos"]);
-            });
-          });
-        } else if (result["repos"].length == 0) {
-          setApiStatus(loadingMessages.noProjects);
-        } else {
-          setStateLoaded(result["repos"]);
-          setLastKey(result["lastKey"]);
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-        if (err.name !== "AbortError") {
-          alert(
-            "Error loading projects from database. Please try again later. " +
-              err
-          );
-        }
-      });
-  }, [searchBarValue, pageNumber, projectToShow, yearShow]);
-
-  let nodes = [];
-
-  if (projectsLoaded.length > 0) {
-    var userRepos = [];
-    projectsLoaded /*[pageNumber].data.*/
-      .forEach((repo) => {
-        userRepos.push(repo);
-      });
-    nodes = [...userRepos];
-  }
   const handleSearchChange = (e) => {
-    if (e.code == "Enter") {
-      setSearchBarValue(e.target.value);
-      setPageNumber(0);
-    }
+    setSearch(e.target.value.toLowerCase());
+    setPageNumber(0);
   };
 
   const UserNavDiv = (
@@ -754,6 +757,79 @@ const ShowProjects = ({
     </div>
   );
 
+  const PageComponent = (
+    <>
+      {isLoading ? null : (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            margin: "0px 10px 0px 10px",
+          }}
+        >
+          {lastKey ? (
+            <button
+              onClick={() => {
+                if (pageNumber > 0) {
+                  setPageNumber(pageNumber - 1);
+                }
+              }}
+              className="page_back_button"
+            >
+              {"\u2190"}
+            </button>
+          ) : null}
+
+          {lastKey ? (
+            <button
+              className="page_forward_button"
+              onClick={() => {
+                if (lastKey != "") {
+                  setPageNumber(pageNumber + 1);
+                }
+              }}
+            >
+              {"\u2192"}
+            </button>
+          ) : null}
+        </div>
+      )}
+    </>
+  );
+
+  const showDict = {
+    all: {
+      label: "Browsing Projects",
+      data: allRepos,
+      loading: isLoading,
+      error: isError,
+    },
+    owned: {
+      label: "My Projects",
+      data: myRepos,
+      loading: isLoadingUser,
+      error: isErrorUser,
+    },
+    featured: {
+      label: "Featured Projects",
+      data: featuredRepos,
+      loading: isLoadingFeatured,
+      error: isErrorFeatured,
+    },
+    liked: {
+      label: "My Liked Projects",
+      data: likedRepos,
+      loading: isLoadingLiked,
+      error: isErrorLiked,
+    },
+    recents: {
+      label: "Recent Projects",
+      data: recentRepos,
+      loading: isLoadingRecents,
+      error: isErrorRecents,
+    },
+  };
+
   return (
     <>
       <div className="login-content-div">
@@ -762,65 +838,17 @@ const ShowProjects = ({
           <span style={{ fontFamily: "Roboto" }}>
             Welcome {GlobalVariables.currentUser}
           </span>
-          <div className="home-section">
-            {projectToShow == "owned"
-              ? "My Projects"
-              : projectToShow == "liked"
-              ? "My Liked Projects"
-              : projectToShow == "all"
-              ? "Browsing Projects"
-              : projectToShow == "featured"
-              ? "Featured Projects"
-              : projectToShow == "recents"
-              ? "Recent Projects"
-              : null}
-          </div>
+          <div className="home-section">{showDict[projectToShow]["label"]}</div>
           <hr width="100%" color="#D3D3D3" />
 
           <div className="search-bar-div">
-            {projectsLoaded.length > 1 ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  margin: "0px 10px 0px 10px",
-                }}
-              >
-                {lastKey ? (
-                  <button
-                    onClick={() => {
-                      if (pageNumber > 0) {
-                        setPageNumber(pageNumber - 1);
-                      }
-                    }}
-                    className="page_back_button"
-                  >
-                    {"\u2190"}
-                  </button>
-                ) : null}
-
-                {lastKey ? (
-                  <button
-                    className="page_forward_button"
-                    onClick={() => {
-                      if (lastKey != "") {
-                        setPageNumber(pageNumber + 1);
-                      }
-                    }}
-                  >
-                    {"\u2192"}
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-
+            {PageComponent}
             <input
               type="text"
               key="project-search-bar"
-              placeholder={searchBarValue}
-              //value={target.value}
-              //onChange={(e) => setSearchBarType(e.target.value)}
-              onKeyDown={(e) => {
+              placeholder={search}
+              value={search}
+              onChange={(e) => {
                 handleSearchChange(e);
               }}
               className="menu_search searchButton"
@@ -842,19 +870,23 @@ const ShowProjects = ({
               />
             </button>
           </div>
-          {projectsLoaded.length > 0 ? (
+          {showDict[projectToShow]["loading"] ? (
+            <p> Searching for projects ... </p>
+          ) : null}
+          {showDict[projectToShow]["error"] ? (
+            <p> There was an error: please try again </p>
+          ) : null}
+          {showDict[projectToShow]["data"] ? (
             <AddProject
               {...{
                 setYearShow,
-                nodes,
+                projectsLoaded: showDict[projectToShow]["data"],
                 authorizedUserOcto,
                 user,
                 projectToShow,
               }}
             />
-          ) : (
-            apiStatus
-          )}
+          ) : null}
         </div>
       </div>
     </>
@@ -862,61 +894,18 @@ const ShowProjects = ({
 };
 
 function LoginMode({
-  tryLogin,
   exportPopUp,
   setExportPopUp,
   setIsLoggedIn,
   authorizedUserOcto,
   setAuthorizedUserOcto,
+  isAuthorized,
 }) {
   const pageDict = { 0: null };
 
   const [noUserBrowsing, setNoUserBrowsing] = useState(false);
 
-  const {
-    loginWithRedirect,
-    logout,
-    isAuthenticated,
-    isLoading,
-    getAccessTokenSilently,
-  } = useAuth0();
-
-  const [projectToShow, setProjectsToShow] = useState("featured");
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      console.log("isAuthenticated");
-
-      const serverUrl =
-        "https://n3i60kesu6.execute-api.us-east-2.amazonaws.com/prox";
-
-      const callSecureApi = async () => {
-        try {
-          const token = await getAccessTokenSilently();
-
-          //Returns authorized user from proxy server
-          const response = await fetch(`${serverUrl}/api/greet`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          const authResponse = await response.json();
-          const authorizedUser = new Octokit({
-            auth: authResponse.message,
-          });
-          const { data } = await authorizedUser.request("/user");
-          GlobalVariables.currentUser = data.login;
-          if (GlobalVariables.currentUser) {
-            setIsLoggedIn(true);
-            setAuthorizedUserOcto(authorizedUser);
-          }
-        } catch (error) {
-          console.error(error);
-        }
-      };
-      callSecureApi();
-    }
-  }, [isAuthenticated, getAccessTokenSilently]);
+  const [projectToShow, setProjectsToShow] = useState("all");
 
   let popUpContent;
   if (exportPopUp && authorizedUserOcto) {
@@ -925,7 +914,7 @@ function LoginMode({
         {...{ setExportPopUp, authorizedUserOcto, exporting: false }}
       />
     );
-  } else if (isAuthenticated && authorizedUserOcto) {
+  } else if (isAuthorized && authorizedUserOcto) {
     popUpContent = (
       <ShowProjects
         {...{
@@ -938,7 +927,7 @@ function LoginMode({
         }}
       />
     );
-  } else if (isAuthenticated || isLoading) {
+  } else if (isAuthorized) {
     popUpContent = (
       <div className="login-page">
         <div className="form animate fadeInUp one">
@@ -961,8 +950,13 @@ function LoginMode({
                 className="login-logo"
               />
             </div>
-
-            <p> Redirecting you to your projects ... </p>
+            {isAuthorized ? (
+              <p style={{ padding: "0 20px" }}>
+                Welcome. Redirecting you to your projects...
+              </p>
+            ) : (
+              <p style={{ padding: "0 20px" }}>Logging you in ...</p>
+            )}
           </div>
         </div>
       </div>
@@ -983,9 +977,7 @@ function LoginMode({
       />
     );
   } else {
-    popUpContent = (
-      <InitialLog {...{ loginWithRedirect, tryLogin, setNoUserBrowsing }} />
-    );
+    popUpContent = <InitialLog {...{ setNoUserBrowsing }} />;
   }
   return (
     <div
@@ -998,7 +990,9 @@ function LoginMode({
     >
       <div>
         {" "}
-        {GlobalVariables.currentRepo && isAuthenticated ? (
+        {GlobalVariables.currentRepo &&
+        GlobalVariables.currentRepo.owner == GlobalVariables.currentUser &&
+        isAuthorized ? (
           <Link
             to={`/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`}
           >
@@ -1012,14 +1006,14 @@ function LoginMode({
               <span> Return to project</span>
             </button>
           </Link>
-        ) : isAuthenticated ? (
+        ) : isAuthorized ? (
           <button
             className="closeButton"
             onClick={() => {
               logout({
                 returnTo: import.meta.env.VITE_APP_DEV
                   ? window.location.origin
-                  : "https://barboursmith.github.io/Abundance", // Redirect to home page or specified URL
+                  : "https://abundance.maslowcnc.com", // Redirect to home page or specified URL
               });
             }}
           >
@@ -1048,7 +1042,7 @@ function LoginMode({
           />
         </div>
 
-        {isAuthenticated ? (
+        {isAuthorized ? (
           <section id="mobile-nav" className="top-nav">
             <input id="menu-toggle" type="checkbox" />
             <label className="menu-button-container" htmlFor="menu-toggle">
@@ -1060,7 +1054,7 @@ function LoginMode({
                 logout({
                   returnTo: import.meta.env.VITE_APP_DEV
                     ? window.location.origin
-                    : "https://barboursmith.github.io/Abundance", // Redirect to home page or specified URL
+                    : "https://abundance.maslowcnc.com", // Redirect to home page or specified URL
                 });
               }}
             >

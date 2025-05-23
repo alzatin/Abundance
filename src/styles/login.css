@@ -254,7 +254,7 @@
 }
 
 .form {
-  background-color: var(--loginPopup-input);
+  background-color: var(--loginPopup-border);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -268,6 +268,23 @@
 
 .form-row .submit-btn {
   width: 40%;
+}
+
+#settingsPopUp {
+  background-color: var(--settingsPopup-background);
+  border: 5px solid #c5c2c2;
+}
+
+.settings-labels {
+  color: var(--settingsPopup-text);
+  font-size: 14px;
+  margin-bottom: 0px;
+  font-family: "Roboto", sans-serif;
+  text-transform: uppercase;
+  display: inline-block;
+}
+.settings-sliders {
+  color: var(--abundance-color-brightPurple);
 }
 .runSideBarDiv {
   display: flex;
@@ -339,7 +356,7 @@
   align-items: baseline;
   justify-content: left;
   gap: 20px;
-  color: var(--loginPopup-projectColor);
+  color: var(--settingsPopup-text);
   margin: -20px 0 10px 0;
 }
 .form input {
@@ -352,13 +369,15 @@
   padding: 9px;
   box-sizing: border-box;
   font-size: 14px;
+  color: var(--newProject-form-input-text);
 }
 .form label {
   color: var(--settingsPopup-text);
   font-size: 14px;
-  margin-bottom: 5px;
+  margin-bottom: 0px;
   font-family: "Roboto", sans-serif;
   text-transform: uppercase;
+  display: inline-block;
 }
 
 .form select {
@@ -374,7 +393,7 @@
 }
 .form h2 {
   color: var(--settingsPopup-text);
-  font-size: 20px;
+  font-size: 17px;
   margin-bottom: 5px;
   font-family: "Roboto", sans-serif;
   text-transform: uppercase;
@@ -386,12 +405,12 @@
   text-transform: uppercase;
   margin-top: 3px;
   outline: 0;
-  background: var(--loginPopup-input);
+  background: var(--submit-button-background);
   width: 100%;
   border: 1;
   border-radius: 2px;
   border-color: var(--settingsPopup-text);
-  color: var(--settingsPopup-text);
+  color: var(--submit-button-text);
   font-size: 14px;
   -webkit-transition: all 0.3 ease;
   transition: all 0.3 ease;
@@ -403,20 +422,18 @@
 .submit-btn:hover {
   background: var(--settingsPopup-text);
   border: 2px solid var(--loginPopup-border);
-  color: var(--loginPopup-button);
+  color: var(--settingsPopup-hover-text);
 }
 
 .closeButton {
   position: absolute;
   top: 5px;
   right: 15px;
-  border: none;
   height: 1.5em;
   background-color: var(--settingsPopup-closeButton);
   font: 0.75em sans-serif;
-  cursor: pointer;
   margin-top: 3px;
-  border-color: var(--settingsPopup-text);
+  border-color: white;
   border-radius: 30px;
   padding: 0 15px 0 15px;
   color: var(--settingsPopup-text);
@@ -555,7 +572,7 @@
 .order_dropdown {
   align-self: center;
   border: 3px solid var(--loginPopup-input);
-  color: var(--settingsPopup-text);
+  color: var(--newProject-form-input-text);
   background-color: var(--loginPopup-input);
   border-radius: 5px 5px;
   outline: none;
@@ -648,7 +665,7 @@
 }
 
 .basic-multi-select {
-  margin: 0px 0px 5px 0px;
+  margin: 15px 0px 15px 0px;
   width: 100%;
 }
 

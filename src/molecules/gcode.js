@@ -1,5 +1,6 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
+import { button } from "leva";
 //import saveAs from '../lib/FileSaver.js'
 
 /**
@@ -33,6 +34,8 @@ export default class Gcode extends Atom {
      * @type {string}
      */
     this.description = "Generates Maslow gcode from the input geometry.";
+
+    this.blob = null;
     /**
      * The generated gcode string
      * @type {string}
@@ -40,15 +43,17 @@ export default class Gcode extends Atom {
     this.gcodeString = "";
 
     this.addIO("input", "geometry", this, "geometry", null);
-    this.addIO("input", "tool size", this, "number", 6.35);
-    this.addIO("input", "passes", this, "number", 6);
-    this.addIO("input", "speed", this, "number", 500);
-    this.addIO("input", "tabs", this, "string", "true");
-    this.addIO("input", "safe height", this, "number", 6);
+    //this.addIO("input", "tool size", this, "number", 6.35);
+    //this.addIO("input", "passes", this, "number", 6);
+    //this.addIO("input", "speed", this, "number", 500);
+    //this.addIO("input", "tabs", this, "string", "true");
+    //this.addIO("input", "safe height", this, "number", 6);
 
     this.addIO("output", "gcode", this, "geometry", "");
 
     this.setValues(values);
+
+    this.kirimotoBlobs = {};
   }
 
   /**
@@ -77,66 +82,71 @@ export default class Gcode extends Atom {
   updateValue() {
     super.updateValue();
     try {
-      var geometry = this.findIOValue("geometry");
-      var toolSize = this.findIOValue("tool size");
-      var passes = this.findIOValue("passes");
-      var speed = this.findIOValue("speed");
-      var tabs = this.findIOValue("tabs");
-      var safeHeight = this.findIOValue("safe height");
-      const values = {
-        op: "gcode",
-        readPath: geometry,
-        toolSize: toolSize,
-        passes: passes,
-        speed: speed,
-        tabs: tabs,
-        safeHeight: safeHeight,
-        writePath: this.path,
-      };
-      this.gcodeString = this.basicThreadValueProcessing(values);
+      //var toolSize = this.findIOValue("tool size");
+      //var passes = this.findIOValue("passes");
+      // var speed = this.findIOValue("speed");
+      // var tabs = this.findIOValue("tabs");
+      //var safeHeight = this.findIOValue("safe height");
+      /* We have to make an STL file to pass to the Kiri:Moto engine */
+
+      let inputID = this.findIOValue("geometry");
+
+      GlobalVariables.cad
+        .visExport(this.uniqueID, inputID, "STL")
+        .then((result) => {
+          GlobalVariables.cad
+            .downExport(this.uniqueID, "STL")
+            .then((result) => {
+              this.kirimotoBlobs[this.uniqueID] = result; // Store the blob with a unique ID to avoid overriding
+              // Dispatch a custom event to notify React components
+              const event = new CustomEvent("kirimotoBlobUpdated", {
+                detail: { uniqueID: this.uniqueID, blob: result },
+              });
+              window.dispatchEvent(event);
+            });
+        })
+        .catch((err) => {
+          console.error("Error creating STL for gcode:", err);
+        });
     } catch (err) {
       this.setAlert(err);
     }
   }
 
-  /**
-   * Create a button to download the .stl file.
-   */
-  updateSidebar() {
-    const list = super.updateSidebar();
-    this.createButton(list, this, "Download G-Code", () => {
-      this.downloadGCode();
-    });
+  createLevaInputs() {
+    let inputParams = {};
+
+    /** Runs through active atom inputs and adds IO parameters to default param*/
+    if (this.inputs) {
+      this.inputs.map((input) => {
+        const checkConnector = () => {
+          return input.connectors.length > 0;
+        };
+
+        /* Some input parameters (inlcuding equation and result) live in the parameter editor file so they can use the set, get functions */
+
+        /* Makes inputs for Io's other than geometry */
+        if (input.valueType !== "geometry") {
+          inputParams[input.name] = {
+            value: input.value,
+            disabled: checkConnector(),
+            onChange: (value) => {
+              input.setValue(value);
+            },
+            order: -2,
+          };
+        }
+      });
+    }
+
+    inputParams["Download Gcode"] = button(() => this.clickKiriButton());
+
+    return inputParams;
   }
 
-  /**
-   * The function which is called when you press the download button.
-   */
-  downloadGCode() {
-    try {
-      var geometry = this.findIOValue("geometry");
-      var toolSize = this.findIOValue("tool size");
-      var passes = this.findIOValue("passes");
-      var speed = this.findIOValue("speed");
-      var tabs = this.findIOValue("tabs");
-      var safeHeight = this.findIOValue("safe height");
-      const values = {
-        op: "gcode",
-        readPath: geometry,
-        toolSize: toolSize,
-        passes: passes,
-        speed: speed,
-        tabs: tabs,
-        safeHeight: safeHeight,
-        writePath: this.path,
-      };
-      const { answer } = window.ask(values);
-      // answer.then( returnedAnswer => {
-      //     const blob = new Blob([returnedAnswer])
-      //     saveAs(blob, GlobalVariables.currentMolecule.name+'.nc')
-      // })
-    } catch (err) {
-      this.setAlert(err);
-    }
+  clickKiriButton() {
+    let kirimotoButton = document.getElementById("kirimoto-button");
+    console.log(kirimotoButton);
+    kirimotoButton.click();
   }
 }
