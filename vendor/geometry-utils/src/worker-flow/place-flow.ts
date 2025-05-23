@@ -207,7 +207,7 @@ export function placePaths(buffer: ArrayBuffer, config: WorkerConfig): Float64Ar
         }
 
         if (minWidth) {
-            fitness += minWidth / placeContent.area;
+            fitness += minWidth / Math.abs(placeContent.area);
         }
 
         for (i = 0; i < placed.length; ++i) {
