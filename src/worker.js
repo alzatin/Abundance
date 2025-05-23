@@ -108,6 +108,21 @@ function rectangle(id, x, y) {
   });
 }
 
+function point(id, x, y, z) {
+  return started.then(() => {
+    const newPlane = new Plane().pivot(0, "Y");
+    // Create a vertex at the specified point
+    library[id] = {
+      geometry: [replicad.makeVertex(new replicad.Vector(x, y, z))],
+      tags: [],
+      plane: newPlane,
+      color: defaultColor,
+      bom: [],
+    };
+    return true;
+  });
+}
+
 function regularPolygon(id, radius, numberOfSides) {
   return started.then(() => {
     const newPlane = new Plane().pivot(0, "Y");
@@ -1752,6 +1767,7 @@ expose({
   code,
   regularPolygon,
   rectangle,
+  point,
   generateDisplayMesh,
   extrude,
   fusion,

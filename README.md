@@ -43,6 +43,7 @@ The atoms available in the circular menu are divided into 6 categories:
         - Regular Polygon
         - Circle
         - Rectangle
+        - Point
         - Text
         - Molecule
         
