@@ -94,7 +94,7 @@ export default memo(function FlowCanvas({
   };
 
   const mouseMove = (e) => {
-    if (e.touches) {
+    if (e.touches && e.touches.length > 0) {
       // Set touchInterface flag to true when touch is detected
       GlobalVariables.touchInterface = true;
       
@@ -115,6 +115,12 @@ export default memo(function FlowCanvas({
         }
       }
     }
+    
+    // Skip if clientX/Y are not defined (can happen when touchend fires with no coordinates)
+    if (e.clientX === undefined || e.clientY === undefined) {
+      return;
+    }
+    
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
       molecule.mouseMove(e.clientX, e.clientY);
     });
@@ -259,6 +265,9 @@ export default memo(function FlowCanvas({
         cmenu.show([touchStartPos.current.x, touchStartPos.current.y], false);
         longPressTimer.current = null;
       }, 700);
+    } else {
+      // For mouse events, don't start a long press timer
+      longPressTimer.current = null;
     }
 
     // if it's a right click show the circular menu
@@ -334,9 +343,12 @@ export default memo(function FlowCanvas({
     }
     
     // Handle touch events
-    if (event.touches) {
+    if (event.touches && event.touches.length > 0) {
       event.clientX = event.touches[0].clientX;
       event.clientY = event.touches[0].clientY;
+    } else if (event.changedTouches && event.changedTouches.length > 0) {
+      event.clientX = event.changedTouches[0].clientX;
+      event.clientY = event.changedTouches[0].clientY;
     }
     
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
@@ -355,10 +367,15 @@ export default memo(function FlowCanvas({
       longPressTimer.current = null;
     }
 
-    if (lastTouchMove) {
+    if (lastTouchMove && lastTouchMove.touches && lastTouchMove.touches.length > 0) {
       event.clientX = lastTouchMove.touches[0].clientX;
       event.clientY = lastTouchMove.touches[0].clientY;
+    } else if (event.changedTouches && event.changedTouches.length > 0) {
+      // For touchend events, touches array is empty, but changedTouches contains the touch that ended
+      event.clientX = event.changedTouches[0].clientX;
+      event.clientY = event.changedTouches[0].clientY;
     }
+    
     //every time the mouse button goes up
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
       molecule.clickUp(event.clientX, event.clientY);
