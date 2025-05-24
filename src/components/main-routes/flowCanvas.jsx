@@ -44,7 +44,9 @@ export default memo(function FlowCanvas({
   
   // Double tap detection
   let lastTapTime = useRef(0);
+  let lastTapPosition = useRef({ x: 0, y: 0 });
   let doubleTapDelay = 300; // milliseconds
+  let doubleTapRadius = 20; // pixel radius for considering taps to be at the same position
 
   // On component mount create a new top level molecule before project load
   useEffect(() => {
@@ -250,14 +252,26 @@ export default memo(function FlowCanvas({
       const currentTime = new Date().getTime();
       const tapTimeDiff = currentTime - lastTapTime.current;
       
+      // Check if this tap is within time and distance thresholds of last tap
       if (tapTimeDiff < doubleTapDelay) {
-        // This is a double tap
-        onDoubleClick(event);
-        lastTapTime.current = 0; // Reset the timer
-        return;
+        // Calculate distance between current tap and last tap
+        const tapDistance = Math.sqrt(
+          Math.pow(event.clientX - lastTapPosition.current.x, 2) +
+          Math.pow(event.clientY - lastTapPosition.current.y, 2)
+        );
+        
+        // If within radius, consider it a double tap
+        if (tapDistance < doubleTapRadius) {
+          // This is a double tap
+          onDoubleClick(event);
+          lastTapTime.current = 0; // Reset the timer
+          return;
+        }
       }
       
+      // Save this tap's time and position for potential double tap detection
       lastTapTime.current = currentTime;
+      lastTapPosition.current = { x: event.clientX, y: event.clientY };
       
       // Start a long press timer for touch events (700ms is a common duration for long press)
       longPressTimer.current = setTimeout(() => {
@@ -374,6 +388,11 @@ export default memo(function FlowCanvas({
       // For touchend events, touches array is empty, but changedTouches contains the touch that ended
       event.clientX = event.changedTouches[0].clientX;
       event.clientY = event.changedTouches[0].clientY;
+    }
+    
+    // If no coordinates were set, skip further processing
+    if (event.clientX === undefined || event.clientY === undefined) {
+      return;
     }
     
     //every time the mouse button goes up
