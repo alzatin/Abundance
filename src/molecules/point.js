@@ -26,9 +26,14 @@ export default class Point extends Atom {
      * A description of this atom
      * @type {string}
      */
-    this.description = "Creates a sketch point in 3D space.";
+    this.description = "Creates a point in 3D space.";
 
-    // A point has only an output, no inputs to adjust as per requirements
+    // Add inputs for x, y, z coordinates
+    this.addIO("input", "x", this, "number", 0);
+    this.addIO("input", "y", this, "number", 0);
+    this.addIO("input", "z", this, "number", 0);
+    
+    // Add output
     this.addIO("output", "geometry", this, "geometry", "");
 
     this.setValues(values);
@@ -56,13 +61,18 @@ export default class Point extends Atom {
   }
 
   /**
-   * Create a new sketch point in a worker thread.
+   * Create a new point in a worker thread.
    */
   updateValue() {
     super.updateValue();
-    // Create a point at the origin (0,0,0)
+    
+    // Get the x, y, z coordinates from inputs
+    const xVal = this.findIOValue("x");
+    const yVal = this.findIOValue("y");
+    const zVal = this.findIOValue("z");
+    
     GlobalVariables.cad
-      .point(this.uniqueID, 0, 0, 0)
+      .point(this.uniqueID, xVal, yVal, zVal)
       .then(() => {
         this.basicThreadValueProcessing();
       })
