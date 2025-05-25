@@ -12,7 +12,6 @@ const Callback = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  console.log("isAuthorized", isAuthorized);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -42,7 +41,6 @@ const Callback = ({
         const authorizedUser = new Octokit({
           auth: access_token,
         });
-        console.log("authorizedUser", authorizedUser);
         const { data } = await authorizedUser.request("/user");
         GlobalVariables.currentUser = data.login;
         if (GlobalVariables.currentUser) {
@@ -52,7 +50,6 @@ const Callback = ({
           return authorizedUser;
         }
       } catch (error) {
-        console.error(error);
         setIsAuthorized(false);
       }
     };
