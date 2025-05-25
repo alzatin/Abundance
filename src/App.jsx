@@ -57,6 +57,7 @@ export default function ReplicadApp() {
   const [isloggedIn, setIsLoggedIn] = useState(false);
   const [activeAtom, setActiveAtom] = useState(null);
   const [exportPopUp, setExportPopUp] = useState(false);
+  const [redirectType, setRedirectType] = useState(null);
 
   const [authorizedUserOcto, setAuthorizedUserOcto] = useState(null);
   const [shortCutsOn, setShortCuts] = useState(
@@ -221,6 +222,7 @@ export default function ReplicadApp() {
                 setIsAuthorized={setIsAuthorized}
                 setIsLoggedIn={setIsLoggedIn}
                 setAuthorizedUserOcto={setAuthorizedUserOcto}
+                setRedirectType={setRedirectType}
               />
             }
           />
@@ -264,6 +266,8 @@ export default function ReplicadApp() {
                   setWireMesh,
                   outdatedMesh,
                   setOutdatedMesh,
+                  redirectType,
+                  setRedirectType,
                 }}
               />
             }

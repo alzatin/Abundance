@@ -9,6 +9,7 @@ const Callback = ({
   setIsAuthorized,
   setIsLoggedIn,
   setAuthorizedUserOcto,
+  setRedirectType,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,6 +63,10 @@ const Callback = ({
         console.log("state", state);
         if (state.forking && state.currentRepo && authorizedUser) {
           navigate(`/run/${state.currentRepo}`);
+          setRedirectType("fork");
+        } else if (state.liking && state.currentRepo && authorizedUser) {
+          navigate(`/run/${state.currentRepo}`);
+          setRedirectType("like");
         } else {
           navigate("/");
         }
