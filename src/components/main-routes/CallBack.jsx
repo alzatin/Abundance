@@ -42,7 +42,7 @@ const Callback = ({
         const authorizedUser = new Octokit({
           auth: access_token,
         });
-
+        console.log("authorizedUser", authorizedUser);
         const { data } = await authorizedUser.request("/user");
         GlobalVariables.currentUser = data.login;
         if (GlobalVariables.currentUser) {
