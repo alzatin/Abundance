@@ -1010,7 +1010,8 @@ function LoginMode({
               <span> Return to project</span>
             </button>
           </Link>
-        ) : isAuthorized ? (
+        ) : null}
+        {isAuthorized ? (
           <button
             className="closeButton"
             onClick={() => {
