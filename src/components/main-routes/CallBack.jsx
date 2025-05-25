@@ -72,7 +72,48 @@ const Callback = ({
     });
   }, [location, setIsAuthorized]);
 
-  return <div>Redirecting...</div>;
+  return (
+    <div
+      className="login-popup"
+      id="projects-popup"
+      style={{
+        padding: "0",
+        border: "10px solid #3e3d3d",
+      }}
+    >
+      <div className="login-page">
+        <div className="form animate fadeInUp one">
+          <div id="gitSide" className="logindiv">
+            <img
+              className="logo"
+              src={
+                import.meta.env.VITE_APP_PATH_FOR_PICS +
+                "/imgs/abundance_logo.png"
+              }
+              alt="logo"
+            />
+            <div id="welcome">
+              <img
+                src={
+                  import.meta.env.VITE_APP_PATH_FOR_PICS +
+                  "/imgs/abundance_lettering.png"
+                }
+                alt="logo"
+                className="login-logo"
+              />
+            </div>
+            {isAuthorized ? (
+              <p style={{ padding: "0 20px" }}>
+                Welcome. Redirecting you to your projects...
+              </p>
+            ) : (
+              <p style={{ padding: "0 20px" }}>Logging you in ...</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Callback;
