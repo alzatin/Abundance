@@ -28,28 +28,9 @@ export default class Point extends Atom {
      */
     this.description = "Creates a point in 3D space.";
 
-    /**
-     * Default x coordinate value
-     * @type {number}
-     */
-    this.xValue = 0;
-
-    /**
-     * Default y coordinate value
-     * @type {number}
-     */
-    this.yValue = 0;
-
-    /**
-     * Default z coordinate value
-     * @type {number}
-     */
-    this.zValue = 0;
-
-    // Add inputs for x, y, z coordinates
-    this.addIO("input", "x", this, "number", this.xValue);
-    this.addIO("input", "y", this, "number", this.yValue);
-    this.addIO("input", "z", this, "number", this.zValue);
+    this.addIO("input", "xDist", this, "number", 0.0);
+    this.addIO("input", "yDist", this, "number", 0.0);
+    this.addIO("input", "zDist", this, "number", 0.0);
 
     // Add output
     this.addIO("output", "geometry", this, "geometry", "");
@@ -79,43 +60,15 @@ export default class Point extends Atom {
   }
 
   /**
-   * Create Leva Menu Inputs
+   * Starts propagation from this atom if it is not waiting for anything up stream.
    */
-  createLevaInputs() {
-    // Create the Leva inputs for x, y, z coordinates
-    let outputParams = {};
+  beginPropagation() {
+    //Check to see if a value already exists. Generate it if it doesn't. Only do this for circles and rectangles
 
-    outputParams[this.uniqueID + "x"] = {
-      value: this.xValue,
-      label: "x",
-      onChange: (value) => {
-        this.xValue = value;
-        this.inputs.find((input) => input.name === "x").setValue(value);
-        this.updateValue();
-      },
-    };
-
-    outputParams[this.uniqueID + "y"] = {
-      value: this.yValue,
-      label: "y",
-      onChange: (value) => {
-        this.yValue = value;
-        this.inputs.find((input) => input.name === "y").setValue(value);
-        this.updateValue();
-      },
-    };
-
-    outputParams[this.uniqueID + "z"] = {
-      value: this.zValue,
-      label: "z",
-      onChange: (value) => {
-        this.zValue = value;
-        this.inputs.find((input) => input.name === "z").setValue(value);
-        this.updateValue();
-      },
-    };
-
-    return outputParams;
+    //Triggers inputs with nothing connected to begin propagation
+    this.inputs.forEach((input) => {
+      input.beginPropagation();
+    });
   }
 
   /**
@@ -123,28 +76,22 @@ export default class Point extends Atom {
    */
   updateValue() {
     super.updateValue();
+    console.log("Updating Point Value");
 
-    // Get the x, y, z coordinates from inputs
-    const xVal = this.findIOValue("x");
-    const yVal = this.findIOValue("y");
-    const zVal = this.findIOValue("z");
+    this.processing = true;
 
-    // Update the menu values to match the inputs
-    this.xValue = xVal;
-    this.yValue = yVal;
-    this.zValue = zVal;
+    var x = this.findIOValue("xDist");
+    var y = this.findIOValue("yDist");
+    var z = this.findIOValue("zDist");
 
-    this.value = [xVal, yVal, zVal];
-    this.output.setValue(this.value);
-    this.output.ready = true;
+    this.value = [x, y, z];
+
+    this.decreaseToProcessCountByOne();
+    if (this.output) {
+      this.output.setValue(this.value);
+      this.output.ready = true;
+    }
     this.processing = false;
-
-    /*GlobalVariables.cad
-      .point(this.uniqueID, xVal, yVal, zVal)
-      .then(() => {
-        this.basicThreadValueProcessing();
-      })
-      .catch(this.alertingErrorHandler());*/
   }
 
   /**
@@ -161,9 +108,9 @@ export default class Point extends Atom {
   serialize(values) {
     //Save the atom's properties to the serial stream
     var valuesObj = super.serialize(values);
-    valuesObj.xValue = this.xValue;
-    valuesObj.yValue = this.yValue;
-    valuesObj.zValue = this.zValue;
+    valuesObj.x = this.x;
+    valuesObj.y = this.y;
+    valuesObj.z = this.z;
 
     return valuesObj;
   }

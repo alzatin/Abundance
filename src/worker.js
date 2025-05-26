@@ -108,22 +108,6 @@ function rectangle(id, x, y) {
   });
 }
 
-function point(id, x, y, z) {
-  return started.then(() => {
-    /*const newPlane = new Plane().pivot(0, "Y");
-    // Create a real vertex point at the specified coordinates
-    library[id] = {
-      geometry: [replicad.makeVertex(new replicad.Vector([x, y, z]))],
-      tags: [],
-      plane: newPlane,
-      color: defaultColor,
-      bom: [],  
-    };*/
-
-    return true;
-  });
-}
-
 function regularPolygon(id, radius, numberOfSides) {
   return started.then(() => {
     const newPlane = new Plane().pivot(0, "Y");
@@ -227,7 +211,7 @@ function is3D(inputs) {
 
 function isPoint(input) {
   // Check if the input is an assembly
-  console.log("is vertex running");
+  console.log("Checking if input is a point:", input);
   if (
     Array.isArray(input) &&
     input.length === 3 &&
@@ -373,7 +357,6 @@ function shrinkWrapSketches(targetID, inputIDs) {
       points = inputIDs.map((inputID) => inputID.slice(0, 2));
       let drawToSketch = replicad.draw(points[0]);
       for (let i = 1; i < points.length; i++) {
-        console.log("points", points[i]);
         drawToSketch = drawToSketch.lineTo(points[i]);
       }
       drawToSketch = drawToSketch.close();
@@ -385,7 +368,6 @@ function shrinkWrapSketches(targetID, inputIDs) {
         plane: newPlane,
         bom: BOM,
       };
-      console.log(library[targetID]);
 
       return true;
     } else if (inputIDs.every((inputID) => !is3D(library[inputID]))) {
@@ -1805,7 +1787,6 @@ expose({
   code,
   regularPolygon,
   rectangle,
-  point,
   generateDisplayMesh,
   extrude,
   fusion,
