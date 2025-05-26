@@ -224,6 +224,18 @@ function is3D(inputs) {
   }
 }
 
+function isVertex(inputs) {
+  // Check if the input is an assembly
+
+  if (isAssembly(inputs)) {
+    return inputs.geometry.every((input) => isVertex(input));
+  } else if (inputs.geometry[0] instanceof replicad.Vertex) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 function move(inputID, x, y, z, targetID = null) {
   return started.then(() => {
     if (is3D(library[inputID])) {
@@ -351,6 +363,7 @@ function difference(targetID, input1ID, input2ID) {
 function shrinkWrapSketches(targetID, inputIDs) {
   return started.then(() => {
     let BOM = [];
+    console.log("inputIDs0", library[inputIDs[0]]);
     if (inputIDs.every((inputID) => !is3D(library[inputID]))) {
       let inputsToFuse = [];
       inputIDs.forEach((inputID) => {
@@ -373,8 +386,41 @@ function shrinkWrapSketches(targetID, inputIDs) {
         bom: BOM,
       };
       return true;
+    } else if (inputIDs.every((inputID) => isVertex(library[inputID]))) {
+      inputIDs.forEach((inputID) => {
+        console.log("inputID", library[inputID].geometry[0]);
+        console.log("inputID", library[inputID].geometry[0].asTuple);
+      });
+      let points = [
+        [0, 0],
+        [0, 5],
+        [5, 5],
+      ];
+
+      const newDrawing = replicad.draw([points[0]]);
+      console.log("newDrawing", newDrawing);
+
+      let drawToSketch = replicad.draw(points[0]);
+      for (let i = 1; i < points.length; i++) {
+        console.log("points", points[i]);
+        drawToSketch = drawToSketch.lineTo(points[i]);
+        console.log(drawToSketch);
+      }
+      drawToSketch = drawToSketch.close();
+      console.log("drawToSketch", drawToSketch);
+      const newPlane = new Plane().pivot(0, "Y");
+      library[targetID] = {
+        geometry: [drawToSketch],
+        tags: [],
+        color: defaultColor,
+        plane: newPlane,
+        bom: BOM,
+      };
+      console.log(library[targetID]);
+
+      return true;
     } else {
-      throw new Error("All inputs must be sketches");
+      throw new Error("All inputs must be sketches or points");
     }
   });
 }
@@ -854,7 +900,6 @@ function displayLayout(targetID, inputID, positions, layoutConfig) {
   applyLayout(targetID, inputID, positions, layoutConfig);
 }
 
-
 /**
  * Rotate shapes to be placed on their most cuttable face (basically lay them flat)
  */
@@ -879,9 +924,8 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
   // select among candidates for each part based on either good fit to the
   //    estimated material thickness, or just take thinnest orientation.
 
-
   // get candidates as {leaf_id: "abc", [candidate 1, candidate 2 etc]}
-  const all_candidates = {}
+  const all_candidates = {};
   const intermediate = actOnLeafs(geometryToLayout, (leaf) => {
     // For each face, consider it as the underside of the shape on the CNC bed.
     // In order to be considered, a face must be...
@@ -894,7 +938,7 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
       if (face.geomType == "PLANE") {
         hasFlatFace = true;
         const prospectiveGoem = moveFaceToCuttingPlane(leaf.geometry[0], face);
-//        if (thickness < layoutConfig.thickness + THICKNESS_TOLLERANCE) {
+        //        if (thickness < layoutConfig.thickness + THICKNESS_TOLLERANCE) {
         // Check for protrusions "below" the bottom of the raw material.
         if (
           prospectiveGoem.boundingBox.bounds[0][2] >
@@ -918,7 +962,7 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
         throw new Error("Upstream object uncuttable, has no flat face");
       }
     }
-    all_candidates[localId]= candidates
+    all_candidates[localId] = candidates;
     const newLeaf = {
       geometry: leaf.geometry,
       id: localId,
@@ -929,7 +973,6 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
     };
     localId++;
     return newLeaf;
-
   });
 
   // Heuristic here is... for each part get it's minimum thickness. If the largest of these is
@@ -938,15 +981,20 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
 
   let material_thickness = -1;
   if (layoutConfig.units) {
-    const LARGEST_PLAUSIBLE_STOCK = layoutConfig.units == "MM" ? 25.4 : 1    
-    const min_thickness_per_part = Object.values(all_candidates).map(s => Math.min(...s.map(c => c.thickness)));
-    if (Math.max(...min_thickness_per_part) <= LARGEST_PLAUSIBLE_STOCK + THICKNESS_TOLLERANCE) {
+    const LARGEST_PLAUSIBLE_STOCK = layoutConfig.units == "MM" ? 25.4 : 1;
+    const min_thickness_per_part = Object.values(all_candidates).map((s) =>
+      Math.min(...s.map((c) => c.thickness))
+    );
+    if (
+      Math.max(...min_thickness_per_part) <=
+      LARGEST_PLAUSIBLE_STOCK + THICKNESS_TOLLERANCE
+    ) {
       material_thickness = Math.max(...min_thickness_per_part);
     }
   }
 
   library[targetID] = actOnLeafs(intermediate, (leaf) => {
-    let candidates = all_candidates[leaf.id]
+    let candidates = all_candidates[leaf.id];
     let selected;
     if (candidates.length == 1) {
       selected = candidates[0];
@@ -962,8 +1010,8 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
           thickness: c.thickness,
           area: areaApprox(c.face.UVBounds),
           interiorWires: c.face.clone().innerWires().length,
-        }});
-
+        };
+      });
 
       // Sort in order of preference (scores[0] being best).
       scores.sort((a, b) => {
@@ -982,7 +1030,7 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
         }
 
         // Tie brakes for candidates of equal thickness.
-        
+
         // First, look for interior wires, if unequal we prefer candidates with fewer since
         // interior wires *might* indicate carve-outs which are unreachable on the underside of the sheet.
         if (a.interiorWires != b.interiorWires) {
@@ -995,8 +1043,7 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
         }
 
         return 0; // we can't decide.
-      }
-      );
+      });
       console.log("score");
       console.log(scores);
       selected = candidates[scores[0].candidate_index];
