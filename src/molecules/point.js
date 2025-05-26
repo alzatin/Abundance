@@ -33,13 +33,13 @@ export default class Point extends Atom {
      * @type {number}
      */
     this.xValue = 0;
-    
+
     /**
      * Default y coordinate value
      * @type {number}
      */
     this.yValue = 0;
-    
+
     /**
      * Default z coordinate value
      * @type {number}
@@ -50,7 +50,7 @@ export default class Point extends Atom {
     this.addIO("input", "x", this, "number", this.xValue);
     this.addIO("input", "y", this, "number", this.yValue);
     this.addIO("input", "z", this, "number", this.zValue);
-    
+
     // Add output
     this.addIO("output", "geometry", this, "geometry", "");
 
@@ -77,44 +77,44 @@ export default class Point extends Atom {
     GlobalVariables.c.stroke();
     GlobalVariables.c.closePath();
   }
-  
+
   /**
    * Create Leva Menu Inputs
    */
   createLevaInputs() {
     // Create the Leva inputs for x, y, z coordinates
     let outputParams = {};
-    
-    outputParams["x"] = {
+
+    outputParams[this.uniqueID + "x"] = {
       value: this.xValue,
-      label: "X Coordinate",
+      label: "x",
       onChange: (value) => {
         this.xValue = value;
-        this.inputs.find(input => input.name === "x").setValue(value);
+        this.inputs.find((input) => input.name === "x").setValue(value);
         this.updateValue();
       },
     };
-    
-    outputParams["y"] = {
+
+    outputParams[this.uniqueID + "y"] = {
       value: this.yValue,
-      label: "Y Coordinate",
+      label: "y",
       onChange: (value) => {
         this.yValue = value;
-        this.inputs.find(input => input.name === "y").setValue(value);
+        this.inputs.find((input) => input.name === "y").setValue(value);
         this.updateValue();
       },
     };
-    
-    outputParams["z"] = {
+
+    outputParams[this.uniqueID + "z"] = {
       value: this.zValue,
-      label: "Z Coordinate",
+      label: "z",
       onChange: (value) => {
         this.zValue = value;
-        this.inputs.find(input => input.name === "z").setValue(value);
+        this.inputs.find((input) => input.name === "z").setValue(value);
         this.updateValue();
       },
     };
-    
+
     return outputParams;
   }
 
@@ -123,25 +123,38 @@ export default class Point extends Atom {
    */
   updateValue() {
     super.updateValue();
-    
+
     // Get the x, y, z coordinates from inputs
     const xVal = this.findIOValue("x");
     const yVal = this.findIOValue("y");
     const zVal = this.findIOValue("z");
-    
+
     // Update the menu values to match the inputs
     this.xValue = xVal;
     this.yValue = yVal;
     this.zValue = zVal;
-    
-    GlobalVariables.cad
+
+    this.value = [xVal, yVal, zVal];
+    this.output.ready = true;
+    this.processing = false;
+
+    console.log(this.value);
+    /*GlobalVariables.cad
       .point(this.uniqueID, xVal, yVal, zVal)
       .then(() => {
         this.basicThreadValueProcessing();
       })
-      .catch(this.alertingErrorHandler());
+      .catch(this.alertingErrorHandler());*/
   }
-  
+
+  /**
+   * Send the value of this atom to the 3D display. Used to display the number
+   */
+  sendToRender() {
+    //Send code to jotcad to render
+    console.log("point has nothing to render");
+  }
+
   /**
    * Serialize this atom's properties
    */
@@ -151,7 +164,7 @@ export default class Point extends Atom {
     valuesObj.xValue = this.xValue;
     valuesObj.yValue = this.yValue;
     valuesObj.zValue = this.zValue;
-    
+
     return valuesObj;
   }
 }
