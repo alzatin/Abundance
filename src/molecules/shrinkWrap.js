@@ -98,15 +98,18 @@ export default class shrinkWrap extends Atom {
    */
   updateValue() {
     super.updateValue();
-
+    console.log("ShrinkWrap inputs", this.inputs);
     if (this.inputs.every((x) => x.ready)) {
+      console.log("ShrinkWrap inputs are ready");
       this.processing = true;
       var inputsList = [];
+
       this.inputs.forEach((io) => {
         if (io.connectors.length > 0) {
           inputsList.push(io.getValue());
         }
       });
+      console.log("ShrinkWrap inputsList", inputsList);
       GlobalVariables.cad
         .shrinkWrapSketches(this.uniqueID, inputsList)
         .then(() => {

@@ -110,15 +110,16 @@ function rectangle(id, x, y) {
 
 function point(id, x, y, z) {
   return started.then(() => {
-    const newPlane = new Plane().pivot(0, "Y");
+    /*const newPlane = new Plane().pivot(0, "Y");
     // Create a real vertex point at the specified coordinates
     library[id] = {
       geometry: [replicad.makeVertex(new replicad.Vector([x, y, z]))],
       tags: [],
       plane: newPlane,
       color: defaultColor,
-      bom: [],
-    };
+      bom: [],  
+    };*/
+
     return true;
   });
 }
@@ -224,14 +225,17 @@ function is3D(inputs) {
   }
 }
 
-function isVertex(inputs) {
+function isPoint(input) {
   // Check if the input is an assembly
-
-  if (isAssembly(inputs)) {
-    return inputs.geometry.every((input) => isVertex(input));
-  } else if (inputs.geometry[0] instanceof replicad.Vertex) {
+  console.log("is vertex running");
+  if (
+    Array.isArray(input) &&
+    input.length === 3 &&
+    input.every((coord) => typeof coord === "number")
+  ) {
     return true;
   } else {
+    console.log("Input is not a valid x, y, z point");
     return false;
   }
 }
@@ -363,8 +367,28 @@ function difference(targetID, input1ID, input2ID) {
 function shrinkWrapSketches(targetID, inputIDs) {
   return started.then(() => {
     let BOM = [];
-    console.log("inputIDs0", library[inputIDs[0]]);
-    if (inputIDs.every((inputID) => !is3D(library[inputID]))) {
+    let points = [];
+    if (inputIDs.every((inputID) => isPoint(inputID))) {
+      //inputIDs is an array of xyz points, shrinkwrap will only take 2D points
+      points = inputIDs.map((inputID) => inputID.slice(0, 2));
+      let drawToSketch = replicad.draw(points[0]);
+      for (let i = 1; i < points.length; i++) {
+        console.log("points", points[i]);
+        drawToSketch = drawToSketch.lineTo(points[i]);
+      }
+      drawToSketch = drawToSketch.close();
+      const newPlane = new Plane().pivot(0, "Y");
+      library[targetID] = {
+        geometry: [drawToSketch],
+        tags: [],
+        color: defaultColor,
+        plane: newPlane,
+        bom: BOM,
+      };
+      console.log(library[targetID]);
+
+      return true;
+    } else if (inputIDs.every((inputID) => !is3D(library[inputID]))) {
       let inputsToFuse = [];
       inputIDs.forEach((inputID) => {
         let fusedInput = digFuse(library[inputID]);
@@ -385,39 +409,6 @@ function shrinkWrapSketches(targetID, inputIDs) {
         plane: newPlane,
         bom: BOM,
       };
-      return true;
-    } else if (inputIDs.every((inputID) => isVertex(library[inputID]))) {
-      inputIDs.forEach((inputID) => {
-        console.log("inputID", library[inputID].geometry[0]);
-        console.log("inputID", library[inputID].geometry[0].asTuple);
-      });
-      let points = [
-        [0, 0],
-        [0, 5],
-        [5, 5],
-      ];
-
-      const newDrawing = replicad.draw([points[0]]);
-      console.log("newDrawing", newDrawing);
-
-      let drawToSketch = replicad.draw(points[0]);
-      for (let i = 1; i < points.length; i++) {
-        console.log("points", points[i]);
-        drawToSketch = drawToSketch.lineTo(points[i]);
-        console.log(drawToSketch);
-      }
-      drawToSketch = drawToSketch.close();
-      console.log("drawToSketch", drawToSketch);
-      const newPlane = new Plane().pivot(0, "Y");
-      library[targetID] = {
-        geometry: [drawToSketch],
-        tags: [],
-        color: defaultColor,
-        plane: newPlane,
-        bom: BOM,
-      };
-      console.log(library[targetID]);
-
       return true;
     } else {
       throw new Error("All inputs must be sketches or points");

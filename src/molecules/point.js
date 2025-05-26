@@ -135,10 +135,10 @@ export default class Point extends Atom {
     this.zValue = zVal;
 
     this.value = [xVal, yVal, zVal];
+    this.output.setValue(this.value);
     this.output.ready = true;
     this.processing = false;
 
-    console.log(this.value);
     /*GlobalVariables.cad
       .point(this.uniqueID, xVal, yVal, zVal)
       .then(() => {
