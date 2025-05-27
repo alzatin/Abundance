@@ -28,12 +28,18 @@ export default class Point extends Atom {
      */
     this.description = "Creates a point in 3D space.";
 
+    /**
+     * The default value for the point
+     * @type {array}
+     */
+    this.value = [0, 0, 0];
+
     this.addIO("input", "xDist", this, "number", 0.0);
     this.addIO("input", "yDist", this, "number", 0.0);
     this.addIO("input", "zDist", this, "number", 0.0);
 
     // Add output
-    this.addIO("output", "geometry", this, "geometry", "");
+    this.addIO("output", "geometry", this, "geometry", this.value);
 
     this.setValues(values);
   }
@@ -59,16 +65,26 @@ export default class Point extends Atom {
     GlobalVariables.c.closePath();
   }
 
-  /**
-   * Starts propagation from this atom if it is not waiting for anything up stream.
-   */
-  beginPropagation() {
-    //Check to see if a value already exists. Generate it if it doesn't. Only do this for circles and rectangles
+  createLevaInputs() {
+    let inputParams = {};
 
-    //Triggers inputs with nothing connected to begin propagation
-    this.inputs.forEach((input) => {
-      input.beginPropagation();
-    });
+    inputParams[this.uniqueID + "point"] = {
+      value: { x: this.inputs[0].value, y: this.inputs[1].value },
+      label: "Point",
+      step: 1,
+      disabled: false,
+      onChange: (value) => {
+        if (
+          this.inputs[0].value !== value.x ||
+          this.inputs[1].value !== value.y
+        ) {
+          this.inputs[0].setValue(value.x);
+          this.inputs[1].setValue(value.y);
+        }
+      },
+    };
+
+    return inputParams;
   }
 
   /**
@@ -76,7 +92,6 @@ export default class Point extends Atom {
    */
   updateValue() {
     super.updateValue();
-    console.log("Updating Point Value");
 
     this.processing = true;
 
