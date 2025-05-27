@@ -108,9 +108,9 @@ export default class Point extends Atom {
   serialize(values) {
     //Save the atom's properties to the serial stream
     var valuesObj = super.serialize(values);
-    valuesObj.x = this.x;
-    valuesObj.y = this.y;
-    valuesObj.z = this.z;
+    valuesObj.xDist = this.findIOValue("xDist");
+    valuesObj.yDist = this.findIOValue("yDist");
+    valuesObj.zDist = this.findIOValue("zDist");
 
     return valuesObj;
   }
