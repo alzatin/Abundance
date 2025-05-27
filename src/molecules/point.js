@@ -1,4 +1,4 @@
-import Atom from "../prototypes/atom";
+import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 
 /**
