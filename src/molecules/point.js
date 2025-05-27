@@ -72,6 +72,7 @@ export default class Point extends Atom {
       value: { x: this.inputs[0].value, y: this.inputs[1].value },
       label: "Point",
       step: 1,
+      joystick: false,
       disabled: false,
       onChange: (value) => {
         if (
@@ -101,7 +102,6 @@ export default class Point extends Atom {
 
     this.value = [x, y, z];
 
-    this.decreaseToProcessCountByOne();
     if (this.output) {
       this.output.setValue(this.value);
       this.output.ready = true;
