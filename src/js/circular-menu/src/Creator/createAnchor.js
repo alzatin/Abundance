@@ -79,16 +79,6 @@ export default function (parent, data, index) {
     "hover"
   );
 
-  function clickCallBack(e, data) {
-    if (data.click) data.click.call(this, e, data);
-
-    if (self._config.hideAfterClick) {
-      self._cMenu.hide();
-      if (self._cMenu._pMenu) self._cMenu._pMenu.hide();
-      if (subMenu) subMenu.hide();
-    }
-  }
-
   // this is where the tooltip div is created to show names of elements in circular menu
   on(a, "mouseenter", function () {
     var div = document.createElement("div");
@@ -111,19 +101,49 @@ export default function (parent, data, index) {
     );
   });
 
-  on(a, "click", clickCallBack, data);
   on(a, "mouseleave", function () {
-    document.getElementById(data.icon + "text").remove();
+    if (document.getElementById(data.icon + "text")) {
+      document.getElementById(data.icon + "text").remove();
+    }
   });
 
   parent.appendChild(a);
 
   this._createHorizontal(a, data, index);
 
+  // Define subMenu variable outside the conditionals
+  var subMenu = null;
+
   //toggle subMenu
   if (hasSubMenus(data.menus)) {
-    var subMenu = this._createSubMenu(self, data.menus, index);
+    subMenu = this._createSubMenu(self, data.menus, index);
     let hovered = false;
+    let subMenuVisible = false;
+    
+    // Handle click for touch devices
+    on(a, "click", function (e) {
+      // Only handle submenu clicks for touch devices
+      if (window.GlobalVariables && window.GlobalVariables.touchInterface) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Toggle submenu visibility
+        if (subMenuVisible) {
+          subMenu.hide();
+          subMenuVisible = false;
+        } else {
+          subMenu
+            .styles({
+              top: self._container.offsetTop + self._calc.radius + "px",
+              left: self._container.offsetLeft + self._calc.radius + "px",
+            })
+            .show();
+          subMenuVisible = true;
+        }
+        return false;
+      }
+    });
+    
     on(a, "mouseenter", function () {
       hovered = true;
       delayShow = setTimeout(function () {
@@ -134,6 +154,7 @@ export default function (parent, data, index) {
               left: self._container.offsetLeft + self._calc.radius + "px",
             })
             .show();
+          subMenuVisible = true;
         }
       }, 100);
     });
@@ -143,6 +164,7 @@ export default function (parent, data, index) {
         hovered = false;
         delayHide = setTimeout(function () {
           subMenu.hide();
+          subMenuVisible = false;
         }, 100);
       }
     });
@@ -167,10 +189,37 @@ export default function (parent, data, index) {
     on(subMenu._container, "mouseleave", function (e) {
       hovered = false;
 
-      document.getElementById(data.icon + "text2").remove();
+      if (document.getElementById(data.icon + "text2")) {
+        document.getElementById(data.icon + "text2").remove();
+      }
+      
       if (!a.contains(e.toElement) || e.toElement.children[0] === a) {
         subMenu.hide();
+        subMenuVisible = false;
       }
     });
+  }
+  
+  // Define clickCallBack function after subMenu has been created
+  function clickCallBack(e, data) {
+    // Don't process clicks on submenu parents in touch interface
+    if (window.GlobalVariables && window.GlobalVariables.touchInterface && hasSubMenus(data.menus)) {
+      return;
+    }
+    
+    if (data.click) data.click.call(this, e, data);
+
+    if (self._config.hideAfterClick) {
+      self._cMenu.hide();
+      if (self._cMenu._pMenu) self._cMenu._pMenu.hide();
+      if (subMenu) subMenu.hide();
+    }
+  }
+  
+  // Only add the main click handler if it doesn't have submenus or we're not in touch mode
+  // We'll add a special handler for submenus in touch mode later
+  if (!hasSubMenus(data.menus) || 
+      !(window.GlobalVariables && window.GlobalVariables.touchInterface)) {
+    on(a, "click", clickCallBack, data);
   }
 }
