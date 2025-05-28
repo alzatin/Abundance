@@ -80,6 +80,9 @@ export default function (parent, data, index) {
   );
 
   function clickCallBack(e, data) {
+    console.log("Click call back ran");
+    console.log(e);
+    console.log(data);
     if (data.click) data.click.call(this, e, data);
 
     if (self._config.hideAfterClick) {
