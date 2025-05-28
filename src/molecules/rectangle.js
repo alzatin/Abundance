@@ -59,7 +59,7 @@ export default class Rectangle extends Atom {
       GlobalVariables.widthToPixels(this.x - this.radius / 2),
       GlobalVariables.heightToPixels(this.y - this.radius * 2),
       GlobalVariables.widthToPixels(this.radius),
-      GlobalVariables.widthToPixels(this.radius)
+      GlobalVariables.heightToPixels(this.radius)
     );
     //GlobalVariables.c.fill()
     GlobalVariables.c.stroke();
