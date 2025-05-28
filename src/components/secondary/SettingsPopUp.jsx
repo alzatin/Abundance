@@ -234,7 +234,7 @@ const SettingsPopUp = ({ setSettingsPopUp, shortCutsOn, setShortCuts }) => {
                 name="atomSize"
                 className="settings-sliders"
                 min={10}
-                max={30}
+                max={60}
                 color="white"
                 defaultValue={Globalvariables.atomSize * 1000}
               />
