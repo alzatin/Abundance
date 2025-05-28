@@ -63,14 +63,14 @@ export default class CutLayout extends Atom {
       "Sheet Width",
       this,
       "number",
-      GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 2438 : 96
+      GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 1219 : 48
     );
     this.addIO(
       "input",
       "Sheet Height",
       this,
       "number",
-      GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 1219 : 48
+      GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 2438 : 96
     );
     this.addIO(
       "input",

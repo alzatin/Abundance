@@ -1146,11 +1146,12 @@ function computePositions(
       return asFloat64(preparePoints(mesh, tolerance));
     });
 
+  // Clockwise winding direction appears to matter here for the current packing algo.
   const bin = asFloat64([
     { x: 0, y: 0 },
-    { x: layoutConfig.width, y: 0 },
-    { x: layoutConfig.width, y: layoutConfig.height },
     { x: 0, y: layoutConfig.height },
+    { x: layoutConfig.width, y: layoutConfig.height },
+    { x: layoutConfig.width, y: 0 },
   ]);
 
   const packer = new PolygonPacker();
@@ -1180,8 +1181,6 @@ function computePositions(
         console.log("placement percentage: " + placementPercentage);
 
         let placements = translatePlacements(placementsData);
-        console.log("Timeout reached. Stopping packer with final placements: ");
-        console.log(placements);
  
         placementsCallback(placements);
         bestPlacement = placements;
