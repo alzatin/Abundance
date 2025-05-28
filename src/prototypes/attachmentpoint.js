@@ -103,6 +103,15 @@ export default class AttachmentPoint {
     // Initially hide this attachment point.
     this.unexpand();
   }
+  
+  /**
+   * Gets the scaled radius of this attachment point based on the parent molecule's radius
+   */
+  get scaledRadius() {
+    // Scale the attachment point radius based on the parent atom's radius
+    // Using the default atom radius (1/60) as reference
+    return AttachmentPoint.RADIUS * (this.parentMolecule.radius / (1/60));
+  }
 
   /**
    * Draws the attachment point on the screen. Called with each frame.
@@ -114,7 +123,8 @@ export default class AttachmentPoint {
     }
     let xInPixels = GlobalVariables.widthToPixels(this.x);
     let yInPixels = GlobalVariables.heightToPixels(this.y);
-    let radiusInPixels = GlobalVariables.widthToPixels(AttachmentPoint.RADIUS);
+    
+    let radiusInPixels = GlobalVariables.widthToPixels(this.scaledRadius);
 
     if (this.isTargetted) {
       radiusInPixels = radiusInPixels * AttachmentPoint.TARGET_SCALEUP;
@@ -306,13 +316,14 @@ export default class AttachmentPoint {
     const inputList = this.parentMolecule.inputs.filter(
       (input) => input.type == "input"
     );
+    
     if (this.type == "output") {
       // Outputs are always singular and always positioned partially overlapped by the right-most
       // pole of the parent molecule.
       return [
         this.parentMolecule.x +
           this.parentMolecule.radius +
-          AttachmentPoint.RADIUS * 0.75,
+          this.scaledRadius * 0.75,
         this.parentMolecule.y,
       ];
     } else if (this.type == "input" && inputList.length == 1) {
@@ -321,7 +332,7 @@ export default class AttachmentPoint {
       return [
         this.parentMolecule.x -
           this.parentMolecule.radius -
-          AttachmentPoint.RADIUS * 0.75,
+          this.scaledRadius * 0.75,
         this.parentMolecule.y,
       ];
     } else {
@@ -331,7 +342,7 @@ export default class AttachmentPoint {
       const anglePerIO = Math.PI / (inputList.length + 1);
       // Reduce radius to ensure that the entire attachment point is inside boundary, even when targetted.
       const hoverRadius =
-        boundary - AttachmentPoint.RADIUS * AttachmentPoint.TARGET_SCALEUP;
+        boundary - this.scaledRadius * AttachmentPoint.TARGET_SCALEUP;
 
       // angle correction so that it centers menu adjusting to however many attachment points there are
       const angleCorrection = Math.PI / 2 + anglePerIO;
@@ -374,9 +385,9 @@ export default class AttachmentPoint {
       y,
       GlobalVariables.heightToPixels(this.y)
     );
-    const apRadiusInPixels = GlobalVariables.widthToPixels(
-      AttachmentPoint.RADIUS
-    );
+    
+    const apRadiusInPixels = GlobalVariables.widthToPixels(this.scaledRadius);
+    
     if (this.type == "output") {
       return dist <= apRadiusInPixels * 2;
     } else {
@@ -390,7 +401,7 @@ export default class AttachmentPoint {
 
       let hoverRadius = GlobalVariables.widthToPixels(
         AttachmentPoint.DIST_FROM_PARENT * this.parentMolecule.radius -
-          AttachmentPoint.RADIUS * AttachmentPoint.TARGET_SCALEUP
+          this.scaledRadius * AttachmentPoint.TARGET_SCALEUP
       );
 
       const anglePerIO = Math.PI / (inputCount + 1);
