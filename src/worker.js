@@ -365,7 +365,7 @@ function shrinkWrapSketches(targetID, inputIDs) {
   });
 }
 
-function intersect(targetID, input1ID, input2ID) {
+function intersect(input1ID, input2ID, targetID = null) {
   return started.then(() => {
     library[targetID] = actOnLeafs(library[input1ID], (leaf) => {
       const shapeToIntersectWith = digFuse(library[input2ID]);
@@ -377,7 +377,12 @@ function intersect(targetID, input1ID, input2ID) {
         bom: leaf.bom,
       };
     });
-    return true;
+    if (targetID != null) {
+      library[targetID] = generatedAssembly;
+      return true;
+    } else {
+      return generatedAssembly;
+    }
   });
 }
 
