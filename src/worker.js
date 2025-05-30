@@ -485,7 +485,7 @@ async function Intersect(input1, input2) {
 // Runs the user entered code in the worker thread and returns the result.
 async function code(targetID, code, argumentsArray) {
   await started;
-  let keys1 = ["Rotate", "Move", "Assembly"];
+  let keys1 = ["Rotate", "Move", "Assembly", "Intersect"];
   let inputValues = [Rotate, Move, Assembly, Intersect];
   for (const [key, value] of Object.entries(argumentsArray)) {
     keys1.push(`${key}`);
