@@ -6,7 +6,8 @@ import { Plane, Solid } from "replicad";
 import shrinkWrap from "replicad-shrink-wrap";
 import { addSVG, drawSVG } from "replicad-decorate";
 import Fonts from "./js/fonts.js";
-import { AnyNest, FloatPolygon } from "any-nest";
+//import { AnyNest, FloatPolygon } from "any-nest";
+import { PolygonPacker,PlacementWrapper } from "polygon-packer";
 import { equal, re } from "mathjs";
 
 var library = {};
@@ -800,32 +801,44 @@ function layout(
   layoutConfig
 ) {
   return started.then(() => {
-    var shapesForLayout = rotateForLayout(targetID, inputID, layoutConfig);
+    let rotateID = generateUniqueID();
+
+    var shapesForLayout = rotateForLayout(rotateID, inputID, layoutConfig);
 
     let positionsPromise = computePositions(
       shapesForLayout,
       progressCallback,
       placementsCallback,
+      inputID,
+      targetID,
       layoutConfig
     );
     return positionsPromise.then((positions) => {
-      let warning;
+      //This does the actual layout of the parts. We want to break this out into it's own function which can be passed a list of positions
+      applyLayout(targetID, rotateID, positions, layoutConfig);
+
+
+      // TODO: tristan, instead of throwing these here, return the full suite of
+      // result which includes provided parts and placed part counts. Then all error warnings
+      // can be handled in the UI and can be re-rendered from serialized state
+      // this will require invisibly storing the number of input parts.
+
+      // These are soft failures, issue after the result has been applied
       if (positions.length == 0) {
-        warning = "Failed to place any parts. Are sheet dimensions right?";
+        throw new Error("Failed to place any parts. Are sheet dimensions right?");
       } else {
         let unplacedParts = shapesForLayout.length - positions.flat().length;
         if (unplacedParts > 0) {
-          warning =
+          const warning =
             unplacedParts +
             " parts are too big to fit on this sheet size. Failed layout for " +
             unplacedParts +
             " part(s)";
+            throw new Error(warning);
         }
       }
 
-      //This does the actual layout of the parts. We want to break this out into it's own function which can be passed a list of positions
-      applyLayout(targetID, inputID, positions, layoutConfig);
-      return warning;
+      return positions;
     });
   });
 }
@@ -834,14 +847,25 @@ function layout(
  * Lay the input geometry flat and apply the transformations to display it
  */
 function displayLayout(targetID, inputID, positions, layoutConfig) {
-  rotateForLayout(targetID, inputID, layoutConfig);
+  let rotateID = generateUniqueID();
+  rotateForLayout(rotateID, inputID, layoutConfig);
 
-  applyLayout(targetID, inputID, positions, layoutConfig);
+  applyLayout(targetID, rotateID, positions, layoutConfig);
 }
 
 
+
 /**
- * Rotate shapes to be placed on their most cuttable face (basically lay them flat)
+ * Rotates and moves all leafs into an orientation which can be fed into
+ * the nesting algorithm.
+ * 
+ * Specific criteria of this pre-layout step are as follows:
+ * 1) rotate the part such that the best possible face is aligned with the XY plane.
+ *    Criteria for the best face are as follows (in order):
+ *    a) face must be flat (eg: not the edge of a cylinder)
+ *    b) face must have no protrusions below the XY plane
+ *    c) face must be within the (inferred) thickness of the material
+ *    d) face should have minimal number of interior voids and have the largest bounding box
  */
 function rotateForLayout(targetID, inputID, layoutConfig) {
   var THICKNESS_TOLLERANCE = 0.001;
@@ -878,8 +902,8 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
     leaf.geometry[0].faces.forEach((face) => {
       if (face.geomType == "PLANE") {
         hasFlatFace = true;
+
         const prospectiveGoem = moveFaceToCuttingPlane(leaf.geometry[0], face);
-//        if (thickness < layoutConfig.thickness + THICKNESS_TOLLERANCE) {
         // Check for protrusions "below" the bottom of the raw material.
         if (
           prospectiveGoem.boundingBox.bounds[0][2] >
@@ -914,7 +938,6 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
     };
     localId++;
     return newLeaf;
-
   });
 
   // Heuristic here is... for each part get it's minimum thickness. If the largest of these is
@@ -982,13 +1005,21 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
         return 0; // we can't decide.
       }
       );
-      console.log("score");
-      console.log(scores);
       selected = candidates[scores[0].candidate_index];
     }
+
+    // move so center of face is at (0, 0, 0)
+    const newGeom = selected.geom
+      .clone()
+      .translate(
+        -1 * selected.face.center.x,
+        -1 * selected.face.center.y,
+        0
+      );
+
     let newLeaf = {
-      geometry: [selected.geom],
-      id: localId,
+      geometry: [newGeom],
+      id: leaf.id,
       referencePoint: selected.face.center,
       tags: leaf.tags,
       color: leaf.color,
@@ -999,10 +1030,9 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
     // it's been moved to the xy cutting plane. Otherwise we can get weird skewed projections
     // of the face shape.
     shapesForLayout.push({
-      id: localId,
+      id: leaf.id,
       shape: newLeaf.geometry[0].faces[selected.faceIndex],
     });
-    localId++;
 
     return newLeaf;
   });
@@ -1013,7 +1043,9 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
  * Apply the transformations to the geometry to apply the layout
  */
 function applyLayout(targetID, inputID, positions, layoutConfig) {
-  library[targetID] = actOnLeafs(library[targetID], (leaf) => {
+  console.log("Applying layout");
+  console.log(positions);
+  library[targetID] = actOnLeafs(library[inputID], (leaf) => {
     let transform, index;
     for (var i = 0; i < positions.length; i++) {
       let candidates = positions[i].filter(
@@ -1053,102 +1085,163 @@ function applyLayout(targetID, inputID, positions, layoutConfig) {
       color: leaf.color,
       plane: leaf.plane,
       bom: leaf.bom,
+      id: leaf.id,
     };
   });
 }
 
+// where shape is a list of {x: x, y: y} points
+// returns a Float64Array of the points as [x1, y1, x2, y2, ...]
+function asFloat64(shape) {
+  const points = new Float64Array(shape.length * 2 + 2);
+  let i = 0;
+  shape.forEach((point) => {
+    points[i] = point.x;
+    points[i + 1] = point.y;
+    i += 2;
+  });
+  points[i] = shape[0].x;
+  points[i + 1] = shape[0].y; // close the polygon
+
+  if (points.filter((c) => !Number.isFinite(c)).length > 0) {
+    throw new Error("NaN points in Float64Array from: " + JSON.stringify(shape)); 
+  }
+
+  return points;  
+}
+
 /**
- * Use the packing engine, note this is potentially time consuming step. FIXME: Can this be moved into a different worker?
+ * Use the packing engine, note this is potentially time consuming step.
  */
 function computePositions(
   shapesForLayout,
   progressCallback,
   placementsCallback,
+  inputID,
+  targetID,
   layoutConfig
 ) {
-  const populationSize = 5;
-  const nestingEngine = new AnyNest();
+  console.log("Starting to compute positions for shapes: ")
+  console.log(shapesForLayout);
   const tolerance = 0.1;
-  // include tolerance * 2 to ensure padding is the minimum spacing between parts.
-  const configWithDefaults = nestingEngine.config({
+  const runtimeMs = 30000;
+  const config = {
+    curveTolerance: 0.3,
     spacing: layoutConfig.partPadding + tolerance * 2,
-    binSpacing: 0,
-    populationSize: populationSize,
-    exploreConcave: false, // we eventually want this to be true, but it's unsupported right now
-  });
-  nestingEngine.setBin(
-    FloatPolygon.fromPoints(
-      [
-        { x: 0, y: 0 },
-        { x: layoutConfig.width, y: 0 },
-        { x: layoutConfig.width, y: layoutConfig.height },
-        { x: 0, y: layoutConfig.height },
-      ],
-      "bin"
-    )
-  );
+    rotations: 12, // TODO: this should be higher, like at least 8? idk
+    populationSize: 8,
+    mutationRate: 50,
+    useHoles: false,
+  };
+  // from the mesh format of [x1, y1, z1, x2, y2, z2, ...] to FloatPolygon friendly format of
+  // [{x: x1, y: y1}, {x: x2, y: y2}...]
+  const polygons = shapesForLayout.map((shape) => {
+      let face = shape.shape;
+      const mesh = face
+        .clone()
+        .outerWire()
+        .meshEdges({ tolerance: 0.5, angularTolerance: 5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
+      return asFloat64(preparePoints(mesh, tolerance));
+    });
 
-  let parts = [];
+  // Clockwise winding direction appears to matter here for the current packing algo.
+  const bin = asFloat64([
+    { x: 0, y: 0 },
+    { x: 0, y: layoutConfig.height },
+    { x: layoutConfig.width, y: layoutConfig.height },
+    { x: layoutConfig.width, y: 0 },
+  ]);
 
-  shapesForLayout.forEach((shape) => {
-    let face = shape.shape;
-    const mesh = face
-      .clone()
-      .outerWire()
-      .meshEdges({ tolerance: 0.5, angularTolerance: 5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
-    const points = preparePoints(mesh, tolerance); // TOOD: it's not actually clear that this tolerance should be the same..
-    parts.push(FloatPolygon.fromPoints(points, shape.id));
-  });
-  nestingEngine.setParts(parts);
+  const packer = new PolygonPacker();
 
-  console.log(
-    "Starting nesting task with configuration: " +
-      JSON.stringify(configWithDefaults)
-  );
-  let callbackCounter = 0;
-  const targetGenerations = 5;
-  return new Promise((resolve, reject) => {
+  let progressCallbackCounter = 0;
+  const callbackFunction = (num) => {
+    // Forward to the UI thread along with a cancelation handle.
+    // Expect a call every 0.1 seconds for this method.
+    // Unclear what the num argument is supposed to represent
+    progressCallbackCounter++;
+    progressCallback(
+      0.1 + 0.9 * (progressCallbackCounter * 100 / runtimeMs),
+      proxy(() => {
+        packer.stop();
+      })
+    );
+  }
+
+  const result = new Promise((resolve, reject) => {
+    // See https://github.com/yuriilychak/SVGnest/blob/6ed19cf44cb458b11d7ae4abf1868a513c53420a/packages/polygon-packer/src/types.ts#L31
+    let callbackCounter = 0;
+    let bestPlacement = null;
+    const displayCallback = (placementsData, placementPercentage, placedParts, partCount) => {
+      callbackCounter++;
+      if (placedParts > 0) {
+        let placements = translatePlacements(placementsData, placedParts, partCount);
+ 
+        placementsCallback(placements);
+        bestPlacement = placements;
+      }
+    };
+  
     try {
-      nestingEngine.start(
-        (num) => {
-          const fraction = 1 / (targetGenerations * populationSize);
-          // start at 0.1 to acknowledge the rotation computations which happed above.
-          progressCallback(
-            0.1 + 0.9 * (num + callbackCounter) * fraction,
-            proxy(() => {
-              nestingEngine.stop();
-            })
-          );
-        },
-        (placement, utilization) => {
-          callbackCounter++;
-          if (callbackCounter >= targetGenerations * populationSize) {
-            console.log(
-              "nesting search completed " +
-                targetGenerations +
-                " generations. Final result: " +
-                JSON.stringify(placement)
-            );
-            placementsCallback(placement);
-            nestingEngine.stop();
-            resolve(placement);
-          }
-        }
+      packer.start(
+        config,
+        polygons,
+        bin,
+        callbackFunction,
+        displayCallback
       );
+  
+      setTimeout(() => {
+        console.log("Timeout reached. Stopping packer.");
+        if (bestPlacement != null) {
+          packer.stop();
+          resolve(bestPlacement);
+        } else {
+          packer.stop();
+          reject(new Error("Failed to find placements within the time limit."));
+        }
+      }, runtimeMs);
+  
     } catch (err) {
       console.log("error in nesting engine: " + err);
-      nestingEngine.stop();
+      packer.stop();
       reject(err);
     }
   });
+  return result;
+}
+
+/**
+ * 
+ * @param {} placement 
+ * @returns List of placements as expected by applyLayout
+ *  ie. a list of list of transforms, where each entry in the outer list is for 1 sheet's worth of placement
+ *  Each transform follows the structure: {id: "part_id", rotate: degrees, translate: {x: x, y: y}}
+ */
+
+function translatePlacements(placement, placedParts, partCount) {
+  const placements = new PlacementWrapper(placement.placementsData, placement.angleSplit);
+  console.log("new placement received. " + placedParts + " of " + partCount + " parts placed. score: " + placement.placementsData[0]);
+
+  const result = [];
+  for (let i = 0; i < placements.placementCount; i++) {
+    const sheet = []
+    placements.bindPlacement(i);
+    for (let j = 0; j < placements.size; j++) {
+      placements.bindData(j)
+      sheet.push({"id": placements.id, "rotate": placements.rotation, "translate": {"x": placements.x, "y": placements.y}});
+    }
+    result.push(sheet);
+  }
+
+  return result;
 }
 
 // from the mesh format of [x1, y1, z1, x2, y2, z2, ...] to FloatPolygon friendly format of
 // [{x: x1, y: y1}, {x: x2, y: y2}...]
 function preparePoints(mesh, tolerance) {
   // Unfortunately the "edges" of this mesh aren't always in sequential order. Here we re-sort them so we can
-  // pass the points into FloatPolygon in a looping order, ie, starting at one point and looping around the
-  // perimiter of the shape.
+  // provide them in a winding order, ie, starting at one point and winding around the perimeter of the shape.
 
   // create structure for lookup of line segments by start point or end point
   let edgeStarts = [];
@@ -1221,20 +1314,27 @@ function moveFaceToCuttingPlane(geom, face) {
   let pointOnSurface = face.pointOnSurface(0, 0);
   let faceNormal = face.normalAt();
 
-  // Always use "XY" plane as the cutting surface
-  // TODO(tristan): there's an inversion here I don't fully understand, hence using the negative Z vector.
-  let cutPlaneNormal = new replicad.Vector([0, 0, -1]);
+  // Always use "XY" plane as the cutting surface. Attempt to reorient
+  // the given face so it's normal vector points down the Z axis. Down because
+  // the normal vector points out of the surface of our 3d shape, and the interior
+  // of the 3D shape should be placed above the XY plane.
+  let targetOrientation = new replicad.Vector([0, 0, -1]);
 
-  let rotationAxis = faceNormal.cross(cutPlaneNormal);
+  let rotationAxis = faceNormal.cross(targetOrientation);
   if (rotationAxis.Length == 0) {
-    // Face already parallel to cut plane, no rotation necessary.
+    if (faceNormal.dot(targetOrientation) < 0) {
+      // Face points upward but is otherwise parallel to cut plane. flip 180 around x axis.
+      geom = geom.clone().rotate(180, pointOnSurface, new replicad.Vector([1,0,0]));
+    }
+
+    // Face already parallel to cut plane and on underside of the shape.
     return geom.clone().translate(0, 0, -1 * pointOnSurface.z);
   }
 
   let rotationDegrees =
     (Math.acos(
-      faceNormal.dot(cutPlaneNormal) /
-        (cutPlaneNormal.Length * faceNormal.Length)
+      faceNormal.dot(targetOrientation) /
+        (targetOrientation.Length * faceNormal.Length)
     ) *
       360) /
     (2 * Math.PI);
