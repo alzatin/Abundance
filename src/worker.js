@@ -647,7 +647,6 @@ function validateUserCode(code) {
   return true;
 }
 
-
 /**
  * Executes user-provided code in the worker thread with access to predefined geometry functions.
  * @param {string} targetID - The unique identifier to store the code execution result in the library
@@ -666,7 +665,6 @@ async function code(targetID, code, argumentsArray) {
     if (code.length > 50000) {
       throw new Error('Code too long (maximum 50,000 characters)');
     }
-
     // Validate code for dangerous patterns
     // TODO: we probably want to allow some of these but still need to warn about them before executing
     // the code molecule.
