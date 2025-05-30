@@ -366,9 +366,11 @@ function shrinkWrapSketches(targetID, inputIDs) {
 }
 
 function intersect(input1ID, input2ID, targetID = null) {
+  let inputGeometry1 = toGeometry(input1ID);
+  let inputGeometry2 = toGeometry(input2ID);
   return started.then(() => {
-    library[targetID] = actOnLeafs(library[input1ID], (leaf) => {
-      const shapeToIntersectWith = digFuse(library[input2ID]);
+    let generatedAssembly = actOnLeafs(inputGeometry1, (leaf) => {
+      const shapeToIntersectWith = digFuse(inputGeometry2);
       return {
         geometry: [leaf.geometry[0].clone().intersect(shapeToIntersectWith)],
         tags: leaf.tags,
