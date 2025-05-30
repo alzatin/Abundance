@@ -1005,8 +1005,6 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
         return 0; // we can't decide.
       }
       );
-      console.log("score");
-      console.log(scores);
       selected = candidates[scores[0].candidate_index];
     }
 
@@ -1126,13 +1124,13 @@ function computePositions(
   console.log("Starting to compute positions for shapes: ")
   console.log(shapesForLayout);
   const tolerance = 0.1;
-  const runtimeMs = 20000;
+  const runtimeMs = 30000;
   const config = {
     curveTolerance: 0.3,
     spacing: layoutConfig.partPadding + tolerance * 2,
     rotations: 12, // TODO: this should be higher, like at least 8? idk
     populationSize: 8,
-    mutationRate: 25,
+    mutationRate: 50,
     useHoles: false,
   };
   // from the mesh format of [x1, y1, z1, x2, y2, z2, ...] to FloatPolygon friendly format of
@@ -1177,10 +1175,7 @@ function computePositions(
     const displayCallback = (placementsData, placementPercentage, placedParts, partCount) => {
       callbackCounter++;
       if (placedParts > 0) {
-        console.log("new placement received. " + placedParts + " of " + partCount + " parts placed");
-        console.log("placement percentage: " + placementPercentage);
-
-        let placements = translatePlacements(placementsData);
+        let placements = translatePlacements(placementsData, placedParts, partCount);
  
         placementsCallback(placements);
         bestPlacement = placements;
@@ -1224,9 +1219,9 @@ function computePositions(
  *  Each transform follows the structure: {id: "part_id", rotate: degrees, translate: {x: x, y: y}}
  */
 
-function translatePlacements(placement) {
+function translatePlacements(placement, placedParts, partCount) {
   const placements = new PlacementWrapper(placement.placementsData, placement.angleSplit);
-  console.log("placement score: " + placement.placementsData[0])
+  console.log("new placement received. " + placedParts + " of " + partCount + " parts placed. score: " + placement.placementsData[0]);
 
   const result = [];
   for (let i = 0; i < placements.placementCount; i++) {

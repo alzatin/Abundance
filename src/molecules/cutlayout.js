@@ -161,7 +161,6 @@ export default class CutLayout extends Atom {
   }
 
   handleNewPlacements(placements) {
-    console.log("placements", placements);
     this.placements = placements;
     this.basicThreadValueProcessing();
     this.updateValue();
@@ -245,7 +244,6 @@ export default class CutLayout extends Atom {
           inputID,
           proxy((progress, cancelationHandle) => {
             this.progress = progress;
-            console.log("progress", progress);
             this.cancelationHandle = cancelationHandle;
           }),
           proxy((placements) => {this.handleNewPlacements(placements)}),
