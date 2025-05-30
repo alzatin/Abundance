@@ -466,11 +466,27 @@ async function Assembly(inputs) {
   }
 }
 
+/**
+ * A wrapper for the intersect function to allow it to be Intersect and used in the Code atom
+ * @param {string} input1 - The first geometry to intersect
+ * @param {string} input2 - The second geometry to intersect
+ * @return {Promise} - A promise that resolves to the intersected geometry
+ * */
+async function Intersect(input1, input2) {
+  try {
+    const intersectedGeometry = await intersect(input1, input2);
+    return intersectedGeometry;
+  } catch (error) {
+    console.error("Error intersecting geometry:", error);
+    throw error;
+  }
+}
+
 // Runs the user entered code in the worker thread and returns the result.
 async function code(targetID, code, argumentsArray) {
   await started;
   let keys1 = ["Rotate", "Move", "Assembly"];
-  let inputValues = [Rotate, Move, Assembly];
+  let inputValues = [Rotate, Move, Assembly, Intersect];
   for (const [key, value] of Object.entries(argumentsArray)) {
     keys1.push(`${key}`);
     inputValues.push(value);
