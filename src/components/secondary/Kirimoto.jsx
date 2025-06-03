@@ -48,7 +48,7 @@ const KiriMotoIntegration = ({ activeAtom }) => {
     };
   }, []);
 
-  const runKirimoto = (kiriEngine) => {
+  const runKirimoto = () => {
     console.log("kiriEngine");
     console.log(kiriEngine);
     if (!kiriEngine) {
@@ -65,43 +65,93 @@ const KiriMotoIntegration = ({ activeAtom }) => {
       .setListener((message) => {
         console.log("Kiri:Moto Message:", message);
       })
-      .load(stlUrl) // Use the temporary file URL here // or stlUrl
-      .then((eng) => {
-        console.log("STL file loaded");
-        console.log(eng);
-        return eng.setProcess({
-          sliceShells: 1,
-          sliceFillSparse: 0.1,
-          sliceTopLayers: 1,
-          sliceBottomLayers: 1,
-        });
-      })
-      .catch((error) => {
-        console.error("Error loading STL file:", error);
-      })
-      .then((eng) => {
-        console.log("Process parameters set");
-        return eng.setMode("FDM");
-      })
-      .then((eng) => {
-        console.log("Process parameters set");
-        return eng.setDevice({
-          gcodePre: ["M82", "M104 S220"],
-          gcodePost: ["M107"],
-        });
-      })
-      .then((eng) => {
-        console.log("Device parameters set");
-        return eng.slice();
-      })
-      .then((eng) => {
-        console.log("Slicing completed");
-        return eng.prepare();
-      })
-      .then((eng) => {
-        console.log("Preparation completed");
-        return eng.export();
-      })
+      .load(stlUrl)
+      .then((eng) => eng.setMode("CAM"))
+      .then((eng) =>
+        eng.setStock({
+          x: 110.00001525878906,
+          y: 60,
+          z: 60,
+          center: {
+            x: 0,
+            y: 0,
+            z: 12.5,
+          },
+        })
+      )
+      .then((eng) =>
+        eng.setTools([
+          {
+            id: 1722394350168,
+            number: 11,
+            name: "0.3 mm",
+            type: "endmill",
+            shaft_diam: 0.3,
+            shaft_len: 5,
+            flute_diam: 0.3,
+            flute_len: 5,
+            taper_tip: 0,
+            metric: true,
+            order: 0,
+          },
+        ])
+      )
+      .then((eng) =>
+        eng.setProcess({
+          ops: [
+            {
+              type: "outline",
+              tool: 1722394350168,
+              spindle: 15000,
+              step: 0.4,
+              steps: 1,
+              down: 1,
+              rate: 2500,
+              plunge: 150,
+              dogbones: false,
+              omitvoid: false,
+              omitthru: false,
+              outside: false,
+              inside: false,
+              wide: false,
+              top: false,
+            },
+          ],
+        })
+      )
+      .then((eng) =>
+        eng.setDevice({
+          mode: "CAM",
+          internal: 0,
+          bedHeight: 2.5,
+          bedWidth: 678.18,
+          bedDepth: 1524,
+          maxHeight: 150,
+          originCenter: false,
+          spindleMax: 24000,
+          gcodePre: [
+            "G20 ; set units to inches (required)",
+            "G90 ; absolute position mode (required)",
+          ],
+          gcodePost: ["M05 ; spindle off", "M30 ; program end"],
+          gcodeDwell: ["G4 P{time} ; dwell for {time}ms"],
+          gcodeSpindle: ["M3 S{speed} ; spindle on at {spindle} rpm"],
+          gcodeChange: [
+            "M05 ; spindle off",
+            "M6 T{tool} ; change tool to '{tool_name}'",
+            "G37; get tool offset with ETS",
+          ],
+          gcodeFExt: "nc",
+          gcodeSpace: true,
+          gcodeStrip: false,
+          deviceName: "Tormach.24R",
+          imageURL: "",
+          useLaser: false,
+        })
+      )
+      .then((eng) => eng.slice())
+      .then((eng) => eng.prepare())
+      .then((eng) => eng.export())
       .then((gcode) => {
         console.log("GCode generated:", gcode);
         const blob = new Blob([gcode], { type: "text/plain" });
@@ -112,8 +162,8 @@ const KiriMotoIntegration = ({ activeAtom }) => {
         console.error("Kiri:Moto Error:", error);
       })
       .finally(() => {
-        // Clean up the temporary URL
-        URL.revokeObjectURL(stlUrl);
+        // Clean up the temporary URL after the file is saved
+        setTimeout(() => URL.revokeObjectURL(stlUrl), 1000);
       });
   };
 
