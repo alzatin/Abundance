@@ -70,18 +70,23 @@ const KiriMotoIntegration = ({ activeAtom }) => {
         console.log("Kiri:Moto STL loaded successfully");
         return eng.setMode("CAM");
       })
-      .then((eng) =>
+      .then((eng) =>{
+        const bounds = eng.widget.getBoundingBox();
+        const x = bounds.max.x - bounds.min.x;
+        const y = bounds.max.y - bounds.min.y;
+        const z = bounds.max.z - bounds.min.z;
         eng.setStock({
-          x: 30,
-          y: 30,
-          z: 15,
+          x: x + 10,
+          y: y + 10,
+          z: z,
           center: {
-            x: 0,
-            y: 0,
-            z: 7.5,
+            x: x/2, //I'm not sure this is right. We might need to actually find the middle of the bounds
+            y: y/2,
+            z: z/2,
           },
-        })
-      )
+        });
+        return eng;
+      })
       .then((eng) =>
         eng.setTools([
           {
@@ -271,7 +276,7 @@ const KiriMotoIntegration = ({ activeAtom }) => {
           camZAnchor: "middle",
           camZOffset: 0,
           camZTop: 0,
-          camZBottom: 0,
+          camZBottom: -15,
           camZClearance: 1,
           camZThru: 0,
           camFastFeed: 6000,
