@@ -152,7 +152,9 @@ const KiriMotoIntegration = ({ activeAtom }) => {
           },
         ])
       )
-      .then((eng) =>
+      .then((eng) => {
+        const bounds = eng.widget.getBoundingBox();
+        const z = bounds.max.z - bounds.min.z;
         eng.setProcess({
           processName: "default",
           camLevelTool: 1000,
@@ -276,7 +278,7 @@ const KiriMotoIntegration = ({ activeAtom }) => {
           camZAnchor: "middle",
           camZOffset: 0,
           camZTop: 0,
-          camZBottom: -15,
+          camZBottom: -1 * z,
           camZClearance: 1,
           camZThru: 0,
           camFastFeed: 6000,
@@ -335,7 +337,8 @@ const KiriMotoIntegration = ({ activeAtom }) => {
           camDrillPrecision: 1,
           "~camConventional": false,
         })
-      )
+        return eng;
+      })
       .then((eng) =>
         eng.setDevice({
           mode: "CAM",
