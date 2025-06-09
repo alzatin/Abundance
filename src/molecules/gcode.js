@@ -43,9 +43,9 @@ export default class Gcode extends Atom {
     this.gcodeString = "";
 
     this.addIO("input", "geometry", this, "geometry", null);
-    //this.addIO("input", "tool size", this, "number", 6.35);
-    //this.addIO("input", "passes", this, "number", 6);
-    //this.addIO("input", "speed", this, "number", 500);
+    this.addIO("input", "tool size", this, "number", 6.35);
+    this.addIO("input", "passes", this, "number", 6);
+    this.addIO("input", "speed", this, "number", 500);
     //this.addIO("input", "tabs", this, "string", "true");
     //this.addIO("input", "safe height", this, "number", 6);
 
