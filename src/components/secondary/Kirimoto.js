@@ -10,9 +10,7 @@ export const initKiriMoto = () => {
   script.src = "https://grid.space/code/engine.js"; // this comes from the grid.space Kiri:Moto API -- https://docs.grid.space/projects/kiri-moto/apis
   script.async = true;
   script.onload = () => {
-    console.log("Kiri:Moto script loading");
     if (window.kiri) {
-      console.log("Kiri:Moto API loaded");
       kiriEngine = window.kiri.newEngine();
     }
   };
@@ -21,25 +19,10 @@ export const initKiriMoto = () => {
     console.error("Failed to load Kiri:Moto script");
   };
   document.body.appendChild(script);
-
-  return () => {
-    // Cleanup script when component unmounts
-    document.body.removeChild(script);
-  };
 };
 
 //This is the main function which runs the Kiri:Moto engine
 export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
-  console.log("kiriEngine");
-  console.log(kiriEngine);
-  console.log("stlUrl");
-  console.log(stlUrl);
-
-  console.log("Tool Size:", toolSize);
-  console.log("Passes:", passes);
-  console.log("Speed:", speed);
-
-
   if (!kiriEngine) {
     console.error("Kiri:Moto engine is not initialized yet.");
     return;
@@ -56,7 +39,7 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
     })
     .load(stlUrl)
     .then((eng) => {
-      console.log("Kiri:Moto STL loaded successfully");
+    //   console.log("Kiri:Moto STL loaded successfully");
       return eng.setMode("CAM");
     })
     .then((eng) =>{
@@ -310,7 +293,6 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
     .then((eng) => eng.prepare())
     .then((eng) => eng.export())
     .then((gcode) => {
-      console.log("GCode generated:", gcode);
       const blob = new Blob([gcode], { type: "text/plain" });
       const fileName = "output.gcode";
       saveAs(blob, fileName); // Use FileSaver.js to save the GCode file
