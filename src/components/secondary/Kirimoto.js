@@ -304,6 +304,5 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed, gcodeCallback) => {
     .finally(() => {
       // Clean up the temporary URL after the file is saved
       setTimeout(() => URL.revokeObjectURL(stlUrl), 1000);
-      return "This returned";
     });
 };
