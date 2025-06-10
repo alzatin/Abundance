@@ -137,8 +137,7 @@ export default class Gcode extends Atom {
 
     //A callback function for once the gcode is generated
     const gcodeCallback = (gcode) => {
-      console.log("Gcode generated successfully");
-      console.log(gcode);
+      GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
     };
 
     inputParams["Download Gcode"] = button(() => runKirimoto(this.stlURL, this.findIOValue("tool size"), this.findIOValue("passes"), this.findIOValue("speed"), gcodeCallback), {});
