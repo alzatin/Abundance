@@ -1,4 +1,5 @@
 import { create, all } from "mathjs";
+import { v4 as uuidv4 } from "uuid";
 import Assembly from "../molecules/assembly.js";
 import Circle from "../molecules/circle.js";
 import Color from "../molecules/color.js";
@@ -437,10 +438,7 @@ class GlobalVariables {
    * A function to generate a unique ID value.
    */
   generateUniqueID() {
-    const dateString = new Date().getTime();
-    const randomness = Math.floor(Math.random() * 1000);
-    const newID = dateString + randomness;
-    return newID;
+    return uuidv4();
   }
 
   /**
