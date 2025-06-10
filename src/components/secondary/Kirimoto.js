@@ -28,21 +28,6 @@ export const initKiriMoto = () => {
   };
 };
 
-    // const handleBlobUpdate = (event) => {
-    //   const { uniqueID, blob, toolSize, passes, speed } = event.detail;
-    //   console.log("Blob updated:", uniqueID, blob, toolSize, passes, speed);
-
-    //   // Convert blob to a temporary file URL
-    //   const url = URL.createObjectURL(blob);
-    //   setStlUrl(url);
-    // };
-
-    // window.addEventListener("kirimotoBlobUpdated", handleBlobUpdate);
-
-    // return () => {
-    //   window.removeEventListener("kirimotoBlobUpdated", handleBlobUpdate);
-    // };
-
 //This is the main function which runs the Kiri:Moto engine
 export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
   console.log("kiriEngine");
@@ -99,59 +84,10 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
           type: "endmill",
           name: "end 1/4",
           metric: false,
-          shaft_diam: 0.25,
+          shaft_diam: toolSize,
           shaft_len: 1,
           flute_diam: 0.25,
           flute_len: 2,
-          taper_tip: 0,
-        },
-        {
-          id: 1001,
-          number: 2,
-          type: "endmill",
-          name: "end 1/8",
-          metric: false,
-          shaft_diam: 0.125,
-          shaft_len: 1,
-          flute_diam: 0.125,
-          flute_len: 1.5,
-          taper_tip: 0,
-        },
-        {
-          id: 1002,
-          number: 3,
-          type: "endmill",
-          name: "end 1/16",
-          metric: false,
-          shaft_diam: 0.0625,
-          shaft_len: 1,
-          flute_diam: 0.0625,
-          flute_len: 1.5,
-          taper_tip: 0,
-        },
-        {
-          id: 1003,
-          number: 4,
-          type: "tapermill",
-          name: "vee 1/8",
-          metric: true,
-          shaft_diam: 0.125,
-          shaft_len: 1,
-          flute_diam: 0.125,
-          flute_len: 1.5,
-          taper_angle: 5.3,
-          taper_tip: 0,
-        },
-        {
-          id: 1004,
-          number: 5,
-          type: "ballmill",
-          name: "ball 1/8",
-          metric: false,
-          shaft_diam: 0.125,
-          shaft_len: 1,
-          flute_diam: 0.125,
-          flute_len: 1.5,
           taper_tip: 0,
         },
       ])
@@ -169,9 +105,9 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
         camLevelStock: true,
         camRoughTool: 1000,
         camRoughSpindle: 1000,
-        camRoughDown: 2,
+        camRoughDown: z / passes,
         camRoughOver: 0.4,
-        camRoughSpeed: 1000,
+        camRoughSpeed: speed,
         camRoughPlunge: 250,
         camRoughStock: 0,
         camRoughStockZ: 0,
@@ -185,10 +121,10 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
         camOutlineTool: 1000,
         camOutlineSpindle: 1000,
         camOutlineTop: true,
-        camOutlineDown: 4,
+        camOutlineDown: z / passes,
         camOutlineOver: 0.4,
         camOutlineOverCount: 1,
-        camOutlineSpeed: 800,
+        camOutlineSpeed: speed,
         camOutlinePlunge: 250,
         camOutlineWide: false,
         camOutlineDogbone: true,
@@ -200,7 +136,7 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
         camContourTool: 1000,
         camContourSpindle: 1000,
         camContourOver: 0.5,
-        camContourSpeed: 1000,
+        camContourSpeed: speed,
         camContourAngle: 85,
         camContourLeave: 0,
         camContourReduce: 2,
@@ -222,7 +158,7 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
         camTraceOver: 0.5,
         camTraceDown: 0,
         camTraceThru: 0,
-        camTraceSpeed: 250,
+        camTraceSpeed: speed,
         camTracePlunge: 200,
         camTraceOffOver: 0,
         camTraceDogbone: false,
@@ -234,7 +170,7 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
         camPocketTool: 1000,
         camPocketOver: 0.25,
         camPocketDown: 1,
-        camPocketSpeed: 250,
+        camPocketSpeed: speed,
         camPocketPlunge: 200,
         camPocketExpand: 0,
         camPocketSmooth: 0,
@@ -316,10 +252,10 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
             type: "outline",
             tool: 1000,
             spindle: 1000,
-            step: 0.4,
+            step: z / passes,
             steps: 1,
-            down: 4,
-            rate: 800,
+            down: z / passes,
+            rate: speed,
             plunge: 250,
             dogbones: true,
             omitvoid: false,
@@ -348,8 +284,8 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
         mode: "CAM",
         internal: 0,
         bedHeight: 2.5,
-        bedWidth: 400,
-        bedDepth: 400,
+        bedWidth: 10000,
+        bedDepth: 10000,
         maxHeight: 150,
         originCenter: false,
         spindleMax: 0,
