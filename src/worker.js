@@ -623,11 +623,13 @@ function visExport(targetID, inputID, fileType) {
     } else {
       finalGeometry = [fusedGeometry];
     }
-    library[targetID] = {
-      geometry: finalGeometry,
-      color: displayColor,
-      plane: library[inputID].plane,
-    };
+    if(targetID){
+      library[targetID] = {
+        geometry: finalGeometry,
+        color: displayColor,
+        plane: library[inputID].plane,
+      };
+    }
     return true;
   });
 }

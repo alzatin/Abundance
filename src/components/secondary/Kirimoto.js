@@ -22,7 +22,7 @@ export const initKiriMoto = () => {
 };
 
 //This is the main function which runs the Kiri:Moto engine
-export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
+export const runKirimoto = (stlUrl, toolSize, passes, speed, gcodeCallback) => {
   if (!kiriEngine) {
     console.error("Kiri:Moto engine is not initialized yet.");
     return;
@@ -293,6 +293,7 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
     .then((eng) => eng.prepare())
     .then((eng) => eng.export())
     .then((gcode) => {
+      gcodeCallback(gcode);
       const blob = new Blob([gcode], { type: "text/plain" });
       const fileName = "output.gcode";
       saveAs(blob, fileName); // Use FileSaver.js to save the GCode file
@@ -303,5 +304,6 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed) => {
     .finally(() => {
       // Clean up the temporary URL after the file is saved
       setTimeout(() => URL.revokeObjectURL(stlUrl), 1000);
+      return "This returned";
     });
 };

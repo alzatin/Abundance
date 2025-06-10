@@ -93,10 +93,10 @@ export default class Gcode extends Atom {
       let inputID = this.findIOValue("geometry");
 
       GlobalVariables.cad
-        .visExport(this.uniqueID, inputID, "STL")
+        .visExport(this.uniqueID+1, inputID, "STL") //What a hack, we shouldn't be using uniqueID+1 here
         .then((result) => {
           GlobalVariables.cad
-            .downExport(this.uniqueID, "STL")
+            .downExport(this.uniqueID+1, "STL")
             .then((result) => {
               this.stlURL = URL.createObjectURL(result); // Store the STL URL
             });
@@ -135,7 +135,13 @@ export default class Gcode extends Atom {
       });
     }
 
-    inputParams["Download Gcode"] = button(() => runKirimoto(this.stlURL, this.findIOValue("tool size"), this.findIOValue("passes"), this.findIOValue("speed")), {});
+    //A callback function for once the gcode is generated
+    const gcodeCallback = (gcode) => {
+      console.log("Gcode generated successfully");
+      console.log(gcode);
+    };
+
+    inputParams["Download Gcode"] = button(() => runKirimoto(this.stlURL, this.findIOValue("tool size"), this.findIOValue("passes"), this.findIOValue("speed"), gcodeCallback), {});
 
     return inputParams;
   }
