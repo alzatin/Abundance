@@ -89,12 +89,6 @@ export default class Gcode extends Atom {
   updateValue() {
     super.updateValue();
     try {
-      //var toolSize = this.findIOValue("tool size");
-      //var passes = this.findIOValue("passes");
-      // var speed = this.findIOValue("speed");
-      // var tabs = this.findIOValue("tabs");
-      //var safeHeight = this.findIOValue("safe height");
-      /* We have to make an STL file to pass to the Kiri:Moto engine */
 
       let inputID = this.findIOValue("geometry");
 
@@ -105,12 +99,6 @@ export default class Gcode extends Atom {
             .downExport(this.uniqueID, "STL")
             .then((result) => {
               this.stlURL = URL.createObjectURL(result); // Store the STL URL
-               
-              // Dispatch a custom event to notify React components
-              const event = new CustomEvent("kirimotoBlobUpdated", {
-                detail: { uniqueID: this.uniqueID, blob: result, toolSize: toolSize, passes: passes, speed: speed },
-              });
-              window.dispatchEvent(event);
             });
         })
         .catch((err) => {
