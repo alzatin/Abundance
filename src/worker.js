@@ -715,9 +715,6 @@ async function importingSVG(targetID, svg, width) {
 
 //Visualize Gcode
 function visualizeGcode(targetID, gcode) {
-  console.log("Gcode got to visualizeGcode function");
-  console.log(gcode);
-
   let currentPosition = [0, 0, 0];
   let edges = [];
 
