@@ -884,8 +884,6 @@ export default class Molecule extends Atom {
    * @param {boolean} unlock - A flag to indicate if this atom should spawn in the unlocked state.
    */
   async placeAtom(newAtomObj, unlock, values) {
-    console.log("Placing atom");
-    console.trace();
     try {
       GlobalVariables.numberOfAtomsToLoad =
         GlobalVariables.numberOfAtomsToLoad + 1; //Indicate that one more atom needs to be loaded

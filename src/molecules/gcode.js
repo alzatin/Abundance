@@ -1,6 +1,7 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import { button } from "leva";
+import { initKiriMoto, runKirimoto } from '../components/secondary/Kirimoto.js'; // Adjust the path
 //import saveAs from '../lib/FileSaver.js'
 
 /**
@@ -53,7 +54,13 @@ export default class Gcode extends Atom {
 
     this.setValues(values);
 
-    this.kirimotoBlobs = {};
+    // Initialize Kiri:Moto if not already initialized
+    if (!GlobalVariables.kirimotoInitialized) {
+      initKiriMoto();
+      GlobalVariables.kirimotoInitialized = true;
+    }
+
+    this.stlURL = null; // Store the STL URL
   }
 
   /**
@@ -82,12 +89,6 @@ export default class Gcode extends Atom {
   updateValue() {
     super.updateValue();
     try {
-      //var toolSize = this.findIOValue("tool size");
-      //var passes = this.findIOValue("passes");
-      // var speed = this.findIOValue("speed");
-      // var tabs = this.findIOValue("tabs");
-      //var safeHeight = this.findIOValue("safe height");
-      /* We have to make an STL file to pass to the Kiri:Moto engine */
 
       let inputID = this.findIOValue("geometry");
 
@@ -97,12 +98,7 @@ export default class Gcode extends Atom {
           GlobalVariables.cad
             .downExport(this.uniqueID, "STL")
             .then((result) => {
-              this.kirimotoBlobs[this.uniqueID] = result; // Store the blob with a unique ID to avoid overriding
-              // Dispatch a custom event to notify React components
-              const event = new CustomEvent("kirimotoBlobUpdated", {
-                detail: { uniqueID: this.uniqueID, blob: result },
-              });
-              window.dispatchEvent(event);
+              this.stlURL = URL.createObjectURL(result); // Store the STL URL
             });
         })
         .catch((err) => {
@@ -139,14 +135,9 @@ export default class Gcode extends Atom {
       });
     }
 
-    inputParams["Download Gcode"] = button(() => this.clickKiriButton());
+    inputParams["Download Gcode"] = button(() => runKirimoto(this.stlURL, this.findIOValue("tool size"), this.findIOValue("passes"), this.findIOValue("speed")), {});
 
     return inputParams;
   }
 
-  clickKiriButton() {
-    let kirimotoButton = document.getElementById("kirimoto-button");
-    console.log(kirimotoButton);
-    kirimotoButton.click();
-  }
 }
