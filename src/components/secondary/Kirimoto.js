@@ -2,6 +2,8 @@ import GlobalVariables from "../../js/globalvariables.js";
 import { saveAs } from "file-saver";
 
 
+let kiriEngine = null;
+
 export const initKiriMoto = () => {
   // Dynamically load the Kiri:Moto script
   const script = document.createElement("script");
@@ -11,8 +13,7 @@ export const initKiriMoto = () => {
     console.log("Kiri:Moto script loading");
     if (window.kiri) {
       console.log("Kiri:Moto API loaded");
-      const engine = window.kiri.newEngine();
-      setKiriEngine(engine);
+      kiriEngine = window.kiri.newEngine();
     }
   };
 

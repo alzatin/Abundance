@@ -60,7 +60,7 @@ export default class Gcode extends Atom {
       GlobalVariables.kirimotoInitialized = true;
     }
 
-    this.kirimotoBlobs = {};
+    this.stlURL = null; // Store the STL URL
   }
 
   /**
@@ -97,9 +97,6 @@ export default class Gcode extends Atom {
       /* We have to make an STL file to pass to the Kiri:Moto engine */
 
       let inputID = this.findIOValue("geometry");
-      let toolSize = this.findIOValue("tool size");
-      let passes = this.findIOValue("passes");
-      let speed = this.findIOValue("speed");
 
       GlobalVariables.cad
         .visExport(this.uniqueID, inputID, "STL")
@@ -107,12 +104,7 @@ export default class Gcode extends Atom {
           GlobalVariables.cad
             .downExport(this.uniqueID, "STL")
             .then((result) => {
-              this.kirimotoBlobs[this.uniqueID] = { // Store the blob with a unique ID to avoid overriding
-                blob: result,
-                toolSize: toolSize,
-                passes: passes,
-                speed: speed,
-              };
+              this.stlURL = URL.createObjectURL(result); // Store the STL URL
                
               // Dispatch a custom event to notify React components
               const event = new CustomEvent("kirimotoBlobUpdated", {
@@ -155,7 +147,7 @@ export default class Gcode extends Atom {
       });
     }
 
-    inputParams["Download Gcode"] = button(() => runKirimoto());
+    inputParams["Download Gcode"] = button(() => runKirimoto(this.stlURL, this.findIOValue("tool size"), this.findIOValue("passes"), this.findIOValue("speed")), {});
 
     return inputParams;
   }
