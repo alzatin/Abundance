@@ -623,11 +623,13 @@ function visExport(targetID, inputID, fileType) {
     } else {
       finalGeometry = [fusedGeometry];
     }
-    library[targetID] = {
-      geometry: finalGeometry,
-      color: displayColor,
-      plane: library[inputID].plane,
-    };
+    if(targetID){
+      library[targetID] = {
+        geometry: finalGeometry,
+        color: displayColor,
+        plane: library[inputID].plane,
+      };
+    }
     return true;
   });
 }
@@ -709,6 +711,42 @@ async function importingSVG(targetID, svg, width) {
     console.error("Error importing SVG:", error);
     throw error;
   }
+}
+
+//Visualize Gcode
+function visualizeGcode(targetID, gcode) {
+  let currentPosition = [0, 0, 0];
+  let edges = [];
+
+  // Split the gcode into lines
+  const lines = gcode.split("\n");
+  lines.forEach((line) => {
+    // Only process lines that start with G0 or G1
+    if (line.startsWith("G0") || line.startsWith("G1")) {
+      // Parse the line for X, Y, Z values
+      const xMatch = line.match(/X([\d.-]+)/);
+      const yMatch = line.match(/Y([\d.-]+)/);
+      const zMatch = line.match(/Z([\d.-]+)/);
+
+      // Update coordinates if found, otherwise keep the previous value
+      let x = xMatch ? Number(xMatch[1]) : currentPosition[0];
+      let y = yMatch ? Number(yMatch[1]) : currentPosition[1];
+      let z = zMatch ? Number(zMatch[1]) : currentPosition[2];
+
+      edges.push(replicad.makeLine(currentPosition, [x, y, z]));
+      currentPosition = [x, y, z];
+    }
+  });
+
+  // Create a wire from the edges
+  const wire = replicad.assembleWire(edges);
+  library[targetID] = {
+    geometry: [wire],
+    tags: [],
+    plane: new Plane().pivot(0, "Y"),
+    color: defaultColor,
+    bom: [],
+  };
 }
 
 const prettyProjection = (shape) => {
@@ -1899,4 +1937,5 @@ expose({
   loftShapes,
   text,
   resetView,
+  visualizeGcode,
 });
