@@ -1,6 +1,7 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import { button } from "leva";
+import { initKiriMoto, runKirimoto } from '../components/secondary/Kirimoto.js'; // Adjust the path
 //import saveAs from '../lib/FileSaver.js'
 
 /**
@@ -53,6 +54,12 @@ export default class Gcode extends Atom {
 
     this.setValues(values);
 
+    // Initialize Kiri:Moto if not already initialized
+    if (!GlobalVariables.kirimotoInitialized) {
+      initKiriMoto();
+      GlobalVariables.kirimotoInitialized = true;
+    }
+
     this.kirimotoBlobs = {};
   }
 
@@ -90,6 +97,9 @@ export default class Gcode extends Atom {
       /* We have to make an STL file to pass to the Kiri:Moto engine */
 
       let inputID = this.findIOValue("geometry");
+      let toolSize = this.findIOValue("tool size");
+      let passes = this.findIOValue("passes");
+      let speed = this.findIOValue("speed");
 
       GlobalVariables.cad
         .visExport(this.uniqueID, inputID, "STL")
@@ -97,10 +107,16 @@ export default class Gcode extends Atom {
           GlobalVariables.cad
             .downExport(this.uniqueID, "STL")
             .then((result) => {
-              this.kirimotoBlobs[this.uniqueID] = result; // Store the blob with a unique ID to avoid overriding
+              this.kirimotoBlobs[this.uniqueID] = { // Store the blob with a unique ID to avoid overriding
+                blob: result,
+                toolSize: toolSize,
+                passes: passes,
+                speed: speed,
+              };
+               
               // Dispatch a custom event to notify React components
               const event = new CustomEvent("kirimotoBlobUpdated", {
-                detail: { uniqueID: this.uniqueID, blob: result },
+                detail: { uniqueID: this.uniqueID, blob: result, toolSize: toolSize, passes: passes, speed: speed },
               });
               window.dispatchEvent(event);
             });
@@ -139,14 +155,9 @@ export default class Gcode extends Atom {
       });
     }
 
-    inputParams["Download Gcode"] = button(() => this.clickKiriButton());
+    inputParams["Download Gcode"] = button(() => runKirimoto());
 
     return inputParams;
   }
 
-  clickKiriButton() {
-    let kirimotoButton = document.getElementById("kirimoto-button");
-    console.log(kirimotoButton);
-    kirimotoButton.click();
-  }
 }
