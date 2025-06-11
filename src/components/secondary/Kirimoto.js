@@ -33,13 +33,16 @@ export const runKirimoto = (stlUrl, centerPos, toolSize, passes, speed, gcodeCal
     return;
   }
 
-  console.log("Center Position INside:", centerPos);
+  console.log("Center Position Inside:", centerPos);
 
   kiriEngine
     .setListener((message) => {
       console.log("Kiri:Moto Message:", message);
     })
     .load(stlUrl)
+    .then((eng) => {
+        return eng.move(centerPos[0],centerPos[1],0);//Move the model to line up with where the parts were before
+    })
     .then((eng) => {
     //   console.log("Kiri:Moto STL loaded successfully");
       return eng.setMode("CAM");
