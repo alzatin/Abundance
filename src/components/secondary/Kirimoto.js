@@ -22,7 +22,7 @@ export const initKiriMoto = () => {
 };
 
 //This is the main function which runs the Kiri:Moto engine
-export const runKirimoto = (stlUrl, toolSize, passes, speed, gcodeCallback) => {
+export const runKirimoto = (stlUrl, centerPos, toolSize, passes, speed, gcodeCallback) => {
   if (!kiriEngine) {
     console.error("Kiri:Moto engine is not initialized yet.");
     return;
@@ -32,6 +32,8 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed, gcodeCallback) => {
     console.error("STL URL is not available.");
     return;
   }
+
+  console.log("Center Position INside:", centerPos);
 
   kiriEngine
     .setListener((message) => {
