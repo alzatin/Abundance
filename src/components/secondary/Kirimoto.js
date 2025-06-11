@@ -36,8 +36,6 @@ export const runKirimoto = (stlUrl, centerPos, toolSize, passes, speed, gcodeCal
     return;
   }
 
-  console.log("Center Position Inside:", centerPos);
-
   kiriEngine
     .setListener((message) => {
       console.log("Kiri:Moto Message:", message);

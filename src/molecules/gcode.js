@@ -101,18 +101,17 @@ export default class Gcode extends Atom {
             .downExport(this.uniqueID+1, "STL")
             .then((result) => {
               this.stlURL = URL.createObjectURL(result); // Store the STL URL
+              GlobalVariables.cad.getBoundingBox(this.uniqueID+1).then((bounds) => {
+                this.center = [
+                  (bounds.max[0] + bounds.min[0]) / 2,
+                  (bounds.max[1] + bounds.min[1]) / 2,
+                  (bounds.max[2] + bounds.min[2]) / 2,
+                ];
+              });
             });
         })
         .catch((err) => {
           console.error("Error creating STL for gcode:", err);
-        });
-
-        GlobalVariables.cad.getBoundingBox(this.uniqueID+1).then((bounds) => {
-          this.center = [
-            (bounds.max[0] + bounds.min[0]) / 2,
-            (bounds.max[1] + bounds.min[1]) / 2,
-            (bounds.max[2] + bounds.min[2]) / 2,
-          ];
         });
     } catch (err) {
       this.setAlert(err);
