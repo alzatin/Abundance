@@ -1,7 +1,7 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import { button } from "leva";
-import { initKiriMoto, runKirimoto } from '../components/secondary/Kirimoto.js'; // Adjust the path
+import { initKiriMoto, runKirimoto, generateKirimoto, downloadGcode } from '../components/secondary/Kirimoto.js'; // Adjust the path
 //import saveAs from '../lib/FileSaver.js'
 
 /**
@@ -42,6 +42,12 @@ export default class Gcode extends Atom {
      * @type {string}
      */
     this.gcodeString = "";
+
+    /**
+     * Whether gcode has been generated
+     * @type {boolean}
+     */
+    this.gcodeGenerated = false;
 
     this.addIO("input", "geometry", this, "geometry", null);
     this.addIO("input", "tool size", this, "number", 6.35);
@@ -147,10 +153,22 @@ export default class Gcode extends Atom {
 
     //A callback function for once the gcode is generated
     const gcodeCallback = (gcode) => {
+      this.gcodeString = gcode;
+      this.gcodeGenerated = true;
       GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
     };
 
-    inputParams["Download Gcode"] = button(() => runKirimoto(this.stlURL, this.center, this.findIOValue("tool size"), this.findIOValue("passes"), this.findIOValue("speed"), gcodeCallback), {});
+    inputParams["Generate Gcode"] = button(() => generateKirimoto(this.stlURL, this.center, this.findIOValue("tool size"), this.findIOValue("passes"), this.findIOValue("speed"), gcodeCallback), {});
+
+    inputParams["Download Gcode"] = button(() => {
+      if (this.gcodeGenerated && this.gcodeString) {
+        downloadGcode(this.gcodeString);
+      } else {
+        console.warn("No G-code available. Please generate G-code first.");
+        // You could also show an alert or notification to the user here
+        alert("No G-code available. Please generate G-code first.");
+      }
+    }, {});
 
     return inputParams;
   }
