@@ -5,6 +5,7 @@ import { expose, proxy } from "comlink";
 import { Plane, Solid } from "replicad";
 import shrinkWrap from "replicad-shrink-wrap";
 import { addSVG, drawSVG } from "replicad-decorate";
+import { v4 as uuidv4 } from "uuid";
 import Fonts from "./js/fonts.js";
 //import { AnyNest, FloatPolygon } from "any-nest";
 import { PolygonPacker,PlacementWrapper } from "polygon-packer";
@@ -58,10 +59,7 @@ function toGeometry(input) {
  * A function to generate a unique ID value.
  */
 function generateUniqueID() {
-  const dateString = new Date().getTime();
-  const randomness = Math.floor(Math.random() * 1000);
-  const newID = dateString + randomness;
-  return newID;
+  return uuidv4();
 }
 
 /**
