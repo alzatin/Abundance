@@ -23,6 +23,9 @@ export const initKiriMoto = () => {
 
 //This is the main function which runs the Kiri:Moto engine
 export const runKirimoto = (stlUrl, centerPos, toolSize, passes, speed, gcodeCallback) => {
+    
+    kiriEngine = window.kiri.newEngine(); //Create a new Kiri:Moto engine instance to start with a clean slate
+
   if (!kiriEngine) {
     console.error("Kiri:Moto engine is not initialized yet.");
     return;
