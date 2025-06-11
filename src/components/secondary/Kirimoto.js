@@ -22,7 +22,10 @@ export const initKiriMoto = () => {
 };
 
 //This is the main function which runs the Kiri:Moto engine
-export const runKirimoto = (stlUrl, toolSize, passes, speed, gcodeCallback) => {
+export const runKirimoto = (stlUrl, centerPos, toolSize, passes, speed, gcodeCallback) => {
+    
+    kiriEngine = window.kiri.newEngine(); //Create a new Kiri:Moto engine instance to start with a clean slate
+
   if (!kiriEngine) {
     console.error("Kiri:Moto engine is not initialized yet.");
     return;
@@ -38,6 +41,9 @@ export const runKirimoto = (stlUrl, toolSize, passes, speed, gcodeCallback) => {
       console.log("Kiri:Moto Message:", message);
     })
     .load(stlUrl)
+    .then((eng) => {
+        return eng.move(centerPos[0],centerPos[1],0);//Move the model to line up with where the parts were before
+    })
     .then((eng) => {
     //   console.log("Kiri:Moto STL loaded successfully");
       return eng.setMode("CAM");

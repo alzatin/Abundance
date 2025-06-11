@@ -61,6 +61,8 @@ export default class Gcode extends Atom {
     }
 
     this.stlURL = null; // Store the STL URL
+ 
+    this.center = [0, 0, 0]; //Used to correctly position the gcode
   }
 
   /**
@@ -99,6 +101,13 @@ export default class Gcode extends Atom {
             .downExport(this.uniqueID+1, "STL")
             .then((result) => {
               this.stlURL = URL.createObjectURL(result); // Store the STL URL
+              GlobalVariables.cad.getBoundingBox(this.uniqueID+1).then((bounds) => {
+                this.center = [
+                  (bounds.max[0] + bounds.min[0]) / 2,
+                  (bounds.max[1] + bounds.min[1]) / 2,
+                  (bounds.max[2] + bounds.min[2]) / 2,
+                ];
+              });
             });
         })
         .catch((err) => {
@@ -107,6 +116,7 @@ export default class Gcode extends Atom {
     } catch (err) {
       this.setAlert(err);
     }
+
   }
 
   createLevaInputs() {
@@ -140,7 +150,7 @@ export default class Gcode extends Atom {
       GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
     };
 
-    inputParams["Download Gcode"] = button(() => runKirimoto(this.stlURL, this.findIOValue("tool size"), this.findIOValue("passes"), this.findIOValue("speed"), gcodeCallback), {});
+    inputParams["Download Gcode"] = button(() => runKirimoto(this.stlURL, this.center, this.findIOValue("tool size"), this.findIOValue("passes"), this.findIOValue("speed"), gcodeCallback), {});
 
     return inputParams;
   }

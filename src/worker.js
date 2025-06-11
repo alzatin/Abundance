@@ -1099,6 +1099,31 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
 }
 
 /**
+ * Calculate the bounding box of the input geometry by walking through it and finding the min/max of
+ * the bounding box of each leaf.
+ */
+
+function getBoundingBox(inputID) {
+  let minX = Infinity, minY = Infinity, minZ = Infinity;
+  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+
+  actOnLeafs(library[inputID], (leaf) => {
+    const bbox = leaf.geometry[0].boundingBox.bounds;
+    minX = Math.min(minX, bbox[0][0]);
+    minY = Math.min(minY, bbox[0][1]);
+    minZ = Math.min(minZ, bbox[0][2]);
+    maxX = Math.max(maxX, bbox[1][0]);
+    maxY = Math.max(maxY, bbox[1][1]);
+    maxZ = Math.max(maxZ, bbox[1][2]);
+  });
+
+  return {
+    min: [minX, minY, minZ],
+    max: [maxX, maxY, maxZ],
+  };
+}
+
+/**
  * Apply the transformations to the geometry to apply the layout
  */
 function applyLayout(targetID, inputID, positions, layoutConfig) {
@@ -1936,4 +1961,5 @@ expose({
   text,
   resetView,
   visualizeGcode,
+  getBoundingBox,
 });
