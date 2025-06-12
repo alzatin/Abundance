@@ -200,7 +200,7 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, gco
         camTabsHeight: 5,
         camTabsDepth: 5,
         camTabsMidline: false,
-        camDepthFirst: false,
+        camDepthFirst: true,
         camEaseDown: false,
         camEaseAngle: 10,
         camOriginTop: true,
