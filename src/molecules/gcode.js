@@ -1,7 +1,7 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import { button } from "leva";
-import { initKiriMoto, runKirimoto, generateKirimoto, downloadGcode } from '../components/secondary/Kirimoto.js'; // Adjust the path
+import { initKiriMoto, generateKirimoto, downloadGcode } from '../components/secondary/Kirimoto.js'; // Adjust the path
 //import saveAs from '../lib/FileSaver.js'
 
 /**
