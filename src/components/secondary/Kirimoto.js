@@ -22,7 +22,7 @@ export const initKiriMoto = () => {
 };
 
 //This function generates G-code and calls the callback but doesn't download
-export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, gcodeCallback) => {
+export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, extra, gcodeCallback) => {
     
     kiriEngine = window.kiri.newEngine(); //Create a new Kiri:Moto engine instance to start with a clean slate
 
@@ -207,7 +207,7 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, gco
         camZAnchor: "middle",
         camZOffset: 0,
         camZTop: 0,
-        camZBottom: -1,
+        camZBottom: -1 * extra,
         camZClearance: 1,
         camZThru: 0,
         camFastFeed: 6000,
@@ -241,9 +241,9 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, gco
             type: "outline",
             tool: 1000,
             spindle: 1000,
-            step: (z+1) / passes,
+            step: (z+extra) / passes,
             steps: 1,
-            down: (z+1) / passes,
+            down: (z+extra) / passes,
             rate: speed,
             plunge: 250,
             dogbones: true,
