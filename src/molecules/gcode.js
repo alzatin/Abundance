@@ -1,7 +1,7 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import { button } from "leva";
-import { initKiriMoto, runKirimoto, generateKirimoto, downloadGcode } from '../components/secondary/Kirimoto.js'; // Adjust the path
+import { initKiriMoto, generateKirimoto, downloadGcode } from '../components/secondary/Kirimoto.js'; // Adjust the path
 //import saveAs from '../lib/FileSaver.js'
 
 /**
@@ -49,14 +49,15 @@ export default class Gcode extends Atom {
      */
     this.gcodeGenerated = false;
 
-    this.addIO("input", "geometry", this, "geometry", null);
-    this.addIO("input", "tool size", this, "number", 6.35);
-    this.addIO("input", "passes", this, "number", 6);
-    this.addIO("input", "speed", this, "number", 500);
+    this.addIO("input", "Geometry", this, "geometry", null);
+    this.addIO("input", "Tool Size", this, "number", 6.35);
+    this.addIO("input", "Passes", this, "number", 6);
+    this.addIO("input", "Speed", this, "number", 500);
+    this.addIO("input", "Cut Through", this, "number", 1);
     //this.addIO("input", "tabs", this, "string", "true");
     //this.addIO("input", "safe height", this, "number", 6);
 
-    this.addIO("output", "gcode", this, "geometry", "");
+    this.addIO("output", "Gcode", this, "geometry", "");
 
     this.setValues(values);
 
@@ -98,7 +99,7 @@ export default class Gcode extends Atom {
     super.updateValue();
     try {
 
-      let inputID = this.findIOValue("geometry");
+      let inputID = this.findIOValue("Geometry");
 
       GlobalVariables.cad
         .visExport(this.uniqueID+1, inputID, "STL") //What a hack, we shouldn't be using uniqueID+1 here
@@ -158,7 +159,7 @@ export default class Gcode extends Atom {
       GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
     };
 
-    inputParams["Generate Gcode"] = button(() => generateKirimoto(this.stlURL, this.center, this.findIOValue("tool size"), this.findIOValue("passes"), this.findIOValue("speed"), gcodeCallback), {});
+    inputParams["Generate Gcode"] = button(() => generateKirimoto(this.stlURL, this.center, this.findIOValue("Tool Size"), this.findIOValue("Passes"), this.findIOValue("Speed"), this.findIOValue("Cut Through"), gcodeCallback), {});
 
     inputParams["Download Gcode"] = button(() => {
       if (this.gcodeGenerated && this.gcodeString) {
