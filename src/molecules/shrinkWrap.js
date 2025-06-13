@@ -5,7 +5,7 @@ import GlobalVariables from "../js/globalvariables.js";
 /**
  * This class creates the shrinkwrap atom. This behavior can also be called 'hull'
  */
-export default class shrinkWrap extends Atom {
+export default class ShrinkWrap extends Atom {
   /**
    * The constructor function.
    * @param {object} values An array of values passed in which will be assigned to the class as this.x
@@ -94,7 +94,7 @@ export default class shrinkWrap extends Atom {
   }
 
   /**
-   * Generates a list of all of the input shapes, then passees them to a worker thread to compute the hull
+   * Generates a list of all of the input shapes, then passes them to a worker thread to compute the hull
    */
   updateValue() {
     super.updateValue();
