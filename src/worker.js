@@ -314,7 +314,7 @@ function difference(targetID, input1ID, input2ID) {
       (is3D(library[input1ID]) && is3D(library[input2ID])) ||
       (!is3D(library[input1ID]) && !is3D(library[input2ID]))
     ) {
-      cutTemplate = digFuse(library[input2ID]);
+      cutTemplate = digFuse(library[input2ID]); //We should not be fusing this, this is going to slow things down because it's making the geometry that we are cutting with more complex. We should do this recurisvely and check bounding boxes
 
       library[targetID] = actOnLeafs(library[input1ID], (leaf) => {
         return {
@@ -1535,10 +1535,16 @@ function recursiveCut(partToCut, cuttingPart) {
       }
       return cutGeometry;
     } else {
+      //If the shapes don't overlap, we don't need to cut them
+      if(partToCut.boundingBox.isOut(cuttingPart.geometry[0].boundingBox)){
+        return partToCut;
+      }
       // cut and return part
-      let cutPart;
-      cutPart = partToCut.cut(cuttingPart.geometry[0]);
-      return cutPart;
+      else{
+        let cutPart;
+        cutPart = partToCut.cut(cuttingPart.geometry[0]);
+        return cutPart;
+      }
     }
   } catch (e) {
     throw new Error("Recursive Cut failed");
@@ -1849,7 +1855,6 @@ function generateCameraPosition(meshArray) {
 function generateDisplayMesh(id) {
   return started.then(() => {
     console.log("Generating display mesh for " + id);
-
     if (library[id] == undefined || id == undefined) {
       console.log("ID undefined or not found in library");
       //throw new Error("ID not found in library");
