@@ -306,6 +306,19 @@ function rotate(inputGeometry, x, y, z, targetID = null) {
   });
 }
 
+/**
+ * Performs a boolean difference operation between two geometries.
+ * This function subtracts the second geometry (cutter) from the first geometry (target).
+ * 
+ * @param {string} targetID - The ID where the resulting geometry will be stored in the library
+ * @param {string} input1ID - The ID of the base geometry from which material will be removed
+ * @param {string} input2ID - The ID of the cutting geometry that will be subtracted
+ * @returns {Promise<boolean>} - A promise that resolves to true when the operation completes
+ * @throws {Error} - If the input geometries are not of the same type (both must be either 3D or 2D)
+ * 
+ * The function maintains all metadata from the base geometry including tags, color, plane, and BOM.
+ * If the base geometry is an assembly, the cut operation is applied to each leaf independently.
+ */
 function difference(targetID, input1ID, input2ID) {
   return started.then(() => {
     let cutTemplate;
