@@ -71,6 +71,11 @@ function deleteFromLibrary(inputID) {
   });
 }
 
+/**
+ * Creates a mesh with the specified thickness.
+ * @param {number} thickness - The thickness value for the mesh
+ * @returns {Promise<Array>} A promise that resolves to an empty array representing mesh data structure
+ */
 function createMesh(thickness) {
   return started.then(() => {
     // This is how you get the data structure that the replica-three-helper
@@ -79,6 +84,12 @@ function createMesh(thickness) {
   });
 }
 
+/**
+ * Creates a circle geometry with the specified diameter and stores it in the library.
+ * @param {string} id - The unique identifier to store the circle geometry in the library
+ * @param {number} diameter - The diameter of the circle
+ * @returns {Promise<boolean>} A promise that resolves to true when the circle is created successfully
+ */
 function circle(id, diameter) {
   return started.then(() => {
     const newPlane = new Plane().pivot(0, "Y");
@@ -93,6 +104,13 @@ function circle(id, diameter) {
   });
 }
 
+/**
+ * Creates a rectangle geometry with the specified dimensions and stores it in the library.
+ * @param {string} id - The unique identifier to store the rectangle geometry in the library
+ * @param {number} x - The width of the rectangle
+ * @param {number} y - The height of the rectangle
+ * @returns {Promise<boolean>} A promise that resolves to true when the rectangle is created successfully
+ */
 function rectangle(id, x, y) {
   return started.then(() => {
     const newPlane = new Plane().pivot(0, "Y");
@@ -107,6 +125,13 @@ function rectangle(id, x, y) {
   });
 }
 
+/**
+ * Creates a regular polygon geometry with the specified radius and number of sides, and stores it in the library.
+ * @param {string} id - The unique identifier to store the polygon geometry in the library
+ * @param {number} radius - The radius of the polygon (distance from center to vertex)
+ * @param {number} numberOfSides - The number of sides of the polygon
+ * @returns {Promise<boolean>} A promise that resolves to true when the polygon is created successfully
+ */
 function regularPolygon(id, radius, numberOfSides) {
   return started.then(() => {
     const newPlane = new Plane().pivot(0, "Y");
@@ -120,6 +145,15 @@ function regularPolygon(id, radius, numberOfSides) {
     return true;
   });
 }
+/**
+ * Creates text geometry with the specified text, font size, and font family, and stores it in the library.
+ * @param {string} id - The unique identifier to store the text geometry in the library
+ * @param {string} text - The text content to be rendered
+ * @param {number} fontSize - The size of the font
+ * @param {string} fontFamily - The font family to use for rendering the text
+ * @returns {Promise<boolean>} A promise that resolves to true when the text is created successfully
+ * @throws {Error} Throws an error if the font fails to load
+ */
 async function text(id, text, fontSize, fontFamily) {
   await replicad
     .loadFont(Fonts[fontFamily])
@@ -149,6 +183,13 @@ async function text(id, text, fontSize, fontFamily) {
     });
 }
 
+/**
+ * Creates a loft shape by blending between multiple 2D sketches and stores it in the library.
+ * @param {string} targetID - The unique identifier to store the lofted geometry in the library
+ * @param {string[]} inputsIDs - Array of library IDs containing 2D sketches to be lofted
+ * @returns {Promise<boolean>} A promise that resolves to true when the loft is created successfully
+ * @throws {Error} Throws an error if input parts are not sketches or contain interior geometries
+ */
 function loftShapes(targetID, inputsIDs) {
   return started.then(() => {
     let arrayOfSketchedGeometry = [];
@@ -179,6 +220,13 @@ function loftShapes(targetID, inputsIDs) {
   });
 }
 
+/**
+ * Extrudes a 2D sketch to create a 3D geometry with the specified height and stores it in the library.
+ * @param {string} targetID - The unique identifier to store the extruded geometry in the library
+ * @param {string} inputID - The library ID of the 2D sketch to be extruded
+ * @param {number} height - The height to extrude the sketch
+ * @returns {Promise<boolean>} A promise that resolves to true when the extrusion is completed successfully
+ */
 function extrude(targetID, inputID, height) {
   return started.then(() => {
     library[targetID] = actOnLeafs(library[inputID], (leaf) => {
@@ -196,7 +244,11 @@ function extrude(targetID, inputID, height) {
   });
 }
 
-/* function to check if shape has mesh*/
+/**
+ * Checks if the input geometry is 3D (has a mesh) or 2D (sketch).
+ * @param {Object} inputs - The geometry object to check
+ * @returns {boolean} True if the geometry is 3D, false if it's a 2D sketch
+ */
 function is3D(inputs) {
   // if it's an assembly assume it's 3d since our assemblies don't work for drawings right now
   if (isAssembly(inputs)) {
