@@ -306,19 +306,36 @@ function rotate(inputGeometry, x, y, z, targetID = null) {
   });
 }
 
+/**
+ * Performs a boolean difference operation between two geometries.
+ * This function subtracts the second geometry (cutter) from the first geometry (target).
+ * 
+ * @param {string} targetID - The ID where the resulting geometry will be stored in the library
+ * @param {string} input1ID - The ID of the base geometry from which material will be removed
+ * @param {string} input2ID - The ID of the cutting geometry that will be subtracted
+ * @returns {Promise<boolean>} - A promise that resolves to true when the operation completes
+ * @throws {Error} - If the input geometries are not of the same type (both must be either 3D or 2D)
+ * 
+ * The function maintains all metadata from the base geometry including tags, color, plane, and BOM.
+ * If the base geometry is an assembly, the cut operation is applied to each leaf independently.
+ * Uses bounding box checks to avoid processing cuts for non-overlapping geometries.
+ */
 function difference(targetID, input1ID, input2ID) {
   return started.then(() => {
-    let cutTemplate;
-
     if (
       (is3D(library[input1ID]) && is3D(library[input2ID])) ||
       (!is3D(library[input1ID]) && !is3D(library[input2ID]))
     ) {
-      cutTemplate = digFuse(library[input2ID]); //We should not be fusing this, this is going to slow things down because it's making the geometry that we are cutting with more complex. We should do this recurisvely and check bounding boxes
-
+      // Process each leaf of input1ID independently
       library[targetID] = actOnLeafs(library[input1ID], (leaf) => {
+        // Start with a clone of the original geometry
+        let resultGeometry = leaf.geometry[0].clone();
+        
+        // Apply cuts recursively from input2ID, checking bounding boxes
+        resultGeometry = recursiveCut(resultGeometry, library[input2ID]);
+        
         return {
-          geometry: [leaf.geometry[0].clone().cut(cutTemplate)],
+          geometry: [resultGeometry],
           tags: leaf.tags,
           color: leaf.color,
           plane: leaf.plane,
@@ -1446,8 +1463,21 @@ function isAssembly(part) {
   }
 }
 
-/** Cut assembly function that takes in a part to cut (library object), cutting parts (unique IDS), assembly id and index */
-/** Returns a new single cut part or an assembly of cut parts */
+/**
+ * Performs a boolean cut operation on an assembly or part with one or more cutting geometries.
+ * 
+ * @param {Object} partToCut - The library object (part or assembly) that will be cut
+ * @param {string[]} cuttingParts - Array of library IDs for geometries that will cut the part
+ * @param {string} assemblyID - The ID to use for the resulting assembly
+ * @returns {Object} - A new object containing either a single cut part or an assembly of cut parts
+ * 
+ * This function handles cutting operations on complex hierarchical structures:
+ * - If partToCut is a simple part, it applies all cutting geometries to it sequentially
+ * - If partToCut is an assembly, it recursively processes each leaf in the assembly tree
+ * - Maintains the original hierarchy, tags, colors, and metadata
+ * - Avoids unnecessary operations by checking bounding box intersections
+ * - Preserves the original assembly structure while applying cuts
+ */
 function cutAssembly(partToCut, cuttingParts, assemblyID) {
   try {
     //If the partToCut is an assembly pass each part back into cutAssembly function to be cut separately
@@ -1524,7 +1554,25 @@ function cutAssembly(partToCut, cuttingParts, assemblyID) {
     throw new Error("Cut Assembly failed");
   }
 }
-/** Recursive function that gets passed a solid to cut and a library object that cuts it */
+
+
+/**
+ * Recursively applies boolean cutting operations between geometries with optimization.
+ * 
+ * @param {Object} partToCut - The geometry object to be cut
+ * @param {Object} cuttingPart - The library object (may be assembly) used to cut the part
+ * @returns {Object} - The resulting geometry after all applicable cuts have been performed
+ * 
+ * This function:
+ * - Recursively processes assemblies, applying cuts only when necessary
+ * - Performs bounding box intersection checks to skip non-intersecting geometries
+ * - Handles nested assemblies by traversing the entire tree of cutting geometries
+ * - Optimizes performance by avoiding cuts with geometries that cannot intersect
+ * - Preserves the structure of both the target and cutting geometries
+ * 
+ * The function is a core part of the boolean difference system and is designed
+ * to efficiently handle complex hierarchical structures.
+ */
 function recursiveCut(partToCut, cuttingPart) {
   try {
     let cutGeometry = partToCut;
