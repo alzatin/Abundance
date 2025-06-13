@@ -1463,8 +1463,21 @@ function isAssembly(part) {
   }
 }
 
-/** Cut assembly function that takes in a part to cut (library object), cutting parts (unique IDS), assembly id and index */
-/** Returns a new single cut part or an assembly of cut parts */
+/**
+ * Performs a boolean cut operation on an assembly or part with one or more cutting geometries.
+ * 
+ * @param {Object} partToCut - The library object (part or assembly) that will be cut
+ * @param {string[]} cuttingParts - Array of library IDs for geometries that will cut the part
+ * @param {string} assemblyID - The ID to use for the resulting assembly
+ * @returns {Object} - A new object containing either a single cut part or an assembly of cut parts
+ * 
+ * This function handles cutting operations on complex hierarchical structures:
+ * - If partToCut is a simple part, it applies all cutting geometries to it sequentially
+ * - If partToCut is an assembly, it recursively processes each leaf in the assembly tree
+ * - Maintains the original hierarchy, tags, colors, and metadata
+ * - Avoids unnecessary operations by checking bounding box intersections
+ * - Preserves the original assembly structure while applying cuts
+ */
 function cutAssembly(partToCut, cuttingParts, assemblyID) {
   try {
     //If the partToCut is an assembly pass each part back into cutAssembly function to be cut separately
@@ -1541,7 +1554,25 @@ function cutAssembly(partToCut, cuttingParts, assemblyID) {
     throw new Error("Cut Assembly failed");
   }
 }
-/** Recursive function that gets passed a solid to cut and a library object that cuts it */
+
+
+/**
+ * Recursively applies boolean cutting operations between geometries with optimization.
+ * 
+ * @param {Object} partToCut - The geometry object to be cut
+ * @param {Object} cuttingPart - The library object (may be assembly) used to cut the part
+ * @returns {Object} - The resulting geometry after all applicable cuts have been performed
+ * 
+ * This function:
+ * - Recursively processes assemblies, applying cuts only when necessary
+ * - Performs bounding box intersection checks to skip non-intersecting geometries
+ * - Handles nested assemblies by traversing the entire tree of cutting geometries
+ * - Optimizes performance by avoiding cuts with geometries that cannot intersect
+ * - Preserves the structure of both the target and cutting geometries
+ * 
+ * The function is a core part of the boolean difference system and is designed
+ * to efficiently handle complex hierarchical structures.
+ */
 function recursiveCut(partToCut, cuttingPart) {
   try {
     let cutGeometry = partToCut;
