@@ -113,7 +113,7 @@ class GlobalVariables {
         atomType: "RegularPolygon",
         atomCategory: "Shapes",
       },
-      costant: {
+      constant: {
         creator: Constant,
         atomType: "Constant",
         atomCategory: "Inputs",
