@@ -55,41 +55,6 @@ function toGeometry(input) {
   }
 }
 
-
-/**
- *  A utility function which checks to see if two geometries intersect
- * Inputs must be leaf geometry, not assemblies
- * @param {object} shape1 - The first geometry to check for intersection
- * @param {object} shape2 - The second geometry to check for intersection
- * @returns {boolean} - True if the two geometries intersect, false if they do not
-**/
-function checkIntersection(shape1, shape2) {
-
-  // Extract the coordinates for box1 and box2
-  const [x1, y1, z1] = shape1.boundingBox.bounds[0];
-  const [x2, y2, z2] = shape1.boundingBox.bounds[1];
-  const [x3, y3, z3] = shape2.boundingBox.bounds[0];
-  const [x4, y4, z4] = shape2.boundingBox.bounds[1];
-
-  // Check for overlap along the X-axis
-  if (Math.max(x1, x2) < Math.min(x3, x4) || Math.max(x3, x4) < Math.min(x1, x2)) {
-      return false; // No overlap on X-axis
-  }
-
-  // Check for overlap along the Y-axis
-  if (Math.max(y1, y2) < Math.min(y3, y4) || Math.max(y3, y4) < Math.min(y1, y2)) {
-      return false; // No overlap on Y-axis
-  }
-
-  // Check for overlap along the Z-axis
-  if (Math.max(z1, z2) < Math.min(z3, z4) || Math.max(z3, z4) < Math.min(z1, z2)) {
-      return false; // No overlap on Z-axis
-  }
-
-  // If no axis fails the overlap check, then the boxes intersect
-  return true;
-}
-
 /**
  * A function to generate a unique ID value.
  */
@@ -1571,7 +1536,7 @@ function recursiveCut(partToCut, cuttingPart) {
       return cutGeometry;
     } else {
       //If the shapes don't overlap, we don't need to cut them
-      if(!checkIntersection(partToCut, cuttingPart.geometry[0])){
+      if(partToCut.boundingBox.isOut(cuttingPart.geometry[0].boundingBox)){
         return partToCut;
       }
       // cut and return part
