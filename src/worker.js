@@ -1388,8 +1388,12 @@ function applyLayout(targetID, inputID, positions, layoutConfig) {
   });
 }
 
-// where shape is a list of {x: x, y: y} points
-// returns a Float64Array of the points as [x1, y1, x2, y2, ...]
+/**
+ * Converts a shape array of {x, y} points to a Float64Array format for polygon packing.
+ * @param {Array} shape - Array of point objects with x and y properties
+ * @returns {Float64Array} Float64Array containing points as [x1, y1, x2, y2, ...] with the polygon closed
+ * @throws {Error} Throws an error if any points contain NaN values
+ */
 function asFloat64(shape) {
   const points = new Float64Array(shape.length * 2 + 2);
   let i = 0;
@@ -1535,8 +1539,13 @@ function translatePlacements(placement, placedParts, partCount) {
   return result;
 }
 
-// from the mesh format of [x1, y1, z1, x2, y2, z2, ...] to FloatPolygon friendly format of
-// [{x: x1, y: y1}, {x: x2, y: y2}...]
+/**
+ * Converts mesh edge data to a polygon-friendly format with proper winding order.
+ * @param {Object} mesh - The mesh object containing edge groups and line data
+ * @param {number} tolerance - The tolerance for determining if points are equal
+ * @returns {Array} Array of {x, y} points in proper winding order
+ * @throws {Error} Throws an error if geometry has inconsistent edge continuations
+ */
 function preparePoints(mesh, tolerance) {
   // Unfortunately the "edges" of this mesh aren't always in sequential order. Here we re-sort them so we can
   // provide them in a winding order, ie, starting at one point and winding around the perimeter of the shape.
@@ -1608,6 +1617,12 @@ function preparePoints(mesh, tolerance) {
   return result;
 }
 
+/**
+ * Moves a face to the cutting plane by rotating and translating the geometry.
+ * @param {Object} geom - The geometry to transform
+ * @param {Object} face - The face to align with the cutting plane
+ * @returns {Object} The transformed geometry with the face aligned to the XY cutting plane
+ */
 function moveFaceToCuttingPlane(geom, face) {
   let pointOnSurface = face.pointOnSurface(0, 0);
   let faceNormal = face.normalAt();
@@ -1643,11 +1658,20 @@ function moveFaceToCuttingPlane(geom, face) {
     .translate(0, 0, -1 * pointOnSurface.z);
 }
 
+/**
+ * Calculates an approximate area from UV bounds.
+ * @param {Object} bounds - The bounds object containing uMin, uMax, vMin, vMax properties
+ * @returns {number} The approximate area calculated from the bounds
+ */
 function areaApprox(bounds) {
   return (bounds.uMax - bounds.uMin) * (bounds.vMax - bounds.vMin);
 }
 
-// Checks if part is an assembly)
+/**
+ * Checks if a part is an assembly (contains sub-geometries) or a single part.
+ * @param {Object} part - The part object to check
+ * @returns {boolean} True if the part is an assembly, false if it's a single part
+ */
 function isAssembly(part) {
   if (part.geometry.length > 0) {
     if (part.geometry[0].geometry) {
@@ -1948,6 +1972,12 @@ function flattenAssembly(assembly) {
   }
 }
 
+/**
+ * Performs a chain fusion operation on an array of geometries.
+ * @param {Array} chain - Array of geometry objects to fuse together sequentially
+ * @returns {Object} The resulting fused geometry
+ * @throws {Error} Throws an error if the fusion operation fails
+ */
 function chainFuse(chain) {
   try {
     let fused = chain[0].clone();
@@ -1960,6 +1990,11 @@ function chainFuse(chain) {
   }
 }
 
+/**
+ * Recursively digs through an assembly and fuses all leaf geometries into a single geometry.
+ * @param {Object} assembly - The assembly or leaf geometry to process
+ * @returns {Object} A single fused geometry combining all leaves in the assembly
+ */
 function digFuse(assembly) {
   var flattened = [];
 
@@ -2005,11 +2040,20 @@ let colorOptions = {
   White: "#FFFCF7",
   "Keep Out": "#E0E0E0",
 };
+/**
+ * Generates a default mesh for display when no output is available.
+ * @param {string} id - The unique identifier to store the default mesh in the library
+ * @returns {Promise} A promise that resolves to the default text mesh
+ */
 async function generateDefaultMesh(id) {
   let defaultMesh = await text(id, "No output to display", 28, "ROBOTO");
   return defaultMesh;
 }
 
+/**
+ * Resets the view by returning an empty array.
+ * @returns {Promise<Array>} A promise that resolves to an empty array
+ */
 function resetView() {
   return started.then(() => {
     return [];
