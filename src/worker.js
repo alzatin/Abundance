@@ -318,20 +318,24 @@ function rotate(inputGeometry, x, y, z, targetID = null) {
  * 
  * The function maintains all metadata from the base geometry including tags, color, plane, and BOM.
  * If the base geometry is an assembly, the cut operation is applied to each leaf independently.
+ * Uses bounding box checks to avoid processing cuts for non-overlapping geometries.
  */
 function difference(targetID, input1ID, input2ID) {
   return started.then(() => {
-    let cutTemplate;
-
     if (
       (is3D(library[input1ID]) && is3D(library[input2ID])) ||
       (!is3D(library[input1ID]) && !is3D(library[input2ID]))
     ) {
-      cutTemplate = digFuse(library[input2ID]); //We should not be fusing this, this is going to slow things down because it's making the geometry that we are cutting with more complex. We should do this recurisvely and check bounding boxes
-
+      // Process each leaf of input1ID independently
       library[targetID] = actOnLeafs(library[input1ID], (leaf) => {
+        // Start with a clone of the original geometry
+        let resultGeometry = leaf.geometry[0].clone();
+        
+        // Apply cuts recursively from input2ID, checking bounding boxes
+        resultGeometry = recursiveCut(resultGeometry, library[input2ID]);
+        
         return {
-          geometry: [leaf.geometry[0].clone().cut(cutTemplate)],
+          geometry: [resultGeometry],
           tags: leaf.tags,
           color: leaf.color,
           plane: leaf.plane,
