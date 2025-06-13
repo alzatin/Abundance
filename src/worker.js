@@ -260,6 +260,15 @@ function is3D(inputs) {
   }
 }
 
+/**
+ * Moves a geometry by the specified x, y, and z distances.
+ * @param {string} inputID - The library ID of the geometry to move
+ * @param {number} x - The distance to move along the x-axis
+ * @param {number} y - The distance to move along the y-axis
+ * @param {number} z - The distance to move along the z-axis
+ * @param {string|null} targetID - The ID to store the result in the library. If null, the result is returned
+ * @returns {Promise<boolean|Object>} A promise that resolves to true if targetID is provided, or the moved geometry if targetID is null
+ */
 function move(inputID, x, y, z, targetID = null) {
   return started.then(() => {
     if (is3D(library[inputID])) {
@@ -401,6 +410,13 @@ function difference(targetID, input1ID, input2ID) {
   });
 }
 
+/**
+ * Creates a shrink-wrapped boundary around multiple 2D sketches and stores it in the library.
+ * @param {string} targetID - The unique identifier to store the shrink-wrapped geometry in the library
+ * @param {string[]} inputIDs - Array of library IDs containing 2D sketches to be shrink-wrapped
+ * @returns {Promise<boolean>} A promise that resolves to true when the shrink wrapping is completed successfully
+ * @throws {Error} Throws an error if inputs are not all sketches or if sketches have interior geometries
+ */
 function shrinkWrapSketches(targetID, inputIDs) {
   return started.then(() => {
     let BOM = [];
@@ -432,6 +448,13 @@ function shrinkWrapSketches(targetID, inputIDs) {
   });
 }
 
+/**
+ * Performs a boolean intersection operation between two geometries.
+ * @param {string} input1ID - The ID of the first geometry or the geometry object itself
+ * @param {string} input2ID - The ID of the second geometry or the geometry object itself
+ * @param {string|null} targetID - The ID to store the result in the library. If null, the result is returned
+ * @returns {Promise<boolean|Object>} A promise that resolves to true if targetID is provided, or the intersected geometry if targetID is null
+ */
 function intersect(input1ID, input2ID, targetID = null) {
   let inputGeometry1 = toGeometry(input1ID);
   let inputGeometry2 = toGeometry(input2ID);
@@ -455,6 +478,13 @@ function intersect(input1ID, input2ID, targetID = null) {
   });
 }
 
+/**
+ * Adds tags to a geometry and stores the tagged geometry in the library.
+ * @param {string} targetID - The unique identifier to store the tagged geometry in the library
+ * @param {string} inputID - The library ID of the geometry to tag
+ * @param {string[]} TAG - Array of tags to add to the geometry
+ * @returns {Promise<boolean>} A promise that resolves to true when the tagging is completed successfully
+ */
 function tag(targetID, inputID, TAG) {
   return started.then(() => {
     library[targetID] = {
@@ -468,6 +498,13 @@ function tag(targetID, inputID, TAG) {
   });
 }
 
+/**
+ * Extracts and returns all tags from a geometry and its subassemblies.
+ * @param {string} inputID - The library ID of the geometry to extract tags from
+ * @param {string} tag - Currently unused parameter (kept for compatibility)
+ * @returns {Promise<string[]>} A promise that resolves to an array of all unique tags, with "Select Tag" as the first element
+ * @throws {Error} Throws an error if the geometry with the specified ID is not found in the library
+ */
 function extractAllTags(inputID, tag) {
   return started.then(() => {
     // Recursive helper function to collect tags
@@ -556,7 +593,14 @@ async function Intersect(input1, input2) {
   }
 }
 
-// Runs the user entered code in the worker thread and returns the result.
+/**
+ * Executes user-provided code in the worker thread with access to predefined geometry functions.
+ * @param {string} targetID - The unique identifier to store the code execution result in the library
+ * @param {string} code - The JavaScript code string to execute
+ * @param {Object} argumentsArray - Object containing key-value pairs of additional variables to make available to the code
+ * @returns {Promise<boolean|number>} A promise that resolves to the result value if it's a number, or true otherwise
+ * @note Uses eval() for code execution - consider security implications in production environments
+ */
 async function code(targetID, code, argumentsArray) {
   await started;
   let keys1 = ["Rotate", "Move", "Assembly", "Intersect"];
