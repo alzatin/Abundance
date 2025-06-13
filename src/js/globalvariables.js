@@ -454,7 +454,7 @@ class GlobalVariables {
 
       // Replace the last occurrence of the number in the variable name with the incremented number
       const incrementedVarName = varName.replace(
-        new RegExp(lastNumber[0] + "(?=D*$)"),
+        new RegExp(lastNumber[0] + "(?=\\D*$)"),
         incrementedNumber
       );
       return this.incrementVariableName(incrementedVarName, molecule);
