@@ -630,6 +630,14 @@ async function code(targetID, code, argumentsArray) {
   }
 }
 
+/**
+ * Applies a color to a geometry and stores the colored geometry in the library.
+ * @param {string} targetID - The unique identifier to store the colored geometry in the library
+ * @param {string} inputID - The library ID of the geometry to color
+ * @param {string} color - The color to apply to the geometry (hex color code)
+ * @returns {Promise} A promise that resolves when the coloring operation is completed
+ * @note If the color is "#D9544D", a "keepout" tag is automatically added to the geometry
+ */
 function color(targetID, inputID, color) {
   return started.then(() => {
     library[targetID] = actOnLeafs(library[inputID], (leaf) => {
@@ -648,6 +656,13 @@ function color(targetID, inputID, color) {
   });
 }
 
+/**
+ * Adds a Bill of Materials (BOM) entry to a geometry and stores it in the library.
+ * @param {string} targetID - The unique identifier to store the geometry with BOM in the library
+ * @param {string} inputID - The library ID of the geometry to add BOM entry to
+ * @param {Object} BOM - The BOM entry to add to the geometry
+ * @returns {Promise<boolean>} A promise that resolves to true when the BOM addition is completed successfully
+ */
 function bom(targetID, inputID, BOM) {
   return started.then(() => {
     if (library[inputID].bom != []) {
@@ -663,6 +678,14 @@ function bom(targetID, inputID, BOM) {
   });
 }
 
+/**
+ * Extracts geometry with a specific tag and stores it in the library.
+ * @param {string} targetID - The unique identifier to store the extracted geometry in the library
+ * @param {string} inputID - The library ID of the geometry to extract from
+ * @param {string} TAG - The specific tag to search for and extract
+ * @returns {Promise<boolean>} A promise that resolves to true when the extraction is completed successfully
+ * @throws {Error} Throws an error if the specified tag is not found in the geometry
+ */
 function extractTag(targetID, inputID, TAG) {
   return started.then(() => {
     let taggedGeometry = extractTags(library[inputID], TAG);
@@ -680,6 +703,13 @@ function extractTag(targetID, inputID, TAG) {
   });
 }
 
+/**
+ * Copies a geometry from one library location to another, typically used for output connections.
+ * @param {string} targetID - The unique identifier to store the output geometry in the library
+ * @param {string} inputID - The library ID of the geometry to output
+ * @returns {Promise<boolean>} A promise that resolves to true when the output operation is completed successfully
+ * @throws {Error} Throws an error if nothing is connected to the output (inputID is undefined)
+ */
 function output(targetID, inputID) {
   return started.then(() => {
     if (library[inputID] != undefined) {
@@ -692,6 +722,13 @@ function output(targetID, inputID) {
   });
 }
 
+/**
+ * Copies a geometry from one library location to another, typically used for molecule connections.
+ * @param {string} targetID - The unique identifier to store the molecule geometry in the library
+ * @param {string} inputID - The library ID of the geometry to copy for the molecule
+ * @returns {Promise<boolean>} A promise that resolves to true when the molecule operation is completed successfully
+ * @throws {Error} Throws an error if the output ID is undefined
+ */
 function molecule(targetID, inputID) {
   return started.then(() => {
     if (library[inputID] != undefined) {
@@ -703,7 +740,11 @@ function molecule(targetID, inputID) {
   });
 }
 
-/** Function that extracts geometry with BOM tags and returns bomItems*/
+/**
+ * Extracts the Bill of Materials (BOM) list from a geometry.
+ * @param {string} inputID - The library ID of the geometry to extract BOM from
+ * @returns {Array|boolean} The BOM array if it exists, or false if BOM is undefined
+ */
 function extractBomList(inputID) {
   if (library[inputID].bom !== undefined) {
     return library[inputID].bom;
@@ -712,7 +753,13 @@ function extractBomList(inputID) {
   }
 }
 
-/** Visualize STL or STEP*/
+/**
+ * Prepares geometry for visualization export in various file formats (STL, STEP, SVG).
+ * @param {string} targetID - The unique identifier to store the prepared export geometry in the library
+ * @param {string} inputID - The library ID of the geometry to prepare for export
+ * @param {string} fileType - The file type for export ("STL", "STEP", or "SVG")
+ * @returns {Promise<boolean>} A promise that resolves to true when the export preparation is completed successfully
+ */
 function visExport(targetID, inputID, fileType) {
   return started.then(() => {
     let geometryToExport = extractKeepOut(library[inputID]);
@@ -745,7 +792,14 @@ function visExport(targetID, inputID, fileType) {
   });
 }
 
-/** down STL*/
+/**
+ * Exports geometry to downloadable file formats (STL, STEP, SVG).
+ * @param {string} ID - The library ID of the geometry to export
+ * @param {string} fileType - The file type for export ("STL", "STEP", or "SVG")
+ * @param {number} svgResolution - The resolution for SVG export
+ * @param {string} units - The units for scaling ("Inches", "MM", or other)
+ * @returns {Promise<Blob>} A promise that resolves to a Blob containing the exported file data
+ */
 function downExport(ID, fileType, svgResolution, units) {
   return started.then(() => {
     let scaleUnit = units == "Inches" ? 1 : units == "MM" ? 25.4 : 1;
@@ -763,6 +817,12 @@ function downExport(ID, fileType, svgResolution, units) {
   });
 }
 
+/**
+ * Imports a STEP file and stores the resulting geometry in the library.
+ * @param {string} targetID - The unique identifier to store the imported geometry in the library
+ * @param {File} file - The STEP file to import
+ * @returns {Promise<boolean>} A promise that resolves to true when the import is completed successfully
+ */
 async function importingSTEP(targetID, file) {
   let STEPresult = await replicad.importSTEP(file);
 
@@ -775,6 +835,12 @@ async function importingSTEP(targetID, file) {
   return true;
 }
 
+/**
+ * Imports an STL file and stores the resulting geometry in the library.
+ * @param {string} targetID - The unique identifier to store the imported geometry in the library
+ * @param {File} file - The STL file to import
+ * @returns {Promise<boolean>} A promise that resolves to true when the import is completed successfully
+ */
 async function importingSTL(targetID, file) {
   let STLresult = await replicad.importSTL(file);
 
