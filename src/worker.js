@@ -853,6 +853,14 @@ async function importingSTL(targetID, file) {
   return true;
 }
 
+/**
+ * Imports an SVG file and creates 2D geometry, then stores it in the library.
+ * @param {string} targetID - The unique identifier to store the imported SVG geometry in the library
+ * @param {string} svg - The SVG content as a string
+ * @param {number} width - The width to scale the SVG to
+ * @returns {Promise<boolean>} A promise that resolves to true when the import is completed successfully
+ * @throws {Error} Throws an error if the SVG import fails
+ */
 async function importingSVG(targetID, svg, width) {
   const baseWidth = width + width * 0.05;
   const baseShape = replicad
@@ -890,7 +898,12 @@ async function importingSVG(targetID, svg, width) {
   }
 }
 
-//Visualize Gcode
+/**
+ * Visualizes G-code by parsing movement commands and creating 3D wire geometry.
+ * @param {string} targetID - The unique identifier to store the visualized G-code geometry in the library
+ * @param {string} gcode - The G-code string to visualize
+ * @returns {void} This function does not return a value, it directly stores the result in the library
+ */
 function visualizeGcode(targetID, gcode) {
   let currentPosition = [0, 0, 0];
   let edges = [];
@@ -926,6 +939,11 @@ function visualizeGcode(targetID, gcode) {
   };
 }
 
+/**
+ * Creates a pretty projection of a 3D shape for thumbnail generation.
+ * @param {Object} shape - The 3D shape to create a projection from
+ * @returns {Object} An object containing visible and hidden projection lines
+ */
 const prettyProjection = (shape) => {
   const bbox = shape.boundingBox;
   const center = bbox.center;
@@ -940,6 +958,12 @@ const prettyProjection = (shape) => {
   return { visible, hidden };
 };
 
+/**
+ * Generates an SVG thumbnail representation of a geometry.
+ * @param {string} inputID - The library ID of the geometry to generate a thumbnail for
+ * @returns {Promise<string>} A promise that resolves to an SVG string representing the thumbnail
+ * @throws {Error} Throws an error if the geometry is undefined or thumbnail generation fails
+ */
 function generateThumbnail(inputID) {
   return started.then(() => {
     if (library[inputID] != undefined) {
@@ -965,6 +989,12 @@ function generateThumbnail(inputID) {
   });
 }
 
+/**
+ * Recursively extracts geometry with a specific tag from an assembly or single geometry.
+ * @param {Object} inputGeometry - The geometry object to search for the tag
+ * @param {string} TAG - The tag to search for and extract
+ * @returns {Object|boolean} The geometry containing the tag, or false if the tag is not found
+ */
 function extractTags(inputGeometry, TAG) {
   if (inputGeometry.tags.includes(TAG)) {
     return inputGeometry;
@@ -993,6 +1023,11 @@ function extractTags(inputGeometry, TAG) {
   }
 }
 
+/**
+ * Recursively extracts geometry that does NOT have "keepout" tags from an assembly or single geometry.
+ * @param {Object} inputGeometry - The geometry object to filter keepout tags from
+ * @returns {Object|boolean} The geometry without keepout tags, or false if all geometry has keepout tags
+ */
 function extractKeepOut(inputGeometry) {
   if (inputGeometry.tags.includes("keepout")) {
     return false;
@@ -1818,6 +1853,13 @@ async function assembly(inputIDs, targetID = null) {
   return true;
 }
 
+/**
+ * Performs a boolean fusion (union) operation on multiple geometries and stores the result in the library.
+ * @param {string} targetID - The unique identifier to store the fused geometry in the library
+ * @param {string[]} inputIDs - Array of library IDs containing geometries to be fused together
+ * @returns {Promise<boolean>} A promise that resolves to true when the fusion is completed successfully
+ * @throws {Error} Throws an error if inputs are mixed between 2D and 3D geometries
+ */
 function fusion(targetID, inputIDs) {
   return started.then(() => {
     let fusedGeometry = [];
@@ -1848,8 +1890,13 @@ function fusion(targetID, inputIDs) {
   });
 }
 
-//Action is a function which takes in a leaf and returns a new leaf which has had the action applied to it
-// The action may return 'undefined' to cause the leaf to be removed from the result.
+/**
+ * Recursively applies an action function to all leaf geometries in an assembly tree.
+ * @param {Object} assembly - The assembly or leaf geometry to process
+ * @param {Function} action - The function to apply to each leaf geometry. Should return the transformed leaf or undefined to remove it
+ * @param {Object} plane - Optional plane to use for the resulting assembly
+ * @returns {Object} The transformed assembly with the action applied to all leaves
+ */
 function actOnLeafs(assembly, action, plane) {
   plane = plane || assembly.plane;
   //This is a leaf
@@ -1877,6 +1924,11 @@ function actOnLeafs(assembly, action, plane) {
   }
 }
 
+/**
+ * Recursively flattens an assembly tree into a flat array of geometry objects with colors.
+ * @param {Object} assembly - The assembly to flatten
+ * @returns {Array} An array of objects containing geometry and color properties
+ */
 function flattenAssembly(assembly) {
   var flattened = [];
   //This is a leaf
