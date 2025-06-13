@@ -80,7 +80,7 @@ export default class Molecule extends Atom {
      * A list of available units with corresponding scaling numbers.
      * @type {object}
      */
-    this.units = { MM: "MM", Inches: "Inches" };
+    this.units = { MM: "MM", Inches: "Inches", Unitless: "Unitless" };
     /**
      * The key of the currently selected unit.
      * @type {string}

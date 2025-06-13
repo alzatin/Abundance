@@ -1,4 +1,5 @@
 import { create, all } from "mathjs";
+import { v4 as uuidv4 } from "uuid";
 import Assembly from "../molecules/assembly.js";
 import Circle from "../molecules/circle.js";
 import Color from "../molecules/color.js";
@@ -291,15 +292,14 @@ class GlobalVariables {
       return storedFont ? storedFont : `12px Work Sans Bold`;
     })();
 
-    /*this.atomSize = (() => {
-      const storedSize = localStorage.getItem("atomSize");
-      return storedSize ? storedSize : 1 / 60;
-    })();*/
     /**
      * A number to indicate the size of the atoms in the canvas. This is used to scale the atoms to fit on the canvas.
      * @type {number}
      */
-    this.atomSize = 1 / 60;
+    this.atomSize = (() => {
+      const storedSize = localStorage.getItem("atomSize");
+      return storedSize ? parseFloat(storedSize) : 1 / 60;
+    })();
 
     const math = create(all); //What does this do? I think it is used to evalue strings as math
     /**
@@ -438,10 +438,7 @@ class GlobalVariables {
    * A function to generate a unique ID value.
    */
   generateUniqueID() {
-    const dateString = new Date().getTime();
-    const randomness = Math.floor(Math.random() * 1000);
-    const newID = dateString + randomness;
-    return newID;
+    return uuidv4();
   }
 
   /**
