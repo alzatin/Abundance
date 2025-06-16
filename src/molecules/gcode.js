@@ -1,6 +1,7 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import { button } from "leva";
+import { initKiriMoto, generateKirimoto, downloadGcode } from '../components/secondary/Kirimoto.js'; // Adjust the path
 //import saveAs from '../lib/FileSaver.js'
 
 /**
@@ -42,18 +43,33 @@ export default class Gcode extends Atom {
      */
     this.gcodeString = "";
 
-    this.addIO("input", "geometry", this, "geometry", null);
-    //this.addIO("input", "tool size", this, "number", 6.35);
-    //this.addIO("input", "passes", this, "number", 6);
-    //this.addIO("input", "speed", this, "number", 500);
+    /**
+     * Whether gcode has been generated
+     * @type {boolean}
+     */
+    this.gcodeGenerated = false;
+
+    this.addIO("input", "Geometry", this, "geometry", null);
+    this.addIO("input", "Tool Size", this, "number", 6.35);
+    this.addIO("input", "Passes", this, "number", 6);
+    this.addIO("input", "Speed", this, "number", 500);
+    this.addIO("input", "Cut Through", this, "number", 1);
     //this.addIO("input", "tabs", this, "string", "true");
     //this.addIO("input", "safe height", this, "number", 6);
 
-    this.addIO("output", "gcode", this, "geometry", "");
+    this.addIO("output", "Gcode", this, "geometry", "");
 
     this.setValues(values);
 
-    this.kirimotoBlobs = {};
+    // Initialize Kiri:Moto if not already initialized
+    if (!GlobalVariables.kirimotoInitialized) {
+      initKiriMoto();
+      GlobalVariables.kirimotoInitialized = true;
+    }
+
+    this.stlURL = null; // Store the STL URL
+ 
+    this.center = [0, 0, 0]; //Used to correctly position the gcode
   }
 
   /**
@@ -82,27 +98,23 @@ export default class Gcode extends Atom {
   updateValue() {
     super.updateValue();
     try {
-      //var toolSize = this.findIOValue("tool size");
-      //var passes = this.findIOValue("passes");
-      // var speed = this.findIOValue("speed");
-      // var tabs = this.findIOValue("tabs");
-      //var safeHeight = this.findIOValue("safe height");
-      /* We have to make an STL file to pass to the Kiri:Moto engine */
 
-      let inputID = this.findIOValue("geometry");
+      let inputID = this.findIOValue("Geometry");
 
       GlobalVariables.cad
-        .visExport(this.uniqueID, inputID, "STL")
+        .visExport(this.uniqueID+1, inputID, "STL") //What a hack, we shouldn't be using uniqueID+1 here
         .then((result) => {
           GlobalVariables.cad
-            .downExport(this.uniqueID, "STL")
+            .downExport(this.uniqueID+1, "STL")
             .then((result) => {
-              this.kirimotoBlobs[this.uniqueID] = result; // Store the blob with a unique ID to avoid overriding
-              // Dispatch a custom event to notify React components
-              const event = new CustomEvent("kirimotoBlobUpdated", {
-                detail: { uniqueID: this.uniqueID, blob: result },
+              this.stlURL = URL.createObjectURL(result); // Store the STL URL
+              GlobalVariables.cad.getBoundingBox(this.uniqueID+1).then((bounds) => {
+                this.center = [
+                  (bounds.max[0] + bounds.min[0]) / 2,
+                  (bounds.max[1] + bounds.min[1]) / 2,
+                  (bounds.max[2] + bounds.min[2]) / 2,
+                ];
               });
-              window.dispatchEvent(event);
             });
         })
         .catch((err) => {
@@ -111,6 +123,7 @@ export default class Gcode extends Atom {
     } catch (err) {
       this.setAlert(err);
     }
+
   }
 
   createLevaInputs() {
@@ -139,14 +152,27 @@ export default class Gcode extends Atom {
       });
     }
 
-    inputParams["Download Gcode"] = button(() => this.clickKiriButton());
+    //A callback function for once the gcode is generated
+    const gcodeCallback = (gcode) => {
+      this.gcodeString = gcode;
+      this.gcodeGenerated = true;
+      GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
+      this.sendToRender();
+    };
+
+    inputParams["Generate Gcode"] = button(() => generateKirimoto(this.stlURL, this.center, this.findIOValue("Tool Size"), this.findIOValue("Passes"), this.findIOValue("Speed"), this.findIOValue("Cut Through"), gcodeCallback), {});
+
+    inputParams["Download Gcode"] = button(() => {
+      if (this.gcodeGenerated && this.gcodeString) {
+        downloadGcode(this.gcodeString);
+      } else {
+        console.warn("No G-code available. Please generate G-code first.");
+        // You could also show an alert or notification to the user here
+        alert("No G-code available. Please generate G-code first.");
+      }
+    }, {});
 
     return inputParams;
   }
 
-  clickKiriButton() {
-    let kirimotoButton = document.getElementById("kirimoto-button");
-    console.log(kirimotoButton);
-    kirimotoButton.click();
-  }
 }
