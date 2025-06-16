@@ -8,7 +8,7 @@ import { addSVG, drawSVG } from "replicad-decorate";
 import { v4 as uuidv4 } from "uuid";
 import Fonts from "./js/fonts.js";
 //import { AnyNest, FloatPolygon } from "any-nest";
-import { PolygonPacker,PlacementWrapper } from "polygon-packer";
+import { PolygonPacker, PlacementWrapper } from "polygon-packer";
 import { equal, re } from "mathjs";
 
 var library = {};
@@ -37,7 +37,7 @@ const started = init();
  */
 function toGeometry(input) {
   //If the input is a library ID we look it up
-  if (typeof input === "number") {
+  if (typeof input === "string") {
     return library[input];
   }
   //If the input is already an abundance object we return it
@@ -370,13 +370,13 @@ function rotate(inputGeometry, x, y, z, targetID = null) {
 /**
  * Performs a boolean difference operation between two geometries.
  * This function subtracts the second geometry (cutter) from the first geometry (target).
- * 
+ *
  * @param {string} targetID - The ID where the resulting geometry will be stored in the library
  * @param {string} input1ID - The ID of the base geometry from which material will be removed
  * @param {string} input2ID - The ID of the cutting geometry that will be subtracted
  * @returns {Promise<boolean>} - A promise that resolves to true when the operation completes
  * @throws {Error} - If the input geometries are not of the same type (both must be either 3D or 2D)
- * 
+ *
  * The function maintains all metadata from the base geometry including tags, color, plane, and BOM.
  * If the base geometry is an assembly, the cut operation is applied to each leaf independently.
  * Uses bounding box checks to avoid processing cuts for non-overlapping geometries.
@@ -391,10 +391,10 @@ function difference(targetID, input1ID, input2ID) {
       library[targetID] = actOnLeafs(library[input1ID], (leaf) => {
         // Start with a clone of the original geometry
         let resultGeometry = leaf.geometry[0].clone();
-        
+
         // Apply cuts recursively from input2ID, checking bounding boxes
         resultGeometry = recursiveCut(resultGeometry, library[input2ID]);
-        
+
         return {
           geometry: [resultGeometry],
           tags: leaf.tags,
@@ -781,7 +781,7 @@ function visExport(targetID, inputID, fileType) {
     } else {
       finalGeometry = [fusedGeometry];
     }
-    if(targetID){
+    if (targetID) {
       library[targetID] = {
         geometry: finalGeometry,
         color: displayColor,
@@ -1090,7 +1090,6 @@ function layout(
       //This does the actual layout of the parts. We want to break this out into it's own function which can be passed a list of positions
       applyLayout(targetID, rotateID, positions, layoutConfig);
 
-
       // TODO: tristan, instead of throwing these here, return the full suite of
       // result which includes provided parts and placed part counts. Then all error warnings
       // can be handled in the UI and can be re-rendered from serialized state
@@ -1098,7 +1097,9 @@ function layout(
 
       // These are soft failures, issue after the result has been applied
       if (positions.length == 0) {
-        throw new Error("Failed to place any parts. Are sheet dimensions right?");
+        throw new Error(
+          "Failed to place any parts. Are sheet dimensions right?"
+        );
       } else {
         let unplacedParts = shapesForLayout.length - positions.flat().length;
         if (unplacedParts > 0) {
@@ -1107,7 +1108,7 @@ function layout(
             " parts are too big to fit on this sheet size. Failed layout for " +
             unplacedParts +
             " part(s)";
-            throw new Error(warning);
+          throw new Error(warning);
         }
       }
 
@@ -1126,12 +1127,10 @@ function displayLayout(targetID, inputID, positions, layoutConfig) {
   applyLayout(targetID, rotateID, positions, layoutConfig);
 }
 
-
-
 /**
  * Rotates and moves all leafs into an orientation which can be fed into
  * the nesting algorithm.
- * 
+ *
  * Specific criteria of this pre-layout step are as follows:
  * 1) rotate the part such that the best possible face is aligned with the XY plane.
  *    Criteria for the best face are as follows (in order):
@@ -1161,9 +1160,8 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
   // select among candidates for each part based on either good fit to the
   //    estimated material thickness, or just take thinnest orientation.
 
-
   // get candidates as {leaf_id: "abc", [candidate 1, candidate 2 etc]}
-  const all_candidates = {}
+  const all_candidates = {};
   const intermediate = actOnLeafs(geometryToLayout, (leaf) => {
     // For each face, consider it as the underside of the shape on the CNC bed.
     // In order to be considered, a face must be...
@@ -1200,7 +1198,7 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
         throw new Error("Upstream object uncuttable, has no flat face");
       }
     }
-    all_candidates[localId]= candidates
+    all_candidates[localId] = candidates;
     const newLeaf = {
       geometry: leaf.geometry,
       id: localId,
@@ -1219,15 +1217,20 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
 
   let material_thickness = -1;
   if (layoutConfig.units) {
-    const LARGEST_PLAUSIBLE_STOCK = layoutConfig.units == "MM" ? 25.4 : 1    
-    const min_thickness_per_part = Object.values(all_candidates).map(s => Math.min(...s.map(c => c.thickness)));
-    if (Math.max(...min_thickness_per_part) <= LARGEST_PLAUSIBLE_STOCK + THICKNESS_TOLLERANCE) {
+    const LARGEST_PLAUSIBLE_STOCK = layoutConfig.units == "MM" ? 25.4 : 1;
+    const min_thickness_per_part = Object.values(all_candidates).map((s) =>
+      Math.min(...s.map((c) => c.thickness))
+    );
+    if (
+      Math.max(...min_thickness_per_part) <=
+      LARGEST_PLAUSIBLE_STOCK + THICKNESS_TOLLERANCE
+    ) {
       material_thickness = Math.max(...min_thickness_per_part);
     }
   }
 
   library[targetID] = actOnLeafs(intermediate, (leaf) => {
-    let candidates = all_candidates[leaf.id]
+    let candidates = all_candidates[leaf.id];
     let selected;
     if (candidates.length == 1) {
       selected = candidates[0];
@@ -1243,8 +1246,8 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
           thickness: c.thickness,
           area: areaApprox(c.face.UVBounds),
           interiorWires: c.face.clone().innerWires().length,
-        }});
-
+        };
+      });
 
       // Sort in order of preference (scores[0] being best).
       scores.sort((a, b) => {
@@ -1263,7 +1266,7 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
         }
 
         // Tie brakes for candidates of equal thickness.
-        
+
         // First, look for interior wires, if unequal we prefer candidates with fewer since
         // interior wires *might* indicate carve-outs which are unreachable on the underside of the sheet.
         if (a.interiorWires != b.interiorWires) {
@@ -1276,19 +1279,14 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
         }
 
         return 0; // we can't decide.
-      }
-      );
+      });
       selected = candidates[scores[0].candidate_index];
     }
 
     // move so center of face is at (0, 0, 0)
     const newGeom = selected.geom
       .clone()
-      .translate(
-        -1 * selected.face.center.x,
-        -1 * selected.face.center.y,
-        0
-      );
+      .translate(-1 * selected.face.center.x, -1 * selected.face.center.y, 0);
 
     let newLeaf = {
       geometry: [newGeom],
@@ -1318,8 +1316,12 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
  */
 
 function getBoundingBox(inputID) {
-  let minX = Infinity, minY = Infinity, minZ = Infinity;
-  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity;
 
   actOnLeafs(library[inputID], (leaf) => {
     const bbox = leaf.geometry[0].boundingBox.bounds;
@@ -1406,10 +1408,12 @@ function asFloat64(shape) {
   points[i + 1] = shape[0].y; // close the polygon
 
   if (points.filter((c) => !Number.isFinite(c)).length > 0) {
-    throw new Error("NaN points in Float64Array from: " + JSON.stringify(shape)); 
+    throw new Error(
+      "NaN points in Float64Array from: " + JSON.stringify(shape)
+    );
   }
 
-  return points;  
+  return points;
 }
 
 /**
@@ -1423,7 +1427,7 @@ function computePositions(
   targetID,
   layoutConfig
 ) {
-  console.log("Starting to compute positions for shapes: ")
+  console.log("Starting to compute positions for shapes: ");
   console.log(shapesForLayout);
   const tolerance = 0.1;
   const runtimeMs = 30000;
@@ -1438,13 +1442,13 @@ function computePositions(
   // from the mesh format of [x1, y1, z1, x2, y2, z2, ...] to FloatPolygon friendly format of
   // [{x: x1, y: y1}, {x: x2, y: y2}...]
   const polygons = shapesForLayout.map((shape) => {
-      let face = shape.shape;
-      const mesh = face
-        .clone()
-        .outerWire()
-        .meshEdges({ tolerance: 0.5, angularTolerance: 5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
-      return asFloat64(preparePoints(mesh, tolerance));
-    });
+    let face = shape.shape;
+    const mesh = face
+      .clone()
+      .outerWire()
+      .meshEdges({ tolerance: 0.5, angularTolerance: 5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
+    return asFloat64(preparePoints(mesh, tolerance));
+  });
 
   // Clockwise winding direction appears to matter here for the current packing algo.
   const bin = asFloat64([
@@ -1463,36 +1467,39 @@ function computePositions(
     // Unclear what the num argument is supposed to represent
     progressCallbackCounter++;
     progressCallback(
-      0.1 + 0.9 * (progressCallbackCounter * 100 / runtimeMs),
+      0.1 + 0.9 * ((progressCallbackCounter * 100) / runtimeMs),
       proxy(() => {
         packer.stop();
       })
     );
-  }
+  };
 
   const result = new Promise((resolve, reject) => {
     // See https://github.com/yuriilychak/SVGnest/blob/6ed19cf44cb458b11d7ae4abf1868a513c53420a/packages/polygon-packer/src/types.ts#L31
     let callbackCounter = 0;
     let bestPlacement = null;
-    const displayCallback = (placementsData, placementPercentage, placedParts, partCount) => {
+    const displayCallback = (
+      placementsData,
+      placementPercentage,
+      placedParts,
+      partCount
+    ) => {
       callbackCounter++;
       if (placedParts > 0) {
-        let placements = translatePlacements(placementsData, placedParts, partCount);
- 
+        let placements = translatePlacements(
+          placementsData,
+          placedParts,
+          partCount
+        );
+
         placementsCallback(placements);
         bestPlacement = placements;
       }
     };
-  
+
     try {
-      packer.start(
-        config,
-        polygons,
-        bin,
-        callbackFunction,
-        displayCallback
-      );
-  
+      packer.start(config, polygons, bin, callbackFunction, displayCallback);
+
       setTimeout(() => {
         console.log("Timeout reached. Stopping packer.");
         if (bestPlacement != null) {
@@ -1503,7 +1510,6 @@ function computePositions(
           reject(new Error("Failed to find placements within the time limit."));
         }
       }, runtimeMs);
-  
     } catch (err) {
       console.log("error in nesting engine: " + err);
       packer.stop();
@@ -1514,24 +1520,38 @@ function computePositions(
 }
 
 /**
- * 
- * @param {} placement 
+ *
+ * @param {} placement
  * @returns List of placements as expected by applyLayout
  *  ie. a list of list of transforms, where each entry in the outer list is for 1 sheet's worth of placement
  *  Each transform follows the structure: {id: "part_id", rotate: degrees, translate: {x: x, y: y}}
  */
 
 function translatePlacements(placement, placedParts, partCount) {
-  const placements = new PlacementWrapper(placement.placementsData, placement.angleSplit);
-  console.log("new placement received. " + placedParts + " of " + partCount + " parts placed. score: " + placement.placementsData[0]);
+  const placements = new PlacementWrapper(
+    placement.placementsData,
+    placement.angleSplit
+  );
+  console.log(
+    "new placement received. " +
+      placedParts +
+      " of " +
+      partCount +
+      " parts placed. score: " +
+      placement.placementsData[0]
+  );
 
   const result = [];
   for (let i = 0; i < placements.placementCount; i++) {
-    const sheet = []
+    const sheet = [];
     placements.bindPlacement(i);
     for (let j = 0; j < placements.size; j++) {
-      placements.bindData(j)
-      sheet.push({"id": placements.id, "rotate": placements.rotation, "translate": {"x": placements.x, "y": placements.y}});
+      placements.bindData(j);
+      sheet.push({
+        id: placements.id,
+        rotate: placements.rotation,
+        translate: { x: placements.x, y: placements.y },
+      });
     }
     result.push(sheet);
   }
@@ -1637,7 +1657,9 @@ function moveFaceToCuttingPlane(geom, face) {
   if (rotationAxis.Length == 0) {
     if (faceNormal.dot(targetOrientation) < 0) {
       // Face points upward but is otherwise parallel to cut plane. flip 180 around x axis.
-      geom = geom.clone().rotate(180, pointOnSurface, new replicad.Vector([1,0,0]));
+      geom = geom
+        .clone()
+        .rotate(180, pointOnSurface, new replicad.Vector([1, 0, 0]));
     }
 
     // Face already parallel to cut plane and on underside of the shape.
@@ -1686,12 +1708,12 @@ function isAssembly(part) {
 
 /**
  * Performs a boolean cut operation on an assembly or part with one or more cutting geometries.
- * 
+ *
  * @param {Object} partToCut - The library object (part or assembly) that will be cut
  * @param {string[]} cuttingParts - Array of library IDs for geometries that will cut the part
  * @param {string} assemblyID - The ID to use for the resulting assembly
  * @returns {Object} - A new object containing either a single cut part or an assembly of cut parts
- * 
+ *
  * This function handles cutting operations on complex hierarchical structures:
  * - If partToCut is a simple part, it applies all cutting geometries to it sequentially
  * - If partToCut is an assembly, it recursively processes each leaf in the assembly tree
@@ -1776,21 +1798,20 @@ function cutAssembly(partToCut, cuttingParts, assemblyID) {
   }
 }
 
-
 /**
  * Recursively applies boolean cutting operations between geometries with optimization.
- * 
+ *
  * @param {Object} partToCut - The geometry object to be cut
  * @param {Object} cuttingPart - The library object (may be assembly) used to cut the part
  * @returns {Object} - The resulting geometry after all applicable cuts have been performed
- * 
+ *
  * This function:
  * - Recursively processes assemblies, applying cuts only when necessary
  * - Performs bounding box intersection checks to skip non-intersecting geometries
  * - Handles nested assemblies by traversing the entire tree of cutting geometries
  * - Optimizes performance by avoiding cuts with geometries that cannot intersect
  * - Preserves the structure of both the target and cutting geometries
- * 
+ *
  * The function is a core part of the boolean difference system and is designed
  * to efficiently handle complex hierarchical structures.
  */
@@ -1805,11 +1826,11 @@ function recursiveCut(partToCut, cuttingPart) {
       return cutGeometry;
     } else {
       //If the shapes don't overlap, we don't need to cut them
-      if(partToCut.boundingBox.isOut(cuttingPart.geometry[0].boundingBox)){
+      if (partToCut.boundingBox.isOut(cuttingPart.geometry[0].boundingBox)) {
         return partToCut;
       }
       // cut and return part
-      else{
+      else {
         let cutPart;
         cutPart = partToCut.cut(cuttingPart.geometry[0]);
         return cutPart;
