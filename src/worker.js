@@ -37,7 +37,7 @@ const started = init();
  */
 function toGeometry(input) {
   //If the input is a library ID we look it up
-  if (typeof input === "string") {
+  if (typeof input === "string" || "number") {
     return library[input];
   }
   //If the input is already an abundance object we return it
