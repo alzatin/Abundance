@@ -47,7 +47,7 @@ export default class Extrude extends Atom {
       GlobalVariables.widthToPixels(this.x - this.radius / 2),
       GlobalVariables.heightToPixels(this.y + this.radius / 4),
       GlobalVariables.widthToPixels(this.radius),
-      GlobalVariables.heightToPixels(this.radius / 3)
+      GlobalVariables.widthToPixels(this.radius / 3)
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.stroke();
@@ -60,7 +60,7 @@ export default class Extrude extends Atom {
       GlobalVariables.widthToPixels(this.x - this.radius / 2),
       GlobalVariables.heightToPixels(this.y - this.radius / 4),
       GlobalVariables.widthToPixels(this.radius),
-      GlobalVariables.heightToPixels(this.radius / 2)
+      GlobalVariables.widthToPixels(this.radius / 2)
     );
     //GlobalVariables.c.fill()
     GlobalVariables.c.stroke();
