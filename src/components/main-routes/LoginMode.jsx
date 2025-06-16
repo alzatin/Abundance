@@ -610,7 +610,7 @@ const ShowProjects = ({
   });
 
   useEffect(() => {
-    setProjectsToShow(user ? "owned" : "featured");
+    setProjectsToShow(user ? "recents" : "featured");
   }, [GlobalVariables.currentUser]);
 
   const forkProject = async function (authorizedUserOcto, owner, repo) {
