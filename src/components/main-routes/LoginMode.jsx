@@ -151,8 +151,6 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
     nodes = nodes.filter((node) => node.parentRepo === null);
   }
 
-  console.log(nodes);
-
   return (
     <>
       <div
