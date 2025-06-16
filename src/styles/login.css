@@ -588,12 +588,12 @@
   flex-direction: column;
 }
 .project_name {
-  font-size: "1.2em";
+  font-size: 1.2em;
   font-family: "Roboto", sans-serif;
   color: var(--loginPopup-text);
-  text-overflow: "ellipsis";
-  display: "block";
-  overflow: "hidden";
+  text-overflow: ellipsis;
+  display: block;
+  overflow: hidden;
   width: 80%;
 }
 
