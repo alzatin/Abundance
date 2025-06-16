@@ -319,7 +319,6 @@ export default class AttachmentPoint {
     );
 
     if (this.type == "output") {
-      console.log(this.parentMolecule);
       if (this.parentMolecule.atomType == "Input") {
         return [GlobalVariables.atomSize * 4, this.parentMolecule.y];
       } else {
