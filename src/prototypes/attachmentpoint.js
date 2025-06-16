@@ -1,5 +1,6 @@
 import Connector from "./connector.js";
 import GlobalVariables from "../js/globalvariables.js";
+import { Global } from "@emotion/react";
 
 /**
  * This class creates a new attachmentPoint which are the input and output blobs on Atoms
@@ -103,14 +104,14 @@ export default class AttachmentPoint {
     // Initially hide this attachment point.
     this.unexpand();
   }
-  
+
   /**
    * Gets the scaled radius of this attachment point based on the parent molecule's radius
    */
   get scaledRadius() {
     // Scale the attachment point radius based on the parent atom's radius
     // Using the default atom radius (1/60) as reference
-    return AttachmentPoint.RADIUS * (this.parentMolecule.radius / (1/60));
+    return AttachmentPoint.RADIUS * (this.parentMolecule.radius / (1 / 60));
   }
 
   /**
@@ -123,7 +124,7 @@ export default class AttachmentPoint {
     }
     let xInPixels = GlobalVariables.widthToPixels(this.x);
     let yInPixels = GlobalVariables.heightToPixels(this.y);
-    
+
     let radiusInPixels = GlobalVariables.widthToPixels(this.scaledRadius);
 
     if (this.isTargetted) {
@@ -316,16 +317,21 @@ export default class AttachmentPoint {
     const inputList = this.parentMolecule.inputs.filter(
       (input) => input.type == "input"
     );
-    
+
     if (this.type == "output") {
-      // Outputs are always singular and always positioned partially overlapped by the right-most
-      // pole of the parent molecule.
-      return [
-        this.parentMolecule.x +
-          this.parentMolecule.radius +
-          this.scaledRadius * 0.75,
-        this.parentMolecule.y,
-      ];
+      console.log(this.parentMolecule);
+      if (this.parentMolecule.atomType == "Input") {
+        return [GlobalVariables.atomSize * 4, this.parentMolecule.y];
+      } else {
+        // Outputs are always singular and always positioned partially overlapped by the right-most
+        // pole of the parent molecule.
+        return [
+          this.parentMolecule.x +
+            this.parentMolecule.radius +
+            this.scaledRadius * 0.75,
+          this.parentMolecule.y,
+        ];
+      }
     } else if (this.type == "input" && inputList.length == 1) {
       // Singular inputs are located in a mirror of the output, ie partially overlapped by the
       // left-most pole of the parent molecule.
@@ -385,9 +391,9 @@ export default class AttachmentPoint {
       y,
       GlobalVariables.heightToPixels(this.y)
     );
-    
+
     const apRadiusInPixels = GlobalVariables.widthToPixels(this.scaledRadius);
-    
+
     if (this.type == "output") {
       return dist <= apRadiusInPixels * 2;
     } else {
