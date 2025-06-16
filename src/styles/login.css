@@ -559,7 +559,7 @@
   margin-right: 10px;
   border: 1px solid var(--loginPopup-input);
   border-radius: 5px 5px;
-  color: var(--loginPopup-projectColor);
+  color: var(--newProject-form-input-text);
   outline: none;
   background-color: var(--newProject-form-input);
 }
