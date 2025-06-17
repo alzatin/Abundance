@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Text Atom Input Changes</title>
+    <script type="module">
+        // Simple test to reproduce the Text atom input update issue
+        import Text from './src/molecules/text.js';
+        import GlobalVariables from './src/js/globalvariables.js';
+        
+        // Mock the GlobalVariables.cad.text method to verify it gets called
+        let textCallCount = 0;
+        let lastTextCall = null;
+        
+        const mockCad = {
+            text: (id, text, fontSize, fontFamily) => {
+                textCallCount++;
+                lastTextCall = { id, text, fontSize, fontFamily };
+                console.log('Worker text() called:', lastTextCall);
+                return Promise.resolve();
+            }
+        };
+        
+        GlobalVariables.cad = mockCad;
+        GlobalVariables.generateUniqueID = () => Math.random().toString(36);
+        
+        // Create a Text atom
+        const textAtom = new Text({});
+        
+        console.log('Created Text atom with inputs:', textAtom.inputs.map(i => i.name));
+        
+        // Test 1: Check if changing text input via setValue triggers updateValue
+        console.log('\n=== Test 1: Changing text input ===');
+        const textInput = textAtom.inputs.find(input => input.name === 'Text');
+        if (textInput) {
+            console.log('Initial text value:', textInput.getValue());
+            console.log('Initial call count:', textCallCount);
+            
+            // Simulate what happens when user changes text in Leva interface
+            textInput.setValue('Hello World');
+            
+            console.log('After setValue - call count:', textCallCount);
+            console.log('Last worker call:', lastTextCall);
+            
+            if (textCallCount === 0) {
+                console.error('❌ ISSUE CONFIRMED: setText did not trigger worker call');
+            } else {
+                console.log('✅ Text change triggered worker call');
+            }
+        }
+        
+        // Test 2: Check if changing font size input via setValue triggers updateValue  
+        console.log('\n=== Test 2: Changing font size input ===');
+        const fontSizeInput = textAtom.inputs.find(input => input.name === 'Font Size');
+        if (fontSizeInput) {
+            const initialCallCount = textCallCount;
+            console.log('Initial font size:', fontSizeInput.getValue());
+            console.log('Call count before change:', initialCallCount);
+            
+            fontSizeInput.setValue(20);
+            
+            console.log('After setValue - call count:', textCallCount);
+            
+            if (textCallCount === initialCallCount) {
+                console.error('❌ ISSUE CONFIRMED: Font size change did not trigger worker call');
+            } else {
+                console.log('✅ Font size change triggered worker call');
+            }
+        }
+        
+        // Test 3: Check if font family change works (this should work)
+        console.log('\n=== Test 3: Changing font family (should work) ===');
+        const initialCallCount = textCallCount;
+        textAtom.fontFamily = 'ANTON';
+        textAtom.updateValue(); // This should work as it directly calls updateValue
+        
+        setTimeout(() => {
+            console.log('After font family change - call count:', textCallCount);
+            if (textCallCount > initialCallCount) {
+                console.log('✅ Direct updateValue() call works');
+            } else {
+                console.error('❌ Even direct updateValue() call failed');
+            }
+        }, 100);
+        
+    </script>
+</head>
+<body>
+    <h1>Text Atom Input Test</h1>
+    <p>Check the console for test results.</p>
+</body>
+</html>
