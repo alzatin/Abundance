@@ -174,6 +174,7 @@ export default class Gcode extends Atom {
       this.gcodeString = gcode;
       this.gcodeGenerated = true;
       GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
+      this.basicThreadValueProcessing();
       this.sendToRender();
     };
 
