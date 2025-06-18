@@ -958,6 +958,10 @@ export default class Molecule extends Atom {
 
             atom.updateValue();
             const flowCanvas = document.querySelector("#flow-canvas");
+            if (!flowCanvas) {
+              console.warn("Flow canvas element not found");
+              return;
+            }
             const mouseDownEvent = new MouseEvent("mousedown", {
               bubbles: true,
               cancelable: true,
