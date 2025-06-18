@@ -393,11 +393,14 @@ function CreateMode({
         }
       });
     }
-    filesObject["project.svg"] = finalSVG
-      ? finalSVG
-      : backupProjectSVG
-      ? backupProjectSVG
-      : "";
+    
+    // Only update project thumbnail if a new one has been generated successfully
+    const thumbnailToUse = finalSVG || backupProjectSVG;
+    if (thumbnailToUse) {
+      filesObject["project.svg"] = thumbnailToUse;
+    }
+    // If no thumbnail was generated, don't include project.svg in the commit
+    // This preserves the existing thumbnail in the repository
 
     setState(30);
 
