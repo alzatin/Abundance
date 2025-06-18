@@ -54,12 +54,15 @@ export default class Gcode extends Atom {
     this.addIO("input", "Passes", this, "number", 6);
     this.addIO("input", "Speed", this, "number", 500);
     this.addIO("input", "Cut Through", this, "number", 1);
+    this.addIO("input", "Part Name", this, "string", this.parent.name);
     //this.addIO("input", "tabs", this, "string", "true");
     //this.addIO("input", "safe height", this, "number", 6);
 
     this.addIO("output", "Gcode", this, "geometry", "");
 
     this.setValues(values);
+
+    this.partName = this.parent.name;
 
     // Initialize Kiri:Moto if not already initialized
     if (!GlobalVariables.kirimotoInitialized) {
@@ -93,6 +96,36 @@ export default class Gcode extends Atom {
   }
 
   /**
+   * Creates a callback function for when gcode is generated
+   * @returns {Function} The gcode callback function
+   */
+  _createGcodeCallback() {
+    return (gcode) => {
+      this.gcodeString = gcode;
+      this.gcodeGenerated = true;
+      GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
+      this.basicThreadValueProcessing();
+      this.sendToRender();
+    };
+  }
+
+  /**
+   * Generates gcode using Kirimoto with the current parameters
+   */
+  _generateGcode() {
+    const gcodeCallback = this._createGcodeCallback();
+    generateKirimoto(
+      this.stlURL, 
+      this.center, 
+      this.findIOValue("Tool Size"), 
+      this.findIOValue("Passes"), 
+      this.findIOValue("Speed"), 
+      this.findIOValue("Cut Through"), 
+      gcodeCallback
+    );
+  }
+
+  /**
    * Generate a layered outline of the part where the tool will cut
    */
   updateValue() {
@@ -114,6 +147,9 @@ export default class Gcode extends Atom {
                   (bounds.max[1] + bounds.min[1]) / 2,
                   (bounds.max[2] + bounds.min[2]) / 2,
                 ];
+                if(GlobalVariables.runMode) {
+                  this._generateGcode();
+                }
               });
             });
         })
@@ -140,31 +176,38 @@ export default class Gcode extends Atom {
 
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry") {
-          inputParams[input.name] = {
-            value: input.value,
-            disabled: checkConnector(),
-            onChange: (value) => {
-              input.setValue(value);
-            },
-            order: -2,
-          };
+          if (input.name == "Part Name") {
+            inputParams[this.uniqueID + input.name] = {
+              value: this.partName,
+              label: input.name,
+              disabled: checkConnector(),
+              onChange: (value) => {
+                if (input.value !== value) {
+                  input.setValue(value);
+                  this.partName = value;
+                }
+              },
+            };
+          } else {
+            inputParams[input.name] = {
+              value: input.value,
+              disabled: checkConnector(),
+              onChange: (value) => {
+                input.setValue(value);
+              },
+              order: -2,
+            };
+          }
         }
       });
     }
 
-    //A callback function for once the gcode is generated
-    const gcodeCallback = (gcode) => {
-      this.gcodeString = gcode;
-      this.gcodeGenerated = true;
-      GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
-      this.sendToRender();
-    };
+    inputParams["Generate Gcode"] = button(() => this._generateGcode(), {});
 
-    inputParams["Generate Gcode"] = button(() => generateKirimoto(this.stlURL, this.center, this.findIOValue("Tool Size"), this.findIOValue("Passes"), this.findIOValue("Speed"), this.findIOValue("Cut Through"), gcodeCallback), {});
-
-    inputParams["Download Gcode"] = button(() => {
+    const partName = this.findIOValue("Part Name") || this.partName || "output";
+    inputParams[`Download Gcode - ${partName}`] = button(() => {
       if (this.gcodeGenerated && this.gcodeString) {
-        downloadGcode(this.gcodeString);
+        downloadGcode(this.gcodeString, `${partName}.gcode`);
       } else {
         console.warn("No G-code available. Please generate G-code first.");
         // You could also show an alert or notification to the user here
@@ -173,6 +216,16 @@ export default class Gcode extends Atom {
     }, {});
 
     return inputParams;
+  }
+
+  /**
+   * Add the part name to the object which is saved for this molecule
+   */
+  serialize(offset = { x: 0, y: 0 }) {
+    var superSerialObject = super.serialize(offset);
+    superSerialObject.partName = this.partName;
+
+    return superSerialObject;
   }
 
 }
