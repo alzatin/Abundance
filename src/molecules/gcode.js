@@ -146,6 +146,10 @@ export default class Gcode extends Atom {
           GlobalVariables.cad
             .downExport(this.uniqueID+1, "STL")
             .then((result) => {
+              //Delete anything previously stored
+              if (this.stlURL) {
+                URL.revokeObjectURL(this.stlURL); // Clean up the previous URL
+              }
               this.stlURL = URL.createObjectURL(result); // Store the STL URL
               GlobalVariables.cad.getBoundingBox(this.uniqueID+1).then((bounds) => {
                 this.center = [
