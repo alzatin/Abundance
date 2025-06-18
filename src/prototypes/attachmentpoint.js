@@ -302,7 +302,11 @@ export default class AttachmentPoint {
     if (this.type == "input") {
       this.x = this.parentMolecule.x - this.parentMolecule.radius;
     } else {
-      this.x = this.parentMolecule.x + this.parentMolecule.radius;
+      if (this.parentMolecule.atomType == "Input") {
+        this.x = GlobalVariables.atomSize * 3.5;
+      } else {
+        this.x = this.parentMolecule.x + this.parentMolecule.radius;
+      }
     }
     [this.x, this.y] = GlobalVariables.constrainToCanvasBorders(this.x, this.y);
   }
