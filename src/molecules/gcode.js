@@ -67,7 +67,6 @@ export default class Gcode extends Atom {
     // Initialize Kiri:Moto if not already initialized
     if (!GlobalVariables.kirimotoInitialized) {
       initKiriMoto();
-      GlobalVariables.kirimotoInitialized = true;
     }
 
     this.stlURL = null; // Store the STL URL
@@ -113,6 +112,13 @@ export default class Gcode extends Atom {
    * Generates gcode using Kirimoto with the current parameters
    */
   _generateGcode() {
+    if (!GlobalVariables.kirimotoInitialized) {
+      // If Kirimoto is not initialized, wait 500ms and try again
+      setTimeout(() => this._generateGcode(), 500);
+      console.log("Waiting for Kirimoto to initialize...");
+      return;
+    }
+    
     const gcodeCallback = this._createGcodeCallback();
     generateKirimoto(
       this.stlURL, 
@@ -147,7 +153,7 @@ export default class Gcode extends Atom {
                   (bounds.max[1] + bounds.min[1]) / 2,
                   (bounds.max[2] + bounds.min[2]) / 2,
                 ];
-                if(GlobalVariables.runMode) {
+                if(window.location.pathname.includes('/run/')) {
                   this._generateGcode();
                 }
               });
