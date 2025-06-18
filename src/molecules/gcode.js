@@ -117,6 +117,16 @@ export default class Gcode extends Atom {
                   (bounds.max[1] + bounds.min[1]) / 2,
                   (bounds.max[2] + bounds.min[2]) / 2,
                 ];
+                if(GlobalVariables.runMode) {
+                  const gcodeCallback = (gcode) => {
+                    this.gcodeString = gcode;
+                    this.gcodeGenerated = true;
+                    GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
+                    this.basicThreadValueProcessing();
+                    this.sendToRender();
+                  };
+                  generateKirimoto(this.stlURL, this.center, this.findIOValue("Tool Size"), this.findIOValue("Passes"), this.findIOValue("Speed"), this.findIOValue("Cut Through"), gcodeCallback);
+                }
               });
             });
         })
