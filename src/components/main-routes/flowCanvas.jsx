@@ -220,9 +220,7 @@ export default memo(function FlowCanvas({
   };
 
   const keyUp = (e) => {
-    console.log("Key released: ", e.key);
     if (e.key == "Control" || e.key == "Meta") {
-      console.log("Control key released");
       GlobalVariables.ctrlDown = false;
     }
   };
