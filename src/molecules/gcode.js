@@ -147,7 +147,7 @@ export default class Gcode extends Atom {
                   (bounds.max[1] + bounds.min[1]) / 2,
                   (bounds.max[2] + bounds.min[2]) / 2,
                 ];
-                if(GlobalVariables.runMode) {
+                if(window.location.pathname.includes('/run/')) {
                   this._generateGcode();
                 }
               });

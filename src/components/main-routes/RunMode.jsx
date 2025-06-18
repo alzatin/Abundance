@@ -77,7 +77,6 @@ function runMode({
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;
     GlobalVariables.c = canvasRef.current.getContext("2d");
-    GlobalVariables.runMode = true;
 
     /** Only run loadproject() if the project is different from what is already loaded and clear screen */
     if (GlobalVariables.currentRepo) {
