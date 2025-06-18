@@ -12,6 +12,8 @@ export const initKiriMoto = () => {
   script.onload = () => {
     if (window.kiri) {
       kiriEngine = window.kiri.newEngine();
+      console.log("Kiri:Moto script loaded successfully");
+      GlobalVariables.kirimotoInitialized = true; // Set a flag to indicate Kiri:Moto is initialized
     }
   };
 
