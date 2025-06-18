@@ -302,7 +302,11 @@ class GlobalVariables {
      */
     this.atomSize = (() => {
       const storedSize = localStorage.getItem("atomSize");
-      return storedSize ? parseFloat(storedSize) : 1 / 60;
+      return storedSize
+        ? parseFloat(storedSize)
+        : this.isMobile()
+        ? 1 / 30
+        : 1 / 65;
     })();
 
     const math = create(all); //What does this do? I think it is used to evalue strings as math
