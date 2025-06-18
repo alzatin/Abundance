@@ -96,6 +96,36 @@ export default class Gcode extends Atom {
   }
 
   /**
+   * Creates a callback function for when gcode is generated
+   * @returns {Function} The gcode callback function
+   */
+  _createGcodeCallback() {
+    return (gcode) => {
+      this.gcodeString = gcode;
+      this.gcodeGenerated = true;
+      GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
+      this.basicThreadValueProcessing();
+      this.sendToRender();
+    };
+  }
+
+  /**
+   * Generates gcode using Kirimoto with the current parameters
+   */
+  _generateGcode() {
+    const gcodeCallback = this._createGcodeCallback();
+    generateKirimoto(
+      this.stlURL, 
+      this.center, 
+      this.findIOValue("Tool Size"), 
+      this.findIOValue("Passes"), 
+      this.findIOValue("Speed"), 
+      this.findIOValue("Cut Through"), 
+      gcodeCallback
+    );
+  }
+
+  /**
    * Generate a layered outline of the part where the tool will cut
    */
   updateValue() {
@@ -118,14 +148,7 @@ export default class Gcode extends Atom {
                   (bounds.max[2] + bounds.min[2]) / 2,
                 ];
                 if(GlobalVariables.runMode) {
-                  const gcodeCallback = (gcode) => {
-                    this.gcodeString = gcode;
-                    this.gcodeGenerated = true;
-                    GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
-                    this.basicThreadValueProcessing();
-                    this.sendToRender();
-                  };
-                  generateKirimoto(this.stlURL, this.center, this.findIOValue("Tool Size"), this.findIOValue("Passes"), this.findIOValue("Speed"), this.findIOValue("Cut Through"), gcodeCallback);
+                  this._generateGcode();
                 }
               });
             });
@@ -179,16 +202,7 @@ export default class Gcode extends Atom {
       });
     }
 
-    //A callback function for once the gcode is generated
-    const gcodeCallback = (gcode) => {
-      this.gcodeString = gcode;
-      this.gcodeGenerated = true;
-      GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
-      this.basicThreadValueProcessing();
-      this.sendToRender();
-    };
-
-    inputParams["Generate Gcode"] = button(() => generateKirimoto(this.stlURL, this.center, this.findIOValue("Tool Size"), this.findIOValue("Passes"), this.findIOValue("Speed"), this.findIOValue("Cut Through"), gcodeCallback), {});
+    inputParams["Generate Gcode"] = button(() => this._generateGcode(), {});
 
     const partName = this.findIOValue("Part Name") || this.partName || "output";
     inputParams[`Download Gcode - ${partName}`] = button(() => {
