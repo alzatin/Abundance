@@ -24,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - run: git init
       - name: Checkout
         uses: actions/checkout@v4.2.2
       - name: Set up Node
