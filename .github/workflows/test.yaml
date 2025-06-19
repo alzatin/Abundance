@@ -46,8 +46,6 @@ jobs:
       - name: Comment Webpage Screenshot
         uses: opengisch/comment-pr-with-images@upload_only
         with:
-          # required: Comma seperated list of files to upload.
           images: "Puppet/images/main.png"
-          # optional: The action will create a new branch and
-          # upload the screenshots to that branch.
-          upload_to: imgur #github_branch # Or, imgur
+          upload_to: github_branch
+          github_token: ${{ secrets.GITHUB_TOKEN }}
