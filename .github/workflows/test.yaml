@@ -51,4 +51,4 @@ jobs:
           images: "Puppet/images/main.png"
           # optional: The action will create a new branch and
           # upload the screenshots to that branch.
-          upload_to: github_branch # Or, imgur
+          upload_to: imgur #github_branch # Or, imgur
