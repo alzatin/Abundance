@@ -72,11 +72,11 @@ async function loadPuppeteerAndExec(browser, date) {
       selector
     );
     await page.screenshot({
-      path: `./artifacts/Puppet/images/${projectName}-Deployed.png`,
+      path: `Puppet/images/${projectName}-Deployed.png`,
     });
 
     console.log(
-      `Screenshot: ./artifacts/Puppet/images/${projectName}-Deployed-${date}.png`
+      `Screenshot: Puppet/images/${projectName}-Deployed-${date}.png`
     );
   }
   // Navigate to main.html
@@ -84,6 +84,6 @@ async function loadPuppeteerAndExec(browser, date) {
   await page.goto(`file:${path.join(__dirname, "main.html")}`);
   console.log("navigated to: main.html");
   await page.screenshot({
-    path: `./artifacts/Puppet/images/main.png`,
+    path: `Puppet/images/main.png`,
   });
 }
