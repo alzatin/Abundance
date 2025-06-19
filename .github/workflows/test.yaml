@@ -48,4 +48,3 @@ jobs:
         with:
           images: "Puppet/images/main.png"
           upload_to: github_branch
-          github_token: ${{ secrets.GITHUB_TOKEN }}
