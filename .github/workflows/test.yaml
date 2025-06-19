@@ -24,9 +24,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - run: git init
       - name: Checkout
         uses: actions/checkout@v4.2.2
+      - name: Configure Git Safe Directory
+        run: git config --global --add safe.directory /github/workspace
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -50,8 +51,3 @@ jobs:
           # optional: The action will create a new branch and
           # upload the screenshots to that branch.
           upload_to: github_branch # Or, imgur
-      - name: Upload screenshot
-        uses: actions/upload-artifact@v4
-        with:
-          name: puppeteer-screenshot
-          path: Puppet/images/main.png
