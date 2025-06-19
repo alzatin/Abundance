@@ -41,6 +41,14 @@ jobs:
         run: npm start &
       - name: Run Tests
         run: npm test
+      - name: Comment Webpage Screenshot
+        uses: opengisch/comment-pr-with-images@upload_only
+        with:
+          # required: Comma seperated list of files to upload.
+          images: "Puppet/images/main.png"
+          # optional: The action will create a new branch and
+          # upload the screenshots to that branch.
+          upload_to: github_branch # Or, imgur
       - name: Upload screenshot
         uses: actions/upload-artifact@v4
         with:
