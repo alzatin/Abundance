@@ -681,7 +681,6 @@ async function AssemblyMap(assemblyId, callbackFn) {
       } 
       // This is a branch node (an assembly)
       else {
-        // Process all children first
         const newGeometry = await Promise.all(
           node.geometry.map(async (child) => {
             return await processNode(child, depth + 1);
@@ -711,6 +710,15 @@ async function AssemblyMap(assemblyId, callbackFn) {
   }
 }
 
+
+async function AssemblyIterable(assemblyId) {
+  const result = [];
+  actOnLeafs(toGeometry(assemblyId), (leaf) => {
+    result.push(leaf);
+  });
+  // TODO: when we typescriptify things, this should be a read-only list.
+  return result;
+}
 
 async function AssemblyReduce(assemblyId, accumulatorFn, initialValue) {
   try {
@@ -830,8 +838,8 @@ async function code(targetID, code, argumentsArray) {
     // the code molecule.
     validateUserCode(code);
 
-    let keys1 = ["Rotate", "Move", "Assembly", "Intersect", "AssemblyMap", "AssemblyReduce", "PrintLibrary", "library", "replicad"];
-    let inputValues = [Rotate, Move, Assembly, Intersect, AssemblyMap, AssemblyReduce, PrintLibrary, library, replicad];  
+    let keys1 = ["Rotate", "Move", "Assembly", "Intersect", "CutAssembly", "AssemblyMap", "AssemblyReduce", "AssemblyIterable", "PrintLibrary", "library", "replicad"];
+    let inputValues = [Rotate, Move, Assembly, Intersect, cutAssembly, AssemblyMap, AssemblyReduce, AssemblyIterable, PrintLibrary, library, replicad];  
     for (const [key, value] of Object.entries(argumentsArray)) {
       // Sanitize parameter names to prevent injection
       if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)) {
@@ -1975,8 +1983,7 @@ function validateAssembly(partId, part, depth = 0) {
  * Performs a boolean cut operation on an assembly or part with one or more cutting geometries.
  *
  * @param {Object} partToCut - The library object (part or assembly) that will be cut
- * @param {string[]} cuttingParts - Array of library IDs for geometries that will cut the part
- * @param {string} assemblyID - The ID to use for the resulting assembly
+ * @param {Object[]} cuttingParts - Array of geometries that will cut the part
  * @returns {Object} - A new object containing either a single cut part or an assembly of cut parts
  *
  * This function handles cutting operations on complex hierarchical structures:
@@ -1986,7 +1993,7 @@ function validateAssembly(partId, part, depth = 0) {
  * - Avoids unnecessary operations by checking bounding box intersections
  * - Preserves the original assembly structure while applying cuts
  */
-function cutAssembly(partToCut, cuttingParts, assemblyID) {
+function cutAssembly(partToCut, cuttingParts) {
   try {
     //If the partToCut is an assembly pass each part back into cutAssembly function to be cut separately
     if (isAssembly(partToCut)) {
@@ -1994,7 +2001,7 @@ function cutAssembly(partToCut, cuttingParts, assemblyID) {
       let assemblyCut = [];
       assemblyToCut.forEach((part) => {
         // make new assembly from cut parts
-        assemblyCut.push(cutAssembly(part, cuttingParts, assemblyID));
+        assemblyCut.push(cutAssembly(part, cuttingParts));
       });
 
       let subID = generateUniqueID();
@@ -2016,7 +2023,7 @@ function cutAssembly(partToCut, cuttingParts, assemblyID) {
       var partCutCopy = partToCut.geometry[0];
       cuttingParts.forEach((cuttingPart) => {
         // for each cutting part cut the part
-        partCutCopy = recursiveCut(partCutCopy, toGeometry(cuttingPart));
+        partCutCopy = recursiveCut(partCutCopy, cuttingPart);
       });
       /*   if the part is a compound return each solid as a new assembly */
       function getSolids(compound) {
@@ -2064,7 +2071,8 @@ function cutAssembly(partToCut, cuttingParts, assemblyID) {
       return library[newID];
     }
   } catch (e) {
-    throw new Error("Cut Assembly failed");
+    console.log(e)
+    throw new Error("Cut Assembly failed", e);
   }
 }
 
@@ -2121,7 +2129,8 @@ function recursiveCut(partToCut, cuttingPart) {
       }
     }
   } catch (e) {
-    throw new Error("Recursive Cut failed");
+    console.log(e)
+    throw new Error("Recursive Cut failed", e);
   }
 }
 
@@ -2148,7 +2157,7 @@ async function assembly(inputIDs, targetID = null) {
     if (all3D || all2D) {
       for (let i = 0; i < inputIDs.length; i++) {
         const geometry = toGeometry(inputIDs[i]);
-        assembly.push(cutAssembly(geometry, inputIDs.slice(i + 1), targetID));
+        assembly.push(cutAssembly(geometry, inputIDs.slice(i + 1).map(toGeometry), targetID));
         if (geometry.bom.length > 0) {
           bomAssembly.push(...geometry.bom);
         }
