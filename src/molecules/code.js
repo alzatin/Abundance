@@ -250,6 +250,34 @@ export default class Code extends Atom {
    * This function reads the string of inputs the user specifies and adds them to the atom.
    */
   parseInputs(ready = true) {
+/*    try {
+      const sourceFile = ts.createSourceFile(
+        "temp.ts",
+        this.code,
+        ts.ScriptTarget.Latest,
+        true
+      );
+
+      const atomFuncArguments = [];
+
+      const visitNode = (node) => {
+        if (ts.isFunctionDeclaration(node) && node.name?.text === "AtomFunc") {
+          node.parameters.forEach((param) => {
+            const paramName = param.name.getText();
+            const paramType = param.type ? param.type.getText() : "any";
+            atomFuncArguments.push({ name: paramName, type: paramType });
+          });
+        }
+        ts.forEachChild(node, visitNode);
+      };
+
+      visitNode(sourceFile);
+
+      console.log("AtomFunc arguments:", atomFuncArguments);
+    } catch (err) {
+      console.error("Error parsing TypeScript code:", err.message);
+    }*/
+
     //Parse this.code for the line "\nmain(input1, input2....) and add those as inputs if needed
     var variables = /Inputs:\[\s*([^)]+?)\s*\]/.exec(this.code);
 
@@ -327,15 +355,15 @@ export default class Code extends Atom {
     const saveCodeButton = document.getElementById("save-code-button");
     saveCodeButton.click();
 
+   // CreateMode.saveProject(CreateMode.setSaveState, "Code Save");
     document.getElementById("");
+  }
 
-    loadFile(type) {
-      var f = document.getElementById("fileLoaderInput");
-      f.accept = "." + type.toLowerCase();
-      f.click();
-      this.type = type;
-    }
-  
+  loadFile(type) {
+    var f = document.getElementById("fileLoaderInput");
+    f.accept = "." + type.toLowerCase();
+    f.click();
+    this.type = type;
   }
 
   /**
