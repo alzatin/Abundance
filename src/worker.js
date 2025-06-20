@@ -369,7 +369,7 @@ async function rotate(geom, x, y, z, targetID = null) {
     }
     return result;
   } else {
-    let result = actOnLeafs(toGeometry(inputGeometry), (leaf) => {
+    let result = actOnLeafs(input, (leaf) => {
       return {
         geometry: [leaf.geometry[0].clone().rotate(z, [0, 0, 0], [0, 0, 1])],
         tags: leaf.tags,
