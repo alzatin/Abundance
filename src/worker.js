@@ -312,8 +312,9 @@ async function move(geom, x, y, z, targetID = null) {
     );
     if (targetID) {
       library[targetID] = result;
+    } else {
+      return result;
     }
-    return result;
   } else {
     let result = actOnLeafs(
       geom,
@@ -330,9 +331,11 @@ async function move(geom, x, y, z, targetID = null) {
     );
     if (targetID) {
       library[targetID] = result;
+    } else {
+      return result;
     }
-    return result;
   }
+  return true;
 }
 
 /**
@@ -366,8 +369,9 @@ async function rotate(geom, x, y, z, targetID = null) {
     });
     if (targetID) {
       library[targetID] = result;
+    } else {
+      return result;
     }
-    return result;
   } else {
     let result = actOnLeafs(input, (leaf) => {
       return {
@@ -381,9 +385,11 @@ async function rotate(geom, x, y, z, targetID = null) {
     if (targetID) {
       library[targetID] = result;
       //library[inputID].plane.pivot(x, "X").pivot(y, "Y"); //@Alzatin what is this line for?
+    } else {
+      return result;
     }
-    return result;
   }
+  return true;
 }
 
 /**
