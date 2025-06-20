@@ -285,109 +285,105 @@ function isWireGeometry(inputs) {
 
 /**
  * Moves a geometry by the specified x, y, and z distances.
- * @param {string} inputID - The library ID of the geometry to move
+ * @param {Object|string} geom - The geometry to move, or library ID for same
  * @param {number} x - The distance to move along the x-axis
  * @param {number} y - The distance to move along the y-axis
  * @param {number} z - The distance to move along the z-axis
  * @param {string|null} targetID - The ID to store the result in the library. If null, the result is returned
- * @returns {Promise<boolean|Object>} A promise that resolves to true if targetID is provided, or the moved geometry if targetID is null
+ * @returns {Promise<Object>} A promise that resolves to the moved geometry
  */
-function move(inputID, x, y, z, targetID = null) {
-  return started.then(() => {
-    if (is3D(library[inputID])) {
-      let result = actOnLeafs(
-        library[inputID],
-        (leaf) => {
-          return {
-            geometry: [leaf.geometry[0].clone().translate(x, y, z)],
-            plane: leaf.plane,
-            tags: leaf.tags,
-            color: leaf.color,
-            bom: leaf.bom,
-          };
-        },
-        library[inputID].plane
-      );
-      if (targetID) {
-        library[targetID] = result;
-      } else {
-        return result;
-      }
-    } else {
-      let result = actOnLeafs(
-        library[inputID],
-        (leaf) => {
-          return {
-            geometry: [leaf.geometry[0].clone().translate([x, y])],
-            tags: leaf.tags,
-            plane: leaf.plane.translate([0, 0, z]),
-            color: leaf.color,
-            bom: leaf.bom,
-          };
-        },
-        library[inputID].plane.translate([0, 0, z])
-      );
-      if (targetID) {
-        library[targetID] = result;
-      } else {
-        return result;
-      }
+async function move(geom, x, y, z, targetID = null) {
+  await started;
+
+  geom = toGeometry(geom, "move-geometry");
+  if (is3D(geom)) {
+    let result = actOnLeafs(
+      geom,
+      (leaf) => {
+        return {
+          geometry: [leaf.geometry[0].clone().translate(x, y, z)],
+          plane: leaf.plane,
+          tags: leaf.tags,
+          color: leaf.color,
+          bom: leaf.bom,
+        };
+      },
+      geom.plane
+    );
+    if (targetID) {
+      library[targetID] = result;
     }
-    return true;
-  });
+    return result;
+  } else {
+    let result = actOnLeafs(
+      geom,
+      (leaf) => {
+        return {
+          geometry: [leaf.geometry[0].clone().translate([x, y])],
+          tags: leaf.tags,
+          plane: leaf.plane.translate([0, 0, z]),
+          color: leaf.color,
+          bom: leaf.bom,
+        };
+      },
+      geom.plane.translate([0, 0, z])
+    );
+    if (targetID) {
+      library[targetID] = result;
+    }
+    return result;
+  }
 }
 
 /**
  * Function to rotate a geometry around the x, y, and z axis
- * @param {string} inputGeometry - The geometry to rotate. Can be any type
+ * @param {Object|string} geom - The geometry to rotate or id for same
  * @param {number} x - The angle to rotate around the x axis
  * @param {number} y - The angle to rotate around the y axis
  * @param {number} z - The angle to rotate around the z axis
  * @param {string} targetID - The ID to store the result in. If it undefined the result will be returned instead
- * @returns {object} - The rotated geometry
+ * @returns {Promise<Object>} A promise that resolves to the rotated geometry
  **/
-function rotate(inputGeometry, x, y, z, targetID = null) {
-  let input = toGeometry(inputGeometry);
-  return started.then(() => {
-    if (is3D(input)) {
-      let result = actOnLeafs(input, (leaf) => {
-        return {
-          geometry: [
-            leaf.geometry[0]
-              .clone()
-              .rotate(x, [0, 0, 0], [1, 0, 0])
-              .rotate(y, [0, 0, 0], [0, 1, 0])
-              .rotate(z, [0, 0, 0], [0, 0, 1]),
-          ],
-          tags: leaf.tags,
-          plane: leaf.plane,
-          color: leaf.color,
-          bom: leaf.bom,
-        };
-      });
-      if (targetID) {
-        library[targetID] = result;
-      } else {
-        return result;
-      }
-    } else {
-      let result = actOnLeafs(toGeometry(inputGeometry), (leaf) => {
-        return {
-          geometry: [leaf.geometry[0].clone().rotate(z, [0, 0, 0], [0, 0, 1])],
-          tags: leaf.tags,
-          plane: leaf.plane.pivot(x, "X").pivot(y, "Y"),
-          color: leaf.color,
-          bom: leaf.bom,
-        };
-      });
-      if (targetID) {
-        library[targetID] = result;
-        //library[inputID].plane.pivot(x, "X").pivot(y, "Y"); //@Alzatin what is this line for?
-      } else {
-        return result;
-      }
+async function rotate(geom, x, y, z, targetID = null) {
+  let input = toGeometry(geom, "rotate-geometry");
+  await started;
+
+  if (is3D(input)) {
+    let result = actOnLeafs(input, (leaf) => {
+      return {
+        geometry: [
+          leaf.geometry[0]
+            .clone()
+            .rotate(x, [0, 0, 0], [1, 0, 0])
+            .rotate(y, [0, 0, 0], [0, 1, 0])
+            .rotate(z, [0, 0, 0], [0, 0, 1]),
+        ],
+        tags: leaf.tags,
+        plane: leaf.plane,
+        color: leaf.color,
+        bom: leaf.bom,
+      };
+    });
+    if (targetID) {
+      library[targetID] = result;
     }
-  });
+    return result;
+  } else {
+    let result = actOnLeafs(toGeometry(inputGeometry), (leaf) => {
+      return {
+        geometry: [leaf.geometry[0].clone().rotate(z, [0, 0, 0], [0, 0, 1])],
+        tags: leaf.tags,
+        plane: leaf.plane.pivot(x, "X").pivot(y, "Y"),
+        color: leaf.color,
+        bom: leaf.bom,
+      };
+    });
+    if (targetID) {
+      library[targetID] = result;
+      //library[inputID].plane.pivot(x, "X").pivot(y, "Y"); //@Alzatin what is this line for?
+    }
+    return result;
+  }
 }
 
 /**
@@ -473,8 +469,8 @@ function shrinkWrapSketches(targetID, inputIDs) {
 
 /**
  * Performs a boolean intersection operation between two geometries.
- * @param {string} input1ID - The ID of the first geometry or the geometry object itself
- * @param {string} input2ID - The ID of the second geometry or the geometry object itself
+ * @param {string|Object} input1ID - The ID of the first geometry or the geometry object itself
+ * @param {string|Object} input2ID - The ID of the second geometry or the geometry object itself
  * @param {string|null} targetID - The ID to store the result in the library. If null, the result is returned
  * @returns {Promise<boolean|Object>} A promise that resolves to true if targetID is provided, or the intersected geometry if targetID is null
  */
@@ -563,6 +559,7 @@ function extractAllTags(inputID, tag) {
 //---------------------Functions for the code atom---------------------
 
 /**
+<<<<<<< HEAD
  * A wrapper for the rotate function to allow it to be Rotate and used in the Code atom
  */
 async function Rotate(input, x, y, z) {
@@ -667,7 +664,20 @@ function validateUserCode(code) {
   }
 }
 
-async function AssemblyMap(assemblyId, callbackFn) {
+/** 
+ * AssemblyMap
+ * 
+ * Maps the given callbackFn to each leaf in the specified assembly. And returns
+ * a new assembly of the same structure and metadata, but with transformed leafs.
+ * If the provided assembly is a single entity, returns a transformed singular entity.
+ * 
+ * @param {*} assemblyId 
+ * @param {*} callbackFn - A function that takes a leaf and returns a new leaf.
+ * @returns a new assembly with the same structure and metadata as assemblyId,
+ * but where each leaf is the result of applying callbackFn to the
+ * corresponding leaf in the input assembly.
+ */
+async function assemblyMap(assemblyId, callbackFn) {
   try {
     const assembly = toGeometry(assemblyId);
 
@@ -711,44 +721,13 @@ async function AssemblyMap(assemblyId, callbackFn) {
 }
 
 
-async function AssemblyIterable(assemblyId) {
+async function assemblyAsIterable(assemblyId) {
   const result = [];
   actOnLeafs(toGeometry(assemblyId), (leaf) => {
     result.push(leaf);
   });
   // TODO: when we typescriptify things, this should be a read-only list.
   return result;
-}
-
-async function AssemblyReduce(assemblyId, accumulatorFn, initialValue) {
-  try {
-    const assembly = toGeometry(assemblyId);
-    let accumulator = initialValue;
-    // Helper function to process nodes recursively
-    async function processNode(node) {
-      // If this is a leaf node
-      if (node.geometry.length === 1 && node.geometry[0].geometry === undefined) {
-        // Apply callback and return result
-        accumulator = await accumulatorFn(accumulator, node);
-      } 
-      // This is a branch node (an assembly)
-      else {
-        // Process all children first
-        await Promise.all(
-          node.geometry.map(async (child) => {
-            return await processNode(child);
-          })
-        );
-      }
-    }
-
-    // Start processing from the root
-    await processNode(assembly);
-    return accumulator;
-  } catch (error) {
-    logError(error, "AssemblyReduce");
-    throw error;
-  }
 }
 
 function logError(error, context) {
@@ -838,8 +817,8 @@ async function code(targetID, code, argumentsArray) {
     // the code molecule.
     validateUserCode(code);
 
-    let keys1 = ["Rotate", "Move", "Assembly", "Intersect", "CutAssembly", "AssemblyMap", "AssemblyReduce", "AssemblyIterable", "PrintLibrary", "library", "replicad"];
-    let inputValues = [Rotate, Move, Assembly, Intersect, cutAssembly, AssemblyMap, AssemblyReduce, AssemblyIterable, PrintLibrary, library, replicad];  
+    let keys1 = ["Rotate", "Move", "Assembly", "Intersect", "CutAssembly", "AssemblyMap", "AssemblyAsIterable", "library", "replicad"];
+    let inputValues = [rotate, move, assembly, intersect, cutAssembly, assemblyMap, assemblyAsIterable, library, replicad];
     for (const [key, value] of Object.entries(argumentsArray)) {
       // Sanitize parameter names to prevent injection
       if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)) {
@@ -2139,8 +2118,8 @@ function recursiveCut(partToCut, cuttingPart) {
  * Geometries will cut all geometries below them in the list to make sure that no parts intersect
  * If the targetID is defined, the assembly will be stored in the library under that ID, otherwise it will be returned
  */
-async function assembly(inputIDs, targetID = null) {
-  if (!Array.isArray(inputIDs) || inputIDs.length === 0) {
+async function assembly(geometries, targetID = null) {
+  if (!Array.isArray(geometries) || geometries.length === 0) {
     throw new Error("inputIDs must be a non-empty array");
   }
 
@@ -2149,27 +2128,27 @@ async function assembly(inputIDs, targetID = null) {
   let assembly = [];
   let bomAssembly = [];
 
-  if (inputIDs.length > 1) {
-    const all3D = inputIDs.every((inputID) => is3D(toGeometry(inputID)));
-    console.log("all3D: " + inputIDs.map((inputID) => is3D(toGeometry(inputID))));
-    const all2D = inputIDs.every((inputID) => !is3D(toGeometry(inputID)));
+  if (geometries.length > 1) {
+    const all3D = geometries.every((inputID) => is3D(toGeometry(inputID)));
+    console.log("all3D: " + geometries.map((inputID) => is3D(toGeometry(inputID))));
+    const all2D = geometries.every((inputID) => !is3D(toGeometry(inputID)));
 
     if (all3D || all2D) {
-      for (let i = 0; i < inputIDs.length; i++) {
-        const geometry = toGeometry(inputIDs[i]);
-        assembly.push(cutAssembly(geometry, inputIDs.slice(i + 1).map(toGeometry), targetID));
+      for (let i = 0; i < geometries.length; i++) {
+        const geometry = toGeometry(geometries[i]);
+        assembly.push(cutAssembly(geometry, geometries.slice(i + 1).map(toGeometry), targetID));
         if (geometry.bom.length > 0) {
           bomAssembly.push(...geometry.bom);
         }
       }
     } else {
-      console.trace("assembly error. inputs: " + inputIDs);
+      console.trace("assembly error. inputs: " + geometries);
       throw new Error(
         "Assemblies must be composed from only sketches OR only solids"
       );
     }
   } else {
-    const geometry = toGeometry(inputIDs[0]);
+    const geometry = toGeometry(geometries[0]);
     assembly.push(geometry);
     if (geometry.bom.length > 0) {
       bomAssembly.push(...geometry.bom);
