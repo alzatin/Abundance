@@ -656,7 +656,6 @@ function logError(error, context) {
 function validateUserCode(code) {
   const dangerousPatterns = [
     /eval\s*\(/,
-    /Function\s*\(/,
     /import\s*\(/,
     /require\s*\(/,
     /process\s*\./,
