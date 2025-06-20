@@ -252,14 +252,6 @@ export default class Code extends Atom {
     }
   }
 
-  alertingErrorHandler() {
-    return (err) => {
-      this.processing = false;
-      console.log(err);
-      this.setAlert(err.message);
-    };
-  }
-
 
   /**
    * Override the standard basic thread processing function to allow passing of numbers or geometry depending on what we have
