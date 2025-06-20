@@ -355,6 +355,16 @@ export default class Code extends Atom {
   saveCode() {
     const saveCodeButton = document.getElementById("save-code-button");
     saveCodeButton.click();
+
+    document.getElementById("");
+
+    loadFile(type) {
+      var f = document.getElementById("fileLoaderInput");
+      f.accept = "." + type.toLowerCase();
+      f.click();
+      this.type = type;
+    }
+  
   }
 
   loadFile(type) {

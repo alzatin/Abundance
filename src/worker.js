@@ -768,6 +768,45 @@ function logError(error, context) {
 }
 
 /**
+ * Validates that user-provided code doesn't contain dangerous patterns
+ * @param {string} code - The JavaScript code string to validate
+ * @returns {boolean} True if code appears safe, throws error if dangerous patterns detected
+ */
+function validateUserCode(code) {
+  const dangerousPatterns = [
+    /eval\s*\(/,
+    /Function\s*\(/,
+    /import\s*\(/,
+    /require\s*\(/,
+    /process\s*\./,
+    /global\s*\./,
+    /window\s*\./,
+    /document\s*\./,
+    /XMLHttpRequest/,
+    /fetch\s*\(/,
+    /localStorage/,
+    /sessionStorage/,
+    /IndexedDB/,
+    /WebSocket/,
+    /Worker\s*\(/,
+    /setTimeout\s*\(/,
+    /setInterval\s*\(/,
+    /__proto__/,
+    /constructor/,
+    /prototype/,
+  ];
+
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(code)) {
+      throw new Error(`Code contains potentially dangerous pattern: ${pattern.source}`);
+    }
+  }
+
+  return true;
+}
+
+
+/**
  * Executes user-provided code in the worker thread with access to predefined geometry functions.
  * @param {string} targetID - The unique identifier to store the code execution result in the library
  * @param {string} code - The JavaScript code string to execute
@@ -785,13 +824,14 @@ async function code(targetID, code, argumentsArray) {
     if (code.length > 50000) {
       throw new Error('Code too long (maximum 50,000 characters)');
     }
+
     // Validate code for dangerous patterns
     // TODO: we probably want to allow some of these but still need to warn about them before executing
     // the code molecule.
     validateUserCode(code);
 
-    let keys1 = ["Rotate", "Move", "Assembly", "Intersect", "library", "replicad"];
-    let inputValues = [Rotate, Move, Assembly, Intersect, library, replicad];  
+    let keys1 = ["Rotate", "Move", "Assembly", "Intersect", "AssemblyMap", "AssemblyReduce", "PrintLibrary", "library", "replicad"];
+    let inputValues = [Rotate, Move, Assembly, Intersect, AssemblyMap, AssemblyReduce, PrintLibrary, library, replicad];  
     for (const [key, value] of Object.entries(argumentsArray)) {
       // Sanitize parameter names to prevent injection
       if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)) {
