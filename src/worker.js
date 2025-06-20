@@ -2023,7 +2023,6 @@ async function assembly(geometries, targetID = null) {
 
   if (geometries.length > 1) {
     const all3D = geometries.every((inputID) => is3D(toGeometry(inputID)));
-    console.log("all3D: " + geometries.map((inputID) => is3D(toGeometry(inputID))));
     const all2D = geometries.every((inputID) => !is3D(toGeometry(inputID)));
 
     if (all3D || all2D) {
