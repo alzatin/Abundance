@@ -618,7 +618,6 @@ function validateUserCode(code) {
     // TODO(tristan): we may not actually want to ban all of these.
     // but leaving them for now, until we have a way to warn and override
     /eval\s*\(/,
-    /Function\s*\(/,
     /import\s*\(/,
     /require\s*\(/,
     /process\s*\./,
