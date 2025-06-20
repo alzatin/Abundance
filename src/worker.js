@@ -35,7 +35,7 @@ const started = init();
  * A function which converts any input into Abundance style geometry. Input can be a library ID, an abundance object, or a single geometry object.
  * This is useful for allowing our functions to work within the Code atom or within the flow canvas.
  */
-function toGeometry(input) {
+function toGeometry(input, name = "geometry"){ 
   //If the input is a library ID we look it up
   if (typeof input === "string" || typeof input === "number") {
     return library[input];
@@ -44,14 +44,22 @@ function toGeometry(input) {
   else if (input.geometry) {
     return input;
   }
-  //Else we build an abundance object from the input
-  else {
+
+  // else check if it's a raw geometry object
+  const raw_type = input?._wrapped?.$$?.ptrType?.name
+  if (raw_type && raw_type instanceof String && raw_type.startsWith("TopoDS")) {
+    // If it's a raw geometry object, we wrap it in an abundance object
     return {
       geometry: [input],
       tags: [],
       color: defaultColor,
       bom: [],
     };
+  } else {
+    // If it's something else, we throw an error
+    throw new Error(
+      name + " value cannot be interpreted as geometry."
+    );
   }
 }
 
@@ -471,13 +479,14 @@ function shrinkWrapSketches(targetID, inputIDs) {
  * @returns {Promise<boolean|Object>} A promise that resolves to true if targetID is provided, or the intersected geometry if targetID is null
  */
 function intersect(input1ID, input2ID, targetID = null) {
-  let inputGeometry1 = toGeometry(input1ID);
-  let inputGeometry2 = toGeometry(input2ID);
+  let inputGeometry1 = toGeometry(input1ID, "geometry1");
+  let inputGeometry2 = toGeometry(input2ID, "geometry2");
   return started.then(() => {
     let generatedAssembly = actOnLeafs(inputGeometry1, (leaf) => {
       const shapeToIntersectWith = digFuse(inputGeometry2);
+      const newGeom = leaf.geometry[0].clone().intersect(shapeToIntersectWith);
       return {
-        geometry: [leaf.geometry[0].clone().intersect(shapeToIntersectWith)],
+        geometry: [newGeom],
         tags: leaf.tags,
         color: leaf.color,
         plane: leaf.plane,
@@ -608,6 +617,19 @@ async function Intersect(input1, input2) {
   }
 }
 
+async function PrintLibrary() {
+  await started;
+  console.log("Library contents:");
+  for (const [key, value] of Object.entries(library)) {
+    console.log(`ID: ${key}:`);
+    AssemblyMap(key, (leaf, depth) => {
+      console.log(Array(depth * 2 + 1).join(" ") + JSON.stringify(leaf));
+      return leaf;
+    });
+  }
+  return true;
+}
+
 /**
  * Validates that user-provided code doesn't contain dangerous patterns
  * @param {string} code - The JavaScript code string to validate
@@ -643,8 +665,106 @@ function validateUserCode(code) {
       throw new Error(`Code contains potentially dangerous pattern: ${pattern.source}`);
     }
   }
+}
 
-  return true;
+async function AssemblyMap(assemblyId, callbackFn) {
+  try {
+    const assembly = toGeometry(assemblyId);
+
+    // Helper function to process nodes recursively
+    async function processNode(node, depth) {
+      // If this is a leaf node
+      if (node.geometry.length === 1 && node.geometry[0].geometry === undefined) {
+        // Apply callback and return result
+        let result = await callbackFn(node, depth);
+        return result;
+      } 
+      // This is a branch node (an assembly)
+      else {
+        // Process all children first
+        const newGeometry = await Promise.all(
+          node.geometry.map(async (child) => {
+            return await processNode(child, depth + 1);
+          })
+        );
+        
+        // Filter out any undefined results (in case callbackFn filters some nodes)
+        const filteredGeometry = newGeometry.filter(item => item !== undefined);
+        
+        // Return a new node with the same metadata but transformed children
+        return {
+          geometry: filteredGeometry,
+          tags: node.tags || [],
+          color: node.color,
+          plane: node.plane,
+          bom: node.bom || []
+        };
+      }
+    }
+
+    // Start processing from the root
+    const result = await processNode(assembly, 0);
+    return result;
+  } catch (error) {
+    logError(error, "AssemblyMap");
+    throw error;
+  }
+}
+
+
+async function AssemblyReduce(assemblyId, accumulatorFn, initialValue) {
+  try {
+    const assembly = toGeometry(assemblyId);
+    let accumulator = initialValue;
+    // Helper function to process nodes recursively
+    async function processNode(node) {
+      // If this is a leaf node
+      if (node.geometry.length === 1 && node.geometry[0].geometry === undefined) {
+        // Apply callback and return result
+        accumulator = await accumulatorFn(accumulator, node);
+      } 
+      // This is a branch node (an assembly)
+      else {
+        // Process all children first
+        await Promise.all(
+          node.geometry.map(async (child) => {
+            return await processNode(child);
+          })
+        );
+      }
+    }
+
+    // Start processing from the root
+    await processNode(assembly);
+    return accumulator;
+  } catch (error) {
+    logError(error, "AssemblyReduce");
+    throw error;
+  }
+}
+
+function logError(error, context) {
+  console.warn("error from context: ", context)
+  if (error instanceof SyntaxError) {
+    console.error("SyntaxError encountered:", error.message);
+  } else if (error instanceof ReferenceError) {
+    console.error("ReferenceError encountered:", error.message);
+  } else {
+    console.error("An error occurred:", error.message);
+  }
+
+  // Log additional error details if available
+  if (error.stack) {
+    console.error("Stack trace:", error.stack);
+  }
+  if (error.lineNumber) {
+    console.error("Line number:", error.lineNumber);
+  }
+  if (error.columnNumber) {
+    console.error("Column number:", error.columnNumber);
+  }
+  console.log("full error:");
+  console.log(error);
 }
 
 /**
@@ -1772,6 +1892,9 @@ function areaApprox(bounds) {
  * @returns {boolean} True if the part is an assembly, false if it's a single part
  */
 function isAssembly(part) {
+  if (part == undefined || part.geometry == undefined) {
+    return false;
+  }
   if (part.geometry.length > 0) {
     if (part.geometry[0].geometry) {
       return true;
@@ -1780,6 +1903,31 @@ function isAssembly(part) {
     }
   } else {
     return false;
+  }
+}
+
+function validateAssembly(partId, part, depth = 0) {
+  const label = depth == 0 ? "Part id " + partId : "Subpart of " + partId + " depth: " + depth;
+  if (!part || typeof part !== "object") {
+    throw new Error(label + " is not an object: " + JSON.stringify(part));
+  }
+  if (!part.geometry) {
+    throw new Error(label + " is missing 'geometry'");
+  }
+  if (!Array.isArray(part.geometry)) {
+    throw new Error(label + " 'geometry' is not an array");
+  }
+  if (!part.tags || !Array.isArray(part.tags)) {
+    throw new Error(label + " is missing 'tags' or it is not an array");
+  }
+  if (!part.bom || !Array.isArray(part.bom)) {
+    throw new Error(label + " is missing 'bom' or it is not an array");
+  }
+  
+  if (isAssembly(part)) {
+    part.geometry.forEach((subPart) => {
+      validateAssembly(partId, subPart, depth + 1);
+    });
   }
 }
 
@@ -1954,6 +2102,7 @@ async function assembly(inputIDs, targetID = null) {
 
   if (inputIDs.length > 1) {
     const all3D = inputIDs.every((inputID) => is3D(toGeometry(inputID)));
+    console.log("all3D: " + inputIDs.map((inputID) => is3D(toGeometry(inputID))));
     const all2D = inputIDs.every((inputID) => !is3D(toGeometry(inputID)));
 
     if (all3D || all2D) {
@@ -1965,6 +2114,7 @@ async function assembly(inputIDs, targetID = null) {
         }
       }
     } else {
+      console.trace("assembly error. inputs: " + inputIDs);
       throw new Error(
         "Assemblies must be composed from only sketches OR only solids"
       );
@@ -2041,6 +2191,11 @@ function fusion(targetID, inputIDs) {
 function actOnLeafs(assembly, action, plane) {
   plane = plane || assembly.plane;
   //This is a leaf
+  if (assembly.geometry == undefined) {
+    console.log("empty geometry found:");
+    console.log(assembly);
+  }
+
   if (
     assembly.geometry.length == 1 &&
     assembly.geometry[0].geometry == undefined
