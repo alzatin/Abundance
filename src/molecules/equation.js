@@ -90,7 +90,7 @@ export default class Equation extends Atom {
   addAndRemoveInputs() {
     //Find all the letters in this equation
     var re = /[a-zA-Z]/g;
-    const variables = this.currentEquation.match(re);
+    const variables = this.currentEquation.match(re) || [];
 
     //Remove any inputs which are not needed
     const deleteExtraInputs = () => {
@@ -122,7 +122,7 @@ export default class Equation extends Atom {
 
       // Find all the letters in this equation
       var re = /[a-zA-Z]/g;
-      const variables = this.currentEquation.match(re);
+      const variables = this.currentEquation.match(re) || [];
       for (var variable in variables) {
         for (var i = 0; i < this.inputs.length; i++) {
           if (this.inputs[i].name == variables[variable]) {
