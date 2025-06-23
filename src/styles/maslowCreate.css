@@ -291,8 +291,20 @@ canvas {
   height: 25px;
 }
 
+#git_search li {
+  padding: 5px;
+  margin: 2px 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
 #git_search li:hover {
   background-color: #000;
+}
+
+#git_search li.selected {
+  background-color: var(--abundance-color-lightPurple) !important;
+  color: var(--abundance-color-fontGrey) !important;
 }
 
 /*gitmolecule info panel on hover gitmolecule from list*/
