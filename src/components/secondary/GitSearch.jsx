@@ -146,8 +146,9 @@ function GitSearch({
     const searchInputWidth = 210; // Width from CSS
     const margin = 20; // Minimum margin between elements
     
-    // Get viewport width
+    // Get viewport width and calculate maximum allowed panel position
     const viewportWidth = window.innerWidth;
+    const maxPanelLeft = viewportWidth - panelWidth - margin;
     
     // Calculate search input position (it's positioned at clickX)
     const searchInputLeft = clickX;
@@ -174,17 +175,21 @@ function GitSearch({
           // Fit on the right with proper spacing
           panelLeft = searchInputRight + margin;
         } else {
-          // Choose the side with more space, but ensure no overlap
+          // Choose the side with more space, but ensure we never exceed viewport
           if (leftSpace >= rightSpace) {
-            // Position at the leftmost safe position, even if it doesn't fit perfectly
+            // Position at the leftmost safe position
             panelLeft = margin;
           } else {
-            // Position starting from search input end, even if it goes slightly off-screen
-            panelLeft = searchInputRight + margin;
+            // Position as far right as possible without exceeding viewport
+            panelLeft = Math.min(searchInputRight + margin, maxPanelLeft);
           }
         }
       }
     }
+    
+    // Final safety check: ensure panel never extends beyond viewport
+    panelLeft = Math.min(panelLeft, maxPanelLeft);
+    panelLeft = Math.max(panelLeft, margin);
     
     return {
       left: panelLeft + "px",
