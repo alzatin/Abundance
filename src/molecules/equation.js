@@ -216,7 +216,7 @@ export default class Equation extends Atom {
    * Set the current equation to be a new value.
    */
   setEquation(newEquation) {
-    this.currentEquation = newEquation.trim(); //remove leading and trailing whitespace
+    this.currentEquation = String(newEquation).trim(); //convert to string first, then remove leading and trailing whitespace
     this.updateValue();
   }
 
