@@ -134,40 +134,6 @@ function GitSearch({
     // Don't reset selectedIndex here to allow keyboard navigation to continue
   };
 
-  // Calculate smart positioning for the search input to fit within viewport
-  const calculateSearchInputPosition = () => {
-    if (!GlobalVariables.lastClick) {
-      return { left: "75%", top: "37%" };
-    }
-
-    const clickX = GlobalVariables.lastClick[0];
-    const clickY = GlobalVariables.lastClick[1];
-    const searchInputWidth = 210; // Width from CSS
-    const margin = 20; // Minimum margin from screen edges
-    
-    // Get viewport width and calculate maximum allowed input position
-    const viewportWidth = window.innerWidth;
-    const maxInputLeft = viewportWidth - searchInputWidth - margin;
-    
-    // Use click position if there's enough space, otherwise adjust left
-    let inputLeft = clickX;
-    
-    // Check if input would go off the right edge
-    if (inputLeft + searchInputWidth > viewportWidth - margin) {
-      inputLeft = maxInputLeft;
-    }
-    
-    // Check if input would go off the left edge
-    if (inputLeft < margin) {
-      inputLeft = margin;
-    }
-    
-    return {
-      left: inputLeft + "px",
-      top: clickY + "px"
-    };
-  };
-
   // Calculate smart positioning for the info panel to avoid overlap
   const calculatePanelPosition = () => {
     if (!GlobalVariables.lastClick) {
@@ -184,9 +150,8 @@ function GitSearch({
     const viewportWidth = window.innerWidth;
     const maxPanelLeft = viewportWidth - panelWidth - margin;
     
-    // Calculate actual search input position (may be adjusted for viewport)
-    const searchInputPosition = calculateSearchInputPosition();
-    const searchInputLeft = parseInt(searchInputPosition.left);
+    // Calculate search input position (it's positioned at clickX)
+    const searchInputLeft = clickX;
     const searchInputRight = searchInputLeft + searchInputWidth;
     
     // Try to position panel to the left first (original behavior)
@@ -268,8 +233,12 @@ function GitSearch({
           <div
             id="git_search"
             style={{
-              position: "absolute",
-              ...calculateSearchInputPosition(),
+              top: GlobalVariables.lastClick
+                ? GlobalVariables.lastClick[1] + "px"
+                : "37%",
+              left: GlobalVariables.lastClick
+                ? GlobalVariables.lastClick[0] + "px"
+                : "75%",
             }}
           >
             <input
