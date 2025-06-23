@@ -157,27 +157,30 @@ function GitSearch({
     let panelLeft = clickX - panelWidth - margin;
     
     // Check if panel would go off the left edge or overlap with search input
-    if (panelLeft < margin || (panelLeft + panelWidth + margin) > searchInputLeft) {
-      // Position to the right of the search input instead
+    if (panelLeft < margin) {
+      // Try positioning to the right of the search input
       panelLeft = searchInputRight + margin;
       
       // Check if it goes off the right edge
       if (panelLeft + panelWidth > viewportWidth - margin) {
-        // If it doesn't fit on either side, position at the available space
-        // Try left side with minimum margin from edge
-        const leftSideSpace = searchInputLeft - margin;
-        const rightSideSpace = viewportWidth - searchInputRight - margin;
+        // Find the best available position
+        const leftSpace = searchInputLeft - margin;
+        const rightSpace = viewportWidth - searchInputRight - margin;
         
-        if (leftSideSpace >= panelWidth) {
+        if (leftSpace >= panelWidth) {
+          // Fit on the left with proper spacing
           panelLeft = margin;
-        } else if (rightSideSpace >= panelWidth) {
+        } else if (rightSpace >= panelWidth) {
+          // Fit on the right with proper spacing
           panelLeft = searchInputRight + margin;
         } else {
-          // Force fit in the larger available space
-          if (leftSideSpace > rightSideSpace) {
-            panelLeft = Math.max(margin, searchInputLeft - panelWidth - margin);
+          // Choose the side with more space, but ensure no overlap
+          if (leftSpace >= rightSpace) {
+            // Position at the leftmost safe position, even if it doesn't fit perfectly
+            panelLeft = margin;
           } else {
-            panelLeft = Math.min(searchInputRight + margin, viewportWidth - panelWidth - margin);
+            // Position starting from search input end, even if it goes slightly off-screen
+            panelLeft = searchInputRight + margin;
           }
         }
       }
