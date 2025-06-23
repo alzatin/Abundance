@@ -123,8 +123,6 @@ export default class Molecule extends Atom {
               atomType: "Input",
               uniqueID: GlobalVariables.generateUniqueID(),
             },
-            null,
-            GlobalVariables.availableTypes,
             true
           );
         }
