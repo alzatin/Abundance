@@ -134,6 +134,61 @@ function GitSearch({
     // Don't reset selectedIndex here to allow keyboard navigation to continue
   };
 
+  // Calculate smart positioning for the info panel to avoid overlap
+  const calculatePanelPosition = () => {
+    if (!GlobalVariables.lastClick) {
+      return { left: "50%", top: "35%" };
+    }
+
+    const clickX = GlobalVariables.lastClick[0];
+    const clickY = GlobalVariables.lastClick[1];
+    const panelWidth = 340; // Width from CSS
+    const searchInputWidth = 210; // Width from CSS
+    const margin = 20; // Minimum margin between elements
+    
+    // Get viewport width
+    const viewportWidth = window.innerWidth;
+    
+    // Calculate search input position (it's positioned at clickX)
+    const searchInputLeft = clickX;
+    const searchInputRight = searchInputLeft + searchInputWidth;
+    
+    // Try to position panel to the left first (original behavior)
+    let panelLeft = clickX - panelWidth - margin;
+    
+    // Check if panel would go off the left edge or overlap with search input
+    if (panelLeft < margin || (panelLeft + panelWidth + margin) > searchInputLeft) {
+      // Position to the right of the search input instead
+      panelLeft = searchInputRight + margin;
+      
+      // Check if it goes off the right edge
+      if (panelLeft + panelWidth > viewportWidth - margin) {
+        // If it doesn't fit on either side, position at the available space
+        // Try left side with minimum margin from edge
+        const leftSideSpace = searchInputLeft - margin;
+        const rightSideSpace = viewportWidth - searchInputRight - margin;
+        
+        if (leftSideSpace >= panelWidth) {
+          panelLeft = margin;
+        } else if (rightSideSpace >= panelWidth) {
+          panelLeft = searchInputRight + margin;
+        } else {
+          // Force fit in the larger available space
+          if (leftSideSpace > rightSideSpace) {
+            panelLeft = Math.max(margin, searchInputLeft - panelWidth - margin);
+          } else {
+            panelLeft = Math.min(searchInputRight + margin, viewportWidth - panelWidth - margin);
+          }
+        }
+      }
+    }
+    
+    return {
+      left: panelLeft + "px",
+      top: clickY + "px"
+    };
+  };
+
   const GitList = function () {
     if (isLoading) {
       return <li>Loading...</li>;
@@ -196,12 +251,7 @@ function GitSearch({
               className="GitProjectInfoPanel"
               style={{
                 position: "absolute",
-                top: GlobalVariables.lastClick
-                  ? GlobalVariables.lastClick[1] + "px"
-                  : "35%",
-                left: GlobalVariables.lastClick
-                  ? GlobalVariables.lastClick[0] - 375 + "px"
-                  : "50%",
+                ...calculatePanelPosition(),
               }}
             >
               <div className="GitInfoLeft">
