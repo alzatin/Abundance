@@ -60,25 +60,13 @@ export default (function ParamsEditor({
 
   if (activeAtom.atomType == "Equation") {
     /* Make an input for the equation itself */
-    // Ensure Leva always treats this as a text input by making sure
-    // the value never looks like a pure number
-    let displayValue = activeAtom.currentEquation;
-    const trimmedValue = displayValue.trim();
-    const isNumericLooking = /^[\d.-]+$/.test(trimmedValue);
-    
     inputParamsConfig[activeAtom.uniqueID + "currentequation"] = {
-      // If it looks like a number, prefix with a space to force text input
-      value: isNumericLooking ? ` ${trimmedValue}` : displayValue,
-      label: "Current Equation", 
+      value: activeAtom.currentEquation,
+      label: "Current Equation",
       disabled: false,
       onChange: (value) => {
-        // Remove any leading space we might have added for numeric values
-        const trimmedInput = value.trim();
-        const isInputNumeric = /^[\d.-]+$/.test(trimmedInput);
-        const cleanValue = isInputNumeric && value.startsWith(' ') ? trimmedInput : value;
-        
-        if (activeAtom.currentEquation !== cleanValue) {
-          activeAtom.setEquation(cleanValue);
+        if (activeAtom.currentEquation !== value) {
+          activeAtom.setEquation(value);
           setInputChanged(activeAtom.currentEquation);
         }
         set({
