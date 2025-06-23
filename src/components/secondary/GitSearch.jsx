@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
@@ -15,6 +15,7 @@ function GitSearch({
   const [lastKey, setLastKey] = useState("");
   const [yearShow, setYearShow] = useState("2024");
   const [panelItem, setPanelItem] = useState({});
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   //const [search, setSearch] = useState("");
   const debouncedSearchTerm = useDebounce(search, 200);
@@ -49,6 +50,24 @@ function GitSearch({
       return undefined;
     },
   });
+
+  // Update panel item when keyboard navigation changes selection
+  useEffect(() => {
+    if (data && data.repos && selectedIndex >= 0 && selectedIndex < data.repos.length) {
+      const selectedItem = data.repos[selectedIndex];
+      setPanelItem(selectedItem);
+      setIsHovering(true);
+    } else if (selectedIndex === -1) {
+      setPanelItem({});
+      setIsHovering(false);
+    }
+  }, [selectedIndex, data]);
+
+  // Reset selected index when search results change
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [data]);
+
   /**
    * Runs when a menu option is clicked to place a new atom from searching on GitHub.
    * @param {object} ev - The event triggered by clicking on a menu item.
@@ -69,15 +88,50 @@ function GitSearch({
   const handleChange = function (e) {
     searchBarValue = e.target.value.toLowerCase();
     setSearch(e.target.value.toLowerCase());
+    setSelectedIndex(-1); // Reset selection when search changes
+  };
+
+  const handleKeyDown = function (e) {
+    if (!data || !data.repos || data.repos.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex((prevIndex) => 
+          prevIndex < data.repos.length - 1 ? prevIndex + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex((prevIndex) => 
+          prevIndex > 0 ? prevIndex - 1 : data.repos.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedIndex >= 0 && selectedIndex < data.repos.length) {
+          placeGitHubMolecule(e, data.repos[selectedIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setSearchingGitHub(false);
+        setSearch("");
+        setIsHovering(false);
+        setSelectedIndex(-1);
+        break;
+    }
   };
 
   const handleMouseOver = (item, key) => {
     setPanelItem(item);
     setIsHovering(true);
+    setSelectedIndex(key); // Sync mouse hover with keyboard selection
   };
   const handleMouseOut = () => {
     setPanelItem({});
     setIsHovering(false);
+    // Don't reset selectedIndex here to allow keyboard navigation to continue
   };
 
   const GitList = function () {
@@ -91,13 +145,16 @@ function GitSearch({
       if (data.repos.length === 0) {
         return <li>No results found</li>;
       }
+
       return data.repos.map((item, key) => {
+        const isSelected = selectedIndex === key;
         return (
           <li
             onClick={(e) => placeGitHubMolecule(e, item)}
             key={item.id}
             onMouseEnter={() => handleMouseOver(item, key)}
             onMouseLeave={() => handleMouseOut()}
+            className={isSelected ? "selected" : ""}
           >
             {item.repoName}
           </li>
@@ -126,6 +183,7 @@ function GitSearch({
               id="menuInput"
               autoFocus
               onChange={handleChange}
+              onKeyDown={handleKeyDown}
               placeholder="Search for atom.."
               className="menu_search_canvas"
               autoComplete="off"
