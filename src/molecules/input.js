@@ -50,6 +50,24 @@ export default class Input extends Atom {
 
     this.radius = 1 / 75;
 
+    /**
+     * Flag indicating if the name text is currently truncated
+     * @type {boolean}
+     */
+    this.isTextTruncated = false;
+
+    /**
+     * Timer for tooltip delay
+     * @type {number}
+     */
+    this.tooltipTimer = null;
+
+    /**
+     * Reference to the tooltip DOM element
+     * @type {HTMLElement}
+     */
+    this.tooltipElement = null;
+
     this.addIO("output", "number or geometry", this, this.type, this.value);
 
     //Add a new input to the current molecule
@@ -66,8 +84,10 @@ export default class Input extends Atom {
     var ellipsis = "…";
     var ellipsisWidth = c.measureText(ellipsis).width;
     if (width <= maxWidth || width <= ellipsisWidth) {
+      this.isTextTruncated = false;
       return str;
     } else {
+      this.isTextTruncated = true;
       var len = str.length;
       while (width >= maxWidth - ellipsisWidth && len-- > 0) {
         str = str.substring(0, len);
@@ -164,6 +184,10 @@ export default class Input extends Atom {
    * Remove the input from the parent molecule, then delete the atom normally.
    */
   deleteNode(backgroundClickAfter = true, deletePath = true, silent = false) {
+    // Clean up tooltip
+    this.clearTooltipTimer();
+    this.hideTooltip();
+
     //Remove this input from the parent molecule
     if (typeof this.parent !== "undefined") {
       this.parent.removeIO("input", this.name, this.parent, silent);
@@ -183,6 +207,88 @@ export default class Input extends Atom {
       }
     });
     this.oldName = this.name;
+  }
+
+  /**
+   * Creates and shows the tooltip element
+   */
+  showTooltip(x, y) {
+    if (!this.isTextTruncated || !this.name || this.tooltipElement) {
+      return;
+    }
+
+    this.tooltipElement = document.createElement('div');
+    this.tooltipElement.className = 'tooltip';
+    this.tooltipElement.textContent = this.name;
+    this.tooltipElement.style.left = x + 'px';
+    this.tooltipElement.style.top = (y - 30) + 'px';
+    this.tooltipElement.style.display = 'block';
+    this.tooltipElement.style.padding = '4px 8px';
+    this.tooltipElement.style.borderRadius = '4px';
+    this.tooltipElement.style.whiteSpace = 'nowrap';
+    
+    document.body.appendChild(this.tooltipElement);
+  }
+
+  /**
+   * Hides and removes the tooltip element
+   */
+  hideTooltip() {
+    if (this.tooltipElement) {
+      document.body.removeChild(this.tooltipElement);
+      this.tooltipElement = null;
+    }
+  }
+
+  /**
+   * Override mouseMove to handle tooltip functionality
+   */
+  mouseMove(x, y) {
+    super.mouseMove(x, y);
+
+    // Only show tooltip if text is truncated
+    if (!this.isTextTruncated) {
+      this.clearTooltipTimer();
+      this.hideTooltip();
+      return;
+    }
+
+    // Check if mouse is over this input atom
+    let xInPixels = GlobalVariables.widthToPixels(this.x);
+    let yInPixels = GlobalVariables.heightToPixels(this.y);
+    let radiusInPixels = GlobalVariables.widthToPixels(this.radius);
+
+    var distFromClick = GlobalVariables.distBetweenPoints(
+      x,
+      xInPixels,
+      y,
+      yInPixels
+    );
+
+    if (distFromClick < radiusInPixels * 2) {
+      // Mouse is over the atom
+      if (!this.tooltipTimer) {
+        // Start timer for delayed tooltip
+        this.tooltipTimer = setTimeout(() => {
+          this.showTooltip(x, y);
+          this.tooltipTimer = null;
+        }, 1000); // 1 second delay
+      }
+    } else {
+      // Mouse is not over the atom
+      this.clearTooltipTimer();
+      this.hideTooltip();
+    }
+  }
+
+  /**
+   * Clears the tooltip timer
+   */
+  clearTooltipTimer() {
+    if (this.tooltipTimer) {
+      clearTimeout(this.tooltipTimer);
+      this.tooltipTimer = null;
+    }
   }
 
   /**
