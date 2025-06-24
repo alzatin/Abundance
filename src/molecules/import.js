@@ -188,6 +188,7 @@ export default class Import extends Atom {
         inputParams["Width"] = {
           value: this.SVGwidth, //href to the file
           label: "Width",
+          step: 0.01,
           onChange: (value) => {
             this.SVGwidth = value;
             this.updateValue();
