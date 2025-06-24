@@ -80,6 +80,11 @@ export default class Input extends Atom {
 
   /** Solution to canvas overflow https://stackoverflow.com/questions/10508988/html-canvas-text-overflow-ellipsis*/
   fittingString(c, str, maxWidth) {
+    if (!str) {
+      this.isTextTruncated = false;
+      return str || '';
+    }
+    
     var width = c.measureText(str).width;
     var ellipsis = "…";
     var ellipsisWidth = c.measureText(ellipsis).width;
@@ -207,6 +212,13 @@ export default class Input extends Atom {
       }
     });
     this.oldName = this.name;
+    
+    // Clear tooltip if name is no longer truncated
+    // Note: isTextTruncated will be updated in the next draw() call
+    // But we can hide tooltip immediately to avoid showing outdated info
+    if (this.tooltipElement) {
+      this.hideTooltip();
+    }
   }
 
   /**
