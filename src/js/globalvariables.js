@@ -282,6 +282,13 @@ class GlobalVariables {
      * @type {array}
      */
     this.recentMoleculeRepresentation = [];
+    
+    /**
+     * An array to track operation types for better undo handling.
+     * Each entry contains: { type: 'ADD'|'DELETE'|'MODIFY', timestamp: number, context: string }
+     * @type {array}
+     */
+    this.undoOperationHistory = [];
 
     /**
      * A string to indicate a stored user font for the canvas.
@@ -469,6 +476,37 @@ class GlobalVariables {
       return varName;
     }
   }
+
+  /**
+   * Saves the current state for undo functionality with operation type tracking
+   * @param {string} operationType - Type of operation ('ADD', 'DELETE', 'MODIFY')
+   * @param {string} context - Additional context about the operation
+   */
+  saveUndoState(operationType, context = '') {
+    if (!this.topLevelMolecule) {
+      return; // Can't save state if no top level molecule exists
+    }
+
+    const topLevelMoleculeCopy = JSON.stringify(
+      this.topLevelMolecule.serialize(),
+      null,
+      4
+    );
+
+    this.recentMoleculeRepresentation.push(topLevelMoleculeCopy);
+    this.undoOperationHistory.push({
+      type: operationType,
+      timestamp: Date.now(),
+      context: context
+    });
+
+    // Keep maximum of 5 undo states
+    if (this.recentMoleculeRepresentation.length > 5) {
+      this.recentMoleculeRepresentation.shift();
+      this.undoOperationHistory.shift();
+    }
+  }
+
   /**
    * Computes the distance between two points on a plane. This is a duplicate of the one in utils which should probably be deleted.
    * @param {number} x1 - The x cordinate of the first point.
