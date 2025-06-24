@@ -559,7 +559,10 @@ function RunNavigation({
           className=" run-navigation-button"
           id="Bill-button"
           onClick={() => {
-            console.log("open compiled bill of materials ");
+            var url =
+              GlobalVariables.currentRepo.html_url +
+              "/blob/master/BillOfMaterials.md";
+            window.open(url);
           }}
         >
           {billSvg}
