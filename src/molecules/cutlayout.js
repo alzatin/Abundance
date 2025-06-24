@@ -298,6 +298,7 @@ export default class CutLayout extends Atom {
           inputParams[this.uniqueID + "position" + part_counter] = {
             value: { x: placement.translate.x, y: placement.translate.y, z: placement.rotate },
             label: prepareLabel(index, part_num, totalSheets),
+            step: 0.01,
             onChange: (value, index) => {
                 const match = index.match(/position(\d+)/);
                 const indexNumber = match ? parseInt(match[1], 10) : null;
