@@ -217,11 +217,17 @@ export default class Input extends Atom {
       return;
     }
 
+    // Get canvas position to properly position tooltip
+    const canvas = GlobalVariables.canvas.current;
+    const canvasRect = canvas.getBoundingClientRect();
+
     this.tooltipElement = document.createElement('div');
     this.tooltipElement.className = 'tooltip';
     this.tooltipElement.textContent = this.name;
-    this.tooltipElement.style.left = x + 'px';
-    this.tooltipElement.style.top = (y - 30) + 'px';
+    
+    // Position tooltip relative to the page, not just the canvas
+    this.tooltipElement.style.left = (x + canvasRect.left) + 'px';
+    this.tooltipElement.style.top = (y + canvasRect.top - 35) + 'px';
     this.tooltipElement.style.display = 'block';
     this.tooltipElement.style.padding = '4px 8px';
     this.tooltipElement.style.borderRadius = '4px';
@@ -253,19 +259,17 @@ export default class Input extends Atom {
       return;
     }
 
-    // Check if mouse is over this input atom
+    // Check if mouse is over this input atom using the input's actual dimensions
     let xInPixels = GlobalVariables.widthToPixels(this.x);
     let yInPixels = GlobalVariables.heightToPixels(this.y);
-    let radiusInPixels = GlobalVariables.widthToPixels(this.radius);
+    
+    // Use the input's width and height instead of just radius
+    const isOverAtom = x >= xInPixels - (this.width || 100) / 2 && 
+                       x <= xInPixels + (this.width || 100) / 2 &&
+                       y >= yInPixels - (this.height || 30) / 2 && 
+                       y <= yInPixels + (this.height || 30) / 2;
 
-    var distFromClick = GlobalVariables.distBetweenPoints(
-      x,
-      xInPixels,
-      y,
-      yInPixels
-    );
-
-    if (distFromClick < radiusInPixels * 2) {
+    if (isOverAtom) {
       // Mouse is over the atom
       if (!this.tooltipTimer) {
         // Start timer for delayed tooltip
