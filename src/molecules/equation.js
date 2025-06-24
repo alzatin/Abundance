@@ -194,6 +194,7 @@ export default class Equation extends Atom {
           inputParams[input.name] = {
             value: input.value,
             disabled: checkConnector(),
+            step: 0.01,
             onChange: (value) => {
               input.setValue(value);
               setInputChanged(value);
