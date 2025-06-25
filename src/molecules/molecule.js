@@ -540,9 +540,12 @@ export default class Molecule extends Atom {
           this.awaitingPropagationFlag = true;
         }
 
-        this.compileBom().then((result) => {
-          this.compiledBom = result;
-        });
+        // Compile BOM at the top level to capture the entire project
+        if (GlobalVariables.topLevelMolecule) {
+          GlobalVariables.topLevelMolecule.compileBom().then((result) => {
+            GlobalVariables.topLevelMolecule.compiledBom = result;
+          });
+        }
         if (this.selected) {
           this.sendToRender();
         }
