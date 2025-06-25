@@ -10,6 +10,8 @@ function GitSearch({
   setSearch,
   isHovering,
   setIsHovering,
+  isShortcut,
+  setIsShortcutTriggered,
 }) {
   let searchBarValue = "";
   const [lastKey, setLastKey] = useState("");
@@ -56,10 +58,16 @@ function GitSearch({
     const localAtoms = getFilteredLocalAtoms(debouncedSearchTerm);
     const combinedResults = [...localAtoms];
     if (data && data.repos) {
-      combinedResults.push(...data.repos.map(repo => ({ ...repo, isLocal: false })));
+      combinedResults.push(
+        ...data.repos.map((repo) => ({ ...repo, isLocal: false }))
+      );
     }
-    
-    if (combinedResults.length > 0 && selectedIndex >= 0 && selectedIndex < combinedResults.length) {
+
+    if (
+      combinedResults.length > 0 &&
+      selectedIndex >= 0 &&
+      selectedIndex < combinedResults.length
+    ) {
       const selectedItem = combinedResults[selectedIndex];
       setPanelItem(selectedItem);
       setIsHovering(true);
@@ -81,9 +89,10 @@ function GitSearch({
   function placeGitHubMolecule(e, item) {
     GlobalVariables.currentMolecule.loadGithubMoleculeByName(item);
     setSearchingGitHub(false);
+    setIsShortcutTriggered(false);
     setSearch("");
     setIsHovering(false);
-    
+
     // Ensure canvas regains focus after placing molecule
     const flowCanvas = document.getElementById("flow-canvas");
     if (flowCanvas) {
@@ -99,8 +108,16 @@ function GitSearch({
   function placeLocalAtom(e, atomType) {
     GlobalVariables.currentMolecule.placeAtom(
       {
-        x: GlobalVariables.pixelsToWidth(GlobalVariables.lastClick ? GlobalVariables.lastClick[0] : window.innerWidth * 0.75),
-        y: GlobalVariables.pixelsToHeight(GlobalVariables.lastClick ? GlobalVariables.lastClick[1] : window.innerHeight * 0.37),
+        x: GlobalVariables.pixelsToWidth(
+          GlobalVariables.lastClick
+            ? GlobalVariables.lastClick[0]
+            : window.innerWidth * 0.75
+        ),
+        y: GlobalVariables.pixelsToHeight(
+          GlobalVariables.lastClick
+            ? GlobalVariables.lastClick[1]
+            : window.innerHeight * 0.37
+        ),
         parent: GlobalVariables.currentMolecule,
         atomType: atomType,
         uniqueID: GlobalVariables.generateUniqueID(),
@@ -109,8 +126,9 @@ function GitSearch({
     );
     setSearchingGitHub(false);
     setSearch("");
+    setIsShortcutTriggered(false);
     setIsHovering(false);
-    
+
     // Ensure canvas regains focus after placing atom
     const flowCanvas = document.getElementById("flow-canvas");
     if (flowCanvas) {
@@ -127,16 +145,16 @@ function GitSearch({
     if (!searchTerm || searchTerm.length < 1) {
       return [];
     }
-    
+
     const filteredAtoms = [];
     for (const key in GlobalVariables.availableTypes) {
       const atom = GlobalVariables.availableTypes[key];
-      if (atom.atomType && atom.atomType.toLowerCase().includes(searchTerm.toLowerCase())) {
+      if (atom.atomType?.toLowerCase().includes(searchTerm.toLowerCase())) {
         filteredAtoms.push({
           id: `local-${key}`,
           atomType: atom.atomType,
           atomCategory: atom.atomCategory || "General",
-          isLocal: true
+          isLocal: true,
         });
       }
     }
@@ -153,25 +171,27 @@ function GitSearch({
     const localAtoms = getFilteredLocalAtoms(debouncedSearchTerm);
     const combinedResults = [...localAtoms];
     if (data && data.repos) {
-      combinedResults.push(...data.repos.map(repo => ({ ...repo, isLocal: false })));
+      combinedResults.push(
+        ...data.repos.map((repo) => ({ ...repo, isLocal: false }))
+      );
     }
-    
+
     if (combinedResults.length === 0) return;
 
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
-        setSelectedIndex((prevIndex) => 
+        setSelectedIndex((prevIndex) =>
           prevIndex < combinedResults.length - 1 ? prevIndex + 1 : 0
         );
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
-        setSelectedIndex((prevIndex) => 
+        setSelectedIndex((prevIndex) =>
           prevIndex > 0 ? prevIndex - 1 : combinedResults.length - 1
         );
         break;
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         if (selectedIndex >= 0 && selectedIndex < combinedResults.length) {
           const selectedItem = combinedResults[selectedIndex];
@@ -182,9 +202,10 @@ function GitSearch({
           }
         }
         break;
-      case 'Escape':
+      case "Escape":
         e.preventDefault();
         setSearchingGitHub(false);
+        setIsShortcutTriggered(false);
         setSearch("");
         setIsHovering(false);
         setSelectedIndex(-1);
@@ -205,70 +226,80 @@ function GitSearch({
 
   // Calculate smart positioning for the info panel to avoid overlap
   const calculatePanelPosition = () => {
-    if (!GlobalVariables.lastClick) {
+    const gitSearchElement = document.getElementById("git_search");
+    if (!gitSearchElement) {
       return { left: "50%", top: "35%" };
+    }
+
+    const searchRect = gitSearchElement.getBoundingClientRect();
+    const panelWidth = 340; // Width from CSS
+    const margin = 30; // Minimum margin between elements
+
+    const viewportWidth = window.innerWidth;
+    const maxPanelLeft = viewportWidth - panelWidth - margin;
+
+    // Try to position panel to the right of the search box
+    let panelLeft = searchRect.right + margin;
+
+    // Check if it goes off the right edge
+    if (panelLeft + panelWidth > viewportWidth - margin) {
+      // Position to the left of the search box
+      panelLeft = searchRect.left - panelWidth - margin;
+    }
+
+    // Ensure panel does not extend beyond viewport
+    panelLeft = Math.min(panelLeft, maxPanelLeft);
+    panelLeft = Math.max(panelLeft, margin);
+
+    return {
+      left: panelLeft + "px",
+      top: searchRect.top + "px",
+    };
+  };
+
+  const calculateSearchPosition = (isShortcut) => {
+    if (isShortcut) {
+      const marginLeft = 30; // Minimum margin between elements
+      const marginTop = 10; // Minimum margin between elements
+      const searchWidth = 210; // Width from CSS
+      const searchHeight = 50; // Approximate height of the search box
+
+      const viewportWidth = window.innerWidth;
+      const canvasHeight = GlobalVariables.canvas.current.height;
+
+      return {
+        left: viewportWidth - searchWidth - marginLeft + "px",
+        top: canvasHeight - searchHeight - marginTop + "px",
+      };
+    }
+
+    if (!GlobalVariables.lastClick) {
+      return { left: "75%", top: "37%" };
     }
 
     const clickX = GlobalVariables.lastClick[0];
     const clickY = GlobalVariables.lastClick[1];
-    const panelWidth = 340; // Width from CSS
-    const searchInputWidth = 210; // Width from CSS
+    const searchWidth = 210; // Width from CSS
     const margin = 20; // Minimum margin between elements
-    
-    // Get viewport width and calculate maximum allowed panel position
+
     const viewportWidth = window.innerWidth;
-    const maxPanelLeft = viewportWidth - panelWidth - margin;
-    
-    // Calculate search input position (it's positioned at clickX)
-    const searchInputLeft = clickX;
-    const searchInputRight = searchInputLeft + searchInputWidth;
-    
-    // Try to position panel to the left first (original behavior)
-    let panelLeft = clickX - panelWidth - margin;
-    
-    // Check if panel would go off the left edge or overlap with search input
-    if (panelLeft < margin) {
-      // Try positioning to the right of the search input
-      panelLeft = searchInputRight + margin;
-      
-      // Check if it goes off the right edge
-      if (panelLeft + panelWidth > viewportWidth - margin) {
-        // Find the best available position
-        const leftSpace = searchInputLeft - margin;
-        const rightSpace = viewportWidth - searchInputRight - margin;
-        
-        if (leftSpace >= panelWidth) {
-          // Fit on the left with proper spacing
-          panelLeft = margin;
-        } else if (rightSpace >= panelWidth) {
-          // Fit on the right with proper spacing
-          panelLeft = searchInputRight + margin;
-        } else {
-          // Choose the side with more space, but ensure we never exceed viewport
-          if (leftSpace >= rightSpace) {
-            // Position at the leftmost safe position
-            panelLeft = margin;
-          } else {
-            // Position as far right as possible without exceeding viewport
-            panelLeft = Math.min(searchInputRight + margin, maxPanelLeft);
-          }
-        }
-      }
+    const maxLeft = viewportWidth - searchWidth - margin;
+
+    let left = clickX;
+    if (left + searchWidth > viewportWidth - margin) {
+      left = maxLeft;
     }
-    
-    // Final safety check: ensure panel never extends beyond viewport
-    panelLeft = Math.min(panelLeft, maxPanelLeft);
-    panelLeft = Math.max(panelLeft, margin);
-    
+    left = Math.max(left, margin);
+
     return {
-      left: panelLeft + "px",
-      top: clickY + "px"
+      left: left + "px",
+      top: clickY + "px",
     };
   };
 
   const GitList = function () {
     const localAtoms = getFilteredLocalAtoms(debouncedSearchTerm);
-    
+
     if (isLoading) {
       // Show local atoms even while loading GitHub results
       if (localAtoms.length > 0) {
@@ -283,16 +314,21 @@ function GitSearch({
               className={`local-atom ${isSelected ? "selected" : ""}`}
               title={`Local Atom - ${atom.atomCategory}`}
             >
-              {atom.atomType} <span className="atom-category">({atom.atomCategory})</span>
+              {atom.atomType}{" "}
+              <span className="atom-category">({atom.atomCategory})</span>
             </li>
           );
         });
-        items.push(<li key="loading" className="loading-item">Loading GitHub results...</li>);
+        items.push(
+          <li key="loading" className="loading-item">
+            Loading GitHub results...
+          </li>
+        );
         return items;
       }
       return <li>Loading...</li>;
     }
-    
+
     if (isError) {
       // Show local atoms even if GitHub search fails
       if (localAtoms.length > 0) {
@@ -307,29 +343,36 @@ function GitSearch({
               className={`local-atom ${isSelected ? "selected" : ""}`}
               title={`Local Atom - ${atom.atomCategory}`}
             >
-              {atom.atomType} <span className="atom-category">({atom.atomCategory})</span>
+              {atom.atomType}{" "}
+              <span className="atom-category">({atom.atomCategory})</span>
             </li>
           );
         });
-        items.push(<li key="error" className="error-item">Error loading GitHub results</li>);
+        items.push(
+          <li key="error" className="error-item">
+            Error loading GitHub results
+          </li>
+        );
         return items;
       }
       return <li>Error loading data</li>;
     }
-    
+
     // Combine local atoms with GitHub results
     const combinedResults = [...localAtoms];
-    if (data && data.repos) {
-      combinedResults.push(...data.repos.map(repo => ({ ...repo, isLocal: false })));
+    if (data?.repos) {
+      combinedResults.push(
+        ...data.repos.map((repo) => ({ ...repo, isLocal: false }))
+      );
     }
-    
+
     if (combinedResults.length === 0) {
       return <li>No results found</li>;
     }
 
     return combinedResults.map((item, key) => {
       const isSelected = selectedIndex === key;
-      
+
       if (item.isLocal) {
         return (
           <li
@@ -340,7 +383,8 @@ function GitSearch({
             className={`local-atom ${isSelected ? "selected" : ""}`}
             title={`Local Atom - ${item.atomCategory}`}
           >
-            {item.atomType} <span className="atom-category">({item.atomCategory})</span>
+            {item.atomType}{" "}
+            <span className="atom-category">({item.atomCategory})</span>
           </li>
         );
       } else {
@@ -367,12 +411,8 @@ function GitSearch({
           <div
             id="git_search"
             style={{
-              top: GlobalVariables.lastClick
-                ? GlobalVariables.lastClick[1] + "px"
-                : "37%",
-              left: GlobalVariables.lastClick
-                ? GlobalVariables.lastClick[0] + "px"
-                : "75%",
+              position: "absolute",
+              ...calculateSearchPosition(isShortcut),
             }}
           >
             <input
@@ -407,7 +447,9 @@ function GitSearch({
                   >
                     <path d="M8 .2l4.9 15.2L0 6h16L3.1 15.4z" />
                   </svg>
-                  <p style={{ fontSize: "0.5em" }}>{panelItem.ranking || (panelItem.isLocal ? "Local" : "")}</p>
+                  <p style={{ fontSize: "0.5em" }}>
+                    {panelItem.ranking || (panelItem.isLocal ? "Local" : "")}
+                  </p>
                 </div>
               </div>
 
