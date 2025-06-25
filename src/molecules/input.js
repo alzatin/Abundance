@@ -16,7 +16,7 @@ export default class Input extends Atom {
      * This atom's name
      * @type {string}
      */
-    this.name;
+    this.name = "name";
     /**
      * A description of this atom
      * @type {string}
