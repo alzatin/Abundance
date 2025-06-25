@@ -307,11 +307,8 @@ function GitSearch({
           const isSelected = selectedIndex === key;
           return (
             <li
-              onClick={(e) => placeLocalAtom(e, atom.atomType)}
               key={atom.id}
-              onMouseEnter={() => handleMouseOver(atom, key)}
-              onMouseLeave={() => handleMouseOut()}
-              className={`local-atom ${isSelected ? "selected" : ""}`}
+              className={`local-atom ${isSelected ? "selected" : ""} disabled`}
               title={`Local Atom - ${atom.atomCategory}`}
             >
               {atom.atomType}{" "}
@@ -336,11 +333,8 @@ function GitSearch({
           const isSelected = selectedIndex === key;
           return (
             <li
-              onClick={(e) => placeLocalAtom(e, atom.atomType)}
               key={atom.id}
-              onMouseEnter={() => handleMouseOver(atom, key)}
-              onMouseLeave={() => handleMouseOut()}
-              className={`local-atom ${isSelected ? "selected" : ""}`}
+              className={`local-atom ${isSelected ? "selected" : ""} disabled`}
               title={`Local Atom - ${atom.atomCategory}`}
             >
               {atom.atomType}{" "}
@@ -370,13 +364,22 @@ function GitSearch({
       return <li>No results found</li>;
     }
 
+    const handleItemClick = (e, item) => {
+      e.stopPropagation(); // Prevent event propagation
+      if (item.isLocal) {
+        placeLocalAtom(e, item.atomType);
+      } else {
+        placeGitHubMolecule(e, item);
+      }
+    };
+
     return combinedResults.map((item, key) => {
       const isSelected = selectedIndex === key;
 
       if (item.isLocal) {
         return (
           <li
-            onClick={(e) => placeLocalAtom(e, item.atomType)}
+            onClick={(e) => !isLoading && handleItemClick(e, item)}
             key={item.id}
             onMouseEnter={() => handleMouseOver(item, key)}
             onMouseLeave={() => handleMouseOut()}
@@ -390,7 +393,7 @@ function GitSearch({
       } else {
         return (
           <li
-            onClick={(e) => placeGitHubMolecule(e, item)}
+            onClick={(e) => !isLoading && handleItemClick(e, item)}
             key={item.id}
             onMouseEnter={() => handleMouseOver(item, key)}
             onMouseLeave={() => handleMouseOut()}
