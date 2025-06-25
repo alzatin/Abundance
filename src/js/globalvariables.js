@@ -57,7 +57,6 @@ class GlobalVariables {
      * @type {array}
      */
     this.availableTypes = {
-      box: { creator: Box, atomType: "Box" },
       intersection: {
         creator: Intersection,
         atomType: "Intersection",
@@ -78,7 +77,6 @@ class GlobalVariables {
         atomType: "Fusion",
         atomCategory: "Interactions",
       },
-      group: { creator: Group, atomType: "Group", atomCategory: "None" },
       loft: {
         creator: Loft,
         atomType: "Loft",
@@ -457,7 +455,7 @@ class GlobalVariables {
         // Extract base name and current number
         const baseName = suffixMatch[1];
         const currentNumber = parseInt(suffixMatch[2]);
-        
+
         // Increment the number and try again
         const incrementedVarName = `${baseName} (${currentNumber + 1})`;
         return this.incrementVariableName(incrementedVarName, molecule);
