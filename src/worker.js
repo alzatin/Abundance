@@ -1468,41 +1468,52 @@ function getBoundingBox(inputID) {
  * @returns {Object} The bounds object with min and max arrays
  */
 function getBounds(input) {
-  const geometry = toGeometry(input);
-  
-  let minX = Infinity,
-    minY = Infinity,
-    minZ = Infinity;
-  let maxX = -Infinity,
-    maxY = -Infinity,
-    maxZ = -Infinity;
+  try {
+    const geometry = toGeometry(input);
+    
+    let minX = Infinity,
+      minY = Infinity,
+      minZ = Infinity;
+    let maxX = -Infinity,
+      maxY = -Infinity,
+      maxZ = -Infinity;
 
-  if (isAssembly(geometry)) {
-    // Handle assembly by iterating through all parts
-    actOnLeafs(geometry, (leaf) => {
-      const bbox = leaf.geometry[0].boundingBox.bounds;
-      minX = Math.min(minX, bbox[0][0]);
-      minY = Math.min(minY, bbox[0][1]);
-      minZ = Math.min(minZ, bbox[0][2]);
-      maxX = Math.max(maxX, bbox[1][0]);
-      maxY = Math.max(maxY, bbox[1][1]);
-      maxZ = Math.max(maxZ, bbox[1][2]);
-    });
-  } else {
-    // Handle single geometry
-    const bbox = geometry.geometry[0].boundingBox.bounds;
-    minX = bbox[0][0];
-    minY = bbox[0][1];
-    minZ = bbox[0][2];
-    maxX = bbox[1][0];
-    maxY = bbox[1][1];
-    maxZ = bbox[1][2];
+    if (isAssembly(geometry)) {
+      // Handle assembly by iterating through all parts
+      actOnLeafs(geometry, (leaf) => {
+        if (leaf.geometry && leaf.geometry[0] && leaf.geometry[0].boundingBox) {
+          const bbox = leaf.geometry[0].boundingBox.bounds;
+          minX = Math.min(minX, bbox[0][0]);
+          minY = Math.min(minY, bbox[0][1]);
+          minZ = Math.min(minZ, bbox[0][2]);
+          maxX = Math.max(maxX, bbox[1][0]);
+          maxY = Math.max(maxY, bbox[1][1]);
+          maxZ = Math.max(maxZ, bbox[1][2]);
+        }
+      });
+    } else {
+      // Handle single geometry
+      if (geometry.geometry && geometry.geometry[0] && geometry.geometry[0].boundingBox) {
+        const bbox = geometry.geometry[0].boundingBox.bounds;
+        minX = bbox[0][0];
+        minY = bbox[0][1];
+        minZ = bbox[0][2];
+        maxX = bbox[1][0];
+        maxY = bbox[1][1];
+        maxZ = bbox[1][2];
+      } else {
+        throw new Error("Invalid geometry: missing boundingBox");
+      }
+    }
+
+    return {
+      min: [minX, minY, minZ],
+      max: [maxX, maxY, maxZ],
+    };
+  } catch (error) {
+    console.error('GetBounds error:', error);
+    throw new Error(`GetBounds failed: ${error.message}`);
   }
-
-  return {
-    min: [minX, minY, minZ],
-    max: [maxX, maxY, maxZ],
-  };
 }
 
 /**
