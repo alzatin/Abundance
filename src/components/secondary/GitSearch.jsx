@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
-import flowCanvas from "../main-routes/flowCanvas.jsx";
 
 function GitSearch({
   searchingGitHub,
@@ -150,10 +149,7 @@ function GitSearch({
     const filteredAtoms = [];
     for (const key in GlobalVariables.availableTypes) {
       const atom = GlobalVariables.availableTypes[key];
-      if (
-        atom.atomType &&
-        atom.atomType.toLowerCase().includes(searchTerm.toLowerCase())
-      ) {
+      if (atom.atomType?.toLowerCase().includes(searchTerm.toLowerCase())) {
         filteredAtoms.push({
           id: `local-${key}`,
           atomType: atom.atomType,
@@ -364,7 +360,7 @@ function GitSearch({
 
     // Combine local atoms with GitHub results
     const combinedResults = [...localAtoms];
-    if (data && data.repos) {
+    if (data?.repos) {
       combinedResults.push(
         ...data.repos.map((repo) => ({ ...repo, isLocal: false }))
       );
