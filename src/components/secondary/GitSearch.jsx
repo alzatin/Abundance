@@ -266,6 +266,33 @@ function GitSearch({
     };
   };
 
+  const calculateSearchPosition = () => {
+    if (!GlobalVariables.lastClick) {
+      return { left: "75%", top: "37%" };
+    }
+
+    const clickX = GlobalVariables.lastClick[0];
+    const clickY = GlobalVariables.lastClick[1];
+    const searchWidth = 210; // Width from CSS
+    const margin = 20; // Minimum margin between elements
+
+    // Get viewport width and calculate maximum allowed position
+    const viewportWidth = window.innerWidth;
+    const maxLeft = viewportWidth - searchWidth - margin;
+
+    // Calculate left position
+    let left = clickX;
+    if (left + searchWidth > viewportWidth - margin) {
+      left = maxLeft;
+    }
+    left = Math.max(left, margin);
+
+    return {
+      left: left + "px",
+      top: clickY + "px",
+    };
+  };
+
   const GitList = function () {
     const localAtoms = getFilteredLocalAtoms(debouncedSearchTerm);
     
@@ -367,12 +394,8 @@ function GitSearch({
           <div
             id="git_search"
             style={{
-              top: GlobalVariables.lastClick
-                ? GlobalVariables.lastClick[1] + "px"
-                : "37%",
-              left: GlobalVariables.lastClick
-                ? GlobalVariables.lastClick[0] + "px"
-                : "75%",
+              position: "absolute",
+              ...calculateSearchPosition(),
             }}
           >
             <input
