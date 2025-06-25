@@ -34,6 +34,7 @@ export default memo(function FlowCanvas({
   const [searchingGitHub, setSearchingGitHub] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [search, setSearch] = useState("");
+  const [isShortcut, setIsShortcutTriggered] = useState(false);
 
   const canvasRef = useRef(null);
   const circleMenu = useRef(null);
@@ -172,11 +173,11 @@ export default memo(function FlowCanvas({
 
     if (GlobalVariables.ctrlDown && shortCuts.hasOwnProperty([e.key])) {
       e.preventDefault();
-      //Undo
+      // Undo
       if (e.key == "z") {
         GlobalVariables.currentMolecule.undo();
       }
-      //Copy & Paste
+      // Copy & Paste
       if (e.key == "c") {
         GlobalVariables.atomsSelected = [];
         GlobalVariables.currentMolecule.copy();
@@ -200,9 +201,10 @@ export default memo(function FlowCanvas({
         });
       }
 
-      //Opens menu to search for github molecule
+      // Opens menu to search for GitHub molecule
       if (e.key == "g") {
         setSearchingGitHub(true);
+        setIsShortcutTriggered(true); // Set the shortcut flag
         GlobalVariables.ctrlDown = false;
       } else {
         GlobalVariables.currentMolecule.placeAtom(
@@ -307,6 +309,7 @@ export default memo(function FlowCanvas({
     } else {
       cmenu.hide();
       setSearchingGitHub(false);
+      setIsShortcutTriggered(false);
       setIsHovering(false);
       setSearch("");
 
@@ -520,6 +523,8 @@ export default memo(function FlowCanvas({
             setSearchingGitHub,
             isHovering,
             setIsHovering,
+            isShortcut,
+            setIsShortcutTriggered,
           }}
         />
       </div>
