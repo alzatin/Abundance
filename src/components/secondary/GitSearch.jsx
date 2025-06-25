@@ -293,9 +293,8 @@ function GitSearch({
 
   const calculateSearchPosition = (isShortcut) => {
     if (isShortcut) {
-      console.log(GlobalVariables.canvas.current.height);
-      console.log("Shortcut activated, positioning search box at bottom right");
-      const margin = 20; // Minimum margin between elements
+      const marginLeft = 30; // Minimum margin between elements
+      const marginTop = 10; // Minimum margin between elements
       const searchWidth = 210; // Width from CSS
       const searchHeight = 50; // Approximate height of the search box
 
@@ -303,8 +302,8 @@ function GitSearch({
       const canvasHeight = GlobalVariables.canvas.current.height;
 
       return {
-        left: viewportWidth - searchWidth - margin + "px",
-        top: canvasHeight - searchHeight - margin + "px",
+        left: viewportWidth - searchWidth - marginLeft + "px",
+        top: canvasHeight - searchHeight - marginTop + "px",
       };
     }
 
