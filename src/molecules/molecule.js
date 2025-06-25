@@ -497,9 +497,11 @@ export default class Molecule extends Atom {
 
   createLevaBom() {
     let bomParams = {};
-    if (this.compiledBom) {
-      if (this.compiledBom.length > 0) {
-        this.compiledBom.map((item) => {
+    // Always show the top-level BOM, which contains the complete project BOM
+    const bomToShow = GlobalVariables.topLevelMolecule?.compiledBom || this.compiledBom;
+    if (bomToShow) {
+      if (bomToShow.length > 0) {
+        bomToShow.map((item) => {
           bomParams[item.BOMitemName] = {
             value: item.numberNeeded,
             label: item.BOMitemName + " x",
@@ -544,6 +546,8 @@ export default class Molecule extends Atom {
         if (GlobalVariables.topLevelMolecule) {
           GlobalVariables.topLevelMolecule.compileBom().then((result) => {
             GlobalVariables.topLevelMolecule.compiledBom = result;
+          }).catch((err) => {
+            console.warn("Failed to compile BOM at top level:", err);
           });
         }
         if (this.selected) {
