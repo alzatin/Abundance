@@ -182,16 +182,17 @@ export default class Connector {
                 // Add the new input atom to the molecule's nodes
                 atom.nodesOnTheScreen.push(newInputAtom);
                 
-                // Find the newly created input attachment point and connect to it
-                for (let i = 0; i < newInputAtom.inputs.length; i++) {
-                  const input = newInputAtom.inputs[i];
-                  if (input.type === "input" && input.connectors.length === 0) {
-                    attachmentMade = true;
-                    this.attachmentPoint2 = input;
-                    input.attach(this);
-                    this.propogate();
-                    break;
-                  }
+                // The Input constructor automatically creates an input attachment point on the parent molecule
+                // Find this newly created input attachment point on the target molecule
+                const newInputAP = atom.inputs.find(input => 
+                  input.name === inputName && input.type === "input" && input.connectors.length === 0
+                );
+                
+                if (newInputAP) {
+                  attachmentMade = true;
+                  this.attachmentPoint2 = newInputAP;
+                  newInputAP.attach(this);
+                  this.propogate();
                 }
               }
             }
