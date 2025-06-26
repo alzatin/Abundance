@@ -169,7 +169,7 @@ export default class Equation extends Atom {
       return GlobalVariables.limitedEvaluate(substitutedEquation);
     } catch (error) {
       console.error("Error evaluating equation:", error);
-      this.setAlert(error);
+      this.setError(error);
       return NaN;
     }
   }
@@ -228,7 +228,7 @@ export default class Equation extends Atom {
       }
     } catch (err) {
       console.warn(err);
-      this.setAlert(err);
+      this.setError(err);
     }
   }
 

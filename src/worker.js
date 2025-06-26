@@ -1193,13 +1193,14 @@ function layout(
   targetID,
   inputID,
   progressCallback,
+  warningCallback,
   placementsCallback,
   layoutConfig
 ) {
   return started.then(() => {
     let rotateID = generateUniqueID();
 
-    var shapesForLayout = rotateForLayout(rotateID, inputID, layoutConfig);
+    var shapesForLayout = rotateForLayout(rotateID, inputID, layoutConfig, warningCallback);
 
     let positionsPromise = computePositions(
       shapesForLayout,
@@ -1210,7 +1211,7 @@ function layout(
       layoutConfig
     );
     return positionsPromise.then((positions) => {
-      //This does the actual layout of the parts. We want to break this out into it's own function which can be passed a list of positions
+      //This does the actual layout of the parts.
       applyLayout(targetID, rotateID, positions, layoutConfig);
 
       // TODO: tristan, instead of throwing these here, return the full suite of
@@ -1243,9 +1244,9 @@ function layout(
 /**
  * Lay the input geometry flat and apply the transformations to display it
  */
-function displayLayout(targetID, inputID, positions, layoutConfig) {
+function displayLayout(targetID, inputID, positions, warningCallback, layoutConfig) {
   let rotateID = generateUniqueID();
-  rotateForLayout(rotateID, inputID, layoutConfig);
+  rotateForLayout(rotateID, inputID, layoutConfig, warningCallback);
 
   applyLayout(targetID, rotateID, positions, layoutConfig);
 }
@@ -1262,7 +1263,7 @@ function displayLayout(targetID, inputID, positions, layoutConfig) {
  *    c) face must be within the (inferred) thickness of the material
  *    d) face should have minimal number of interior voids and have the largest bounding box
  */
-function rotateForLayout(targetID, inputID, layoutConfig) {
+function rotateForLayout(targetID, inputID, layoutConfig, warningCallback) {
   var THICKNESS_TOLLERANCE = 0.001;
 
   function equalThickness(a, b) {
@@ -1296,31 +1297,26 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
     leaf.geometry[0].faces.forEach((face) => {
       if (face.geomType == "PLANE") {
         hasFlatFace = true;
-
-        const prospectiveGoem = moveFaceToCuttingPlane(leaf.geometry[0], face);
-        // Check for protrusions "below" the bottom of the raw material.
-        if (
-          prospectiveGoem.boundingBox.bounds[0][2] >
-          -1 * THICKNESS_TOLLERANCE
-        ) {
-          candidates.push({
-            face: face,
-            geom: prospectiveGoem,
-            faceIndex: faceIndex,
-            thickness: prospectiveGoem.boundingBox.depth,
-          });
-        }
       }
+      let prospectiveGoem = moveFaceToCuttingPlane(leaf.geometry[0], face);
+      let offset = 0;
+      if (prospectiveGoem.boundingBox.bounds[0][2] < -1 * THICKNESS_TOLLERANCE) {
+        // this face causes protrusions below the XY plane, move the prospective geometry so that
+        // all points are above the XY plane. Record this movement, since it's a red flag for
+        // this candidate.
+        offset = -1 * prospectiveGoem.boundingBox.bounds[0][2];
+        prospectiveGoem = prospectiveGoem.translate(0, 0, offset);
+      }
+      candidates.push({
+        face: face,
+        offset: offset,
+        geom: prospectiveGoem,
+        faceIndex: faceIndex,
+        thickness: prospectiveGoem.boundingBox.depth,
+      });
       faceIndex++;
     });
 
-    if (candidates.length == 0) {
-      if (!hasFlatFace) {
-        // TODO: This should be a warning not an error and we should fail over to placing
-        // objects on a curved side.
-        throw new Error("Upstream object uncuttable, has no flat face");
-      }
-    }
     all_candidates[localId] = candidates;
     const newLeaf = {
       geometry: leaf.geometry,
@@ -1360,12 +1356,15 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
     } else {
       // For each candidate generate a descriptive struct with the properties we care about.
       // namely:
-      //  - height
+      //  - is planar face
+      //  - thickness
       //  - area (approx)
       //  - number of interior wires (if any)
       const scores = candidates.map((c, index) => {
         return {
           candidate_index: index,
+          is_planar: c.face.geomType == "PLANE",
+          offset: c.offset,
           thickness: c.thickness,
           area: areaApprox(c.face.UVBounds),
           interiorWires: c.face.clone().innerWires().length,
@@ -1374,6 +1373,21 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
 
       // Sort in order of preference (scores[0] being best).
       scores.sort((a, b) => {
+        // negative means a goes before b, positive means b goes before a
+
+        // having minimal (usually this means 0) offset is the most important factor, since it
+        // means our candidate face is actually flush with the xy plane and has no protrusions
+        // below it.
+        if (a.offset != b.offset) {
+          return a.offset - b.offset; // prefer candidates with no offset
+        }
+
+        // Planar faces are preferred because typical cnc machines won't be able to reach the
+        // underside face to make cuts.
+        if (a.is_planar != b.is_planar) {
+          return a.is_planar ? -1 : 1; // prefer planar faces
+        }
+
         // Thickness differences take priority over all other factors.
         if (!equalThickness(a.thickness, b.thickness)) {
           // Candidates with thickness exactly equal to material thickness always win.
@@ -1404,6 +1418,17 @@ function rotateForLayout(targetID, inputID, layoutConfig) {
         return 0; // we can't decide.
       });
       selected = candidates[scores[0].candidate_index];
+
+      if (scores[0].is_planar == false) {
+        warningCallback("Upstream object " + localId + " uncuttable, has no flat face");
+      } else if (scores[0].offset > THICKNESS_TOLLERANCE) {
+        warningCallback(
+          "Upstream object " +
+            localId +
+            " does not sit flat on the XY plane, likely to be uncuttable."
+        );
+      }
+
     }
 
     // move so center of face is at (0, 0, 0)
@@ -1594,7 +1619,7 @@ function asFloat64(shape) {
 }
 
 /**
- * Use the packing engine, note this is potentially time consuming step.
+ * Use the packing engine, this is potentially time consuming step.
  */
 function computePositions(
   shapesForLayout,

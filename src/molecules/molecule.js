@@ -548,7 +548,7 @@ export default class Molecule extends Atom {
         }
       });
     } catch (err) {
-      this.setAlert(err);
+      this.setError(err);
     }
   }
 
@@ -572,7 +572,7 @@ export default class Molecule extends Atom {
       const loadingDots = document.querySelector(".loading");
       loadingDots.style.display = "none";
     } catch (err) {
-      this.setAlert(err);
+      this.setError(err);
     }
   }
 
