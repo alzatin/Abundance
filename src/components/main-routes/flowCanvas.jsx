@@ -314,6 +314,7 @@ export default memo(function FlowCanvas({
       setSearch("");
 
       var clickHandledByMolecule = false;
+      var activeAtom = null;
       /*Run through all the atoms on the screen and decide if one was clicked*/
       // Iterate in reverse order to give priority to newer atoms
       for (
@@ -329,14 +330,18 @@ export default memo(function FlowCanvas({
           event.clientY,
           clickHandledByMolecule
         );
-        if (atomClicked !== undefined) {
-          let idi = atomClicked;
+        if (atomClicked !== undefined && !clickHandledByMolecule) {
+          activeAtom = atomClicked;
           /* Clicked atom is now the active atom */
-          setActiveAtom(idi);
           GlobalVariables.currentMolecule.selected = false;
           clickHandledByMolecule = true;
-          break; // Stop processing once an atom handles the click
+          // Continue processing to allow other atoms to deselect themselves
         }
+      }
+      
+      // Set the active atom after all atoms have been processed
+      if (activeAtom) {
+        setActiveAtom(activeAtom);
       }
 
       //Draw the selection box
