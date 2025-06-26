@@ -446,6 +446,112 @@ async function scale(geom, scaleFactor, targetID = null) {
 }
 
 /**
+ * Applies a fillet (rounded edge) to the input geometry.
+ * @param {Object|string} geom - The geometry to fillet, or library ID for same
+ * @param {number} radius - The radius of the fillet
+ * @param {string|null} targetID - The ID to store the result in the library. If null, the result is returned
+ * @returns {Promise<Object>} A promise that resolves to the filleted geometry
+ */
+async function fillet(geom, radius, targetID = null) {
+  await started;
+
+  geom = toGeometry(geom, "fillet-geometry");
+  if (is3D(geom)) {
+    let result = actOnLeafs(
+      geom,
+      (leaf) => {
+        return {
+          geometry: [leaf.geometry[0].clone().fillet(radius)],
+          plane: leaf.plane,
+          tags: leaf.tags,
+          color: leaf.color,
+          bom: leaf.bom,
+        };
+      },
+      geom.plane
+    );
+    if (targetID) {
+      library[targetID] = result;
+    } else {
+      return result;
+    }
+  } else {
+    let result = actOnLeafs(
+      geom,
+      (leaf) => {
+        return {
+          geometry: [leaf.geometry[0].clone().fillet(radius)],
+          tags: leaf.tags,
+          plane: leaf.plane,
+          color: leaf.color,
+          bom: leaf.bom,
+        };
+      },
+      geom.plane
+    );
+    if (targetID) {
+      library[targetID] = result;
+    } else {
+      return result;
+    }
+  }
+  return true;
+}
+
+/**
+ * Applies a chamfer (beveled edge) to the input geometry.
+ * @param {Object|string} geom - The geometry to chamfer, or library ID for same
+ * @param {number} size - The size of the chamfer
+ * @param {string|null} targetID - The ID to store the result in the library. If null, the result is returned
+ * @returns {Promise<Object>} A promise that resolves to the chamfered geometry
+ */
+async function chamfer(geom, size, targetID = null) {
+  await started;
+
+  geom = toGeometry(geom, "chamfer-geometry");
+  if (is3D(geom)) {
+    let result = actOnLeafs(
+      geom,
+      (leaf) => {
+        return {
+          geometry: [leaf.geometry[0].clone().chamfer(size)],
+          plane: leaf.plane,
+          tags: leaf.tags,
+          color: leaf.color,
+          bom: leaf.bom,
+        };
+      },
+      geom.plane
+    );
+    if (targetID) {
+      library[targetID] = result;
+    } else {
+      return result;
+    }
+  } else {
+    let result = actOnLeafs(
+      geom,
+      (leaf) => {
+        return {
+          geometry: [leaf.geometry[0].clone().chamfer(size)],
+          tags: leaf.tags,
+          plane: leaf.plane,
+          color: leaf.color,
+          bom: leaf.bom,
+        };
+      },
+      geom.plane
+    );
+    if (targetID) {
+      library[targetID] = result;
+    } else {
+      return result;
+    }
+  }
+  return true;
+}
+
+/**
  * Performs a boolean difference operation between two geometries.
  * This function subtracts the second geometry (cutter) from the first geometry (target).
  *
@@ -2563,6 +2669,8 @@ expose({
   move,
   rotate,
   scale,
+  fillet,
+  chamfer,
   difference,
   tag,
   extractAllTags,
