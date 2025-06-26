@@ -1348,6 +1348,8 @@ function rotateForLayout(targetID, inputID, layoutConfig, warningCallback) {
     }
   }
 
+  const layoutWarnList = [];
+
   library[targetID] = actOnLeafs(intermediate, (leaf) => {
     let candidates = all_candidates[leaf.id];
     let selected;
@@ -1419,16 +1421,15 @@ function rotateForLayout(targetID, inputID, layoutConfig, warningCallback) {
       });
       selected = candidates[scores[0].candidate_index];
 
-      if (scores[0].is_planar == false) {
-        warningCallback("Upstream object " + localId + " uncuttable, has no flat face");
-      } else if (scores[0].offset > THICKNESS_TOLLERANCE) {
-        warningCallback(
-          "Upstream object " +
-            localId +
-            " does not sit flat on the XY plane, likely to be uncuttable."
-        );
+      if (scores[0].is_planar == false || scores[0].offset > THICKNESS_TOLLERANCE) {
+        layoutWarnList.push(localId)
       }
-
+    }
+    // If we have a warning, pass it to the callback
+    if (layoutWarnList.length > 0 && warningCallback) {
+      warningCallback(
+        `Part(s) ${layoutWarnList.join(", ")} have no orientation suitable for layout.`
+      );
     }
 
     // move so center of face is at (0, 0, 0)
