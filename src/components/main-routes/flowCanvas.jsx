@@ -188,15 +188,10 @@ export default memo(function FlowCanvas({
           atom.selected = false;
         });
 
-        GlobalVariables.atomsSelected.forEach((item) => {
-          let newAtomID = GlobalVariables.generateUniqueID();
-          item.uniqueID = newAtomID;
-          if (
-            item.atomType == "Molecule" ||
-            item.atomType == "GitHubMolecule"
-          ) {
-            item = GlobalVariables.currentMolecule.remapIDs(item);
-          }
+        // Remap all unique IDs for the atoms being pasted to ensure they have new unique IDs
+        const remappedAtoms = GlobalVariables.remapIDsForPaste(GlobalVariables.atomsSelected);
+        
+        remappedAtoms.forEach((item) => {
           GlobalVariables.currentMolecule.placeAtom(item, true);
         });
       }
