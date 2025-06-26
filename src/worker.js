@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import Fonts from "./js/fonts.js";
 //import { AnyNest, FloatPolygon } from "any-nest";
 import { PolygonPacker, PlacementWrapper } from "polygon-packer";
-import { equal, re } from "mathjs";
+import { e, equal, re } from "mathjs";
 
 var library = {};
 let defaultColor = "#aad7f2";
@@ -1270,7 +1270,14 @@ function rotateForLayout(targetID, inputID, layoutConfig, warningCallback) {
     return Math.abs(a - b) < THICKNESS_TOLLERANCE;
   }
 
-  let geometryToLayout = library[inputID];
+  // Get geometry and remove any empty leafs.
+  let geometryToLayout = actOnLeafs(library[inputID], (leaf) => {
+    if (leaf.geometry.length > 0 && leaf.geometry[0].faces.length > 0) {
+      return leaf;
+    } else {
+      return undefined;
+    }
+  });
 
   let localId = 0;
   let shapesForLayout = [];
@@ -1348,12 +1355,19 @@ function rotateForLayout(targetID, inputID, layoutConfig, warningCallback) {
 
   library[targetID] = actOnLeafs(intermediate, (leaf) => {
     let candidates = all_candidates[leaf.id];
+    if (candidates == undefined || candidates.length == 0) {
+      // no candidates, this leaf has no faces or all faces are non-planar.
+      // we can't do anything with it.
+      if (warningCallback) {
+        warningCallback(
+          `Part ${leaf.id} has no planar faces suitable for layout.`
+        );
+      }
+      console.warn("impossably had no candidates")
+      return undefined;
+    }
     let selected;
-    if (candidates.length == 0) {
-      // no candidates, this leaf has no faces which can be used for layout.
-      console.warn("Skipping a leaf with no candidate faces. total face count: ", leaf.geometry[0].faces.length);
-      return leaf; // return the original leaf, nothing to do here.
-    } else if (candidates.length == 1) {
+    if (candidates.length == 1) {
       selected = candidates[0];
     } else {
       // For each candidate generate a descriptive struct with the properties we care about.
@@ -1633,7 +1647,7 @@ function computePositions(
 ) {
   console.log("Starting to compute positions for shapes: ");
   console.log(shapesForLayout);
-  const tolerance = 0.1;
+  const tolerance = 0.2;
   const runtimeMs = 30000;
   const config = {
     curveTolerance: 0.1,
@@ -1645,14 +1659,15 @@ function computePositions(
   };
   // from the mesh format of [x1, y1, z1, x2, y2, z2, ...] to FloatPolygon friendly format of
   // [{x: x1, y: y1}, {x: x2, y: y2}...]
-  const polygons = shapesForLayout.map((shape) => {
+  const polygons = shapesForLayout.map((shape, index) => {
     let face = shape.shape;
     const mesh = face
       .clone()
       .outerWire()
-      .meshEdges({ tolerance: 0.1, angularTolerance: 0.3 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
-    return asFloat64(preparePoints(mesh, tolerance));
+      .meshEdges({ tolerance: tolerance, angularTolerance: 0.5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
+    return asFloat64(preparePoints(mesh, tolerance, index % 2 == 0));
   });
+  console.log(polygons);
 
   // Clockwise winding direction appears to matter here for the current packing algo.
   const bin = asFloat64([
@@ -1770,7 +1785,7 @@ function translatePlacements(placement, placedParts, partCount) {
  * @returns {Array} Array of {x, y} points in proper winding order
  * @throws {Error} Throws an error if geometry has inconsistent edge continuations
  */
-function preparePoints(mesh, tolerance) {
+function preparePoints(mesh, tolerance, reverse = false) {
   // Unfortunately the "edges" of this mesh aren't always in sequential order. Here we re-sort them so we can
   // provide them in a winding order, ie, starting at one point and winding around the perimeter of the shape.
 
@@ -1820,23 +1835,33 @@ function preparePoints(mesh, tolerance) {
     edgeStarts = edgeStarts.filter((edge) => {
       return edge.edgeId != currentEdge.edgeId;
     });
+    if (edgeStarts.length == 0) {
+      break;
+    }
 
     // else find next edge which starts where current result ends.
-    const nextEgdes = edgeStarts.filter((edge) => {
+    const nextEdges = edgeStarts.filter((edge) => {
       return almostEqual(result[result.length - 1], edge.startPoint);
     });
-
-    if (edgeStarts.length > 0 && nextEgdes.length != 1) {
-      // console.log(result);
-      // console.log(edgeStarts);
-      // console.log(nextEgdes);
+    if (nextEdges.length == 1) {
+      currentEdge = nextEdges[0];
+    } else {
       throw new Error(
         "Geometry error when preparing for cutlayout. Part perimiter has an edge with: " +
-          nextEgdes.length +
+          nextEdges.length +
           " continuations"
       );
     }
-    currentEdge = nextEgdes[0];
+  }
+
+  if (result.length < 3) {
+    throw new Error(
+      "Part perimiter has less than 3 points: " +
+        JSON.stringify(result)
+    );
+  }
+  if (reverse) {
+    result.reverse();
   }
   return result;
 }
@@ -1910,31 +1935,6 @@ function isAssembly(part) {
     }
   } else {
     return false;
-  }
-}
-
-function validateAssembly(partId, part, depth = 0) {
-  const label = depth == 0 ? "Part id " + partId : "Subpart of " + partId + " depth: " + depth;
-  if (!part || typeof part !== "object") {
-    throw new Error(label + " is not an object: " + JSON.stringify(part));
-  }
-  if (!part.geometry) {
-    throw new Error(label + " is missing 'geometry'");
-  }
-  if (!Array.isArray(part.geometry)) {
-    throw new Error(label + " 'geometry' is not an array");
-  }
-  if (!part.tags || !Array.isArray(part.tags)) {
-    throw new Error(label + " is missing 'tags' or it is not an array");
-  }
-  if (!part.bom || !Array.isArray(part.bom)) {
-    throw new Error(label + " is missing 'bom' or it is not an array");
-  }
-  
-  if (isAssembly(part)) {
-    part.geometry.forEach((subPart) => {
-      validateAssembly(partId, subPart, depth + 1);
-    });
   }
 }
 
