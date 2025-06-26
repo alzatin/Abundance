@@ -1292,12 +1292,8 @@ function rotateForLayout(targetID, inputID, layoutConfig, warningCallback) {
     //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
     //  2) there must be no parts of the shape which protrude "below" this face
     const candidates = [];
-    let hasFlatFace = false;
     let faceIndex = 0;
     leaf.geometry[0].faces.forEach((face) => {
-      if (face.geomType == "PLANE") {
-        hasFlatFace = true;
-      }
       let prospectiveGoem = moveFaceToCuttingPlane(leaf.geometry[0], face);
       let offset = 0;
       if (prospectiveGoem.boundingBox.bounds[0][2] < -1 * THICKNESS_TOLLERANCE) {
@@ -1353,12 +1349,17 @@ function rotateForLayout(targetID, inputID, layoutConfig, warningCallback) {
   library[targetID] = actOnLeafs(intermediate, (leaf) => {
     let candidates = all_candidates[leaf.id];
     let selected;
-    if (candidates.length == 1) {
+    if (candidates.length == 0) {
+      // no candidates, this leaf has no faces which can be used for layout.
+      console.warn("Skipping a leaf with no candidate faces. total face count: ", leaf.geometry[0].faces.length);
+      return leaf; // return the original leaf, nothing to do here.
+    } else if (candidates.length == 1) {
       selected = candidates[0];
     } else {
       // For each candidate generate a descriptive struct with the properties we care about.
       // namely:
       //  - is planar face
+      //  - offset (how much the of the object is below the face)
       //  - thickness
       //  - area (approx)
       //  - number of interior wires (if any)
@@ -1420,18 +1421,10 @@ function rotateForLayout(targetID, inputID, layoutConfig, warningCallback) {
         return 0; // we can't decide.
       });
       selected = candidates[scores[0].candidate_index];
-
-      if (scores[0].is_planar == false || scores[0].offset > THICKNESS_TOLLERANCE) {
-        layoutWarnList.push(localId)
-      }
     }
-    // If we have a warning, pass it to the callback
-    if (layoutWarnList.length > 0 && warningCallback) {
-      warningCallback(
-        `Part(s) ${layoutWarnList.join(", ")} have no orientation suitable for layout.`
-      );
+    if (selected.face.geomType != "PLANE" || selected.offset > THICKNESS_TOLLERANCE) {
+      layoutWarnList.push(leaf.id)
     }
-
     // move so center of face is at (0, 0, 0)
     const newGeom = selected.geom
       .clone()
@@ -1456,6 +1449,14 @@ function rotateForLayout(targetID, inputID, layoutConfig, warningCallback) {
 
     return newLeaf;
   });
+  
+  // If we have a warning, pass it to the callback
+  if (layoutWarnList.length > 0 && warningCallback) {
+    warningCallback(
+      `Part(s) ${layoutWarnList.join(", ")} have no orientation suitable for layout.`
+    );
+  }
+
   return shapesForLayout;
 }
 
@@ -1635,7 +1636,7 @@ function computePositions(
   const tolerance = 0.1;
   const runtimeMs = 30000;
   const config = {
-    curveTolerance: 0.3,
+    curveTolerance: 0.1,
     spacing: layoutConfig.partPadding + tolerance * 2,
     rotations: 12, // TODO: this should be higher, like at least 8? idk
     populationSize: 8,
@@ -1649,7 +1650,7 @@ function computePositions(
     const mesh = face
       .clone()
       .outerWire()
-      .meshEdges({ tolerance: 0.5, angularTolerance: 5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
+      .meshEdges({ tolerance: 0.1, angularTolerance: 0.3 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
     return asFloat64(preparePoints(mesh, tolerance));
   });
 
