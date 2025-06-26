@@ -153,6 +153,47 @@ export default class Connector {
                   break; // Stop after finding the first available input
                 }
               }
+              
+              // If no available input was found and this is a molecule, create a new input
+              if (!attachmentMade && atom.atomType === "Molecule") {
+                // Determine the name for the new input
+                let inputName = "input";
+                
+                // Special case: if the connector comes from an Input atom, use its name
+                if (this.attachmentPoint1.parentMolecule.atomType === "Input") {
+                  inputName = this.attachmentPoint1.parentMolecule.name;
+                }
+                
+                // Ensure the name is unique within the target molecule
+                inputName = GlobalVariables.incrementVariableName(inputName, atom);
+                
+                // Create a new Input atom within the target molecule
+                const newInputAtom = new GlobalVariables.availableTypes.input.creator({
+                  atomType: "Input",
+                  name: inputName,
+                  parent: atom,
+                  parentMolecule: atom,
+                  x: atom.x - 0.15, // Position to the left of the molecule
+                  y: atom.y,
+                  uniqueID: GlobalVariables.generateUniqueID(),
+                  type: "geometry" // Default type, can be changed later
+                });
+                
+                // Add the new input atom to the molecule's nodes
+                atom.nodesOnTheScreen.push(newInputAtom);
+                
+                // Find the newly created input attachment point and connect to it
+                for (let i = 0; i < newInputAtom.inputs.length; i++) {
+                  const input = newInputAtom.inputs[i];
+                  if (input.type === "input" && input.connectors.length === 0) {
+                    attachmentMade = true;
+                    this.attachmentPoint2 = input;
+                    input.attach(this);
+                    this.propogate();
+                    break;
+                  }
+                }
+              }
             }
           }
         });
