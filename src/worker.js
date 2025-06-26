@@ -875,8 +875,8 @@ async function code(targetID, code, argumentsArray) {
     // the code molecule.
     validateUserCode(code);
 
-    let keys1 = ["Rotate", "Move", "Scale", "Assembly", "Intersect", "CutAssembly", "AssemblyMap", "AssemblyAsIterable", "GetBounds", "library", "replicad"];
-    let inputValues = [rotate, move, scale, assembly, intersect, cutAssembly, assemblyMap, assemblyAsIterable, getBounds, library, replicad];
+    let keys1 = ["Rotate", "Move", "Scale", "Assembly", "Intersect", "CutAssembly", "AssemblyMap", "AssemblyAsIterable", "GetBounds", "Fillet", "Chamfer", "library", "replicad"];
+    let inputValues = [rotate, move, scale, assembly, intersect, cutAssembly, assemblyMap, assemblyAsIterable, getBounds, fillet, chamfer, library, replicad];
     for (const [key, value] of Object.entries(argumentsArray)) {
       // Sanitize parameter names to prevent injection
       if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)) {
