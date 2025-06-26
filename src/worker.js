@@ -393,6 +393,59 @@ async function rotate(geom, x, y, z, targetID = null) {
 }
 
 /**
+ * Scales a geometry by the specified scale factor.
+ * @param {Object|string} geom - The geometry to scale, or library ID for same
+ * @param {number} scaleFactor - The scale factor to apply (1.0 = no change, 2.0 = double size, 0.5 = half size)
+ * @param {string|null} targetID - The ID to store the result in the library. If null, the result is returned
+ * @returns {Promise<Object>} A promise that resolves to the scaled geometry
+ */
+async function scale(geom, scaleFactor, targetID = null) {
+  await started;
+
+  geom = toGeometry(geom, "scale-geometry");
+  if (is3D(geom)) {
+    let result = actOnLeafs(
+      geom,
+      (leaf) => {
+        return {
+          geometry: [leaf.geometry[0].clone().scale(scaleFactor)],
+          plane: leaf.plane,
+          tags: leaf.tags,
+          color: leaf.color,
+          bom: leaf.bom,
+        };
+      },
+      geom.plane
+    );
+    if (targetID) {
+      library[targetID] = result;
+    } else {
+      return result;
+    }
+  } else {
+    let result = actOnLeafs(
+      geom,
+      (leaf) => {
+        return {
+          geometry: [leaf.geometry[0].clone().scale(scaleFactor)],
+          tags: leaf.tags,
+          plane: leaf.plane,
+          color: leaf.color,
+          bom: leaf.bom,
+        };
+      },
+      geom.plane
+    );
+    if (targetID) {
+      library[targetID] = result;
+    } else {
+      return result;
+    }
+  }
+  return true;
+}
+
+/**
  * Performs a boolean difference operation between two geometries.
  * This function subtracts the second geometry (cutter) from the first geometry (target).
  *
@@ -716,8 +769,8 @@ async function code(targetID, code, argumentsArray) {
     // the code molecule.
     validateUserCode(code);
 
-    let keys1 = ["Rotate", "Move", "Assembly", "Intersect", "CutAssembly", "AssemblyMap", "AssemblyAsIterable", "GetBounds", "library", "replicad"];
-    let inputValues = [rotate, move, assembly, intersect, cutAssembly, assemblyMap, assemblyAsIterable, getBounds, library, replicad];
+    let keys1 = ["Rotate", "Move", "Scale", "Assembly", "Intersect", "CutAssembly", "AssemblyMap", "AssemblyAsIterable", "GetBounds", "library", "replicad"];
+    let inputValues = [rotate, move, scale, assembly, intersect, cutAssembly, assemblyMap, assemblyAsIterable, getBounds, library, replicad];
     for (const [key, value] of Object.entries(argumentsArray)) {
       // Sanitize parameter names to prevent injection
       if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)) {
@@ -2509,6 +2562,7 @@ expose({
   shrinkWrapSketches,
   move,
   rotate,
+  scale,
   difference,
   tag,
   extractAllTags,
