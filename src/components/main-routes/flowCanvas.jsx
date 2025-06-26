@@ -335,7 +335,6 @@ export default memo(function FlowCanvas({
           setActiveAtom(idi);
           GlobalVariables.currentMolecule.selected = false;
           clickHandledByMolecule = true;
-          break; // Stop processing once an atom handles the click
         }
       }
 
