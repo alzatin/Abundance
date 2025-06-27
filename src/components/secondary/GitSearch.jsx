@@ -168,6 +168,9 @@ function GitSearch({
   };
 
   const handleKeyDown = function (e) {
+    if (e.key === "Escape" || e.key === "Shift") {
+      setSearchingGitHub(false);
+    }
     const localAtoms = getFilteredLocalAtoms(debouncedSearchTerm);
     const combinedResults = [...localAtoms];
     if (data && data.repos) {

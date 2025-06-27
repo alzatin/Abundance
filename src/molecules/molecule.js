@@ -108,29 +108,6 @@ export default class Molecule extends Atom {
   }
 
   /**
-   * Gives this molecule inputs with the same names as all of it's parent's inputs
-   */
-  copyInputsFromParent() {
-    if (this.parent) {
-      this.parent.nodesOnTheScreen.forEach((node) => {
-        if (node.atomType == "Input") {
-          this.placeAtom(
-            {
-              parentMolecule: this,
-              y: node.y,
-              parent: this,
-              name: node.name,
-              atomType: "Input",
-              uniqueID: GlobalVariables.generateUniqueID(),
-            },
-            true
-          );
-        }
-      });
-    }
-  }
-
-  /**
    * Add the center dot to the molecule
    */
   draw() {
@@ -371,23 +348,57 @@ export default class Molecule extends Atom {
     });
   }
   /**
-   * Takes an array of recently deleted atoms
+   * Performs undo operation with improved reliability and operation type awareness
    */
   undo() {
-    if (GlobalVariables.recentMoleculeRepresentation.length > 0) {
+    // Check if there are any undo states available
+    if (GlobalVariables.recentMoleculeRepresentation.length === 0) {
+      console.log("No undo history available");
+      return; // Exit gracefully when no undo history exists
+    }
+
+    try {
+      // Get the last saved state and operation info
       let rawFile = JSON.parse(
         GlobalVariables.recentMoleculeRepresentation.pop()
       );
+
+      // Get operation info if available
+      let operationInfo = null;
+      if (GlobalVariables.undoOperationHistory.length > 0) {
+        operationInfo = GlobalVariables.undoOperationHistory.pop();
+        console.log(
+          `Undoing ${operationInfo.type} operation: ${operationInfo.context}`
+        );
+      }
+
+      // Make a copy of current nodes to safely delete them
       const nodesCopy = [...GlobalVariables.topLevelMolecule.nodesOnTheScreen];
-      // Delete nodes so deserialize doesn't repeat, could be useful to not delete for a diff in the future
-      nodesCopy.forEach((atom, index) => {
-        atom.deleteNode();
+
+      // Delete all current nodes to prepare for state restoration
+      nodesCopy.forEach((atom) => {
+        try {
+          atom.deleteNode();
+        } catch (error) {
+          console.warn("Error deleting atom during undo:", error);
+        }
       });
 
-      if (rawFile.fileTypeVersion == 1) {
+      // Restore the previous state if it's a valid format
+      if (rawFile && rawFile.fileTypeVersion == 1) {
         GlobalVariables.topLevelMolecule.deserialize(rawFile);
+      } else {
+        console.warn("Invalid file format for undo operation");
       }
-      GlobalVariables.currentMolecule.selected = true;
+
+      // Ensure current molecule is selected
+      if (GlobalVariables.currentMolecule) {
+        GlobalVariables.currentMolecule.selected = true;
+      }
+    } catch (error) {
+      console.error("Error during undo operation:", error);
+      // If undo fails, we should try to maintain a consistent state
+      // The nodes have already been deleted, so we need to handle this gracefully
     }
   }
 
@@ -884,6 +895,13 @@ export default class Molecule extends Atom {
    */
   async placeAtom(newAtomObj, unlock, values) {
     try {
+      // Save undo state for user-initiated atom additions (unlock=true means user action)
+      if (unlock && this === GlobalVariables.currentMolecule) {
+        console.log(`undostate in current molecule place atom`);
+        console.log(newAtomObj, unlock, values);
+        GlobalVariables.saveUndoState("ADD", `Added ${newAtomObj.atomType}`);
+      }
+
       GlobalVariables.numberOfAtomsToLoad =
         GlobalVariables.numberOfAtomsToLoad + 1; //Indicate that one more atom needs to be loaded
 
@@ -921,7 +939,10 @@ export default class Molecule extends Atom {
           ) {
             // For copied inputs (when unlock=true), apply name deduplication
             if (unlock) {
-              atom.name = GlobalVariables.incrementVariableName(newAtomObj.name, this);
+              atom.name = GlobalVariables.incrementVariableName(
+                newAtomObj.name,
+                this
+              );
             } else {
               atom.name = newAtomObj.name; // Preserve exact name for normal loading
             }
@@ -948,7 +969,6 @@ export default class Molecule extends Atom {
             //Make this molecule spawn with all of it's parent's inputs
             if (atom.atomType == "Molecule") {
               //Not GitHubMolecule
-              atom.copyInputsFromParent();
 
               //Make begin propagation from an atom when it is placed. This is used when copy and pasting molecules.
               if (promise != null) {
