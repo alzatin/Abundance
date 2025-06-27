@@ -1214,12 +1214,6 @@ function layout(
       //This does the actual layout of the parts.
       applyLayout(targetID, rotateID, positions, layoutConfig);
 
-      // TODO: tristan, instead of throwing these here, return the full suite of
-      // result which includes provided parts and placed part counts. Then all error warnings
-      // can be handled in the UI and can be re-rendered from serialized state
-      // this will require invisibly storing the number of input parts.
-
-      // These are soft failures, issue after the result has been applied
       if (positions.length == 0) {
         throw new Error(
           "Failed to place any parts. Are sheet dimensions right?"
@@ -1232,7 +1226,7 @@ function layout(
             " parts are too big to fit on this sheet size. Failed layout for " +
             unplacedParts +
             " part(s)";
-          throw new Error(warning);
+          warningCallback(warning);
         }
       }
 
@@ -1281,9 +1275,6 @@ function rotateForLayout(targetID, inputID, layoutConfig, warningCallback) {
 
   let localId = 0;
   let shapesForLayout = [];
-
-  //TODO: revisit this? Split apart disjoint geometry into assemblies so they can be placed seperately
-  // let splitGeometry = actOnLeafs(taggedGeometry, disjointGeometryToAssembly);
 
   // Algo overview:
   // collect all prospective orientations for all parts
