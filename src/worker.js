@@ -4,12 +4,10 @@ import * as replicad from "replicad";
 import { expose, proxy } from "comlink";
 import { Plane, Solid, Wire } from "replicad";
 import shrinkWrap from "replicad-shrink-wrap";
-import { addSVG, drawSVG } from "replicad-decorate";
+import { drawSVG } from "replicad-decorate";
 import { v4 as uuidv4 } from "uuid";
 import Fonts from "./js/fonts.js";
-//import { AnyNest, FloatPolygon } from "any-nest";
 import { PolygonPacker, PlacementWrapper } from "polygon-packer";
-import { e, equal, re } from "mathjs";
 
 var library = {};
 let defaultColor = "#aad7f2";
@@ -1347,15 +1345,8 @@ function rotateForLayout(targetID, inputID, layoutConfig, warningCallback) {
   library[targetID] = actOnLeafs(intermediate, (leaf) => {
     let candidates = all_candidates[leaf.id];
     if (candidates == undefined || candidates.length == 0) {
-      // no candidates, this leaf has no faces or all faces are non-planar.
-      // we can't do anything with it.
-      if (warningCallback) {
-        warningCallback(
-          `Part ${leaf.id} has no planar faces suitable for layout.`
-        );
-      }
-      console.warn("impossably had no candidates")
-      return undefined;
+      // This should be impossible.
+      throw new Error("Failed to filter unplacable part. id: " + leaf.id);
     }
     let selected;
     if (candidates.length == 1) {
@@ -1381,22 +1372,19 @@ function rotateForLayout(targetID, inputID, layoutConfig, warningCallback) {
 
       // Sort in order of preference (scores[0] being best).
       scores.sort((a, b) => {
-        // negative means a goes before b, positive means b goes before a
-
-        // having minimal (usually this means 0) offset is the most important factor, since it
-        // means our candidate face is actually flush with the xy plane and has no protrusions
-        // below it.
-        if (a.offset != b.offset) {
-          return a.offset - b.offset; // prefer candidates with no offset
-        }
-
         // Planar faces are preferred because typical cnc machines won't be able to reach the
         // underside face to make cuts.
         if (a.is_planar != b.is_planar) {
           return a.is_planar ? -1 : 1; // prefer planar faces
         }
 
-        // Thickness differences take priority over all other factors.
+        // offset == 0 is preferred since it means our face is flush with the xy plane.
+        if (a.offset != b.offset) {
+          return a.offset - b.offset; // prefer candidates with no offset
+        }
+
+        // Next, prefer thickness that matches material if possible, else pick thinnest
+        // orientation. Or defer if thickness is equal.
         if (!equalThickness(a.thickness, b.thickness)) {
           // Candidates with thickness exactly equal to material thickness always win.
           if (equalThickness(a.thickness, material_thickness)) {
@@ -1656,7 +1644,7 @@ function computePositions(
       .clone()
       .outerWire()
       .meshEdges({ tolerance: tolerance, angularTolerance: 0.5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
-    return asFloat64(preparePoints(mesh, tolerance, index % 2 == 0));
+    return asFloat64(preparePoints(mesh, tolerance));
   });
   console.log(polygons);
 
@@ -1776,7 +1764,7 @@ function translatePlacements(placement, placedParts, partCount) {
  * @returns {Array} Array of {x, y} points in proper winding order
  * @throws {Error} Throws an error if geometry has inconsistent edge continuations
  */
-function preparePoints(mesh, tolerance, reverse = false) {
+function preparePoints(mesh, tolerance) {
   // Unfortunately the "edges" of this mesh aren't always in sequential order. Here we re-sort them so we can
   // provide them in a winding order, ie, starting at one point and winding around the perimeter of the shape.
 
@@ -1850,9 +1838,6 @@ function preparePoints(mesh, tolerance, reverse = false) {
       "Part perimiter has less than 3 points: " +
         JSON.stringify(result)
     );
-  }
-  if (reverse) {
-    result.reverse();
   }
   return result;
 }
