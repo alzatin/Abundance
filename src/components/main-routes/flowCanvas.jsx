@@ -34,6 +34,9 @@ export default memo(function FlowCanvas({
   const [searchingGitHub, setSearchingGitHub] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [search, setSearch] = useState("");
+  
+  /** State for undo notification */
+  const [undoNotification, setUndoNotification] = useState(null);
 
   const canvasRef = useRef(null);
   const circleMenu = useRef(null);
@@ -164,7 +167,26 @@ export default memo(function FlowCanvas({
       e.preventDefault();
       //Undo
       if (e.key == "z") {
+        // Get operation info before undo (it gets popped during undo)
+        const operationInfo = GlobalVariables.undoOperationHistory.length > 0 
+          ? GlobalVariables.undoOperationHistory[GlobalVariables.undoOperationHistory.length - 1]
+          : null;
+        
+        const hadUndoHistory = GlobalVariables.recentMoleculeRepresentation.length > 0;
+        
         GlobalVariables.currentMolecule.undo();
+        
+        // Show notification based on what was undone
+        if (hadUndoHistory && operationInfo) {
+          setUndoNotification(`Undone: ${operationInfo.context || operationInfo.type}`);
+        } else if (hadUndoHistory) {
+          setUndoNotification("Undone: Previous action");
+        } else {
+          setUndoNotification("No action to undo");
+        }
+        
+        // Auto-dismiss notification after 3 seconds
+        setTimeout(() => setUndoNotification(null), 3000);
       }
       //Copy & Paste
       if (e.key == "c") {
@@ -513,6 +535,13 @@ export default memo(function FlowCanvas({
           }}
         />
       </div>
+      
+      {/* Undo notification */}
+      {undoNotification && (
+        <div className="undo-notification">
+          {undoNotification}
+        </div>
+      )}
     </>
   );
 });
