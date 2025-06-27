@@ -202,11 +202,8 @@ export default class CutLayout extends Atom {
             partPadding: partPadding,
             units: GlobalVariables.topLevelMolecule.units[GlobalVariables.topLevelMolecule.unitsKey],
           })
-        .then((warning) => {
+        .then(() => {
           this.basicThreadValueProcessing();
-          if (warning != undefined) {
-            this.setError(warning);
-          }
           this.progress = 1.0;
           this.cancelationHandle = undefined;
           this.processing = false;
