@@ -108,29 +108,6 @@ export default class Molecule extends Atom {
   }
 
   /**
-   * Gives this molecule inputs with the same names as all of it's parent's inputs
-   */
-  copyInputsFromParent() {
-    if (this.parent) {
-      this.parent.nodesOnTheScreen.forEach((node) => {
-        if (node.atomType == "Input") {
-          this.placeAtom(
-            {
-              parentMolecule: this,
-              y: node.y,
-              parent: this,
-              name: node.name,
-              atomType: "Input",
-              uniqueID: GlobalVariables.generateUniqueID(),
-            },
-            true
-          );
-        }
-      });
-    }
-  }
-
-  /**
    * Add the center dot to the molecule
    */
   draw() {
@@ -992,7 +969,6 @@ export default class Molecule extends Atom {
             //Make this molecule spawn with all of it's parent's inputs
             if (atom.atomType == "Molecule") {
               //Not GitHubMolecule
-              atom.copyInputsFromParent();
 
               //Make begin propagation from an atom when it is placed. This is used when copy and pasting molecules.
               if (promise != null) {

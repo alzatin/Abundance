@@ -57,7 +57,6 @@ class GlobalVariables {
      * @type {array}
      */
     this.availableTypes = {
-      box: { creator: Box, atomType: "Box" },
       intersection: {
         creator: Intersection,
         atomType: "Intersection",
@@ -78,7 +77,6 @@ class GlobalVariables {
         atomType: "Fusion",
         atomCategory: "Interactions",
       },
-      group: { creator: Group, atomType: "Group", atomCategory: "None" },
       loft: {
         creator: Loft,
         atomType: "Loft",
@@ -510,6 +508,64 @@ class GlobalVariables {
       this.recentMoleculeRepresentation.shift();
       this.undoOperationHistory.shift();
     }
+  }
+
+  /**
+   * Remaps unique IDs in a collection of serialized atoms to ensure pasted atoms have new unique IDs
+   * @param {array} atomsArray - Array of serialized atoms to remap IDs for
+   * @returns {array} - Array of atoms with remapped unique IDs
+   */
+  remapIDsForPaste(atomsArray) {
+    // First pass: create mapping of old IDs to new IDs for all atoms
+    const idMapping = {};
+    atomsArray.forEach((atom) => {
+      const oldID = atom.uniqueID;
+      const newID = this.generateUniqueID();
+      idMapping[oldID] = newID;
+      
+      // Also map any nested atom IDs (for complex molecules)
+      if (atom.allAtoms) {
+        atom.allAtoms.forEach((nestedAtom) => {
+          const oldNestedID = nestedAtom.uniqueID;
+          const newNestedID = this.generateUniqueID();
+          idMapping[oldNestedID] = newNestedID;
+        });
+      }
+    });
+
+    // Second pass: apply the ID mapping to all atoms and their connectors
+    return atomsArray.map((atom) => {
+      // Create a deep copy to avoid modifying the original
+      const atomCopy = JSON.parse(JSON.stringify(atom));
+      
+      // Update the main atom's unique ID
+      if (idMapping[atomCopy.uniqueID]) {
+        atomCopy.uniqueID = idMapping[atomCopy.uniqueID];
+      }
+      
+      // Update nested atoms (for complex molecules)
+      if (atomCopy.allAtoms) {
+        atomCopy.allAtoms.forEach((nestedAtom) => {
+          if (idMapping[nestedAtom.uniqueID]) {
+            nestedAtom.uniqueID = idMapping[nestedAtom.uniqueID];
+          }
+        });
+      }
+      
+      // Update connector references
+      if (atomCopy.allConnectors) {
+        atomCopy.allConnectors.forEach((connector) => {
+          if (connector.ap1ID && idMapping[connector.ap1ID]) {
+            connector.ap1ID = idMapping[connector.ap1ID];
+          }
+          if (connector.ap2ID && idMapping[connector.ap2ID]) {
+            connector.ap2ID = idMapping[connector.ap2ID];
+          }
+        });
+      }
+      
+      return atomCopy;
+    });
   }
 
   /**

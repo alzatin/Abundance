@@ -307,6 +307,38 @@ canvas {
   color: var(--abundance-color-fontGrey) !important;
 }
 
+/* Local atom styling */
+#git_search li.local-atom {
+  border-left: 3px solid var(--abundance-color-brightPurple);
+  background-color: rgba(124, 77, 255, 0.1);
+}
+
+#git_search li.local-atom:hover {
+  background-color: rgba(124, 77, 255, 0.2);
+}
+
+#git_search li.local-atom .atom-category {
+  font-size: 0.8em;
+  color: var(--abundance-color-brightPurple);
+  font-style: italic;
+}
+
+#git_search li.github-repo {
+  border-left: 3px solid transparent;
+}
+
+#git_search li.loading-item,
+#git_search li.error-item {
+  font-style: italic;
+  opacity: 0.7;
+  cursor: default;
+}
+
+#git_search li.loading-item:hover,
+#git_search li.error-item:hover {
+  background-color: transparent;
+}
+
 /*gitmolecule info panel on hover gitmolecule from list*/
 .GitProjectInfoPanel {
   padding: 10px;

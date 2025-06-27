@@ -433,6 +433,8 @@ function CreateMode({
                 "/imgs/abundance_logo.png"
               }
               alt="logo"
+              onClick={() => navigate("/")}
+              style={{ cursor: "pointer" }}
             />
           </div>
 

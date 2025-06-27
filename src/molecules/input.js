@@ -16,7 +16,7 @@ export default class Input extends Atom {
      * This atom's name
      * @type {string}
      */
-    this.name;
+    this.name = "name";
     /**
      * A description of this atom
      * @type {string}
@@ -70,12 +70,13 @@ export default class Input extends Atom {
 
     this.addIO("output", "number or geometry", this, this.type, this.value);
 
+    // Set values first to ensure this.name is correct before creating the parent input
+    this.setValues(values);
+
     //Add a new input to the current molecule
     if (typeof this.parent !== "undefined") {
       this.parent.addIO("input", this.name, this.parent, this.type, this.value);
     }
-
-    this.setValues(values);
   }
 
   /** Solution to canvas overflow https://stackoverflow.com/questions/10508988/html-canvas-text-overflow-ellipsis*/

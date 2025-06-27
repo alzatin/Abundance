@@ -37,6 +37,7 @@ export default memo(function FlowCanvas({
 
   /** State for undo notification */
   const [undoNotification, setUndoNotification] = useState(null);
+  const [isShortcut, setIsShortcutTriggered] = useState(false);
 
   const canvasRef = useRef(null);
   const circleMenu = useRef(null);
@@ -165,7 +166,7 @@ export default memo(function FlowCanvas({
 
     if (GlobalVariables.ctrlDown && shortCuts.hasOwnProperty([e.key])) {
       e.preventDefault();
-      //Undo
+      // Undo
       if (e.key == "z") {
         // Get operation info before undo (it gets popped during undo)
         const operationInfo =
@@ -204,15 +205,12 @@ export default memo(function FlowCanvas({
           atom.selected = false;
         });
 
-        GlobalVariables.atomsSelected.forEach((item) => {
-          let newAtomID = GlobalVariables.generateUniqueID();
-          item.uniqueID = newAtomID;
-          if (
-            item.atomType == "Molecule" ||
-            item.atomType == "GitHubMolecule"
-          ) {
-            item = GlobalVariables.currentMolecule.remapIDs(item);
-          }
+        // Remap all unique IDs for the atoms being pasted to ensure they have new unique IDs
+        const remappedAtoms = GlobalVariables.remapIDsForPaste(
+          GlobalVariables.atomsSelected
+        );
+
+        remappedAtoms.forEach((item) => {
           GlobalVariables.currentMolecule.placeAtom(item, true);
         });
       }
@@ -220,6 +218,7 @@ export default memo(function FlowCanvas({
       //Opens menu to search for github molecule
       else if (e.key == "g") {
         setSearchingGitHub(true);
+        setIsShortcutTriggered(true); // Set the shortcut flag
         GlobalVariables.ctrlDown = false;
       } else {
         GlobalVariables.currentMolecule.placeAtom(
@@ -324,10 +323,12 @@ export default memo(function FlowCanvas({
     } else {
       cmenu.hide();
       setSearchingGitHub(false);
+      setIsShortcutTriggered(false);
       setIsHovering(false);
       setSearch("");
 
       var clickHandledByMolecule = false;
+      var activeAtom = null;
       /*Run through all the atoms on the screen and decide if one was clicked*/
       // Iterate in reverse order to give priority to newer atoms
       for (
@@ -343,14 +344,18 @@ export default memo(function FlowCanvas({
           event.clientY,
           clickHandledByMolecule
         );
-        if (atomClicked !== undefined) {
-          let idi = atomClicked;
+        if (atomClicked !== undefined && !clickHandledByMolecule) {
+          activeAtom = atomClicked;
           /* Clicked atom is now the active atom */
-          setActiveAtom(idi);
           GlobalVariables.currentMolecule.selected = false;
           clickHandledByMolecule = true;
-          break; // Stop processing once an atom handles the click
+          // Continue processing to allow other atoms to deselect themselves
         }
+      }
+
+      // Set the active atom after all atoms have been processed
+      if (activeAtom) {
+        setActiveAtom(activeAtom);
       }
 
       //Draw the selection box
@@ -537,6 +542,8 @@ export default memo(function FlowCanvas({
             setSearchingGitHub,
             isHovering,
             setIsHovering,
+            isShortcut,
+            setIsShortcutTriggered,
           }}
         />
       </div>

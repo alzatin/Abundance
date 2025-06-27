@@ -68,10 +68,10 @@ export default (function ParamsEditor({
         if (activeAtom.currentEquation !== value) {
           activeAtom.setEquation(value);
           setInputChanged(activeAtom.currentEquation);
+          set({
+            [activeAtom.uniqueID + "result"]: activeAtom.evaluateEquation(),
+          });
         }
-        set({
-          [activeAtom.uniqueID + "result"]: activeAtom.evaluateEquation(),
-        });
       },
       order: -3,
     };
