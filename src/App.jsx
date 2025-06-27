@@ -116,7 +116,7 @@ export default function ReplicadApp() {
           })
           .catch((e) => {
             console.error("Can't display Mesh " + e);
-            activeAtom.setAlert("Can't display Mesh " + e);
+            activeAtom.setError("Can't display Mesh " + e);
           });
         /*Set wireMesh*/
         //Exception: Don't display the mesh if the thing we are displaying is already the output

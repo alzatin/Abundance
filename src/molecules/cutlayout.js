@@ -182,7 +182,7 @@ export default class CutLayout extends Atom {
       var partPadding = this.findIOValue("Part Padding");
 
       if (!inputID) {
-        this.setAlert('"geometry" input is missing');
+        this.setError('"geometry" input is missing');
         return;
       }
       // if positions isn't a list of lists, nest it so that it is
@@ -195,17 +195,15 @@ export default class CutLayout extends Atom {
           this.uniqueID,
           inputID,
           this.placements,
+          proxy((message) => {this.setWarning(message)}),
           {
             width: sheetWidth,
             height: sheetHeight,
             partPadding: partPadding,
             units: GlobalVariables.topLevelMolecule.units[GlobalVariables.topLevelMolecule.unitsKey],
           })
-        .then((warning) => {
+        .then(() => {
           this.basicThreadValueProcessing();
-          if (warning != undefined) {
-            this.setAlert(warning);
-          }
           this.progress = 1.0;
           this.cancelationHandle = undefined;
           this.processing = false;
@@ -234,7 +232,7 @@ export default class CutLayout extends Atom {
       var partPadding = this.findIOValue("Part Padding");
 
       if (!inputID) {
-        this.setAlert('"geometry" input is missing');
+        this.setError('"geometry" input is missing');
         return;
       }
 
@@ -246,6 +244,7 @@ export default class CutLayout extends Atom {
             this.progress = progress;
             this.cancelationHandle = cancelationHandle;
           }),
+          proxy((message) => {this.setWarning(message)}),
           proxy((placements) => {this.handleNewPlacements(placements)}),
           {
             width: sheetWidth,
