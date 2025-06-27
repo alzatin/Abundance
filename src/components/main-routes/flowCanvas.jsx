@@ -177,24 +177,16 @@ export default memo(function FlowCanvas({
         GlobalVariables.currentMolecule.undo();
         
         // Show notification based on what was undone
-        let notificationMessage = null;
-        
         if (hadUndoHistory && operationInfo) {
-          // Don't show notification for ADD operations, as user just added something and undoing doesn't need confirmation
-          if (operationInfo.type !== 'ADD') {
-            notificationMessage = `Undone: ${operationInfo.context || operationInfo.type}`;
-          }
+          setUndoNotification(`Undone: ${operationInfo.context || operationInfo.type}`);
         } else if (hadUndoHistory) {
-          notificationMessage = "Undone: Previous action";
+          setUndoNotification("Undone: Previous action");
         } else {
-          notificationMessage = "No action to undo";
+          setUndoNotification("No action to undo");
         }
         
-        if (notificationMessage) {
-          setUndoNotification(notificationMessage);
-          // Auto-dismiss notification after 3 seconds
-          setTimeout(() => setUndoNotification(null), 3000);
-        }
+        // Auto-dismiss notification after 3 seconds
+        setTimeout(() => setUndoNotification(null), 3000);
       }
       //Copy & Paste
       if (e.key == "c") {
