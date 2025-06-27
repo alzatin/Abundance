@@ -25,9 +25,10 @@ const InitialLog = ({ setNoUserBrowsing }) => {
 
     // the client id from github
 
-    const client_id = window.origin.includes("localhost")
-      ? import.meta.env.VITE_GH_OAUTH_CLIENT_ID
-      : import.meta.env.VITE_GH_OAUTH_CLIENT_ID_MOB;
+    const client_id =
+      window.origin.includes("localhost") || window.origin.includes("abundance")
+        ? import.meta.env.VITE_GH_OAUTH_CLIENT_ID
+        : import.meta.env.VITE_GH_OAUTH_CLIENT_ID_MOB;
 
     // create a CSRF token and store it locally
     const csrfToken = window.crypto
