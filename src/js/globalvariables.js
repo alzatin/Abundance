@@ -522,7 +522,7 @@ class GlobalVariables {
       const oldID = atom.uniqueID;
       const newID = this.generateUniqueID();
       idMapping[oldID] = newID;
-      
+
       // Also map any nested atom IDs (for complex molecules)
       if (atom.allAtoms) {
         atom.allAtoms.forEach((nestedAtom) => {
@@ -537,12 +537,12 @@ class GlobalVariables {
     return atomsArray.map((atom) => {
       // Create a deep copy to avoid modifying the original
       const atomCopy = JSON.parse(JSON.stringify(atom));
-      
+
       // Update the main atom's unique ID
       if (idMapping[atomCopy.uniqueID]) {
         atomCopy.uniqueID = idMapping[atomCopy.uniqueID];
       }
-      
+
       // Update nested atoms (for complex molecules)
       if (atomCopy.allAtoms) {
         atomCopy.allAtoms.forEach((nestedAtom) => {
@@ -551,7 +551,7 @@ class GlobalVariables {
           }
         });
       }
-      
+
       // Update connector references
       if (atomCopy.allConnectors) {
         atomCopy.allConnectors.forEach((connector) => {
@@ -563,7 +563,7 @@ class GlobalVariables {
           }
         });
       }
-      
+
       return atomCopy;
     });
   }
