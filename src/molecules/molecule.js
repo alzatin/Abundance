@@ -385,17 +385,19 @@ export default class Molecule extends Atom {
       let rawFile = JSON.parse(
         GlobalVariables.recentMoleculeRepresentation.pop()
       );
-      
+
       // Get operation info if available
       let operationInfo = null;
       if (GlobalVariables.undoOperationHistory.length > 0) {
         operationInfo = GlobalVariables.undoOperationHistory.pop();
-        console.log(`Undoing ${operationInfo.type} operation: ${operationInfo.context}`);
+        console.log(
+          `Undoing ${operationInfo.type} operation: ${operationInfo.context}`
+        );
       }
 
       // Make a copy of current nodes to safely delete them
       const nodesCopy = [...GlobalVariables.topLevelMolecule.nodesOnTheScreen];
-      
+
       // Delete all current nodes to prepare for state restoration
       nodesCopy.forEach((atom) => {
         try {
@@ -411,7 +413,7 @@ export default class Molecule extends Atom {
       } else {
         console.warn("Invalid file format for undo operation");
       }
-      
+
       // Ensure current molecule is selected
       if (GlobalVariables.currentMolecule) {
         GlobalVariables.currentMolecule.selected = true;
@@ -918,7 +920,9 @@ export default class Molecule extends Atom {
     try {
       // Save undo state for user-initiated atom additions (unlock=true means user action)
       if (unlock && this === GlobalVariables.currentMolecule) {
-        GlobalVariables.saveUndoState('ADD', `Added ${newAtomObj.atomType}`);
+        console.log(`undostate in current molecule place atom`);
+        console.log(newAtomObj, unlock, values);
+        GlobalVariables.saveUndoState("ADD", `Added ${newAtomObj.atomType}`);
       }
 
       GlobalVariables.numberOfAtomsToLoad =
@@ -958,7 +962,10 @@ export default class Molecule extends Atom {
           ) {
             // For copied inputs (when unlock=true), apply name deduplication
             if (unlock) {
-              atom.name = GlobalVariables.incrementVariableName(newAtomObj.name, this);
+              atom.name = GlobalVariables.incrementVariableName(
+                newAtomObj.name,
+                this
+              );
             } else {
               atom.name = newAtomObj.name; // Preserve exact name for normal loading
             }

@@ -34,7 +34,7 @@ export default memo(function FlowCanvas({
   const [searchingGitHub, setSearchingGitHub] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [search, setSearch] = useState("");
-  
+
   /** State for undo notification */
   const [undoNotification, setUndoNotification] = useState(null);
 
@@ -142,7 +142,7 @@ export default memo(function FlowCanvas({
 
     if (e.key == "Backspace" || e.key == "Delete") {
       /* Save undo state before deletion */
-      GlobalVariables.saveUndoState('DELETE', 'Deleted selected atoms');
+      GlobalVariables.saveUndoState("DELETE", "Deleted selected atoms");
 
       GlobalVariables.atomsSelected = [];
       //Adds items to the  array that we will use to delete
@@ -168,32 +168,37 @@ export default memo(function FlowCanvas({
       //Undo
       if (e.key == "z") {
         // Get operation info before undo (it gets popped during undo)
-        const operationInfo = GlobalVariables.undoOperationHistory.length > 0 
-          ? GlobalVariables.undoOperationHistory[GlobalVariables.undoOperationHistory.length - 1]
-          : null;
-        
-        const hadUndoHistory = GlobalVariables.recentMoleculeRepresentation.length > 0;
-        
+        const operationInfo =
+          GlobalVariables.undoOperationHistory.length > 0
+            ? GlobalVariables.undoOperationHistory[
+                GlobalVariables.undoOperationHistory.length - 1
+              ]
+            : null;
+
+        const hadUndoHistory =
+          GlobalVariables.recentMoleculeRepresentation.length > 0;
+
         GlobalVariables.currentMolecule.undo();
-        
+
         // Show notification based on what was undone
         if (hadUndoHistory && operationInfo) {
-          setUndoNotification(`Undone: ${operationInfo.context || operationInfo.type}`);
+          setUndoNotification(
+            `Undone: ${operationInfo.context || operationInfo.type}`
+          );
         } else if (hadUndoHistory) {
           setUndoNotification("Undone: Previous action");
         } else {
           setUndoNotification("No action to undo");
         }
-        
+
         // Auto-dismiss notification after 3 seconds
         setTimeout(() => setUndoNotification(null), 3000);
       }
       //Copy & Paste
-      if (e.key == "c") {
+      else if (e.key == "c") {
         GlobalVariables.atomsSelected = [];
         GlobalVariables.currentMolecule.copy();
-      }
-      if (e.key == "v") {
+      } else if (e.key == "v") {
         // Deselect all currently selected atoms before pasting
         GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
           atom.selected = false;
@@ -213,7 +218,7 @@ export default memo(function FlowCanvas({
       }
 
       //Opens menu to search for github molecule
-      if (e.key == "g") {
+      else if (e.key == "g") {
         setSearchingGitHub(true);
         GlobalVariables.ctrlDown = false;
       } else {
@@ -535,12 +540,10 @@ export default memo(function FlowCanvas({
           }}
         />
       </div>
-      
+
       {/* Undo notification */}
       {undoNotification && (
-        <div className="undo-notification">
-          {undoNotification}
-        </div>
+        <div className="undo-notification">{undoNotification}</div>
       )}
     </>
   );

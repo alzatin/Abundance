@@ -282,7 +282,7 @@ class GlobalVariables {
      * @type {array}
      */
     this.recentMoleculeRepresentation = [];
-    
+
     /**
      * An array to track operation types for better undo handling.
      * Each entry contains: { type: 'ADD'|'DELETE'|'MODIFY', timestamp: number, context: string }
@@ -464,7 +464,7 @@ class GlobalVariables {
         // Extract base name and current number
         const baseName = suffixMatch[1];
         const currentNumber = parseInt(suffixMatch[2]);
-        
+
         // Increment the number and try again
         const incrementedVarName = `${baseName} (${currentNumber + 1})`;
         return this.incrementVariableName(incrementedVarName, molecule);
@@ -482,10 +482,14 @@ class GlobalVariables {
    * @param {string} operationType - Type of operation ('ADD', 'DELETE', 'MODIFY')
    * @param {string} context - Additional context about the operation
    */
-  saveUndoState(operationType, context = '') {
+  saveUndoState(operationType, context = "") {
     if (!this.topLevelMolecule) {
       return; // Can't save state if no top level molecule exists
     }
+
+    console.log(
+      `Saving undo state for operation: ${operationType}, context: ${context}`
+    );
 
     const topLevelMoleculeCopy = JSON.stringify(
       this.topLevelMolecule.serialize(),
@@ -494,10 +498,11 @@ class GlobalVariables {
     );
 
     this.recentMoleculeRepresentation.push(topLevelMoleculeCopy);
+    console.log(operationType, context);
     this.undoOperationHistory.push({
       type: operationType,
       timestamp: Date.now(),
-      context: context
+      context: context,
     });
 
     // Keep maximum of 5 undo states
