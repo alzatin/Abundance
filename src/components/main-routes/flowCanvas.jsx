@@ -164,14 +164,11 @@ export default memo(function FlowCanvas({
       GlobalVariables.ctrlDown = true;
     }
 
-    // Handle Shift key for GitSearch
     if (e.key == "Shift") {
-      GlobalVariables.shiftDown = true;
       // Trigger GitSearch when Shift is pressed
-      if (!searchingGitHub) {
-        setSearchingGitHub(true);
-        setIsShortcutTriggered(true);
-      }
+      setSearchingGitHub(true);
+      setIsShortcutTriggered(true); // Set the shortcut flag
+      GlobalVariables.ctrlDown = false;
     }
 
     if (GlobalVariables.ctrlDown && shortCuts.hasOwnProperty([e.key])) {
@@ -224,7 +221,6 @@ export default memo(function FlowCanvas({
           GlobalVariables.currentMolecule.placeAtom(item, true);
         });
       }
-
       //Opens menu to search for github molecule
       else if (e.key == "g") {
         setSearchingGitHub(true);
