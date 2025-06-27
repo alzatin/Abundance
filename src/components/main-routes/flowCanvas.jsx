@@ -34,6 +34,9 @@ export default memo(function FlowCanvas({
   const [searchingGitHub, setSearchingGitHub] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [search, setSearch] = useState("");
+
+  /** State for undo notification */
+  const [undoNotification, setUndoNotification] = useState(null);
   const [isShortcut, setIsShortcutTriggered] = useState(false);
 
   const canvasRef = useRef(null);
@@ -139,18 +142,8 @@ export default memo(function FlowCanvas({
     // }
 
     if (e.key == "Backspace" || e.key == "Delete") {
-      /* Copy the top level molecule to the recently deleted atoms for undo */
-      const topLevelMoleculeCopy = JSON.stringify(
-        GlobalVariables.topLevelMolecule.serialize(),
-        null,
-        4
-      );
-
-      GlobalVariables.recentMoleculeRepresentation.push(topLevelMoleculeCopy);
-      //max the number of backups at 5
-      if (GlobalVariables.recentMoleculeRepresentation.length > 5) {
-        GlobalVariables.recentMoleculeRepresentation.shift();
-      }
+      /* Save undo state before deletion */
+      GlobalVariables.saveUndoState("DELETE", "Deleted selected atoms");
 
       GlobalVariables.atomsSelected = [];
       //Adds items to the  array that we will use to delete
@@ -175,29 +168,55 @@ export default memo(function FlowCanvas({
       e.preventDefault();
       // Undo
       if (e.key == "z") {
+        // Get operation info before undo (it gets popped during undo)
+        const operationInfo =
+          GlobalVariables.undoOperationHistory.length > 0
+            ? GlobalVariables.undoOperationHistory[
+                GlobalVariables.undoOperationHistory.length - 1
+              ]
+            : null;
+
+        const hadUndoHistory =
+          GlobalVariables.recentMoleculeRepresentation.length > 0;
+
         GlobalVariables.currentMolecule.undo();
+
+        // Show notification based on what was undone
+        if (hadUndoHistory && operationInfo) {
+          setUndoNotification(
+            `Undone: ${operationInfo.context || operationInfo.type}`
+          );
+        } else if (hadUndoHistory) {
+          setUndoNotification("Undone: Previous action");
+        } else {
+          setUndoNotification("No action to undo");
+        }
+
+        // Auto-dismiss notification after 3 seconds
+        setTimeout(() => setUndoNotification(null), 3000);
       }
-      // Copy & Paste
-      if (e.key == "c") {
+      //Copy & Paste
+      else if (e.key == "c") {
         GlobalVariables.atomsSelected = [];
         GlobalVariables.currentMolecule.copy();
-      }
-      if (e.key == "v") {
+      } else if (e.key == "v") {
         // Deselect all currently selected atoms before pasting
         GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
           atom.selected = false;
         });
 
         // Remap all unique IDs for the atoms being pasted to ensure they have new unique IDs
-        const remappedAtoms = GlobalVariables.remapIDsForPaste(GlobalVariables.atomsSelected);
-        
+        const remappedAtoms = GlobalVariables.remapIDsForPaste(
+          GlobalVariables.atomsSelected
+        );
+
         remappedAtoms.forEach((item) => {
           GlobalVariables.currentMolecule.placeAtom(item, true);
         });
       }
 
-      // Opens menu to search for GitHub molecule
-      if (e.key == "g") {
+      //Opens menu to search for github molecule
+      else if (e.key == "g") {
         setSearchingGitHub(true);
         setIsShortcutTriggered(true); // Set the shortcut flag
         GlobalVariables.ctrlDown = false;
@@ -333,7 +352,7 @@ export default memo(function FlowCanvas({
           // Continue processing to allow other atoms to deselect themselves
         }
       }
-      
+
       // Set the active atom after all atoms have been processed
       if (activeAtom) {
         setActiveAtom(activeAtom);
@@ -350,7 +369,7 @@ export default memo(function FlowCanvas({
             name: "Box",
             atomType: "Box",
           },
-          null,
+          true, // Changed from null to true to enable undo state saving
           GlobalVariables.availableTypes
         );
       }
@@ -528,6 +547,11 @@ export default memo(function FlowCanvas({
           }}
         />
       </div>
+
+      {/* Undo notification */}
+      {undoNotification && (
+        <div className="undo-notification">{undoNotification}</div>
+      )}
     </>
   );
 });
