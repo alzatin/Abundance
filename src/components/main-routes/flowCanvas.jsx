@@ -171,6 +171,16 @@ export default memo(function FlowCanvas({
       GlobalVariables.ctrlDown = true;
     }
 
+    // Handle Shift key for GitSearch
+    if (e.key == "Shift") {
+      GlobalVariables.shiftDown = true;
+      // Trigger GitSearch when Shift is pressed
+      if (!searchingGitHub) {
+        setSearchingGitHub(true);
+        setIsShortcutTriggered(true);
+      }
+    }
+
     if (GlobalVariables.ctrlDown && shortCuts.hasOwnProperty([e.key])) {
       e.preventDefault();
       // Undo
@@ -224,6 +234,9 @@ export default memo(function FlowCanvas({
   const keyUp = (e) => {
     if (e.key == "Control" || e.key == "Meta") {
       GlobalVariables.ctrlDown = false;
+    }
+    if (e.key == "Shift") {
+      GlobalVariables.shiftDown = false;
     }
   };
 

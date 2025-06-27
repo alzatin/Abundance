@@ -235,6 +235,11 @@ class GlobalVariables {
      */
     this.ctrlDown = false;
     /**
+     * A flag to indicate if shift is pressed
+     * @type {boolean}
+     */
+    this.shiftDown = false;
+    /**
      * A variable to save array to be copied
      * @type {array}
      */
