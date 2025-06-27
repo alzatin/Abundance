@@ -358,7 +358,6 @@ export default memo(function FlowCanvas({
           /* Clicked atom is now the active atom */
           GlobalVariables.currentMolecule.selected = false;
           clickHandledByMolecule = true;
-          // Continue processing to allow other atoms to deselect themselves
         }
       }
 
