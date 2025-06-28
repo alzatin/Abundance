@@ -47,6 +47,10 @@ export default class PolygonPacker {
     this.#resultBounds = binData.resultBounds;
     this.#binArea = binData.area;
     this.#isWorking = true;
+    console.log("Starting polygon packing with the following configuration:");
+    for (const polygon of polygons) {
+      console.log(polygon.length)
+    }
     this.#nodes = clipperWrapper.generateTree(polygons, configuration.useHoles);
 
     this.launchWorkers(configuration, displayCallback);

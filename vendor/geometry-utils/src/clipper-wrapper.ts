@@ -70,11 +70,15 @@ export default class ClipperWrapper {
     let i: number = 0;
 
     for (i = 0; i < nodeCount; ++i) {
+      console.log("Processing polygon " + i);
       memSeg = memSegs[i];
       node = getPolygonNode(i, memSeg);
+      console.log("pre-clean node " + node.memSeg.length);
 
       this.cleanNode(node);
-
+      if (i == 2) {
+        console.log("cleanned node " + node.memSeg.length);
+      }
       this.polygon.bind(node.memSeg);
 
       if (this.polygon.isBroken || this.polygon.absArea <= trashold) {
