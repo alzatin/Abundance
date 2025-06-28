@@ -240,14 +240,14 @@ export default class Code extends Atom {
             const lineMatch = err.stack.match(/<anonymous>:(\d+):(\d+)/);
             if (lineMatch) {
               const lineNumber = lineMatch[1];
-              this.setAlert(
+              this.setError(
                 `User code error at line ${lineNumber}: ${err.name} - ${err.message}`
               );
               logged = true;
             }
           }
           if (!logged) {
-            this.setAlert(err.name + ": " + err.message);
+            this.setError(err.name + ": " + err.message);
           }
         });
     }

@@ -35,6 +35,10 @@ export default memo(function FlowCanvas({
   const [isHovering, setIsHovering] = useState(false);
   const [search, setSearch] = useState("");
 
+  /** State for undo notification */
+  const [undoNotification, setUndoNotification] = useState(null);
+  const [isShortcut, setIsShortcutTriggered] = useState(false);
+
   const canvasRef = useRef(null);
   const circleMenu = useRef(null);
   const navigate = useNavigate();
@@ -138,18 +142,8 @@ export default memo(function FlowCanvas({
     // }
 
     if (e.key == "Backspace" || e.key == "Delete") {
-      /* Copy the top level molecule to the recently deleted atoms for undo */
-      const topLevelMoleculeCopy = JSON.stringify(
-        GlobalVariables.topLevelMolecule.serialize(),
-        null,
-        4
-      );
-
-      GlobalVariables.recentMoleculeRepresentation.push(topLevelMoleculeCopy);
-      //max the number of backups at 5
-      if (GlobalVariables.recentMoleculeRepresentation.length > 5) {
-        GlobalVariables.recentMoleculeRepresentation.shift();
-      }
+      /* Save undo state before deletion */
+      GlobalVariables.saveUndoState("DELETE", "Deleted selected atoms");
 
       GlobalVariables.atomsSelected = [];
       //Adds items to the  array that we will use to delete
@@ -170,39 +164,67 @@ export default memo(function FlowCanvas({
       GlobalVariables.ctrlDown = true;
     }
 
+    if (e.key == "Shift") {
+      // Trigger GitSearch when Shift is pressed
+      setSearchingGitHub(true);
+      setIsShortcutTriggered(true); // Set the shortcut flag
+      GlobalVariables.ctrlDown = false;
+    }
+
     if (GlobalVariables.ctrlDown && shortCuts.hasOwnProperty([e.key])) {
       e.preventDefault();
-      //Undo
+      // Undo
       if (e.key == "z") {
+        // Get operation info before undo (it gets popped during undo)
+        const operationInfo =
+          GlobalVariables.undoOperationHistory.length > 0
+            ? GlobalVariables.undoOperationHistory[
+                GlobalVariables.undoOperationHistory.length - 1
+              ]
+            : null;
+
+        const hadUndoHistory =
+          GlobalVariables.recentMoleculeRepresentation.length > 0;
+
         GlobalVariables.currentMolecule.undo();
+
+        // Show notification based on what was undone
+        if (hadUndoHistory && operationInfo) {
+          setUndoNotification(
+            `Undone: ${operationInfo.context || operationInfo.type}`
+          );
+        } else if (hadUndoHistory) {
+          setUndoNotification("Undone: Previous action");
+        } else {
+          setUndoNotification("No action to undo");
+        }
+
+        // Auto-dismiss notification after 3 seconds
+        setTimeout(() => setUndoNotification(null), 3000);
       }
       //Copy & Paste
-      if (e.key == "c") {
+      else if (e.key == "c") {
         GlobalVariables.atomsSelected = [];
         GlobalVariables.currentMolecule.copy();
-      }
-      if (e.key == "v") {
+      } else if (e.key == "v") {
         // Deselect all currently selected atoms before pasting
         GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
           atom.selected = false;
         });
 
-        GlobalVariables.atomsSelected.forEach((item) => {
-          let newAtomID = GlobalVariables.generateUniqueID();
-          item.uniqueID = newAtomID;
-          if (
-            item.atomType == "Molecule" ||
-            item.atomType == "GitHubMolecule"
-          ) {
-            item = GlobalVariables.currentMolecule.remapIDs(item);
-          }
+        // Remap all unique IDs for the atoms being pasted to ensure they have new unique IDs
+        const remappedAtoms = GlobalVariables.remapIDsForPaste(
+          GlobalVariables.atomsSelected
+        );
+
+        remappedAtoms.forEach((item) => {
           GlobalVariables.currentMolecule.placeAtom(item, true);
         });
       }
-
       //Opens menu to search for github molecule
-      if (e.key == "g") {
+      else if (e.key == "g") {
         setSearchingGitHub(true);
+        setIsShortcutTriggered(true); // Set the shortcut flag
         GlobalVariables.ctrlDown = false;
       } else {
         GlobalVariables.currentMolecule.placeAtom(
@@ -227,6 +249,9 @@ export default memo(function FlowCanvas({
   const keyUp = (e) => {
     if (e.key == "Control" || e.key == "Meta") {
       GlobalVariables.ctrlDown = false;
+    }
+    if (e.key == "Shift") {
+      GlobalVariables.shiftDown = false;
     }
   };
 
@@ -307,10 +332,12 @@ export default memo(function FlowCanvas({
     } else {
       cmenu.hide();
       setSearchingGitHub(false);
+      setIsShortcutTriggered(false);
       setIsHovering(false);
       setSearch("");
 
       var clickHandledByMolecule = false;
+      var activeAtom = null;
       /*Run through all the atoms on the screen and decide if one was clicked*/
       // Iterate in reverse order to give priority to newer atoms
       for (
@@ -326,14 +353,17 @@ export default memo(function FlowCanvas({
           event.clientY,
           clickHandledByMolecule
         );
-        if (atomClicked !== undefined) {
-          let idi = atomClicked;
+        if (atomClicked !== undefined && !clickHandledByMolecule) {
+          activeAtom = atomClicked;
           /* Clicked atom is now the active atom */
-          setActiveAtom(idi);
           GlobalVariables.currentMolecule.selected = false;
           clickHandledByMolecule = true;
-          break; // Stop processing once an atom handles the click
         }
+      }
+
+      // Set the active atom after all atoms have been processed
+      if (activeAtom) {
+        setActiveAtom(activeAtom);
       }
 
       //Draw the selection box
@@ -347,7 +377,7 @@ export default memo(function FlowCanvas({
             name: "Box",
             atomType: "Box",
           },
-          null,
+          true, // Changed from null to true to enable undo state saving
           GlobalVariables.availableTypes
         );
       }
@@ -520,9 +550,16 @@ export default memo(function FlowCanvas({
             setSearchingGitHub,
             isHovering,
             setIsHovering,
+            isShortcut,
+            setIsShortcutTriggered,
           }}
         />
       </div>
+
+      {/* Undo notification */}
+      {undoNotification && (
+        <div className="undo-notification">{undoNotification}</div>
+      )}
     </>
   );
 });

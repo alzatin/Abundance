@@ -167,7 +167,7 @@ export default class Gcode extends Atom {
           console.error("Error creating STL for gcode:", err);
         });
     } catch (err) {
-      this.setAlert(err);
+      this.setError(err);
     }
 
   }

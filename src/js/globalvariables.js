@@ -57,7 +57,6 @@ class GlobalVariables {
      * @type {array}
      */
     this.availableTypes = {
-      box: { creator: Box, atomType: "Box" },
       intersection: {
         creator: Intersection,
         atomType: "Intersection",
@@ -78,7 +77,6 @@ class GlobalVariables {
         atomType: "Fusion",
         atomCategory: "Interactions",
       },
-      group: { creator: Group, atomType: "Group", atomCategory: "None" },
       loft: {
         creator: Loft,
         atomType: "Loft",
@@ -284,6 +282,13 @@ class GlobalVariables {
     this.recentMoleculeRepresentation = [];
 
     /**
+     * An array to track operation types for better undo handling.
+     * Each entry contains: { type: 'ADD'|'DELETE'|'MODIFY', timestamp: number, context: string }
+     * @type {array}
+     */
+    this.undoOperationHistory = [];
+
+    /**
      * A string to indicate a stored user font for the canvas.
      * @type {string}
      */
@@ -457,7 +462,7 @@ class GlobalVariables {
         // Extract base name and current number
         const baseName = suffixMatch[1];
         const currentNumber = parseInt(suffixMatch[2]);
-        
+
         // Increment the number and try again
         const incrementedVarName = `${baseName} (${currentNumber + 1})`;
         return this.incrementVariableName(incrementedVarName, molecule);
@@ -469,6 +474,100 @@ class GlobalVariables {
       return varName;
     }
   }
+
+  /**
+   * Saves the current state for undo functionality with operation type tracking
+   * @param {string} operationType - Type of operation ('ADD', 'DELETE', 'MODIFY')
+   * @param {string} context - Additional context about the operation
+   */
+  saveUndoState(operationType, context = "") {
+    if (!this.topLevelMolecule) {
+      return; // Can't save state if no top level molecule exists
+    }
+
+    console.log(
+      `Saving undo state for operation: ${operationType}, context: ${context}`
+    );
+
+    const topLevelMoleculeCopy = JSON.stringify(
+      this.topLevelMolecule.serialize(),
+      null,
+      4
+    );
+
+    this.recentMoleculeRepresentation.push(topLevelMoleculeCopy);
+    console.log(operationType, context);
+    this.undoOperationHistory.push({
+      type: operationType,
+      timestamp: Date.now(),
+      context: context,
+    });
+
+    // Keep maximum of 5 undo states
+    if (this.recentMoleculeRepresentation.length > 5) {
+      this.recentMoleculeRepresentation.shift();
+      this.undoOperationHistory.shift();
+    }
+  }
+
+  /**
+   * Remaps unique IDs in a collection of serialized atoms to ensure pasted atoms have new unique IDs
+   * @param {array} atomsArray - Array of serialized atoms to remap IDs for
+   * @returns {array} - Array of atoms with remapped unique IDs
+   */
+  remapIDsForPaste(atomsArray) {
+    // First pass: create mapping of old IDs to new IDs for all atoms
+    const idMapping = {};
+    atomsArray.forEach((atom) => {
+      const oldID = atom.uniqueID;
+      const newID = this.generateUniqueID();
+      idMapping[oldID] = newID;
+
+      // Also map any nested atom IDs (for complex molecules)
+      if (atom.allAtoms) {
+        atom.allAtoms.forEach((nestedAtom) => {
+          const oldNestedID = nestedAtom.uniqueID;
+          const newNestedID = this.generateUniqueID();
+          idMapping[oldNestedID] = newNestedID;
+        });
+      }
+    });
+
+    // Second pass: apply the ID mapping to all atoms and their connectors
+    return atomsArray.map((atom) => {
+      // Create a deep copy to avoid modifying the original
+      const atomCopy = JSON.parse(JSON.stringify(atom));
+
+      // Update the main atom's unique ID
+      if (idMapping[atomCopy.uniqueID]) {
+        atomCopy.uniqueID = idMapping[atomCopy.uniqueID];
+      }
+
+      // Update nested atoms (for complex molecules)
+      if (atomCopy.allAtoms) {
+        atomCopy.allAtoms.forEach((nestedAtom) => {
+          if (idMapping[nestedAtom.uniqueID]) {
+            nestedAtom.uniqueID = idMapping[nestedAtom.uniqueID];
+          }
+        });
+      }
+
+      // Update connector references
+      if (atomCopy.allConnectors) {
+        atomCopy.allConnectors.forEach((connector) => {
+          if (connector.ap1ID && idMapping[connector.ap1ID]) {
+            connector.ap1ID = idMapping[connector.ap1ID];
+          }
+          if (connector.ap2ID && idMapping[connector.ap2ID]) {
+            connector.ap2ID = idMapping[connector.ap2ID];
+          }
+        });
+      }
+
+      return atomCopy;
+    });
+  }
+
   /**
    * Computes the distance between two points on a plane. This is a duplicate of the one in utils which should probably be deleted.
    * @param {number} x1 - The x cordinate of the first point.
