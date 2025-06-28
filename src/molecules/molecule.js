@@ -272,7 +272,7 @@ export default class Molecule extends Atom {
    * Computes and returns an array of BOMEntry objects after looking at the tags of a geometry.*/
   async extractBomTags() {
     var tag = "BOMitem";
-    let bomlist = await GlobalVariables.cad.extractBomList(this.output.value);
+    let bomlist = await GlobalVariables.cad.extractBomList(this.uniqueID);
     return bomlist;
   }
 
@@ -424,6 +424,7 @@ export default class Molecule extends Atom {
 
   compileBom() {
     let compiled = this.extractBomTags().then((result) => {
+      console.log("Compiling BOM for molecule:", this.name);
       let bomList = [];
       let compileBomItems = [];
       if (result) {
@@ -509,7 +510,8 @@ export default class Molecule extends Atom {
   createLevaBom() {
     let bomParams = {};
     // Always show the top-level BOM, which contains the complete project BOM
-    const bomToShow = GlobalVariables.topLevelMolecule?.compiledBom || this.compiledBom;
+    const bomToShow =
+      GlobalVariables.topLevelMolecule?.compiledBom || this.compiledBom;
     if (bomToShow) {
       if (bomToShow.length > 0) {
         bomToShow.map((item) => {
@@ -555,11 +557,14 @@ export default class Molecule extends Atom {
 
         // Compile BOM at the top level to capture the entire project
         if (GlobalVariables.topLevelMolecule) {
-          GlobalVariables.topLevelMolecule.compileBom().then((result) => {
-            GlobalVariables.topLevelMolecule.compiledBom = result;
-          }).catch((err) => {
-            console.warn("Failed to compile BOM at top level:", err);
-          });
+          GlobalVariables.topLevelMolecule
+            .compileBom()
+            .then((result) => {
+              GlobalVariables.topLevelMolecule.compiledBom = result;
+            })
+            .catch((err) => {
+              console.warn("Failed to compile BOM at top level:", err);
+            });
         }
         if (this.selected) {
           this.sendToRender();
@@ -904,8 +909,6 @@ export default class Molecule extends Atom {
     try {
       // Save undo state for user-initiated atom additions (unlock=true means user action)
       if (unlock && this === GlobalVariables.currentMolecule) {
-        console.log(`undostate in current molecule place atom`);
-        console.log(newAtomObj, unlock, values);
         GlobalVariables.saveUndoState("ADD", `Added ${newAtomObj.atomType}`);
       }
 
