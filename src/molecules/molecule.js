@@ -424,7 +424,6 @@ export default class Molecule extends Atom {
 
   compileBom() {
     let compiled = this.extractBomTags().then((result) => {
-      console.log("Compiling BOM for molecule:", this.name);
       let bomList = [];
       let compileBomItems = [];
       if (result) {
@@ -508,7 +507,6 @@ export default class Molecule extends Atom {
   }
 
   createLevaBom() {
-    console.log("Creating BOM for active atom IN Molecule", this.name);
     let bomParams = {};
     // Always show the top-level BOM, which contains the complete project BOM
     const bomToShow =
@@ -530,11 +528,9 @@ export default class Molecule extends Atom {
 
           saveAs(myFile, fileName + "." + "txt");
         });
-        console.log("BOM Params", bomParams);
-
-        return bomParams;
       }
     }
+    return bomParams;
   }
 
   /**
@@ -559,8 +555,6 @@ export default class Molecule extends Atom {
           GlobalVariables.topLevelMolecule
             .compileBom()
             .then((result) => {
-              console.log("FINISHED COMPILING BOM AT TOP LEVEL");
-
               GlobalVariables.topLevelMolecule.compiledBom = result;
             })
             .catch((err) => {

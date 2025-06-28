@@ -1063,7 +1063,6 @@ function molecule(targetID, inputID) {
  * @returns {Array|boolean} The BOM array if it exists, or false if BOM is undefined
  */
 function extractBomList(inputID) {
-  console.log("extractBomList called with inputID:", inputID);
   if (library[inputID].bom !== undefined) {
     return library[inputID].bom;
   } else {

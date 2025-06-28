@@ -84,7 +84,10 @@ export default (function ParamsEditor({
   /** Creates Leva panel with parameters from active atom inputs */
 
   useControls(() => exportParamsConfig, { store: store4 }, [activeAtom]);
-  useControls(() => bomParamsConfig, { store: store3 }, [activeAtom]);
+  useControls(() => bomParamsConfig, { store: store3 }, [
+    activeAtom,
+    compiledBom,
+  ]);
 
   const [, set] = useControls(() => inputParamsConfig, { store: store1 }, [
     activeAtom,
