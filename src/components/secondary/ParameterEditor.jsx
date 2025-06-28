@@ -43,11 +43,9 @@ export default (function ParamsEditor({
     if (run) {
       exportParams = activeAtom.createLevaExport();
     }
-  }
-  if (activeAtom.atomType == "Molecule") {
-    /** Creates Leva inputs inside each atom */
-    console.log("Creating BOM for active atom", activeAtom);
-    compiledBom = activeAtom.createLevaBom();
+    if (activeAtom.atomType == "Molecule") {
+      compiledBom = activeAtom.createLevaBom();
+    }
   }
   const bomParamsConfig = useMemo(() => {
     return { ...compiledBom };
