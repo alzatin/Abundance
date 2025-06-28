@@ -272,7 +272,7 @@ export default class Molecule extends Atom {
    * Computes and returns an array of BOMEntry objects after looking at the tags of a geometry.*/
   async extractBomTags() {
     var tag = "BOMitem";
-    let bomlist = await GlobalVariables.cad.extractBomList(this.output.value);
+    let bomlist = await GlobalVariables.cad.extractBomList(this.uniqueID);
     return bomlist;
   }
 
@@ -508,9 +508,12 @@ export default class Molecule extends Atom {
 
   createLevaBom() {
     let bomParams = {};
-    if (this.compiledBom) {
-      if (this.compiledBom.length > 0) {
-        this.compiledBom.map((item) => {
+    // Always show the top-level BOM, which contains the complete project BOM
+    const bomToShow =
+      GlobalVariables.topLevelMolecule?.compiledBom || this.compiledBom;
+    if (bomToShow) {
+      if (bomToShow.length > 0) {
+        bomToShow.map((item) => {
           bomParams[item.BOMitemName] = {
             value: item.numberNeeded,
             label: item.BOMitemName + " x",
@@ -525,19 +528,15 @@ export default class Molecule extends Atom {
 
           saveAs(myFile, fileName + "." + "txt");
         });
-
-        return bomParams;
       }
     }
+    return bomParams;
   }
 
   /**
    * Reads molecule's output atom ID to recompute the molecule in worker
    */
   recomputeMolecule(outputID) {
-    //super.updateValue();
-    console.log("recompute");
-
     try {
       this.processing = true;
       const centeredText = document.querySelector(".loading");
@@ -551,9 +550,17 @@ export default class Molecule extends Atom {
           this.awaitingPropagationFlag = true;
         }
 
-        this.compileBom().then((result) => {
-          this.compiledBom = result;
-        });
+        // Compile BOM at the top level to capture the entire project
+        if (GlobalVariables.topLevelMolecule === this) {
+          GlobalVariables.topLevelMolecule
+            .compileBom()
+            .then((result) => {
+              GlobalVariables.topLevelMolecule.compiledBom = result;
+            })
+            .catch((err) => {
+              console.warn("Failed to compile BOM at top level:", err);
+            });
+        }
         if (this.selected) {
           this.sendToRender();
         }
@@ -897,8 +904,6 @@ export default class Molecule extends Atom {
     try {
       // Save undo state for user-initiated atom additions (unlock=true means user action)
       if (unlock && this === GlobalVariables.currentMolecule) {
-        console.log(`undostate in current molecule place atom`);
-        console.log(newAtomObj, unlock, values);
         GlobalVariables.saveUndoState("ADD", `Added ${newAtomObj.atomType}`);
       }
 

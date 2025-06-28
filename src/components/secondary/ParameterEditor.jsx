@@ -43,10 +43,9 @@ export default (function ParamsEditor({
     if (run) {
       exportParams = activeAtom.createLevaExport();
     }
-  }
-  if (activeAtom.atomType == "Molecule") {
-    /** Creates Leva inputs inside each atom */
-    compiledBom = activeAtom.createLevaBom();
+    if (activeAtom.atomType == "Molecule") {
+      compiledBom = activeAtom.createLevaBom();
+    }
   }
   const bomParamsConfig = useMemo(() => {
     return { ...compiledBom };
@@ -85,7 +84,10 @@ export default (function ParamsEditor({
   /** Creates Leva panel with parameters from active atom inputs */
 
   useControls(() => exportParamsConfig, { store: store4 }, [activeAtom]);
-  useControls(() => bomParamsConfig, { store: store3 }, [activeAtom]);
+  useControls(() => bomParamsConfig, { store: store3 }, [
+    activeAtom,
+    compiledBom,
+  ]);
 
   const [, set] = useControls(() => inputParamsConfig, { store: store1 }, [
     activeAtom,
