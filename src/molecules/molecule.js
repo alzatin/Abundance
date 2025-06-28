@@ -539,9 +539,6 @@ export default class Molecule extends Atom {
    * Reads molecule's output atom ID to recompute the molecule in worker
    */
   recomputeMolecule(outputID) {
-    //super.updateValue();
-    console.log("recompute");
-
     try {
       this.processing = true;
       const centeredText = document.querySelector(".loading");
@@ -556,7 +553,11 @@ export default class Molecule extends Atom {
         }
 
         // Compile BOM at the top level to capture the entire project
-        if (GlobalVariables.topLevelMolecule) {
+        if (GlobalVariables.topLevelMolecule === this) {
+          console.log(
+            "Compiling BOM at top level for project:",
+            GlobalVariables.currentRepoName
+          );
           GlobalVariables.topLevelMolecule
             .compileBom()
             .then((result) => {
