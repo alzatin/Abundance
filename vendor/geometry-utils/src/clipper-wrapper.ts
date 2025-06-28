@@ -73,8 +73,9 @@ export default class ClipperWrapper {
       console.log("Processing polygon " + i);
       memSeg = memSegs[i];
       node = getPolygonNode(i, memSeg);
-      console.log("pre-clean node " + node.memSeg.length);
-
+      if (i == 2) {
+        console.log("pre-clean node " + node.memSeg.length);
+      }
       this.cleanNode(node);
       if (i == 2) {
         console.log("cleanned node " + node.memSeg.length);

@@ -80,6 +80,7 @@ export function cleanPolygon(path: Point[], distance: number): Point[] {
     ) {
       op = op.exclude();
       console.log("slopes collinear " + op.index);
+      op = op.next;
       --pointCount;
     } else {
       op.index = 1;
