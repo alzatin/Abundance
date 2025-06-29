@@ -167,7 +167,6 @@ export default memo(function FlowCanvas({
       // Trigger GitSearch when Shift is pressed
       setSearchingGitHub(true);
       setIsShortcutTriggered(true); // Set the shortcut flag
-      GlobalVariables.ctrlDown = false;
     }
 
     if (GlobalVariables.ctrlDown && shortCuts.hasOwnProperty([e.key])) {
@@ -231,7 +230,7 @@ export default memo(function FlowCanvas({
 
           // Place atoms first
           const atomPromises = [];
-          if (remappedData && remappedData.allAtoms) {
+          if (remappedData?.allAtoms) {
             remappedData.allAtoms.forEach((atomData) => {
               const promise = GlobalVariables.currentMolecule.placeAtom(
                 atomData,
@@ -243,7 +242,7 @@ export default memo(function FlowCanvas({
 
           // Wait for all atoms to be placed, then place connectors
           Promise.all(atomPromises).then(() => {
-            if (remappedData && remappedData.allConnectors) {
+            if (remappedData?.allConnectors) {
               remappedData.allConnectors.forEach((connectorData) => {
                 GlobalVariables.currentMolecule.placeConnector(connectorData);
               });

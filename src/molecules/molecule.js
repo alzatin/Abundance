@@ -503,7 +503,7 @@ export default class Molecule extends Atom {
     const remappedData = targetMolecule.remapIDs(moleculeData);
 
     // Place atoms in target molecule
-    if (remappedData && remappedData.allAtoms) {
+    if (remappedData?.allAtoms) {
       const atomPromises = [];
       remappedData.allAtoms.forEach((atomData) => {
         const promise = targetMolecule.placeAtom(atomData, true);
