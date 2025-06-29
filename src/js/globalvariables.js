@@ -57,6 +57,7 @@ class GlobalVariables {
      * @type {array}
      */
     this.availableTypes = {
+      box: { creator: Box, atomType: "Box", atomCategory: "Shapes" },
       intersection: {
         creator: Intersection,
         atomType: "Intersection",
