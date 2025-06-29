@@ -414,21 +414,24 @@ export default memo(function FlowCanvas({
       }
 
       //Draw the selection box
-      /*if (!clickHandledByMolecule && GlobalVariables.ctrlDown) {
+      if (!clickHandledByMolecule && GlobalVariables.ctrlDown) {
         console.log("Placing a box atom");
-        GlobalVariables.currentMolecule.placeAtom(
-          {
-            parentMolecule: GlobalVariables.currentMolecule,
-            x: GlobalVariables.pixelsToWidth(event.clientX),
-            y: GlobalVariables.pixelsToHeight(event.clientY),
-            parent: GlobalVariables.currentMolecule,
-            name: "Box",
-            atomType: "Box",
-          },
-          true, // Changed from null to true to enable undo state saving
-          GlobalVariables.availableTypes
-        );
-      }*/
+        GlobalVariables.currentMolecule
+          .placeAtom(
+            {
+              parentMolecule: GlobalVariables.currentMolecule,
+              x: GlobalVariables.pixelsToWidth(event.clientX),
+              y: GlobalVariables.pixelsToHeight(event.clientY),
+              parent: GlobalVariables.currentMolecule,
+              name: "Box",
+              atomType: "Box",
+            },
+            null // Don't pass to undo
+          )
+          .then((newAtom) => {
+            console.log("Box atom placed:", newAtom);
+          });
+      }
 
       if (!clickHandledByMolecule) {
         /* Background click - molecule is active atom */
