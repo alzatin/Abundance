@@ -151,7 +151,7 @@ function GitSearch({
       const atom = GlobalVariables.availableTypes[key];
       if (
         atom.atomType?.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        atom.atomType.toLowerCase() !== "box"
+        atom.atomType?.toLowerCase() !== "box"
       ) {
         filteredAtoms.push({
           id: `local-${key}`,
