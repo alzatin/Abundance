@@ -426,7 +426,7 @@ export default memo(function FlowCanvas({
               name: "Box",
               atomType: "Box",
             },
-            null // Don't pass to undo
+            false // Don't pass to undo
           )
           .then((newAtom) => {
             console.log("Box atom placed:", newAtom);
