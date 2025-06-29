@@ -163,8 +163,7 @@ export default memo(function FlowCanvas({
     if (e.key == "Control" || e.key == "Meta") {
       GlobalVariables.ctrlDown = true;
     }
-
-    if (e.key == "Shift") {
+    if (e.key == "Shift" && !GlobalVariables.ctrlDown) {
       // Trigger GitSearch when Shift is pressed
       setSearchingGitHub(true);
       setIsShortcutTriggered(true); // Set the shortcut flag
@@ -205,21 +204,70 @@ export default memo(function FlowCanvas({
       //Copy & Paste
       else if (e.key == "c") {
         GlobalVariables.atomsSelected = [];
-        GlobalVariables.currentMolecule.copy();
+        GlobalVariables.connectorsSelected = [];
+        // Ctrl+C: Enhanced copy with connectors
+        GlobalVariables.currentMolecule.copyWithConnectors();
       } else if (e.key == "v") {
         // Deselect all currently selected atoms before pasting
         GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
           atom.selected = false;
         });
 
-        // Remap all unique IDs for the atoms being pasted to ensure they have new unique IDs
-        const remappedAtoms = GlobalVariables.remapIDsForPaste(
-          GlobalVariables.atomsSelected
-        );
+        // If we have connectors to paste, handle the full molecule structure
+        if (
+          GlobalVariables.connectorsSelected &&
+          GlobalVariables.connectorsSelected.length > 0
+        ) {
+          // Create a temporary molecule data structure
+          const moleculeData = {
+            allAtoms: GlobalVariables.atomsSelected,
+            allConnectors: GlobalVariables.connectorsSelected,
+            fileTypeVersion: 1,
+          };
 
-        remappedAtoms.forEach((item) => {
-          GlobalVariables.currentMolecule.placeAtom(item, true);
-        });
+          // Remap IDs to avoid conflicts
+          const remappedData =
+            GlobalVariables.currentMolecule.remapIDs(moleculeData);
+
+          // Place atoms first
+          const atomPromises = [];
+          if (remappedData && remappedData.allAtoms) {
+            remappedData.allAtoms.forEach((atomData) => {
+              const promise = GlobalVariables.currentMolecule.placeAtom(
+                atomData,
+                true
+              );
+              atomPromises.push(promise);
+            });
+          }
+
+          // Wait for all atoms to be placed, then place connectors
+          Promise.all(atomPromises).then(() => {
+            if (remappedData && remappedData.allConnectors) {
+              remappedData.allConnectors.forEach((connectorData) => {
+                GlobalVariables.currentMolecule.placeConnector(connectorData);
+              });
+            }
+          });
+        } else {
+          // Regular paste without connectors
+          GlobalVariables.atomsSelected.forEach((item) => {
+            let newAtomID = GlobalVariables.generateUniqueID();
+            item.uniqueID = newAtomID;
+            if (
+              item.atomType == "Molecule" ||
+              item.atomType == "GitHubMolecule"
+            ) {
+              item = GlobalVariables.currentMolecule.remapIDs(item);
+            }
+            GlobalVariables.currentMolecule.placeAtom(item, true);
+          });
+        }
+      }
+
+      // Move selected atoms to new molecule with connectors
+      else if (e.key == "m") {
+        GlobalVariables.currentMolecule.moveSelectedAtomsToMolecule();
       }
       //Opens menu to search for github molecule
       else if (e.key == "g") {
@@ -367,7 +415,8 @@ export default memo(function FlowCanvas({
       }
 
       //Draw the selection box
-      if (!clickHandledByMolecule && GlobalVariables.ctrlDown) {
+      /*if (!clickHandledByMolecule && GlobalVariables.ctrlDown) {
+        console.log("Placing a box atom");
         GlobalVariables.currentMolecule.placeAtom(
           {
             parentMolecule: GlobalVariables.currentMolecule,
@@ -380,7 +429,7 @@ export default memo(function FlowCanvas({
           true, // Changed from null to true to enable undo state saving
           GlobalVariables.availableTypes
         );
-      }
+      }*/
 
       if (!clickHandledByMolecule) {
         /* Background click - molecule is active atom */
