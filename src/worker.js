@@ -1845,7 +1845,7 @@ function computePositions(
 ) {
   console.log("Starting to compute positions for shapes: ");
   console.log(shapesForLayout);
-  const tolerance = 0.5;
+  const tolerance = 0.2;
   const runtimeMs = 30000;
   const config = {
     curveTolerance: 0.1,
@@ -1865,16 +1865,8 @@ function computePositions(
       .meshEdges({ tolerance: tolerance, angularTolerance: 0.5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
     
     
-    const prepared = preparePoints(mesh, tolerance);
+    const prepared = preparePoints(mesh, tolerance / 100);
     const result = asFloat64(prepared);
-    console.log("Prepared points for shape " + index + ": ");
-    console.log("mesh length: " + mesh.lines.length + " groups: " + mesh.edgeGroups.length);
-    console.log("prepared length: " + prepared.length);
-    console.log("float64 length: " + result.length);
-    console.log(mesh.edgeGroups);
-    console.log(mesh.lines)
-    console.log(prepared);
-    console.log(result);
     return result;
   });
 
@@ -1987,13 +1979,6 @@ function translatePlacements(placement, placedParts, partCount) {
   return result;
 }
 
-function snapToZero(value, tolerance = 0.0001) {
-  if (Math.abs(value) < tolerance) {
-    return 0;
-  }
-  return value;
-}
-
 /**
  * Converts mesh edge data to a polygon-friendly format with proper winding order.
  * @param {Object} mesh - The mesh object containing edge groups and line data
@@ -2045,7 +2030,7 @@ function preparePoints(mesh, tolerance) {
       }
       const index = currentEdge.start + offset;
       const nextPoint = {x: mesh.lines[index], y: mesh.lines[index + 1]};
-      if (result.length == 0 || !almostEqual(result[result.length - 1], nextPoint, tolerance / 100)) {
+      if (result.length == 0 || !almostEqual(result[result.length - 1], nextPoint)) {
         result.push(nextPoint);
       }
     }
@@ -2069,7 +2054,7 @@ function preparePoints(mesh, tolerance) {
     } else if (nextEdges.length == 1) {
       currentEdge = nextEdges[0];
     } else { // nextEdges.length > 1
-      console.warn("Multiple edges starting at seemingly the same point.")
+      console.warn("Multiple edges starting at seemingly the same point.");
       nextEdges.sort((a, b) => {
         const p1 = result[result.length - 1];
         const p2 = a.startPoint;
@@ -2082,8 +2067,6 @@ function preparePoints(mesh, tolerance) {
         );
         return distA - distB;
       });
-      console.log(nextEdges);
-      console.log(result[result.length - 1])
       currentEdge = nextEdges[0];
     }
   }
