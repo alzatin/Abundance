@@ -2103,7 +2103,16 @@ function preparePoints(mesh, tolerance) {
  * @returns {Object} The transformed geometry with the face aligned to the XY cutting plane
  */
 function moveFaceToCuttingPlane(geom, face) {
-  let pointOnSurface = face.pointOnSurface(0, 0);
+  // There's a broken edge case in the clipper lib which gets triggered if one of the perimeter lines is
+  // co-incident with the X or Y axis. Here use the center of the face to ensure the origin isn't aligned with
+  // any perimeter edge of this face.
+  // Try removing this once https://github.com/BarbourSmith/Abundance/issues/572 is resolved.
+  let center = {
+    x: (face.UVBounds.uMin + face.UVBounds.uMax) / 2,
+    y: (face.UVBounds.vMin + face.UVBounds.vMax) / 2,
+  }
+
+  let pointOnSurface = face.pointOnSurface(center.x, center.y);
   let faceNormal = face.normalAt();
 
   // Always use "XY" plane as the cutting surface. Attempt to reorient
