@@ -37,7 +37,7 @@ async function loadPuppeteerAndExec(browser, date) {
 
   for (const projectName of projects_to_test) {
     console.log(`Testing project: ${projectName}`);
-
+    
     try {
       // Navigate the page to a localhost URL.
       await page.goto(
@@ -47,12 +47,12 @@ async function loadPuppeteerAndExec(browser, date) {
       // Set screen size.
       await page.setViewport({ width: 1080, height: 1024 });
       const selector = "#molecule-fully-render-puppeteer";
-
+      
       // Wait for the element to exist, with timeout
       try {
         await page.waitForFunction(
           (selector) => !!document.querySelector(selector),
-          { timeout: 240000 }, // Increase timeout to 2 minutes
+          { timeout: 120000 }, // Increase timeout to 2 minutes
           selector
         );
         await page.screenshot({
@@ -60,9 +60,7 @@ async function loadPuppeteerAndExec(browser, date) {
         });
         console.log(`Screenshot saved: Puppet/images/${projectName}-Test.png`);
       } catch (elementError) {
-        console.log(
-          `Element ${selector} not found for ${projectName}, taking screenshot anyway`
-        );
+        console.log(`Element ${selector} not found for ${projectName}, taking screenshot anyway`);
         await page.screenshot({
           path: `Puppet/images/${projectName}-Test.png`,
         });
@@ -78,29 +76,23 @@ async function loadPuppeteerAndExec(browser, date) {
             "/" +
             projectName
         );
-
+        
         // Wait a bit for the page to load
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
         await page.screenshot({
           path: `Puppet/images/${projectName}-Deployed.png`,
         });
-        console.log(
-          `Screenshot saved: Puppet/images/${projectName}-Deployed.png`
-        );
+        console.log(`Screenshot saved: Puppet/images/${projectName}-Deployed.png`);
       } catch (deployedError) {
-        console.log(
-          `Deployed version not available for ${projectName}: ${deployedError.message}`
-        );
+        console.log(`Deployed version not available for ${projectName}: ${deployedError.message}`);
       }
+      
     } catch (projectError) {
-      console.error(
-        `Error processing project ${projectName}:`,
-        projectError.message
-      );
+      console.error(`Error processing project ${projectName}:`, projectError.message);
     }
   }
-
+  
   // Navigate to main.html
   try {
     const path = require("path");
