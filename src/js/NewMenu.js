@@ -18,6 +18,9 @@ const createCMenu = (targetElement, setSearchingGithub) => {
     for (var key in GlobalVariables.availableTypes) {
       var instance = GlobalVariables.availableTypes[key];
       if (instance.atomCategory === group) {
+        if (instance.atomType === "Box") {
+          continue;
+        }
         var subMenu = new Object();
         subMenu.title = `${instance.atomType}`;
         subMenu.icon = `${instance.atomType}`;
@@ -114,7 +117,7 @@ const createCMenu = (targetElement, setSearchingGithub) => {
     );
     //Simulate a click on the new atom
     var clickHandledByAtom = false;
-    
+
     // Ensure canvas regains focus after placing atom
     const flowCanvas = document.getElementById("flow-canvas");
     if (flowCanvas) {
