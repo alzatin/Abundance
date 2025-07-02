@@ -1161,8 +1161,6 @@ export default class Molecule extends Atom {
           this.nodesOnTheScreen.push(atom);
 
           if (unlock) {
-            console.log("unlock is true, atom will be unlocked");
-
             //Make this molecule spawn with all of it's parent's inputs
             if (atom.atomType == "Molecule") {
               //Not GitHubMolecule
