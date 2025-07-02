@@ -415,7 +415,6 @@ export default memo(function FlowCanvas({
 
       //Draw the selection box
       if (!clickHandledByMolecule && GlobalVariables.ctrlDown) {
-        console.log("Placing a box atom");
         GlobalVariables.currentMolecule
           .placeAtom(
             {

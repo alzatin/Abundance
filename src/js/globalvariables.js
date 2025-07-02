@@ -486,10 +486,6 @@ class GlobalVariables {
       return; // Can't save state if no top level molecule exists
     }
 
-    console.log(
-      `Saving undo state for operation: ${operationType}, context: ${context}`
-    );
-
     const topLevelMoleculeCopy = JSON.stringify(
       this.topLevelMolecule.serialize(),
       null,
@@ -497,7 +493,6 @@ class GlobalVariables {
     );
 
     this.recentMoleculeRepresentation.push(topLevelMoleculeCopy);
-    console.log(operationType, context);
     this.undoOperationHistory.push({
       type: operationType,
       timestamp: Date.now(),
