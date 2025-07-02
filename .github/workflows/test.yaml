@@ -31,12 +31,12 @@ jobs:
         with:
           script: |
             const branchName = `screenshots-pr-${context.issue.number}`;
-            
+
             // Determine the correct repository to clean up from
             const isFromFork = github.event.pull_request?.head?.repo?.full_name !== github.event.pull_request?.base?.repo?.full_name;
             const targetOwner = isFromFork ? github.event.pull_request.head.repo.owner.login : context.repo.owner;
             const targetRepo = isFromFork ? github.event.pull_request.head.repo.name : context.repo.repo;
-            
+
             try {
               await github.rest.git.deleteRef({
                 owner: targetOwner,
@@ -136,10 +136,11 @@ jobs:
               
               // Determine the correct repository for screenshot storage
               // Use the head repository (fork) if this is a forked PR, otherwise use the base repository
-              console.log(github.event);
-              const isFromFork = github.event.pull_request && github.event.pull_request.head.repo.full_name !== github.event.pull_request.base.repo.full_name;
+              console.log(context);
+              /*const isFromFork = github.event.pull_request && github.event.pull_request.head.repo.full_name !== github.event.pull_request.base.repo.full_name;
               const targetOwner = isFromFork ? github.event.pull_request.head.repo.owner.login : context.repo.owner;
               const targetRepo = isFromFork ? github.event.pull_request.head.repo.name : context.repo.repo;
+              */
               
               console.log(`PR is from fork: ${isFromFork}`);
               console.log(`Target repository for screenshots: ${targetOwner}/${targetRepo}`);
@@ -153,8 +154,8 @@ jobs:
                 let branchRef;
                 try {
                   branchRef = await github.rest.git.getRef({
-                    owner: targetOwner,
-                    repo: targetRepo,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
                     ref: `heads/${branchName}`
                   });
                 } catch (error) {
