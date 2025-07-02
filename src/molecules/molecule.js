@@ -1147,9 +1147,6 @@ export default class Molecule extends Atom {
           } else if (atom.atomType == "Input") {
             atom.name = GlobalVariables.incrementVariableName(atom.name, this);
           }
-          console.log(
-            `Placing Input atom with name: ${atom.name} and type: ${atom.type}`
-          );
           //If this is an output, check to make sure there are no existing outputs, and if there are delete the existing one because there can only be one
           if (atom.atomType == "Output") {
             //Check for existing outputs
