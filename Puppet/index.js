@@ -47,12 +47,12 @@ async function loadPuppeteerAndExec(browser, date) {
     await page.setViewport({ width: 1080, height: 1024 });
     const selector = "#molecule-fully-render-puppeteer";
 
+    // Wait for the element to be present in the DOM
     await page.waitForFunction(
       (selector) => !!document.querySelector(selector),
       { timeout: 120000 }, // Increase timeout to 2 minutes
       selector
     );
-    // Wait for the element to exist, with timeout
     try {
       await page.screenshot({
         path: `Puppet/images/${projectName}-Test.png`,
@@ -68,6 +68,12 @@ async function loadPuppeteerAndExec(browser, date) {
 
     // Try deployed version - skip if not available
     try {
+      // Wait for the element to be present in the DOM
+      await page.waitForFunction(
+        (selector) => !!document.querySelector(selector),
+        { timeout: 120000 }, // Increase timeout to 2 minutes
+        selector
+      );
       await page.goto(
         "https://abundance.maslowcnc.com" +
           "/run/" +
