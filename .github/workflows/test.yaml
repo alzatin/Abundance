@@ -86,7 +86,13 @@ jobs:
               
               files.forEach(file => {
                 if (file.includes('-Test.png') || file.includes('-Deployed.png')) {
-                  const projectName = file.split('-')[0];
+                  let projectName;
+                  if (file.includes('-Test.png')) {
+                    projectName = file.replace('-Test.png', '');
+                  } else if (file.includes('-Deployed.png')) {
+                    projectName = file.replace('-Deployed.png', '');
+                  }
+                  
                   if (!projectScreenshots[projectName]) {
                     projectScreenshots[projectName] = {};
                   }
