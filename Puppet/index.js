@@ -68,18 +68,18 @@ async function loadPuppeteerAndExec(browser, date) {
 
     // Try deployed version - skip if not available
     try {
-      // Wait for the element to be present in the DOM
-      await page.waitForFunction(
-        (selector) => !!document.querySelector(selector),
-        { timeout: 120000 }, // Increase timeout to 2 minutes
-        selector
-      );
       await page.goto(
         "https://abundance.maslowcnc.com" +
           "/run/" +
           projectUser +
           "/" +
           projectName
+      );
+      // Wait for the element to be present in the DOM
+      await page.waitForFunction(
+        (selector) => !!document.querySelector(selector),
+        { timeout: 120000 }, // Increase timeout to 2 minutes
+        selector
       );
 
       // Wait a bit for the page to load

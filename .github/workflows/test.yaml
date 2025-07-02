@@ -84,7 +84,7 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            
+
             // Get list of screenshot files
             const screenshotDir = 'Puppet/images';
             let files = [];
@@ -93,10 +93,10 @@ jobs:
             } catch (e) {
               console.log('Screenshot directory not found or empty');
             }
-            
+
             let comment = '## 📸 Puppeteer Test Screenshots\n\n';
             comment += `Screenshots from commit: ${context.sha.substring(0, 7)}\n\n`;
-            
+
             if (files.length === 0) {
               comment += 'No screenshots were generated.';
             } else {
@@ -223,7 +223,7 @@ jobs:
               
               // Display other screenshots with embedded images
               if (otherScreenshots.length > 0) {
-                comment += `### Other Screenshots\n\n`;
+                comment += `### Project Test Screenshot Diff\n\n`;
                 otherScreenshots.forEach(file => {
                   if (screenshotUrls[file]) {
                     comment += `![${file}](${screenshotUrls[file]})\n\n`;
@@ -239,18 +239,18 @@ jobs:
                 comment += `\n\n*Images are hosted on the \`${branchName}\` branch and will be cleaned up when the PR is closed.*`;
               }
             }
-            
+
             // Find existing comment to update or create new one
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            
+
             const botComment = comments.data.find(comment => 
               comment.user.type === 'Bot' && comment.body.includes('📸 Puppeteer Test Screenshots')
             );
-            
+
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
