@@ -86,6 +86,7 @@ export default class Import extends Atom {
   getAFile = async function () {
     const octokit = new Octokit();
     const filePath = this.fileName;
+
     const repoOwner = this.repoOwner;
     const repoName = this.repoName;
     const result = await octokit.rest.repos.getContent({
@@ -231,6 +232,16 @@ export default class Import extends Atom {
   updateFile(file, sha) {
     this.fileName = file.name;
     this.sha = sha;
+    if (
+      !GlobalVariables.currentRepo?.owner ||
+      !GlobalVariables.currentRepoName
+    ) {
+      console.warn("Repository information not available");
+      return;
+    }
+    this.repoOwner = GlobalVariables.currentRepo.owner;
+    this.repoName = GlobalVariables.currentRepoName;
+
     this.repoOwner = GlobalVariables.currentRepo.owner;
     this.repoName = GlobalVariables.currentRepoName;
     this.updateValue();
