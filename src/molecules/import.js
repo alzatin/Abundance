@@ -86,12 +86,13 @@ export default class Import extends Atom {
   getAFile = async function () {
     const octokit = new Octokit();
     const filePath = this.fileName;
+    const repoOwner = this.repoOwner;
+    const repoName = this.repoName;
     const result = await octokit.rest.repos.getContent({
-      owner: GlobalVariables.currentRepo.owner,
-      repo: GlobalVariables.currentRepoName,
+      owner: repoOwner,
+      repo: repoName,
       path: filePath,
     });
-
     return result;
   };
   /**
@@ -100,6 +101,7 @@ export default class Import extends Atom {
   updateValue() {
     super.updateValue();
     this.processing = true;
+
     try {
       if (this.fileName != null) {
         this.getAFile().then((result) => {
@@ -229,6 +231,8 @@ export default class Import extends Atom {
   updateFile(file, sha) {
     this.fileName = file.name;
     this.sha = sha;
+    this.repoOwner = GlobalVariables.currentRepo.owner;
+    this.repoName = GlobalVariables.currentRepoName;
     this.updateValue();
   }
   /**
@@ -242,6 +246,8 @@ export default class Import extends Atom {
     superSerialObject.name = this.name;
     superSerialObject.type = this.type;
     superSerialObject.SVGwidth = this.SVGwidth;
+    superSerialObject.repoOwner = this.repoOwner;
+    superSerialObject.repoName = this.repoName;
 
     return superSerialObject;
   }
