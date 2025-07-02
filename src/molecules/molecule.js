@@ -1084,6 +1084,14 @@ export default class Molecule extends Atom {
    */
   async placeAtom(newAtomObj, unlock, values) {
     try {
+      //If the input has a name and is a copy, we need to make sure it is unique so that the constructors adds IO
+      if (
+        newAtomObj.atomType == "Input" &&
+        newAtomObj.name !== undefined &&
+        unlock
+      ) {
+        newAtomObj.name = GlobalVariables.incrementVariableName("Input", this);
+      }
       // Save undo state for user-initiated atom additions (unlock=true means user action)
       if (unlock && this === GlobalVariables.currentMolecule) {
         GlobalVariables.saveUndoState("ADD", `Added ${newAtomObj.atomType}`);
@@ -1134,11 +1142,14 @@ export default class Molecule extends Atom {
               atom.name = newAtomObj.name; // Preserve exact name for normal loading
             }
             atom.type = newAtomObj.type;
+
             atom.draw(); //The poling happens in draw :roll_eyes:
           } else if (atom.atomType == "Input") {
             atom.name = GlobalVariables.incrementVariableName(atom.name, this);
           }
-
+          console.log(
+            `Placing Input atom with name: ${atom.name} and type: ${atom.type}`
+          );
           //If this is an output, check to make sure there are no existing outputs, and if there are delete the existing one because there can only be one
           if (atom.atomType == "Output") {
             //Check for existing outputs
@@ -1153,6 +1164,8 @@ export default class Molecule extends Atom {
           this.nodesOnTheScreen.push(atom);
 
           if (unlock) {
+            console.log("unlock is true, atom will be unlocked");
+
             //Make this molecule spawn with all of it's parent's inputs
             if (atom.atomType == "Molecule") {
               //Not GitHubMolecule

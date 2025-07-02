@@ -16,7 +16,7 @@ export default class Input extends Atom {
      * This atom's name
      * @type {string}
      */
-    this.name = "name";
+    this.name = "Input";
     /**
      * A description of this atom
      * @type {string}
@@ -75,6 +75,12 @@ export default class Input extends Atom {
 
     //Add a new input to the current molecule
     if (typeof this.parent !== "undefined") {
+      console.log(
+        "Adding input to parent molecule",
+        this.name,
+        this.type,
+        this.value
+      );
       this.parent.addIO("input", this.name, this.parent, this.type, this.value);
     }
   }
@@ -83,9 +89,9 @@ export default class Input extends Atom {
   fittingString(c, str, maxWidth) {
     if (!str) {
       this.isTextTruncated = false;
-      return str || '';
+      return str || "";
     }
-    
+
     var width = c.measureText(str).width;
     var ellipsis = "…";
     var ellipsisWidth = c.measureText(ellipsis).width;
@@ -213,7 +219,7 @@ export default class Input extends Atom {
       }
     });
     this.oldName = this.name;
-    
+
     // Clear tooltip if name is no longer truncated
     // Note: isTextTruncated will be updated in the next draw() call
     // But we can hide tooltip immediately to avoid showing outdated info
@@ -234,18 +240,18 @@ export default class Input extends Atom {
     const canvas = GlobalVariables.canvas.current;
     const canvasRect = canvas.getBoundingClientRect();
 
-    this.tooltipElement = document.createElement('div');
-    this.tooltipElement.className = 'tooltip';
+    this.tooltipElement = document.createElement("div");
+    this.tooltipElement.className = "tooltip";
     this.tooltipElement.textContent = this.name;
-    
+
     // Position tooltip relative to the page, not just the canvas
-    this.tooltipElement.style.left = (x + canvasRect.left) + 'px';
-    this.tooltipElement.style.top = (y + canvasRect.top - 35) + 'px';
-    this.tooltipElement.style.display = 'block';
-    this.tooltipElement.style.padding = '4px 8px';
-    this.tooltipElement.style.borderRadius = '4px';
-    this.tooltipElement.style.whiteSpace = 'nowrap';
-    
+    this.tooltipElement.style.left = x + canvasRect.left + "px";
+    this.tooltipElement.style.top = y + canvasRect.top - 35 + "px";
+    this.tooltipElement.style.display = "block";
+    this.tooltipElement.style.padding = "4px 8px";
+    this.tooltipElement.style.borderRadius = "4px";
+    this.tooltipElement.style.whiteSpace = "nowrap";
+
     document.body.appendChild(this.tooltipElement);
   }
 
@@ -275,12 +281,13 @@ export default class Input extends Atom {
     // Check if mouse is over this input atom using the input's actual dimensions
     let xInPixels = GlobalVariables.widthToPixels(this.x);
     let yInPixels = GlobalVariables.heightToPixels(this.y);
-    
+
     // Use the input's width and height instead of just radius
-    const isOverAtom = x >= xInPixels - (this.width || 100) / 2 && 
-                       x <= xInPixels + (this.width || 100) / 2 &&
-                       y >= yInPixels - (this.height || 30) / 2 && 
-                       y <= yInPixels + (this.height || 30) / 2;
+    const isOverAtom =
+      x >= xInPixels - (this.width || 100) / 2 &&
+      x <= xInPixels + (this.width || 100) / 2 &&
+      y >= yInPixels - (this.height || 30) / 2 &&
+      y <= yInPixels + (this.height || 30) / 2;
 
     if (isOverAtom) {
       // Mouse is over the atom
