@@ -7,6 +7,7 @@ const projectUser = "moatmaslow";
 
 const puppeteer = require("puppeteer");
 const projects_to_test = require("./projects_to_test.js");
+
 // Get the current date
 const currentDate = new Date().toISOString().split("T")[0];
 
@@ -38,66 +39,60 @@ async function loadPuppeteerAndExec(browser, date) {
   for (const projectName of projects_to_test) {
     console.log(`Testing project: ${projectName}`);
 
+    // Navigate the page to a localhost URL.
+    await page.goto(
+      "http://localhost:4444" + "/run/" + projectUser + "/" + projectName
+    );
+    console.log("navigated to: " + projectName);
+    // Set screen size.
+    await page.setViewport({ width: 1080, height: 1024 });
+    const selector = "#molecule-fully-render-puppeteer";
+
+    // Wait for the element to exist, with timeout
+    await page.waitForFunction(
+      (selector) => !!document.querySelector(selector),
+      { timeout: 120000 }, // Increase timeout to 2 minutes
+      selector
+    );
+
     try {
-      // Navigate the page to a localhost URL.
+      await page.screenshot({
+        path: `Puppet/images/${projectName}-Test.png`,
+      });
+      console.log(`Screenshot saved: Puppet/images/${projectName}-Test.png`);
+    } catch (elementError) {
+      console.log(elementError);
+      console.log(
+        `Element ${selector} not found for ${projectName}, taking screenshot anyway`
+      );
+      await page.screenshot({
+        path: `Puppet/images/${projectName}-Test.png`,
+      });
+      console.log(`Screenshot saved: Puppet/images/${projectName}-Test.png`);
+    }
+
+    // Try deployed version - skip if not available
+    try {
       await page.goto(
-        "http://localhost:4444" + "/run/" + projectUser + "/" + projectName
-      );
-      console.log("navigated to: " + projectName);
-      // Set screen size.
-      await page.setViewport({ width: 1080, height: 1024 });
-      const selector = "#molecule-fully-render-puppeteer";
-
-      // Wait for the element to exist, with timeout
-      await page.waitForFunction(
-        (selector) => !!document.querySelector(selector),
-        { timeout: 120000 }, // Increase timeout to 2 minutes
-        selector
+        "https://abundance.maslowcnc.com" +
+          "/run/" +
+          projectUser +
+          "/" +
+          projectName
       );
 
-      try {
-        await page.screenshot({
-          path: `Puppet/images/${projectName}-Test.png`,
-        });
-        console.log(`Screenshot saved: Puppet/images/${projectName}-Test.png`);
-      } catch (elementError) {
-        console.log(
-          `Element ${selector} not found for ${projectName}, taking screenshot anyway`
-        );
-        await page.screenshot({
-          path: `Puppet/images/${projectName}-Test.png`,
-        });
-        console.log(`Screenshot saved: Puppet/images/${projectName}-Test.png`);
-      }
+      // Wait a bit for the page to load
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
-      // Try deployed version - skip if not available
-      try {
-        await page.goto(
-          "https://abundance.maslowcnc.com" +
-            "/run/" +
-            projectUser +
-            "/" +
-            projectName
-        );
-
-        // Wait a bit for the page to load
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-
-        await page.screenshot({
-          path: `Puppet/images/${projectName}-Deployed.png`,
-        });
-        console.log(
-          `Screenshot saved: Puppet/images/${projectName}-Deployed.png`
-        );
-      } catch (deployedError) {
-        console.log(
-          `Deployed version not available for ${projectName}: ${deployedError.message}`
-        );
-      }
-    } catch (projectError) {
-      console.error(
-        `Error processing project ${projectName}:`,
-        projectError.message
+      await page.screenshot({
+        path: `Puppet/images/${projectName}-Deployed.png`,
+      });
+      console.log(
+        `Screenshot saved: Puppet/images/${projectName}-Deployed.png`
+      );
+    } catch (deployedError) {
+      console.log(
+        `Deployed version not available for ${projectName}: ${deployedError.message}`
       );
     }
   }
