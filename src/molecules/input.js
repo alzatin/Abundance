@@ -75,12 +75,6 @@ export default class Input extends Atom {
 
     //Add a new input to the current molecule
     if (typeof this.parent !== "undefined") {
-      console.log(
-        "Adding input to parent molecule",
-        this.name,
-        this.type,
-        this.value
-      );
       this.parent.addIO("input", this.name, this.parent, this.type, this.value);
     }
   }
