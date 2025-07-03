@@ -4,13 +4,15 @@
   "version": "0.14.6",
   "description": "A simple React app based on replicad.",
   "private": true,
+  "type": "module",
   "scripts": {
     "start": "vite",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "build": "vite build && cp ./dist/index.html ./dist/404.html",
     "serve": "vite preview",
-    "test": "node Puppet/index.js"
+    "test": "node Puppet/index.js",
+    "postinstall": "node ./patch-replicad-opencascadejs.mjs"
   },
   "dependencies": {
     "-": "^0.0.1",
