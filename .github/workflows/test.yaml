@@ -132,6 +132,10 @@ jobs:
               const screenshotUrls = {};
               const branchName = `screenshots-pr-${context.issue.number}`;
               
+               console.log('GitHub Context:', JSON.stringify(context, null, 2));
+            console.log('GitHub Event Payload:', JSON.stringify(github.event, null, 2));
+
+
               try {
                 // Create or update the screenshots branch
                 let branchRef;
@@ -266,5 +270,3 @@ jobs:
                 body: comment
               });
             }
-            console.log('GitHub Context:', JSON.stringify(context, null, 2));
-            console.log('GitHub Event Payload:', JSON.stringify(github.event, null, 2));
