@@ -43,11 +43,15 @@ export default {
       testEnvironment: 'node',
       testMatch: ['<rootDir>/tests/workerExtrude.integration.test.mjs'],
       setupFilesAfterEnv: ['<rootDir>/tests/setupExtrudeIntegration.js'],
-      transform: {}, // No transform for ESM
+      transform: {
+        '^.+\\.[tj]sx?$': 'babel-jest',
+      },
       moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
         'replicad-shrink-wrap': '<rootDir>/tests/__mocks__/replicad-shrink-wrap.js',
-        'replicad-decorate': '<rootDir>/tests/__mocks__/replicad-decorate.js'
+        'replicad-decorate': '<rootDir>/tests/__mocks__/replicad-decorate.js',
+        'polygon-packer': '<rootDir>/tests/__mocks__/polygon-packer.js',
+        '\\.wasm$': '<rootDir>/tests/__mocks__/wasm-url.js',
       },
       testTimeout: 30000
     },
@@ -64,7 +68,7 @@ export default {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   transformIgnorePatterns: [
-    "/node_modules/(?!replicad-opencascadejs)"
+    "/node_modules/"
   ],
   verbose: true
 };

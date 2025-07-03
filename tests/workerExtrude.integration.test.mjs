@@ -1,16 +1,20 @@
 // Integration test for extrude in worker.js using real replicad and WASMco
-import replicad from 'replicad';
+import * as replicad from 'replicad';
 import opencascade from 'replicad-opencascadejs/src/replicad_single.js';
-import worker from '../src/worker.js';
+import * as worker from '../src/worker.js';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 // Patch global library for worker.js
 let library;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 beforeAll(async () => {
   // Load OpenCascade WASM and set in replicad
   const OC = await opencascade({
     locateFile: () => require('path').resolve(
-      __dirname,
       '../node_modules/replicad-opencascadejs/src/replicad_single.wasm'
     ),
   });
