@@ -266,3 +266,5 @@ jobs:
                 body: comment
               });
             }
+            console.log('GitHub Context:', JSON.stringify(context, null, 2));
+            console.log('GitHub Event Payload:', JSON.stringify(github.event, null, 2));
