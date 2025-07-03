@@ -26,27 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.action == 'closed'
     steps:
-      - name: Cleanup screenshot branch
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const branchName = `screenshots-pr-${context.issue.number}`;
-
-            // Determine the correct repository to clean up from
-            const isFromFork = github.event.pull_request?.head?.repo?.full_name !== github.event.pull_request?.base?.repo?.full_name;
-            const targetOwner = isFromFork ? github.event.pull_request.head.repo.owner.login : context.repo.owner;
-            const targetRepo = isFromFork ? github.event.pull_request.head.repo.name : context.repo.repo;
-
-            try {
-              await github.rest.git.deleteRef({
-                owner: targetOwner,
-                repo: targetRepo,
-                ref: `heads/${branchName}`
-              });
-              console.log(`Deleted screenshot branch: ${branchName} from ${targetOwner}/${targetRepo}`);
-            } catch (error) {
-              console.log(`Screenshot branch ${branchName} not found or already deleted in ${targetOwner}/${targetRepo}: ${error.message}`);
-            }
+      - name: Cleanup completed
+        run: |
+          echo "PR #${{ github.event.number }} closed - no cleanup needed as screenshots are stored in workflow artifacts"
 
   test:
     runs-on: ubuntu-latest
@@ -95,7 +77,7 @@ jobs:
             const screenshotDir = 'Puppet/images';
             let files = [];
             try {
-              files = fs.readdirSync(screenshotDir).filter(file => file === 'main.png');
+              files = fs.readdirSync(screenshotDir).filter(file => file === 'main.png' || file.endsWith('.png'));
             } catch (e) {
               console.log('Screenshot directory not found or empty');
             }
@@ -134,128 +116,30 @@ jobs:
                 }
               });
               
-              // Determine the correct repository for screenshot storage
-              // Use the head repository (fork) if this is a forked PR, otherwise use the base repository
-              console.log(context);
-              /*const isFromFork = github.event.pull_request && github.event.pull_request.head.repo.full_name !== github.event.pull_request.base.repo.full_name;
-              const targetOwner = isFromFork ? github.event.pull_request.head.repo.owner.login : context.repo.owner;
-              const targetRepo = isFromFork ? github.event.pull_request.head.repo.name : context.repo.repo;
-              */
-              
-              console.log(`PR is from fork: ${isFromFork}`);
-              console.log(`Target repository for screenshots: ${targetOwner}/${targetRepo}`);
-              
-              // Upload screenshots to a dedicated branch and get URLs
-              const screenshotUrls = {};
-              const branchName = `screenshots-pr-${context.issue.number}`;
-              
-              try {
-                // Create or update the screenshots branch
-                let branchRef;
-                try {
-                  branchRef = await github.rest.git.getRef({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    ref: `heads/${branchName}`
-                  });
-                } catch (error) {
-                  // Branch doesn't exist, create it
-                  const mainRef = await github.rest.git.getRef({
-                    owner: targetOwner,
-                    repo: targetRepo,
-                    ref: 'heads/main'
-                  });
-                  
-                  branchRef = await github.rest.git.createRef({
-                    owner: targetOwner,
-                    repo: targetRepo,
-                    ref: `refs/heads/${branchName}`,
-                    sha: mainRef.data.object.sha
-                  });
-                }
-                
-                // Upload each screenshot to the branch
-                for (const file of files) {
-                  const filePath = path.join(screenshotDir, file);
-                  const fileContent = fs.readFileSync(filePath);
-                  const base64Content = fileContent.toString('base64');
-                  
-                  try {
-                    // Check if file already exists
-                    let existingFile;
-                    try {
-                      existingFile = await github.rest.repos.getContent({
-                        owner: targetOwner,
-                        repo: targetRepo,
-                        path: `screenshots/${file}`,
-                        ref: branchName
-                      });
-                    } catch (error) {
-                      // File doesn't exist, that's fine
-                    }
-                    
-                    await github.rest.repos.createOrUpdateFileContents({
-                      owner: targetOwner,
-                      repo: targetRepo,
-                      path: `screenshots/${file}`,
-                      message: `Add screenshot ${file} for PR #${context.issue.number}`,
-                      content: base64Content,
-                      branch: branchName,
-                      sha: existingFile ? existingFile.data.sha : undefined
-                    });
-                    
-                    // Generate GitHub raw URL
-                    screenshotUrls[file] = `https://raw.githubusercontent.com/${targetOwner}/${targetRepo}/${branchName}/screenshots/${file}`;
-                  } catch (uploadError) {
-                    console.log(`Failed to upload ${file}: ${uploadError.message}`);
-                    screenshotUrls[file] = null;
-                  }
-                }
-              } catch (branchError) {
-                console.log(`Failed to create/update screenshots branch: ${branchError.message}`);
-              }
-              
-              // Display project comparisons with embedded images
+              // Display project comparisons
               Object.keys(projectScreenshots).forEach(project => {
                 comment += `### ${project}\n\n`;
                 if (projectScreenshots[project].test) {
-                  comment += `**Local Test Version:**\n`;
-                  const testFile = projectScreenshots[project].test;
-                  if (screenshotUrls[testFile]) {
-                    comment += `![${testFile}](${screenshotUrls[testFile]})\n\n`;
-                  } else {
-                    comment += `- \`${testFile}\` (upload failed - see artifacts)\n\n`;
-                  }
+                  comment += `**Local Test Version:** \`${projectScreenshots[project].test}\`\n\n`;
                 }
                 if (projectScreenshots[project].deployed) {
-                  comment += `**Deployed Version:**\n`;
-                  const deployedFile = projectScreenshots[project].deployed;
-                  if (screenshotUrls[deployedFile]) {
-                    comment += `![${deployedFile}](${screenshotUrls[deployedFile]})\n\n`;
-                  } else {
-                    comment += `- \`${deployedFile}\` (upload failed - see artifacts)\n\n`;
-                  }
+                  comment += `**Deployed Version:** \`${projectScreenshots[project].deployed}\`\n\n`;
                 }
               });
               
-              // Display other screenshots with embedded images
+              // Display other screenshots
               if (otherScreenshots.length > 0) {
-                comment += `### Project Test Screenshot Diff\n\n`;
+                comment += `### Other Screenshots\n\n`;
                 otherScreenshots.forEach(file => {
-                  if (screenshotUrls[file]) {
-                    comment += `![${file}](${screenshotUrls[file]})\n\n`;
-                  } else {
-                    comment += `- \`${file}\` (upload failed - see artifacts)\n`;
-                  }
+                  comment += `- \`${file}\`\n`;
                 });
+                comment += '\n';
               }
               
-              comment += '\n*All screenshots are also available in the workflow artifacts for download.*';
-              
-              if (Object.values(screenshotUrls).some(url => url)) {
-                const repoDisplayName = isFromFork ? `${targetOwner}/${targetRepo}` : 'this repository';
-                comment += `\n\n*Images are hosted on the \`${branchName}\` branch in ${repoDisplayName} and will be cleaned up when the PR is closed.*`;
-              }
+              comment += '**📁 Download Screenshots:** All screenshots are available in the [workflow artifacts]';
+              comment += `(https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) `;
+              comment += 'for this workflow run. Click "Summary" then download the "puppeteer-screenshots" artifact.\n\n';
+              comment += '*Screenshots are automatically cleaned up after 90 days by GitHub.*';
             }
 
             // Find existing comment to update or create new one
