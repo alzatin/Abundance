@@ -26,21 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.action == 'closed'
     steps:
-      - name: Cleanup screenshot branch
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const branchName = `screenshots-pr-${context.issue.number}`;
-            try {
-              await github.rest.git.deleteRef({
-                owner: targetOwner,
-                repo: targetRepo,
-                ref: `heads/${branchName}`
-              });
-              console.log(`Deleted screenshot branch: ${branchName}`);
-            } catch (error) {
-              console.log(`Screenshot branch ${branchName} not found or already deleted: ${error.message}`);
-            }
+      - name: Cleanup completed
+        run: |
+          echo "PR #${{ github.event.number }} closed - no cleanup needed as screenshots are stored in workflow artifacts"
 
   test:
     runs-on: ubuntu-latest
@@ -82,5 +70,101 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           script: |
-            const handleScreenshots = require('./screenshot-handler');
-            await handleScreenshots({ github, context });
+            const fs = require('fs');
+            const path = require('path');
+
+            // Get list of screenshot files
+            const screenshotDir = 'Puppet/images';
+            let files = [];
+            try {
+              files = fs.readdirSync(screenshotDir).filter(file => file === 'main.png' || file.endsWith('.png'));
+            } catch (e) {
+              console.log('Screenshot directory not found or empty');
+            }
+
+            let comment = '## 📸 Puppeteer Test Screenshots\n\n';
+            comment += `Screenshots from commit: ${context.sha.substring(0, 7)}\n\n`;
+
+            if (files.length === 0) {
+              comment += 'No screenshots were generated.';
+            } else {
+              comment += `Generated ${files.length} screenshot(s):\n\n`;
+              
+              // Group screenshots by project
+              const projectScreenshots = {};
+              const otherScreenshots = [];
+              
+              files.forEach(file => {
+                if (file.includes('-Test.png') || file.includes('-Deployed.png')) {
+                  let projectName;
+                  if (file.includes('-Test.png')) {
+                    projectName = file.replace('-Test.png', '');
+                  } else if (file.includes('-Deployed.png')) {
+                    projectName = file.replace('-Deployed.png', '');
+                  }
+                  
+                  if (!projectScreenshots[projectName]) {
+                    projectScreenshots[projectName] = {};
+                  }
+                  if (file.includes('-Test.png')) {
+                    projectScreenshots[projectName].test = file;
+                  } else if (file.includes('-Deployed.png')) {
+                    projectScreenshots[projectName].deployed = file;
+                  }
+                } else {
+                  otherScreenshots.push(file);
+                }
+              });
+              
+              // Display project comparisons
+              Object.keys(projectScreenshots).forEach(project => {
+                comment += `### ${project}\n\n`;
+                if (projectScreenshots[project].test) {
+                  comment += `**Local Test Version:** \`${projectScreenshots[project].test}\`\n\n`;
+                }
+                if (projectScreenshots[project].deployed) {
+                  comment += `**Deployed Version:** \`${projectScreenshots[project].deployed}\`\n\n`;
+                }
+              });
+              
+              // Display other screenshots
+              if (otherScreenshots.length > 0) {
+                comment += `### Other Screenshots\n\n`;
+                otherScreenshots.forEach(file => {
+                  comment += `- \`${file}\`\n`;
+                });
+                comment += '\n';
+              }
+              
+              comment += '**📁 Download Screenshots:** All screenshots are available in the [workflow artifacts]';
+              comment += `(https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) `;
+              comment += 'for this workflow run. Click "Summary" then download the "puppeteer-screenshots" artifact.\n\n';
+              comment += '*Screenshots are automatically cleaned up after 90 days by GitHub.*';
+            }
+
+            // Find existing comment to update or create new one
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('📸 Puppeteer Test Screenshots')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
