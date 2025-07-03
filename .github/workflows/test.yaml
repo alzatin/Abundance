@@ -132,11 +132,16 @@ jobs:
               const screenshotUrls = {};
               const branchName = `screenshots-pr-${context.issue.number}`;
               
-               console.log('GitHub Context:', JSON.stringify(context, null, 2));
-            console.log('GitHub Event Payload:', JSON.stringify(github.event, null, 2));
+             
+            // Detect if PR is from a fork
+            const isFromFork = context.payload.pull_request?.head?.repo?.full_name !== context.payload.pull_request?.base?.repo?.full_name;
+            // Use fork repository for screenshots if PR is from fork, otherwise use main repository
+            const targetOwner = isFromFork ? context.payload.pull_request.head.repo.owner.login : context.repo.owner;
+            const targetRepo = isFromFork ? context.payload.pull_request.head.repo.name : context.repo.repo;
 
+            console.log(`Using target repository: ${targetOwner}/${targetRepo} for screenshots branch: ${branchName}`);
 
-              try {
+            try {
                 // Create or update the screenshots branch
                 let branchRef;
                 try {
