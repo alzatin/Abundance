@@ -44,36 +44,50 @@ Replace `YOUR_BUCKET_NAME` with your actual bucket name.
 
 ### 3. Create IAM User for GitHub Actions
 
-1. Go to IAM → Users → Create user
-2. **User name**: `github-actions-abundance`
-3. **Attach policies directly**: Create a custom policy with these permissions:
+1. **Create the IAM Policy First:**
+   - Go to IAM → Policies → Create policy
+   - Choose "JSON" tab and paste the following policy:
+   ```json
+   {
+       "Version": "2012-10-17",
+       "Statement": [
+           {
+               "Effect": "Allow",
+               "Action": [
+                   "s3:PutObject",
+                   "s3:PutObjectAcl",
+                   "s3:GetObject",
+                   "s3:DeleteObject"
+               ],
+               "Resource": "arn:aws:s3:::YOUR_BUCKET_NAME/*"
+           },
+           {
+               "Effect": "Allow",
+               "Action": [
+                   "s3:ListBucket"
+               ],
+               "Resource": "arn:aws:s3:::YOUR_BUCKET_NAME"
+           }
+       ]
+   }
+   ```
+   - **Important**: Replace `YOUR_BUCKET_NAME` with your actual S3 bucket name
+   - Click "Next" → Name it `github-actions-abundance-s3-policy` → Create policy
 
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:PutObject",
-                "s3:PutObjectAcl",
-                "s3:GetObject",
-                "s3:DeleteObject"
-            ],
-            "Resource": "arn:aws:s3:::YOUR_BUCKET_NAME/*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:ListBucket"
-            ],
-            "Resource": "arn:aws:s3:::YOUR_BUCKET_NAME"
-        }
-    ]
-}
-```
+2. **Create the IAM User:**
+   - Go to IAM → Users → Create user
+   - **User name**: `github-actions-abundance`
+   - **Permissions**: Choose "Attach existing policies directly"
+   - Search for `github-actions-abundance-s3-policy` and select it
+   - Click "Next" → "Create user"
 
-4. Create access keys for this user and save them securely
+3. **Create Access Keys:**
+   - Click on the newly created user
+   - Go to "Security credentials" tab
+   - Click "Create access key"
+   - Select "Application running outside AWS" → Next
+   - Add description "GitHub Actions Abundance Screenshots" → Create access key
+   - **Important**: Save both the Access Key ID and Secret Access Key securely
 
 ## GitHub Repository Setup
 
@@ -153,11 +167,41 @@ S3 objects are automatically tagged and can be cleaned up using lifecycle polici
 - Ensure AWS credentials are correctly set in GitHub Secrets
 
 ### Permission Errors
-- Verify IAM user has correct permissions
-- Check AWS region matches between bucket and credentials
-- Ensure bucket name is correct in secrets
+- **AccessDenied on PutObject**: The IAM user doesn't have the required s3:PutObject permission
+  - Go to IAM → Users → github-actions-abundance → Permissions
+  - Verify the `github-actions-abundance-s3-policy` is attached
+  - If not attached, click "Add permissions" → "Attach existing policies directly" → select the policy
+  - Ensure the policy JSON has the correct bucket name (not YOUR_BUCKET_NAME)
+- **Check the IAM policy resource ARN**: Must match your actual bucket name exactly
+  - Go to IAM → Policies → github-actions-abundance-s3-policy → Edit
+  - Verify `arn:aws:s3:::YOUR_BUCKET_NAME/*` has your real bucket name
+- Check AWS region matches between bucket and credentials  
+- Ensure bucket name is correct in GitHub secrets
 
 ### Upload Failures
 - Check GitHub Actions logs for AWS error messages
 - Verify AWS credentials are valid and not expired
 - Ensure bucket exists and is in the specified region
+
+## Quick Fix for Permission Issues
+
+If you're getting `AccessDenied` errors, follow these steps:
+
+1. **Verify your IAM policy has the correct bucket name:**
+   - Go to AWS Console → IAM → Policies  
+   - Find `github-actions-abundance-s3-policy` (or whatever you named it)
+   - Click "Edit" and ensure the Resource ARN uses your actual bucket name:
+     ```json
+     "Resource": "arn:aws:s3:::your-actual-bucket-name/*"
+     ```
+
+2. **Ensure the policy is attached to your user:**
+   - Go to IAM → Users → github-actions-abundance
+   - Click "Permissions" tab
+   - Verify your S3 policy is listed under "Permissions policies"
+   - If not, click "Add permissions" → "Attach existing policies directly" → select your policy
+
+3. **Double-check your GitHub Secrets:**
+   - Go to your repository → Settings → Secrets and variables → Actions
+   - Verify `S3_BUCKET_NAME` exactly matches your S3 bucket name
+   - Verify `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are from the correct IAM user
