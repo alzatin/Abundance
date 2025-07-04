@@ -11,7 +11,7 @@ vi.mock('replicad-decorate', () => ({
   drawSVG: () => ({}),
 }));
 
-// Mock the WASM file import to return the correct file URL
+// Fix url so that resolution works in Node.js test environment
 vi.mock('replicad-opencascadejs/src/replicad_single.wasm?url', () => {
   const wasmPath = resolve(process.cwd(), 'node_modules/replicad-opencascadejs/src/replicad_single.wasm');
   return {

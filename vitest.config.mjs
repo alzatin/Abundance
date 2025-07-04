@@ -7,7 +7,7 @@ export default defineConfig({
     nodePolyfills({
       // Be more selective about polyfills to avoid conflicts
       include: ['path', 'fs', 'process', 'buffer'],
-      exclude: ['url', 'punycode'], // Exclude problematic polyfills
+      exclude: ['url', 'punycode'],
       globals: {
         Buffer: true,
         global: true,
