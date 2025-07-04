@@ -1,2 +1,7 @@
 /node_modules/
 *.DS_Store
+/test_*.js
+dist/
+
+# Puppeteer test screenshots (generated during CI)
+Puppet/images/*.png
