@@ -259,6 +259,7 @@ jobs:
                 body: comment
               });
             } else {
+             console.log('Creating new comment for Puppeteer screenshots');
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
