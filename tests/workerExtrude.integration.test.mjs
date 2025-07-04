@@ -1,101 +1,26 @@
 // Integration test for extrude in worker.js using real replicad and WASM
-import '../src/worker.js'; // Import worker to initialize globals and load WASM
-import * as replicad from 'replicad';
-
-// Import the actual functions we need from the worker module
-// Since worker.js doesn't export directly, we need to access the functions from global scope or re-import
-let library;
-let circle, rectangle, extrude, is3D;
-
-beforeAll(async () => {
-  // Wait for the worker to initialize (WASM loading)
-  // The worker.js file sets up everything when imported
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Give time for WASM to load
-  
-  // Access the library that worker.js sets up
-  if (typeof global !== 'undefined' && global.library) {
-    library = global.library;
-  } else {
-    // Create our own library if not available
-    library = {};
-    global.library = library;
-  }
-  
-  // Import worker functions - we need to access them directly since they're not exported
-  // Let's create our own versions using the worker's pattern
-  circle = async (id, diameter) => {
-    const newPlane = new replicad.Plane().pivot(0, "Y");
-    library[id] = {
-      geometry: [replicad.drawCircle(diameter / 2)],
-      tags: [],
-      plane: newPlane,
-      color: "#aad7f2",
-      bom: [],
-    };
-    return true;
-  };
-  
-  rectangle = async (id, x, y) => {
-    const newPlane = new replicad.Plane().pivot(0, "Y");
-    library[id] = {
-      geometry: [replicad.drawRectangle(x, y)],
-      tags: [],
-      plane: newPlane,
-      color: "#aad7f2",
-      bom: [],
-    };
-    return true;
-  };
-  
-  // Helper function to check if geometry is 3D
-  is3D = (inputs) => {
-    if (inputs.geometry[0].mesh !== undefined || inputs.geometry[0] instanceof replicad.Wire) {
-      return true;
-    } else {
-      return false;
-    }
-  };
-  
-  // Simplified version of actOnLeafs for testing
-  const actOnLeafs = (input, callback) => {
-    if (input.geometry && input.geometry.length === 1 && input.geometry[0].geometry === undefined) {
-      // This is a leaf
-      return callback(input);
-    } else {
-      // This would be for assemblies, but for simple test we assume single geometry
-      return callback(input);
-    }
-  };
-  
-  extrude = async (targetID, inputID, height) => {
-    const inputGeom = library[inputID];
-    if (!inputGeom) {
-      throw new Error(`Input geometry ${inputID} not found in library`);
-    }
-    
-    library[targetID] = actOnLeafs(inputGeom, (leaf) => {
-      return {
-        geometry: [
-          leaf.geometry[0].clone().sketchOnPlane(leaf.plane).extrude(height),
-        ],
-        tags: leaf.tags,
-        plane: leaf.plane,
-        color: leaf.color,
-        bom: leaf.bom,
-      };
-    });
-    return true;
-  };
-});
-
-afterEach(() => {
-  // Reset library after each test
-  if (library) {
-    for (const key of Object.keys(library)) delete library[key];
-  }
-});
+import { 
+  library, 
+  started, 
+  circle, 
+  rectangle, 
+  extrude, 
+  is3D 
+} from '../src/worker.js';
 
 describe('worker.js extrude integration', () => {
+  beforeAll(async () => {
+    // Wait for the worker to initialize (WASM loading)
+    await started;
+  });
+
+  afterEach(() => {
+    // Reset library after each test
+    for (const key of Object.keys(library)) {
+      delete library[key];
+    }
+  });
+
   it('extrudes a rectangle sketch into a 3D box', async () => {
     // 1. Create a 2D rectangle in the library
     const inputID = 'rect1';
