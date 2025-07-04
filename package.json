@@ -12,9 +12,8 @@
     "build": "vite build && cp ./dist/index.html ./dist/404.html",
     "serve": "vite preview",
     "test": "node Puppet/index.js",
-    "unit": "vitest",
-    "unit:watch": "vitest --watch",
-    "postinstall": "node ./patch-replicad-opencascadejs.mjs"
+    "unit": "node ./tests/patchDependencies.mjs && vitest",
+    "unit:watch": "node ./tests/patchDependencies.mjs && vitest --watch"
   },
   "dependencies": {
     "-": "^0.0.1",

@@ -3,13 +3,10 @@ import { vi } from 'vitest';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 
-vi.mock('replicad-shrink-wrap', () => ({
-  default: () => ({}),
-}));
-
-vi.mock('replicad-decorate', () => ({
-  drawSVG: () => ({}),
-}));
+// Only patch dependencies when not in test environment (avoid Vitest import issues)
+if (process.env.NODE_ENV !== 'test') {
+  await import('./patchDependencies.mjs');
+}
 
 // Fix url so that resolution works in Node.js test environment
 vi.mock('replicad-opencascadejs/src/replicad_single.wasm?url', () => {
