@@ -304,28 +304,35 @@ function CreateMode({
       });
 
       let fileName = file.name;
-      const fileExists = existingFiles.data.some(
-        (existingFile) => existingFile.name === fileName
-      );
+      const fileExtension = fileName.substring(fileName.lastIndexOf("."));
+      const baseName = fileName.substring(0, fileName.lastIndexOf("."));
+      let uniqueFileName = fileName;
+      let counter = 1;
 
-      // If the file exists, rename it by appending '_copy'
-      if (fileExists) {
-        const fileExtension = fileName.substring(fileName.lastIndexOf("."));
-        const baseName = fileName.substring(0, fileName.lastIndexOf("."));
-        fileName = `${baseName}_copy${fileExtension}`;
-        console.warn(`File already exists. Renaming to: ${fileName}`);
+      // Incrementally rename the file until a unique name is found
+      while (
+        existingFiles.data.some(
+          (existingFile) => existingFile.name === uniqueFileName
+        )
+      ) {
+        uniqueFileName = `${baseName}_copy${counter}${fileExtension}`;
+        counter++;
+      }
+
+      if (uniqueFileName !== fileName) {
+        console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
       }
 
       authorizedUserOcto.rest.repos
         .createOrUpdateFileContents({
           owner: GlobalVariables.currentUser,
           repo: GlobalVariables.currentRepoName,
-          path: fileName,
+          path: uniqueFileName,
           message: "Import File",
           content: base64result,
         })
         .then((result) => {
-          activeAtom.updateFile({ name: fileName }, result.data.content.sha);
+          activeAtom.updateFile({ name: uniqueFileName }, result.data.content.sha);
           saveProject(setSaveState, "Upload Save");
         });
     };
