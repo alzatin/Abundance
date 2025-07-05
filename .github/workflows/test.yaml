@@ -120,7 +120,7 @@ jobs:
           path: Puppet/images/*.png
       - name: Create screenshot comparison comment
         uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request_target'
         with:
           script: |
             const fs = require('fs');
