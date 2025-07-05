@@ -247,6 +247,7 @@ export default class Import extends Atom {
     this.repoName = GlobalVariables.currentRepoName;
     this.updateValue();
   }
+
   /**
    * Add the file name to the object which is saved for this molecule
    */
