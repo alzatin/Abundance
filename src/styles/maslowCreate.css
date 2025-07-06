@@ -968,3 +968,22 @@ Sidebar navigation
     transform: translateX(0);
   }
 }
+
+/* Import notification styles */
+.import-notification {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  background-color: var(--abundance-color-brightPurple);
+  color: var(--abundance-color-fontWhite);
+  padding: 12px 16px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-family: 'Work Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1000;
+  max-width: 300px;
+  word-wrap: break-word;
+  animation: undoSlideIn 0.3s ease-out;
+}
