@@ -94,7 +94,7 @@ export default (function ParamsEditor({
       );
     });
     inputParamsConfig[activeAtom.uniqueID + "Loaded File"] = {
-      value: "", //href to the file
+      value: activeAtom.fileName ? activeAtom.fileName : "", //href to the file
       label: "Loaded File",
       disabled: true,
     };
