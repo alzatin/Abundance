@@ -89,7 +89,6 @@ export default (function ParamsEditor({
           set({
             [activeAtom.uniqueID + "Loaded File"]: fileName,
           });
-          // Perform additional actions after the file is loaded
         }
       );
     });
