@@ -235,7 +235,6 @@ export default class Import extends Atom {
    * Update the file, filename and sha of the atom
    */
   updateFile(file, sha) {
-    console.log("Updating file", file, sha);
     this.fileName = file.name;
     this.sha = sha;
     if (
