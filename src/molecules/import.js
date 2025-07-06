@@ -184,9 +184,6 @@ export default class Import extends Atom {
           this.importIndex = this.importOptions.indexOf(value);
         },
       };
-      /*inputParams["Load File"] = button(() =>
-        this.loadFile(importOptions[importIndex])
-      );*/
     } else {
       if (this.type == "SVG") {
         inputParams["Width"] = {
