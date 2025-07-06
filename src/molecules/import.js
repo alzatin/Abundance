@@ -57,6 +57,10 @@ export default class Import extends Atom {
 
     this.addIO("output", "geometry", this, "geometry", "");
 
+    this.importOptions = ["SVG", "STL", "STEP"];
+
+    this.importIndex = 0;
+
     this.setValues(values);
   }
 
@@ -173,19 +177,16 @@ export default class Import extends Atom {
   createLevaInputs() {
     let inputParams = {};
     if (this.fileName == null) {
-      const importOptions = ["STL", "SVG", "STEP"];
-      let importIndex = 0;
-
       inputParams[this.uniqueID + "file_ops"] = {
-        options: importOptions,
+        options: this.importOptions,
         label: "File Type",
         onChange: (value) => {
-          importIndex = importOptions.indexOf(value);
+          this.importIndex = this.importOptions.indexOf(value);
         },
       };
-      inputParams["Load File"] = button(() =>
+      /*inputParams["Load File"] = button(() =>
         this.loadFile(importOptions[importIndex])
-      );
+      );*/
     } else {
       if (this.type == "SVG") {
         inputParams["Width"] = {
@@ -198,23 +199,26 @@ export default class Import extends Atom {
           },
         };
       }
-      inputParams["Loaded File"] = {
-        value: this.fileName, //href to the file
-        label: "Loaded File",
-        disabled: true,
-      };
     }
-
     return inputParams;
   }
   /**
    * Creates an input element to load a file and calls import function in CreateMode
    */
-  loadFile(type) {
+  loadFile(type, onLoadComplete) {
     var f = document.getElementById("fileLoaderInput");
     f.accept = "." + type.toLowerCase();
+    f.onchange = (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        this.type = type;
+        this.fileName = file.name; // Set the filename
+        if (onLoadComplete) {
+          onLoadComplete(file.name); // Trigger the callback with the filename
+        }
+      }
+    };
     f.click();
-    this.type = type;
   }
 
   /**
@@ -231,6 +235,7 @@ export default class Import extends Atom {
    * Update the file, filename and sha of the atom
    */
   updateFile(file, sha) {
+    console.log("Updating file", file, sha);
     this.fileName = file.name;
     this.sha = sha;
     if (
