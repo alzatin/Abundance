@@ -136,6 +136,7 @@ export default class Import extends Atom {
         });
       }
     } catch (err) {
+      console.error("Error in Import Atom updateValue:", err);
       this.alertingErrorHandler();
     }
   }

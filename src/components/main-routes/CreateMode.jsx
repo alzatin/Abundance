@@ -337,10 +337,11 @@ function CreateMode({
             new Promise((_, reject) =>
               setTimeout(
                 () => reject(new Error("File upload timed out")),
-                30000
+                60000
               )
             ),
           ]);
+          console.log("File uploaded successfully:", result);
 
           activeAtom.updateFile(
             { name: uniqueFileName },
@@ -371,20 +372,26 @@ function CreateMode({
   };
 
   const deleteAFile = async function (fileName, fileSha) {
-    console.log("deleting file");
-    authorizedUserOcto.rest.repos
-      .deleteFile({
+    try {
+      console.log("Attempting to delete file:", fileName);
+      await authorizedUserOcto.rest.repos.deleteFile({
         owner: GlobalVariables.currentUser,
         repo: GlobalVariables.currentRepoName,
         path: fileName,
         message: "Deleted node",
         sha: fileSha,
-      })
-      .then(() => {
-        // Show delete notification
-        setImportNotification(`File deleted: ${fileName}`);
-        setTimeout(() => setImportNotification(null), 3000);
       });
+      console.log("File deleted successfully:", fileName);
+
+      // Show delete notification
+      setImportNotification(`File deleted: ${fileName}`);
+      setTimeout(() => setImportNotification(null), 3000);
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      alert(
+        `Failed to delete file: ${fileName}. The file will remain in your repository.`
+      );
+    }
   };
 
   /**

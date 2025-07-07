@@ -82,19 +82,14 @@ export default (function ParamsEditor({
   }
   if (activeAtom.atomType == "Import") {
     inputParamsConfig["Load File"] = button(() => {
-      try {
-        activeAtom.loadFile(
-          activeAtom.importOptions[activeAtom.importIndex],
-          (fileName) => {
-            set({
-              [activeAtom.uniqueID + "Loaded File"]: fileName,
-            });
-          }
-        );
-      } catch (error) {
-        console.error("Error loading file:", error);
-        alert("Failed to load the file. Please try again.");
-      }
+      activeAtom.loadFile(
+        activeAtom.importOptions[activeAtom.importIndex],
+        (fileName) => {
+          set({
+            [activeAtom.uniqueID + "Loaded File"]: fileName,
+          });
+        }
+      );
     });
     inputParamsConfig[activeAtom.uniqueID + "Loaded File"] = {
       value: activeAtom.fileName ? activeAtom.fileName : "", //href to the file
