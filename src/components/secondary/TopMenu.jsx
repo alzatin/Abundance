@@ -3,6 +3,7 @@ import GlobalVariables from "../../js/globalvariables.js";
 import ShareDialog from "./ShareDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import SettingsPopUp from "./SettingsPopUp.jsx";
+import MobileSettingsPopUp from "./MobileSettingsPopUp.jsx";
 
 function TopMenu({
   authorizedUserOcto,
@@ -23,6 +24,8 @@ function TopMenu({
   let [settingsPopUp, setSettingsPopUp] = useState(false);
 
   const navigate = useNavigate();
+
+  console.log(GlobalVariables.isMobile());
 
   // objects for navigation items in the top menu
   const navItems = [
@@ -249,7 +252,13 @@ function TopMenu({
         <SaveBar {...{ saveState, savePopUp, setSavePopUp }} />
       ) : null}
       {settingsPopUp ? (
-        <SettingsPopUp {...{ setSettingsPopUp, shortCutsOn, setShortCuts }} />
+        GlobalVariables.isMobile() == true ? (
+          <MobileSettingsPopUp
+            {...{ setSettingsPopUp, shortCutsOn, setShortCuts }}
+          />
+        ) : (
+          <SettingsPopUp {...{ setSettingsPopUp, shortCutsOn, setShortCuts }} />
+        )
       ) : null}
       {shareDialog ? (
         <ShareDialog
