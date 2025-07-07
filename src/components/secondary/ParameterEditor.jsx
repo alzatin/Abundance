@@ -80,6 +80,24 @@ export default (function ParamsEditor({
       disabled: true,
     };
   }
+  if (activeAtom.atomType == "Import") {
+    inputParamsConfig["Load File"] = button(() => {
+      activeAtom.loadFile(
+        activeAtom.importOptions[activeAtom.importIndex],
+        (fileName) => {
+          console.log(`File loaded successfully: ${fileName}`);
+          set({
+            [activeAtom.uniqueID + "Loaded File"]: fileName,
+          });
+        }
+      );
+    });
+    inputParamsConfig[activeAtom.uniqueID + "Loaded File"] = {
+      value: activeAtom.fileName ? activeAtom.fileName : "", //href to the file
+      label: "Loaded File",
+      disabled: true,
+    };
+  }
 
   /** Creates Leva panel with parameters from active atom inputs */
 

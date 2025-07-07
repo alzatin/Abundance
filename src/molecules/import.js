@@ -57,6 +57,10 @@ export default class Import extends Atom {
 
     this.addIO("output", "geometry", this, "geometry", "");
 
+    this.importOptions = ["SVG", "STL", "STEP"];
+
+    this.importIndex = 0;
+
     this.setValues(values);
   }
 
@@ -86,12 +90,14 @@ export default class Import extends Atom {
   getAFile = async function () {
     const octokit = new Octokit();
     const filePath = this.fileName;
+
+    const repoOwner = this.repoOwner;
+    const repoName = this.repoName;
     const result = await octokit.rest.repos.getContent({
-      owner: GlobalVariables.currentRepo.owner,
-      repo: GlobalVariables.currentRepoName,
+      owner: repoOwner,
+      repo: repoName,
       path: filePath,
     });
-
     return result;
   };
   /**
@@ -100,6 +106,7 @@ export default class Import extends Atom {
   updateValue() {
     super.updateValue();
     this.processing = true;
+
     try {
       if (this.fileName != null) {
         this.getAFile().then((result) => {
@@ -170,19 +177,13 @@ export default class Import extends Atom {
   createLevaInputs() {
     let inputParams = {};
     if (this.fileName == null) {
-      const importOptions = ["STL", "SVG", "STEP"];
-      let importIndex = 0;
-
       inputParams[this.uniqueID + "file_ops"] = {
-        options: importOptions,
+        options: this.importOptions,
         label: "File Type",
         onChange: (value) => {
-          importIndex = importOptions.indexOf(value);
+          this.importIndex = this.importOptions.indexOf(value);
         },
       };
-      inputParams["Load File"] = button(() =>
-        this.loadFile(importOptions[importIndex])
-      );
     } else {
       if (this.type == "SVG") {
         inputParams["Width"] = {
@@ -195,22 +196,36 @@ export default class Import extends Atom {
           },
         };
       }
-      inputParams["Loaded File"] = {
-        value: this.fileName, //href to the file
-        label: "Loaded File",
-        disabled: true,
-      };
     }
     return inputParams;
   }
   /**
    * Creates an input element to load a file and calls import function in CreateMode
    */
-  loadFile(type) {
+  loadFile(type, onLoadComplete) {
     var f = document.getElementById("fileLoaderInput");
     f.accept = "." + type.toLowerCase();
+    f.onchange = (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        // If a previous file exists, delete it
+        if (this.fileName && this.sha) {
+          console.log(`Deleting previous file: ${this.fileName}`);
+          const deleteInput = document.getElementById("fileDeleteInput");
+          deleteInput.value = this.fileName;
+          deleteInput.setAttribute("data-sha", this.sha);
+          deleteInput.click();
+        }
+
+        this.type = type;
+        this.fileName = file.name; // Set the new filename
+
+        if (onLoadComplete) {
+          onLoadComplete(file.name); // Trigger the callback with the new filename
+        }
+      }
+    };
     f.click();
-    this.type = type;
   }
 
   /**
@@ -229,8 +244,21 @@ export default class Import extends Atom {
   updateFile(file, sha) {
     this.fileName = file.name;
     this.sha = sha;
+    if (
+      !GlobalVariables.currentRepo?.owner ||
+      !GlobalVariables.currentRepoName
+    ) {
+      console.warn("Repository information not available");
+      return;
+    }
+    this.repoOwner = GlobalVariables.currentRepo.owner;
+    this.repoName = GlobalVariables.currentRepoName;
+
+    this.repoOwner = GlobalVariables.currentRepo.owner;
+    this.repoName = GlobalVariables.currentRepoName;
     this.updateValue();
   }
+
   /**
    * Add the file name to the object which is saved for this molecule
    */
@@ -242,6 +270,8 @@ export default class Import extends Atom {
     superSerialObject.name = this.name;
     superSerialObject.type = this.type;
     superSerialObject.SVGwidth = this.SVGwidth;
+    superSerialObject.repoOwner = this.repoOwner;
+    superSerialObject.repoName = this.repoName;
 
     return superSerialObject;
   }

@@ -50,6 +50,9 @@ function CreateMode({
   const [wireParam, setWire] = useState(true);
   const [solidParam, setSolid] = useState(true);
 
+  /** State for import notifications */
+  const [importNotification, setImportNotification] = useState(null);
+
   /** State for save progress bar */
   const [saveState, setSaveState] = useState(0);
   const [savePopUp, setSavePopUp] = useState(false);
@@ -293,21 +296,55 @@ function CreateMode({
   const uploadAFile = async function (file) {
     var reader = new FileReader();
 
-    reader.onload = function (e) {
+    reader.onload = async function (e) {
       let base64result = e.target.result.split(",")[1];
+
+      // Check if the file already exists in the repository
+      const existingFiles = await authorizedUserOcto.rest.repos.getContent({
+        owner: GlobalVariables.currentUser,
+        repo: GlobalVariables.currentRepoName,
+        path: "",
+      });
+
+      let fileName = file.name;
+      const fileExtension = fileName.substring(fileName.lastIndexOf("."));
+      const baseName = fileName.substring(0, fileName.lastIndexOf("."));
+      let uniqueFileName = fileName;
+      let counter = 1;
+
+      // Incrementally rename the file until a unique name is found
+      while (
+        existingFiles.data.some(
+          (existingFile) => existingFile.name === uniqueFileName
+        )
+      ) {
+        uniqueFileName = `${baseName}_copy${counter}${fileExtension}`;
+        counter++;
+      }
+
+      if (uniqueFileName !== fileName) {
+        console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
+      }
+
       authorizedUserOcto.rest.repos
         .createOrUpdateFileContents({
           owner: GlobalVariables.currentUser,
           repo: GlobalVariables.currentRepoName,
-          path: file.name,
+          path: uniqueFileName,
           message: "Import File",
           content: base64result,
         })
         .then((result) => {
-          activeAtom.updateFile(file, result.data.content.sha);
+          activeAtom.updateFile({ name: uniqueFileName }, result.data.content.sha);
           saveProject(setSaveState, "Upload Save");
+          
+          // Show upload notification
+          setImportNotification(`File uploaded: ${uniqueFileName}`);
+          setTimeout(() => setImportNotification(null), 3000);
         });
     };
+
+    console.log("uploading file", file);
     reader.readAsDataURL(file);
   };
 
@@ -319,6 +356,10 @@ function CreateMode({
       path: fileName,
       message: "Deleted node",
       sha: fileSha,
+    }).then(() => {
+      // Show delete notification
+      setImportNotification(`File deleted: ${fileName}`);
+      setTimeout(() => setImportNotification(null), 3000);
     });
   };
 
@@ -393,7 +434,7 @@ function CreateMode({
         }
       });
     }
-    
+
     // Only update project thumbnail if a new one has been generated successfully
     const thumbnailToUse = finalSVG || backupProjectSVG;
     if (thumbnailToUse) {
@@ -526,6 +567,7 @@ function CreateMode({
               setMesh,
               cad,
               setWireMesh,
+              importNotification,
             }}
           />
           <div className="parent flex-parent" id="lowerHalf">
