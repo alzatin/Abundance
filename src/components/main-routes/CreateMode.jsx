@@ -291,53 +291,82 @@ function CreateMode({
   };
 
   const uploadAFile = async function (file) {
+    console.log("Starting uploadAFile function");
     var reader = new FileReader();
 
-    reader.onload = async function (e) {
-      let base64result = e.target.result.split(",")[1];
+    reader.onload = function (e) {
+      console.log("FileReader onload triggered");
+      const base64result = e.target.result.split(",")[1];
 
-      // Check if the file already exists in the repository
-      const existingFiles = await authorizedUserOcto.rest.repos.getContent({
-        owner: GlobalVariables.currentUser,
-        repo: GlobalVariables.currentRepoName,
-        path: "",
-      });
+      (async () => {
+        try {
+          console.log("Checking if file already exists in the repository");
+          const existingFiles = await authorizedUserOcto.rest.repos.getContent({
+            owner: GlobalVariables.currentUser,
+            repo: GlobalVariables.currentRepoName,
+            path: "",
+          });
+          console.log("Existing files retrieved successfully");
 
-      let fileName = file.name;
-      const fileExtension = fileName.substring(fileName.lastIndexOf("."));
-      const baseName = fileName.substring(0, fileName.lastIndexOf("."));
-      let uniqueFileName = fileName;
-      let counter = 1;
+          let fileName = file.name;
+          const fileExtension = fileName.substring(fileName.lastIndexOf("."));
+          const baseName = fileName.substring(0, fileName.lastIndexOf("."));
+          let uniqueFileName = fileName;
+          let counter = 1;
 
-      // Incrementally rename the file until a unique name is found
-      while (
-        existingFiles.data.some(
-          (existingFile) => existingFile.name === uniqueFileName
-        )
-      ) {
-        uniqueFileName = `${baseName}_copy${counter}${fileExtension}`;
-        counter++;
-      }
+          // Incrementally rename the file until a unique name is found
+          while (
+            existingFiles.data.some(
+              (existingFile) => existingFile.name === uniqueFileName
+            )
+          ) {
+            uniqueFileName = `${baseName}_copy${counter}${fileExtension}`;
+            counter++;
+          }
 
-      if (uniqueFileName !== fileName) {
-        console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
-      }
+          if (uniqueFileName !== fileName) {
+            console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
+          }
 
-      authorizedUserOcto.rest.repos
-        .createOrUpdateFileContents({
-          owner: GlobalVariables.currentUser,
-          repo: GlobalVariables.currentRepoName,
-          path: uniqueFileName,
-          message: "Import File",
-          content: base64result,
-        })
-        .then((result) => {
-          activeAtom.updateFile({ name: uniqueFileName }, result.data.content.sha);
+          console.log(`Uploading file: ${uniqueFileName}`);
+          const rateLimit = await authorizedUserOcto.rest.rateLimit.get();
+          console.log("Rate Limit:", rateLimit);
+          const result = await Promise.race([
+            authorizedUserOcto.rest.repos.createOrUpdateFileContents({
+              owner: GlobalVariables.currentUser,
+              repo: GlobalVariables.currentRepoName,
+              path: uniqueFileName,
+              message: "Import File",
+              content: base64result,
+            }),
+            new Promise((_, reject) =>
+              setTimeout(
+                () => reject(new Error("File upload timed out")),
+                60000
+              )
+            ),
+          ]);
+          console.log("File uploaded successfully", result);
+
+          activeAtom.updateFile(
+            { name: uniqueFileName },
+            result.data.content.sha
+          );
           saveProject(setSaveState, "Upload Save");
-        });
+          console.log(`File upload process completed for: ${uniqueFileName}`);
+        } catch (error) {
+          console.error("Error during file upload:", error);
+          alert(`Failed to upload file: ${file.name}. Please try again.`);
+        }
+      })();
     };
 
-    console.log("uploading file", file);
+    reader.onerror = function (error) {
+      console.error("Error reading file:", error);
+      alert("Failed to read the file. Please try again.");
+    };
+
+    console.log("Starting to read file", file);
     reader.readAsDataURL(file);
   };
 
