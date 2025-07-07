@@ -366,8 +366,6 @@ function CreateMode({
       console.error("Error reading file:", error);
       alert("Failed to read the file. Please try again.");
     };
-
-    console.log("Starting to read file", file);
     reader.readAsDataURL(file);
   };
 
