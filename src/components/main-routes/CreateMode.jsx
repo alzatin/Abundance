@@ -50,6 +50,9 @@ function CreateMode({
   const [wireParam, setWire] = useState(true);
   const [solidParam, setSolid] = useState(true);
 
+  /** State for import notifications */
+  const [importNotification, setImportNotification] = useState(null);
+
   /** State for save progress bar */
   const [saveState, setSaveState] = useState(0);
   const [savePopUp, setSavePopUp] = useState(false);
@@ -353,6 +356,10 @@ function CreateMode({
             result.data.content.sha
           );
           saveProject(setSaveState, "Upload Save");
+
+          // Show upload notification
+          setImportNotification(`File uploaded: ${uniqueFileName}`);
+          setTimeout(() => setImportNotification(null), 3000);
           console.log(`File upload process completed for: ${uniqueFileName}`);
         } catch (error) {
           console.error("Error during file upload:", error);
@@ -372,13 +379,19 @@ function CreateMode({
 
   const deleteAFile = async function (fileName, fileSha) {
     console.log("deleting file");
-    authorizedUserOcto.rest.repos.deleteFile({
-      owner: GlobalVariables.currentUser,
-      repo: GlobalVariables.currentRepoName,
-      path: fileName,
-      message: "Deleted node",
-      sha: fileSha,
-    });
+    authorizedUserOcto.rest.repos
+      .deleteFile({
+        owner: GlobalVariables.currentUser,
+        repo: GlobalVariables.currentRepoName,
+        path: fileName,
+        message: "Deleted node",
+        sha: fileSha,
+      })
+      .then(() => {
+        // Show delete notification
+        setImportNotification(`File deleted: ${fileName}`);
+        setTimeout(() => setImportNotification(null), 3000);
+      });
   };
 
   /**
@@ -585,6 +598,7 @@ function CreateMode({
               setMesh,
               cad,
               setWireMesh,
+              importNotification,
             }}
           />
           <div className="parent flex-parent" id="lowerHalf">
