@@ -373,7 +373,6 @@ function CreateMode({
 
   const deleteAFile = async function (fileName, fileSha) {
     try {
-      console.log("Attempting to delete file:", fileName);
       await authorizedUserOcto.rest.repos.deleteFile({
         owner: GlobalVariables.currentUser,
         repo: GlobalVariables.currentRepoName,
