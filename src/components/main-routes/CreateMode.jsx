@@ -50,6 +50,9 @@ function CreateMode({
   const [wireParam, setWire] = useState(true);
   const [solidParam, setSolid] = useState(true);
 
+  /** State for import notifications */
+  const [importNotification, setImportNotification] = useState(null);
+
   /** State for save progress bar */
   const [saveState, setSaveState] = useState(0);
   const [savePopUp, setSavePopUp] = useState(false);
@@ -334,6 +337,10 @@ function CreateMode({
         .then((result) => {
           activeAtom.updateFile({ name: uniqueFileName }, result.data.content.sha);
           saveProject(setSaveState, "Upload Save");
+          
+          // Show upload notification
+          setImportNotification(`File uploaded: ${uniqueFileName}`);
+          setTimeout(() => setImportNotification(null), 3000);
         });
     };
 
@@ -349,6 +356,10 @@ function CreateMode({
       path: fileName,
       message: "Deleted node",
       sha: fileSha,
+    }).then(() => {
+      // Show delete notification
+      setImportNotification(`File deleted: ${fileName}`);
+      setTimeout(() => setImportNotification(null), 3000);
     });
   };
 
@@ -556,6 +567,7 @@ function CreateMode({
               setMesh,
               cad,
               setWireMesh,
+              importNotification,
             }}
           />
           <div className="parent flex-parent" id="lowerHalf">

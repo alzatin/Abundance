@@ -29,6 +29,7 @@ export default memo(function FlowCanvas({
   setActiveAtom,
   shortCuts,
   authorizedUserOcto,
+  importNotification,
 }) {
   /** State for github molecule search input */
   const [searchingGitHub, setSearchingGitHub] = useState(false);
@@ -609,6 +610,11 @@ export default memo(function FlowCanvas({
       {/* Undo notification */}
       {undoNotification && (
         <div className="undo-notification">{undoNotification}</div>
+      )}
+
+      {/* Import notification */}
+      {importNotification && (
+        <div className="import-notification">{importNotification}</div>
       )}
     </>
   );
