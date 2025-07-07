@@ -294,22 +294,18 @@ function CreateMode({
   };
 
   const uploadAFile = async function (file) {
-    console.log("Starting uploadAFile function");
     var reader = new FileReader();
 
     reader.onload = function (e) {
-      console.log("FileReader onload triggered");
       const base64result = e.target.result.split(",")[1];
 
       (async () => {
         try {
-          console.log("Checking if file already exists in the repository");
           const existingFiles = await authorizedUserOcto.rest.repos.getContent({
             owner: GlobalVariables.currentUser,
             repo: GlobalVariables.currentRepoName,
             path: "",
           });
-          console.log("Existing files retrieved successfully");
 
           let fileName = file.name;
           const fileExtension = fileName.substring(fileName.lastIndexOf("."));
@@ -330,10 +326,6 @@ function CreateMode({
           if (uniqueFileName !== fileName) {
             console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
           }
-
-          console.log(`Uploading file: ${uniqueFileName}`);
-          const rateLimit = await authorizedUserOcto.rest.rateLimit.get();
-          console.log("Rate Limit:", rateLimit);
           const result = await Promise.race([
             authorizedUserOcto.rest.repos.createOrUpdateFileContents({
               owner: GlobalVariables.currentUser,
@@ -345,11 +337,10 @@ function CreateMode({
             new Promise((_, reject) =>
               setTimeout(
                 () => reject(new Error("File upload timed out")),
-                60000
+                30000
               )
             ),
           ]);
-          console.log("File uploaded successfully", result);
 
           activeAtom.updateFile(
             { name: uniqueFileName },
@@ -360,10 +351,12 @@ function CreateMode({
           // Show upload notification
           setImportNotification(`File uploaded: ${uniqueFileName}`);
           setTimeout(() => setImportNotification(null), 3000);
-          console.log(`File upload process completed for: ${uniqueFileName}`);
         } catch (error) {
+          setImportNotification(
+            `Failed to Upload File: Corrupt or exceeded size limit`
+          );
+          setTimeout(() => setImportNotification(null), 3000);
           console.error("Error during file upload:", error);
-          alert(`Failed to upload file: ${file.name}. Please try again.`);
         }
       })();
     };
