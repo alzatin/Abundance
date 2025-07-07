@@ -9,7 +9,7 @@ const AlertType = Object.freeze({
   WARNING: "warning",
   INFO: "info",
   NONE: "none",
-})
+});
 
 /**
  * This class is the prototype for all atoms.
@@ -241,7 +241,7 @@ export default class Atom {
       if (this.alert.type != AlertType.NONE) {
         this.color = "red";
         let prefix = "ERROR: ";
-        switch(this.alert.type) {
+        switch (this.alert.type) {
           case AlertType.WARNING:
             prefix = "WARNING: ";
             this.color = "orange";
@@ -355,10 +355,11 @@ export default class Atom {
    * @returns
    */
   alertingErrorHandler() {
+    console.log("Error in atom: " + this.name);
     return (err) => {
       this.processing = false;
       console.log(err);
-      this.setError(err.message);
+      this.setError(err.message || "Unkown error occurred");
     };
   }
 
@@ -367,7 +368,7 @@ export default class Atom {
    * @param {string} message - The message to display.
    */
   setError(message) {
-    this.alert = {type: AlertType.ERROR, message: String(message)};
+    this.alert = { type: AlertType.ERROR, message: String(message) };
   }
 
   /**
@@ -375,12 +376,12 @@ export default class Atom {
    * processing will continue.
    */
   setWarning(message) {
-    this.alert = {type: AlertType.WARNING, message: String(message)};
+    this.alert = { type: AlertType.WARNING, message: String(message) };
   }
 
   /** Set an informational alert on this atom */
   setInfo(message) {
-    this.alert = {type: AlertType.INFO, message: String(message)};
+    this.alert = { type: AlertType.INFO, message: String(message) };
   }
 
   /**
@@ -388,7 +389,7 @@ export default class Atom {
    */
   clearAlert() {
     this.color = this.defaultColor;
-    this.alert = {type: AlertType.NONE, message: ""};
+    this.alert = { type: AlertType.NONE, message: "" };
   }
 
   /**
@@ -630,13 +631,13 @@ export default class Atom {
    * @param {string} inputName - The name of the input that changed (optional)
    */
   updateValue(inputName) {
-    // If called with an input name parameter (from AttachmentPoint), 
+    // If called with an input name parameter (from AttachmentPoint),
     // just call the main updateValue logic
     if (inputName !== undefined) {
       this.updateValue();
       return;
     }
-    
+
     this.waitOnComingInformation();
   }
 
