@@ -1863,8 +1863,7 @@ function computePositions(
       .clone()
       .outerWire()
       .meshEdges({ tolerance: tolerance, angularTolerance: 0.5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
-    
-    
+
     const prepared = preparePoints(mesh, tolerance / 100);
     const result = asFloat64(prepared);
     return result;
@@ -2011,7 +2010,7 @@ function preparePoints(mesh, tolerance) {
     });
   });
 
-  const almostEqual = (p1, p2, t=tolerance) => {
+  const almostEqual = (p1, p2, t = tolerance) => {
     const x = Math.abs(p1.x - p2.x) < t;
     const y = Math.abs(p1.y - p2.y) < t;
     return x && y;
@@ -2029,8 +2028,11 @@ function preparePoints(mesh, tolerance) {
         offset = -1 * offset;
       }
       const index = currentEdge.start + offset;
-      const nextPoint = {x: mesh.lines[index], y: mesh.lines[index + 1]};
-      if (result.length == 0 || !almostEqual(result[result.length - 1], nextPoint)) {
+      const nextPoint = { x: mesh.lines[index], y: mesh.lines[index + 1] };
+      if (
+        result.length == 0 ||
+        !almostEqual(result[result.length - 1], nextPoint)
+      ) {
         result.push(nextPoint);
       }
     }
@@ -2053,7 +2055,8 @@ function preparePoints(mesh, tolerance) {
       );
     } else if (nextEdges.length == 1) {
       currentEdge = nextEdges[0];
-    } else { // nextEdges.length > 1
+    } else {
+      // nextEdges.length > 1
       console.warn("Multiple edges starting at seemingly the same point.");
       nextEdges.sort((a, b) => {
         const p1 = result[result.length - 1];
@@ -2093,7 +2096,7 @@ function moveFaceToCuttingPlane(geom, face) {
   let center = {
     x: (face.UVBounds.uMin + face.UVBounds.uMax) / 2,
     y: (face.UVBounds.vMin + face.UVBounds.vMax) / 2,
-  }
+  };
 
   let pointOnSurface = face.pointOnSurface(center.x, center.y);
   let faceNormal = face.normalAt();

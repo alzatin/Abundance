@@ -85,7 +85,6 @@ export default (function ParamsEditor({
       activeAtom.loadFile(
         activeAtom.importOptions[activeAtom.importIndex],
         (fileName) => {
-          console.log(`File loaded successfully: ${fileName}`);
           set({
             [activeAtom.uniqueID + "Loaded File"]: fileName,
           });
