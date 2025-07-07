@@ -23,9 +23,9 @@ export default defineConfig({
   },
   test: {
     environment: 'node', // Use 'jsdom' if you need browser APIs
-    globals: true,       // So you can use describe/it/expect without imports
-    setupFiles: ['./tests/setupVitestMocks.mjs'], // Load our setup/mocking file
+    globals: true,
+    setupFiles: ['./tests/setupVitestMocks.mjs'], 
     include: ['tests/**/*.test.{js,mjs,ts}', 'tests/**/*.integration.{js,mjs,ts}'],
-    // You can add more config here as needed
+    coverage: { provider: "v8"}
   },
 });

@@ -13,7 +13,8 @@
     "serve": "vite preview",
     "test": "node Puppet/index.js",
     "unit": "node ./tests/patchDependencies.mjs && vitest",
-    "unit:watch": "node ./tests/patchDependencies.mjs && vitest --watch"
+    "unit:watch": "node ./tests/patchDependencies.mjs && vitest --watch",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "-": "^0.0.1",
@@ -31,6 +32,7 @@
     "@uiw/codemirror-extensions-langs": "^4.23.7",
     "@uiw/codemirror-theme-andromeda": "^4.23.7",
     "@uiw/react-codemirror": "^4.22.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "circular-menu": "^1.0.6",
     "codemirror": "^6.0.1",
     "comlink": "^4.4.1",
@@ -58,7 +60,8 @@
     "showdown": "^2.1.0",
     "three": "^0.161.0",
     "url": "^0.11.4",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "v8": "^0.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "4.2.1",

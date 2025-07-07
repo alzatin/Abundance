@@ -8,7 +8,8 @@ if (process.env.NODE_ENV !== 'test') {
   await import('./patchDependencies.mjs');
 }
 
-// Fix url so that resolution works in Node.js test environment
+// Fix url resolution. This intercepts import of wasm file but only to correct the path
+// for the testing environment. The real wasm file is still what get's loaded.
 vi.mock('replicad-opencascadejs/src/replicad_single.wasm?url', () => {
   const wasmPath = resolve(process.cwd(), 'node_modules/replicad-opencascadejs/src/replicad_single.wasm');
   return {
