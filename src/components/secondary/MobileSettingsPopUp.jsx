@@ -123,6 +123,7 @@ const MobileSettingsPopUp = ({
           >
             <Typography gutterBottom>Font Size</Typography>
             <Slider
+              style={{ color: "#be3fe5" }}
               value={state.fontSize}
               onChange={handleValueChange}
               name="fontSize"
@@ -134,8 +135,10 @@ const MobileSettingsPopUp = ({
               value={state.atomSize}
               onChange={handleValueChange}
               name="atomSize"
+              color="white"
               min={10}
               max={60}
+              style={{ color: "#be3fe5" }}
             />
             <InputLabel
               id="measure-units-label"
