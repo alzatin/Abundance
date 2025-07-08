@@ -124,7 +124,7 @@ export default class Import extends Atom {
             : null;
 
         if (funcToCall == null) {
-          throw "Invalid file type";
+          throw new Error("Invalid file type");
         }
 
         funcToCall(this.uniqueID, file, this.SVGwidth)
