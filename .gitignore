@@ -2,6 +2,6 @@
 *.DS_Store
 /test_*.js
 dist/
-
+coverage/
 # Puppeteer test screenshots (generated during CI)
 Puppet/images/*.png

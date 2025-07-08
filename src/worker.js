@@ -2744,9 +2744,59 @@ function generateDisplayMesh(id) {
   });
 }
 
-// comlink is great to expose your functions within the worker as a simple API
-// to your app.
-expose({
+if (
+  typeof self !== "undefined" &&
+  typeof self.addEventListener === "function" &&
+  process.env.NODE_ENV !== "test"
+) {
+  expose({
+    deleteFromLibrary,
+    importingSTEP,
+    importingSTL,
+    importingSVG,
+    createMesh,
+    circle,
+    color,
+    code,
+    regularPolygon,
+    rectangle,
+    generateDisplayMesh,
+    extrude,
+    fusion,
+    extractBomList,
+    generateThumbnail,
+    visExport,
+    downExport,
+    shrinkWrapSketches,
+    move,
+    rotate,
+    scale,
+    fillet,
+    chamfer,
+    difference,
+    tag,
+    extractAllTags,
+    layout,
+    displayLayout,
+    output,
+    molecule,
+    bom,
+    extractTag,
+    intersect,
+    assembly,
+    loftShapes,
+    text,
+    resetView,
+    visualizeGcode,
+    getBoundingBox,
+    getBounds,
+  })
+}
+
+// Export functions for testing and ES module environments
+export {
+  library,
+  started,
   deleteFromLibrary,
   importingSTEP,
   importingSTL,
@@ -2757,14 +2807,7 @@ expose({
   code,
   regularPolygon,
   rectangle,
-  generateDisplayMesh,
   extrude,
-  fusion,
-  extractBomList,
-  generateThumbnail,
-  visExport,
-  downExport,
-  shrinkWrapSketches,
   move,
   rotate,
   scale,
@@ -2783,8 +2826,12 @@ expose({
   assembly,
   loftShapes,
   text,
-  resetView,
   visualizeGcode,
   getBoundingBox,
   getBounds,
-});
+  is3D,
+  generateThumbnail,
+  visExport,
+  downExport,
+  shrinkWrapSketches,
+};
