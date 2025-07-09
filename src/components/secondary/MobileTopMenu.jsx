@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import SettingsPopUp from "./SettingsPopUp.jsx";
 import MobileSettingsPopUp from "./MobileSettingsPopUp.jsx";
 
-function TopMenu({
+function MobileTopMenu({
   authorizedUserOcto,
   savePopUp,
   setSavePopUp,
@@ -24,8 +24,6 @@ function TopMenu({
   let [settingsPopUp, setSettingsPopUp] = useState(false);
 
   const navigate = useNavigate();
-
-  console.log(GlobalVariables.isMobile());
 
   // objects for navigation items in the top menu
   const navItems = [
@@ -222,13 +220,9 @@ function TopMenu({
             )}
           </button>
 
-          <div className={`menu-nav${navbarOpen ? " show-menu" : ""}`}>
+          <ul className={`menu-nav${navbarOpen ? " show-menu" : ""}`}>
             {navItems.map((item, index) => (
-              <button
-                key={item.id}
-                className="menu-nav-button"
-                onClick={item.buttonFunc}
-              >
+              <button key={item.id} className="menu-nav-button">
                 <img
                   className=" thumnail-logo"
                   alt={item}
@@ -240,11 +234,12 @@ function TopMenu({
                   }
                   key={item.id}
                   title={item.id + "-button"}
+                  onClick={item.buttonFunc}
                 />
-                <span className="nav-text">{item.id}</span>
+                <span className="nav-text">mmmmm</span>
               </button>
             ))}
-          </div>
+          </ul>
         </nav>
       </>
     );
@@ -275,4 +270,4 @@ function TopMenu({
   );
 }
 
-export default memo(TopMenu);
+export default memo(MobileTopMenu);

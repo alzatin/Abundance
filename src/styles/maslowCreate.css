@@ -531,22 +531,16 @@ Sidebar navigation
 .rotati-plus {
   transform: translate(0px) rotate(90deg);
 }
-.menu-nav-button {
-  background-color: transparent;
-  border: none;
-  padding: 0;
-}
+
 .menu-nav {
+  margin: auto;
   position: absolute;
-  /*right: 80px;*/
-  top: -15px;
+  top: 60px;
   list-style: none;
   width: 0;
   overflow: hidden;
-  max-width: 250px;
+  height: calc(100vh - 70px);
   z-index: 9;
-  transform: translateX(90px);
-  transition: transform ease-in-out 0.1s;
   -webkit-user-select: none; /* Safari */
   -khtml-user-select: none; /* Konqueror HTML */
   -moz-user-select: none; /* Old versions of Firefox */
@@ -554,16 +548,37 @@ Sidebar navigation
   user-select: none; /* Non-prefixed version */
   /* transition: width ease 0.2s; */
 }
+.menu-nav button {
+  display: flex;
+  position: relative;
+  margin: 15px 10px;
+  padding: 0px;
+  width: 90%;
+  height: 50px;
+  border-left: 3px solid var(--abundance-color-brightPurple);
+  background-color: rgba(124, 77, 255, 0.1);
+}
 .nav-img,
 .menu-nav img {
   padding: 10px;
 }
-.menu-nav img:hover {
-  background-color: #ffffffe1;
+.menu-nav button:hover {
+  background-color: rgba(124, 77, 255, 0.2);
 }
 .menu-nav.show-menu {
-  width: 100%;
+  width: calc(100% - 6px);
   transform: translateX(0px);
+  background-color: var(--abundance-color-hightlightOffWhite);
+  border: 3px solid var(--abundance-color-darkGrey);
+}
+
+.nav-text {
+  display: inline;
+  font-family: ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas",
+    "Liberation Mono", "Courier New", monospace;
+  font-weight: 500;
+  font-size: 16px;
+  align-self: center;
 }
 
 .go-up-button {
@@ -809,19 +824,6 @@ Sidebar navigation
 }
 
 @media (min-width: 768px) {
-  .menu-nav {
-    position: absolute;
-    top: -15px;
-    list-style: none;
-    width: 0;
-    overflow: hidden;
-    right: 80px;
-    max-width: 450px;
-    z-index: 9;
-    transform: translateX(170px);
-    transition: transform ease-in-out 0.1s;
-    /* transition: width ease 0.2s; */
-  }
   .paramEditorDiv {
     width: 280px;
     top: 57vh;
@@ -914,6 +916,50 @@ Sidebar navigation
     border: 2px solid var(--run-project-info);
   }
 
+  /* Top Nav Menu */
+
+  .menu-nav-button {
+    background-color: transparent;
+    border: none;
+  }
+  .menu-nav {
+    position: absolute;
+    padding: 1px;
+    margin-top: 20px;
+    top: -15px;
+    list-style: none;
+    width: 0;
+    overflow: hidden;
+    max-width: 250px;
+    right: 70px;
+    transform: translateX(170px);
+    transition: transform ease-in-out 0.1s;
+    z-index: 9;
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version */
+  }
+
+  .nav-img,
+  .menu-nav img {
+    padding: 10px;
+  }
+  .menu-nav.show-menu {
+    width: 100%;
+    transform: translateX(0px);
+    background-color: var(--abundance-color-hightlightOffWhite);
+    border: none;
+  }
+  .nav-text {
+    display: inline;
+    font-family: ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas",
+      "Liberation Mono", "Courier New", monospace;
+    font-weight: 500;
+    font-size: 14px;
+    align-self: center;
+  }
   /* Share Dialog */
 
   .share-dialog {
