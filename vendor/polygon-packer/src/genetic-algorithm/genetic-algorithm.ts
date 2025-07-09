@@ -50,10 +50,12 @@ export default class GeneticAlgorithm {
 
         if (seedPhenotype) {
             // Use the seed phenotype as the first individual if provided
+            console.log("Initializing genetic algorithm with seed phenotype");
             firstPhenotype = seedPhenotype;
             this.#population.push(firstPhenotype);
         } else {
             // Create a random first individual using the sorted adam order
+            console.log("Initializing genetic algorithm with random phenotype");
             for (i = 0; i < adam.length; ++i) {
                 angles.push(this.randomAngle(polygon, adam[i]));
             }

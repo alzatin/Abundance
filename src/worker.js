@@ -1849,6 +1849,13 @@ function computePositions(
 ) {
   console.log("Starting to compute positions for shapes: ");
   console.log(shapesForLayout);
+  
+  if (previousPlacements && previousPlacements.length > 0) {
+    console.log("Previous placements received in computePositions:", previousPlacements);
+  } else {
+    console.log("No previous placements provided to computePositions");
+  }
+  
   const tolerance = 0.2;
   const runtimeMs = 30000;
   const config = {
