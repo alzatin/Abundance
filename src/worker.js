@@ -1382,6 +1382,7 @@ function extractKeepOut(inputGeometry) {
  *    - width
  *    - height - together with width specifies the demensions of the stock material
  *    - partPadding - space between parts in the resulting placement
+ * @param {*} previousPlacements - optional array of previous placements to use as starting point
  */
 function layout(
   targetID,
@@ -1389,7 +1390,8 @@ function layout(
   progressCallback,
   warningCallback,
   placementsCallback,
-  layoutConfig
+  layoutConfig,
+  previousPlacements = null
 ) {
   return started.then(() => {
     let rotateID = generateUniqueID();
@@ -1407,7 +1409,8 @@ function layout(
       placementsCallback,
       inputID,
       targetID,
-      layoutConfig
+      layoutConfig,
+      previousPlacements
     );
     return positionsPromise.then((positions) => {
       //This does the actual layout of the parts.
@@ -1841,7 +1844,8 @@ function computePositions(
   placementsCallback,
   inputID,
   targetID,
-  layoutConfig
+  layoutConfig,
+  previousPlacements = null
 ) {
   console.log("Starting to compute positions for shapes: ");
   console.log(shapesForLayout);
@@ -1888,7 +1892,7 @@ function computePositions(
     progressCallback(
       0.1 + 0.9 * ((progressCallbackCounter * 100) / runtimeMs),
       proxy(() => {
-        packer.stop();
+        packer.stop(false);
       })
     );
   };
@@ -1917,21 +1921,21 @@ function computePositions(
     };
 
     try {
-      packer.start(config, polygons, bin, callbackFunction, displayCallback);
+      packer.start(config, polygons, bin, callbackFunction, displayCallback, previousPlacements);
 
       setTimeout(() => {
         console.log("Timeout reached. Stopping packer.");
         if (bestPlacement != null) {
-          packer.stop();
+          packer.stop(true);
           resolve(bestPlacement);
         } else {
-          packer.stop();
+          packer.stop(true);
           reject(new Error("Failed to find placements within the time limit."));
         }
       }, runtimeMs);
     } catch (err) {
       console.log("error in nesting engine: " + err);
-      packer.stop();
+      packer.stop(true);
       reject(err);
     }
   });
