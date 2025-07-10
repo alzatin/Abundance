@@ -5,8 +5,8 @@
 
 const projectUser = "moatmaslow";
 
-const puppeteer = require("puppeteer");
-const projects_to_test = require("./projects_to_test.js");
+import puppeteer from "puppeteer";
+import projects_to_test from "./projects_to_test.js";
 // Get the current date
 const currentDate = new Date().toISOString().split("T")[0];
 
