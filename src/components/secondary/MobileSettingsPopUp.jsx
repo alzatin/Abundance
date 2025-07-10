@@ -54,6 +54,7 @@ const MobileSettingsPopUp = ({
 
   const [state, setState] = React.useState({
     shortcut: shortCutsOn,
+    displaytheme: Globalvariables.displayTheme,
     fontSize: parseInt(
       Globalvariables.canvasFont.replace("px Work Sans Bold", ""),
       10
@@ -96,6 +97,16 @@ const MobileSettingsPopUp = ({
     });
     if (event.target.name === "shortcut") {
       setShortCuts(event.target.checked);
+    }
+    if (event.target.name === "displaytheme") {
+      const element = document.querySelector("html");
+      if (element && element.className === "light-theme") {
+        element.className = "dark-theme";
+        localStorage.setItem("displayTheme", "dark-theme");
+      } else {
+        element.className = "light-theme";
+        localStorage.setItem("displayTheme", "light-theme");
+      }
     }
   };
 
