@@ -1846,7 +1846,7 @@ function computePositions(
   console.log("Starting to compute positions for shapes: ");
   console.log(shapesForLayout);
   const tolerance = 0.2;
-  const runtimeMs = 30000;
+  const runtimeMs = 120000;
   const config = {
     curveTolerance: 0.1,
     spacing: layoutConfig.partPadding + tolerance * 2,
