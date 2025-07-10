@@ -2,9 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import globalvariables from "../../js/globalvariables";
 
 import { useControls, useCreateStore, LevaPanel, button } from "leva";
-import { re } from "mathjs";
-import fonts from "../../js/fonts";
-//import { c } from "vite/dist/node/types.d-FdqQ54oU";
 
 /**Creates new collapsible sidebar with Leva - edited from Replicad's ParamsEditor.jsx */
 export default (function ParamsEditor({
@@ -23,6 +20,8 @@ export default (function ParamsEditor({
   const store2 = useCreateStore();
   const store3 = useCreateStore();
   const store4 = useCreateStore();
+
+  let isMobile = globalvariables.isMobile();
 
   /*Work around Leva collapse issue */
   /**https://github.com/pmndrs/leva/issues/456#issuecomment-1537510948 */
@@ -183,6 +182,7 @@ export default (function ParamsEditor({
         <LevaPanel
           store={store1}
           neverHide
+          fill
           collapsed={{
             collapsed,
             onChange: (value) => {
@@ -190,7 +190,6 @@ export default (function ParamsEditor({
             },
           }}
           hideCopyButton
-          fill
           titleBar={{
             title: activeAtom.name || globalvariables.currentRepo.repoName,
             drag: false,
@@ -202,7 +201,7 @@ export default (function ParamsEditor({
         <LevaPanel
           store={store2}
           fill
-          hidden={false}
+          hidden={isMobile ? true : false}
           collapsed={true}
           hideCopyButton
           titleBar={{
@@ -217,7 +216,7 @@ export default (function ParamsEditor({
           <LevaPanel
             store={store3}
             fill
-            hidden={false}
+            hidden={isMobile ? true : false}
             collapsed={true}
             hideCopyButton
             titleBar={{

@@ -598,8 +598,7 @@ Sidebar navigation
 .switch {
   position: fixed;
   width: 45px;
-  height: 24px;
-  top: 47%;
+  top: 39%;
   right: 15%;
   z-index: 2;
   font-size: 11px;
@@ -618,11 +617,11 @@ Sidebar navigation
 
 /*new leva sidebar */
 .paramEditorDiv {
-  max-height: 45%;
+  max-height: 25%;
   position: absolute;
-  top: 53%;
-  left: 10px;
-  width: 250px;
+  top: 47%;
+  left: 0px;
+  width: 100%;
   z-index: 3;
   overflow-x: auto;
   box-sizing: content-box;
@@ -635,7 +634,7 @@ Sidebar navigation
 
 .paramEditorDivRun {
   position: absolute;
-  top: 110px;
+  top: 10px;
   right: 10px;
   width: 250px;
   z-index: 3;
@@ -651,7 +650,7 @@ Sidebar navigation
 
 .gridEditorDiv {
   position: absolute;
-  top: 47%;
+  top: 87%;
   left: 10px;
   width: 250px;
   z-index: 3;
@@ -665,7 +664,7 @@ Sidebar navigation
 }
 .bomEditorDiv {
   position: absolute;
-  top: 47%;
+  top: 87%;
   left: 300px;
   width: 250px;
   z-index: 3;
@@ -827,11 +826,19 @@ Sidebar navigation
     opacity: 0;
   }
 }
-
 @media (min-width: 768px) {
+  /*new leva sidebar */
   .paramEditorDiv {
-    width: 280px;
-    top: 57vh;
+    max-height: 45%;
+    position: absolute;
+    top: 53%;
+    left: 10px;
+    width: 250px;
+    z-index: 3;
+    overflow-x: auto;
+    box-sizing: content-box;
+    -ms-overflow-style: none; /* for Internet Explorer, Edge */
+    scrollbar-width: none; /* for Firefox */
   }
   .paramEditorDivRun {
     position: absolute;
