@@ -1,14 +1,11 @@
-//ENTER YOUR GITHUB CREDENTIALS TO TEST PUPPETEER AND CHANGE PROJECTS TO TEST TO PROJECTS THAT EXIST FOR THAT SPECIFIC USER
-
-//const envUserValue = "";
-//const envPassValue = "";
-
-const projectUser = "moatmaslow";
-
 import puppeteer from "puppeteer";
 import projects_to_test from "./projects_to_test.js";
-// Get the current date
+import path from "path";
+import { fileURLToPath } from "url";
+
+const projectUser = "moatmaslow";
 const currentDate = new Date().toISOString().split("T")[0];
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Launch the browser and open a new blank page
 //for each project in projects to test launch puppeteer
@@ -100,7 +97,6 @@ async function loadPuppeteerAndExec(browser, date) {
 
   // Navigate to main.html
   try {
-    const path = require("path");
     await page.goto(`file:${path.join(__dirname, "main.html")}`);
     console.log("navigated to: main.html");
     await page.screenshot({
