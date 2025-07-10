@@ -251,7 +251,8 @@ export default class CutLayout extends Atom {
             height: sheetHeight,
             partPadding: partPadding,
             units: GlobalVariables.topLevelMolecule.units[GlobalVariables.topLevelMolecule.unitsKey],
-          })
+          },
+          this.placements)
         .then((positions) => {
           this.handleNewPlacements(positions);
         })
