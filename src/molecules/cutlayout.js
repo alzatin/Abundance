@@ -236,13 +236,6 @@ export default class CutLayout extends Atom {
         return;
       }
 
-      // Log previous placements for debugging
-      if (this.placements && this.placements.length > 0) {
-        console.log("CutLayout: Using previous placements as starting point:", this.placements);
-      } else {
-        console.log("CutLayout: No previous placements available, starting fresh");
-      }
-
       GlobalVariables.cad
         .layout(
           this.uniqueID,

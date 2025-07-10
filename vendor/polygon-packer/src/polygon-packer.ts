@@ -34,11 +34,8 @@ export default class PolygonPacker {
   // Convert previous placements to a Phenotype object
   private convertPlacementsToPhotype(placements: any[], configuration: NestConfig): Phenotype {
     if (!placements || placements.length === 0) {
-      console.log("No previous placements provided to convertPlacementsToPhotype");
       return null;
     }
-
-    console.log("Converting previous placements to phenotype:", placements);
 
     // Create a mapping from part ID to node index
     const nodeMap = new Map<string, number>();
@@ -55,7 +52,6 @@ export default class PolygonPacker {
       if (nodeIndex !== undefined) {
         orderedNodes.push(this.#nodes[nodeIndex]);
         rotations.push(placement.rotate || 0);
-        console.log(`Mapped placement ID ${placement.id} to node ${nodeIndex} with rotation ${placement.rotate || 0}`);
       } else {
         console.log(`Warning: Could not find node for placement ID ${placement.id}`);
       }
@@ -66,16 +62,13 @@ export default class PolygonPacker {
       if (!orderedNodes.find(n => n.source === node.source)) {
         orderedNodes.push(node);
         rotations.push(0);
-        console.log(`Added remaining node ${node.source} with rotation 0`);
       }
     });
 
     if (orderedNodes.length === 0) {
-      console.log("Warning: No nodes could be mapped from placements");
       return null;
     }
 
-    console.log(`Created seed phenotype with ${orderedNodes.length} nodes`);
     return new Phenotype(orderedNodes, rotations);
   }
 
@@ -116,15 +109,7 @@ export default class PolygonPacker {
 
     // Convert previous placements to a seed phenotype if provided
     if (previousPlacements && previousPlacements.length > 0) {
-      console.log("Using previous placements as seed for genetic algorithm:", previousPlacements);
       seedPhenotype = this.convertPlacementsToPhotype(previousPlacements[0], configuration);
-      if (seedPhenotype) {
-        console.log("Successfully created seed phenotype from previous placements");
-      } else {
-        console.log("Failed to create seed phenotype, using random initialization");
-      }
-    } else {
-      console.log("No previous placements provided, using random initialization");
     }
 
     this.#geneticAlgorithm.init(this.#nodes, this.#resultBounds, configuration, seedPhenotype);
