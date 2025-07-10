@@ -558,6 +558,11 @@ Sidebar navigation
   border-left: 3px solid var(--abundance-color-brightPurple);
   background-color: rgba(124, 77, 255, 0.1);
 }
+
+.menu-nav-button {
+  background-color: transparent;
+  border: none;
+}
 .nav-img,
 .menu-nav img {
   padding: 10px;
@@ -918,10 +923,6 @@ Sidebar navigation
 
   /* Top Nav Menu */
 
-  .menu-nav-button {
-    background-color: transparent;
-    border: none;
-  }
   .menu-nav {
     position: absolute;
     padding: 1px;
