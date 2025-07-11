@@ -3,9 +3,11 @@ import projects_to_test from "./projects_to_test.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const projectUser = "moatmaslow";
 const currentDate = new Date().toISOString().split("T")[0];
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Launch the browser and open a new blank page
 //for each project in projects to test launch puppeteer
@@ -98,7 +100,10 @@ async function loadPuppeteerAndExec(browser, date) {
   // Navigate to main.html
   try {
     await page.goto(`file:${path.join(__dirname, "main.html")}`);
-    console.log("navigated to: main.html");
+
+    // Wait a bit for the page to load
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
     await page.screenshot({
       path: `Puppet/images/main.png`,
     });
