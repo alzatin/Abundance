@@ -33,7 +33,8 @@ export default class Code extends Atom {
      * The code contained within the atom stored as a string.
      * @type {string}
      */
-    this.code = " \n\
+    this.code =
+      " \n\
       //Inputs:[inputShape, dist, height]\n\
       //This defines the molecules inputs and creates variables with the same names which can be referenced in the code\n\
       \n\
@@ -116,9 +117,18 @@ export default class Code extends Atom {
 
     this.addIO("output", "geometry", this, "geometry", "");
 
-    this.setValues(values);
+    //This loads any inputs which this atom had when last saved.
+    if (typeof this.ioValues !== "undefined") {
+      this.ioValues.forEach((ioValue) => {
+        //for each saved value
+        this.addIO("input", ioValue.name, this, "geometry", "");
+      });
+    }
 
-    this.parseInputs(false);
+    this.setValues([]);
+    this.code = values.code || this.code;
+
+    //this.parseInputs(false);
   }
 
   /**
@@ -163,7 +173,7 @@ export default class Code extends Atom {
   createLevaInputs() {
     let inputParams = {};
     /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs) {
+    if (this.inputs.every((x) => x.ready)) {
       this.inputs.map((input) => {
         const checkConnector = () => {
           return input.connectors.length > 0;
@@ -194,6 +204,8 @@ export default class Code extends Atom {
    */
   updateCode(code) {
     this.code = code;
+
+    this.parseInputs();
     this.updateValue();
     this.sendToRender();
   }
@@ -204,8 +216,6 @@ export default class Code extends Atom {
   updateValue(value) {
     super.updateValue();
     //Parse the inputs
-    this.parseInputs();
-
     if (this.inputs.every((x) => x.ready)) {
       var inputValues = [];
       this.inputs.forEach((io) => {
@@ -253,7 +263,6 @@ export default class Code extends Atom {
     }
   }
 
-
   /**
    * Override the standard basic thread processing function to allow passing of numbers or geometry depending on what we have
    */
@@ -272,39 +281,28 @@ export default class Code extends Atom {
    * This function reads the string of inputs the user specifies and adds them to the atom.
    */
   parseInputs(ready = true) {
-    //Parse this.code for the line "\nmain(input1, input2....) and add those as inputs if needed
-    var variables = /Inputs:\[\s*([^)]+?)\s*\]/.exec(this.code);
+    const variables = /Inputs:\[\s*([^)]+?)\s*\]/.exec(this.code);
 
     if (variables) {
-      if (variables[1]) {
-        variables = variables[1].split(/\s*,\s*/);
-      }
-      let variableNames = [];
-      //Add any inputs which are needed
-      for (var variable in variables) {
-        variables[variable] = variables[variable].split(/\s*=\s*/);
-        let variableName = variables[variable][0];
-        variableNames.push(variableName);
-        let defaultVal = variables[variable][1] ? variables[variable][1] : 10;
+      const variableNames = [];
+      const parsedVariables =
+        variables[1]?.split(/\s*,\s*/).map((v) => v.split(/\s*=\s*/)) || [];
 
-        if (!this.inputs.some((input) => input.Name === variableName)) {
-          this.addIO(
-            "input",
-            variableName,
-            this,
-            "geometry",
-            defaultVal,
-            ready
-          );
-        }
-      }
+      parsedVariables.forEach(([name, defaultVal]) => {
+        const value = defaultVal || 10;
+        variableNames.push(name);
 
-      //Remove any inputs which are not needed
-      for (var input in this.inputs) {
-        if (!variableNames.includes(this.inputs[input].name)) {
-          this.removeIO("input", this.inputs[input].name, this);
+        const existingInput = this.inputs.find((input) => input.name === name);
+        if (existingInput) {
+          // value is already set to the existing input's value
+        } else {
+          this.addIO("input", name, this, "geometry", value, ready);
         }
-      }
+      });
+
+      this.inputs = this.inputs.filter((input) =>
+        variableNames.includes(input.name)
+      );
     }
   }
 
@@ -347,7 +345,7 @@ export default class Code extends Atom {
    */
   saveCode() {
     const saveCodeButton = document.getElementById("save-code-button");
-    saveCodeButton.click();  
+    saveCodeButton.click();
   }
 
   /**
@@ -364,6 +362,7 @@ export default class Code extends Atom {
   serialize(values) {
     //Save the readme text to the serial stream
     var valuesObj = super.serialize(values);
+
     valuesObj.codeVersion = 1;
     valuesObj.code = this.code;
 
