@@ -37,12 +37,14 @@ function layout(
   );
   return positionsPromise.then((positions) => {
     //This does the actual layout of the parts.
-    const layedOutAssembly = applyLayout(rotatedAssembly, positions, layoutConfig);
+    const layedOutAssembly = applyLayout(
+      rotatedAssembly,
+      positions,
+      layoutConfig
+    );
 
     if (positions.length == 0) {
-      throw new Error(
-        "Failed to place any parts. Are sheet dimensions right?"
-      );
+      throw new Error("Failed to place any parts. Are sheet dimensions right?");
     } else {
       let unplacedParts = shapesForLayout.length - positions.flat().length;
       if (unplacedParts > 0) {
@@ -62,14 +64,12 @@ function layout(
 /**
  * Lay the input geometry flat and apply the transformations to display it
  */
-function displayLayout(
-  assembly,
-  positions,
-  warningCallback,
-  layoutConfig
-) {
-
-  const [rotatedAssembly, shapesForLayout] = rotateForLayout(assembly, layoutConfig, warningCallback);
+function displayLayout(assembly, positions, warningCallback, layoutConfig) {
+  const [rotatedAssembly, shapesForLayout] = rotateForLayout(
+    assembly,
+    layoutConfig,
+    warningCallback
+  );
 
   return applyLayout(rotatedAssembly, positions, layoutConfig);
 }
@@ -292,8 +292,6 @@ function rotateForLayout(assembly, layoutConfig, warningCallback) {
   return [rotatedAssembly, shapesForLayout];
 }
 
-
-
 /**
  * Apply the transformations to the geometry to apply the layout
  */
@@ -383,13 +381,13 @@ function computePositions(
 ) {
   console.log("Starting to compute positions for shapes: ");
   console.log(shapesForLayout);
-  
+
   const tolerance = 0.2;
   const runtimeMs = 120000;
   const config = {
     curveTolerance: 0.1,
     spacing: layoutConfig.partPadding + tolerance * 2,
-    rotations: 12, // TODO: this should be higher, like at least 8? idk
+    rotations: 12,
     populationSize: 8,
     mutationRate: 50,
     useHoles: false,
@@ -456,7 +454,14 @@ function computePositions(
     };
 
     try {
-      packer.start(config, polygons, bin, callbackFunction, displayCallback, previousPlacements);
+      packer.start(
+        config,
+        polygons,
+        bin,
+        callbackFunction,
+        displayCallback,
+        previousPlacements
+      );
 
       setTimeout(() => {
         console.log("Timeout reached. Stopping packer.");

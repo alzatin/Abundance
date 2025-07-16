@@ -32,7 +32,6 @@ async function layout(
   await started;
   assertInLibrary(inputID);
 
-  // TODO: check inputID exists in library.
   return cutlayout
     .layout(
       library[inputID],
@@ -931,7 +930,7 @@ async function code(targetID, code, argumentsArray) {
       "Fillet",
       "Chamfer",
       "library",
-      "util.replicad",
+      "replicad",
     ];
     let inputValues = [
       rotate,
@@ -946,7 +945,7 @@ async function code(targetID, code, argumentsArray) {
       fillet,
       chamfer,
       library,
-      replicad,
+      util.replicad,
     ];
     for (const [key, value] of Object.entries(argumentsArray)) {
       // Sanitize parameter names to prevent injection
