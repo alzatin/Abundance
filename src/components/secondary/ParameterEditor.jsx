@@ -26,6 +26,7 @@ export default (function ParamsEditor({
   const store4 = useCreateStore();
 
   let isMobile = globalvariables.isMobile();
+  console.log("isMobile, " + isMobile);
 
   /*Work around Leva collapse issue */
   /**https://github.com/pmndrs/leva/issues/456#issuecomment-1537510948 */
@@ -116,7 +117,6 @@ export default (function ParamsEditor({
 
   /** Creates Leva panel with grid settings */
   useControls(
-    "Grid",
     {
       grid: {
         value: gridParam,
