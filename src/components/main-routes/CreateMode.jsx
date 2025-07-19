@@ -7,14 +7,12 @@ import FlowCanvas from "./flowCanvas.jsx";
 import LowerHalf from "./lowerHalf.jsx";
 import ParamsEditor from "../secondary/ParameterEditor.jsx";
 import CodeWindow from "../secondary/codeWindow.jsx";
-import { useAuth0 } from "@auth0/auth0-react";
 import {
   BrowserRouter as Router,
   useParams,
   useNavigate,
 } from "react-router-dom";
 import NewProjectPopUp from "../secondary/NewProjectPopUp.jsx";
-import { exp, re } from "mathjs";
 import { Link } from "react-router-dom";
 
 /**
