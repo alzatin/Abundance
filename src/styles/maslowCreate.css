@@ -898,7 +898,7 @@ Sidebar navigation
     list-style: none;
     width: 0;
     overflow: hidden;
-    height: calc(100vh - 70px);
+    /*height: calc(100vh - 70px);*/
     z-index: 9;
     -webkit-user-select: none; /* Safari */
     -khtml-user-select: none; /* Konqueror HTML */

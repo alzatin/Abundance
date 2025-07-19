@@ -18,6 +18,14 @@ function TopMenu({
   setActiveAtom,
   shortCutsOn,
   setShortCuts,
+  gridParam,
+  axesParam,
+  wireParam,
+  solidParam,
+  setGrid,
+  setAxes,
+  setWire,
+  setSolid,
 }) {
   let [shareDialog, setShareDialog] = useState(false);
   let [dialogContent, setDialog] = useState("");
@@ -258,10 +266,36 @@ function TopMenu({
       {settingsPopUp ? (
         GlobalVariables.isMobile() == true ? (
           <MobileSettingsPopUp
-            {...{ setSettingsPopUp, shortCutsOn, setShortCuts }}
+            {...{
+              setSettingsPopUp,
+              shortCutsOn,
+              setShortCuts,
+              gridParam,
+              axesParam,
+              wireParam,
+              solidParam,
+              setGrid,
+              setAxes,
+              setWire,
+              setSolid,
+            }}
           />
         ) : (
-          <SettingsPopUp {...{ setSettingsPopUp, shortCutsOn, setShortCuts }} />
+          <SettingsPopUp
+            {...{
+              setSettingsPopUp,
+              shortCutsOn,
+              setShortCuts,
+              gridParam,
+              axesParam,
+              wireParam,
+              solidParam,
+              setGrid,
+              setAxes,
+              setWire,
+              setSolid,
+            }}
+          />
         )
       ) : null}
       {shareDialog ? (

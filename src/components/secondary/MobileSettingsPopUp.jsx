@@ -21,6 +21,10 @@ const MobileSettingsPopUp = ({
   setSettingsPopUp,
   shortCutsOn,
   setShortCuts,
+  setGrid,
+  setAxes,
+  setWire,
+  setSolid,
 }) => {
   let repoTopics = [];
   if (Globalvariables.currentRepo.topics.length > 0) {

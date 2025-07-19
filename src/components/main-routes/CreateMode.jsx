@@ -561,6 +561,14 @@ function CreateMode({
               setActiveAtom,
               shortCutsOn,
               setShortCuts,
+              gridParam,
+              axesParam,
+              wireParam,
+              solidParam,
+              setGrid,
+              setAxes,
+              setWire,
+              setSolid,
             }}
           />
 
@@ -602,6 +610,10 @@ function CreateMode({
             {activeAtom ? (
               <ParamsEditor
                 {...{
+                  gridParam,
+                  axesParam,
+                  wireParam,
+                  solidParam,
                   activeAtom,
                   setActiveAtom,
                   setGrid,
