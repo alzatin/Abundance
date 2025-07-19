@@ -61,8 +61,6 @@ function CreateMode({
   /** State for top level molecule */
   const [currentMoleculeTop, setTop] = useState(false);
 
-  const { loginWithRedirect } = useAuth0();
-
   const lastSaveData = useRef({}); // The object saved last time the project was saved...used for comparison
 
   /**
@@ -654,7 +652,7 @@ function CreateMode({
         );
 
         if (loginConfirm) {
-          loginWithRedirect();
+          loginRedirect();
         } else {
           // user clicked cancel and is redirected to the run mode
         }
