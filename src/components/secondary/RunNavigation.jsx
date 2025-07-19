@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import ShareDialog from "./ShareDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import GlobalVariables from "../../js/globalvariables.js";
-import { useAuth0 } from "@auth0/auth0-react";
-import { use } from "react";
 
 //navigation svg icons - turn into key pairs later
 let shareSvg = (
@@ -418,7 +416,11 @@ function RunNavigation({
                 result.data.name +
                 "/master/project.svg?sanitize=true",
               dateCreated: result.data.created_at,
-              html_url: "https://github.com/" + GlobalVariables.currentUser + "/" + result.data.name,
+              html_url:
+                "https://github.com/" +
+                GlobalVariables.currentUser +
+                "/" +
+                result.data.name,
             };
             fetch(apiUrl, {
               method: "POST",
@@ -446,7 +448,7 @@ function RunNavigation({
       "You are not logged in. Would you like to log in?"
     );
     if (loginConfirm) {
-      loginWithRedirect();
+      loginRedirect();
     } else {
       // user clicked cancel and is redirected to the run mode
     }
