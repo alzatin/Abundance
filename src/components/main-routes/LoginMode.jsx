@@ -78,7 +78,7 @@ const InitialLog = ({ setNoUserBrowsing }) => {
               id="loginButton"
               style={{ height: "40px" }}
               className="submit-btn"
-              onClick={() => loginHandler() /*loginWithRedirect()*/}
+              onClick={() => loginHandler()}
             >
               Login With GitHub
             </button>
@@ -487,7 +487,6 @@ const ShowProjects = ({
   user,
   authorizedUserOcto,
   pageDict,
-  loginWithRedirect,
   setNoUserBrowsing,
 }) => {
   const [search, setSearch] = useState("");
@@ -768,7 +767,7 @@ const ShowProjects = ({
         className="login-nav-item"
         onClick={() => {
           setNoUserBrowsing(false);
-          loginWithRedirect();
+          loginRedirect();
         }}
       >
         <p>Login</p>
@@ -982,7 +981,6 @@ function LoginMode({
           user: null,
           authorizedUserOcto,
           pageDict,
-          loginWithRedirect,
           setNoUserBrowsing,
         }}
       />
