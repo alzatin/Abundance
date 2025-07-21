@@ -80,7 +80,6 @@ async function executeCode(code, argumentsArray, library) {
       "replicad",
     ];
     let inputValues = [
-      // TODO: TRISTAN we need all of these to be imported
       rotate,
       move,
       scale,
@@ -92,7 +91,7 @@ async function executeCode(code, argumentsArray, library) {
       util.getBounds,
       fillet,
       chamfer,
-      library, // TODO(tristan): I think we should deprecate this
+      library, // TODO(tristan): I think we should deprecate this but it'll require passing the actual geom.
       util.replicad,
     ];
     for (const [key, value] of Object.entries(argumentsArray)) {
@@ -115,18 +114,7 @@ async function executeCode(code, argumentsArray, library) {
       setTimeout(() => reject(new Error("Code execution timed out")), 60000); // 1 min timeout
     });
 
-    const result = await Promise.race([
-      userFunction(...inputValues),
-      timeoutPromise,
-    ]);
-
-    library[targetID] = result;
-    // If the type of the result is a number return the number so it can be passed to the next atom
-    if (typeof result === "number") {
-      return result;
-    } else {
-      return true;
-    }
+    return await Promise.race([userFunction(...inputValues), timeoutPromise]);
   } catch (error) {
     console.error("Code execution error:", error);
     throw new Error(`Code execution failed: ${error.message}`);
@@ -146,10 +134,8 @@ async function executeCode(code, argumentsArray, library) {
  * but where each leaf is the result of applying callbackFn to the
  * corresponding leaf in the input assembly.
  */
-async function assemblyMap(assemblyId, callbackFn) {
+async function assemblyMap(assembly, callbackFn) {
   try {
-    const assembly = toGeometry(assemblyId);
-
     // Helper function to process nodes recursively
     async function processNode(node, depth) {
       // If this is a leaf node
@@ -194,9 +180,9 @@ async function assemblyMap(assemblyId, callbackFn) {
   }
 }
 
-async function assemblyAsIterable(assemblyId) {
+async function assemblyAsIterable(assembly) {
   const result = [];
-  util.actOnLeafs(toGeometry(assemblyId), (leaf) => {
+  util.actOnLeafs(assembly, (leaf) => {
     result.push(leaf);
   });
   // TODO: when we typescriptify things, this should be a read-only list.

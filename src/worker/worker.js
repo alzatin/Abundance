@@ -304,7 +304,7 @@ async function fillet(geom, radius, targetID = null) {
 async function chamfer(geom, size, targetID = null) {
   await started;
 
-  const result = awaitactions.chamfer(
+  const result = await actions.chamfer(
     toGeometry(geom, "chamfer-geometry"),
     size
   );

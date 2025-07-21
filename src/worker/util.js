@@ -44,10 +44,8 @@ function is3D(inputs) {
  * @param {*} input - Can be a library ID, util.replicad geometry, or assembly
  * @returns {Object} The bounds object with min and max arrays
  */
-function getBounds(input) {
+function getBounds(geometry) {
   try {
-    const geometry = toGeometry(input);
-
     let minX = Infinity,
       minY = Infinity,
       minZ = Infinity;
@@ -55,9 +53,9 @@ function getBounds(input) {
       maxY = -Infinity,
       maxZ = -Infinity;
 
-    if (util.isAssembly(geometry)) {
+    if (isAssembly(geometry)) {
       // Handle assembly by iterating through all parts
-      util.actOnLeafs(geometry, (leaf) => {
+      actOnLeafs(geometry, (leaf) => {
         if (leaf.geometry && leaf.geometry[0] && leaf.geometry[0].boundingBox) {
           const bbox = leaf.geometry[0].boundingBox.bounds;
           minX = Math.min(minX, bbox[0][0]);

@@ -184,9 +184,6 @@ async function fillet(geom, radius) {
  * @returns {Promise<Object>} A promise that resolves to the chamfered geometry
  */
 async function chamfer(geom, size) {
-  await started;
-
-  geom = toGeometry(geom, "chamfer-geometry");
   if (util.is3D(geom)) {
     return util.actOnLeafs(
       geom,
