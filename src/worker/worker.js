@@ -1,15 +1,15 @@
-import * as replicad from "replicad";
-import { expose, proxy } from "comlink";
-import { Plane, Solid, Wire } from "replicad";
-import shrinkWrap from "replicad-shrink-wrap";
+import { expose } from "comlink";
+import { Plane } from "replicad";
 import { drawSVG } from "replicad-decorate";
-import { v4 as uuidv4 } from "uuid";
-import Fonts from "../js/fonts.js";
 import * as cutlayout from "./cutlayout.js";
 import * as util from "./util.js";
+import * as shapes from "./shapes.js";
+import * as actions from "./actions.js";
+import * as interaction from "./interaction.js";
+import * as tags from "./tags.js";
+import * as codeLib from "./code.js";
 
 var library = {};
-let defaultColor = "#aad7f2";
 
 const started = util.init();
 
@@ -17,6 +17,13 @@ function assertInLibrary(id) {
   if (!library[id]) {
     throw new Error(`Library ID ${id} does not exist.`);
   }
+}
+
+async function code(targetID, codeText, argumentsArray) {
+  await started;
+  const result = codeLib.executeCode(codeText, argumentsArray);
+  library[targetID] = result;
+  return true;
 }
 
 // Wrap layout and manage library accesses
@@ -88,20 +95,13 @@ function toGeometry(input, name = "geometry") {
     return {
       geometry: [input],
       tags: [],
-      color: defaultColor,
+      color: util.defaultColor,
       bom: [],
     };
   } else {
     // If it's something else, we throw an error
     throw new Error(name + " value cannot be interpreted as geometry.");
   }
-}
-
-/**
- * A function to generate a unique ID value.
- */
-function generateUniqueID() {
-  return uuidv4();
 }
 
 /**
@@ -134,14 +134,7 @@ function createMesh(thickness) {
  */
 function circle(id, diameter) {
   return started.then(() => {
-    const newPlane = new Plane().pivot(0, "Y");
-    library[id] = {
-      geometry: [util.replicad.drawCircle(diameter / 2)],
-      tags: [],
-      plane: newPlane,
-      color: defaultColor,
-      bom: [],
-    };
+    library[id] = shapes.circle(diameter);
     return true;
   });
 }
@@ -155,14 +148,7 @@ function circle(id, diameter) {
  */
 function rectangle(id, x, y) {
   return started.then(() => {
-    const newPlane = new Plane().pivot(0, "Y");
-    library[id] = {
-      geometry: [util.replicad.drawRectangle(x, y)],
-      tags: [],
-      plane: newPlane,
-      color: defaultColor,
-      bom: [],
-    };
+    library[id] = shapes.rectangle(x, y);
     return true;
   });
 }
@@ -176,17 +162,11 @@ function rectangle(id, x, y) {
  */
 function regularPolygon(id, radius, numberOfSides) {
   return started.then(() => {
-    const newPlane = new Plane().pivot(0, "Y");
-    library[id] = {
-      geometry: [util.replicad.drawPolysides(radius, numberOfSides)],
-      tags: [],
-      plane: newPlane,
-      color: defaultColor,
-      bom: [],
-    };
+    library[id] = shapes.regularPolygon(radius, numberOfSides);
     return true;
   });
 }
+
 /**
  * Creates text geometry with the specified text, font size, and font family, and stores it in the library.
  * @param {string} id - The unique identifier to store the text geometry in the library
@@ -197,32 +177,11 @@ function regularPolygon(id, radius, numberOfSides) {
  * @throws {Error} Throws an error if the font fails to load
  */
 async function text(id, text, fontSize, fontFamily) {
-  await util.replicad
-    .loadFont(Fonts[fontFamily])
-    .then(() => {
-      console.log("Font loaded");
-      return started.then(() => {
-        const newPlane = new Plane().pivot(0, "Y");
-
-        const textGeometry = util.replicad.drawText(text, {
-          startX: 0,
-          startY: 0,
-          fontSize: fontSize,
-          font: fontFamily,
-        });
-        library[id] = {
-          geometry: [textGeometry],
-          tags: [],
-          plane: newPlane,
-          color: defaultColor,
-          bom: [],
-        };
-        return true;
-      });
-    })
-    .catch((err) => {
-      throw new Error("Error loading font: ", err);
-    });
+  return started.then(async () => {
+    const result = await shapes.text(text, fontSize, fontFamily);
+    library[id] = result;
+    return result;
+  });
 }
 
 /**
@@ -234,30 +193,12 @@ async function text(id, text, fontSize, fontFamily) {
  */
 function loftShapes(targetID, inputsIDs) {
   return started.then(() => {
-    let arrayOfSketchedGeometry = [];
-
-    inputsIDs.forEach((inputID) => {
-      if (is3D(library[inputID])) {
-        throw new Error("Parts to be lofted must be sketches");
-      }
-      let partToLoft = digFuse(library[inputID]);
-      let sketchedpart = partToLoft.sketchOnPlane(library[inputID].plane);
-      if (!sketchedpart.sketches) {
-        arrayOfSketchedGeometry.push(sketchedpart);
-      } else {
-        throw new Error("Sketches to be lofted can't have interior geometries");
-      }
-    });
-    let startGeometry = arrayOfSketchedGeometry.shift();
-    const newPlane = new Plane().pivot(0, "Y");
-
-    library[targetID] = {
-      geometry: [startGeometry.loftWith([...arrayOfSketchedGeometry])],
-      tags: [],
-      plane: newPlane,
-      color: defaultColor,
-      bom: [],
-    };
+    library[targetID] = interaction.loftShapes(
+      (inputsIDs || []).map((id) => {
+        assertInLibrary(id);
+        return library[id];
+      })
+    );
     return true;
   });
 }
@@ -271,53 +212,9 @@ function loftShapes(targetID, inputsIDs) {
  */
 function extrude(targetID, inputID, height) {
   return started.then(() => {
-    library[targetID] = util.actOnLeafs(library[inputID], (leaf) => {
-      return {
-        geometry: [
-          leaf.geometry[0].clone().sketchOnPlane(leaf.plane).extrude(height),
-        ],
-        tags: leaf.tags,
-        plane: leaf.plane,
-        color: leaf.color,
-        bom: leaf.bom,
-      };
-    });
+    library[targetID] = actions.extrude(library[inputID], height);
     return true;
   });
-}
-
-/**
- * Checks if the input geometry is 3D (has a mesh) or 2D (sketch).
- * @param {Object} inputs - The geometry object to check
- * @returns {boolean} True if the geometry is 3D, false if it's a 2D sketch
- */
-function is3D(inputs) {
-  // if it's an assembly assume it's 3d since our assemblies don't work for drawings right now
-  if (isAssembly(inputs)) {
-    return inputs.geometry.some((input) => is3D(input));
-  } else if (
-    inputs.geometry[0].mesh !== undefined ||
-    inputs.geometry[0] instanceof Wire
-  ) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-/**
- * Checks if the input geometry is wire geometry (like from G-code).
- * @param {Object} inputs - The geometry object to check
- * @returns {boolean} True if the geometry is wire geometry, false otherwise
- */
-function isWireGeometry(inputs) {
-  if (isAssembly(inputs)) {
-    return inputs.geometry.some((input) => isWireGeometry(input));
-  } else if (inputs.geometry && inputs.geometry[0] instanceof Wire) {
-    return true;
-  } else {
-    return false;
-  }
 }
 
 /**
@@ -332,47 +229,12 @@ function isWireGeometry(inputs) {
 async function move(geom, x, y, z, targetID = null) {
   await started;
 
-  geom = toGeometry(geom, "move-geometry");
-  if (is3D(geom)) {
-    let result = util.actOnLeafs(
-      geom,
-      (leaf) => {
-        return {
-          geometry: [leaf.geometry[0].clone().translate(x, y, z)],
-          plane: leaf.plane,
-          tags: leaf.tags,
-          color: leaf.color,
-          bom: leaf.bom,
-        };
-      },
-      geom.plane
-    );
-    if (targetID) {
-      library[targetID] = result;
-    } else {
-      return result;
-    }
+  const result = actions.move(geom, x, y, z);
+  if (targetID) {
+    library[targetID] = result;
   } else {
-    let result = util.actOnLeafs(
-      geom,
-      (leaf) => {
-        return {
-          geometry: [leaf.geometry[0].clone().translate([x, y])],
-          tags: leaf.tags,
-          plane: leaf.plane.translate([0, 0, z]),
-          color: leaf.color,
-          bom: leaf.bom,
-        };
-      },
-      geom.plane.translate([0, 0, z])
-    );
-    if (targetID) {
-      library[targetID] = result;
-    } else {
-      return result;
-    }
+    return result;
   }
-  return true;
 }
 
 /**
@@ -385,48 +247,15 @@ async function move(geom, x, y, z, targetID = null) {
  * @returns {Promise<Object>} A promise that resolves to the rotated geometry
  **/
 async function rotate(geom, x, y, z, targetID = null) {
-  let input = toGeometry(geom, "rotate-geometry");
   await started;
 
-  if (is3D(input)) {
-    let result = util.actOnLeafs(input, (leaf) => {
-      return {
-        geometry: [
-          leaf.geometry[0]
-            .clone()
-            .rotate(x, [0, 0, 0], [1, 0, 0])
-            .rotate(y, [0, 0, 0], [0, 1, 0])
-            .rotate(z, [0, 0, 0], [0, 0, 1]),
-        ],
-        tags: leaf.tags,
-        plane: leaf.plane,
-        color: leaf.color,
-        bom: leaf.bom,
-      };
-    });
-    if (targetID) {
-      library[targetID] = result;
-    } else {
-      return result;
-    }
+  const asGeom = toGeometry(geom, "rotate-geometry"); // TODO(tristan): I'd love to deprecate use of this method here.
+  const result = actions.rotate(asGeom, x, y, z);
+  if (targetID) {
+    library[targetID] = result;
   } else {
-    let result = util.actOnLeafs(input, (leaf) => {
-      return {
-        geometry: [leaf.geometry[0].clone().rotate(z, [0, 0, 0], [0, 0, 1])],
-        tags: leaf.tags,
-        plane: leaf.plane.pivot(x, "X").pivot(y, "Y"),
-        color: leaf.color,
-        bom: leaf.bom,
-      };
-    });
-    if (targetID) {
-      library[targetID] = result;
-      //library[inputID].plane.pivot(x, "X").pivot(y, "Y"); //@Alzatin what is this line for?
-    } else {
-      return result;
-    }
+    return result;
   }
-  return true;
 }
 
 /**
@@ -440,46 +269,12 @@ async function scale(geom, scaleFactor, targetID = null) {
   await started;
 
   geom = toGeometry(geom, "scale-geometry");
-  if (is3D(geom)) {
-    let result = util.actOnLeafs(
-      geom,
-      (leaf) => {
-        return {
-          geometry: [leaf.geometry[0].clone().scale(scaleFactor)],
-          plane: leaf.plane,
-          tags: leaf.tags,
-          color: leaf.color,
-          bom: leaf.bom,
-        };
-      },
-      geom.plane
-    );
-    if (targetID) {
-      library[targetID] = result;
-    } else {
-      return result;
-    }
+  const result = actions.scale(geom, scaleFactor);
+  if (targetID) {
+    library[targetID] = result;
   } else {
-    let result = util.actOnLeafs(
-      geom,
-      (leaf) => {
-        return {
-          geometry: [leaf.geometry[0].clone().scale(scaleFactor)],
-          tags: leaf.tags,
-          plane: leaf.plane,
-          color: leaf.color,
-          bom: leaf.bom,
-        };
-      },
-      geom.plane
-    );
-    if (targetID) {
-      library[targetID] = result;
-    } else {
-      return result;
-    }
+    return result;
   }
-  return true;
 }
 
 /**
@@ -492,47 +287,12 @@ async function scale(geom, scaleFactor, targetID = null) {
 async function fillet(geom, radius, targetID = null) {
   await started;
 
-  geom = toGeometry(geom, "fillet-geometry");
-  if (is3D(geom)) {
-    let result = util.actOnLeafs(
-      geom,
-      (leaf) => {
-        return {
-          geometry: [leaf.geometry[0].clone().fillet(radius)],
-          plane: leaf.plane,
-          tags: leaf.tags,
-          color: leaf.color,
-          bom: leaf.bom,
-        };
-      },
-      geom.plane
-    );
-    if (targetID) {
-      library[targetID] = result;
-    } else {
-      return result;
-    }
+  const result = actions.fillet(toGeometry(geom, "fillet-geometry"), radius);
+  if (targetID) {
+    library[targetID] = result;
   } else {
-    let result = util.actOnLeafs(
-      geom,
-      (leaf) => {
-        return {
-          geometry: [leaf.geometry[0].clone().fillet(radius)],
-          tags: leaf.tags,
-          plane: leaf.plane,
-          color: leaf.color,
-          bom: leaf.bom,
-        };
-      },
-      geom.plane
-    );
-    if (targetID) {
-      library[targetID] = result;
-    } else {
-      return result;
-    }
+    return result;
   }
-  return true;
 }
 
 /**
@@ -545,47 +305,12 @@ async function fillet(geom, radius, targetID = null) {
 async function chamfer(geom, size, targetID = null) {
   await started;
 
-  geom = toGeometry(geom, "chamfer-geometry");
-  if (is3D(geom)) {
-    let result = util.actOnLeafs(
-      geom,
-      (leaf) => {
-        return {
-          geometry: [leaf.geometry[0].clone().chamfer(size)],
-          plane: leaf.plane,
-          tags: leaf.tags,
-          color: leaf.color,
-          bom: leaf.bom,
-        };
-      },
-      geom.plane
-    );
-    if (targetID) {
-      library[targetID] = result;
-    } else {
-      return result;
-    }
+  const result = actions.chamfer(toGeometry(geom, "chamfer-geometry"), size);
+  if (targetID) {
+    library[targetID] = result;
   } else {
-    let result = util.actOnLeafs(
-      geom,
-      (leaf) => {
-        return {
-          geometry: [leaf.geometry[0].clone().chamfer(size)],
-          tags: leaf.tags,
-          plane: leaf.plane,
-          color: leaf.color,
-          bom: leaf.bom,
-        };
-      },
-      geom.plane
-    );
-    if (targetID) {
-      library[targetID] = result;
-    } else {
-      return result;
-    }
+    return result;
   }
-  return true;
 }
 
 /**
@@ -604,29 +329,12 @@ async function chamfer(geom, size, targetID = null) {
  */
 function difference(targetID, input1ID, input2ID) {
   return started.then(() => {
-    if (
-      (is3D(library[input1ID]) && is3D(library[input2ID])) ||
-      (!is3D(library[input1ID]) && !is3D(library[input2ID]))
-    ) {
-      // Process each leaf of input1ID independently
-      library[targetID] = util.actOnLeafs(library[input1ID], (leaf) => {
-        // Start with a clone of the original geometry
-        let resultGeometry = leaf.geometry[0].clone();
-
-        // Apply cuts recursively from input2ID, checking bounding boxes
-        resultGeometry = recursiveCut(resultGeometry, library[input2ID]);
-
-        return {
-          geometry: [resultGeometry],
-          tags: leaf.tags,
-          color: leaf.color,
-          plane: leaf.plane,
-          bom: leaf.bom,
-        };
-      });
-    } else {
-      throw new Error("Both inputs must be either 3D or 2D");
-    }
+    assertInLibrary(input1ID);
+    assertInLibrary(input2ID);
+    library[targetID] = interaction.difference(
+      library[input1ID],
+      library[input2ID]
+    );
     return true;
   });
 }
@@ -640,32 +348,13 @@ function difference(targetID, input1ID, input2ID) {
  */
 function shrinkWrapSketches(targetID, inputIDs) {
   return started.then(() => {
-    let BOM = [];
-    if (inputIDs.every((inputID) => !is3D(library[inputID]))) {
-      let inputsToFuse = [];
-      inputIDs.forEach((inputID) => {
-        let fusedInput = digFuse(library[inputID]);
-        inputsToFuse.push(fusedInput);
-        if (fusedInput.innerShape.blueprints) {
-          throw new Error(
-            "Sketches to be lofted can't have interior geometries"
-          );
-        }
-        BOM.push(library[inputID].bom);
-      });
-      let geometryToWrap = chainFuse(inputsToFuse);
-      const newPlane = new Plane().pivot(0, "Y");
-      library[targetID] = {
-        geometry: [shrinkWrap(geometryToWrap, 50)],
-        tags: [],
-        color: defaultColor,
-        plane: newPlane,
-        bom: BOM,
-      };
-      return true;
-    } else {
-      throw new Error("All inputs must be sketches");
-    }
+    library[targetID] = interaction.shrinkWrapSketches(
+      inputIDs.map((id) => {
+        assertInLibrary(id);
+        return library[id];
+      })
+    );
+    return true;
   });
 }
 
@@ -677,25 +366,16 @@ function shrinkWrapSketches(targetID, inputIDs) {
  * @returns {Promise<boolean|Object>} A promise that resolves to true if targetID is provided, or the intersected geometry if targetID is null
  */
 function intersect(input1ID, input2ID, targetID = null) {
-  let inputGeometry1 = toGeometry(input1ID, "geometry1");
-  let inputGeometry2 = toGeometry(input2ID, "geometry2");
   return started.then(() => {
-    let generatedAssembly = util.actOnLeafs(inputGeometry1, (leaf) => {
-      const shapeToIntersectWith = digFuse(inputGeometry2);
-      const newGeom = leaf.geometry[0].clone().intersect(shapeToIntersectWith);
-      return {
-        geometry: [newGeom],
-        tags: leaf.tags,
-        color: leaf.color,
-        plane: leaf.plane,
-        bom: leaf.bom,
-      };
-    });
-    if (targetID != null) {
-      library[targetID] = generatedAssembly;
+    assertInLibrary(input1ID);
+    assertInLibrary(input2ID);
+
+    const result = interaction.intersect(input1ID, input2ID);
+    if (targetID) {
+      library[targetID] = result;
       return true;
     } else {
-      return generatedAssembly;
+      return result;
     }
   });
 }
@@ -709,13 +389,8 @@ function intersect(input1ID, input2ID, targetID = null) {
  */
 function tag(targetID, inputID, TAG) {
   return started.then(() => {
-    library[targetID] = {
-      geometry: library[inputID].geometry,
-      bom: library[inputID].bom,
-      tags: [...TAG, ...library[inputID].tags],
-      color: library[inputID].color,
-      plane: library[inputID].plane,
-    };
+    assertInLibrary(inputID);
+    library[targetID] = tags.tag(library[inputID], TAG);
     return true;
   });
 }
@@ -729,260 +404,9 @@ function tag(targetID, inputID, TAG) {
  */
 function extractAllTags(inputID, tag) {
   return started.then(() => {
-    // Recursive helper function to collect tags
-    function collectTags(geometry) {
-      let tags = new Set(geometry.tags || []); // Use a Set to ensure uniqueness
-
-      // If the geometry is an assembly, recursively collect tags from subassemblies
-      if (isAssembly(geometry)) {
-        geometry.geometry.forEach((subAssembly) => {
-          const subTags = collectTags(subAssembly);
-          subTags.forEach((tag) => tags.add(tag)); // Add tags from subassemblies
-        });
-      }
-
-      return tags;
-    }
-
-    // Start collecting tags from the input geometry
-    const inputGeometry = library[inputID];
-    if (!inputGeometry) {
-      throw new Error(`Geometry with ID ${inputID} not found in library`);
-    }
-
-    const allTags = collectTags(inputGeometry);
-    let returningArray = Array.from(allTags); // Convert the Set to an array
-
-    returningArray = ["Select Tag", ...new Set(returningArray)];
-    return returningArray;
+    assertInLibrary(inputID);
+    return tags.extractAllTags(library[inputID]);
   });
-}
-
-//---------------------Functions for the code atom---------------------
-
-/**
- * AssemblyMap
- *
- * Maps the given callbackFn to each leaf in the specified assembly. And returns
- * a new assembly of the same structure and metadata, but with transformed leafs.
- * If the provided assembly is a single entity, returns a transformed singular entity.
- *
- * @param {*} assemblyId
- * @param {*} callbackFn - A function that takes a leaf and returns a new leaf.
- * @returns a new assembly with the same structure and metadata as assemblyId,
- * but where each leaf is the result of applying callbackFn to the
- * corresponding leaf in the input assembly.
- */
-async function assemblyMap(assemblyId, callbackFn) {
-  try {
-    const assembly = toGeometry(assemblyId);
-
-    // Helper function to process nodes recursively
-    async function processNode(node, depth) {
-      // If this is a leaf node
-      if (
-        node.geometry.length === 1 &&
-        node.geometry[0].geometry === undefined
-      ) {
-        // Apply callback and return result
-        let result = await callbackFn(node, depth);
-        return result;
-      }
-      // This is a branch node (an assembly)
-      else {
-        const newGeometry = await Promise.all(
-          node.geometry.map(async (child) => {
-            return await processNode(child, depth + 1);
-          })
-        );
-
-        // Filter out any undefined results (in case callbackFn filters some nodes)
-        const filteredGeometry = newGeometry.filter(
-          (item) => item !== undefined
-        );
-
-        // Return a new node with the same metadata but transformed children
-        return {
-          geometry: filteredGeometry,
-          tags: node.tags || [],
-          color: node.color,
-          plane: node.plane,
-          bom: node.bom || [],
-        };
-      }
-    }
-
-    // Start processing from the root
-    const result = await processNode(assembly, 0);
-    return result;
-  } catch (error) {
-    logError(error, "AssemblyMap");
-    throw error;
-  }
-}
-
-async function assemblyAsIterable(assemblyId) {
-  const result = [];
-  util.actOnLeafs(toGeometry(assemblyId), (leaf) => {
-    result.push(leaf);
-  });
-  // TODO: when we typescriptify things, this should be a read-only list.
-  return result;
-}
-
-function logError(error, context) {
-  console.warn("error from context: ", context);
-  if (error instanceof SyntaxError) {
-    console.error("SyntaxError encountered:", error.message);
-  } else if (error instanceof ReferenceError) {
-    console.error("ReferenceError encountered:", error.message);
-  } else {
-    console.error("An error occurred:", error.message);
-  }
-
-  // Log additional error details if available
-  if (error.stack) {
-    console.error("Stack trace:", error.stack);
-  }
-  if (error.lineNumber) {
-    console.error("Line number:", error.lineNumber);
-  }
-  if (error.columnNumber) {
-    console.error("Column number:", error.columnNumber);
-  }
-  console.log("full error:");
-  console.log(error);
-}
-
-/**
- * Validates that user-provided code doesn't contain dangerous patterns
- * @param {string} code - The JavaScript code string to validate
- * @returns {boolean} True if code appears safe, throws error if dangerous patterns detected
- */
-function validateUserCode(code) {
-  const dangerousPatterns = [
-    /eval\s*\(/,
-    /import\s*\(/,
-    /require\s*\(/,
-    /process\s*\./,
-    /global\s*\./,
-    /window\s*\./,
-    /document\s*\./,
-    /XMLHttpRequest/,
-    /fetch\s*\(/,
-    /localStorage/,
-    /sessionStorage/,
-    /IndexedDB/,
-    /WebSocket/,
-    /Worker\s*\(/,
-    /setTimeout\s*\(/,
-    /setInterval\s*\(/,
-    /__proto__/,
-    /constructor/,
-    /prototype/,
-  ];
-
-  for (const pattern of dangerousPatterns) {
-    if (pattern.test(code)) {
-      throw new Error(
-        `Code contains potentially dangerous pattern: ${pattern.source}`
-      );
-    }
-  }
-
-  return true;
-}
-
-/**
- * Executes user-provided code in the worker thread with access to predefined geometry functions.
- * @param {string} targetID - The unique identifier to store the code execution result in the library
- * @param {string} code - The JavaScript code string to execute
- * @param {Object} argumentsArray - Object containing key-value pairs of additional variables to make available to the code
- * @returns {Promise<boolean|number>} A promise that resolves to the result value if it's a number, or true otherwise
- * @note Uses eval() for code execution - consider security implications in production environments
- */
-async function code(targetID, code, argumentsArray) {
-  await started;
-  try {
-    // Validate input parameters
-    if (typeof code !== "string") {
-      throw new Error("Code must be a string");
-    }
-    if (code.length > 50000) {
-      throw new Error("Code too long (maximum 50,000 characters)");
-    }
-
-    // Validate code for dangerous patterns
-    // TODO: we probably want to allow some of these but still need to warn about them before executing
-    // the code molecule.
-    validateUserCode(code);
-
-    let keys1 = [
-      "Rotate",
-      "Move",
-      "Scale",
-      "Assembly",
-      "Intersect",
-      "CutAssembly",
-      "AssemblyMap",
-      "AssemblyAsIterable",
-      "GetBounds",
-      "Fillet",
-      "Chamfer",
-      "library",
-      "replicad",
-    ];
-    let inputValues = [
-      rotate,
-      move,
-      scale,
-      assembly,
-      intersect,
-      cutAssembly,
-      assemblyMap,
-      assemblyAsIterable,
-      getBounds,
-      fillet,
-      chamfer,
-      library,
-      util.replicad,
-    ];
-    for (const [key, value] of Object.entries(argumentsArray)) {
-      // Sanitize parameter names to prevent injection
-      if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)) {
-        throw new Error(`Invalid parameter name: ${key}`);
-      }
-      keys1.push(key);
-      inputValues.push(value);
-    }
-
-    // Use Function constructor instead of eval - still allows code execution but safer than eval
-    const userFunction = new Function(
-      ...keys1,
-      `return (async () => { ${code} })();`
-    );
-
-    // Execute with timeout protection
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Code execution timed out")), 60000); // 1 min timeout
-    });
-
-    const result = await Promise.race([
-      userFunction(...inputValues),
-      timeoutPromise,
-    ]);
-
-    library[targetID] = result;
-    // If the type of the result is a number return the number so it can be passed to the next atom
-    if (typeof result === "number") {
-      return result;
-    } else {
-      return true;
-    }
-  } catch (error) {
-    console.error("Code execution error:", error);
-    throw new Error(`Code execution failed: ${error.message}`);
-  }
 }
 
 /**
@@ -995,19 +419,9 @@ async function code(targetID, code, argumentsArray) {
  */
 function color(targetID, inputID, color) {
   return started.then(() => {
-    library[targetID] = util.actOnLeafs(library[inputID], (leaf) => {
-      // keep out color add tag
-      if (color == "#D9544D") {
-        leaf.tags.push("keepout");
-      }
-      return {
-        geometry: leaf.geometry,
-        tags: [...leaf.tags],
-        color: color,
-        bom: leaf.bom,
-        plane: leaf.plane,
-      };
-    });
+    assertInLibrary(inputID);
+    library[targetID] = tags.color(library[inputID], color);
+    return true;
   });
 }
 
@@ -1020,15 +434,8 @@ function color(targetID, inputID, color) {
  */
 function bom(targetID, inputID, BOM) {
   return started.then(() => {
-    if (library[inputID].bom != []) {
-      BOM = [...library[inputID].bom, BOM];
-    }
-    library[targetID] = {
-      geometry: library[inputID].geometry,
-      tags: [...library[inputID].tags],
-      bom: BOM,
-      color: library[inputID].color,
-    };
+    assertInLibrary(inputID);
+    library[targetID] = tags.bom(library[inputID], BOM);
     return true;
   });
 }
@@ -1101,11 +508,8 @@ function molecule(targetID, inputID) {
  * @returns {Array|boolean} The BOM array if it exists, or false if BOM is undefined
  */
 function extractBomList(inputID) {
-  if (library[inputID].bom !== undefined) {
-    return library[inputID].bom;
-  } else {
-    return false;
-  }
+  assertInLibrary(inputID);
+  return tags.extractBomList(library[inputID]);
 }
 
 /**
@@ -1118,7 +522,7 @@ function extractBomList(inputID) {
 function visExport(targetID, inputID, fileType) {
   return started.then(() => {
     let geometryToExport = extractKeepOut(library[inputID]);
-    let fusedGeometry = digFuse(geometryToExport);
+    let fusedGeometry = interaction.digFuse(geometryToExport);
     let displayColor =
       fileType == "STL"
         ? "#91C8D5"
@@ -1128,7 +532,7 @@ function visExport(targetID, inputID, fileType) {
     let finalGeometry;
     if (fileType == "SVG") {
       /** Fuses input geometry, draws a top view projection*/
-      if (is3D(library[inputID])) {
+      if (util.is3D(library[inputID])) {
         finalGeometry = [
           util.replicad.drawProjection(fusedGeometry, "top").visible,
         ];
@@ -1186,7 +590,7 @@ async function importingSTEP(targetID, file) {
   library[targetID] = {
     geometry: [STEPresult],
     tags: [],
-    color: defaultColor,
+    color: util.defaultColor,
     bom: [],
   };
   return true;
@@ -1204,7 +608,7 @@ async function importingSTL(targetID, file) {
   library[targetID] = {
     geometry: [STLresult],
     tags: [],
-    color: defaultColor,
+    color: util.defaultColor,
     bom: [],
   };
   return true;
@@ -1241,7 +645,7 @@ async function importingSVG(targetID, svg, width) {
       geometry: [drawnSVG.clone().translate(-center[0], -center[1])],
       tags: [],
       plane: new Plane().pivot(0, "Y"),
-      color: defaultColor,
+      color: util.defaultColor,
       bom: [],
     };
     console.log("SVG imported successfully");
@@ -1291,7 +695,7 @@ function visualizeGcode(targetID, gcode) {
     geometry: [wire],
     tags: [],
     plane: new Plane().pivot(0, "Y"),
-    color: defaultColor,
+    color: util.defaultColor,
     bom: [],
   };
 }
@@ -1327,12 +731,13 @@ function generateThumbnail(inputID) {
       let fusedGeometry;
       let projectionShape;
       let svg;
-      if (is3D(library[inputID])) {
-        fusedGeometry = digFuse(library[inputID]);
+      if (util.is3D(library[inputID])) {
+        fusedGeometry = interaction.digFuse(library[inputID]);
         projectionShape = prettyProjection(fusedGeometry);
         svg = projectionShape.visible.toSVG();
       } else {
-        fusedGeometry = digFuse(library[inputID])
+        fusedGeometry = interaction
+          .digFuse(library[inputID])
           .sketchOnPlane("XY")
           .extrude(0.0001);
         projectionShape = util.replicad.drawProjection(
@@ -1347,73 +752,6 @@ function generateThumbnail(inputID) {
       throw new Error("can't generate thumbnail for undefined geometry");
     }
   });
-}
-
-/**
- * Recursively extracts geometry with a specific tag from an assembly or single geometry.
- * @param {Object} inputGeometry - The geometry object to search for the tag
- * @param {string} TAG - The tag to search for and extract
- * @returns {Object|boolean} The geometry containing the tag, or false if the tag is not found
- */
-function extractTags(inputGeometry, TAG) {
-  if (inputGeometry.tags.includes(TAG)) {
-    return inputGeometry;
-  } else if (isAssembly(inputGeometry)) {
-    let geometryWithTags = [];
-    inputGeometry.geometry.forEach((subAssembly) => {
-      let extractedGeometry = extractTags(subAssembly, TAG);
-
-      if (extractedGeometry != false) {
-        geometryWithTags.push(extractedGeometry);
-      }
-    });
-    if (geometryWithTags.length > 0) {
-      let thethingtoreturn = {
-        geometry: geometryWithTags,
-        tags: inputGeometry.tags,
-        color: inputGeometry.color,
-        bom: inputGeometry.bom,
-      };
-      return thethingtoreturn;
-    } else {
-      return false;
-    }
-  } else {
-    return false;
-  }
-}
-
-/**
- * Recursively extracts geometry that does NOT have "keepout" tags from an assembly or single geometry.
- * @param {Object} inputGeometry - The geometry object to filter keepout tags from
- * @returns {Object|boolean} The geometry without keepout tags, or false if all geometry has keepout tags
- */
-function extractKeepOut(inputGeometry) {
-  if (inputGeometry.tags.includes("keepout")) {
-    return false;
-  } else if (isAssembly(inputGeometry)) {
-    let geometryNoKeepOut = [];
-    inputGeometry.geometry.forEach((subAssembly) => {
-      let extractedGeometry = extractKeepOut(subAssembly, "keepout");
-
-      if (extractedGeometry != false) {
-        geometryNoKeepOut.push(extractedGeometry);
-      }
-    });
-    if (geometryNoKeepOut.length > 0) {
-      let thethingtoreturn = {
-        geometry: geometryNoKeepOut,
-        tags: inputGeometry.tags,
-        color: inputGeometry.color,
-        bom: inputGeometry.bom,
-      };
-      return thethingtoreturn;
-    } else {
-      return false;
-    }
-  } else {
-    return inputGeometry;
-  }
 }
 
 /**
@@ -1461,7 +799,7 @@ function getBounds(input) {
       maxY = -Infinity,
       maxZ = -Infinity;
 
-    if (isAssembly(geometry)) {
+    if (util.isAssembly(geometry)) {
       // Handle assembly by iterating through all parts
       util.actOnLeafs(geometry, (leaf) => {
         if (leaf.geometry && leaf.geometry[0] && leaf.geometry[0].boundingBox) {
@@ -1504,242 +842,24 @@ function getBounds(input) {
 }
 
 /**
- * Checks if a part is an assembly (contains sub-geometries) or a single part.
- * @param {Object} part - The part object to check
- * @returns {boolean} True if the part is an assembly, false if it's a single part
- */
-function isAssembly(part) {
-  if (part == undefined || part.geometry == undefined) {
-    return false;
-  }
-  if (part.geometry.length > 0) {
-    if (part.geometry[0].geometry) {
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    return false;
-  }
-}
-
-/**
- * Performs a boolean cut operation on an assembly or part with one or more cutting geometries.
- *
- * @param {Object} partToCut - The library object (part or assembly) that will be cut
- * @param {Object[]} cuttingParts - Array of geometries that will cut the part
- * @returns {Object} - A new object containing either a single cut part or an assembly of cut parts
- *
- * This function handles cutting operations on complex hierarchical structures:
- * - If partToCut is a simple part, it applies all cutting geometries to it sequentially
- * - If partToCut is an assembly, it recursively processes each leaf in the assembly tree
- * - Maintains the original hierarchy, tags, colors, and metadata
- * - Avoids unnecessary operations by checking bounding box intersections
- * - Preserves the original assembly structure while applying cuts
- */
-function cutAssembly(partToCut, cuttingParts) {
-  try {
-    //If the partToCut is an assembly pass each part back into cutAssembly function to be cut separately
-    if (isAssembly(partToCut)) {
-      let assemblyToCut = partToCut.geometry;
-      let assemblyCut = [];
-      assemblyToCut.forEach((part) => {
-        // make new assembly from cut parts
-        assemblyCut.push(cutAssembly(part, cuttingParts));
-      });
-
-      let subID = generateUniqueID();
-      //returns new assembly that has been cut
-      library[subID] = {
-        //This feels like a hack, we shouldn't be using the library internally like this
-        geometry: assemblyCut,
-        tags: partToCut.tags,
-        bom: partToCut.bom,
-      };
-      return library[subID];
-    } else {
-      // if part to cut is wire geometry, return it unchanged (wires should pass through assemblies)
-      if (isWireGeometry(partToCut)) {
-        return partToCut;
-      }
-
-      // if part to cut is a single part send to cutting function with cutting parts
-      var partCutCopy = partToCut.geometry[0];
-      cuttingParts.forEach((cuttingPart) => {
-        // for each cutting part cut the part
-        partCutCopy = recursiveCut(partCutCopy, cuttingPart);
-      });
-      /*   if the part is a compound return each solid as a new assembly */
-      function getSolids(compound) {
-        return Array.from(
-          util.replicad.iterTopo(compound.wrapped, "solid"),
-          (s) => new Solid(s)
-        );
-      }
-      if (partCutCopy.wrapped) {
-        let solids = getSolids(partCutCopy);
-        if (solids.length > 1) {
-          let newAssembly = [];
-          solids.forEach((solid) => {
-            newAssembly.push({
-              geometry: [solid],
-              tags: partToCut.tags,
-              color: partToCut.color,
-              bom: partToCut.bom,
-              plane: partToCut.plane,
-            });
-          });
-          // return new cut part
-          let newID = generateUniqueID();
-          library[newID] = {
-            geometry: newAssembly,
-            tags: partToCut.tags,
-            color: partToCut.color,
-            bom: partToCut.bom,
-            plane: partToCut.plane,
-          };
-
-          return library[newID];
-        }
-      }
-      // return new cut part
-      let newID = generateUniqueID();
-      library[newID] = {
-        geometry: [partCutCopy],
-        tags: partToCut.tags,
-        color: partToCut.color,
-        bom: partToCut.bom,
-        plane: partToCut.plane,
-      };
-
-      return library[newID];
-    }
-  } catch (e) {
-    console.log(e);
-    throw new Error("Cut Assembly failed", e);
-  }
-}
-
-/**
- * Recursively applies boolean cutting operations between geometries with optimization.
- *
- * @param {Object} partToCut - The geometry object to be cut
- * @param {Object} cuttingPart - The library object (may be assembly) used to cut the part
- * @returns {Object} - The resulting geometry after all applicable cuts have been performed
- *
- * This function:
- * - Recursively processes assemblies, applying cuts only when necessary
- * - Performs bounding box intersection checks to skip non-intersecting geometries
- * - Handles nested assemblies by traversing the entire tree of cutting geometries
- * - Optimizes performance by avoiding cuts with geometries that cannot intersect
- * - Preserves the structure of both the target and cutting geometries
- *
- * The function is a core part of the boolean difference system and is designed
- * to efficiently handle complex hierarchical structures.
- */
-function recursiveCut(partToCut, cuttingPart) {
-  try {
-    let cutGeometry = partToCut;
-
-    // Wire geometry should not participate in cutting operations
-    if (isWireGeometry({ geometry: [partToCut] })) {
-      return partToCut; // Wire parts should pass through unchanged
-    }
-
-    // if cutting part is an assembly pass back into the function to be cut by each part in that assembly
-    if (isAssembly(cuttingPart)) {
-      for (let i = 0; i < cuttingPart.geometry.length; i++) {
-        // Skip cutting with wire geometry
-        if (!isWireGeometry(cuttingPart.geometry[i])) {
-          cutGeometry = recursiveCut(cutGeometry, cuttingPart.geometry[i]);
-        }
-      }
-      return cutGeometry;
-    } else {
-      // Skip cutting if the cutting part is wire geometry
-      if (isWireGeometry(cuttingPart)) {
-        return partToCut;
-      }
-
-      //If the shapes don't overlap, we don't need to cut them
-      if (partToCut.boundingBox.isOut(cuttingPart.geometry[0].boundingBox)) {
-        return partToCut;
-      }
-      // cut and return part
-      else {
-        let cutPart;
-        cutPart = partToCut.cut(cuttingPart.geometry[0]);
-        return cutPart;
-      }
-    }
-  } catch (e) {
-    console.log(e);
-    throw new Error("Recursive Cut failed", e);
-  }
-}
-
-/**
  * A function which takes in an array of target geometries and forms them into an assembly
  * Geometries will cut all geometries below them in the list to make sure that no parts intersect
  * If the targetID is defined, the assembly will be stored in the library under that ID, otherwise it will be returned
  */
 async function assembly(geometries, targetID = null) {
-  if (!Array.isArray(geometries) || geometries.length === 0) {
-    throw new Error("inputIDs must be a non-empty array");
-  }
-
   await started;
-
-  let assembly = [];
-  let bomAssembly = [];
-
-  if (geometries.length > 1) {
-    const all3D = geometries.every((inputID) => is3D(toGeometry(inputID)));
-    const all2D = geometries.every((inputID) => !is3D(toGeometry(inputID)));
-
-    if (all3D || all2D) {
-      for (let i = 0; i < geometries.length; i++) {
-        const geometry = toGeometry(geometries[i]);
-        assembly.push(
-          cutAssembly(
-            geometry,
-            geometries.slice(i + 1).map(toGeometry),
-            targetID
-          )
-        );
-        if (geometry.bom.length > 0) {
-          bomAssembly.push(...geometry.bom);
-        }
-      }
-    } else {
-      console.trace("assembly error. inputs: " + geometries);
-      throw new Error(
-        "Assemblies must be composed from only sketches OR only solids"
-      );
-    }
-  } else {
-    const geometry = toGeometry(geometries[0]);
-    assembly.push(geometry);
-    if (geometry.bom.length > 0) {
-      bomAssembly.push(...geometry.bom);
-    }
-  }
-
-  const newPlane = new Plane().pivot(0, "Y");
-  let generatedAssembly = {
-    geometry: assembly,
-    plane: newPlane,
-    tags: [],
-    bom: bomAssembly,
-  };
-
+  const result = interaction.assembly(
+    geometries.map((id) => {
+      assertInLibrary(id);
+      return library[id];
+    })
+  );
   if (targetID != null) {
-    library[targetID] = generatedAssembly;
+    library[targetID] = result;
+    return true;
   } else {
-    return generatedAssembly;
+    return result;
   }
-
-  return true;
 }
 
 /**
@@ -1751,30 +871,12 @@ async function assembly(geometries, targetID = null) {
  */
 function fusion(targetID, inputIDs) {
   return started.then(() => {
-    let fusedGeometry = [];
-    let bomAssembly = [];
-    inputIDs.forEach((inputID) => {
-      if (inputIDs.every((inputID) => is3D(library[inputID]))) {
-        fusedGeometry.push(digFuse(library[inputID]));
-      } else if (inputIDs.every((inputID) => !is3D(library[inputID]))) {
-        fusedGeometry.push(digFuse(library[inputID]));
-      } else {
-        throw new Error(
-          "Fusion must be composed from only sketches OR only solids"
-        );
-      }
-      if (library[inputID].bom.length > 0) {
-        bomAssembly.push(...library[inputID].bom);
-      }
-    });
-    const newPlane = new Plane().pivot(0, "Y");
-    library[targetID] = {
-      geometry: [chainFuse(fusedGeometry)],
-      tags: [],
-      bom: bomAssembly,
-      plane: newPlane,
-      color: defaultColor,
-    };
+    library[targetID] = intersection.fusion(
+      inputIDs.map((id) => {
+        assertInLibrary(id);
+        return library[id];
+      })
+    );
     return true;
   });
 }
@@ -1786,6 +888,11 @@ function fusion(targetID, inputIDs) {
  */
 function flattenAssembly(assembly) {
   var flattened = [];
+  if (assembly == undefined || assembly.geometry == undefined) {
+    console.trace("attempted to flatten empty assembly");
+    return flattened;
+  }
+
   //This is a leaf
   if (
     assembly.geometry.length == 1 &&
@@ -1803,51 +910,8 @@ function flattenAssembly(assembly) {
   }
 }
 
-/**
- * Performs a chain fusion operation on an array of geometries.
- * @param {Array} chain - Array of geometry objects to fuse together sequentially
- * @returns {Object} The resulting fused geometry
- * @throws {Error} Throws an error if the fusion operation fails
- */
-function chainFuse(chain) {
-  try {
-    let fused = chain[0].clone();
-    for (let i = 1; i < chain.length; i++) {
-      fused = fused.fuse(chain[i]);
-    }
-    return fused;
-  } catch (e) {
-    throw new Error("Fusion failed");
-  }
-}
-
-/**
- * Recursively digs through an assembly and fuses all leaf geometries into a single geometry.
- * @param {Object} assembly - The assembly or leaf geometry to process
- * @returns {Object} A single fused geometry combining all leaves in the assembly
- */
-function digFuse(assembly) {
-  var flattened = [];
-
-  if (isAssembly(assembly)) {
-    assembly.geometry.forEach((subAssembly) => {
-      if (!isAssembly(subAssembly)) {
-        //if it's not an assembly hold on add it to the fusion list
-        flattened.push(subAssembly.geometry[0]);
-      } else {
-        // if it is an assembly keep digging
-        // add the fused things in
-        flattened.push(digFuse(subAssembly));
-      }
-    });
-    return chainFuse(flattened);
-  } else {
-    return assembly.geometry[0];
-  }
-}
-
 let colorOptions = {
-  Default: defaultColor,
+  Default: util.defaultColor,
   Red: "#FF9065",
   Orange: "#FFB458",
   Yellow: "#FFD600",
@@ -1877,8 +941,7 @@ let colorOptions = {
  * @returns {Promise} A promise that resolves to the default text mesh
  */
 async function generateDefaultMesh(id) {
-  let defaultMesh = await text(id, "No output to display", 28, "ROBOTO");
-  return defaultMesh;
+  return text(id, "No output to display", 28, "ROBOTO");
 }
 
 /**
@@ -1995,7 +1058,7 @@ function generateDisplayMesh(id) {
     if (library[id] == undefined || id == undefined) {
       console.log("ID undefined or not found in library");
       //throw new Error("ID not found in library");
-      generateDefaultMesh(id).then((result) => {
+      return generateDefaultMesh(id).then((result) => {
         console.log(result);
       });
     }
@@ -2150,7 +1213,6 @@ export {
   visualizeGcode,
   getBoundingBox,
   getBounds,
-  is3D,
   generateThumbnail,
   visExport,
   downExport,
