@@ -1,3 +1,5 @@
+import { isAssembly, actOnLeafs } from "./util";
+
 /**
  * Adds tags to a geometry and stores the tagged geometry in the library.
  * @param {string} targetID - The unique identifier to store the tagged geometry in the library
@@ -24,7 +26,7 @@ function tag(geom, TAG) {
  * @note If the color is "#D9544D", a "keepout" tag is automatically added to the geometry
  */
 function color(geom, color) {
-  return util.actOnLeafs(geom, (leaf) => {
+  return actOnLeafs(geom, (leaf) => {
     // keep out color add tag
     if (color == "#D9544D") {
       leaf.tags.push("keepout");
