@@ -48,7 +48,6 @@ function validateUserCode(code) {
  * @note Uses eval() for code execution - consider security implications in production environments
  */
 async function executeCode(targetID, code, argumentsArray) {
-  await started;
   try {
     // Validate input parameters
     if (typeof code !== "string") {
