@@ -89,7 +89,7 @@ async function rotate(toRotate, x, y, z) {
       };
     });
   } else {
-    return util.actOnLeafs(input, (leaf) => {
+    return util.actOnLeafs(toRotate, (leaf) => {
       return {
         geometry: [leaf.geometry[0].clone().rotate(z, [0, 0, 0], [0, 0, 1])],
         tags: leaf.tags,
