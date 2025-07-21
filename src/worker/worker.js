@@ -223,10 +223,11 @@ async function extrude(targetID, inputID, height) {
  */
 async function move(geom, x, y, z, targetID = null) {
   await started;
-
+  console.log("move called for target " + targetID);
   const result = await actions.move(toGeometry(geom, "move-geometry"), x, y, z);
   if (targetID) {
     library[targetID] = result;
+    return true;
   } else {
     return result;
   }
@@ -813,10 +814,10 @@ async function assembly(geometries, targetID = null) {
  * @throws {Error} Throws an error if inputs are mixed between 2D and 3D geometries
  */
 function fusion(targetID, inputIDs) {
-  return started.then(() => {
+  return started.then(async () => {
     console.log("fusion with inputs: " + inputIDs.length);
     console.log(inputIDs);
-    library[targetID] = interaction.fusion(
+    library[targetID] = await interaction.fusion(
       inputIDs.map((id) => {
         assertInLibrary(id);
         return library[id];
@@ -886,7 +887,7 @@ let colorOptions = {
  * @returns {Promise} A promise that resolves to the default text mesh
  */
 async function generateDefaultMesh(id) {
-  return text(id, "No output to display", 28, "ROBOTO");
+  return await text(id, "No output to display", 28, "ROBOTO");
 }
 
 /**
@@ -1003,7 +1004,7 @@ function generateDisplayMesh(id) {
     if (library[id] == undefined || id == undefined) {
       console.log("ID undefined or not found in library");
       //throw new Error("ID not found in library");
-      return generateDefaultMesh(id).then((result) => {
+      generateDefaultMesh(id).then((result) => {
         console.log(result);
       });
     }

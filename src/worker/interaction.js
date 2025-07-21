@@ -226,7 +226,8 @@ function chainFuse(chain) {
     }
     return fused;
   } catch (e) {
-    throw new Error("Fusion failed");
+    console.log(e);
+    throw new Error("Fusion failed", e);
   }
 }
 
