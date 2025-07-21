@@ -1,6 +1,6 @@
 import * as util from "./util.js";
 import shrinkWrap from "replicad-shrink-wrap";
-import { Plane } from "replicad";
+import { Plane, Solid } from "replicad";
 
 /**
  * Creates a loft shape by blending between multiple 2D sketches.
@@ -9,32 +9,30 @@ import { Plane } from "replicad";
  * @throws {Error} Throws an error if input parts are not sketches or contain interior geometries
  */
 function loftShapes(sketches) {
-  return started.then(() => {
-    let arrayOfSketchedGeometry = [];
+  let arrayOfSketchedGeometry = [];
 
-    sketches.forEach((sketch) => {
-      if (util.is3D(sketch)) {
-        throw new Error("Parts to be lofted must be sketches");
-      }
-      let partToLoft = digFuse(sketch);
-      let sketchedpart = partToLoft.sketchOnPlane(sketch.plane);
-      if (!sketchedpart.sketches) {
-        arrayOfSketchedGeometry.push(sketchedpart);
-      } else {
-        throw new Error("Sketches to be lofted can't have interior geometries");
-      }
-    });
-    let startGeometry = arrayOfSketchedGeometry.shift();
-    const newPlane = new Plane().pivot(0, "Y");
-
-    return {
-      geometry: [startGeometry.loftWith([...arrayOfSketchedGeometry])],
-      tags: [],
-      plane: newPlane,
-      color: util.defaultColor,
-      bom: [],
-    };
+  sketches.forEach((sketch) => {
+    if (util.is3D(sketch)) {
+      throw new Error("Parts to be lofted must be sketches");
+    }
+    let partToLoft = digFuse(sketch);
+    let sketchedpart = partToLoft.sketchOnPlane(sketch.plane);
+    if (!sketchedpart.sketches) {
+      arrayOfSketchedGeometry.push(sketchedpart);
+    } else {
+      throw new Error("Sketches to be lofted can't have interior geometries");
+    }
   });
+  let startGeometry = arrayOfSketchedGeometry.shift();
+  const newPlane = new Plane().pivot(0, "Y");
+
+  return {
+    geometry: [startGeometry.loftWith([...arrayOfSketchedGeometry])],
+    tags: [],
+    plane: newPlane,
+    color: util.defaultColor,
+    bom: [],
+  };
 }
 
 /**
@@ -183,7 +181,7 @@ async function assembly(geometries) {
     if (all3D || all2D) {
       for (let i = 0; i < geometries.length; i++) {
         const geometry = geometries[i];
-        assembly.push(cutAssembly(geometry, geometries.slice(i + 1), targetID));
+        assembly.push(cutAssembly(geometry, geometries.slice(i + 1)));
         if (geometry.bom.length > 0) {
           bomAssembly.push(...geometry.bom);
         }
@@ -274,7 +272,7 @@ function digFuse(assembly) {
 function cutAssembly(partToCut, cuttingParts) {
   try {
     //If the partToCut is an assembly pass each part back into cutAssembly function to be cut separately
-    if (isAssembly(partToCut)) {
+    if (util.isAssembly(partToCut)) {
       let assemblyToCut = partToCut.geometry;
       let assemblyCut = [];
       assemblyToCut.forEach((part) => {
@@ -282,18 +280,17 @@ function cutAssembly(partToCut, cuttingParts) {
         assemblyCut.push(cutAssembly(part, cuttingParts));
       });
 
-      let subID = generateUniqueID();
       //returns new assembly that has been cut
-      library[subID] = {
-        //This feels like a hack, we shouldn't be using the library internally like this
+      const newAssembly = {
+        //TODO(tristan): Shouldn't we be copying color and plane here?
         geometry: assemblyCut,
         tags: partToCut.tags,
         bom: partToCut.bom,
       };
-      return library[subID];
+      return newAssembly;
     } else {
       // if part to cut is wire geometry, return it unchanged (wires should pass through assemblies)
-      if (isWireGeometry(partToCut)) {
+      if (util.isWireGeometry(partToCut)) {
         return partToCut;
       }
 
@@ -324,29 +321,23 @@ function cutAssembly(partToCut, cuttingParts) {
             });
           });
           // return new cut part
-          let newID = generateUniqueID();
-          library[newID] = {
+          return {
             geometry: newAssembly,
             tags: partToCut.tags,
             color: partToCut.color,
             bom: partToCut.bom,
             plane: partToCut.plane,
           };
-
-          return library[newID];
         }
       }
       // return new cut part
-      let newID = generateUniqueID();
-      library[newID] = {
+      return {
         geometry: [partCutCopy],
         tags: partToCut.tags,
         color: partToCut.color,
         bom: partToCut.bom,
         plane: partToCut.plane,
       };
-
-      return library[newID];
     }
   } catch (e) {
     console.log(e);

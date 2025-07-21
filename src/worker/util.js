@@ -93,7 +93,7 @@ function generateUniqueID() {
 function isWireGeometry(inputs) {
   if (isAssembly(inputs)) {
     return inputs.geometry.some((input) => isWireGeometry(input));
-  } else if (inputs.geometry && inputs.geometry[0] instanceof Wire) {
+  } else if (inputs.geometry && inputs.geometry[0] instanceof replicad.Wire) {
     return true;
   } else {
     return false;
@@ -120,4 +120,12 @@ function isAssembly(part) {
   }
 }
 
-export { init, actOnLeafs, replicad, is3D, isWireGeometry, isAssembly };
+export {
+  init,
+  actOnLeafs,
+  replicad,
+  is3D,
+  isWireGeometry,
+  isAssembly,
+  generateUniqueID,
+};
