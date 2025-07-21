@@ -21,7 +21,7 @@ function assertInLibrary(id) {
 
 async function code(targetID, codeText, argumentsArray) {
   await started;
-  const result = codeLib.executeCode(codeText, argumentsArray);
+  const result = await codeLib.executeCode(codeText, argumentsArray, library);
   library[targetID] = result;
   return true;
 }
@@ -66,7 +66,7 @@ async function displayLayout(
   await started;
   assertInLibrary(inputID);
 
-  library[targetID] = cutlayout.displayLayout(
+  library[targetID] = await cutlayout.displayLayout(
     library[inputID],
     placements,
     warningCallback,
@@ -132,11 +132,10 @@ function createMesh(thickness) {
  * @param {number} diameter - The diameter of the circle
  * @returns {Promise<boolean>} A promise that resolves to true when the circle is created successfully
  */
-function circle(id, diameter) {
-  return started.then(() => {
-    library[id] = shapes.circle(diameter);
-    return true;
-  });
+async function circle(id, diameter) {
+  await started;
+  library[id] = await shapes.circle(diameter);
+  return true;
 }
 
 /**
@@ -146,11 +145,10 @@ function circle(id, diameter) {
  * @param {number} y - The height of the rectangle
  * @returns {Promise<boolean>} A promise that resolves to true when the rectangle is created successfully
  */
-function rectangle(id, x, y) {
-  return started.then(() => {
-    library[id] = shapes.rectangle(x, y);
-    return true;
-  });
+async function rectangle(id, x, y) {
+  await started;
+  library[id] = await shapes.rectangle(x, y);
+  return true;
 }
 
 /**
@@ -160,11 +158,10 @@ function rectangle(id, x, y) {
  * @param {number} numberOfSides - The number of sides of the polygon
  * @returns {Promise<boolean>} A promise that resolves to true when the polygon is created successfully
  */
-function regularPolygon(id, radius, numberOfSides) {
-  return started.then(() => {
-    library[id] = shapes.regularPolygon(radius, numberOfSides);
-    return true;
-  });
+async function regularPolygon(id, radius, numberOfSides) {
+  await started;
+  library[id] = await shapes.regularPolygon(radius, numberOfSides);
+  return true;
 }
 
 /**
@@ -191,16 +188,15 @@ async function text(id, text, fontSize, fontFamily) {
  * @returns {Promise<boolean>} A promise that resolves to true when the loft is created successfully
  * @throws {Error} Throws an error if input parts are not sketches or contain interior geometries
  */
-function loftShapes(targetID, inputsIDs) {
-  return started.then(() => {
-    library[targetID] = interaction.loftShapes(
-      (inputsIDs || []).map((id) => {
-        assertInLibrary(id);
-        return library[id];
-      })
-    );
-    return true;
-  });
+async function loftShapes(targetID, inputsIDs) {
+  await started;
+  library[targetID] = await interaction.loftShapes(
+    (inputsIDs || []).map((id) => {
+      assertInLibrary(id);
+      return library[id];
+    })
+  );
+  return true;
 }
 
 /**
@@ -210,11 +206,10 @@ function loftShapes(targetID, inputsIDs) {
  * @param {number} height - The height to extrude the sketch
  * @returns {Promise<boolean>} A promise that resolves to true when the extrusion is completed successfully
  */
-function extrude(targetID, inputID, height) {
-  return started.then(() => {
-    library[targetID] = actions.extrude(library[inputID], height);
-    return true;
-  });
+async function extrude(targetID, inputID, height) {
+  await started;
+  library[targetID] = await actions.extrude(library[inputID], height);
+  return true;
 }
 
 /**
@@ -229,7 +224,7 @@ function extrude(targetID, inputID, height) {
 async function move(geom, x, y, z, targetID = null) {
   await started;
 
-  const result = actions.move(geom, x, y, z);
+  const result = await actions.move(toGeometry(geom, "move-geometry"), x, y, z);
   if (targetID) {
     library[targetID] = result;
   } else {
@@ -250,7 +245,7 @@ async function rotate(geom, x, y, z, targetID = null) {
   await started;
 
   const asGeom = toGeometry(geom, "rotate-geometry"); // TODO(tristan): I'd love to deprecate use of this method here.
-  const result = actions.rotate(asGeom, x, y, z);
+  const result = await actions.rotate(asGeom, x, y, z);
   if (targetID) {
     library[targetID] = result;
   } else {
@@ -269,7 +264,7 @@ async function scale(geom, scaleFactor, targetID = null) {
   await started;
 
   geom = toGeometry(geom, "scale-geometry");
-  const result = actions.scale(geom, scaleFactor);
+  const result = await actions.scale(geom, scaleFactor);
   if (targetID) {
     library[targetID] = result;
   } else {
@@ -287,7 +282,10 @@ async function scale(geom, scaleFactor, targetID = null) {
 async function fillet(geom, radius, targetID = null) {
   await started;
 
-  const result = actions.fillet(toGeometry(geom, "fillet-geometry"), radius);
+  const result = await actions.fillet(
+    toGeometry(geom, "fillet-geometry"),
+    radius
+  );
   if (targetID) {
     library[targetID] = result;
   } else {
@@ -305,7 +303,10 @@ async function fillet(geom, radius, targetID = null) {
 async function chamfer(geom, size, targetID = null) {
   await started;
 
-  const result = actions.chamfer(toGeometry(geom, "chamfer-geometry"), size);
+  const result = awaitactions.chamfer(
+    toGeometry(geom, "chamfer-geometry"),
+    size
+  );
   if (targetID) {
     library[targetID] = result;
   } else {
@@ -328,10 +329,10 @@ async function chamfer(geom, size, targetID = null) {
  * Uses bounding box checks to avoid processing cuts for non-overlapping geometries.
  */
 function difference(targetID, input1ID, input2ID) {
-  return started.then(() => {
+  return started.then(async () => {
     assertInLibrary(input1ID);
     assertInLibrary(input2ID);
-    library[targetID] = interaction.difference(
+    library[targetID] = await interaction.difference(
       library[input1ID],
       library[input2ID]
     );
@@ -347,8 +348,8 @@ function difference(targetID, input1ID, input2ID) {
  * @throws {Error} Throws an error if inputs are not all sketches or if sketches have interior geometries
  */
 function shrinkWrapSketches(targetID, inputIDs) {
-  return started.then(() => {
-    library[targetID] = interaction.shrinkWrapSketches(
+  return started.then(async () => {
+    library[targetID] = await interaction.shrinkWrapSketches(
       inputIDs.map((id) => {
         assertInLibrary(id);
         return library[id];
@@ -366,11 +367,11 @@ function shrinkWrapSketches(targetID, inputIDs) {
  * @returns {Promise<boolean|Object>} A promise that resolves to true if targetID is provided, or the intersected geometry if targetID is null
  */
 function intersect(input1ID, input2ID, targetID = null) {
-  return started.then(() => {
+  return started.then(async () => {
     assertInLibrary(input1ID);
     assertInLibrary(input2ID);
 
-    const result = interaction.intersect(input1ID, input2ID);
+    const result = await interaction.intersect(input1ID, input2ID);
     if (targetID) {
       library[targetID] = result;
       return true;
@@ -784,71 +785,13 @@ function getBoundingBox(inputID) {
 }
 
 /**
- * Gets the bounds of the input geometry or assembly.
- * @param {*} input - Can be a library ID, util.replicad geometry, or assembly
- * @returns {Object} The bounds object with min and max arrays
- */
-function getBounds(input) {
-  try {
-    const geometry = toGeometry(input);
-
-    let minX = Infinity,
-      minY = Infinity,
-      minZ = Infinity;
-    let maxX = -Infinity,
-      maxY = -Infinity,
-      maxZ = -Infinity;
-
-    if (util.isAssembly(geometry)) {
-      // Handle assembly by iterating through all parts
-      util.actOnLeafs(geometry, (leaf) => {
-        if (leaf.geometry && leaf.geometry[0] && leaf.geometry[0].boundingBox) {
-          const bbox = leaf.geometry[0].boundingBox.bounds;
-          minX = Math.min(minX, bbox[0][0]);
-          minY = Math.min(minY, bbox[0][1]);
-          minZ = Math.min(minZ, bbox[0][2]);
-          maxX = Math.max(maxX, bbox[1][0]);
-          maxY = Math.max(maxY, bbox[1][1]);
-          maxZ = Math.max(maxZ, bbox[1][2]);
-        }
-      });
-    } else {
-      // Handle single geometry
-      if (
-        geometry.geometry &&
-        geometry.geometry[0] &&
-        geometry.geometry[0].boundingBox
-      ) {
-        const bbox = geometry.geometry[0].boundingBox.bounds;
-        minX = bbox[0][0];
-        minY = bbox[0][1];
-        minZ = bbox[0][2];
-        maxX = bbox[1][0];
-        maxY = bbox[1][1];
-        maxZ = bbox[1][2];
-      } else {
-        throw new Error("Invalid geometry: missing boundingBox");
-      }
-    }
-
-    return {
-      min: [minX, minY, minZ],
-      max: [maxX, maxY, maxZ],
-    };
-  } catch (error) {
-    console.error("GetBounds error:", error);
-    throw new Error(`GetBounds failed: ${error.message}`);
-  }
-}
-
-/**
  * A function which takes in an array of target geometries and forms them into an assembly
  * Geometries will cut all geometries below them in the list to make sure that no parts intersect
  * If the targetID is defined, the assembly will be stored in the library under that ID, otherwise it will be returned
  */
 async function assembly(geometries, targetID = null) {
   await started;
-  const result = interaction.assembly(
+  const result = await interaction.assembly(
     geometries.map((id) => {
       assertInLibrary(id);
       return library[id];
@@ -871,7 +814,9 @@ async function assembly(geometries, targetID = null) {
  */
 function fusion(targetID, inputIDs) {
   return started.then(() => {
-    library[targetID] = intersection.fusion(
+    console.log("fusion with inputs: " + inputIDs.length);
+    console.log(inputIDs);
+    library[targetID] = interaction.fusion(
       inputIDs.map((id) => {
         assertInLibrary(id);
         return library[id];
@@ -1173,7 +1118,6 @@ if (
     resetView,
     visualizeGcode,
     getBoundingBox,
-    getBounds,
   });
 }
 
@@ -1212,7 +1156,6 @@ export {
   text,
   visualizeGcode,
   getBoundingBox,
-  getBounds,
   generateThumbnail,
   visExport,
   downExport,

@@ -5,7 +5,6 @@ import { isAssembly, actOnLeafs } from "./util";
  * @param {string} targetID - The unique identifier to store the tagged geometry in the library
  * @param {string} inputID - The library ID of the geometry to tag
  * @param {string[]} TAG - Array of tags to add to the geometry
- * @returns {Promise<boolean>} A promise that resolves to true when the tagging is completed successfully
  */
 function tag(geom, TAG) {
   return {
@@ -22,7 +21,6 @@ function tag(geom, TAG) {
  * @param {string} targetID - The unique identifier to store the colored geometry in the library
  * @param {string} inputID - The library ID of the geometry to color
  * @param {string} color - The color to apply to the geometry (hex color code)
- * @returns {Promise} A promise that resolves when the coloring operation is completed
  * @note If the color is "#D9544D", a "keepout" tag is automatically added to the geometry
  */
 function color(geom, color) {

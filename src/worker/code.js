@@ -1,4 +1,6 @@
 import * as util from "./util.js";
+import { rotate, move, scale, fillet, chamfer } from "./actions.js";
+import { intersect, assembly, cutAssembly } from "./interaction.js";
 
 /**
  * Validates that user-provided code doesn't contain dangerous patterns
@@ -47,7 +49,7 @@ function validateUserCode(code) {
  * @returns {Promise<boolean|number>} A promise that resolves to the result value if it's a number, or true otherwise
  * @note Uses eval() for code execution - consider security implications in production environments
  */
-async function executeCode(targetID, code, argumentsArray) {
+async function executeCode(code, argumentsArray, library) {
   try {
     // Validate input parameters
     if (typeof code !== "string") {
@@ -87,10 +89,10 @@ async function executeCode(targetID, code, argumentsArray) {
       cutAssembly,
       assemblyMap,
       assemblyAsIterable,
-      getBounds,
+      util.getBounds,
       fillet,
       chamfer,
-      library,
+      library, // TODO(tristan): I think we should deprecate this
       util.replicad,
     ];
     for (const [key, value] of Object.entries(argumentsArray)) {

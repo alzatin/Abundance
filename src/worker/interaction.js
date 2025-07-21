@@ -411,4 +411,5 @@ export {
   fusion,
   assembly,
   digFuse,
+  cutAssembly,
 };
