@@ -13,10 +13,11 @@ var library = {};
 
 const started = util.init();
 
-function assertInLibrary(id) {
+function getOrThrow(id) {
   if (!library[id]) {
     throw new Error(`Library ID ${id} does not exist.`);
   }
+  return library[id];
 }
 
 async function code(targetID, codeText, argumentsArray) {
@@ -37,11 +38,10 @@ async function layout(
   priorPlacements
 ) {
   await started;
-  assertInLibrary(inputID);
 
   return cutlayout
     .layout(
-      library[inputID],
+      getOrThrow(inputID),
       progressCallback,
       warningCallback,
       placementCallback,
@@ -64,10 +64,9 @@ async function displayLayout(
   layoutConfig
 ) {
   await started;
-  assertInLibrary(inputID);
 
   library[targetID] = await cutlayout.displayLayout(
-    library[inputID],
+    getOrThrow(inputID),
     placements,
     warningCallback,
     layoutConfig
@@ -191,10 +190,7 @@ async function text(id, text, fontSize, fontFamily) {
 async function loftShapes(targetID, inputsIDs) {
   await started;
   library[targetID] = await interaction.loftShapes(
-    (inputsIDs || []).map((id) => {
-      assertInLibrary(id);
-      return library[id];
-    })
+    (inputsIDs || []).map(getOrThrow)
   );
   return true;
 }
@@ -208,7 +204,7 @@ async function loftShapes(targetID, inputsIDs) {
  */
 async function extrude(targetID, inputID, height) {
   await started;
-  library[targetID] = await actions.extrude(library[inputID], height);
+  library[targetID] = await actions.extrude(getOrThrow, height);
   return true;
 }
 
@@ -335,11 +331,9 @@ async function chamfer(geom, size, targetID = null) {
  */
 function difference(targetID, input1ID, input2ID) {
   return started.then(async () => {
-    assertInLibrary(input1ID);
-    assertInLibrary(input2ID);
     library[targetID] = await interaction.difference(
-      library[input1ID],
-      library[input2ID]
+      getOrThrow(input1ID),
+      getOrThrow(input2ID)
     );
     return true;
   });
@@ -355,10 +349,7 @@ function difference(targetID, input1ID, input2ID) {
 function shrinkWrapSketches(targetID, inputIDs) {
   return started.then(async () => {
     library[targetID] = await interaction.shrinkWrapSketches(
-      inputIDs.map((id) => {
-        assertInLibrary(id);
-        return library[id];
-      })
+      inputIDs.map(getOrThrow)
     );
     return true;
   });
@@ -373,10 +364,10 @@ function shrinkWrapSketches(targetID, inputIDs) {
  */
 function intersect(input1ID, input2ID, targetID = null) {
   return started.then(async () => {
-    assertInLibrary(input1ID);
-    assertInLibrary(input2ID);
-
-    const result = await interaction.intersect(input1ID, input2ID);
+    const result = await interaction.intersect(
+      getOrThrow(input1ID),
+      getOrThrow(input2ID)
+    );
     if (targetID) {
       library[targetID] = result;
       return true;
@@ -395,8 +386,7 @@ function intersect(input1ID, input2ID, targetID = null) {
  */
 function tag(targetID, inputID, TAG) {
   return started.then(() => {
-    assertInLibrary(inputID);
-    library[targetID] = tags.tag(library[inputID], TAG);
+    library[targetID] = tags.tag(getOrThrow(inputID), TAG);
     return true;
   });
 }
@@ -410,8 +400,7 @@ function tag(targetID, inputID, TAG) {
  */
 function extractAllTags(inputID, tag) {
   return started.then(() => {
-    assertInLibrary(inputID);
-    return tags.extractAllTags(library[inputID]);
+    return tags.extractAllTags(getOrThrow(inputID));
   });
 }
 
@@ -425,8 +414,7 @@ function extractAllTags(inputID, tag) {
  */
 function color(targetID, inputID, color) {
   return started.then(() => {
-    assertInLibrary(inputID);
-    library[targetID] = tags.color(library[inputID], color);
+    library[targetID] = tags.color(getOrThrow(inputID), color);
     return true;
   });
 }
@@ -440,8 +428,7 @@ function color(targetID, inputID, color) {
  */
 function bom(targetID, inputID, BOM) {
   return started.then(() => {
-    assertInLibrary(inputID);
-    library[targetID] = tags.bom(library[inputID], BOM);
+    library[targetID] = tags.bom(getOrThrow(inputID), BOM);
     return true;
   });
 }
@@ -456,8 +443,7 @@ function bom(targetID, inputID, BOM) {
  */
 async function extractTag(targetID, inputID, TAG) {
   await started;
-  assertInLibrary(inputID);
-  library[targetID] = tags.extractTag(library[inputID], TAG);
+  library[targetID] = tags.extractTag(getOrThrow(inputID), TAG);
   return true;
 }
 
@@ -504,8 +490,7 @@ function molecule(targetID, inputID) {
  * @returns {Array|boolean} The BOM array if it exists, or false if BOM is undefined
  */
 function extractBomList(inputID) {
-  assertInLibrary(inputID);
-  return tags.extractBomList(library[inputID]);
+  return tags.extractBomList(getOrThrow(inputID));
 }
 
 /**
@@ -785,14 +770,9 @@ function getBoundingBox(inputID) {
  * Geometries will cut all geometries below them in the list to make sure that no parts intersect
  * If the targetID is defined, the assembly will be stored in the library under that ID, otherwise it will be returned
  */
-async function assembly(geometries, targetID = null) {
+async function assembly(inputIDs, targetID = null) {
   await started;
-  const result = await interaction.assembly(
-    geometries.map((id) => {
-      assertInLibrary(id);
-      return library[id];
-    })
-  );
+  const result = await interaction.assembly(inputIDs.map(getOrThrow));
   if (targetID != null) {
     library[targetID] = result;
     return true;
@@ -812,12 +792,7 @@ function fusion(targetID, inputIDs) {
   return started.then(async () => {
     console.log("fusion with inputs: " + inputIDs.length);
     console.log(inputIDs);
-    library[targetID] = await interaction.fusion(
-      inputIDs.map((id) => {
-        assertInLibrary(id);
-        return library[id];
-      })
-    );
+    library[targetID] = await interaction.fusion(inputIDs.map(getOrThrow));
     return true;
   });
 }
