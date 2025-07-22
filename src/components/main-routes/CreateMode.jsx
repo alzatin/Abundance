@@ -46,7 +46,7 @@ function CreateMode({
   const [gridParam, setGrid] = useState(true);
   const [axesParam, setAxes] = useState(true);
   const [wireParam, setWire] = useState(true);
-  const [solidParam, setSolid] = useState(true);
+  const [solidParam, setSolid] = useState(false);
 
   /** State for import notifications */
   const [importNotification, setImportNotification] = useState(null);
