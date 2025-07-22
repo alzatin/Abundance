@@ -14,6 +14,9 @@ var library = {};
 const started = util.init();
 
 function getOrThrow(id) {
+  if (id == undefined) {
+    throw new Error("Missing a required input");
+  }
   if (!library[id]) {
     throw new Error(`Library ID ${id} does not exist.`);
   }
@@ -169,14 +172,14 @@ async function regularPolygon(id, radius, numberOfSides) {
  * @param {string} text - The text content to be rendered
  * @param {number} fontSize - The size of the font
  * @param {string} fontFamily - The font family to use for rendering the text
- * @returns {Promise<Object>} A promise that resolves to the created text geometry object
+ * @returns {Promise<boolean>} A promise that resolves to true when the text geometry is created successfully
  * @throws {Error} Throws an error if the font fails to load
  */
 async function text(id, text, fontSize, fontFamily) {
   return started.then(async () => {
     const result = await shapes.text(text, fontSize, fontFamily);
     library[id] = result;
-    return result;
+    return true;
   });
 }
 
@@ -204,7 +207,7 @@ async function loftShapes(targetID, inputsIDs) {
  */
 async function extrude(targetID, inputID, height) {
   await started;
-  library[targetID] = await actions.extrude(getOrThrow, height);
+  library[targetID] = await actions.extrude(getOrThrow(inputID), height);
   return true;
 }
 
@@ -502,7 +505,7 @@ function extractBomList(inputID) {
  */
 function visExport(targetID, inputID, fileType) {
   return started.then(() => {
-    let geometryToExport = extractKeepOut(library[inputID]);
+    let geometryToExport = tags.extractKeepOut(library[inputID]);
     let fusedGeometry = interaction.digFuse(geometryToExport);
     let displayColor =
       fileType == "STL"
