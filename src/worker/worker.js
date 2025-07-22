@@ -1044,6 +1044,7 @@ function generateDisplayMesh(id) {
     meshArray.forEach((meshgeometry) => {
       try {
         //Try extruding if there is no 3d shape
+        let sketchPlane = library[id].plane;
         if (meshgeometry.geometry.mesh == undefined) {
           const threeDShape = meshgeometry
             .sketchOnPlane(sketchPlane)

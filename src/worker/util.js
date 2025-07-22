@@ -185,4 +185,5 @@ export {
   isAssembly,
   generateUniqueID,
   getBounds,
+  defaultColor,
 };

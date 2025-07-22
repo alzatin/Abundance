@@ -122,16 +122,16 @@ function intersect(shape1, shape2) {
 function fusion(shapes) {
   let fusedGeometry = [];
   let bomAssembly = [];
+  const all2D = shapes.every((shape) => !util.is3D(shape));
+  const all3D = shapes.every((shape) => util.is3D(shape));
+  if (!all2D && !all3D) {
+    throw new Error(
+      "Fusion must be composed from only sketches OR only solids"
+    );
+  }
+
   shapes.forEach((shape) => {
-    if (shapes.every((shape) => util.is3D(shape))) {
-      fusedGeometry.push(digFuse(shape));
-    } else if (shapes.every((shape) => !util.is3D(shape))) {
-      fusedGeometry.push(digFuse(shape));
-    } else {
-      throw new Error(
-        "Fusion must be composed from only sketches OR only solids"
-      );
-    }
+    fusedGeometry.push(digFuse(shape));
     if (shape.bom.length > 0) {
       bomAssembly.push(...shape.bom);
     }
