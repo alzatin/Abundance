@@ -366,6 +366,11 @@ function CreateMode({
   };
 
   const deleteAFile = async function (fileName, fileSha) {
+    // If fileName is null or undefined, there's no file to delete
+    if (fileName == null) {
+      return;
+    }
+    
     try {
       await authorizedUserOcto.rest.repos.deleteFile({
         owner: GlobalVariables.currentUser,
