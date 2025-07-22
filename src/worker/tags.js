@@ -73,7 +73,7 @@ function extractBomList(assembly) {
 function extractTag(geometry, TAG) {
   let taggedGeometry = extractTags(geometry, TAG);
   if (taggedGeometry != false) {
-    library[targetID] = {
+    return {
       bom: taggedGeometry.bom,
       geometry: taggedGeometry.geometry,
       tags: taggedGeometry.tags,
@@ -114,6 +114,7 @@ function extractAllTags(geom) {
 
 // Recursively extract geometries with the specified tag.
 function extractTags(inputGeometry, TAG) {
+  // TODO(tristan): this destroys the "plane" property.
   if (inputGeometry.tags.includes(TAG)) {
     return inputGeometry;
   } else if (isAssembly(inputGeometry)) {
@@ -126,13 +127,12 @@ function extractTags(inputGeometry, TAG) {
       }
     });
     if (geometryWithTags.length > 0) {
-      let thethingtoreturn = {
+      return {
         geometry: geometryWithTags,
         tags: inputGeometry.tags,
         color: inputGeometry.color,
         bom: inputGeometry.bom,
       };
-      return thethingtoreturn;
     } else {
       return false;
     }

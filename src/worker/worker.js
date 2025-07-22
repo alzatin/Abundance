@@ -170,7 +170,7 @@ async function regularPolygon(id, radius, numberOfSides) {
  * @param {string} text - The text content to be rendered
  * @param {number} fontSize - The size of the font
  * @param {string} fontFamily - The font family to use for rendering the text
- * @returns {Promise<boolean>} A promise that resolves to true when the text is created successfully
+ * @returns {Promise<Object>} A promise that resolves to the created text geometry object
  * @throws {Error} Throws an error if the font fails to load
  */
 async function text(id, text, fontSize, fontFamily) {
@@ -219,7 +219,7 @@ async function extrude(targetID, inputID, height) {
  * @param {number} y - The distance to move along the y-axis
  * @param {number} z - The distance to move along the z-axis
  * @param {string|null} targetID - The ID to store the result in the library. If null, the result is returned
- * @returns {Promise<Object>} A promise that resolves to the moved geometry
+ * @returns {Promise<boolean|Object>} A promise that resolves to the moved geometry, or true if targetID is provided
  */
 async function move(geom, x, y, z, targetID = null) {
   await started;
@@ -240,7 +240,7 @@ async function move(geom, x, y, z, targetID = null) {
  * @param {number} y - The angle to rotate around the y axis
  * @param {number} z - The angle to rotate around the z axis
  * @param {string} targetID - The ID to store the result in. If it undefined the result will be returned instead
- * @returns {Promise<Object>} A promise that resolves to the rotated geometry
+ * @returns {Promise<boolean|Object>} A promise that resolves to the rotated geometry or true if targetID is provided
  **/
 async function rotate(geom, x, y, z, targetID = null) {
   await started;
@@ -249,6 +249,7 @@ async function rotate(geom, x, y, z, targetID = null) {
   const result = await actions.rotate(asGeom, x, y, z);
   if (targetID) {
     library[targetID] = result;
+    return true;
   } else {
     return result;
   }
@@ -259,7 +260,7 @@ async function rotate(geom, x, y, z, targetID = null) {
  * @param {Object|string} geom - The geometry to scale, or library ID for same
  * @param {number} scaleFactor - The scale factor to apply (1.0 = no change, 2.0 = double size, 0.5 = half size)
  * @param {string|null} targetID - The ID to store the result in the library. If null, the result is returned
- * @returns {Promise<Object>} A promise that resolves to the scaled geometry
+ * @returns {Promise<boolean|Object>} A promise that resolves to the scaled geometry, or true if targetID is provided
  */
 async function scale(geom, scaleFactor, targetID = null) {
   await started;
@@ -268,6 +269,7 @@ async function scale(geom, scaleFactor, targetID = null) {
   const result = await actions.scale(geom, scaleFactor);
   if (targetID) {
     library[targetID] = result;
+    return true;
   } else {
     return result;
   }
@@ -278,7 +280,7 @@ async function scale(geom, scaleFactor, targetID = null) {
  * @param {Object|string} geom - The geometry to fillet, or library ID for same
  * @param {number} radius - The radius of the fillet
  * @param {string|null} targetID - The ID to store the result in the library. If null, the result is returned
- * @returns {Promise<Object>} A promise that resolves to the filleted geometry
+ * @returns {Promise<boolean|Object>} A promise that resolves to the filleted geometry or true if targetID is provided
  */
 async function fillet(geom, radius, targetID = null) {
   await started;
@@ -289,6 +291,7 @@ async function fillet(geom, radius, targetID = null) {
   );
   if (targetID) {
     library[targetID] = result;
+    return true;
   } else {
     return result;
   }
@@ -299,7 +302,7 @@ async function fillet(geom, radius, targetID = null) {
  * @param {Object|string} geom - The geometry to chamfer, or library ID for same
  * @param {number} size - The size of the chamfer
  * @param {string|null} targetID - The ID to store the result in the library. If null, the result is returned
- * @returns {Promise<Object>} A promise that resolves to the chamfered geometry
+ * @returns {Promise<boolean|Object>} A promise that resolves to the chamfered geometry or true if targetID is provided
  */
 async function chamfer(geom, size, targetID = null) {
   await started;
@@ -310,6 +313,7 @@ async function chamfer(geom, size, targetID = null) {
   );
   if (targetID) {
     library[targetID] = result;
+    return true;
   } else {
     return result;
   }
@@ -450,21 +454,11 @@ function bom(targetID, inputID, BOM) {
  * @returns {Promise<boolean>} A promise that resolves to true when the extraction is completed successfully
  * @throws {Error} Throws an error if the specified tag is not found in the geometry
  */
-function extractTag(targetID, inputID, TAG) {
-  return started.then(() => {
-    let taggedGeometry = extractTags(library[inputID], TAG);
-    if (taggedGeometry != false) {
-      library[targetID] = {
-        bom: taggedGeometry.bom,
-        geometry: taggedGeometry.geometry,
-        tags: taggedGeometry.tags,
-        color: taggedGeometry.color,
-      };
-    } else {
-      throw new Error("Tag not found");
-    }
-    return true;
-  });
+async function extractTag(targetID, inputID, TAG) {
+  await started;
+  assertInLibrary(inputID);
+  library[targetID] = tags.extractTag(library[inputID], TAG);
+  return true;
 }
 
 /**
@@ -762,6 +756,7 @@ function generateThumbnail(inputID) {
  */
 
 function getBoundingBox(inputID) {
+  // TODO(tristan): this is redundant with util.getBounds I think.
   let minX = Infinity,
     minY = Infinity,
     minZ = Infinity;
