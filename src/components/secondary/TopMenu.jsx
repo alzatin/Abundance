@@ -32,9 +32,6 @@ function TopMenu({
   let [settingsPopUp, setSettingsPopUp] = useState(false);
 
   const navigate = useNavigate();
-
-  console.log(GlobalVariables.isMobile());
-
   // objects for navigation items in the top menu
   const navItems = [
     {
