@@ -3,10 +3,15 @@ import shrinkWrap from "replicad-shrink-wrap";
 import { Plane, Solid } from "replicad";
 
 /**
- * Creates a loft shape by blending between multiple 2D sketches.
- * @param {Object[]} sketches - Array of sketch assemblies to be lofted
- * @returns {Promise<Object>} A promise of an Assembly containing the lofted geometry
- * @throws {Error} Throws an error if input parts are not sketches or contain interior geometries
+ * All methods in this file take multiple geometries and combine them in some way.
+ *
+ * Most methods return a singular new geometry which is the intersection/difference/fusion etc
+ * of the inputs. The one notable exception is `assembly`, which returns a grouping of multiple
+ * geometries which can later be separated (eg: with tags, BOM, or cut layout)
+ */
+
+/**
+ * Create and return a lofted shape which blends between multiple 2D profile sketches.
  */
 function loftShapes(sketches) {
   let arrayOfSketchedGeometry = [];
@@ -38,15 +43,6 @@ function loftShapes(sketches) {
 /**
  * Performs a boolean difference operation between two geometries.
  * This function subtracts the second geometry (cutter) from the first geometry (target).
- *
- * @param {string} input1ID - The ID of the base geometry from which material will be removed
- * @param {string} input2ID - The ID of the cutting geometry that will be subtracted
- * @returns {Promise<Object>} - A promise that resolves to the resulting geometry after the operation
- * @throws {Error} - If the input geometries are not of the same type (both must be either 3D or 2D)
- *
- * The function maintains all metadata from the base geometry including tags, color, plane, and BOM.
- * If the base geometry is an assembly, the cut operation is applied to each leaf independently.
- * Uses bounding box checks to avoid processing cuts for non-overlapping geometries.
  */
 function difference(target, cutter) {
   if (
@@ -76,9 +72,6 @@ function difference(target, cutter) {
 
 /**
  * Creates a shrink-wrapped boundary around multiple 2D sketches and stores it in the library.
- * @param {string[]} inputIDs - Array of library IDs containing 2D sketches to be shrink-wrapped
- * @returns {Promise<boolean>} A promise that resolves to true when the shrink wrapping is completed successfully
- * @throws {Error} Throws an error if inputs are not all sketches or if sketches have interior geometries
  */
 function shrinkWrapSketches(sketches) {
   let BOM = [];
@@ -107,11 +100,7 @@ function shrinkWrapSketches(sketches) {
 }
 
 /**
- * Performs a boolean intersection operation between two geometries.
- * @param {string|Object} input1ID - The ID of the first geometry or the geometry object itself
- * @param {string|Object} input2ID - The ID of the second geometry or the geometry object itself
- * @param {string|null} targetID - The ID to store the result in the library. If null, the result is returned
- * @returns {Promise<boolean|Object>} A promise that resolves to true if targetID is provided, or the intersected geometry if targetID is null
+ * Return the intersection between shape1 and shape2.
  */
 function intersect(shape1, shape2) {
   return util.actOnLeafs(shape1, (leaf) => {
@@ -128,11 +117,7 @@ function intersect(shape1, shape2) {
 }
 
 /**
- * Performs a boolean fusion (union) operation on multiple geometries and stores the result in the library.
- * @param {string} targetID - The unique identifier to store the fused geometry in the library
- * @param {string[]} inputIDs - Array of library IDs containing geometries to be fused together
- * @returns {Promise<boolean>} A promise that resolves to true when the fusion is completed successfully
- * @throws {Error} Throws an error if inputs are mixed between 2D and 3D geometries
+ * Return the boolean union between all entries in shapes.
  */
 function fusion(shapes) {
   let fusedGeometry = [];

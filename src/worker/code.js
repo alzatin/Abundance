@@ -3,7 +3,7 @@ import { rotate, move, scale, fillet, chamfer } from "./actions.js";
 import { intersect, assembly, cutAssembly } from "./interaction.js";
 
 /**
- * Validates that user-provided code doesn't contain dangerous patterns
+ * A best-effort check for exploits in user provided code. Checks for a series of known bad patterns.
  * @param {string} code - The JavaScript code string to validate
  * @returns {boolean} True if code appears safe, throws error if dangerous patterns detected
  */
@@ -42,12 +42,9 @@ function validateUserCode(code) {
 }
 
 /**
- * Executes user-provided code in the worker thread with access to predefined geometry functions.
- * @param {string} targetID - The unique identifier to store the code execution result in the library
- * @param {string} code - The JavaScript code string to execute
- * @param {Object} argumentsArray - Object containing key-value pairs of additional variables to make available to the code
- * @returns {Promise<boolean|number>} A promise that resolves to the result value if it's a number, or true otherwise
- * @note Uses eval() for code execution - consider security implications in production environments
+ * Executes the given code with the provided arguments list.
+ * 
+ * Unusually this function requires library as context since the source code may reference library.
  */
 async function executeCode(code, argumentsArray, library) {
   try {

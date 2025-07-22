@@ -1,10 +1,11 @@
 import * as util from "./util.js";
 
 /**
- * Extrudes a 2D sketch to create a 3D geometry with the specified height and stores it in the library.
- * @param {string} toExtrude - An Assembly whose components will be extruded. Must contain only 2D sketches
- * @param {number} height - The height to extrude the sketch(es)
- * @returns {Promise<Object>} An Assembly containing the extruded geometries
+ * Methods in this file act on a single geometry and return a modified copy of it.
+ */
+
+/**
+ * Extrudes a 2D sketch to create a 3D geometry with the specified height and returns the result.
  */
 function extrude(toExtrude, height) {
   return util.actOnLeafs(toExtrude, (leaf) => {
@@ -23,12 +24,6 @@ function extrude(toExtrude, height) {
 /**
  * Moves a geometry by the specified x, y, and z distances. If the geometry is 2D, then it's plane
  * will be translated by the specified z distance.
- *
- * @param {Object} toMove - The assembly to be moved
- * @param {number} x - The distance to move along the x-axis
- * @param {number} y - The distance to move along the y-axis
- * @param {number} z - The distance to move along the z-axis
- * @returns {Promise<Object>} A promise that resolves to the moved geometry
  */
 function move(toMove, x, y, z) {
   if (util.is3D(toMove)) {
@@ -65,11 +60,6 @@ function move(toMove, x, y, z) {
 /**
  * Function to rotate a geometry around the x, y, and z axis. If toRotate is 2D, it's plane will be
  * rotated based on the x and y inputs, while it will be rotated within the plane according to the z input.
- * @param {Object} toRotate - The geometry to rotate
- * @param {number} x - The angle to rotate around the x axis
- * @param {number} y - The angle to rotate around the y axis
- * @param {number} z - The angle to rotate around the z axis
- * @returns {Promise<Object>} A promise that resolves to the rotated geometry
  **/
 async function rotate(toRotate, x, y, z) {
   if (util.is3D(toRotate)) {
@@ -102,10 +92,7 @@ async function rotate(toRotate, x, y, z) {
 }
 
 /**
- * Scales a geometry by the specified scale factor.
- * @param {Object} geom - The geometry to scale
- * @param {number} scaleFactor - The scale factor to apply (1.0 = no change, 2.0 = double size, 0.5 = half size)
- * @returns {Promise<Object>} A promise that resolves to the scaled geometry
+ * Scale geom by the given factor and return the resulting geometry.
  */
 async function scale(geom, scaleFactor) {
   if (util.is3D(geom)) {
@@ -140,10 +127,7 @@ async function scale(geom, scaleFactor) {
 }
 
 /**
- * Applies a fillet (rounded edge) to the input geometry.
- * @param {Object|string} geom - The geometry to fillet, or library ID for same
- * @param {number} radius - The radius of the fillet
- * @returns {Promise<Object>} A promise that resolves to the filleted geometry
+ * Rounds all edges in geom to radius and return the resulting geometry.
  */
 async function fillet(geom, radius) {
   if (util.is3D(geom)) {
@@ -178,10 +162,8 @@ async function fillet(geom, radius) {
 }
 
 /**
- * Applies a chamfer (beveled edge) to the input geometry.
- * @param {Object|string} geom - The geometry to chamfer, or library ID for same
- * @param {number} size - The size of the chamfer
- * @returns {Promise<Object>} A promise that resolves to the chamfered geometry
+ * Applies a chamfer (beveled edge) to all edges in geom. Chamfer is symmetric and specified by size.
+ * Returns the resulting geometry.
  */
 async function chamfer(geom, size) {
   if (util.is3D(geom)) {

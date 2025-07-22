@@ -30,7 +30,27 @@ async function code(targetID, codeText, argumentsArray) {
   return true;
 }
 
-// Wrap layout and manage library accesses
+/**
+ * Lay out the parts from inputID to be cut out from a sheet of material. Attempts to lay them out
+ * in a compact and machinable way while respecting the layoutConfig.
+ *
+ * @param {string} inputID - Shape or assembly to be layed out
+ * @param {string} targetID - The unique identifier to store the layed out assembly in the library
+ * @param progressCallback - a function which takes two parameters:
+ *    - progress - 0 to 1 inclusive
+ *    - cancelationHandle - a callable which cancels this task.
+ * @param warningCallback - a to be called with an informational message if layout fails or partially fails.
+ * @param placementCallback - called back with a placement object specifying a singular layout for these parts.
+ *    - will be called multiple times as progressively better layouts are found.
+ * @param {*} layoutConfig - dictionary with keys:
+ *    - width
+ *    - height - together with width specifies the dimensions of the stock material
+ *    - partPadding - space between parts in the resulting placement
+ *    - units - MM or Inches. Used for resolution when generating part perimeters
+ * @param {*} priorPlacements - optional array of previous placements to use as starting point
+ *
+ * @returns {Promise<Array>} A promise that resolves to the best placement found during this run.
+ */
 async function layout(
   targetID,
   inputID,
@@ -58,7 +78,17 @@ async function layout(
     });
 }
 
-// Wrap displayLayout and manage library accesses
+/**
+ * Lays out the parts of InputID according to the positions described in placements. Where `placements`
+ * is the result of an earlier call to `layout`.
+ *
+ * @param {string} targetID - where in the library to store the resulting layed out assembly.
+ * @param {string} inputID - the ID of the input geometry to layout
+ * @param {*} placements - the placement information from the layout
+ * @param {*} warningCallback - will be called back if there are issues with this placement (eg: does not account for all parts)
+ * @param {*} layoutConfig - the layout configuration. See `layout` for expected properties.
+ * @returns {Promise<boolean>} A promise that resolves when the layout is displayed.
+ */
 async function displayLayout(
   targetID,
   inputID,
@@ -74,6 +104,8 @@ async function displayLayout(
     warningCallback,
     layoutConfig
   );
+
+  return true;
 }
 
 /**

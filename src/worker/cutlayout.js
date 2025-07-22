@@ -3,17 +3,6 @@ import { Plane, Solid, Wire } from "replicad";
 import * as util from "./util.js";
 import { proxy } from "comlink"; // TODO: this should ideally be moved to worker somehow
 
-/**
- * @param progressCallback - a function which takes two parameters:
- *    - progress - 0 to 1 inclusive
- *    - cancelationHandle - a callable which cancels this task.
- * @param {*} layoutConfig - dictionary with keys:
- *    - thickness - thickness of the stock material
- *    - width
- *    - height - together with width specifies the demensions of the stock material
- *    - partPadding - space between parts in the resulting placement
- * @param {*} previousPlacements - optional array of previous placements to use as starting point
- */
 function layout(
   assembly,
   progressCallback,

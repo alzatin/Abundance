@@ -3,6 +3,12 @@ import Fonts from "../js/fonts.js";
 import { Plane } from "replicad";
 
 /**
+ * Methods in this file create a new geometry from non-geometric inputs. Eg:
+ * create a circle from a diameter. Almost all projects will start with
+ * these methods.
+ */
+
+/**
  * Creates a circle geometry with the specified diameter and stores it in the library.
  * @param {number} diameter - The diameter of the circle
  * @returns Assembly containing a circle on the XY plane

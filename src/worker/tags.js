@@ -1,10 +1,12 @@
 import { isAssembly, actOnLeafs } from "./util";
 
 /**
- * Adds tags to a geometry and stores the tagged geometry in the library.
- * @param {string} targetID - The unique identifier to store the tagged geometry in the library
- * @param {string} inputID - The library ID of the geometry to tag
- * @param {string[]} TAG - Array of tags to add to the geometry
+ * Methods in this file act on the metadata of a geometry or assembly,
+ * either adding new metadata properties or filtering by existing ones.
+ */
+
+/**
+ * Return a copy of `geom` with the specified tag(s)
  */
 function tag(geom, TAG) {
   return {
@@ -17,10 +19,7 @@ function tag(geom, TAG) {
 }
 
 /**
- * Applies a color to a geometry and stores the colored geometry in the library.
- * @param {string} targetID - The unique identifier to store the colored geometry in the library
- * @param {string} inputID - The library ID of the geometry to color
- * @param {string} color - The color to apply to the geometry (hex color code)
+ * Return a copy of `geom` with the specified color.
  * @note If the color is "#D9544D", a "keepout" tag is automatically added to the geometry
  */
 function color(geom, color) {
