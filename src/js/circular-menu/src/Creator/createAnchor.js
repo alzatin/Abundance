@@ -92,6 +92,7 @@ export default function (parent, data, index) {
   // this is where the tooltip div is created to show names of elements in circular menu
   on(a, "mouseenter", function () {
     var div = document.createElement("div");
+    console.log("mouseenter in createanchor");
     div.textContent = data.icon;
     div.classList.add("tooltip");
     div.id = data.icon + "text";
@@ -112,7 +113,7 @@ export default function (parent, data, index) {
   });
 
   on(a, "click", clickCallBack, data);
-  on(a, "touchstart", clickCallBack, data);
+  on(a, "touchenter", clickCallBack, data);
   on(a, "touchend", clickCallBack, data);
   on(a, "mouseleave", function () {
     document.getElementById(data.icon + "text").remove();
@@ -124,6 +125,7 @@ export default function (parent, data, index) {
 
   //toggle subMenu
   if (hasSubMenus(data.menus)) {
+    console.log("toggle submenu in create anchor");
     var subMenu = this._createSubMenu(self, data.menus, index);
     let hovered = false;
 

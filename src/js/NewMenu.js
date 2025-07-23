@@ -39,6 +39,19 @@ const createCMenu = (targetElement, setSearchingGithub) => {
           }
         };
 
+        subMenu.touchend = function menuTouchEnd(e, title) {
+          if (title.icon === "GitHubMolecule") {
+            const containerX = parseInt(cmenu._container.style.left, 10);
+            const containerY = parseInt(cmenu._container.style.top, 10);
+            GlobalVariables.lastClick = [containerX, containerY];
+            setSearchingGithub(true);
+          } else {
+            setSearchingGithub(false);
+            e.target.id = title.name;
+            placeNewNode(e);
+          }
+        };
+
         menuArray.push(subMenu);
       }
     }
@@ -49,7 +62,7 @@ const createCMenu = (targetElement, setSearchingGithub) => {
    * This creates a new instance of the circular menu.
    */
   cmenu = CMenu(ele.current).config({
-    hideAfterClick: true,
+    hideAfterClick: GlobalVariables.isMobile() ? false : true,
     percent: 0.15,
     menus: [
       {
@@ -85,7 +98,7 @@ const createCMenu = (targetElement, setSearchingGithub) => {
     ],
   });
 
-  /*Mask the default context menu on the main canvas*/
+  /* Mask the default context menu on the main canvas*/
   document
     .getElementById("flow-canvas")
     .addEventListener("contextmenu", (e) => {
@@ -102,6 +115,7 @@ const createCMenu = (targetElement, setSearchingGithub) => {
   //      * @param {object} ev - The event triggered by click event on a menu item.
   //      */
   function placeNewNode(e) {
+    console.log("place new node ev", e);
     let clr = e.target.id;
     const containerX = parseInt(cmenu._container.style.left, 10);
     const containerY = parseInt(cmenu._container.style.top, 10);
@@ -116,6 +130,7 @@ const createCMenu = (targetElement, setSearchingGithub) => {
       true
     );
     //Simulate a click on the new atom
+    cmenu.hide();
     var clickHandledByAtom = false;
 
     // Ensure canvas regains focus after placing atom

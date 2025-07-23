@@ -354,10 +354,11 @@ export default memo(function FlowCanvas({
 
       // Start a long press timer for touch events (700ms is a common duration for long press)
       longPressTimer.current = setTimeout(() => {
+        cmenu._creator._config.hideAfterClick = false;
         // When timer completes, show the circular menu at touch position
         cmenu.show([touchStartPos.current.x, touchStartPos.current.y], false);
         longPressTimer.current = null;
-      }, 700);
+      }, 500);
     } else {
       // For mouse events, don't start a long press timer
       longPressTimer.current = null;
