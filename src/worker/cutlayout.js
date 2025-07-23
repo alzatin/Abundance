@@ -244,10 +244,11 @@ function rotateForLayout(assembly, layoutConfig, warningCallback) {
     ) {
       layoutWarnList.push(leaf.id);
     }
-    // move so center of face is at (0, 0, 0)
+    //move so center of bounding box is at (0, 0, 0)
+    const boundingBoxCenter = selected.geom.boundingBox.center;
     const newGeom = selected.geom
       .clone()
-      .translate(-1 * selected.face.center.x, -1 * selected.face.center.y, 0);
+      .translate(-1 * boundingBoxCenter[0], -1 * boundingBoxCenter[1], 0);
 
     let newLeaf = {
       geometry: [newGeom],
