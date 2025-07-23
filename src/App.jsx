@@ -21,9 +21,9 @@ import Callback from "./components/main-routes/CallBack.jsx";
 
 /*Import style scripts*/
 import "./styles/maslowCreate.css";
-import "./styles//menuIcons.css";
-import "./styles//login.css";
-import "./styles//codemirror.css";
+import "./styles/menuIcons.css";
+import "./styles/login.css";
+import "./styles/codemirror.css";
 import { e } from "mathjs";
 
 const queryClient = new QueryClient();
