@@ -42,6 +42,39 @@ function validateUserCode(code) {
 }
 
 /**
+ * A function which converts any input into Abundance style geometry. Input can be a library ID, an abundance object, or a single geometry object.
+ * This is useful for allowing our functions to work within the Code atom or within the flow canvas.
+ */
+function toGeometry(input, name = "geometry", library) {
+  //If the input is a library ID we look it up
+  if (typeof input === "string" || typeof input === "number") {
+    if (!library[input]) {
+      throw new Error(`Library ID ${input} does not exist.`);
+    }
+    return library[input];
+  }
+  //If the input is already an abundance object we return it
+  else if (input && input.geometry) {
+    return input;
+  }
+
+  // else check if it's a raw geometry object
+  const raw_type = input?._wrapped?.$$?.ptrType?.name;
+  if (raw_type && raw_type instanceof String && raw_type.startsWith("TopoDS")) {
+    // If it's a raw geometry object, we wrap it in an abundance object
+    return {
+      geometry: [input],
+      tags: [],
+      color: util.defaultColor,
+      bom: [],
+    };
+  } else {
+    // If it's something else, we throw an error
+    throw new Error(name + " value cannot be interpreted as geometry.");
+  }
+}
+
+/**
  * Executes the given code with the provided arguments list.
  * 
  * Unusually this function requires library as context since the source code may reference library.
@@ -61,6 +94,49 @@ async function executeCode(code, argumentsArray, library) {
     // the code molecule.
     validateUserCode(code);
 
+    // Create wrapper functions that handle library ID to geometry conversion
+    const wrappedMove = async (geom, x, y, z) => {
+      return await move(toGeometry(geom, "move-geometry", library), x, y, z);
+    };
+
+    const wrappedRotate = async (geom, x, y, z) => {
+      return await rotate(toGeometry(geom, "rotate-geometry", library), x, y, z);
+    };
+
+    const wrappedScale = async (geom, scaleFactor) => {
+      return await scale(toGeometry(geom, "scale-geometry", library), scaleFactor);
+    };
+
+    const wrappedFillet = async (geom, radius) => {
+      return await fillet(toGeometry(geom, "fillet-geometry", library), radius);
+    };
+
+    const wrappedChamfer = async (geom, size) => {
+      return await chamfer(toGeometry(geom, "chamfer-geometry", library), size);
+    };
+
+    const wrappedIntersect = async (input1, input2) => {
+      return await intersect(
+        toGeometry(input1, "intersect-geometry1", library),
+        toGeometry(input2, "intersect-geometry2", library)
+      );
+    };
+
+    const wrappedAssembly = async (inputIDs) => {
+      return await assembly(inputIDs.map(id => toGeometry(id, "assembly-geometry", library)));
+    };
+
+    const wrappedCutAssembly = async (input1, input2Array) => {
+      return await cutAssembly(
+        toGeometry(input1, "cut-geometry1", library),
+        input2Array.map(id => toGeometry(id, "cut-geometry", library))
+      );
+    };
+
+    const wrappedGetBounds = (geom) => {
+      return util.getBounds(toGeometry(geom, "bounds-geometry", library));
+    };
+
     let keys1 = [
       "Rotate",
       "Move",
@@ -77,17 +153,17 @@ async function executeCode(code, argumentsArray, library) {
       "replicad",
     ];
     let inputValues = [
-      rotate,
-      move,
-      scale,
-      assembly,
-      intersect,
-      cutAssembly,
+      wrappedRotate,
+      wrappedMove,
+      wrappedScale,
+      wrappedAssembly,
+      wrappedIntersect,
+      wrappedCutAssembly,
       assemblyMap,
       assemblyAsIterable,
-      util.getBounds,
-      fillet,
-      chamfer,
+      wrappedGetBounds,
+      wrappedFillet,
+      wrappedChamfer,
       library, // TODO(tristan): I think we should deprecate this but it'll require passing the actual geom.
       util.replicad,
     ];
