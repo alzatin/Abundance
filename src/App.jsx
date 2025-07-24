@@ -61,7 +61,7 @@ export default function ReplicadApp() {
 
   const [authorizedUserOcto, setAuthorizedUserOcto] = useState(null);
   const [shortCutsOn, setShortCuts] = useState(
-    localStorage.getItem("shortcuts") === "true" ? true : false
+    localStorage.getItem("shortcuts") === "true"
   );
 
   /* Creates an element to check with Puppeteer if the molecule is fully loaded*/
