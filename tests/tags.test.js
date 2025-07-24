@@ -1,5 +1,5 @@
 // Direct unit tests for tags.js
-import { tag, color, bom, extractAllTags } from "../src/worker/tags.js";
+import { tag, color, bom, extractAllTags, extractBomList } from "../src/worker/tags.js";
 
 describe("tags.js", () => {
   let geometry;
@@ -90,7 +90,62 @@ describe("tags.js", () => {
       expect(geometry.bom).toContain(bomEntry1);
       expect(geometry.bom).toContain(bomEntry2);
     });
-    // TODO: add tests for extracting BOM list, especially for assemblies.
+  });
+
+  describe("extractBomList", () => {
+    it("should extract BOM list from geometry with BOM", () => {
+      const bomEntry = {
+        name: "Test Part",
+        material: "Aluminum",
+        quantity: 1,
+        cost: 25.0,
+      };
+      const geometryWithBom = bom(geometry, bomEntry);
+      
+      const extractedBom = extractBomList(geometryWithBom);
+      
+      expect(extractedBom).toContain(bomEntry);
+      expect(Array.isArray(extractedBom)).toBe(true);
+    });
+
+    it("should return empty array for geometry with empty BOM", () => {
+      const extractedBom = extractBomList(geometry);
+      
+      expect(extractedBom).toEqual([]);
+      expect(Array.isArray(extractedBom)).toBe(true);
+    });
+
+    it("should return false for geometry with undefined BOM", () => {
+      const geometryWithoutBom = {
+        ...geometry,
+        bom: undefined,
+      };
+      const extractedBom = extractBomList(geometryWithoutBom);
+      
+      expect(extractedBom).toBe(false);
+    });
+
+    it("should extract BOM from simple assembly", () => {
+      const bomEntry1 = { name: "Assembly Part 1", material: "Steel" };
+      const bomEntry2 = { name: "Assembly Part 2", material: "Plastic" };
+      
+      // Create a simple assembly structure
+      const assembly = {
+        geometry: [
+          bom(geometry, bomEntry1),
+          bom({...geometry, id: "geom2"}, bomEntry2)
+        ],
+        tags: [],
+        bom: [bomEntry1, bomEntry2],
+        color: null,
+      };
+      
+      const extractedBom = extractBomList(assembly);
+      
+      expect(extractedBom).toContain(bomEntry1);
+      expect(extractedBom).toContain(bomEntry2);
+      expect(Array.isArray(extractedBom)).toBe(true);
+    });
   });
 
   describe("extractAllTags", () => {
