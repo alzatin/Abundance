@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import {
-  BrowserRouter,
   HashRouter as Router,
   // BrowserRouter as Router,
   Routes,
   Route,
-  useNavigate,
 } from "react-router-dom";
 
 import { wrap } from "comlink";
@@ -15,7 +13,7 @@ import LoginMode from "./components/main-routes/LoginMode.jsx";
 import RunMode from "./components/main-routes/RunMode.jsx";
 import CreateMode from "./components/main-routes/CreateMode.jsx";
 import cadWorker from "./worker/worker.js?worker";
-import { button } from "leva";
+
 import { QueryClient, QueryClientProvider } from "react-query";
 import Callback from "./components/main-routes/CallBack.jsx";
 
@@ -24,7 +22,7 @@ import "./styles/maslowCreate.css";
 import "./styles/menuIcons.css";
 import "./styles/login.css";
 import "./styles/codemirror.css";
-import { e } from "mathjs";
+
 
 const queryClient = new QueryClient();
 /**
