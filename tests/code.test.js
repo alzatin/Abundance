@@ -43,5 +43,38 @@ describe("code.js", () => {
       expect(result).toBeDefined();
       expect(result.geometry).toHaveLength(5);
     });
+
+    it("should handle library IDs in function parameters (linear pattern use case)", async () => {
+      // This test specifically verifies that functions like Move, Assembly etc. 
+      // can accept library ID strings as parameters, which was the issue in the linear pattern
+      const linearPatternCode = `
+        //Inputs:[Shape, Number, Dist];
+
+        let shapesArray = [];
+        for (let i = 0; i < Number; i++) {
+            let movedShape = await Move(Shape, Dist * i, 0, 0);
+            shapesArray.push(movedShape);
+        }
+
+        let assembledShape = await Assembly(shapesArray)
+        return assembledShape;
+      `;
+
+      const library = {
+        test_shape: extrude(rectangle(8, 4), 2),
+      };
+
+      const args = {
+        Shape: "test_shape",  // Library ID string - this used to cause the error
+        Number: 3,
+        Dist: 12,
+      };
+
+      const result = await executeCode(linearPatternCode, args, library);
+      
+      expect(result).toBeDefined();
+      expect(result.geometry).toBeDefined();
+      expect(result.geometry.length).toBe(3); // Should have 3 shapes in the assembly
+    });
   });
 });
