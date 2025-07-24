@@ -39,8 +39,10 @@ export default function ReplicadApp() {
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    cad.createMesh(size).then((m) => setMesh(m));
-    cad.createMesh(size).then((m) => setWireMesh(m));
+    cad.createMesh(size).then((m) => {
+      setMesh(m);
+      setWireMesh(m);
+    });
   }, [size]);
 
   useEffect(() => {
