@@ -127,7 +127,7 @@ export default function ReplicadApp() {
             })
             .catch((e) => {
               createPuppeteerDiv();
-              console.error("Can't comput Wireframe/No output " + e);
+              console.error("Can't compute Wireframe/No output " + e);
             });
         } else {
           /* reset mesh view if in output mode*/
