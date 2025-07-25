@@ -695,4 +695,4 @@ function areaApprox(bounds) {
   return (bounds.uMax - bounds.uMin) * (bounds.vMax - bounds.vMin);
 }
 
-export { layout, displayLayout };
+export { layout, displayLayout, createDefaultPlacements };
