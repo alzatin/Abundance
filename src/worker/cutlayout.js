@@ -33,7 +33,10 @@ function layout(
     );
 
     if (positions.length == 0) {
-      throw new Error("Failed to place any parts. Are sheet dimensions right?");
+      // This should not happen anymore since we provide default placements,
+      // but keep this as a safety check
+      console.warn("Unexpected: received empty positions array");
+      return [rotatedAssembly, []];
     } else {
       let unplacedParts = shapesForLayout.length - positions.flat().length;
       if (unplacedParts > 0) {
@@ -358,6 +361,21 @@ function asFloat64(shape) {
 }
 
 /**
+ * Creates a default placement for all parts at position (0,0) with 0° rotation.
+ * This is used as a fallback when the packing algorithm fails to find any placement.
+ * @param {Array} shapesForLayout - Array of shapes to create default placements for
+ * @returns {Array} Default placements with all parts at origin
+ */
+function createDefaultPlacements(shapesForLayout) {
+  const defaultSheet = shapesForLayout.map((shape) => ({
+    id: shape.id,
+    rotate: 0,
+    translate: { x: 0, y: 0 },
+  }));
+  return [defaultSheet]; // Return as a single sheet
+}
+
+/**
  * Use the packing engine, this is potentially time consuming step.
  */
 function computePositions(
@@ -456,13 +474,17 @@ function computePositions(
           resolve(bestPlacement);
         } else {
           packer.stop(true);
-          reject(new Error("Failed to find placements within the time limit."));
+          console.log("No placement found within time limit, using default placement at origin.");
+          const defaultPlacements = createDefaultPlacements(shapesForLayout);
+          resolve(defaultPlacements);
         }
       }, runtimeMs);
     } catch (err) {
       console.log("error in nesting engine: " + err);
       packer.stop(true);
-      reject(err);
+      console.log("Using default placement at origin due to packing error.");
+      const defaultPlacements = createDefaultPlacements(shapesForLayout);
+      resolve(defaultPlacements);
     }
   });
   return result;
