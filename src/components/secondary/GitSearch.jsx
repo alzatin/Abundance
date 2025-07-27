@@ -125,6 +125,7 @@ function GitSearch({
       true
     );
     setSearchingGitHub(false);
+
     setSearch("");
     setIsShortcutTriggered(false);
     setIsHovering(false);
