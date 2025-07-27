@@ -32,26 +32,20 @@ const createCMenu = (targetElement, setSearchingGithub) => {
             const containerY = parseInt(cmenu._container.style.top, 10);
             GlobalVariables.lastClick = [containerX, containerY];
             setSearchingGithub(true);
+            if (e.type === "touchend") {
+              //need to prevent mousedown from running to keep gitsearch open
+              cmenu.hide();
+              e.preventDefault();
+              console.log(
+                "Touch event detected, preventing further click behavior."
+              );
+            }
           } else {
             setSearchingGithub(false);
             e.target.id = title.name;
             placeNewNode(e);
           }
         };
-
-        subMenu.touchend = function menuTouchEnd(e, title) {
-          if (title.icon === "GitHubMolecule") {
-            const containerX = parseInt(cmenu._container.style.left, 10);
-            const containerY = parseInt(cmenu._container.style.top, 10);
-            GlobalVariables.lastClick = [containerX, containerY];
-            setSearchingGithub(true);
-          } else {
-            setSearchingGithub(false);
-            e.target.id = title.name;
-            placeNewNode(e);
-          }
-        };
-
         menuArray.push(subMenu);
       }
     }
@@ -115,7 +109,6 @@ const createCMenu = (targetElement, setSearchingGithub) => {
   //      * @param {object} ev - The event triggered by click event on a menu item.
   //      */
   function placeNewNode(e) {
-    console.log("place new node ev", e);
     let clr = e.target.id;
     const containerX = parseInt(cmenu._container.style.left, 10);
     const containerY = parseInt(cmenu._container.style.top, 10);
