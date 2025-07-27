@@ -40,6 +40,9 @@ export default memo(function FlowCanvas({
   const [undoNotification, setUndoNotification] = useState(null);
   const [isShortcut, setIsShortcutTriggered] = useState(false);
 
+  /** State for error notification */
+  const [errorNotification, setErrorNotification] = useState(null);
+
   const canvasRef = useRef(null);
   const circleMenu = useRef(null);
   const navigate = useNavigate();
@@ -602,6 +605,7 @@ export default memo(function FlowCanvas({
             setIsHovering,
             isShortcut,
             setIsShortcutTriggered,
+            setErrorNotification,
           }}
         />
       </div>
@@ -614,6 +618,11 @@ export default memo(function FlowCanvas({
       {/* Import notification */}
       {importNotification && (
         <div className="import-notification">{importNotification}</div>
+      )}
+
+      {/* Error notification */}
+      {errorNotification && (
+        <div className="error-notification">{errorNotification}</div>
       )}
     </>
   );
