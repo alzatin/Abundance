@@ -36,7 +36,7 @@ function layout(
       // This should not happen anymore since we provide default placements,
       // but keep this as a safety check
       console.warn("Unexpected: received empty positions array");
-      return [rotatedAssembly, []];
+      return [rotatedAssembly, [], rotatedAssembly];
     } else {
       let unplacedParts = shapesForLayout.length - positions.flat().length;
       if (unplacedParts > 0) {
@@ -49,7 +49,7 @@ function layout(
       }
     }
 
-    return [layedOutAssembly, positions];
+    return [layedOutAssembly, positions, rotatedAssembly];
   });
 }
 
@@ -63,6 +63,15 @@ function displayLayout(assembly, positions, warningCallback, layoutConfig) {
     warningCallback
   );
 
+  return applyLayout(rotatedAssembly, positions, layoutConfig);
+}
+
+/**
+ * Apply the transformations to display already-rotated geometry.
+ * This function is used when we already have a pre-rotated assembly 
+ * to avoid calling rotateForLayout again for performance.
+ */
+function displayLayoutWithRotatedAssembly(rotatedAssembly, positions, warningCallback, layoutConfig) {
   return applyLayout(rotatedAssembly, positions, layoutConfig);
 }
 
@@ -695,4 +704,4 @@ function areaApprox(bounds) {
   return (bounds.uMax - bounds.uMin) * (bounds.vMax - bounds.vMin);
 }
 
-export { layout, displayLayout, createDefaultPlacements };
+export { layout, displayLayout, displayLayoutWithRotatedAssembly, createDefaultPlacements };

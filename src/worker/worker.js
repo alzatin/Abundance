@@ -72,8 +72,10 @@ async function layout(
       priorPlacements
     )
     .then((resultArray) => {
-      const [layedOutAssembly, positions] = resultArray;
+      const [layedOutAssembly, positions, rotatedAssembly] = resultArray;
       library[targetID] = layedOutAssembly;
+      // Store the rotated assembly for reuse in displayLayout to avoid calling rotateForLayout again
+      library[targetID + "_rotated"] = rotatedAssembly;
       return positions;
     });
 }
@@ -98,12 +100,27 @@ async function displayLayout(
 ) {
   await started;
 
-  library[targetID] = await cutlayout.displayLayout(
-    getOrThrow(inputID),
-    placements,
-    warningCallback,
-    layoutConfig
-  );
+  // Check if we have a pre-rotated assembly from a previous layout call
+  const rotatedAssemblyKey = inputID + "_rotated";
+  const rotatedAssembly = library[rotatedAssemblyKey];
+  
+  if (rotatedAssembly) {
+    // Use the pre-rotated assembly to avoid calling rotateForLayout again
+    library[targetID] = await cutlayout.displayLayoutWithRotatedAssembly(
+      rotatedAssembly,
+      placements,
+      warningCallback,
+      layoutConfig
+    );
+  } else {
+    // Fallback to original behavior if no pre-rotated assembly is available
+    library[targetID] = await cutlayout.displayLayout(
+      getOrThrow(inputID),
+      placements,
+      warningCallback,
+      layoutConfig
+    );
+  }
 
   return true;
 }
