@@ -62,6 +62,9 @@ async function layout(
 ) {
   await started;
 
+  console.log(`layout: Starting layout computation for inputID=${inputID}, targetID=${targetID}`);
+  const startTime = performance.now();
+
   return cutlayout
     .layout(
       getOrThrow(inputID),
@@ -74,8 +77,15 @@ async function layout(
     .then((resultArray) => {
       const [layedOutAssembly, positions, rotatedAssembly] = resultArray;
       library[targetID] = layedOutAssembly;
+      
       // Store the rotated assembly for reuse in displayLayout to avoid calling rotateForLayout again
-      library[targetID + "_rotated"] = rotatedAssembly;
+      const rotatedAssemblyKey = targetID + "_rotated";
+      library[rotatedAssemblyKey] = rotatedAssembly;
+      console.log(`layout: Stored rotated assembly in cache with key '${rotatedAssemblyKey}'`);
+      
+      const endTime = performance.now();
+      console.log(`layout: Completed layout computation in ${(endTime - startTime).toFixed(2)}ms`);
+      
       return positions;
     });
 }
@@ -100,11 +110,15 @@ async function displayLayout(
 ) {
   await started;
 
+  console.log(`displayLayout: Called for inputID=${inputID}, targetID=${targetID}`);
+  const startTime = performance.now();
+
   // Check if we have a pre-rotated assembly from a previous layout call
   const rotatedAssemblyKey = inputID + "_rotated";
   const rotatedAssembly = library[rotatedAssemblyKey];
   
   if (rotatedAssembly) {
+    console.log(`displayLayout: Found cached rotated assembly for key '${rotatedAssemblyKey}' - using optimized path`);
     // Use the pre-rotated assembly to avoid calling rotateForLayout again
     library[targetID] = await cutlayout.displayLayoutWithRotatedAssembly(
       rotatedAssembly,
@@ -113,6 +127,7 @@ async function displayLayout(
       layoutConfig
     );
   } else {
+    console.log(`displayLayout: No cached rotated assembly found for key '${rotatedAssemblyKey}' - falling back to original path`);
     // Fallback to original behavior if no pre-rotated assembly is available
     library[targetID] = await cutlayout.displayLayout(
       getOrThrow(inputID),
@@ -121,6 +136,9 @@ async function displayLayout(
       layoutConfig
     );
   }
+
+  const endTime = performance.now();
+  console.log(`displayLayout: Total function completed in ${(endTime - startTime).toFixed(2)}ms`);
 
   return true;
 }

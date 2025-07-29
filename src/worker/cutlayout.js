@@ -57,13 +57,21 @@ function layout(
  * Lay the input geometry flat and apply the transformations to display it
  */
 function displayLayout(assembly, positions, warningCallback, layoutConfig) {
+  console.log("displayLayout: Starting - using original path (calling rotateForLayout)");
+  const startTime = performance.now();
+  
   const [rotatedAssembly, shapesForLayout] = rotateForLayout(
     assembly,
     layoutConfig,
     warningCallback
   );
 
-  return applyLayout(rotatedAssembly, positions, layoutConfig);
+  const result = applyLayout(rotatedAssembly, positions, layoutConfig);
+  
+  const endTime = performance.now();
+  console.log(`displayLayout: Completed in ${(endTime - startTime).toFixed(2)}ms`);
+  
+  return result;
 }
 
 /**
@@ -72,7 +80,15 @@ function displayLayout(assembly, positions, warningCallback, layoutConfig) {
  * to avoid calling rotateForLayout again for performance.
  */
 function displayLayoutWithRotatedAssembly(rotatedAssembly, positions, warningCallback, layoutConfig) {
-  return applyLayout(rotatedAssembly, positions, layoutConfig);
+  console.log("displayLayoutWithRotatedAssembly: Starting - using optimized path (skipping rotateForLayout)");
+  const startTime = performance.now();
+  
+  const result = applyLayout(rotatedAssembly, positions, layoutConfig);
+  
+  const endTime = performance.now();
+  console.log(`displayLayoutWithRotatedAssembly: Completed in ${(endTime - startTime).toFixed(2)}ms`);
+  
+  return result;
 }
 
 /**
@@ -88,6 +104,9 @@ function displayLayoutWithRotatedAssembly(rotatedAssembly, positions, warningCal
  *    d) face should have minimal number of interior voids and have the largest bounding box
  */
 function rotateForLayout(assembly, layoutConfig, warningCallback) {
+  console.log("rotateForLayout: Starting expensive rotation calculation");
+  const startTime = performance.now();
+  
   var THICKNESS_TOLLERANCE = 0.001;
 
   function equalThickness(a, b) {
@@ -291,6 +310,9 @@ function rotateForLayout(assembly, layoutConfig, warningCallback) {
     );
   }
 
+  const endTime = performance.now();
+  console.log(`rotateForLayout: Completed expensive rotation calculation in ${(endTime - startTime).toFixed(2)}ms`);
+
   return [rotatedAssembly, shapesForLayout];
 }
 
@@ -298,7 +320,10 @@ function rotateForLayout(assembly, layoutConfig, warningCallback) {
  * Apply the transformations to the geometry to apply the layout
  */
 function applyLayout(rotatedAssembly, positions, layoutConfig) {
-  return util.actOnLeafs(rotatedAssembly, (leaf) => {
+  console.log("applyLayout: Starting geometry transformation");
+  const startTime = performance.now();
+  
+  const result = util.actOnLeafs(rotatedAssembly, (leaf) => {
     let transform, index;
     for (var i = 0; i < positions.length; i++) {
       let candidates = positions[i].filter(
@@ -341,6 +366,11 @@ function applyLayout(rotatedAssembly, positions, layoutConfig) {
       id: leaf.id,
     };
   });
+  
+  const endTime = performance.now();
+  console.log(`applyLayout: Completed geometry transformation in ${(endTime - startTime).toFixed(2)}ms`);
+  
+  return result;
 }
 
 /**
