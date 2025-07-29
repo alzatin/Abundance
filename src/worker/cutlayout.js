@@ -55,6 +55,7 @@ function layout(
 
 /**
  * Lay the input geometry flat and apply the transformations to display it
+ * Returns both the result and the rotatedAssembly for caching purposes
  */
 function displayLayout(assembly, positions, warningCallback, layoutConfig) {
   console.log("displayLayout: Starting - using original path (calling rotateForLayout)");
@@ -71,7 +72,7 @@ function displayLayout(assembly, positions, warningCallback, layoutConfig) {
   const endTime = performance.now();
   console.log(`displayLayout: Completed in ${(endTime - startTime).toFixed(2)}ms`);
   
-  return result;
+  return [result, rotatedAssembly];
 }
 
 /**

@@ -120,7 +120,6 @@ async function displayLayout(
   const rotatedAssembly = library[rotatedAssemblyKey];
   
   console.log(`displayLayout: Looking for cached rotated assembly with key '${rotatedAssemblyKey}'`);
-  console.log(`displayLayout: Available rotated cache keys:`, Object.keys(library).filter(k => k.includes('_rotated')));
   console.log(`displayLayout: Cache lookup result: ${rotatedAssembly !== undefined ? 'FOUND' : 'NOT FOUND'}`);
   
   if (rotatedAssembly) {
@@ -133,15 +132,21 @@ async function displayLayout(
       layoutConfig
     );
   } else {
-    console.log(`displayLayout: *** USING EXPENSIVE PATH *** No cached rotated assembly found - this suggests layout() was never called first`);
-    console.log(`displayLayout: *** WORKFLOW ISSUE *** Manual adjustments should only happen AFTER clicking "Compute Layout" to cache the rotated assembly`);
-    // Fallback to original behavior if no pre-rotated assembly is available
-    library[targetID] = await cutlayout.displayLayout(
+    console.log(`displayLayout: *** USING EXPENSIVE PATH *** No cached rotated assembly found - running expensive calculation and caching result`);
+    // Call expensive function and cache the rotated assembly for future use
+    const [result, newRotatedAssembly] = await cutlayout.displayLayout(
       getOrThrow(inputID),
       placements,
       warningCallback,
       layoutConfig
     );
+    
+    // Cache the rotated assembly for future displayLayout calls
+    library[rotatedAssemblyKey] = newRotatedAssembly;
+    console.log(`displayLayout: *** CACHE STORED *** Cached rotated assembly with key '${rotatedAssemblyKey}' for future fast calls`);
+    
+    // Store the final result
+    library[targetID] = result;
   }
 
   const endTime = performance.now();
