@@ -79,7 +79,7 @@ async function layout(
       library[targetID] = layedOutAssembly;
       
       // Store the rotated assembly for reuse in displayLayout to avoid calling rotateForLayout again
-      const rotatedAssemblyKey = targetID + "_rotated";
+      const rotatedAssemblyKey = inputID + "_rotated";
       library[rotatedAssemblyKey] = rotatedAssembly;
       console.log(`layout: Stored rotated assembly in cache with key '${rotatedAssemblyKey}'`);
       
