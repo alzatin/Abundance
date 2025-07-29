@@ -1,5 +1,5 @@
 // Test file for cutlayout.js - default placement functionality
-import { createDefaultPlacements } from "../src/worker/cutlayout.js";
+import { createDefaultPlacements, displayLayoutWithRotatedAssembly } from "../src/worker/cutlayout.js";
 
 describe("cutlayout.js", () => {
   describe("createDefaultPlacements", () => {
@@ -52,6 +52,31 @@ describe("cutlayout.js", () => {
       expect(result[0][0].rotate).toBe(0);
       expect(result[0][0].translate.x).toBe(0);
       expect(result[0][0].translate.y).toBe(0);
+    });
+  });
+
+  describe("displayLayoutWithRotatedAssembly", () => {
+    it("should exist and be a function", () => {
+      expect(typeof displayLayoutWithRotatedAssembly).toBe('function');
+    });
+
+    it("should work with mock assembly and empty positions", () => {
+      // Create a minimal mock assembly to test the function exists and works
+      const mockRotatedAssembly = {
+        geometry: [],
+        tags: [],
+        color: '#aad7f2',
+        bom: []
+      };
+      
+      const positions = [[]]; // Empty positions
+      const warningCallback = () => {};
+      const layoutConfig = { width: 100, height: 100, partPadding: 1 };
+
+      // This should not throw an error
+      expect(() => {
+        displayLayoutWithRotatedAssembly(mockRotatedAssembly, positions, warningCallback, layoutConfig);
+      }).not.toThrow();
     });
   });
 });
