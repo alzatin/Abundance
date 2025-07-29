@@ -62,10 +62,6 @@ async function layout(
 ) {
   await started;
 
-  console.log(`layout: *** LAYOUT FUNCTION CALLED *** This will cache the rotated assembly for fast manual adjustments`);
-  console.log(`layout: InputID: ${inputID}, TargetID: ${targetID}`);
-  const startTime = performance.now();
-
   return cutlayout
     .layout(
       getOrThrow(inputID),
@@ -82,11 +78,6 @@ async function layout(
       // Store the rotated assembly for reuse in displayLayout to avoid calling rotateForLayout again
       const rotatedAssemblyKey = inputID + "_rotated";
       library[rotatedAssemblyKey] = rotatedAssembly;
-      console.log(`layout: *** CACHE STORED SUCCESSFULLY *** Key: '${rotatedAssemblyKey}'`);
-      console.log(`layout: Manual part adjustments will now use cached rotated assembly (fast path)`);
-      
-      const endTime = performance.now();
-      console.log(`layout: Completed in ${(endTime - startTime).toFixed(2)}ms`);
       
       return positions;
     });
@@ -112,18 +103,11 @@ async function displayLayout(
 ) {
   await started;
 
-  console.log(`displayLayout: *** DISPLAY LAYOUT FUNCTION CALLED *** for inputID=${inputID}, targetID=${targetID}`);
-  const startTime = performance.now();
-
   // Check if we have a pre-rotated assembly from a previous layout call
   const rotatedAssemblyKey = inputID + "_rotated";
   const rotatedAssembly = library[rotatedAssemblyKey];
   
-  console.log(`displayLayout: Looking for cached rotated assembly with key '${rotatedAssemblyKey}'`);
-  console.log(`displayLayout: Cache lookup result: ${rotatedAssembly !== undefined ? 'FOUND' : 'NOT FOUND'}`);
-  
   if (rotatedAssembly) {
-    console.log(`displayLayout: *** USING CACHED PATH *** Found cached rotated assembly - using optimized path`);
     // Use the pre-rotated assembly to avoid calling rotateForLayout again
     library[targetID] = await cutlayout.displayLayoutWithRotatedAssembly(
       rotatedAssembly,
@@ -132,7 +116,6 @@ async function displayLayout(
       layoutConfig
     );
   } else {
-    console.log(`displayLayout: *** USING EXPENSIVE PATH *** No cached rotated assembly found - running expensive calculation and caching result`);
     // Call expensive function and cache the rotated assembly for future use
     const [result, newRotatedAssembly] = await cutlayout.displayLayout(
       getOrThrow(inputID),
@@ -143,14 +126,10 @@ async function displayLayout(
     
     // Cache the rotated assembly for future displayLayout calls
     library[rotatedAssemblyKey] = newRotatedAssembly;
-    console.log(`displayLayout: *** CACHE STORED *** Cached rotated assembly with key '${rotatedAssemblyKey}' for future fast calls`);
     
     // Store the final result
     library[targetID] = result;
   }
-
-  const endTime = performance.now();
-  console.log(`displayLayout: Total function completed in ${(endTime - startTime).toFixed(2)}ms`);
 
   return true;
 }
@@ -190,10 +169,6 @@ function toGeometry(input, name = "geometry") {
  */
 function deleteFromLibrary(inputID) {
   return started.then(() => {
-    console.log(`deleteFromLibrary: *** DELETING *** ${inputID} from library`);
-    if (inputID.includes('_rotated')) {
-      console.log(`deleteFromLibrary: *** WARNING *** Deleting cached rotated assembly: ${inputID} - this will force expensive recalculation`);
-    }
     delete library[inputID];
   });
 }
