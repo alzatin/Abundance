@@ -62,6 +62,10 @@ async function layout(
 ) {
   await started;
 
+  // Always clear the cache when layout is called because geometry input might have changed
+  const rotatedAssemblyKey = inputID + "_rotated";
+  delete library[rotatedAssemblyKey];
+
   return cutlayout
     .layout(
       getOrThrow(inputID),
@@ -76,7 +80,6 @@ async function layout(
       library[targetID] = layedOutAssembly;
       
       // Store the rotated assembly for reuse in displayLayout to avoid calling rotateForLayout again
-      const rotatedAssemblyKey = inputID + "_rotated";
       library[rotatedAssemblyKey] = rotatedAssembly;
       
       return positions;
