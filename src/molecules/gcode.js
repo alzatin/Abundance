@@ -31,6 +31,11 @@ export default class Gcode extends Atom {
 
     this.height = 16;
     /**
+     * The center color for progress indicator
+     * @type {string}
+     */
+    this.centerColor = "#949294";
+    /**
      * A description of this atom
      * @type {string}
      */
@@ -106,7 +111,7 @@ export default class Gcode extends Atom {
     // Draw progress circle in the middle when generating gcode
     if (this.progress < 1.0) {
       GlobalVariables.c.beginPath();
-      GlobalVariables.c.fillStyle = "blue";
+      GlobalVariables.c.fillStyle = this.centerColor;
       GlobalVariables.c.moveTo(xInPixels, yInPixels);
       GlobalVariables.c.arc(
         xInPixels,
