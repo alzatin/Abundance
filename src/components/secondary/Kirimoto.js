@@ -24,7 +24,7 @@ export const initKiriMoto = () => {
 };
 
 //This function generates G-code and calls the callback but doesn't download
-export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, extra, gcodeCallback) => {
+export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, extra, gcodeCallback, progressCallback) => {
     
     kiriEngine = window.kiri.newEngine(); //Create a new Kiri:Moto engine instance to start with a clean slate
 
@@ -44,13 +44,16 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
     })
     .load(stlUrl)
     .then((eng) => {
+        if (progressCallback) progressCallback(0.1); // 10% - STL loaded
         return eng.move(centerPos[0],centerPos[1],0);//Move the model to line up with where the parts were before
     })
     .then((eng) => {
+        if (progressCallback) progressCallback(0.15); // 15% - Model moved
     //   console.log("Kiri:Moto STL loaded successfully");
       return eng.setMode("CAM");
     })
     .then((eng) =>{
+        if (progressCallback) progressCallback(0.2); // 20% - Mode set
       const bounds = eng.widget.getBoundingBox();
       const x = bounds.max.x - bounds.min.x;
       const y = bounds.max.y - bounds.min.y;
@@ -67,8 +70,9 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
       });
       return eng;
     })
-    .then((eng) =>
-      eng.setTools([
+    .then((eng) => {
+        if (progressCallback) progressCallback(0.25); // 25% - Stock set
+        return eng.setTools([
         {
           id: 1000,
           number: 1,
@@ -82,8 +86,9 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
           taper_tip: 0,
         },
       ])
-    )
+    })
     .then((eng) => {
+        if (progressCallback) progressCallback(0.3); // 30% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
       eng.setProcess({
@@ -270,8 +275,9 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
       })
       return eng;
     })
-    .then((eng) =>
-      eng.setDevice({
+    .then((eng) => {
+        if (progressCallback) progressCallback(0.5); // 50% - Process set
+        return eng.setDevice({
         mode: "CAM",
         internal: 0,
         bedHeight: 2.5,
@@ -296,11 +302,21 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
         imageURL: "",
         useLaser: false,
       })
-    )
-    .then((eng) => eng.slice())
-    .then((eng) => eng.prepare())
-    .then((eng) => eng.export())
+    })
+    .then((eng) => {
+        if (progressCallback) progressCallback(0.6); // 60% - Device set
+        return eng.slice();
+    })
+    .then((eng) => {
+        if (progressCallback) progressCallback(0.8); // 80% - Slicing complete
+        return eng.prepare();
+    })
+    .then((eng) => {
+        if (progressCallback) progressCallback(0.9); // 90% - Preparation complete
+        return eng.export();
+    })
     .then((gcode) => {
+      if (progressCallback) progressCallback(1.0); // 100% - Export complete
       gcodeCallback(gcode); // Only call the callback, don't download
     })
     .catch((error) => {
