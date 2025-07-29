@@ -62,7 +62,9 @@ async function layout(
 ) {
   await started;
 
-  console.log(`layout: Starting layout computation for inputID=${inputID}, targetID=${targetID}`);
+  console.log(`layout: *** LAYOUT FUNCTION CALLED *** for inputID=${inputID}, targetID=${targetID}`);
+  console.log(`layout: All library keys before layout:`, Object.keys(library));
+  console.log(`layout: Current rotated cache keys before layout:`, Object.keys(library).filter(k => k.includes('_rotated')));
   const startTime = performance.now();
 
   return cutlayout
@@ -81,9 +83,11 @@ async function layout(
       // Store the rotated assembly for reuse in displayLayout to avoid calling rotateForLayout again
       const rotatedAssemblyKey = inputID + "_rotated";
       library[rotatedAssemblyKey] = rotatedAssembly;
-      console.log(`layout: Stored rotated assembly in cache with key '${rotatedAssemblyKey}'`);
+      console.log(`layout: *** STORING CACHE *** with key '${rotatedAssemblyKey}'`);
       console.log(`layout: Cache storage successful: ${library[rotatedAssemblyKey] !== undefined}`);
-      console.log(`layout: Current cache keys in library:`, Object.keys(library).filter(k => k.includes('_rotated')));
+      console.log(`layout: Rotated assembly type: ${typeof rotatedAssembly}, is null: ${rotatedAssembly === null}, is undefined: ${rotatedAssembly === undefined}`);
+      console.log(`layout: All library keys after storing cache:`, Object.keys(library));
+      console.log(`layout: Current rotated cache keys after layout:`, Object.keys(library).filter(k => k.includes('_rotated')));
       
       const endTime = performance.now();
       console.log(`layout: Completed layout computation in ${(endTime - startTime).toFixed(2)}ms`);
@@ -112,7 +116,9 @@ async function displayLayout(
 ) {
   await started;
 
-  console.log(`displayLayout: Called for inputID=${inputID}, targetID=${targetID}`);
+  console.log(`displayLayout: *** DISPLAY LAYOUT FUNCTION CALLED *** for inputID=${inputID}, targetID=${targetID}`);
+  console.log(`displayLayout: All library keys at start:`, Object.keys(library));
+  console.log(`displayLayout: Total library entries: ${Object.keys(library).length}`);
   const startTime = performance.now();
 
   // Check if we have a pre-rotated assembly from a previous layout call
@@ -122,9 +128,10 @@ async function displayLayout(
   console.log(`displayLayout: Looking for cached rotated assembly with key '${rotatedAssemblyKey}'`);
   console.log(`displayLayout: Current cache keys in library:`, Object.keys(library).filter(k => k.includes('_rotated')));
   console.log(`displayLayout: Cache lookup result: ${rotatedAssembly !== undefined ? 'FOUND' : 'NOT FOUND'}`);
+  console.log(`displayLayout: Rotated assembly value type: ${typeof rotatedAssembly}, is null: ${rotatedAssembly === null}, is undefined: ${rotatedAssembly === undefined}`);
   
   if (rotatedAssembly) {
-    console.log(`displayLayout: Found cached rotated assembly for key '${rotatedAssemblyKey}' - using optimized path`);
+    console.log(`displayLayout: *** USING CACHED PATH *** Found cached rotated assembly for key '${rotatedAssemblyKey}' - using optimized path`);
     // Use the pre-rotated assembly to avoid calling rotateForLayout again
     library[targetID] = await cutlayout.displayLayoutWithRotatedAssembly(
       rotatedAssembly,
@@ -133,7 +140,7 @@ async function displayLayout(
       layoutConfig
     );
   } else {
-    console.log(`displayLayout: No cached rotated assembly found for key '${rotatedAssemblyKey}' - falling back to original path`);
+    console.log(`displayLayout: *** USING EXPENSIVE PATH *** No cached rotated assembly found for key '${rotatedAssemblyKey}' - falling back to original path`);
     // Fallback to original behavior if no pre-rotated assembly is available
     library[targetID] = await cutlayout.displayLayout(
       getOrThrow(inputID),
@@ -184,7 +191,13 @@ function toGeometry(input, name = "geometry") {
  */
 function deleteFromLibrary(inputID) {
   return started.then(() => {
+    console.log(`deleteFromLibrary: *** DELETING *** ${inputID} from library`);
+    if (inputID.includes('_rotated')) {
+      console.log(`deleteFromLibrary: *** WARNING *** Deleting a cached rotated assembly: ${inputID}`);
+    }
+    console.log(`deleteFromLibrary: Library keys before deletion:`, Object.keys(library));
     delete library[inputID];
+    console.log(`deleteFromLibrary: Library keys after deletion:`, Object.keys(library));
   });
 }
 
