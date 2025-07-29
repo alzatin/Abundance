@@ -82,6 +82,8 @@ async function layout(
       const rotatedAssemblyKey = inputID + "_rotated";
       library[rotatedAssemblyKey] = rotatedAssembly;
       console.log(`layout: Stored rotated assembly in cache with key '${rotatedAssemblyKey}'`);
+      console.log(`layout: Cache storage successful: ${library[rotatedAssemblyKey] !== undefined}`);
+      console.log(`layout: Current cache keys in library:`, Object.keys(library).filter(k => k.includes('_rotated')));
       
       const endTime = performance.now();
       console.log(`layout: Completed layout computation in ${(endTime - startTime).toFixed(2)}ms`);
@@ -116,6 +118,10 @@ async function displayLayout(
   // Check if we have a pre-rotated assembly from a previous layout call
   const rotatedAssemblyKey = inputID + "_rotated";
   const rotatedAssembly = library[rotatedAssemblyKey];
+  
+  console.log(`displayLayout: Looking for cached rotated assembly with key '${rotatedAssemblyKey}'`);
+  console.log(`displayLayout: Current cache keys in library:`, Object.keys(library).filter(k => k.includes('_rotated')));
+  console.log(`displayLayout: Cache lookup result: ${rotatedAssembly !== undefined ? 'FOUND' : 'NOT FOUND'}`);
   
   if (rotatedAssembly) {
     console.log(`displayLayout: Found cached rotated assembly for key '${rotatedAssemblyKey}' - using optimized path`);
