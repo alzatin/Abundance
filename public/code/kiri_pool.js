@@ -44134,12 +44134,6 @@ gapp.register("geo.wasm", [], (e, n) => {
               offset: r.poly_offset,
             }),
             (o.js = { diff: l, union: s, offset: f });
-        })
-        .catch((e) => {
-          console.warn("kiri-geo.wasm load error", e);
-          delete d._wasm;
-          // Disable WASM functionality gracefully
-          d.wasm = null;
         }));
   }
   function m() {
