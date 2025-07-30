@@ -38,9 +38,47 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
     return;
   }
 
+  // Track slicing progress with a timer
+  let slicingTimer = null;
+  let slicingStartTime = null;
+  let slicingProgressStart = 0.6;
+  let slicingProgressEnd = 0.8;
+  
+  const startSlicingProgress = () => {
+    slicingStartTime = Date.now();
+    let currentProgress = slicingProgressStart;
+    
+    slicingTimer = setInterval(() => {
+      const elapsed = Date.now() - slicingStartTime;
+      // Gradually increase progress over time, with diminishing returns
+      // This creates a more realistic progress feel during slicing
+      const timeBasedProgress = Math.min(0.18, 0.18 * (1 - Math.exp(-elapsed / 10000))); // Exponential approach to 0.18 (80%-60%)
+      currentProgress = slicingProgressStart + timeBasedProgress;
+      
+      if (progressCallback && currentProgress < slicingProgressEnd) {
+        progressCallback(currentProgress);
+      }
+    }, 500); // Update every 500ms during slicing
+  };
+  
+  const stopSlicingProgress = () => {
+    if (slicingTimer) {
+      clearInterval(slicingTimer);
+      slicingTimer = null;
+    }
+  };
+
   kiriEngine
     .setListener((message) => {
       console.log("Kiri:Moto Message:", message);
+      // Check if message contains slicing progress information
+      if (message && typeof message === 'object') {
+        if (message.progress !== undefined && slicingStartTime) {
+          // If Kiri:Moto provides progress during slicing, use it
+          const slicingProgress = slicingProgressStart + (slicingProgressEnd - slicingProgressStart) * message.progress;
+          if (progressCallback) progressCallback(slicingProgress);
+        }
+      }
     })
     .load(stlUrl)
     .then((eng) => {
@@ -305,9 +343,11 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
     })
     .then((eng) => {
         if (progressCallback) progressCallback(0.6); // 60% - Device set
+        startSlicingProgress(); // Start granular progress tracking for slicing
         return eng.slice();
     })
     .then((eng) => {
+        stopSlicingProgress(); // Stop the slicing progress timer
         if (progressCallback) progressCallback(0.8); // 80% - Slicing complete
         return eng.prepare();
     })
@@ -320,6 +360,7 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
       gcodeCallback(gcode); // Only call the callback, don't download
     })
     .catch((error) => {
+      stopSlicingProgress(); // Ensure timer is cleaned up on error
       console.error("Kiri:Moto Error:", error);
     })
     .finally(() => {
