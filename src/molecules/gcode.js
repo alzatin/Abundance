@@ -31,6 +31,11 @@ export default class Gcode extends Atom {
 
     this.height = 16;
     /**
+     * The center color for progress indicator
+     * @type {string}
+     */
+    this.centerColor = "#949294";
+    /**
      * A description of this atom
      * @type {string}
      */
@@ -48,6 +53,12 @@ export default class Gcode extends Atom {
      * @type {boolean}
      */
     this.gcodeGenerated = false;
+
+    /**
+     * Progress indicator for gcode generation (0.0 to 1.0)
+     * @type {number}
+     */
+    this.progress = 1.0;
 
     this.addIO("input", "Geometry", this, "geometry", null);
     this.addIO("input", "Tool Size", this, "number", 6.35);
@@ -75,10 +86,14 @@ export default class Gcode extends Atom {
   }
 
   /**
-   * Draw the circle atom & icon.
+   * Draw the gcode atom & icon with progress indicator.
    */
   draw() {
     super.draw(); //Super call to draw the rest
+
+    const xInPixels = GlobalVariables.widthToPixels(this.x);
+    const yInPixels = GlobalVariables.heightToPixels(this.y);
+    const radiusInPixels = GlobalVariables.widthToPixels(this.radius);
 
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#484848";
@@ -92,6 +107,23 @@ export default class Gcode extends Atom {
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
+
+    // Draw progress circle in the middle when generating gcode
+    if (this.progress < 1.0) {
+      GlobalVariables.c.beginPath();
+      GlobalVariables.c.fillStyle = this.centerColor;
+      GlobalVariables.c.moveTo(xInPixels, yInPixels);
+      GlobalVariables.c.arc(
+        xInPixels,
+        yInPixels,
+        radiusInPixels / 1.5,
+        0,
+        this.progress * Math.PI * 2,
+        false
+      );
+      GlobalVariables.c.closePath();
+      GlobalVariables.c.fill();
+    }
   }
 
   /**
@@ -102,6 +134,7 @@ export default class Gcode extends Atom {
     return (gcode) => {
       this.gcodeString = gcode;
       this.gcodeGenerated = true;
+      this.progress = 1.0; // Complete progress
       GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
       this.basicThreadValueProcessing();
       this.sendToRender();
@@ -119,7 +152,17 @@ export default class Gcode extends Atom {
       return;
     }
     
+    // Initialize progress tracking
+    this.progress = 0.0;
+    this.processing = true;
+    
     const gcodeCallback = this._createGcodeCallback();
+    const progressCallback = (progress) => {
+      this.progress = progress;
+      // Force a redraw to show progress update
+      this.sendToRender();
+    };
+    
     generateKirimoto(
       this.stlURL, 
       this.center, 
@@ -127,7 +170,8 @@ export default class Gcode extends Atom {
       this.findIOValue("Passes"), 
       this.findIOValue("Speed"), 
       this.findIOValue("Cut Through"), 
-      gcodeCallback
+      gcodeCallback,
+      progressCallback
     );
   }
 

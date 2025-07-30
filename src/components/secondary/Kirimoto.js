@@ -24,7 +24,7 @@ export const initKiriMoto = () => {
 };
 
 //This function generates G-code and calls the callback but doesn't download
-export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, extra, gcodeCallback) => {
+export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, extra, gcodeCallback, progressCallback) => {
     
     kiriEngine = window.kiri.newEngine(); //Create a new Kiri:Moto engine instance to start with a clean slate
 
@@ -38,19 +38,60 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
     return;
   }
 
+  // Track slicing progress with a timer
+  let slicingTimer = null;
+  let slicingStartTime = null;
+  let slicingProgressStart = 0.6;
+  let slicingProgressEnd = 0.8;
+  
+  const startSlicingProgress = () => {
+    slicingStartTime = Date.now();
+    let currentProgress = slicingProgressStart;
+    
+    slicingTimer = setInterval(() => {
+      const elapsed = Date.now() - slicingStartTime;
+      // Gradually increase progress over time, with diminishing returns
+      // This creates a more realistic progress feel during slicing
+      const timeBasedProgress = Math.min(0.18, 0.18 * (1 - Math.exp(-elapsed / 10000))); // Exponential approach to 0.18 (80%-60%)
+      currentProgress = slicingProgressStart + timeBasedProgress;
+      
+      if (progressCallback && currentProgress < slicingProgressEnd) {
+        progressCallback(currentProgress);
+      }
+    }, 500); // Update every 500ms during slicing
+  };
+  
+  const stopSlicingProgress = () => {
+    if (slicingTimer) {
+      clearInterval(slicingTimer);
+      slicingTimer = null;
+    }
+  };
+
   kiriEngine
     .setListener((message) => {
       console.log("Kiri:Moto Message:", message);
+      // Check if message contains slicing progress information
+      if (message && typeof message === 'object') {
+        if (message.progress !== undefined && slicingStartTime) {
+          // If Kiri:Moto provides progress during slicing, use it
+          const slicingProgress = slicingProgressStart + (slicingProgressEnd - slicingProgressStart) * message.progress;
+          if (progressCallback) progressCallback(slicingProgress);
+        }
+      }
     })
     .load(stlUrl)
     .then((eng) => {
+        if (progressCallback) progressCallback(0.1); // 10% - STL loaded
         return eng.move(centerPos[0],centerPos[1],0);//Move the model to line up with where the parts were before
     })
     .then((eng) => {
+        if (progressCallback) progressCallback(0.15); // 15% - Model moved
     //   console.log("Kiri:Moto STL loaded successfully");
       return eng.setMode("CAM");
     })
     .then((eng) =>{
+        if (progressCallback) progressCallback(0.2); // 20% - Mode set
       const bounds = eng.widget.getBoundingBox();
       const x = bounds.max.x - bounds.min.x;
       const y = bounds.max.y - bounds.min.y;
@@ -67,8 +108,9 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
       });
       return eng;
     })
-    .then((eng) =>
-      eng.setTools([
+    .then((eng) => {
+        if (progressCallback) progressCallback(0.25); // 25% - Stock set
+        return eng.setTools([
         {
           id: 1000,
           number: 1,
@@ -82,8 +124,9 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
           taper_tip: 0,
         },
       ])
-    )
+    })
     .then((eng) => {
+        if (progressCallback) progressCallback(0.3); // 30% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
       eng.setProcess({
@@ -270,8 +313,9 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
       })
       return eng;
     })
-    .then((eng) =>
-      eng.setDevice({
+    .then((eng) => {
+        if (progressCallback) progressCallback(0.5); // 50% - Process set
+        return eng.setDevice({
         mode: "CAM",
         internal: 0,
         bedHeight: 2.5,
@@ -296,14 +340,27 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
         imageURL: "",
         useLaser: false,
       })
-    )
-    .then((eng) => eng.slice())
-    .then((eng) => eng.prepare())
-    .then((eng) => eng.export())
+    })
+    .then((eng) => {
+        if (progressCallback) progressCallback(0.6); // 60% - Device set
+        startSlicingProgress(); // Start granular progress tracking for slicing
+        return eng.slice();
+    })
+    .then((eng) => {
+        stopSlicingProgress(); // Stop the slicing progress timer
+        if (progressCallback) progressCallback(0.8); // 80% - Slicing complete
+        return eng.prepare();
+    })
+    .then((eng) => {
+        if (progressCallback) progressCallback(0.9); // 90% - Preparation complete
+        return eng.export();
+    })
     .then((gcode) => {
+      if (progressCallback) progressCallback(1.0); // 100% - Export complete
       gcodeCallback(gcode); // Only call the callback, don't download
     })
     .catch((error) => {
+      stopSlicingProgress(); // Ensure timer is cleaned up on error
       console.error("Kiri:Moto Error:", error);
     })
     .finally(() => {
