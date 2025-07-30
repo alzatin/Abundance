@@ -709,9 +709,10 @@ async function importingSVG(targetID, svg, width) {
  * @returns {void} This function does not return a value, it directly stores the result in the library
  */
 function visualizeGcode(targetID, gcode) {
+  const startTime = performance.now();
   let currentPosition = [0, 0, 0];
   let edges = [];
-
+  console.log("Beginning G-code visualization");
   // Split the gcode into lines
   const lines = gcode.split("\n");
   lines.forEach((line) => {
@@ -727,12 +728,27 @@ function visualizeGcode(targetID, gcode) {
       let y = yMatch ? Number(yMatch[1]) : currentPosition[1];
       let z = zMatch ? Number(zMatch[1]) : currentPosition[2];
 
+      //Reduce the number of edges by combining small movements
+      const threshold = 5; // Threshold for small movements
+      if (
+        Math.abs(x - currentPosition[0]) < threshold &&
+        Math.abs(y - currentPosition[1]) < threshold &&
+        Math.abs(z - currentPosition[2]) < threshold
+      ) {
+        return; // Skip small movements
+      }
       edges.push(util.replicad.makeLine(currentPosition, [x, y, z]));
       currentPosition = [x, y, z];
     }
   });
 
+  const parseEndTime = performance.now();
+  console.log(
+    `Gcode parsed, creating wire geometry (parse time: ${(parseEndTime - startTime).toFixed(2)} ms)`
+  );
+
   // Create a wire from the edges
+  const wireStartTime = performance.now();
   const wire = util.replicad.assembleWire(edges);
   library[targetID] = {
     geometry: [wire],
@@ -741,6 +757,11 @@ function visualizeGcode(targetID, gcode) {
     color: util.defaultColor,
     bom: [],
   };
+
+  const wireEndTime = performance.now();
+  console.log(
+    `Gcode visualization complete, wire geometry created (wire creation time: ${(wireEndTime - wireStartTime).toFixed(2)} ms, total time: ${(wireEndTime - startTime).toFixed(2)} ms)`
+  );
 }
 
 /**
