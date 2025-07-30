@@ -181,39 +181,255 @@ export default class Gcode extends Atom {
   updateValue() {
     super.updateValue();
     try {
-
       let inputID = this.findIOValue("Geometry");
 
-      GlobalVariables.cad
-        .visExport(this.uniqueID+1, inputID, "STL") //What a hack, we shouldn't be using uniqueID+1 here
-        .then((result) => {
-          GlobalVariables.cad
-            .downExport(this.uniqueID+1, "STL")
-            .then((result) => {
-              //Delete anything previously stored
-              if (this.stlURL) {
-                URL.revokeObjectURL(this.stlURL); // Clean up the previous URL
-              }
-              this.stlURL = URL.createObjectURL(result); // Store the STL URL
-              GlobalVariables.cad.getBoundingBox(this.uniqueID+1).then((bounds) => {
-                this.center = [
-                  (bounds.max[0] + bounds.min[0]) / 2,
-                  (bounds.max[1] + bounds.min[1]) / 2,
-                  (bounds.max[2] + bounds.min[2]) / 2,
-                ];
-                if(window.location.pathname.includes('/run/')) {
-                  this._generateGcode();
-                }
-              });
-            });
-        })
-        .catch((err) => {
-          console.error("Error creating STL for gcode:", err);
-        });
+      // Check if input is an assembly and handle accordingly
+      this._handleGeometryInput(inputID);
     } catch (err) {
       this.setError(err);
     }
+  }
 
+  /**
+   * Handle geometry input - either single part or assembly
+   * @param {string} inputID - The input geometry ID
+   */
+  async _handleGeometryInput(inputID) {
+    try {
+      // Check if the input is an assembly
+      const isAssembly = await this._checkIfAssembly(inputID);
+      
+      if (isAssembly) {
+        // Process as assembly - extract parts and generate G-code sequentially
+        await this._processAssembly(inputID);
+      } else {
+        // Process as single part (original behavior)
+        await this._processSinglePart(inputID);
+      }
+    } catch (err) {
+      console.error("Error handling geometry input:", err);
+      this.setError(err);
+    }
+  }
+
+  /**
+   * Check if the input geometry is an assembly
+   * @param {string} inputID - The input geometry ID
+   * @returns {Promise<boolean>} True if it's an assembly
+   */
+  async _checkIfAssembly(inputID) {
+    return new Promise((resolve) => {
+      GlobalVariables.cad.isAssembly(inputID).then(resolve).catch(() => resolve(false));
+    });
+  }
+
+  /**
+   * Process a single part (original behavior)
+   * @param {string} inputID - The input geometry ID
+   */
+  async _processSinglePart(inputID) {
+    GlobalVariables.cad
+      .visExport(this.uniqueID+1, inputID, "STL") //What a hack, we shouldn't be using uniqueID+1 here
+      .then((result) => {
+        GlobalVariables.cad
+          .downExport(this.uniqueID+1, "STL")
+          .then((result) => {
+            //Delete anything previously stored
+            if (this.stlURL) {
+              URL.revokeObjectURL(this.stlURL); // Clean up the previous URL
+            }
+            this.stlURL = URL.createObjectURL(result); // Store the STL URL
+            GlobalVariables.cad.getBoundingBox(this.uniqueID+1).then((bounds) => {
+              this.center = [
+                (bounds.max[0] + bounds.min[0]) / 2,
+                (bounds.max[1] + bounds.min[1]) / 2,
+                (bounds.max[2] + bounds.min[2]) / 2,
+              ];
+              if(window.location.pathname.includes('/run/')) {
+                this._generateGcode();
+              }
+            });
+          });
+      })
+      .catch((err) => {
+        console.error("Error creating STL for gcode:", err);
+      });
+  }
+
+  /**
+   * Process an assembly by extracting parts and generating G-code sequentially
+   * @param {string} inputID - The input assembly ID
+   */
+  async _processAssembly(inputID) {
+    try {
+      // Extract individual parts from assembly
+      const parts = await this._extractPartsFromAssembly(inputID);
+      
+      // Sort parts left to right based on bounding boxes
+      const sortedParts = await this._sortPartsLeftToRight(parts);
+      
+      if (window.location.pathname.includes('/run/')) {
+        // Generate G-code for each part sequentially
+        await this._generateSequentialGcode(sortedParts);
+      }
+    } catch (err) {
+      console.error("Error processing assembly:", err);
+      this.setError(err);
+    }
+  }
+
+  /**
+   * Extract individual parts from an assembly
+   * @param {string} assemblyID - The assembly ID
+   * @returns {Promise<Array>} Array of part IDs
+   */
+  async _extractPartsFromAssembly(assemblyID) {
+    return new Promise((resolve, reject) => {
+      GlobalVariables.cad.extractParts(assemblyID).then(resolve).catch(reject);
+    });
+  }
+
+  /**
+   * Sort parts from left to right based on their bounding boxes
+   * @param {Array} parts - Array of part IDs
+   * @returns {Promise<Array>} Sorted array of part IDs
+   */
+  async _sortPartsLeftToRight(parts) {
+    const partsWithBounds = [];
+    
+    for (const partID of parts) {
+      try {
+        const bounds = await GlobalVariables.cad.getBoundingBox(partID);
+        const centerX = (bounds.max[0] + bounds.min[0]) / 2;
+        partsWithBounds.push({
+          id: partID,
+          centerX: centerX,
+          bounds: bounds
+        });
+      } catch (err) {
+        console.warn(`Could not get bounds for part ${partID}:`, err);
+      }
+    }
+    
+    // Sort by X coordinate (left to right)
+    partsWithBounds.sort((a, b) => a.centerX - b.centerX);
+    
+    return partsWithBounds.map(part => part.id);
+  }
+
+  /**
+   * Generate G-code for multiple parts sequentially and concatenate
+   * @param {Array} sortedPartIDs - Array of part IDs sorted left to right
+   */
+  async _generateSequentialGcode(sortedPartIDs) {
+    const allGcode = [];
+    this.progress = 0.0;
+    
+    for (let i = 0; i < sortedPartIDs.length; i++) {
+      const partID = sortedPartIDs[i];
+      const partProgress = i / sortedPartIDs.length;
+      
+      try {
+        // Update progress
+        this.progress = partProgress;
+        this.sendToRender();
+        
+        // Generate STL for this part
+        await GlobalVariables.cad.visExport(this.uniqueID + 100 + i, partID, "STL");
+        const stlBlob = await GlobalVariables.cad.downExport(this.uniqueID + 100 + i, "STL");
+        const stlURL = URL.createObjectURL(stlBlob);
+        
+        // Get part bounds for centering
+        const bounds = await GlobalVariables.cad.getBoundingBox(this.uniqueID + 100 + i);
+        const center = [
+          (bounds.max[0] + bounds.min[0]) / 2,
+          (bounds.max[1] + bounds.min[1]) / 2,
+          (bounds.max[2] + bounds.min[2]) / 2,
+        ];
+        
+        // Generate G-code for this part
+        const partGcode = await this._generateGcodeForPart(stlURL, center, i + 1);
+        allGcode.push(partGcode);
+        
+        // Clean up STL URL
+        URL.revokeObjectURL(stlURL);
+        
+      } catch (err) {
+        console.error(`Error generating G-code for part ${i + 1}:`, err);
+        // Continue with next part
+      }
+    }
+    
+    // Concatenate all G-code
+    this.gcodeString = this._concatenateGcode(allGcode);
+    this.gcodeGenerated = true;
+    this.progress = 1.0;
+    
+    // Visualize the concatenated G-code
+    GlobalVariables.cad.visualizeGcode(this.uniqueID, this.gcodeString);
+    this.basicThreadValueProcessing();
+    this.sendToRender();
+  }
+
+  /**
+   * Generate G-code for a single part
+   * @param {string} stlURL - URL to the STL blob
+   * @param {Array} center - Center coordinates [x, y, z]
+   * @param {number} partNumber - Part number for naming
+   * @returns {Promise<string>} Generated G-code
+   */
+  _generateGcodeForPart(stlURL, center, partNumber) {
+    return new Promise((resolve, reject) => {
+      const partGcodeCallback = (gcode) => {
+        resolve(gcode);
+      };
+      
+      const partProgressCallback = (progress) => {
+        // Update overall progress
+        // Each part gets equal weight in the overall progress
+      };
+      
+      generateKirimoto(
+        stlURL, 
+        center, 
+        this.findIOValue("Tool Size"), 
+        this.findIOValue("Passes"), 
+        this.findIOValue("Speed"), 
+        this.findIOValue("Cut Through"), 
+        partGcodeCallback,
+        partProgressCallback
+      );
+    });
+  }
+
+  /**
+   * Concatenate multiple G-code strings
+   * @param {Array<string>} gcodeArray - Array of G-code strings
+   * @returns {string} Concatenated G-code
+   */
+  _concatenateGcode(gcodeArray) {
+    if (gcodeArray.length === 0) return "";
+    if (gcodeArray.length === 1) return gcodeArray[0];
+    
+    // Remove end commands from all but the last G-code
+    const processedGcode = gcodeArray.map((gcode, index) => {
+      if (index === gcodeArray.length - 1) {
+        // Keep the last G-code as-is
+        return gcode;
+      } else {
+        // Remove common end commands (M30, M2, etc.)
+        return gcode.replace(/M30.*$/gm, '').replace(/M2.*$/gm, '').trim();
+      }
+    });
+    
+    // Join all G-code with a comment separator
+    return processedGcode.map((gcode, index) => {
+      if (index === 0) {
+        return gcode;
+      } else {
+        return `\n; === Part ${index + 1} ===\n${gcode}`;
+      }
+    }).join('\n');
   }
 
   createLevaInputs() {
