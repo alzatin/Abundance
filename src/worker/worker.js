@@ -711,7 +711,6 @@ async function importingSVG(targetID, svg, width) {
 function visualizeGcode(targetID, gcode) {
   let currentPosition = [0, 0, 0];
   let edges = [];
-
   // Split the gcode into lines
   const lines = gcode.split("\n");
   lines.forEach((line) => {
@@ -727,6 +726,15 @@ function visualizeGcode(targetID, gcode) {
       let y = yMatch ? Number(yMatch[1]) : currentPosition[1];
       let z = zMatch ? Number(zMatch[1]) : currentPosition[2];
 
+      //Reduce the number of edges by combining small movements
+      const threshold = 5; // Threshold for small movements
+      if (
+        Math.abs(x - currentPosition[0]) < threshold &&
+        Math.abs(y - currentPosition[1]) < threshold &&
+        Math.abs(z - currentPosition[2]) < threshold
+      ) {
+        return; // Skip small movements
+      }
       edges.push(util.replicad.makeLine(currentPosition, [x, y, z]));
       currentPosition = [x, y, z];
     }
