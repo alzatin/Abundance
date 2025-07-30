@@ -709,10 +709,8 @@ async function importingSVG(targetID, svg, width) {
  * @returns {void} This function does not return a value, it directly stores the result in the library
  */
 function visualizeGcode(targetID, gcode) {
-  const startTime = performance.now();
   let currentPosition = [0, 0, 0];
   let edges = [];
-  console.log("Beginning G-code visualization");
   // Split the gcode into lines
   const lines = gcode.split("\n");
   lines.forEach((line) => {
@@ -742,11 +740,6 @@ function visualizeGcode(targetID, gcode) {
     }
   });
 
-  const parseEndTime = performance.now();
-  console.log(
-    `Gcode parsed, creating wire geometry (parse time: ${(parseEndTime - startTime).toFixed(2)} ms)`
-  );
-
   // Create a wire from the edges
   const wireStartTime = performance.now();
   const wire = util.replicad.assembleWire(edges);
@@ -757,11 +750,6 @@ function visualizeGcode(targetID, gcode) {
     color: util.defaultColor,
     bom: [],
   };
-
-  const wireEndTime = performance.now();
-  console.log(
-    `Gcode visualization complete, wire geometry created (wire creation time: ${(wireEndTime - wireStartTime).toFixed(2)} ms, total time: ${(wireEndTime - startTime).toFixed(2)} ms)`
-  );
 }
 
 /**
