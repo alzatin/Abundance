@@ -741,7 +741,6 @@ function visualizeGcode(targetID, gcode) {
   });
 
   // Create a wire from the edges
-  const wireStartTime = performance.now();
   const wire = util.replicad.assembleWire(edges);
   library[targetID] = {
     geometry: [wire],
