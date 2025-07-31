@@ -836,6 +836,47 @@ function getBoundingBox(inputID) {
 }
 
 /**
+ * Check if the given geometry ID represents an assembly
+ * @param {string} inputID - The geometry ID to check
+ * @returns {Promise<boolean>} True if it's an assembly, false otherwise
+ */
+async function isAssembly(inputID) {
+  await started;
+  const geometry = library[inputID];
+  return util.isAssembly(geometry);
+}
+
+/**
+ * Extract individual parts from an assembly
+ * @param {string} assemblyID - The assembly ID
+ * @returns {Promise<Array<string>>} Array of part IDs
+ */
+async function extractParts(assemblyID) {
+  await started;
+  const assembly = getOrThrow(assemblyID);
+  
+  if (!util.isAssembly(assembly)) {
+    // If it's not an assembly, return the original ID
+    return [assemblyID];
+  }
+  
+  const parts = [];
+  let partIndex = 0;
+  
+  // Extract each part from the assembly and store it in the library
+  util.actOnLeafs(assembly, (leaf) => {
+    if (leaf.geometry && leaf.geometry.length > 0) {
+      const partID = `${assemblyID}_part_${partIndex++}`;
+      library[partID] = leaf;
+      parts.push(partID);
+    }
+    return leaf;
+  });
+  
+  return parts;
+}
+
+/**
  * A function which takes in an array of target geometries and forms them into an assembly
  * Geometries will cut all geometries below them in the list to make sure that no parts intersect
  * If the targetID is defined, the assembly will be stored in the library under that ID, otherwise it will be returned
@@ -1155,6 +1196,8 @@ if (
     resetView,
     visualizeGcode,
     getBoundingBox,
+    isAssembly,
+    extractParts,
   });
 }
 
@@ -1197,4 +1240,6 @@ export {
   visExport,
   downExport,
   shrinkWrapSketches,
+  isAssembly,
+  extractParts,
 };
