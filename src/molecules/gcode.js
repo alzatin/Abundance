@@ -149,8 +149,9 @@ export default class Gcode extends Atom {
 
   /**
    * Generates gcode using Kirimoto with the current parameters
+   * Handles both single parts and assemblies
    */
-  _generateGcode() {
+  async _generateGcode() {
     if (!GlobalVariables.kirimotoInitialized) {
       // If Kirimoto is not initialized, wait 500ms and try again
       setTimeout(() => this._generateGcode(), 500);
@@ -162,23 +163,45 @@ export default class Gcode extends Atom {
     this.progress = 0.0;
     this.processing = true;
     
-    const gcodeCallback = this._createGcodeCallback();
-    const progressCallback = (progress) => {
-      this.progress = progress;
-      // Force a redraw to show progress update
+    try {
+      // Get the current input ID
+      let inputID = this.findIOValue("Geometry");
+      
+      // Check if the input is an assembly
+      const isAssembly = await this._checkIfAssembly(inputID);
+      
+      if (isAssembly) {
+        // For assemblies, extract parts and generate G-code sequentially
+        const parts = await this._extractPartsFromAssembly(inputID);
+        const sortedParts = await this._sortPartsLeftToRight(parts);
+        await this._generateSequentialGcode(sortedParts);
+      } else {
+        // For single parts, use the original method
+        const gcodeCallback = this._createGcodeCallback();
+        const progressCallback = (progress) => {
+          this.progress = progress;
+          // Force a redraw to show progress update
+          this.sendToRender();
+        };
+        
+        generateKirimoto(
+          this.stlURL, 
+          this.center, 
+          this.findIOValue("Tool Size"), 
+          this.findIOValue("Passes"), 
+          this.findIOValue("Speed"), 
+          this.findIOValue("Cut Through"), 
+          gcodeCallback,
+          progressCallback
+        );
+      }
+    } catch (err) {
+      console.error("Error generating G-code:", err);
+      this.setError(err);
+      this.progress = 1.0;
+      this.processing = false;
       this.sendToRender();
-    };
-    
-    generateKirimoto(
-      this.stlURL, 
-      this.center, 
-      this.findIOValue("Tool Size"), 
-      this.findIOValue("Passes"), 
-      this.findIOValue("Speed"), 
-      this.findIOValue("Cut Through"), 
-      gcodeCallback,
-      progressCallback
-    );
+    }
   }
 
   /**
