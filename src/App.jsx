@@ -123,10 +123,8 @@ export default function ReplicadApp() {
             .generateDisplayMesh(GlobalVariables.currentMolecule.uniqueID)
             .then((w) => {
               setWireMesh(w);
-              createPuppeteerDiv();
             })
             .catch((e) => {
-              createPuppeteerDiv();
               console.error("Can't compute Wireframe/No output " + e);
             });
         } else {
@@ -136,10 +134,8 @@ export default function ReplicadApp() {
             .resetView()
             .then((m) => {
               setWireMesh(m);
-              createPuppeteerDiv();
             })
             .catch((e) => {
-              createPuppeteerDiv();
               console.error("reset view not working" + e);
             });
         }
