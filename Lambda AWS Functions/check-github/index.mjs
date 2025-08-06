@@ -22,6 +22,9 @@ export const handler = async (event, context) => {
     auth: process.env.GIT_ACCESS,
   });
 
+  let updatedCount = 0; // Counter for updated projects
+  let deletedProjects = []; // Array to store deleted project names
+
   /*Scans parameter to returns attributes owner, repoName, fork from all repositories in table*/
   const command = new ScanCommand({
     ProjectionExpression:
@@ -60,29 +63,48 @@ export const handler = async (event, context) => {
   console.log("Items to check:", items.length);
   await checkRateLimit();
 
-  let promises = items
-    .filter((repo) => !repo.privateRepo)
-    .map((repo) => {
-      return checkGithub(
-        repo.owner,
-        repo.repoName,
-        repo.forks,
-        repo.lastFoundGit,
-        repo.contentURL
-      );
-    });
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 
-  await Promise.all(promises)
-    .then((results) => {
-      const response = {
-        statusCode: 200,
-        body: JSON.stringify("Github has been checked"),
-      };
-      return response;
-    })
-    .catch((error) => {
-      console.error("Unhandled promise rejection in Promise.all:", error);
-    });
+  // Batch processing to avoid DynamoDB throttling
+  const BATCH_SIZE = 5; // Number of repositories to process in parallel per batch
+  const BATCH_DELAY_MS = 500; // Delay in milliseconds between each batch
+
+  let reposToCheck = items.filter((repo) => !repo.privateRepo);
+  for (let i = 0; i < reposToCheck.length; i += BATCH_SIZE) {
+    const batch = reposToCheck.slice(i, i + BATCH_SIZE);
+    await Promise.all(
+      batch.map((repo) =>
+        checkGithub(
+          repo.owner,
+          repo.repoName,
+          repo.forks,
+          repo.lastFoundGit,
+          repo.contentURL
+        )
+      )
+    );
+    if (i + BATCH_SIZE < reposToCheck.length) {
+      await sleep(BATCH_DELAY_MS);
+    }
+  }
+
+  console.log(`Projects updated: ${updatedCount}`);
+  if (deletedProjects.length > 0) {
+    console.log(
+      `Projects deleted: ${deletedProjects.length} (${deletedProjects.join(
+        ", "
+      )})`
+    );
+  } else {
+    console.log("No projects deleted.");
+  }
+  const response = {
+    statusCode: 200,
+    body: JSON.stringify("Github has been checked"),
+  };
+  return response;
 
   async function checkUpdate(owner, repoName, forks, githubForks) {
     const input = {
@@ -92,7 +114,8 @@ export const handler = async (event, context) => {
       },
       ReturnValues: "ALL_NEW",
       TableName: "abundance-projects",
-      UpdateExpression: "SET lastFoundGit = :lastFoundGit,  forks = :forks",
+      UpdateExpression:
+        "SET lastFoundGit = :lastFoundGit, forks = :forks REMOVE failureCount",
       Key: {
         owner: owner,
         repoName: repoName,
@@ -101,6 +124,7 @@ export const handler = async (event, context) => {
     const command = new UpdateCommand(input);
     try {
       const response = await dynamo.send(command);
+      updatedCount++; // Increment counter on successful update
       return response;
     } catch (error) {
       console.error(error);
@@ -108,6 +132,7 @@ export const handler = async (event, context) => {
     }
   }
 
+  /* Checks the rate limit of the GitHub API */
   async function checkRateLimit() {
     const response = await fetch("https://api.github.com/rate_limit", {
       headers: {
@@ -135,25 +160,12 @@ export const handler = async (event, context) => {
         owner: owner,
         repo: repoName,
       });
-      /*
-      // If found, reset failure count if it exists
-      const resetParams = {
-        TableName: tableName,
-        Key: {
-          owner: owner,
-          repoName: repoName,
-        },
-        UpdateExpression: `REMOVE ${failureCountKey}`,
-      };
-      const resetCommand = new UpdateCommand(resetParams);
-      await dynamo.send(resetCommand);*/
-      // Update repository details
-      return; //checkUpdate(owner, repoName, forks, repoResponse.data.forks_count);
+      // Update repository details and reset failure count in one call
+      return checkUpdate(owner, repoName, forks, repoResponse.data.forks_count);
     } catch (error) {
       if (error.status === 404) {
         console.log(`Project not found: ${owner}/${repoName}`);
-        await deleteFromTable(owner, repoName);
-        /*
+
         // Fetch current failure count from DynamoDB
         const getParams = {
           TableName: tableName,
@@ -169,28 +181,28 @@ export const handler = async (event, context) => {
 
         // Increment failure count
         const newFailureCount = currentFailureCount + 1;
-        const updateParams = {
-          TableName: tableName,
-          Key: {
-            owner: owner,
-            repoName: repoName,
-          },
-          UpdateExpression: `SET ${failureCountKey} = :failureCount`,
-          ExpressionAttributeValues: {
-            ":failureCount": newFailureCount,
-          },
-        };
-        const updateCommand = new UpdateCommand(updateParams);
-        await dynamo.send(updateCommand);
-
         // Delete from table if failure count reaches 3
         if (newFailureCount >= 3) {
           console.log(
             `(DELETE DISABLED) Deleting project after 3 consecutive failures: ${owner}/${repoName}`
           );
-          //await deleteFromTable(owner, repoName);
+          deletedProjects.push(`${owner}/${repoName}`);
+          await deleteFromTable(owner, repoName);
+        } else {
+          const updateParams = {
+            TableName: tableName,
+            Key: {
+              owner: owner,
+              repoName: repoName,
+            },
+            UpdateExpression: `SET ${failureCountKey} = :failureCount`,
+            ExpressionAttributeValues: {
+              ":failureCount": newFailureCount,
+            },
+          };
+          const updateCommand = new UpdateCommand(updateParams);
+          await dynamo.send(updateCommand);
         }
-          */
       } else {
         // Log and rethrow unexpected errors
         console.error(`Error checking repo ${owner}/${repoName}:`, error);
