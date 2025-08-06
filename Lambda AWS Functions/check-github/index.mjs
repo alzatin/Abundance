@@ -24,6 +24,7 @@ export const handler = async (event, context) => {
 
   let updatedCount = 0; // Counter for updated projects
   let deletedProjects = []; // Array to store deleted project names
+  let notFoundProjects = []; // Array to store not found project names
 
   /*Scans parameter to returns attributes owner, repoName, fork from all repositories in table*/
   const command = new ScanCommand({
@@ -100,6 +101,15 @@ export const handler = async (event, context) => {
   } else {
     console.log("No projects deleted.");
   }
+  if (notFoundProjects.length > 0) {
+    console.log(
+      `Projects not found: ${notFoundProjects.length} (${notFoundProjects.join(
+        ", "
+      )})`
+    );
+  } else {
+    console.log("All projects found.");
+  }
   const response = {
     statusCode: 200,
     body: JSON.stringify("Github has been checked"),
@@ -165,7 +175,7 @@ export const handler = async (event, context) => {
     } catch (error) {
       if (error.status === 404) {
         console.log(`Project not found: ${owner}/${repoName}`);
-
+        notFoundProjects.push(`${owner}/${repoName}`);
         // Fetch current failure count from DynamoDB
         const getParams = {
           TableName: tableName,
@@ -184,7 +194,7 @@ export const handler = async (event, context) => {
         // Delete from table if failure count reaches 3
         if (newFailureCount >= 3) {
           console.log(
-            `(DELETE DISABLED) Deleting project after 3 consecutive failures: ${owner}/${repoName}`
+            `Deleting project after 3 consecutive failures: ${owner}/${repoName}`
           );
           deletedProjects.push(`${owner}/${repoName}`);
           await deleteFromTable(owner, repoName);
