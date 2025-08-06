@@ -8,6 +8,7 @@ import {
   GetCommand,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
@@ -21,6 +22,8 @@ export const handler = async (event, context) => {
   const octokit = new Octokit({
     auth: process.env.GIT_ACCESS,
   });
+
+  const ses = new SESClient({});
 
   let updatedCount = 0; // Counter for updated projects
   let deletedProjects = []; // Array to store deleted project names
@@ -91,25 +94,43 @@ export const handler = async (event, context) => {
     }
   }
 
-  console.log(`Projects updated: ${updatedCount}`);
-  if (deletedProjects.length > 0) {
-    console.log(
-      `Projects deleted: ${deletedProjects.length} (${deletedProjects.join(
-        ", "
-      )})`
-    );
-  } else {
-    console.log("No projects deleted.");
+  // Compose log report
+  let logReport = [
+    `Projects updated: ${updatedCount}`,
+    deletedProjects.length > 0
+      ? `Projects deleted: ${deletedProjects.length} (${deletedProjects.join(
+          ", "
+        )})`
+      : "No projects deleted.",
+    notFoundProjects.length > 0
+      ? `Projects not found: ${
+          notFoundProjects.length
+        } (${notFoundProjects.join(", ")})`
+      : "All projects found.",
+  ].join("\n");
+
+  console.log(logReport);
+
+  // Send SES email report every run
+  try {
+    const params = {
+      Source: process.env.SES_FROM_EMAIL,
+      Destination: {
+        ToAddresses: [process.env.SES_TO_EMAIL],
+      },
+      Message: {
+        Subject: { Data: "Abundance Check GitHub AWS Report" },
+        Body: {
+          Text: { Data: logReport },
+        },
+      },
+    };
+    await ses.send(new SendEmailCommand(params));
+    console.log("SES report email sent.");
+  } catch (err) {
+    console.error("Failed to send SES report email:", err);
   }
-  if (notFoundProjects.length > 0) {
-    console.log(
-      `Projects not found: ${notFoundProjects.length} (${notFoundProjects.join(
-        ", "
-      )})`
-    );
-  } else {
-    console.log("All projects found.");
-  }
+
   const response = {
     statusCode: 200,
     body: JSON.stringify("Github has been checked"),
