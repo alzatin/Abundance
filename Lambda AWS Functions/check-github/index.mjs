@@ -18,7 +18,9 @@ const tableName = "abundance-projects";
 const recentlyDeletedTable = "recently-deleted-abundance";
 
 export const handler = async (event, context) => {
-  const octokit = new Octokit();
+  const octokit = new Octokit({
+    auth: process.env.GIT_ACCESS,
+  });
 
   /*Scans parameter to returns attributes owner, repoName, fork from all repositories in table*/
   const command = new ScanCommand({
@@ -55,6 +57,9 @@ export const handler = async (event, context) => {
 
   items = await scanExecute();
 
+  console.log("Items to check:", items.length);
+  await checkRateLimit();
+
   let promises = items
     .filter((repo) => !repo.privateRepo)
     .map((repo) => {
@@ -67,13 +72,17 @@ export const handler = async (event, context) => {
       );
     });
 
-  await Promise.all(promises).then((results) => {
-    const response = {
-      statusCode: 200,
-      body: JSON.stringify("Github has been checked"),
-    };
-    return response;
-  });
+  await Promise.all(promises)
+    .then((results) => {
+      const response = {
+        statusCode: 200,
+        body: JSON.stringify("Github has been checked"),
+      };
+      return response;
+    })
+    .catch((error) => {
+      console.error("Unhandled promise rejection in Promise.all:", error);
+    });
 
   async function checkUpdate(owner, repoName, forks, githubForks) {
     const input = {
@@ -99,61 +108,114 @@ export const handler = async (event, context) => {
     }
   }
 
+  async function checkRateLimit() {
+    const response = await fetch("https://api.github.com/rate_limit", {
+      headers: {
+        Authorization: `Bearer ${process.env.GIT_ACCESS}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Failed to fetch rate limit status.");
+      return null;
+    }
+
+    const data = await response.json();
+    console.log("Rate Limit Status:", data);
+    return data;
+  }
+
   /* Makes request to github to check if repo exists, if it doesn't deletes from table, it it does updates in table*/
   async function checkGithub(owner, repoName, forks, lastFoundGit, contentURL) {
-    const response = await fetch(contentURL);
-    if (!response.ok) {
-      console.log(owner + "," + repoName + "not found");
-      //when was the last time it was found, compare times
-      let currentTime = new Date();
-      let expireTime = new Date(lastFoundGit);
+    const failureCountKey = "failureCount";
 
-      let minutes = (expireTime - currentTime) / (1000 * 60);
-      let days = minutes / 1440;
-      //remove from table if you haven't found in 3 days
-      if (days < -3.5) {
-        // deleting must be broken , alzatin projects getting randomly erased
-        //deleteFromTable(owner, repoName);
-      }
-    } else {
-      /*if repo exists fetch from github/ exceeding requests :( which is probably why delete was breaking)
-      return octokit.rest.repos
-      .get({
+    try {
+      // Use Octokit to check if repo exists
+      const repoResponse = await octokit.rest.repos.get({
         owner: owner,
         repo: repoName,
-      })
-      .then((response) => {
-        console.log(response)
-        return checkUpdate(
-          owner,
-          repoName,
-          forks,
-          response.data.forks_count
-        ).then((response) => {
-          return response;
-        });
-      })*/
-    }
-  }
-  /*Removes non existent repos from table */
-  async function deleteFromTable(owner, repoName) {
-    pushingToRecentlyDeletedTable(owner, repoName)
-      .then(async () => {
-        const params = {
+      });
+      /*
+      // If found, reset failure count if it exists
+      const resetParams = {
+        TableName: tableName,
+        Key: {
+          owner: owner,
+          repoName: repoName,
+        },
+        UpdateExpression: `REMOVE ${failureCountKey}`,
+      };
+      const resetCommand = new UpdateCommand(resetParams);
+      await dynamo.send(resetCommand);*/
+      // Update repository details
+      return; //checkUpdate(owner, repoName, forks, repoResponse.data.forks_count);
+    } catch (error) {
+      if (error.status === 404) {
+        console.log(`Project not found: ${owner}/${repoName}`);
+        await deleteFromTable(owner, repoName);
+        /*
+        // Fetch current failure count from DynamoDB
+        const getParams = {
           TableName: tableName,
           Key: {
             owner: owner,
             repoName: repoName,
           },
+          ProjectionExpression: failureCountKey,
         };
-        const command = new DeleteCommand(params);
-        console.log("deleting item" + owner + "/" + repoName);
-        return await dynamo.send(command);
-      })
-      .catch((error) => {
-        console.error(error);
-        throw error; // re-throw the error
-      });
+        const getCommand = new GetCommand(getParams);
+        const getResponse = await dynamo.send(getCommand);
+        const currentFailureCount = getResponse.Item?.[failureCountKey] || 0;
+
+        // Increment failure count
+        const newFailureCount = currentFailureCount + 1;
+        const updateParams = {
+          TableName: tableName,
+          Key: {
+            owner: owner,
+            repoName: repoName,
+          },
+          UpdateExpression: `SET ${failureCountKey} = :failureCount`,
+          ExpressionAttributeValues: {
+            ":failureCount": newFailureCount,
+          },
+        };
+        const updateCommand = new UpdateCommand(updateParams);
+        await dynamo.send(updateCommand);
+
+        // Delete from table if failure count reaches 3
+        if (newFailureCount >= 3) {
+          console.log(
+            `(DELETE DISABLED) Deleting project after 3 consecutive failures: ${owner}/${repoName}`
+          );
+          //await deleteFromTable(owner, repoName);
+        }
+          */
+      } else {
+        // Log and rethrow unexpected errors
+        console.error(`Error checking repo ${owner}/${repoName}:`, error);
+        throw error;
+      }
+    }
+  }
+  /*Removes non existent repos from table */
+  async function deleteFromTable(owner, repoName) {
+    try {
+      await pushingToRecentlyDeletedTable(owner, repoName);
+      const params = {
+        TableName: tableName,
+        Key: {
+          owner: owner,
+          repoName: repoName,
+        },
+      };
+      const command = new DeleteCommand(params);
+      console.log("deleting item" + owner + "/" + repoName);
+      return await dynamo.send(command);
+    } catch (error) {
+      console.error(error);
+      throw error; // re-throw the error
+    }
   }
   async function pushingToRecentlyDeletedTable(owner, repoName) {
     // push to recently deleted table
