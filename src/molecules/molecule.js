@@ -251,13 +251,14 @@ export default class Molecule extends Atom {
             path: "project.abundance",
           })
           .then((response) => {
-            // Delete nodes so deserialize doesn't repeat, could be useful to not delete for a diff in the future
-
+            // Clear the nodesOnTheScreen array before deserialization to avoid doubling
             GlobalVariables.topLevelMolecule.nodesOnTheScreen.forEach(
               (atom) => {
                 atom.deleteNode();
               }
             );
+            GlobalVariables.topLevelMolecule.nodesOnTheScreen = []; // <-- clear the array
+
             let rawFile = JSON.parse(atob(response.data.content));
 
             if (rawFile.filetypeVersion == 1) {
