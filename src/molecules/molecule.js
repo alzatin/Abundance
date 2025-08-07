@@ -722,33 +722,46 @@ export default class Molecule extends Atom {
   recomputeMolecule(outputID) {
     try {
       this.processing = true;
-      const centeredText = document.querySelector(".loading");
-      centeredText.style.display = "flex";
+      const loadingDiv = document.querySelector(".loading");
+      loadingDiv.style.display = "flex";
 
-      GlobalVariables.cad.molecule(this.uniqueID, outputID).then(() => {
-        //If we're currently inside this molecule, we don't want to pass the update to the next level until we leave
-        if (GlobalVariables.currentMolecule !== this) {
-          this.basicThreadValueProcessing();
-        } else {
-          this.awaitingPropagationFlag = true;
-        }
+      GlobalVariables.cad
+        .molecule(this.uniqueID, outputID)
+        .then(() => {
+          //If we're currently inside this molecule, we don't want to pass the update to the next level until we leave
+          if (GlobalVariables.currentMolecule !== this) {
+            this.basicThreadValueProcessing();
+          } else {
+            this.awaitingPropagationFlag = true;
+          }
 
-        // Compile BOM at the top level to capture the entire project
-        if (GlobalVariables.topLevelMolecule === this) {
-          GlobalVariables.topLevelMolecule
-            .compileBom()
-            .then((result) => {
-              GlobalVariables.topLevelMolecule.compiledBom = result;
-            })
-            .catch((err) => {
-              console.warn("Failed to compile BOM at top level:", err);
-            });
-        }
-        if (this.selected) {
-          this.sendToRender();
-        }
-      });
+          // Compile BOM at the top level to capture the entire project
+          if (GlobalVariables.topLevelMolecule === this) {
+            GlobalVariables.topLevelMolecule
+              .compileBom()
+              .then((result) => {
+                GlobalVariables.topLevelMolecule.compiledBom = result;
+              })
+              .catch((err) => {
+                console.warn("Failed to compile BOM at top level:", err);
+              });
+          }
+
+          if (this.selected) {
+            this.sendToRender();
+          } else {
+            loadingDiv.style.display = "none"; // Hide loading if not selected
+          }
+        })
+        .catch((err) => {
+          this.setError(err);
+        });
     } catch (err) {
+      // Hide loading dots if there's an error in the try block
+      const loadingDots = document.querySelector(".loading");
+      if (loadingDots) {
+        loadingDots.style.display = "none";
+      }
       this.setError(err);
     }
   }
