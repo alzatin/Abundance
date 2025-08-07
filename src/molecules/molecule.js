@@ -970,11 +970,14 @@ export default class Molecule extends Atom {
     });
   }
   /**
-   * Loads a project into this GitHub molecule from github based on the passed github ID. This function is async and execution time depends on project complexity, and network speed.
-   * @param {number} id - The GitHub project ID for the project to be loaded.
+   * Loads a project into this GitHub molecule from GitHub based on the passed GitHub object.
+   * This function is async and execution time depends on project complexity and network speed.
+   * @param {object} gitObj - An object containing the GitHub repository information (owner, repoName, etc).
+   * @param {object} oldObject - (Optional) The previous atom object to recover IO values from.
+   * @param {object} oldParentObjectConnectors - (Optional) Connectors from the parent object to remap.
    */
   async loadGithubMoleculeByName(
-    item,
+    gitObj,
     oldObject = {},
     oldParentObjectConnectors = {}
   ) {
@@ -982,8 +985,8 @@ export default class Molecule extends Atom {
     try {
       await octokit
         .request("GET /repos/{owner}/{repo}/contents/project.abundance", {
-          owner: item.owner,
-          repo: item.repoName,
+          owner: gitObj.owner,
+          repo: gitObj.repoName,
         })
         .then((response) => {
           let rawFile = JSON.parse(atob(response.data.content));
@@ -1000,7 +1003,7 @@ export default class Molecule extends Atom {
               uniqueID: newMoleculeUniqueID,
               x: this.x,
               y: this.y,
-              parentRepo: item,
+              parentRepo: gitObj,
               topLevel: false,
               ioValues: oldObject.ioValues,
             };
@@ -1018,7 +1021,7 @@ export default class Molecule extends Atom {
             }
             valuesToOverwriteInLoadedVersion = {
               uniqueID: newMoleculeUniqueID,
-              parentRepo: item,
+              parentRepo: gitObj,
               x: xPos,
               y: yPos,
               topLevel: false,
