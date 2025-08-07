@@ -744,11 +744,31 @@ export default class Molecule extends Atom {
               console.warn("Failed to compile BOM at top level:", err);
             });
         }
+        
+        // Hide loading dots when molecule computation is complete, regardless of selection state
+        const loadingDots = document.querySelector(".loading");
+        if (loadingDots) {
+          loadingDots.style.display = "none";
+        }
+        
         if (this.selected) {
           this.sendToRender();
         }
+      })
+      .catch((err) => {
+        // Hide loading dots even if there's an error during computation
+        const loadingDots = document.querySelector(".loading");
+        if (loadingDots) {
+          loadingDots.style.display = "none";
+        }
+        this.setError(err);
       });
     } catch (err) {
+      // Hide loading dots if there's an error in the try block
+      const loadingDots = document.querySelector(".loading");
+      if (loadingDots) {
+        loadingDots.style.display = "none";
+      }
       this.setError(err);
     }
   }
