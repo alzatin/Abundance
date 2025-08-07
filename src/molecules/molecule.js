@@ -722,8 +722,8 @@ export default class Molecule extends Atom {
   recomputeMolecule(outputID) {
     try {
       this.processing = true;
-      const centeredText = document.querySelector(".loading");
-      centeredText.style.display = "flex";
+      const loadingDiv = document.querySelector(".loading");
+      loadingDiv.style.display = "flex";
 
       GlobalVariables.cad
         .molecule(this.uniqueID, outputID)
@@ -750,11 +750,7 @@ export default class Molecule extends Atom {
           if (this.selected) {
             this.sendToRender();
           } else {
-            // Hide loading dots when molecule computation is complete if not selected. if selected, it will be hidden in the writetodisplay method
-            const loadingDots = document.querySelector(".loading");
-            if (loadingDots) {
-              loadingDots.style.display = "none";
-            }
+            loadingDiv.style.display = "none"; // Hide loading if not selected
           }
         })
         .catch((err) => {
