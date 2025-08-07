@@ -742,9 +742,6 @@ export default class Molecule extends Atom {
             .catch((err) => {
               console.warn("Failed to compile BOM at top level:", err);
             });
-          
-          // Create Puppeteer div when top-level molecule computation is complete
-          this.createPuppeteerDiv();
         }
         if (this.selected) {
           this.sendToRender();
@@ -1263,22 +1260,5 @@ export default class Molecule extends Atom {
     //Send code to JSxCAD to render
     //console.log(this);
     GlobalVariables.writeToDisplay(this.uniqueID);
-  }
-
-  /**
-   * Creates an element to check with Puppeteer if the molecule is fully loaded
-   */
-  createPuppeteerDiv() {
-    // Check if the div already exists
-    const existingDiv = document.getElementById(
-      "molecule-fully-render-puppeteer"
-    );
-    if (!existingDiv) {
-      // If it doesn't exist, create it
-      const invisibleDiv = document.createElement("div");
-      invisibleDiv.id = "molecule-fully-render-puppeteer";
-      invisibleDiv.style.display = "none";
-      document.body.appendChild(invisibleDiv);
-    }
   }
 }
