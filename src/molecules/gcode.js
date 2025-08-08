@@ -1,8 +1,8 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import { button } from "leva";
-import { initKiriMoto, generateKirimoto, downloadGcode } from '../components/secondary/Kirimoto.js'; // Adjust the path
-//import saveAs from '../lib/FileSaver.js'
+
+import { saveAs } from "file-saver";
 
 /**
  * This class creates the circle atom.
@@ -39,7 +39,8 @@ export default class Gcode extends Atom {
      * A description of this atom
      * @type {string}
      */
-    this.description = "Generates Maslow gcode from the input geometry. For single parts, generates one gcode file. For assemblies, extracts individual parts, sorts them left to right based on bounding boxes, generates gcode for each part sequentially, and concatenates the results into one file.";
+    this.description =
+      "Generates Maslow gcode from the input geometry. For single parts, generates one gcode file. For assemblies, extracts individual parts, sorts them left to right based on bounding boxes, generates gcode for each part sequentially, and concatenates the results into one file.";
 
     this.blob = null;
     /**
@@ -75,15 +76,10 @@ export default class Gcode extends Atom {
 
     this.partName = this.parent.name;
 
-    // Initialize Kiri:Moto if not already initialized
-    if (!GlobalVariables.kirimotoInitialized) {
-      initKiriMoto();
-    }
-
     this.stlURL = null; // Store the STL URL
- 
+
     this.center = [0, 0, 0]; //Used to correctly position the gcode
-    
+
     /**
      * Flag to track if we're processing an assembly
      * @type {boolean}
@@ -152,24 +148,17 @@ export default class Gcode extends Atom {
    * Handles both single parts and assemblies
    */
   async _generateGcode() {
-    if (!GlobalVariables.kirimotoInitialized) {
-      // If Kirimoto is not initialized, wait 500ms and try again
-      setTimeout(() => this._generateGcode(), 500);
-      console.log("Waiting for Kirimoto to initialize...");
-      return;
-    }
-    
     // Initialize progress tracking
     this.progress = 0.0;
     this.processing = true;
-    
+
     try {
       // Get the current input ID
       let inputID = this.findIOValue("Geometry");
-      
+
       // Check if the input is an assembly
       const isAssembly = await this._checkIfAssembly(inputID);
-      
+
       if (isAssembly) {
         // For assemblies, extract parts and generate G-code sequentially
         const parts = await this._extractPartsFromAssembly(inputID);
@@ -183,16 +172,14 @@ export default class Gcode extends Atom {
           // Force a redraw to show progress update
           this.sendToRender();
         };
-        
-        generateKirimoto(
-          this.stlURL, 
-          this.center, 
-          this.findIOValue("Tool Size"), 
-          this.findIOValue("Passes"), 
-          this.findIOValue("Speed"), 
-          this.findIOValue("Cut Through"), 
-          gcodeCallback,
-          progressCallback
+        window.generateGcode(
+          this.stlURL,
+          this.center,
+          this.findIOValue("Tool Size"),
+          this.findIOValue("Passes"),
+          this.findIOValue("Speed"),
+          this.findIOValue("Cut Through"),
+          gcodeCallback
         );
       }
     } catch (err) {
@@ -227,7 +214,7 @@ export default class Gcode extends Atom {
     try {
       // Check if the input is an assembly
       const isAssembly = await this._checkIfAssembly(inputID);
-      
+
       if (isAssembly) {
         // Process as assembly - extract parts and generate G-code sequentially
         await this._processAssembly(inputID);
@@ -248,7 +235,10 @@ export default class Gcode extends Atom {
    */
   async _checkIfAssembly(inputID) {
     return new Promise((resolve) => {
-      GlobalVariables.cad.isAssembly(inputID).then(resolve).catch(() => resolve(false));
+      GlobalVariables.cad
+        .isAssembly(inputID)
+        .then(resolve)
+        .catch(() => resolve(false));
     });
   }
 
@@ -258,28 +248,30 @@ export default class Gcode extends Atom {
    */
   async _processSinglePart(inputID) {
     this._isProcessingAssembly = false;
-    
+
     GlobalVariables.cad
-      .visExport(this.uniqueID+1, inputID, "STL") //What a hack, we shouldn't be using uniqueID+1 here
+      .visExport(this.uniqueID + 1, inputID, "STL") //What a hack, we shouldn't be using uniqueID+1 here
       .then((result) => {
         GlobalVariables.cad
-          .downExport(this.uniqueID+1, "STL")
+          .downExport(this.uniqueID + 1, "STL")
           .then((result) => {
             //Delete anything previously stored
             if (this.stlURL) {
               URL.revokeObjectURL(this.stlURL); // Clean up the previous URL
             }
             this.stlURL = URL.createObjectURL(result); // Store the STL URL
-            GlobalVariables.cad.getBoundingBox(this.uniqueID+1).then((bounds) => {
-              this.center = [
-                (bounds.max[0] + bounds.min[0]) / 2,
-                (bounds.max[1] + bounds.min[1]) / 2,
-                (bounds.max[2] + bounds.min[2]) / 2,
-              ];
-              if(window.location.pathname.includes('/run/')) {
-                this._generateGcode();
-              }
-            });
+            GlobalVariables.cad
+              .getBoundingBox(this.uniqueID + 1)
+              .then((bounds) => {
+                this.center = [
+                  (bounds.max[0] + bounds.min[0]) / 2,
+                  (bounds.max[1] + bounds.min[1]) / 2,
+                  (bounds.max[2] + bounds.min[2]) / 2,
+                ];
+                if (window.location.pathname.includes("/run/")) {
+                  this._generateGcode();
+                }
+              });
           });
       })
       .catch((err) => {
@@ -294,14 +286,14 @@ export default class Gcode extends Atom {
   async _processAssembly(inputID) {
     try {
       this._isProcessingAssembly = true;
-      
+
       // Extract individual parts from assembly
       const parts = await this._extractPartsFromAssembly(inputID);
-      
+
       // Sort parts left to right based on bounding boxes
       const sortedParts = await this._sortPartsLeftToRight(parts);
-      
-      if (window.location.pathname.includes('/run/')) {
+
+      if (window.location.pathname.includes("/run/")) {
         // Generate G-code for each part sequentially
         await this._generateSequentialGcode(sortedParts);
       }
@@ -329,7 +321,7 @@ export default class Gcode extends Atom {
    */
   async _sortPartsLeftToRight(parts) {
     const partsWithBounds = [];
-    
+
     for (const partID of parts) {
       try {
         const bounds = await GlobalVariables.cad.getBoundingBox(partID);
@@ -337,17 +329,17 @@ export default class Gcode extends Atom {
         partsWithBounds.push({
           id: partID,
           centerX: centerX,
-          bounds: bounds
+          bounds: bounds,
         });
       } catch (err) {
         console.warn(`Could not get bounds for part ${partID}:`, err);
       }
     }
-    
+
     // Sort by X coordinate (left to right)
     partsWithBounds.sort((a, b) => a.centerX - b.centerX);
-    
-    return partsWithBounds.map(part => part.id);
+
+    return partsWithBounds.map((part) => part.id);
   }
 
   /**
@@ -357,47 +349,59 @@ export default class Gcode extends Atom {
   async _generateSequentialGcode(sortedPartIDs) {
     const allGcode = [];
     this.progress = 0.0;
-    
+
     for (let i = 0; i < sortedPartIDs.length; i++) {
       const partID = sortedPartIDs[i];
       const partProgress = i / sortedPartIDs.length;
-      
+
       try {
         // Update progress
         this.progress = partProgress;
         this.sendToRender();
-        
+
         // Generate STL for this part
-        await GlobalVariables.cad.visExport(this.uniqueID + 100 + i, partID, "STL");
-        const stlBlob = await GlobalVariables.cad.downExport(this.uniqueID + 100 + i, "STL");
+        await GlobalVariables.cad.visExport(
+          this.uniqueID + 100 + i,
+          partID,
+          "STL"
+        );
+        const stlBlob = await GlobalVariables.cad.downExport(
+          this.uniqueID + 100 + i,
+          "STL"
+        );
         const stlURL = URL.createObjectURL(stlBlob);
-        
+
         // Get part bounds for centering
-        const bounds = await GlobalVariables.cad.getBoundingBox(this.uniqueID + 100 + i);
+        const bounds = await GlobalVariables.cad.getBoundingBox(
+          this.uniqueID + 100 + i
+        );
         const center = [
           (bounds.max[0] + bounds.min[0]) / 2,
           (bounds.max[1] + bounds.min[1]) / 2,
           (bounds.max[2] + bounds.min[2]) / 2,
         ];
-        
+
         // Generate G-code for this part
-        const partGcode = await this._generateGcodeForPart(stlURL, center, i + 1);
+        const partGcode = await this._generateGcodeForPart(
+          stlURL,
+          center,
+          i + 1
+        );
         allGcode.push(partGcode);
-        
+
         // Clean up STL URL
         URL.revokeObjectURL(stlURL);
-        
       } catch (err) {
         console.error(`Error generating G-code for part ${i + 1}:`, err);
         // Continue with next part
       }
     }
-    
+
     // Concatenate all G-code
     this.gcodeString = this._concatenateGcode(allGcode);
     this.gcodeGenerated = true;
     this.progress = 1.0;
-    
+
     // Visualize the concatenated G-code
     GlobalVariables.cad.visualizeGcode(this.uniqueID, this.gcodeString);
     this.basicThreadValueProcessing();
@@ -416,25 +420,25 @@ export default class Gcode extends Atom {
       const partGcodeCallback = (gcode) => {
         resolve(gcode);
       };
-      
+
       const partProgressCallback = (progress) => {
         // Update overall progress within this part's range
         // Each part gets equal weight in the overall progress
       };
-      
+
       // Set a timeout in case generation fails
       const timeout = setTimeout(() => {
         reject(new Error(`G-code generation timeout for part ${partNumber}`));
       }, 60000); // 60 second timeout
-      
+
       try {
         generateKirimoto(
-          stlURL, 
-          center, 
-          this.findIOValue("Tool Size"), 
-          this.findIOValue("Passes"), 
-          this.findIOValue("Speed"), 
-          this.findIOValue("Cut Through"), 
+          stlURL,
+          center,
+          this.findIOValue("Tool Size"),
+          this.findIOValue("Passes"),
+          this.findIOValue("Speed"),
+          this.findIOValue("Cut Through"),
           (gcode) => {
             clearTimeout(timeout);
             partGcodeCallback(gcode);
@@ -456,15 +460,16 @@ export default class Gcode extends Atom {
   _concatenateGcode(gcodeArray) {
     if (gcodeArray.length === 0) return "";
     if (gcodeArray.length === 1) return gcodeArray[0];
-    
-    const partName = this.findIOValue("Part Name") || this.partName || "assembly";
-    
+
+    const partName =
+      this.findIOValue("Part Name") || this.partName || "assembly";
+
     // Create header comment
     let result = `; Generated by Abundance CAD - Assembly G-code\n`;
     result += `; Project: ${partName}\n`;
     result += `; Total parts: ${gcodeArray.length}\n`;
     result += `; Generated: ${new Date().toISOString()}\n\n`;
-    
+
     // Process each G-code
     const processedGcode = gcodeArray.map((gcode, index) => {
       if (index === gcodeArray.length - 1) {
@@ -473,22 +478,24 @@ export default class Gcode extends Atom {
       } else {
         // Remove common end commands (M30, M2, etc.) but preserve other content
         return gcode
-          .replace(/M30.*$/gm, '')
-          .replace(/M2.*$/gm, '')
-          .replace(/^\s*$/gm, '') // Remove empty lines
+          .replace(/M30.*$/gm, "")
+          .replace(/M2.*$/gm, "")
+          .replace(/^\s*$/gm, "") // Remove empty lines
           .trim();
       }
     });
-    
+
     // Join all G-code with part separators
-    result += processedGcode.map((gcode, index) => {
-      if (index === 0) {
-        return `; === Part 1 (leftmost) ===\n${gcode}`;
-      } else {
-        return `\n; === Part ${index + 1} ===\n${gcode}`;
-      }
-    }).join('\n');
-    
+    result += processedGcode
+      .map((gcode, index) => {
+        if (index === 0) {
+          return `; === Part 1 (leftmost) ===\n${gcode}`;
+        } else {
+          return `\n; === Part ${index + 1} ===\n${gcode}`;
+        }
+      })
+      .join("\n");
+
     return result;
   }
 
@@ -537,13 +544,18 @@ export default class Gcode extends Atom {
 
     const partName = this.findIOValue("Part Name") || this.partName || "output";
     // For assemblies, show "Assembly" in the button name, otherwise use the part name
-    const displayName = this._isProcessingAssembly ? `${partName}_assembly` : partName;
+    const displayName = this._isProcessingAssembly
+      ? `${partName}_assembly`
+      : partName;
     inputParams[`Download Gcode - ${displayName}`] = button(() => {
       if (this.gcodeGenerated && this.gcodeString) {
         // Get the current part name dynamically when button is clicked
-        const currentPartName = this.findIOValue("Part Name") || this.partName || "output";
-        const fileName = this._isProcessingAssembly ? `${currentPartName}_assembly.gcode` : `${currentPartName}.gcode`;
-        downloadGcode(this.gcodeString, fileName);
+        const currentPartName =
+          this.findIOValue("Part Name") || this.partName || "output";
+        const fileName = this._isProcessingAssembly
+          ? `${currentPartName}_assembly.gcode`
+          : `${currentPartName}.gcode`;
+        this, downloadGcode(this.gcodeString, fileName);
       } else {
         console.warn("No G-code available. Please generate G-code first.");
         // You could also show an alert or notification to the user here
@@ -554,6 +566,17 @@ export default class Gcode extends Atom {
     return inputParams;
   }
 
+  //Function to download G-code from a G-code string
+  downloadGcode = (gcode, filename = "output.gcode") => {
+    if (!gcode) {
+      console.error("No G-code available to download.");
+      return;
+    }
+
+    const blob = new Blob([gcode], { type: "text/plain" });
+    saveAs(blob, filename);
+  };
+
   /**
    * Add the part name to the object which is saved for this molecule
    */
@@ -563,5 +586,4 @@ export default class Gcode extends Atom {
 
     return superSerialObject;
   }
-
 }
