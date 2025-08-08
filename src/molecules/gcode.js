@@ -432,7 +432,7 @@ export default class Gcode extends Atom {
       }, 60000); // 60 second timeout
 
       try {
-        generateKirimoto(
+        window.generateGcode(
           stlURL,
           center,
           this.findIOValue("Tool Size"),
