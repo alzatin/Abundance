@@ -71,13 +71,25 @@ export default function BackgroundModel({
             console.log("BackgroundModel: Large file detected, using download_url:", result.data.download_url);
             
             // Fetch the file directly using the download URL
+            console.log("🎯 BACKGROUND MODEL: Starting fetch from download URL...");
             const response = await fetch(result.data.download_url);
+            console.log("🎯 BACKGROUND MODEL: Fetch response received:", {
+              ok: response.ok,
+              status: response.status,
+              statusText: response.statusText,
+              headers: {
+                'content-type': response.headers.get('content-type'),
+                'content-length': response.headers.get('content-length')
+              }
+            });
+            
             if (!response.ok) {
               throw new Error(`Failed to fetch file from download URL: ${response.status} ${response.statusText}`);
             }
             
+            console.log("🎯 BACKGROUND MODEL: Converting response to arrayBuffer...");
             const arrayBuffer = await response.arrayBuffer();
-            console.log("BackgroundModel: Downloaded file, size:", arrayBuffer.byteLength);
+            console.log("🎯 BACKGROUND MODEL: Downloaded file successfully - size:", arrayBuffer.byteLength);
             
             // Determine MIME type based on file extension
             const extension = fileName.toLowerCase().split('.').pop();
@@ -88,9 +100,13 @@ export default function BackgroundModel({
               mimeType = "model/gltf+json";
             }
             
-            console.log("BackgroundModel: Creating blob with MIME type:", mimeType);
+            console.log("🎯 BACKGROUND MODEL: Creating blob with MIME type:", mimeType);
             const blob = new Blob([arrayBuffer], { type: mimeType });
+            console.log("🎯 BACKGROUND MODEL: Blob created successfully - size:", blob.size, "type:", blob.type);
+            
+            console.log("🎯 BACKGROUND MODEL: Creating object URL...");
             url = URL.createObjectURL(blob);
+            console.log("🎯 BACKGROUND MODEL: Object URL created successfully:", url);
           } else {
             // If no download_url, try constructing raw file URL as fallback
             console.log("BackgroundModel: No download_url, attempting raw file access");
@@ -160,8 +176,10 @@ export default function BackgroundModel({
           
           url = URL.createObjectURL(blob);
         }
-        console.log("BackgroundModel: Created blob URL successfully:", url);
+        console.log("🎯 BACKGROUND MODEL: Final URL created successfully:", url);
+        console.log("🎯 BACKGROUND MODEL: Setting model URL in state...");
         setModelUrl(url);
+        console.log("🎯 BACKGROUND MODEL: Model URL set in state, should trigger BackgroundModelMesh render");
       } catch (err) {
         console.error("Error loading background 3D model (attempt", retryCount + 1, "):");
         console.error("Error message:", err.message);
@@ -237,31 +255,61 @@ function BackgroundModelMesh({ url }) {
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {
-    console.log("BackgroundModelMesh: Starting to load model from URL:", url);
+    console.log("🎯 GLTF LOADER: BackgroundModelMesh useEffect triggered with URL:", url);
+    console.log("🎯 GLTF LOADER: URL type:", typeof url);
+    console.log("🎯 GLTF LOADER: URL length:", url?.length || 0);
+    
     setLoading(true);
     setError(null);
     setModel(null);
     
+    console.log("🎯 GLTF LOADER: Creating GLTFLoader instance...");
     const loader = new GLTFLoader();
+    console.log("🎯 GLTF LOADER: GLTFLoader created successfully");
     
+    console.log("🎯 GLTF LOADER: Starting load operation...");
     loader.load(
       url,
       (gltf) => {
-        console.log("BackgroundModelMesh: Model loaded successfully:", {
-          scene: gltf.scene,
+        console.log("🎯 GLTF LOADER: SUCCESS - Model loaded successfully!");
+        console.log("🎯 GLTF LOADER: GLTF object structure:", {
+          hasScene: !!gltf.scene,
+          sceneType: gltf.scene?.type,
+          sceneName: gltf.scene?.name,
+          sceneChildren: gltf.scene?.children?.length || 0,
           animations: gltf.animations?.length || 0,
           cameras: gltf.cameras?.length || 0,
-          scenes: gltf.scenes?.length || 0
+          scenes: gltf.scenes?.length || 0,
+          asset: gltf.asset
         });
+        
+        // Log detailed scene hierarchy
+        if (gltf.scene) {
+          console.log("🎯 GLTF LOADER: Scene hierarchy:");
+          gltf.scene.traverse((child, index) => {
+            console.log(`🎯 GLTF LOADER:   Child ${index}:`, {
+              name: child.name || "unnamed",
+              type: child.type,
+              visible: child.visible,
+              hasGeometry: !!child.geometry,
+              hasMaterial: !!child.material,
+              position: child.position,
+              scale: child.scale,
+              rotation: child.rotation
+            });
+          });
+        }
         
         // Ensure the scene has valid geometry
         if (gltf.scene && gltf.scene.children.length > 0) {
-          console.log("BackgroundModelMesh: Scene has", gltf.scene.children.length, "children");
+          console.log("🎯 GLTF LOADER: Scene validation passed - has", gltf.scene.children.length, "children");
+          console.log("🎯 GLTF LOADER: Setting model in state...");
           setModel(gltf);
           setError(null);
           setLoading(false);
+          console.log("🎯 GLTF LOADER: Model state updated successfully");
         } else {
-          console.warn("BackgroundModelMesh: Model loaded but scene is empty");
+          console.warn("🎯 GLTF LOADER: Scene validation failed - scene is empty");
           setError(new Error("Model loaded but contains no visible geometry"));
           setLoading(false);
         }
@@ -269,17 +317,19 @@ function BackgroundModelMesh({ url }) {
       (progress) => {
         if (progress.lengthComputable) {
           const percentage = (progress.loaded / progress.total) * 100;
-          console.log("BackgroundModelMesh: Loading progress:", Math.round(percentage) + "%");
+          console.log("🎯 GLTF LOADER: Loading progress:", Math.round(percentage) + "%", `(${progress.loaded}/${progress.total} bytes)`);
         } else {
-          console.log("BackgroundModelMesh: Loading progress:", progress.loaded, "bytes loaded");
+          console.log("🎯 GLTF LOADER: Loading progress:", progress.loaded, "bytes loaded");
         }
       },
       (error) => {
-        console.error("BackgroundModelMesh: Error loading model:");
-        console.error("Error type:", typeof error);
-        console.error("Error message:", error?.message || 'No message available');
-        console.error("Error toString:", error?.toString ? error.toString() : 'No toString available');
-        console.error("Full error object:", error);
+        console.error("🎯 GLTF LOADER: ERROR - Model loading failed!");
+        console.error("🎯 GLTF LOADER: Error type:", typeof error);
+        console.error("🎯 GLTF LOADER: Error constructor:", error?.constructor?.name);
+        console.error("🎯 GLTF LOADER: Error message:", error?.message || 'No message available');
+        console.error("🎯 GLTF LOADER: Error toString:", error?.toString ? error.toString() : 'No toString available');
+        console.error("🎯 GLTF LOADER: Full error object:", error);
+        console.error("🎯 GLTF LOADER: Error stack:", error?.stack);
         
         // Create a proper error message
         let errorMessage = "Unknown error loading 3D model";
@@ -291,6 +341,7 @@ function BackgroundModelMesh({ url }) {
           errorMessage = error;
         }
         
+        console.error("🎯 GLTF LOADER: Final error message:", errorMessage);
         setError(new Error(`GLTFLoader failed: ${errorMessage}`));
         setModel(null);
         setLoading(false);
@@ -299,29 +350,31 @@ function BackgroundModelMesh({ url }) {
 
     // Cleanup function
     return () => {
+      console.log("🎯 GLTF LOADER: useEffect cleanup called");
       setLoading(false);
     };
   }, [url]);
   
   if (loading) {
-    console.log("BackgroundModelMesh: Still loading model...");
+    console.log("🎯 GLTF MESH: Still loading model...");
     return null;
   }
   
   if (error) {
-    console.error("BackgroundModelMesh: Render error:");
-    console.error("Error message:", error?.message || 'No message');
-    console.error("Error toString:", error?.toString ? error.toString() : 'No toString');
-    console.error("Full error object:", error);
+    console.error("🎯 GLTF MESH: Render error:");
+    console.error("🎯 GLTF MESH: Error message:", error?.message || 'No message');
+    console.error("🎯 GLTF MESH: Error toString:", error?.toString ? error.toString() : 'No toString');
+    console.error("🎯 GLTF MESH: Full error object:", error);
     return null;
   }
   
   if (!model || !model.scene) {
-    console.log("BackgroundModelMesh: Model not ready yet - model:", !!model, "scene:", !!model?.scene);
+    console.log("🎯 GLTF MESH: Model not ready yet - model:", !!model, "scene:", !!model?.scene);
     return null;
   }
   
-  console.log("BackgroundModelMesh: Rendering model with scene:", {
+  console.log("🎯 GLTF MESH: Model is ready, proceeding with rendering...");
+  console.log("🎯 GLTF MESH: Model details:", {
     children: model.scene.children.length,
     boundingBox: model.scene.children[0]?.geometry?.boundingBox || "No bounding box",
     position: model.scene.position,
@@ -331,14 +384,18 @@ function BackgroundModelMesh({ url }) {
   });
   
   // Clone the scene to avoid conflicts with multiple instances
+  console.log("🎯 GLTF MESH: Cloning scene...");
   const clonedScene = model.scene.clone();
+  console.log("🎯 GLTF MESH: Scene cloned successfully");
   
   // Make sure the model is positioned and scaled appropriately
   // Reset any transformations that might make it invisible
+  console.log("🎯 GLTF MESH: Resetting transformations...");
   clonedScene.position.set(0, 0, 0);
   clonedScene.rotation.set(0, 0, 0);
   clonedScene.scale.set(1, 1, 1);
   clonedScene.visible = true;
+  console.log("🎯 GLTF MESH: Transformations reset");
   
   // Calculate bounding box to understand the model's actual size and position
   const box = new THREE.Box3().setFromObject(clonedScene);
@@ -397,54 +454,38 @@ function BackgroundModelMesh({ url }) {
     }
   });
   
-  console.log("BackgroundModelMesh: About to render primitive with:", {
-    position: clonedScene.position,
-    scale: clonedScene.scale,
-    visible: clonedScene.visible,
-    childCount: clonedScene.children.length
-  });
+  console.log("🎯 GLTF MESH: About to render primitive with final settings:");
+  console.log("🎯 GLTF MESH: - Position:", clonedScene.position);
+  console.log("🎯 GLTF MESH: - Scale:", clonedScene.scale);
+  console.log("🎯 GLTF MESH: - Visible:", clonedScene.visible);
+  console.log("🎯 GLTF MESH: - Child count:", clonedScene.children.length);
+  console.log("🎯 GLTF MESH: - RenderOrder:", -1);
 
   // Add debugging to track if the primitive is actually rendered
-  console.log("🎯 BACKGROUND MODEL: Rendering primitive element");
-  console.log("🎯 BACKGROUND MODEL: clonedScene object:", clonedScene);
-  console.log("🎯 BACKGROUND MODEL: clonedScene.type:", clonedScene.type);
-  console.log("🎯 BACKGROUND MODEL: clonedScene.children:", clonedScene.children);
+  console.log("🎯 GLTF MESH: Creating primitive element...");
+  console.log("🎯 GLTF MESH: clonedScene object type:", clonedScene.type);
+  console.log("🎯 GLTF MESH: clonedScene children count:", clonedScene.children.length);
   
-  // Log detailed information about materials and geometry
-  clonedScene.traverse((child) => {
-    console.log("🎯 BACKGROUND MODEL CHILD:", {
+  // Log detailed information about materials and geometry for final check
+  console.log("🎯 GLTF MESH: Final scene traverse before render:");
+  clonedScene.traverse((child, index) => {
+    console.log(`🎯 GLTF MESH FINAL: Child ${index}:`, {
       name: child.name || "unnamed",
       type: child.type,
       visible: child.visible,
       hasGeometry: !!child.geometry,
       hasMaterial: !!child.material,
-      position: child.position,
-      scale: child.scale,
+      position: child.position?.toArray ? child.position.toArray() : child.position,
+      scale: child.scale?.toArray ? child.scale.toArray() : child.scale,
       renderOrder: child.renderOrder,
-      layers: child.layers
+      layers: child.layers?.mask,
+      geometryType: child.geometry?.type,
+      materialType: child.material?.type,
+      materialColor: child.material?.color?.getHex ? child.material.color.getHex() : undefined
     });
-    
-    if (child.material) {
-      console.log("🎯 BACKGROUND MODEL MATERIAL:", {
-        type: child.material.type,
-        transparent: child.material.transparent,
-        opacity: child.material.opacity,
-        visible: child.material.visible,
-        side: child.material.side,
-        depthTest: child.material.depthTest,
-        depthWrite: child.material.depthWrite
-      });
-    }
-    
-    if (child.geometry) {
-      console.log("🎯 BACKGROUND MODEL GEOMETRY:", {
-        type: child.geometry.type,
-        verticesCount: child.geometry.attributes?.position?.count || 0,
-        boundingBox: child.geometry.boundingBox,
-        boundingSphere: child.geometry.boundingSphere
-      });
-    }
   });
+  
+  console.log("🎯 GLTF MESH: Returning primitive component NOW");
   
   return (
     <primitive 
@@ -452,16 +493,23 @@ function BackgroundModelMesh({ url }) {
       // Render behind CAD models but still visible
       renderOrder={-1}
       onUpdate={(self) => {
-        console.log("🎯 BACKGROUND MODEL: Primitive onUpdate called:", self);
+        console.log("🎯 PRIMITIVE: onUpdate called with:", {
+          type: self?.type,
+          visible: self?.visible,
+          position: self?.position,
+          childrenCount: self?.children?.length || 0
+        });
       }}
       ref={(ref) => {
-        console.log("🎯 BACKGROUND MODEL: Primitive ref callback:", ref);
+        console.log("🎯 PRIMITIVE: ref callback called with:", !!ref ? "valid ref" : "null ref");
         if (ref) {
-          console.log("🎯 BACKGROUND MODEL: Primitive ref object:", {
+          console.log("🎯 PRIMITIVE: ref object details:", {
             type: ref.type,
             visible: ref.visible,
-            position: ref.position,
-            children: ref.children?.length || 0
+            position: ref.position?.toArray ? ref.position.toArray() : ref.position,
+            children: ref.children?.length || 0,
+            parent: !!ref.parent,
+            scene: !!ref.scene
           });
         }
       }}
