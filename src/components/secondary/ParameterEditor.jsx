@@ -168,7 +168,7 @@ export default (function ParamsEditor({
     },
   };
 
-  useControls(renderSettings, { store: store2 });
+  useControls(renderSettings, { store: store2 }, [backgroundUsdzFile, showBackgroundModel]);
 
   // color theme for Leva
   const abundanceTheme = {
