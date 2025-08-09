@@ -485,7 +485,13 @@ const SettingsPopUp = ({
               </div>
               
               {backgroundUsdzFile && (
-                <div style={{ marginBottom: "10px" }}>
+                <div style={{ 
+                  marginBottom: "10px",
+                  padding: "15px",
+                  backgroundColor: "#e3f2fd",
+                  border: "3px solid #2196f3",
+                  borderRadius: "8px"
+                }}>
                   {/* SUCCESS INDICATOR */}
                   <div style={{ 
                     padding: '10px', 
@@ -499,23 +505,66 @@ const SettingsPopUp = ({
                     ✅ SUCCESS: Background model checkbox is being rendered! File: {backgroundUsdzFile}
                   </div>
                   {console.log("SettingsPopUp: Rendering background model controls for file:", backgroundUsdzFile)}
-                  <Typography variant="body2" style={{ color: "#666" }}>
+                  <Typography variant="body2" style={{ color: "#666", marginBottom: "10px" }}>
                     Current file: {backgroundUsdzFile}
                   </Typography>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={showBackgroundModel}
-                        onChange={(event) => {
-                          console.log("SettingsPopUp: Background model toggle changed to:", event.target.checked);
-                          setShowBackgroundModel(event.target.checked);
-                        }}
-                        name="backgroundModel"
-                        color="secondary"
-                      />
-                    }
-                    label="Show Background Model"
-                  />
+                  {/* SUPER VISIBLE CHECKBOX CONTAINER */}
+                  <div style={{
+                    padding: "20px",
+                    backgroundColor: "#fff3e0",
+                    border: "4px solid #ff9800",
+                    borderRadius: "8px",
+                    marginBottom: "10px"
+                  }}>
+                    <div style={{ 
+                      fontSize: "16px", 
+                      fontWeight: "bold", 
+                      marginBottom: "10px",
+                      color: "#e65100"
+                    }}>
+                      🎯 CHECKBOX SHOULD BE BELOW THIS TEXT:
+                    </div>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={showBackgroundModel}
+                          onChange={(event) => {
+                            console.log("SettingsPopUp: Background model toggle changed to:", event.target.checked);
+                            setShowBackgroundModel(event.target.checked);
+                          }}
+                          name="backgroundModel"
+                          color="secondary"
+                          style={{ 
+                            transform: "scale(1.5)",
+                            margin: "10px"
+                          }}
+                        />
+                      }
+                      label={
+                        <span style={{ 
+                          fontSize: "16px", 
+                          fontWeight: "bold",
+                          color: "#d84315"
+                        }}>
+                          Show Background Model
+                        </span>
+                      }
+                      style={{
+                        backgroundColor: "#ffccbc",
+                        padding: "10px",
+                        borderRadius: "4px",
+                        border: "2px solid #ff5722"
+                      }}
+                    />
+                    <div style={{ 
+                      fontSize: "14px", 
+                      marginTop: "10px",
+                      color: "#bf360c",
+                      fontWeight: "bold"
+                    }}>
+                      👆 THE CHECKBOX SHOULD BE VISIBLE ABOVE THIS TEXT
+                    </div>
+                  </div>
                 </div>
               )}
               {/* Enhanced debug when backgroundUsdzFile is falsy */}
