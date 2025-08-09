@@ -156,18 +156,17 @@ export default (function ParamsEditor({
         setSolid(value);
       },
     },
-  };
-
-  // Add background model toggle if a background model is available
-  if (backgroundUsdzFile) {
-    renderSettings.backgroundModel = {
-      value: showBackgroundModel,
+    backgroundModel: {
+      value: backgroundUsdzFile ? showBackgroundModel : false,
       label: "Background Model",
+      disabled: !backgroundUsdzFile,
       onChange: (value) => {
-        setShowBackgroundModel(value);
+        if (backgroundUsdzFile) {
+          setShowBackgroundModel(value);
+        }
       },
-    };
-  }
+    },
+  };
 
   useControls(renderSettings, { store: store2 });
 
