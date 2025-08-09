@@ -49,15 +49,23 @@ export default function BackgroundModel({
           hasContent: !!result.data.content,
           contentLength: result.data.content?.length || 0,
           hasDownloadUrl: !!result.data.download_url,
+          downloadUrl: result.data.download_url,
           size: result.data.size,
-          type: result.data.type
+          type: result.data.type,
+          encoding: result.data.encoding
         });
+        
+        // Log the full response structure for debugging
+        console.log("BackgroundModel: Full API response data keys:", Object.keys(result.data));
+        console.log("BackgroundModel: Full API response data:", result.data);
 
         let url;
 
         // For large files (>1MB), GitHub doesn't include content in the API response
-        // Instead, we need to use the download_url or fetch via blob API
+        // Instead, we need to use the download_url or fetch via raw file URL
         if (!result.data.content || result.data.content.length === 0) {
+          console.log("BackgroundModel: Empty content detected, checking for download options");
+          
           if (result.data.download_url) {
             console.log("BackgroundModel: Large file detected, using download_url:", result.data.download_url);
             
@@ -83,8 +91,37 @@ export default function BackgroundModel({
             const blob = new Blob([arrayBuffer], { type: mimeType });
             url = URL.createObjectURL(blob);
           } else {
-            console.log("BackgroundModel: Empty content and no download URL, will retry if attempts remain");
-            throw new Error("Empty file content received from GitHub and no download URL available");
+            // If no download_url, try constructing raw file URL as fallback
+            console.log("BackgroundModel: No download_url, attempting raw file access");
+            const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${fileName}`;
+            console.log("BackgroundModel: Trying raw URL:", rawUrl);
+            
+            try {
+              const response = await fetch(rawUrl);
+              if (!response.ok) {
+                throw new Error(`Failed to fetch file from raw URL: ${response.status} ${response.statusText}`);
+              }
+              
+              const arrayBuffer = await response.arrayBuffer();
+              console.log("BackgroundModel: Downloaded file via raw URL, size:", arrayBuffer.byteLength);
+              
+              // Determine MIME type based on file extension
+              const extension = fileName.toLowerCase().split('.').pop();
+              let mimeType = "application/octet-stream";
+              if (extension === "glb") {
+                mimeType = "model/gltf-binary";
+              } else if (extension === "gltf") {
+                mimeType = "model/gltf+json";
+              }
+              
+              console.log("BackgroundModel: Creating blob with MIME type:", mimeType);
+              const blob = new Blob([arrayBuffer], { type: mimeType });
+              url = URL.createObjectURL(blob);
+            } catch (rawError) {
+              console.log("BackgroundModel: Raw URL access failed:", rawError.message);
+              console.log("BackgroundModel: Will retry if attempts remain");
+              throw new Error("Empty file content received from GitHub, no download URL available, and raw file access failed");
+            }
           }
         } else {
           // Small files with base64 content (original logic)
@@ -130,9 +167,10 @@ export default function BackgroundModel({
         
         // Retry logic - GitHub might need a moment to make the file available
         if (retryCount < 3 && (
-          err.message.includes("Empty file content received from GitHub and no download URL available") || 
+          err.message.includes("Empty file content received from GitHub") || 
           err.message.includes("Empty base64 content") ||
-          err.status === 404
+          err.status === 404 ||
+          err.message.includes("raw file access failed")
         )) {
           const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
           console.log(`BackgroundModel: Retrying in ${delay}ms...`);
