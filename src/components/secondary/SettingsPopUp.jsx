@@ -484,6 +484,14 @@ const SettingsPopUp = ({
                 🚀 CHECKPOINT: backgroundUsdzFile = "{backgroundUsdzFile}" | Condition result: {backgroundUsdzFile ? 'TRUE (checkbox will show)' : 'FALSE (no checkbox)'}
               </div>
               
+              {/* FINAL CONDITION CHECK - This is the actual condition being evaluated */}
+              {console.log("🎯 FINAL CONDITION EVALUATION:", { 
+                backgroundUsdzFile, 
+                condition: !!backgroundUsdzFile,
+                willRenderCheckbox: !!backgroundUsdzFile,
+                timestamp: new Date().toISOString()
+              })}
+              
               {backgroundUsdzFile && (
                 <div style={{ 
                   marginBottom: "10px",
@@ -492,6 +500,7 @@ const SettingsPopUp = ({
                   border: "3px solid #2196f3",
                   borderRadius: "8px"
                 }}>
+                  {console.log("🎯 INSIDE CONDITIONAL BLOCK - This should only log if condition is true. backgroundUsdzFile:", backgroundUsdzFile)}
                   {/* SUCCESS INDICATOR */}
                   <div style={{ 
                     padding: '10px', 
