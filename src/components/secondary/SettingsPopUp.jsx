@@ -44,6 +44,10 @@ const SettingsPopUp = ({
     hasAuthorizedUserOcto: !!authorizedUserOcto,
     timestamp: new Date().toISOString()
   });
+  
+  // Component reference tracking for debugging multiple instances
+  const componentId = useRef(Math.random().toString(36).substr(2, 9));
+  console.log("SettingsPopUp: Component ID", componentId.current, "rendering with backgroundUsdzFile:", backgroundUsdzFile);
   let repoTopics = [];
   if (Globalvariables.currentRepo.topics.length > 0) {
     Globalvariables.currentRepo.topics.forEach((topic) => {
@@ -57,9 +61,10 @@ const SettingsPopUp = ({
 
   // Track background model prop changes
   useEffect(() => {
-    console.log("SettingsPopUp: Background model props changed", { 
+    console.log("SettingsPopUp:", componentId.current, "Background model props changed", { 
       backgroundUsdzFile, 
-      showBackgroundModel 
+      showBackgroundModel,
+      renderStack: new Error().stack?.split('\n').slice(1, 3).join(' -> ')
     });
   }, [backgroundUsdzFile, showBackgroundModel]);
 
@@ -433,8 +438,17 @@ const SettingsPopUp = ({
               >
                 Supported formats: GLB, GLTF. Max file size: 25MB
               </Typography>
+              {/* Debug background file state */}
+              <div style={{ padding: '10px', backgroundColor: '#f0f0f0', margin: '10px 0', fontSize: '12px' }}>
+                <strong>DEBUG:</strong> backgroundUsdzFile = "{backgroundUsdzFile}" | 
+                showBackgroundModel = {showBackgroundModel?.toString()} | 
+                truthy = {(!!backgroundUsdzFile).toString()} | 
+                Component ID = {componentId.current}
+              </div>
+              {console.log("SettingsPopUp: Render check - backgroundUsdzFile:", backgroundUsdzFile, "truthy:", !!backgroundUsdzFile, "type:", typeof backgroundUsdzFile)}
               {backgroundUsdzFile && (
                 <div style={{ marginBottom: "10px" }}>
+                  {console.log("SettingsPopUp: Rendering background model controls for file:", backgroundUsdzFile)}
                   <Typography variant="body2" style={{ color: "#666" }}>
                     Current file: {backgroundUsdzFile}
                   </Typography>
@@ -443,6 +457,7 @@ const SettingsPopUp = ({
                       <Switch
                         checked={showBackgroundModel}
                         onChange={(event) => {
+                          console.log("SettingsPopUp: Background model toggle changed to:", event.target.checked);
                           setShowBackgroundModel(event.target.checked);
                         }}
                         name="backgroundModel"
@@ -453,6 +468,13 @@ const SettingsPopUp = ({
                   />
                 </div>
               )}
+              {/* Debug when backgroundUsdzFile is falsy */}
+              {!backgroundUsdzFile && (
+                <div style={{ padding: '5px', backgroundColor: '#ffe6e6', fontSize: '12px' }}>
+                  DEBUG: No checkbox shown - backgroundUsdzFile is falsy: "{backgroundUsdzFile}"
+                </div>
+              )}
+              {!backgroundUsdzFile && console.log("SettingsPopUp: No background model controls shown - backgroundUsdzFile is falsy:", backgroundUsdzFile)}
             </FormGroup>
           </CustomTabPanel>
 

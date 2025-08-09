@@ -324,7 +324,9 @@ function BackgroundModelMesh({ url }) {
     children: model.scene.children.length,
     boundingBox: model.scene.children[0]?.geometry?.boundingBox || "No bounding box",
     position: model.scene.position,
-    scale: model.scene.scale
+    scale: model.scene.scale,
+    visible: model.scene.visible,
+    matrixWorld: model.scene.matrixWorld
   });
   
   // Clone the scene to avoid conflicts with multiple instances
@@ -335,6 +337,24 @@ function BackgroundModelMesh({ url }) {
   clonedScene.position.set(0, 0, 0);
   clonedScene.rotation.set(0, 0, 0);
   clonedScene.scale.set(1, 1, 1);
+  clonedScene.visible = true;
+  
+  // Ensure all child objects are visible
+  clonedScene.traverse((child) => {
+    child.visible = true;
+    if (child.material) {
+      child.material.transparent = false;
+      child.material.opacity = 1.0;
+      console.log("BackgroundModelMesh: Setting material properties for child:", child.name || "unnamed");
+    }
+  });
+  
+  console.log("BackgroundModelMesh: About to render primitive with:", {
+    position: clonedScene.position,
+    scale: clonedScene.scale,
+    visible: clonedScene.visible,
+    childCount: clonedScene.children.length
+  });
   
   return (
     <primitive 
