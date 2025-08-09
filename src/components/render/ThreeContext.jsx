@@ -68,79 +68,7 @@ export default function ext({ children, ...props }) {
         frameloop="always"
         shadows={true}
         onCreated={({ scene, camera, gl }) => {
-          console.log("🎯 THREECONTEXT: Canvas created with scene:", scene);
-          console.log("🎯 THREECONTEXT: Camera:", {
-            type: camera.type,
-            position: camera.position,
-            rotation: camera.rotation,
-            zoom: camera.zoom,
-            near: camera.near,
-            far: camera.far,
-            up: camera.up
-          });
-          console.log("🎯 THREECONTEXT: Renderer:", gl);
-          console.log("🎯 THREECONTEXT: Scene children count:", scene.children.length);
-          
-          // Add a periodic check to log scene contents
-          const checkScene = () => {
-            console.log("🎯 THREECONTEXT: Scene check - children count:", scene.children.length);
-            scene.children.forEach((child, index) => {
-              console.log(`🎯 THREECONTEXT: Child ${index}:`, {
-                type: child.type,
-                name: child.name || "unnamed",
-                visible: child.visible,
-                position: child.position,
-                scale: child.scale,
-                renderOrder: child.renderOrder,
-                childrenCount: child.children?.length || 0
-              });
-              
-              // If this child has children, show detailed info about them
-              if (child.children && child.children.length > 0) {
-                console.log(`🎯 THREECONTEXT: ${child.type} Child ${index} has ${child.children.length} nested children:`);
-                child.children.forEach((nestedChild, nestedIndex) => {
-                  console.log(`🎯 THREECONTEXT:   Nested Child ${nestedIndex}:`, {
-                    type: nestedChild.type,
-                    name: nestedChild.name || "unnamed",
-                    visible: nestedChild.visible,
-                    position: nestedChild.position,
-                    scale: nestedChild.scale,
-                    renderOrder: nestedChild.renderOrder,
-                    hasGeometry: !!nestedChild.geometry,
-                    hasMaterial: !!nestedChild.material,
-                    materialType: nestedChild.material?.type,
-                    materialVisible: nestedChild.material?.visible,
-                    materialOpacity: nestedChild.material?.opacity,
-                    materialTransparent: nestedChild.material?.transparent
-                  });
-                  
-                  // Show even deeper nesting if it exists
-                  if (nestedChild.children && nestedChild.children.length > 0) {
-                    console.log(`🎯 THREECONTEXT:   Nested child has ${nestedChild.children.length} sub-children`);
-                    nestedChild.children.forEach((subChild, subIndex) => {
-                      console.log(`🎯 THREECONTEXT:     Sub-child ${subIndex}:`, {
-                        type: subChild.type,
-                        name: subChild.name || "unnamed",
-                        visible: subChild.visible,
-                        hasGeometry: !!subChild.geometry,
-                        hasMaterial: !!subChild.material,
-                        geometryType: subChild.geometry?.type,
-                        vertexCount: subChild.geometry?.attributes?.position?.count || 0,
-                        materialType: subChild.material?.type,
-                        materialOpacity: subChild.material?.opacity
-                      });
-                    });
-                  }
-                });
-              }
-            });
-          };
-          
-          // Check scene contents every 5 seconds
-          const interval = setInterval(checkScene, 5000);
-          
-          // Cleanup interval when canvas is destroyed
-          return () => clearInterval(interval);
+          // Canvas initialization complete
         }}
       >
         <OrthographicCamera
@@ -175,27 +103,13 @@ export default function ext({ children, ...props }) {
         )}
         
         {/* Background USDZ model - rendered behind CAD models */}
-        {console.log("🎯 THREECONTEXT: background render check", { backgroundUsdzFile, showBackgroundModel, shouldRender: backgroundUsdzFile && showBackgroundModel })}
         {backgroundUsdzFile && showBackgroundModel ? (
-          (() => {
-            console.log("🎯 THREECONTEXT: About to render BackgroundModel component");
-            console.log("🎯 THREECONTEXT: fileName:", backgroundUsdzFile);
-            console.log("🎯 THREECONTEXT: showModel:", showBackgroundModel);
-            console.log("🎯 THREECONTEXT: authorizedUserOcto:", !!authorizedUserOcto);
-            return (
-              <BackgroundModel 
-                fileName={backgroundUsdzFile}
-                showModel={showBackgroundModel}
-                authorizedUserOcto={authorizedUserOcto}
-              />
-            );
-          })()
-        ) : (
-          (() => {
-            console.log("🎯 THREECONTEXT: NOT rendering BackgroundModel - backgroundUsdzFile:", backgroundUsdzFile, "showBackgroundModel:", showBackgroundModel);
-            return null;
-          })()
-        )}
+          <BackgroundModel 
+            fileName={backgroundUsdzFile}
+            showModel={showBackgroundModel}
+            authorizedUserOcto={authorizedUserOcto}
+          />
+        ) : null}
         
         {children}
       </Canvas>

@@ -134,25 +134,14 @@ function CreateMode({
    */
   const scanForBackgroundModels = async () => {
     if (!authorizedUserOcto) {
-      console.log("scanForBackgroundModels: No authorized octokit available");
       return;
     }
     
     if (!GlobalVariables.currentUser || !GlobalVariables.currentRepoName) {
-      console.log("scanForBackgroundModels: Missing currentUser or currentRepoName", {
-        currentUser: GlobalVariables.currentUser,
-        currentRepoName: GlobalVariables.currentRepoName
-      });
       return;
     }
     
     try {
-      console.log("scanForBackgroundModels: Starting scan", {
-        owner: GlobalVariables.currentUser,
-        repo: GlobalVariables.currentRepoName,
-        currentBackgroundFile: backgroundUsdzFile
-      });
-      
       const files = await authorizedUserOcto.rest.repos.getContent({
         owner: GlobalVariables.currentUser,
         repo: GlobalVariables.currentRepoName,
@@ -165,43 +154,25 @@ function CreateMode({
         (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf'))
       );
 
-      console.log("scanForBackgroundModels: Found background files:", backgroundFiles.map(f => f.name));
-
       if (backgroundFiles.length > 0) {
         // Use the first background model file found
         const firstFile = backgroundFiles[0];
-        console.log("scanForBackgroundModels: First file found:", firstFile.name);
         
         // Only set if we don't already have a background file set OR if user hasn't uploaded a file
         // This prevents overriding user uploads
-        console.log("scanForBackgroundModels: State check", {
-          backgroundUsdzFile,
-          userUploadedFile,
-          shouldSetBackground: !backgroundUsdzFile && !userUploadedFile
-        });
-        
         if (!backgroundUsdzFile && !userUploadedFile) {
-          console.log("scanForBackgroundModels: Setting background model file:", firstFile.name);
           setBackgroundUsdzFile(firstFile.name);
           setBackgroundUsdzSha(firstFile.sha);
           // Don't auto-enable the display, let user choose
           setShowBackgroundModel(false);
         } else {
-          console.log("scanForBackgroundModels: Background file already set or user uploaded file, not overriding:", {
-            backgroundUsdzFile,
-            userUploadedFile
-          });
           // If user uploaded a file, ensure it stays enabled
           if (userUploadedFile && backgroundUsdzFile) {
-            console.log("scanForBackgroundModels: Ensuring user uploaded file stays enabled");
             setShowBackgroundModel(true);
           }
         }
-      } else {
-        console.log("scanForBackgroundModels: No background model files found");
       }
     } catch (error) {
-      console.log("scanForBackgroundModels: Error scanning:", error.message);
       console.error("scanForBackgroundModels: Full error:", error);
     }
   };
@@ -218,10 +189,7 @@ function CreateMode({
     });
     
     if (authorizedUserOcto && GlobalVariables.currentUser && GlobalVariables.currentRepoName) {
-      console.log("useEffect: Triggering scanForBackgroundModels");
       scanForBackgroundModels();
-    } else {
-      console.log("useEffect: Not triggering scan - missing dependencies");
     }
   }, [authorizedUserOcto, GlobalVariables.currentUser, GlobalVariables.currentRepoName]);
 
@@ -511,11 +479,8 @@ function CreateMode({
    * Upload a 3D background file (GLB/GLTF) to GitHub
    */
   const uploadBackground3D = async function (file) {
-    console.log("uploadBackground3D: Starting upload", { fileName: file.name, fileSize: file.size });
-    
     // Set userUploadedFile flag immediately to prevent auto-detection from interfering
     setUserUploadedFile(true);
-    console.log("uploadBackground3D: Set userUploadedFile flag to prevent auto-detection interference");
     
     try {
       // Read file as base64
@@ -523,7 +488,6 @@ function CreateMode({
         var reader = new FileReader();
         reader.onload = function (e) {
           const base64result = e.target.result.split(",")[1];
-          console.log("uploadBackground3D: File read successfully, base64 length:", base64result.length);
           resolve(base64result);
         };
         reader.onerror = function (error) {
@@ -533,7 +497,6 @@ function CreateMode({
         reader.readAsDataURL(file);
       });
 
-      console.log("uploadBackground3D: Checking existing files");
       const existingFiles = await authorizedUserOcto.rest.repos.getContent({
         owner: GlobalVariables.currentUser,
         repo: GlobalVariables.currentRepoName,
@@ -560,7 +523,6 @@ function CreateMode({
         console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
       }
 
-      console.log("uploadBackground3D: Uploading file to GitHub:", uniqueFileName);
       const result = await Promise.race([
         authorizedUserOcto.rest.repos.createOrUpdateFileContents({
           owner: GlobalVariables.currentUser,
@@ -576,31 +538,11 @@ function CreateMode({
           )
         ),
       ]);
-      console.log("USDZ file uploaded successfully:", result);
-
-      console.log("uploadBackground3D: Setting state before", { 
-        beforeBackgroundUsdzFile: backgroundUsdzFile,
-        beforeShowBackgroundModel: showBackgroundModel
-      });
 
       // Set state immediately after successful upload
-      console.log("uploadBackground3D: About to set state", { 
-        fileName: uniqueFileName, 
-        sha: result.data.content.sha, 
-        showModel: true 
-      });
-      
       setBackgroundUsdzFile(uniqueFileName);
       setBackgroundUsdzSha(result.data.content.sha);
       setShowBackgroundModel(true); // Enable display by default when file is uploaded
-      console.log("uploadBackground3D: State setters called successfully");
-
-      // Use a longer delay to allow React to process state updates
-      setTimeout(() => {
-        console.log("uploadBackground3D: State should be updated by now");
-        // Force SettingsPopUp to log its current props to see if they updated
-        console.log("uploadBackground3D: Triggering SettingsPopUp props check");
-      }, 500);
 
       saveProject(setSaveState, "Background 3D Model Upload Save");
 
@@ -636,7 +578,6 @@ function CreateMode({
         message: "Deleted background 3D model",
         sha: backgroundUsdzSha,
       });
-      console.log("Background 3D model file deleted successfully:", backgroundUsdzFile);
 
       setBackgroundUsdzFile(null);
       setBackgroundUsdzSha(null);
