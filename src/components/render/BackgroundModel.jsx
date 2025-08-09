@@ -101,12 +101,43 @@ export default function BackgroundModel({
             }
             
             console.log("🎯 BACKGROUND MODEL: Creating blob with MIME type:", mimeType);
-            const blob = new Blob([arrayBuffer], { type: mimeType });
-            console.log("🎯 BACKGROUND MODEL: Blob created successfully - size:", blob.size, "type:", blob.type);
+            console.log("🎯 BACKGROUND MODEL: ArrayBuffer details before blob creation:", {
+              byteLength: arrayBuffer.byteLength,
+              constructor: arrayBuffer.constructor.name,
+              isValidArrayBuffer: arrayBuffer instanceof ArrayBuffer
+            });
             
-            console.log("🎯 BACKGROUND MODEL: Creating object URL...");
-            url = URL.createObjectURL(blob);
-            console.log("🎯 BACKGROUND MODEL: Object URL created successfully:", url);
+            try {
+              console.log("🎯 BACKGROUND MODEL: About to call new Blob([arrayBuffer], { type: mimeType })...");
+              const blob = new Blob([arrayBuffer], { type: mimeType });
+              console.log("🎯 BACKGROUND MODEL: ✅ Blob created successfully!");
+              console.log("🎯 BACKGROUND MODEL: Blob details:", {
+                size: blob.size,
+                type: blob.type,
+                constructor: blob.constructor.name,
+                isValidBlob: blob instanceof Blob
+              });
+              
+              console.log("🎯 BACKGROUND MODEL: About to create object URL...");
+              url = URL.createObjectURL(blob);
+              console.log("🎯 BACKGROUND MODEL: ✅ Object URL created successfully!");
+              console.log("🎯 BACKGROUND MODEL: Object URL details:", {
+                url: url,
+                urlLength: url.length,
+                urlType: typeof url,
+                startsWithBlob: url.startsWith('blob:')
+              });
+              
+            } catch (blobError) {
+              console.error("🎯 BACKGROUND MODEL: ❌ BLOB CREATION ERROR!");
+              console.error("🎯 BACKGROUND MODEL: Error type:", typeof blobError);
+              console.error("🎯 BACKGROUND MODEL: Error constructor:", blobError?.constructor?.name);
+              console.error("🎯 BACKGROUND MODEL: Error message:", blobError?.message);
+              console.error("🎯 BACKGROUND MODEL: Error toString:", blobError?.toString ? blobError.toString() : 'No toString available');
+              console.error("🎯 BACKGROUND MODEL: Full error object:", blobError);
+              console.error("🎯 BACKGROUND MODEL: Error stack:", blobError?.stack);
+              throw new Error(`Blob creation failed: ${blobError?.message || 'Unknown blob error'}`);
+            }
           } else {
             // If no download_url, try constructing raw file URL as fallback
             console.log("BackgroundModel: No download_url, attempting raw file access");
@@ -176,10 +207,19 @@ export default function BackgroundModel({
           
           url = URL.createObjectURL(blob);
         }
-        console.log("🎯 BACKGROUND MODEL: Final URL created successfully:", url);
-        console.log("🎯 BACKGROUND MODEL: Setting model URL in state...");
-        setModelUrl(url);
-        console.log("🎯 BACKGROUND MODEL: Model URL set in state, should trigger BackgroundModelMesh render");
+        console.log("🎯 BACKGROUND MODEL: ✅ URL creation pipeline completed successfully!");
+        console.log("🎯 BACKGROUND MODEL: Final URL:", url);
+        console.log("🎯 BACKGROUND MODEL: About to set model URL in state...");
+        
+        try {
+          setModelUrl(url);
+          console.log("🎯 BACKGROUND MODEL: ✅ Model URL state updated successfully!");
+          console.log("🎯 BACKGROUND MODEL: This should trigger BackgroundModelMesh component render");
+        } catch (stateError) {
+          console.error("🎯 BACKGROUND MODEL: ❌ STATE UPDATE ERROR!");
+          console.error("🎯 BACKGROUND MODEL: State error:", stateError);
+          throw new Error(`State update failed: ${stateError?.message || 'Unknown state error'}`);
+        }
       } catch (err) {
         console.error("Error loading background 3D model (attempt", retryCount + 1, "):");
         console.error("Error message:", err.message);
@@ -229,19 +269,27 @@ export default function BackgroundModel({
   }, [modelUrl]);
 
   // Don't render anything if model shouldn't be shown or no URL
-  if (!showModel || !modelUrl) {
+  if (!showModel) {
+    console.log("🎯 BACKGROUND MODEL: Not rendering - showModel is false");
+    return null;
+  }
+  
+  if (!modelUrl) {
+    console.log("🎯 BACKGROUND MODEL: Not rendering - modelUrl is null/undefined:", modelUrl);
     return null;
   }
 
   if (loading) {
+    console.log("🎯 BACKGROUND MODEL: Not rendering - still loading");
     return null; // Could add a loading indicator here if desired
   }
 
   if (error) {
-    console.warn("Background model error:", error);
+    console.warn("🎯 BACKGROUND MODEL: Not rendering - error state:", error);
     return null; // Silently fail to not interfere with CAD operations
   }
 
+  console.log("🎯 BACKGROUND MODEL: ✅ All conditions met - rendering BackgroundModelMesh with URL:", modelUrl);
   return <BackgroundModelMesh url={modelUrl} />;
 }
 
@@ -268,85 +316,93 @@ function BackgroundModelMesh({ url }) {
     console.log("🎯 GLTF LOADER: GLTFLoader created successfully");
     
     console.log("🎯 GLTF LOADER: Starting load operation...");
-    loader.load(
-      url,
-      (gltf) => {
-        console.log("🎯 GLTF LOADER: SUCCESS - Model loaded successfully!");
-        console.log("🎯 GLTF LOADER: GLTF object structure:", {
-          hasScene: !!gltf.scene,
-          sceneType: gltf.scene?.type,
-          sceneName: gltf.scene?.name,
-          sceneChildren: gltf.scene?.children?.length || 0,
-          animations: gltf.animations?.length || 0,
-          cameras: gltf.cameras?.length || 0,
-          scenes: gltf.scenes?.length || 0,
-          asset: gltf.asset
-        });
-        
-        // Log detailed scene hierarchy
-        if (gltf.scene) {
-          console.log("🎯 GLTF LOADER: Scene hierarchy:");
-          gltf.scene.traverse((child, index) => {
-            console.log(`🎯 GLTF LOADER:   Child ${index}:`, {
-              name: child.name || "unnamed",
-              type: child.type,
-              visible: child.visible,
-              hasGeometry: !!child.geometry,
-              hasMaterial: !!child.material,
-              position: child.position,
-              scale: child.scale,
-              rotation: child.rotation
-            });
+    
+    try {
+      loader.load(
+        url,
+        (gltf) => {
+          console.log("🎯 GLTF LOADER: SUCCESS - Model loaded successfully!");
+          console.log("🎯 GLTF LOADER: GLTF object structure:", {
+            hasScene: !!gltf.scene,
+            sceneType: gltf.scene?.type,
+            sceneName: gltf.scene?.name,
+            sceneChildren: gltf.scene?.children?.length || 0,
+            animations: gltf.animations?.length || 0,
+            cameras: gltf.cameras?.length || 0,
+            scenes: gltf.scenes?.length || 0,
+            asset: gltf.asset
           });
-        }
-        
-        // Ensure the scene has valid geometry
-        if (gltf.scene && gltf.scene.children.length > 0) {
-          console.log("🎯 GLTF LOADER: Scene validation passed - has", gltf.scene.children.length, "children");
-          console.log("🎯 GLTF LOADER: Setting model in state...");
-          setModel(gltf);
-          setError(null);
+          
+          // Log detailed scene hierarchy
+          if (gltf.scene) {
+            console.log("🎯 GLTF LOADER: Scene hierarchy:");
+            gltf.scene.traverse((child, index) => {
+              console.log(`🎯 GLTF LOADER:   Child ${index}:`, {
+                name: child.name || "unnamed",
+                type: child.type,
+                visible: child.visible,
+                hasGeometry: !!child.geometry,
+                hasMaterial: !!child.material,
+                position: child.position,
+                scale: child.scale,
+                rotation: child.rotation
+              });
+            });
+          }
+          
+          // Ensure the scene has valid geometry
+          if (gltf.scene && gltf.scene.children.length > 0) {
+            console.log("🎯 GLTF LOADER: Scene validation passed - has", gltf.scene.children.length, "children");
+            console.log("🎯 GLTF LOADER: Setting model in state...");
+            setModel(gltf);
+            setError(null);
+            setLoading(false);
+            console.log("🎯 GLTF LOADER: Model state updated successfully");
+          } else {
+            console.warn("🎯 GLTF LOADER: Scene validation failed - scene is empty");
+            setError(new Error("Model loaded but contains no visible geometry"));
+            setLoading(false);
+          }
+        },
+        (progress) => {
+          if (progress.lengthComputable) {
+            const percentage = (progress.loaded / progress.total) * 100;
+            console.log("🎯 GLTF LOADER: Loading progress:", Math.round(percentage) + "%", `(${progress.loaded}/${progress.total} bytes)`);
+          } else {
+            console.log("🎯 GLTF LOADER: Loading progress:", progress.loaded, "bytes loaded");
+          }
+        },
+        (error) => {
+          console.error("🎯 GLTF LOADER: ERROR - Model loading failed!");
+          console.error("🎯 GLTF LOADER: Error type:", typeof error);
+          console.error("🎯 GLTF LOADER: Error constructor:", error?.constructor?.name);
+          console.error("🎯 GLTF LOADER: Error message:", error?.message || 'No message available');
+          console.error("🎯 GLTF LOADER: Error toString:", error?.toString ? error.toString() : 'No toString available');
+          console.error("🎯 GLTF LOADER: Full error object:", error);
+          console.error("🎯 GLTF LOADER: Error stack:", error?.stack);
+          
+          // Create a proper error message
+          let errorMessage = "Unknown error loading 3D model";
+          if (error && error.message) {
+            errorMessage = error.message;
+          } else if (error && error.toString) {
+            errorMessage = error.toString();
+          } else if (typeof error === 'string') {
+            errorMessage = error;
+          }
+          
+          console.error("🎯 GLTF LOADER: Final error message:", errorMessage);
+          setError(new Error(`GLTFLoader failed: ${errorMessage}`));
+          setModel(null);
           setLoading(false);
-          console.log("🎯 GLTF LOADER: Model state updated successfully");
-        } else {
-          console.warn("🎯 GLTF LOADER: Scene validation failed - scene is empty");
-          setError(new Error("Model loaded but contains no visible geometry"));
-          setLoading(false);
         }
-      },
-      (progress) => {
-        if (progress.lengthComputable) {
-          const percentage = (progress.loaded / progress.total) * 100;
-          console.log("🎯 GLTF LOADER: Loading progress:", Math.round(percentage) + "%", `(${progress.loaded}/${progress.total} bytes)`);
-        } else {
-          console.log("🎯 GLTF LOADER: Loading progress:", progress.loaded, "bytes loaded");
-        }
-      },
-      (error) => {
-        console.error("🎯 GLTF LOADER: ERROR - Model loading failed!");
-        console.error("🎯 GLTF LOADER: Error type:", typeof error);
-        console.error("🎯 GLTF LOADER: Error constructor:", error?.constructor?.name);
-        console.error("🎯 GLTF LOADER: Error message:", error?.message || 'No message available');
-        console.error("🎯 GLTF LOADER: Error toString:", error?.toString ? error.toString() : 'No toString available');
-        console.error("🎯 GLTF LOADER: Full error object:", error);
-        console.error("🎯 GLTF LOADER: Error stack:", error?.stack);
-        
-        // Create a proper error message
-        let errorMessage = "Unknown error loading 3D model";
-        if (error && error.message) {
-          errorMessage = error.message;
-        } else if (error && error.toString) {
-          errorMessage = error.toString();
-        } else if (typeof error === 'string') {
-          errorMessage = error;
-        }
-        
-        console.error("🎯 GLTF LOADER: Final error message:", errorMessage);
-        setError(new Error(`GLTFLoader failed: ${errorMessage}`));
-        setModel(null);
-        setLoading(false);
-      }
-    );
+      );
+    } catch (loaderError) {
+      console.error("🎯 GLTF LOADER: ❌ LOADER SETUP ERROR!");
+      console.error("🎯 GLTF LOADER: Loader setup error:", loaderError);
+      setError(new Error(`GLTFLoader setup failed: ${loaderError?.message || 'Unknown loader setup error'}`));
+      setLoading(false);
+    }
 
     // Cleanup function
     return () => {
