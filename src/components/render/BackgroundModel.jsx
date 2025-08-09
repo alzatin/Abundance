@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useGLTF } from "@react-three/drei";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import GlobalVariables from "../../js/globalvariables.js";
 
@@ -18,6 +18,7 @@ export default function BackgroundModel({
 
   useEffect(() => {
     if (!fileName || !showModel) {
+      console.log("BackgroundModel: Not loading model - fileName:", fileName, "showModel:", showModel);
       setModelUrl(null);
       return;
     }
@@ -30,15 +31,20 @@ export default function BackgroundModel({
       
       try {
         const octokit = authorizedUserOcto || new Octokit();
+        console.log("BackgroundModel: Fetching file content from GitHub");
         const result = await octokit.rest.repos.getContent({
           owner: GlobalVariables.currentUser || GlobalVariables.currentRepo?.owner,
           repo: GlobalVariables.currentRepoName || GlobalVariables.currentRepo?.repoName,
           path: fileName,
         });
 
+        console.log("BackgroundModel: File content received, content length:", result.data.content?.length);
+
         // Convert base64 to blob URL
         // Clean base64 string by removing newlines (GitHub API adds formatting newlines)
         const base64String = result.data.content.replace(/\s/g, '');
+        console.log("BackgroundModel: Cleaned base64 string length:", base64String.length);
+        
         const binary = atob(base64String);
         const array = [];
         for (let i = 0; i < binary.length; i++) {
@@ -54,15 +60,24 @@ export default function BackgroundModel({
           mimeType = "model/gltf+json";
         }
         
+        console.log("BackgroundModel: Creating blob with MIME type:", mimeType, "and size:", array.length);
+        
         const blob = new Blob([new Uint8Array(array)], {
           type: mimeType,
         });
         
         const url = URL.createObjectURL(blob);
-        console.log("BackgroundModel: Created blob URL successfully");
+        console.log("BackgroundModel: Created blob URL successfully:", url);
         setModelUrl(url);
       } catch (err) {
         console.error("Error loading background 3D model:", err);
+        console.error("Error details:", {
+          message: err.message,
+          stack: err.stack,
+          fileName,
+          owner: GlobalVariables.currentUser || GlobalVariables.currentRepo?.owner,
+          repo: GlobalVariables.currentRepoName || GlobalVariables.currentRepo?.repoName
+        });
         setError(`Failed to load background model: ${err.message}`);
       } finally {
         setLoading(false);
@@ -103,28 +118,54 @@ export default function BackgroundModel({
  * This is separated to handle the useGLTF hook properly
  */
 function BackgroundModelMesh({ url }) {
-  try {
-    const { scene } = useGLTF(url);
+  const [model, setModel] = useState(null);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    console.log("BackgroundModelMesh: Starting to load model from URL:", url);
     
-    if (!scene) {
-      console.warn("Background model scene is null");
-      return null;
-    }
+    const loader = new GLTFLoader();
     
-    // Clone the scene to avoid conflicts with multiple instances
-    const clonedScene = scene.clone();
-    
-    return (
-      <primitive 
-        object={clonedScene} 
-        scale={[1, 1, 1]}
-        position={[0, 0, 0]}
-        // Render behind CAD models but still visible
-        renderOrder={-1}
-      />
+    loader.load(
+      url,
+      (gltf) => {
+        console.log("BackgroundModelMesh: Model loaded successfully:", gltf);
+        setModel(gltf);
+        setError(null);
+      },
+      (progress) => {
+        console.log("BackgroundModelMesh: Loading progress:", progress);
+      },
+      (error) => {
+        console.error("BackgroundModelMesh: Error loading model:", error);
+        setError(error);
+        setModel(null);
+      }
     );
-  } catch (error) {
-    console.warn("Failed to load background model:", error);
+  }, [url]);
+  
+  if (error) {
+    console.error("BackgroundModelMesh: Render error:", error);
     return null;
   }
+  
+  if (!model || !model.scene) {
+    console.log("BackgroundModelMesh: Model not ready yet");
+    return null;
+  }
+  
+  console.log("BackgroundModelMesh: Rendering model");
+  
+  // Clone the scene to avoid conflicts with multiple instances
+  const clonedScene = model.scene.clone();
+  
+  return (
+    <primitive 
+      object={clonedScene} 
+      scale={[1, 1, 1]}
+      position={[0, 0, 0]}
+      // Render behind CAD models but still visible
+      renderOrder={-1}
+    />
+  );
 }

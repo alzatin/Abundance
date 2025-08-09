@@ -134,23 +134,35 @@ function CreateMode({
         (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf'))
       );
 
+      console.log("scanForBackgroundModels: Found background files:", backgroundFiles);
+
       if (backgroundFiles.length > 0) {
         // Use the first background model file found
         const firstFile = backgroundFiles[0];
-        console.log("Found background model file:", firstFile.name);
-        setBackgroundUsdzFile(firstFile.name);
-        setBackgroundUsdzSha(firstFile.sha);
-        // Don't auto-enable the display, let user choose
-        setShowBackgroundModel(false);
+        console.log("scanForBackgroundModels: Setting background model file:", firstFile.name);
+        
+        // Only set if we don't already have a background file set
+        // This prevents overriding user uploads
+        if (!backgroundUsdzFile) {
+          setBackgroundUsdzFile(firstFile.name);
+          setBackgroundUsdzSha(firstFile.sha);
+          // Don't auto-enable the display, let user choose
+          setShowBackgroundModel(false);
+        } else {
+          console.log("scanForBackgroundModels: Background file already set, not overriding:", backgroundUsdzFile);
+        }
+      } else {
+        console.log("scanForBackgroundModels: No background model files found");
       }
     } catch (error) {
-      console.log("No background model files found or error scanning:", error.message);
+      console.log("scanForBackgroundModels: Error scanning:", error.message);
     }
   };
 
   // Scan for background models when component mounts or project changes
   useEffect(() => {
     if (authorizedUserOcto && GlobalVariables.currentUser && GlobalVariables.currentRepoName) {
+      console.log("useEffect: Triggering scanForBackgroundModels");
       scanForBackgroundModels();
     }
   }, [authorizedUserOcto]);
