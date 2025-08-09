@@ -37,11 +37,12 @@ const SettingsPopUp = ({
   setShowBackgroundModel,
   authorizedUserOcto,
 }) => {
-  // Debug background model props on every render
+  // Debug background model props on every render with timestamp
   console.log("SettingsPopUp: Received props", { 
     backgroundUsdzFile, 
     showBackgroundModel,
-    hasAuthorizedUserOcto: !!authorizedUserOcto
+    hasAuthorizedUserOcto: !!authorizedUserOcto,
+    timestamp: new Date().toISOString()
   });
   let repoTopics = [];
   if (Globalvariables.currentRepo.topics.length > 0) {

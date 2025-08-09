@@ -572,13 +572,12 @@ function CreateMode({
       setShowBackgroundModel(true); // Enable display by default when file is uploaded
       console.log("uploadBackground3D: State setters called successfully");
 
-      // Small delay to allow React to process state updates, then log final state
+      // Use a longer delay to allow React to process state updates
       setTimeout(() => {
-        console.log("uploadBackground3D: State after upload (100ms delay)", {
-          backgroundUsdzFile: uniqueFileName, // Use the actual value we set
-          showBackgroundModel: true
-        });
-      }, 100);
+        console.log("uploadBackground3D: State should be updated by now");
+        // Force SettingsPopUp to log its current props to see if they updated
+        console.log("uploadBackground3D: Triggering SettingsPopUp props check");
+      }, 500);
 
       saveProject(setSaveState, "Background 3D Model Upload Save");
 

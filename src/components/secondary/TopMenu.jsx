@@ -33,6 +33,12 @@ function TopMenu({
   showBackgroundModel,
   setShowBackgroundModel,
 }) {
+  // Debug TopMenu rendering with background model props
+  console.log("TopMenu: Rendering with background model props", {
+    backgroundUsdzFile,
+    showBackgroundModel,
+    timestamp: new Date().toISOString()
+  });
   let [shareDialog, setShareDialog] = useState(false);
   let [dialogContent, setDialog] = useState("");
   let [settingsPopUp, setSettingsPopUp] = useState(false);
