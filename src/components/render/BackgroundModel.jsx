@@ -45,45 +45,83 @@ export default function BackgroundModel({
           path: fileName,
         });
 
-        console.log("BackgroundModel: File content received, content length:", result.data.content?.length);
-
-        // Check if content is empty or missing
-        if (!result.data.content || result.data.content.length === 0) {
-          console.log("BackgroundModel: Empty content received, will retry if attempts remain");
-          throw new Error("Empty file content received from GitHub");
-        }
-
-        // Convert base64 to blob URL
-        // Clean base64 string by removing newlines (GitHub API adds formatting newlines)
-        const base64String = result.data.content.replace(/\s/g, '');
-        console.log("BackgroundModel: Cleaned base64 string length:", base64String.length);
-        
-        if (base64String.length === 0) {
-          throw new Error("Empty base64 content after cleaning");
-        }
-        
-        const binary = atob(base64String);
-        const array = [];
-        for (let i = 0; i < binary.length; i++) {
-          array.push(binary.charCodeAt(i));
-        }
-        
-        // Determine MIME type based on file extension
-        const extension = fileName.toLowerCase().split('.').pop();
-        let mimeType = "application/octet-stream";
-        if (extension === "glb") {
-          mimeType = "model/gltf-binary";
-        } else if (extension === "gltf") {
-          mimeType = "model/gltf+json";
-        }
-        
-        console.log("BackgroundModel: Creating blob with MIME type:", mimeType, "and size:", array.length);
-        
-        const blob = new Blob([new Uint8Array(array)], {
-          type: mimeType,
+        console.log("BackgroundModel: File response received:", {
+          hasContent: !!result.data.content,
+          contentLength: result.data.content?.length || 0,
+          hasDownloadUrl: !!result.data.download_url,
+          size: result.data.size,
+          type: result.data.type
         });
-        
-        const url = URL.createObjectURL(blob);
+
+        let url;
+
+        // For large files (>1MB), GitHub doesn't include content in the API response
+        // Instead, we need to use the download_url or fetch via blob API
+        if (!result.data.content || result.data.content.length === 0) {
+          if (result.data.download_url) {
+            console.log("BackgroundModel: Large file detected, using download_url:", result.data.download_url);
+            
+            // Fetch the file directly using the download URL
+            const response = await fetch(result.data.download_url);
+            if (!response.ok) {
+              throw new Error(`Failed to fetch file from download URL: ${response.status} ${response.statusText}`);
+            }
+            
+            const arrayBuffer = await response.arrayBuffer();
+            console.log("BackgroundModel: Downloaded file, size:", arrayBuffer.byteLength);
+            
+            // Determine MIME type based on file extension
+            const extension = fileName.toLowerCase().split('.').pop();
+            let mimeType = "application/octet-stream";
+            if (extension === "glb") {
+              mimeType = "model/gltf-binary";
+            } else if (extension === "gltf") {
+              mimeType = "model/gltf+json";
+            }
+            
+            console.log("BackgroundModel: Creating blob with MIME type:", mimeType);
+            const blob = new Blob([arrayBuffer], { type: mimeType });
+            url = URL.createObjectURL(blob);
+          } else {
+            console.log("BackgroundModel: Empty content and no download URL, will retry if attempts remain");
+            throw new Error("Empty file content received from GitHub and no download URL available");
+          }
+        } else {
+          // Small files with base64 content (original logic)
+          console.log("BackgroundModel: Small file with base64 content");
+          
+          // Convert base64 to blob URL
+          // Clean base64 string by removing newlines (GitHub API adds formatting newlines)
+          const base64String = result.data.content.replace(/\s/g, '');
+          console.log("BackgroundModel: Cleaned base64 string length:", base64String.length);
+          
+          if (base64String.length === 0) {
+            throw new Error("Empty base64 content after cleaning");
+          }
+          
+          const binary = atob(base64String);
+          const array = [];
+          for (let i = 0; i < binary.length; i++) {
+            array.push(binary.charCodeAt(i));
+          }
+          
+          // Determine MIME type based on file extension
+          const extension = fileName.toLowerCase().split('.').pop();
+          let mimeType = "application/octet-stream";
+          if (extension === "glb") {
+            mimeType = "model/gltf-binary";
+          } else if (extension === "gltf") {
+            mimeType = "model/gltf+json";
+          }
+          
+          console.log("BackgroundModel: Creating blob with MIME type:", mimeType, "and size:", array.length);
+          
+          const blob = new Blob([new Uint8Array(array)], {
+            type: mimeType,
+          });
+          
+          url = URL.createObjectURL(blob);
+        }
         console.log("BackgroundModel: Created blob URL successfully:", url);
         setModelUrl(url);
       } catch (err) {
@@ -92,7 +130,7 @@ export default function BackgroundModel({
         
         // Retry logic - GitHub might need a moment to make the file available
         if (retryCount < 3 && (
-          err.message.includes("Empty file content") || 
+          err.message.includes("Empty file content received from GitHub and no download URL available") || 
           err.message.includes("Empty base64 content") ||
           err.status === 404
         )) {
