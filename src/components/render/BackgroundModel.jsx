@@ -339,13 +339,41 @@ function BackgroundModelMesh({ url }) {
   clonedScene.scale.set(1, 1, 1);
   clonedScene.visible = true;
   
+  // Calculate bounding box to understand the model's actual size and position
+  const box = new THREE.Box3().setFromObject(clonedScene);
+  console.log("🎯 BACKGROUND MODEL: Bounding box:", {
+    min: box.min,
+    max: box.max,
+    size: box.getSize(new THREE.Vector3()),
+    center: box.getCenter(new THREE.Vector3())
+  });
+  
+  // Position the model at the origin for debugging
+  const center = box.getCenter(new THREE.Vector3());
+  clonedScene.position.sub(center);
+  console.log("🎯 BACKGROUND MODEL: Centered model at origin, new position:", clonedScene.position);
+  
   // Ensure all child objects are visible
   clonedScene.traverse((child) => {
     child.visible = true;
+    
     if (child.material) {
       child.material.transparent = false;
       child.material.opacity = 1.0;
-      console.log("BackgroundModelMesh: Setting material properties for child:", child.name || "unnamed");
+      child.material.depthTest = true;
+      child.material.depthWrite = true;
+      
+      // Set a bright color to make sure the model is visible
+      if (child.material.color) {
+        child.material.color.setHex(0xff0000); // Bright red for debugging
+      }
+      
+      console.log("🎯 BACKGROUND MODEL: Setting material properties for child:", child.name || "unnamed", {
+        type: child.material.type,
+        transparent: child.material.transparent,
+        opacity: child.material.opacity,
+        color: child.material.color?.getHex()
+      });
     }
   });
   
@@ -355,12 +383,68 @@ function BackgroundModelMesh({ url }) {
     visible: clonedScene.visible,
     childCount: clonedScene.children.length
   });
+
+  // Add debugging to track if the primitive is actually rendered
+  console.log("🎯 BACKGROUND MODEL: Rendering primitive element");
+  console.log("🎯 BACKGROUND MODEL: clonedScene object:", clonedScene);
+  console.log("🎯 BACKGROUND MODEL: clonedScene.type:", clonedScene.type);
+  console.log("🎯 BACKGROUND MODEL: clonedScene.children:", clonedScene.children);
+  
+  // Log detailed information about materials and geometry
+  clonedScene.traverse((child) => {
+    console.log("🎯 BACKGROUND MODEL CHILD:", {
+      name: child.name || "unnamed",
+      type: child.type,
+      visible: child.visible,
+      hasGeometry: !!child.geometry,
+      hasMaterial: !!child.material,
+      position: child.position,
+      scale: child.scale,
+      renderOrder: child.renderOrder,
+      layers: child.layers
+    });
+    
+    if (child.material) {
+      console.log("🎯 BACKGROUND MODEL MATERIAL:", {
+        type: child.material.type,
+        transparent: child.material.transparent,
+        opacity: child.material.opacity,
+        visible: child.material.visible,
+        side: child.material.side,
+        depthTest: child.material.depthTest,
+        depthWrite: child.material.depthWrite
+      });
+    }
+    
+    if (child.geometry) {
+      console.log("🎯 BACKGROUND MODEL GEOMETRY:", {
+        type: child.geometry.type,
+        verticesCount: child.geometry.attributes?.position?.count || 0,
+        boundingBox: child.geometry.boundingBox,
+        boundingSphere: child.geometry.boundingSphere
+      });
+    }
+  });
   
   return (
     <primitive 
       object={clonedScene}
       // Render behind CAD models but still visible
       renderOrder={-1}
+      onUpdate={(self) => {
+        console.log("🎯 BACKGROUND MODEL: Primitive onUpdate called:", self);
+      }}
+      ref={(ref) => {
+        console.log("🎯 BACKGROUND MODEL: Primitive ref callback:", ref);
+        if (ref) {
+          console.log("🎯 BACKGROUND MODEL: Primitive ref object:", {
+            type: ref.type,
+            visible: ref.visible,
+            position: ref.position,
+            children: ref.children?.length || 0
+          });
+        }
+      }}
     />
   );
 }

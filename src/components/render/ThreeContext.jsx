@@ -67,6 +67,32 @@ export default function ext({ children, ...props }) {
         dpr={dpr}
         frameloop="always"
         shadows={true}
+        onCreated={({ scene, camera, gl }) => {
+          console.log("🎯 THREECONTEXT: Canvas created with scene:", scene);
+          console.log("🎯 THREECONTEXT: Camera:", camera);
+          console.log("🎯 THREECONTEXT: Renderer:", gl);
+          console.log("🎯 THREECONTEXT: Scene children count:", scene.children.length);
+          
+          // Add a periodic check to log scene contents
+          const checkScene = () => {
+            console.log("🎯 THREECONTEXT: Scene check - children count:", scene.children.length);
+            scene.children.forEach((child, index) => {
+              console.log(`🎯 THREECONTEXT: Child ${index}:`, {
+                type: child.type,
+                name: child.name || "unnamed",
+                visible: child.visible,
+                position: child.position,
+                childrenCount: child.children?.length || 0
+              });
+            });
+          };
+          
+          // Check scene contents every 5 seconds
+          const interval = setInterval(checkScene, 5000);
+          
+          // Cleanup interval when canvas is destroyed
+          return () => clearInterval(interval);
+        }}
       >
         <OrthographicCamera
           ref={cameraRef}
@@ -100,13 +126,26 @@ export default function ext({ children, ...props }) {
         )}
         
         {/* Background USDZ model - rendered behind CAD models */}
-        {console.log("ThreeContext: background render check", { backgroundUsdzFile, showBackgroundModel, shouldRender: backgroundUsdzFile && showBackgroundModel })}
-        {backgroundUsdzFile && showBackgroundModel && (
-          <BackgroundModel 
-            fileName={backgroundUsdzFile}
-            showModel={showBackgroundModel}
-            authorizedUserOcto={authorizedUserOcto}
-          />
+        {console.log("🎯 THREECONTEXT: background render check", { backgroundUsdzFile, showBackgroundModel, shouldRender: backgroundUsdzFile && showBackgroundModel })}
+        {backgroundUsdzFile && showBackgroundModel ? (
+          (() => {
+            console.log("🎯 THREECONTEXT: About to render BackgroundModel component");
+            console.log("🎯 THREECONTEXT: fileName:", backgroundUsdzFile);
+            console.log("🎯 THREECONTEXT: showModel:", showBackgroundModel);
+            console.log("🎯 THREECONTEXT: authorizedUserOcto:", !!authorizedUserOcto);
+            return (
+              <BackgroundModel 
+                fileName={backgroundUsdzFile}
+                showModel={showBackgroundModel}
+                authorizedUserOcto={authorizedUserOcto}
+              />
+            );
+          })()
+        ) : (
+          (() => {
+            console.log("🎯 THREECONTEXT: NOT rendering BackgroundModel - backgroundUsdzFile:", backgroundUsdzFile, "showBackgroundModel:", showBackgroundModel);
+            return null;
+          })()
         )}
         
         {children}
