@@ -233,21 +233,45 @@ export default function BackgroundModel({
 function BackgroundModelMesh({ url }) {
   const [model, setModel] = useState(null);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
   
   useEffect(() => {
     console.log("BackgroundModelMesh: Starting to load model from URL:", url);
+    setLoading(true);
+    setError(null);
+    setModel(null);
     
     const loader = new GLTFLoader();
     
     loader.load(
       url,
       (gltf) => {
-        console.log("BackgroundModelMesh: Model loaded successfully:", gltf);
-        setModel(gltf);
-        setError(null);
+        console.log("BackgroundModelMesh: Model loaded successfully:", {
+          scene: gltf.scene,
+          animations: gltf.animations?.length || 0,
+          cameras: gltf.cameras?.length || 0,
+          scenes: gltf.scenes?.length || 0
+        });
+        
+        // Ensure the scene has valid geometry
+        if (gltf.scene && gltf.scene.children.length > 0) {
+          console.log("BackgroundModelMesh: Scene has", gltf.scene.children.length, "children");
+          setModel(gltf);
+          setError(null);
+          setLoading(false);
+        } else {
+          console.warn("BackgroundModelMesh: Model loaded but scene is empty");
+          setError(new Error("Model loaded but contains no visible geometry"));
+          setLoading(false);
+        }
       },
       (progress) => {
-        console.log("BackgroundModelMesh: Loading progress:", progress);
+        if (progress.lengthComputable) {
+          const percentage = (progress.loaded / progress.total) * 100;
+          console.log("BackgroundModelMesh: Loading progress:", Math.round(percentage) + "%");
+        } else {
+          console.log("BackgroundModelMesh: Loading progress:", progress.loaded, "bytes loaded");
+        }
       },
       (error) => {
         console.error("BackgroundModelMesh: Error loading model:");
@@ -257,7 +281,7 @@ function BackgroundModelMesh({ url }) {
         console.error("Full error object:", error);
         
         // Create a proper error message
-        let errorMessage = "Unknown error";
+        let errorMessage = "Unknown error loading 3D model";
         if (error && error.message) {
           errorMessage = error.message;
         } else if (error && error.toString) {
@@ -268,9 +292,20 @@ function BackgroundModelMesh({ url }) {
         
         setError(new Error(`GLTFLoader failed: ${errorMessage}`));
         setModel(null);
+        setLoading(false);
       }
     );
+
+    // Cleanup function
+    return () => {
+      setLoading(false);
+    };
   }, [url]);
+  
+  if (loading) {
+    console.log("BackgroundModelMesh: Still loading model...");
+    return null;
+  }
   
   if (error) {
     console.error("BackgroundModelMesh: Render error:");
@@ -281,20 +316,29 @@ function BackgroundModelMesh({ url }) {
   }
   
   if (!model || !model.scene) {
-    console.log("BackgroundModelMesh: Model not ready yet");
+    console.log("BackgroundModelMesh: Model not ready yet - model:", !!model, "scene:", !!model?.scene);
     return null;
   }
   
-  console.log("BackgroundModelMesh: Rendering model");
+  console.log("BackgroundModelMesh: Rendering model with scene:", {
+    children: model.scene.children.length,
+    boundingBox: model.scene.children[0]?.geometry?.boundingBox || "No bounding box",
+    position: model.scene.position,
+    scale: model.scene.scale
+  });
   
   // Clone the scene to avoid conflicts with multiple instances
   const clonedScene = model.scene.clone();
   
+  // Make sure the model is positioned and scaled appropriately
+  // Reset any transformations that might make it invisible
+  clonedScene.position.set(0, 0, 0);
+  clonedScene.rotation.set(0, 0, 0);
+  clonedScene.scale.set(1, 1, 1);
+  
   return (
     <primitive 
-      object={clonedScene} 
-      scale={[1, 1, 1]}
-      position={[0, 0, 0]}
+      object={clonedScene}
       // Render behind CAD models but still visible
       renderOrder={-1}
     />

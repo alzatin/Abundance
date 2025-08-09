@@ -37,6 +37,13 @@ const SettingsPopUp = ({
   setShowBackgroundModel,
   authorizedUserOcto,
 }) => {
+  // Debug background model props on every render
+  console.log("SettingsPopUp: Received props", { 
+    backgroundUsdzFile, 
+    showBackgroundModel,
+    hasAuthorizedUserOcto: !!authorizedUserOcto,
+    propsReceived: arguments[0] ? Object.keys(arguments[0]) : []
+  });
   let repoTopics = [];
   if (Globalvariables.currentRepo.topics.length > 0) {
     Globalvariables.currentRepo.topics.forEach((topic) => {
@@ -47,6 +54,14 @@ const SettingsPopUp = ({
   const projectDescriptionRef = useRef(Globalvariables.currentRepo.description);
   const dateString = Globalvariables.currentRepo.dateCreated;
   const dateCreated = new Date(dateString);
+
+  // Track background model prop changes
+  useEffect(() => {
+    console.log("SettingsPopUp: Background model props changed", { 
+      backgroundUsdzFile, 
+      showBackgroundModel 
+    });
+  }, [backgroundUsdzFile, showBackgroundModel]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -375,7 +390,6 @@ const SettingsPopUp = ({
               >
                 Background Model
               </Typography>
-              {console.log("SettingsPopUp: backgroundUsdzFile state", { backgroundUsdzFile, showBackgroundModel })}
               <div style={{ marginBottom: "10px" }}>
                 <button
                   type="button"
