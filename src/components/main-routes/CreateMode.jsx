@@ -115,6 +115,46 @@ function CreateMode({
     return () => clearInterval(myInterval);
   }, []);
 
+  /**
+   * Scan repository for background 3D model files when project loads
+   */
+  const scanForBackgroundModels = async () => {
+    if (!authorizedUserOcto) return;
+    
+    try {
+      const files = await authorizedUserOcto.rest.repos.getContent({
+        owner: GlobalVariables.currentUser,
+        repo: GlobalVariables.currentRepoName,
+        path: "",
+      });
+
+      // Look for GLB or GLTF files
+      const backgroundFiles = files.data.filter(file => 
+        file.type === 'file' && 
+        (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf'))
+      );
+
+      if (backgroundFiles.length > 0) {
+        // Use the first background model file found
+        const firstFile = backgroundFiles[0];
+        console.log("Found background model file:", firstFile.name);
+        setBackgroundUsdzFile(firstFile.name);
+        setBackgroundUsdzSha(firstFile.sha);
+        // Don't auto-enable the display, let user choose
+        setShowBackgroundModel(false);
+      }
+    } catch (error) {
+      console.log("No background model files found or error scanning:", error.message);
+    }
+  };
+
+  // Scan for background models when component mounts or project changes
+  useEffect(() => {
+    if (authorizedUserOcto && GlobalVariables.currentUser && GlobalVariables.currentRepoName) {
+      scanForBackgroundModels();
+    }
+  }, [authorizedUserOcto]);
+
   const handleBodyClick = (e) => {
     if (e.metaKey && e.key == "s") {
       e.preventDefault();

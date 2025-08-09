@@ -22,6 +22,8 @@ export default function BackgroundModel({
       return;
     }
 
+    console.log("BackgroundModel: Loading model", fileName);
+
     const loadModel = async () => {
       setLoading(true);
       setError(null);
@@ -35,7 +37,8 @@ export default function BackgroundModel({
         });
 
         // Convert base64 to blob URL
-        const base64String = result.data.content;
+        // Clean base64 string by removing newlines (GitHub API adds formatting newlines)
+        const base64String = result.data.content.replace(/\s/g, '');
         const binary = atob(base64String);
         const array = [];
         for (let i = 0; i < binary.length; i++) {
@@ -56,6 +59,7 @@ export default function BackgroundModel({
         });
         
         const url = URL.createObjectURL(blob);
+        console.log("BackgroundModel: Created blob URL successfully");
         setModelUrl(url);
       } catch (err) {
         console.error("Error loading background 3D model:", err);
@@ -66,14 +70,16 @@ export default function BackgroundModel({
     };
 
     loadModel();
+  }, [fileName, showModel, authorizedUserOcto]);
 
-    // Cleanup blob URL when component unmounts or modelUrl changes
+  // Cleanup function to revoke blob URLs when component unmounts
+  useEffect(() => {
     return () => {
       if (modelUrl) {
         URL.revokeObjectURL(modelUrl);
       }
     };
-  }, [fileName, showModel, authorizedUserOcto]);
+  }, [modelUrl]);
 
   // Don't render anything if model shouldn't be shown or no URL
   if (!showModel || !modelUrl) {
@@ -100,9 +106,17 @@ function BackgroundModelMesh({ url }) {
   try {
     const { scene } = useGLTF(url);
     
+    if (!scene) {
+      console.warn("Background model scene is null");
+      return null;
+    }
+    
+    // Clone the scene to avoid conflicts with multiple instances
+    const clonedScene = scene.clone();
+    
     return (
       <primitive 
-        object={scene.clone()} 
+        object={clonedScene} 
         scale={[1, 1, 1]}
         position={[0, 0, 0]}
         // Render behind CAD models but still visible
