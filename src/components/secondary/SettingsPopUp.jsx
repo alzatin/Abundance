@@ -41,8 +41,7 @@ const SettingsPopUp = ({
   console.log("SettingsPopUp: Received props", { 
     backgroundUsdzFile, 
     showBackgroundModel,
-    hasAuthorizedUserOcto: !!authorizedUserOcto,
-    propsReceived: arguments[0] ? Object.keys(arguments[0]) : []
+    hasAuthorizedUserOcto: !!authorizedUserOcto
   });
   let repoTopics = [];
   if (Globalvariables.currentRepo.topics.length > 0) {
