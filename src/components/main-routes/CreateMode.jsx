@@ -119,9 +119,26 @@ function CreateMode({
    * Scan repository for background 3D model files when project loads
    */
   const scanForBackgroundModels = async () => {
-    if (!authorizedUserOcto) return;
+    if (!authorizedUserOcto) {
+      console.log("scanForBackgroundModels: No authorized octokit available");
+      return;
+    }
+    
+    if (!GlobalVariables.currentUser || !GlobalVariables.currentRepoName) {
+      console.log("scanForBackgroundModels: Missing currentUser or currentRepoName", {
+        currentUser: GlobalVariables.currentUser,
+        currentRepoName: GlobalVariables.currentRepoName
+      });
+      return;
+    }
     
     try {
+      console.log("scanForBackgroundModels: Starting scan", {
+        owner: GlobalVariables.currentUser,
+        repo: GlobalVariables.currentRepoName,
+        currentBackgroundFile: backgroundUsdzFile
+      });
+      
       const files = await authorizedUserOcto.rest.repos.getContent({
         owner: GlobalVariables.currentUser,
         repo: GlobalVariables.currentRepoName,
@@ -134,16 +151,17 @@ function CreateMode({
         (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf'))
       );
 
-      console.log("scanForBackgroundModels: Found background files:", backgroundFiles);
+      console.log("scanForBackgroundModels: Found background files:", backgroundFiles.map(f => f.name));
 
       if (backgroundFiles.length > 0) {
         // Use the first background model file found
         const firstFile = backgroundFiles[0];
-        console.log("scanForBackgroundModels: Setting background model file:", firstFile.name);
+        console.log("scanForBackgroundModels: First file found:", firstFile.name);
         
         // Only set if we don't already have a background file set
         // This prevents overriding user uploads
         if (!backgroundUsdzFile) {
+          console.log("scanForBackgroundModels: Setting background model file:", firstFile.name);
           setBackgroundUsdzFile(firstFile.name);
           setBackgroundUsdzSha(firstFile.sha);
           // Don't auto-enable the display, let user choose
@@ -156,16 +174,24 @@ function CreateMode({
       }
     } catch (error) {
       console.log("scanForBackgroundModels: Error scanning:", error.message);
+      console.error("scanForBackgroundModels: Full error:", error);
     }
   };
 
   // Scan for background models when component mounts or project changes
   useEffect(() => {
+    console.log("useEffect: Scan trigger check", {
+      hasOctokit: !!authorizedUserOcto,
+      currentUser: GlobalVariables.currentUser,
+      currentRepoName: GlobalVariables.currentRepoName,
+      currentBackgroundFile: backgroundUsdzFile
+    });
+    
     if (authorizedUserOcto && GlobalVariables.currentUser && GlobalVariables.currentRepoName) {
       console.log("useEffect: Triggering scanForBackgroundModels");
       scanForBackgroundModels();
     }
-  }, [authorizedUserOcto]);
+  }, [authorizedUserOcto, GlobalVariables.currentUser, GlobalVariables.currentRepoName]);
 
   const handleBodyClick = (e) => {
     if (e.metaKey && e.key == "s") {
@@ -453,13 +479,16 @@ function CreateMode({
    * Upload a 3D background file (GLB/GLTF) to GitHub
    */
   const uploadBackground3D = async function (file) {
+    console.log("uploadBackground3D: Starting upload", { fileName: file.name, fileSize: file.size });
     var reader = new FileReader();
 
     reader.onload = function (e) {
       const base64result = e.target.result.split(",")[1];
+      console.log("uploadBackground3D: File read successfully, base64 length:", base64result.length);
 
       (async () => {
         try {
+          console.log("uploadBackground3D: Checking existing files");
           const existingFiles = await authorizedUserOcto.rest.repos.getContent({
             owner: GlobalVariables.currentUser,
             repo: GlobalVariables.currentRepoName,
@@ -486,6 +515,7 @@ function CreateMode({
             console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
           }
 
+          console.log("uploadBackground3D: Uploading file to GitHub:", uniqueFileName);
           const result = await Promise.race([
             authorizedUserOcto.rest.repos.createOrUpdateFileContents({
               owner: GlobalVariables.currentUser,
@@ -503,15 +533,35 @@ function CreateMode({
           ]);
           console.log("USDZ file uploaded successfully:", result);
 
+          console.log("uploadBackground3D: Setting state before", { 
+            beforeBackgroundUsdzFile: backgroundUsdzFile,
+            beforeShowBackgroundModel: showBackgroundModel
+          });
+
           setBackgroundUsdzFile(uniqueFileName);
           setBackgroundUsdzSha(result.data.content.sha);
           setShowBackgroundModel(true); // Enable display by default when file is uploaded
+          console.log("Upload success: setting state", { 
+            fileName: uniqueFileName, 
+            sha: result.data.content.sha, 
+            showModel: true 
+          });
+
+          // Use setTimeout to log state after React has processed the state updates
+          setTimeout(() => {
+            console.log("uploadBackground3D: State after upload", {
+              backgroundUsdzFile,
+              showBackgroundModel
+            });
+          }, 100);
+
           saveProject(setSaveState, "Background 3D Model Upload Save");
 
           // Show upload notification
           setImportNotification(`Background 3D model uploaded: ${uniqueFileName}`);
           setTimeout(() => setImportNotification(null), 3000);
         } catch (error) {
+          console.error("uploadBackground3D: Upload error", error);
           setImportNotification(
             `Failed to Upload 3D Model: Corrupt or exceeded size limit`
           );

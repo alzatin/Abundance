@@ -100,6 +100,7 @@ export default function ext({ children, ...props }) {
         )}
         
         {/* Background USDZ model - rendered behind CAD models */}
+        {console.log("ThreeContext: background render check", { backgroundUsdzFile, showBackgroundModel, shouldRender: backgroundUsdzFile && showBackgroundModel })}
         {backgroundUsdzFile && showBackgroundModel && (
           <BackgroundModel 
             fileName={backgroundUsdzFile}

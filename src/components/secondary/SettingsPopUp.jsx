@@ -375,6 +375,7 @@ const SettingsPopUp = ({
               >
                 Background Model
               </Typography>
+              {console.log("SettingsPopUp: backgroundUsdzFile state", { backgroundUsdzFile, showBackgroundModel })}
               <div style={{ marginBottom: "10px" }}>
                 <button
                   type="button"

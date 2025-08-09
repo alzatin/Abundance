@@ -70,10 +70,10 @@ export default function BackgroundModel({
         console.log("BackgroundModel: Created blob URL successfully:", url);
         setModelUrl(url);
       } catch (err) {
-        console.error("Error loading background 3D model:", err);
+        console.error("Error loading background 3D model:");
+        console.error("Error message:", err.message);
+        console.error("Error stack:", err.stack);
         console.error("Error details:", {
-          message: err.message,
-          stack: err.stack,
           fileName,
           owner: GlobalVariables.currentUser || GlobalVariables.currentRepo?.owner,
           repo: GlobalVariables.currentRepoName || GlobalVariables.currentRepo?.repoName
@@ -137,15 +137,33 @@ function BackgroundModelMesh({ url }) {
         console.log("BackgroundModelMesh: Loading progress:", progress);
       },
       (error) => {
-        console.error("BackgroundModelMesh: Error loading model:", error);
-        setError(error);
+        console.error("BackgroundModelMesh: Error loading model:");
+        console.error("Error type:", typeof error);
+        console.error("Error message:", error?.message || 'No message available');
+        console.error("Error toString:", error?.toString ? error.toString() : 'No toString available');
+        console.error("Full error object:", error);
+        
+        // Create a proper error message
+        let errorMessage = "Unknown error";
+        if (error && error.message) {
+          errorMessage = error.message;
+        } else if (error && error.toString) {
+          errorMessage = error.toString();
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+        
+        setError(new Error(`GLTFLoader failed: ${errorMessage}`));
         setModel(null);
       }
     );
   }, [url]);
   
   if (error) {
-    console.error("BackgroundModelMesh: Render error:", error);
+    console.error("BackgroundModelMesh: Render error:");
+    console.error("Error message:", error?.message || 'No message');
+    console.error("Error toString:", error?.toString ? error.toString() : 'No toString');
+    console.error("Full error object:", error);
     return null;
   }
   
