@@ -325,4 +325,4 @@ function TopMenu({
   );
 }
 
-export default memo(TopMenu);
+export default TopMenu;

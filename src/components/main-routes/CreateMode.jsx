@@ -161,6 +161,12 @@ function CreateMode({
         
         // Only set if we don't already have a background file set OR if user hasn't uploaded a file
         // This prevents overriding user uploads
+        console.log("scanForBackgroundModels: State check", {
+          backgroundUsdzFile,
+          userUploadedFile,
+          shouldSetBackground: !backgroundUsdzFile && !userUploadedFile
+        });
+        
         if (!backgroundUsdzFile && !userUploadedFile) {
           console.log("scanForBackgroundModels: Setting background model file:", firstFile.name);
           setBackgroundUsdzFile(firstFile.name);
@@ -193,12 +199,16 @@ function CreateMode({
       hasOctokit: !!authorizedUserOcto,
       currentUser: GlobalVariables.currentUser,
       currentRepoName: GlobalVariables.currentRepoName,
-      currentBackgroundFile: backgroundUsdzFile
+      currentBackgroundFile: backgroundUsdzFile,
+      userUploadedFile,
+      timestamp: new Date().toISOString()
     });
     
     if (authorizedUserOcto && GlobalVariables.currentUser && GlobalVariables.currentRepoName) {
       console.log("useEffect: Triggering scanForBackgroundModels");
       scanForBackgroundModels();
+    } else {
+      console.log("useEffect: Not triggering scan - missing dependencies");
     }
   }, [authorizedUserOcto, GlobalVariables.currentUser, GlobalVariables.currentRepoName]);
 
