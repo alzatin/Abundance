@@ -52,6 +52,7 @@ function CreateMode({
   const [backgroundUsdzFile, setBackgroundUsdzFile] = useState(null);
   const [backgroundUsdzSha, setBackgroundUsdzSha] = useState(null);
   const [showBackgroundModel, setShowBackgroundModel] = useState(false);
+  const [userUploadedFile, setUserUploadedFile] = useState(false); // Track if user uploaded a file
 
   /** State for import notifications */
   const [importNotification, setImportNotification] = useState(null);
@@ -158,16 +159,19 @@ function CreateMode({
         const firstFile = backgroundFiles[0];
         console.log("scanForBackgroundModels: First file found:", firstFile.name);
         
-        // Only set if we don't already have a background file set
+        // Only set if we don't already have a background file set OR if user hasn't uploaded a file
         // This prevents overriding user uploads
-        if (!backgroundUsdzFile) {
+        if (!backgroundUsdzFile && !userUploadedFile) {
           console.log("scanForBackgroundModels: Setting background model file:", firstFile.name);
           setBackgroundUsdzFile(firstFile.name);
           setBackgroundUsdzSha(firstFile.sha);
           // Don't auto-enable the display, let user choose
           setShowBackgroundModel(false);
         } else {
-          console.log("scanForBackgroundModels: Background file already set, not overriding:", backgroundUsdzFile);
+          console.log("scanForBackgroundModels: Background file already set or user uploaded file, not overriding:", {
+            backgroundUsdzFile,
+            userUploadedFile
+          });
         }
       } else {
         console.log("scanForBackgroundModels: No background model files found");
@@ -538,14 +542,18 @@ function CreateMode({
             beforeShowBackgroundModel: showBackgroundModel
           });
 
-          setBackgroundUsdzFile(uniqueFileName);
-          setBackgroundUsdzSha(result.data.content.sha);
-          setShowBackgroundModel(true); // Enable display by default when file is uploaded
-          console.log("Upload success: setting state", { 
-            fileName: uniqueFileName, 
-            sha: result.data.content.sha, 
-            showModel: true 
-          });
+          // Set state with a small delay to ensure GitHub has processed the file
+          setTimeout(() => {
+            setBackgroundUsdzFile(uniqueFileName);
+            setBackgroundUsdzSha(result.data.content.sha);
+            setShowBackgroundModel(true); // Enable display by default when file is uploaded
+            setUserUploadedFile(true); // Mark that user uploaded a file
+            console.log("Upload success: setting state (delayed)", { 
+              fileName: uniqueFileName, 
+              sha: result.data.content.sha, 
+              showModel: true 
+            });
+          }, 500); // Small delay to let GitHub process the upload
 
           // Use setTimeout to log state after React has processed the state updates
           setTimeout(() => {
@@ -599,6 +607,7 @@ function CreateMode({
       setBackgroundUsdzFile(null);
       setBackgroundUsdzSha(null);
       setShowBackgroundModel(false);
+      setUserUploadedFile(false); // Reset user upload flag
 
       // Show delete notification
       setImportNotification(`Background 3D model deleted: ${backgroundUsdzFile}`);

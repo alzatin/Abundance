@@ -25,25 +25,42 @@ export default function BackgroundModel({
 
     console.log("BackgroundModel: Loading model", fileName);
 
-    const loadModel = async () => {
+    const loadModel = async (retryCount = 0) => {
       setLoading(true);
       setError(null);
       
       try {
         const octokit = authorizedUserOcto || new Octokit();
-        console.log("BackgroundModel: Fetching file content from GitHub");
+        console.log("BackgroundModel: Fetching file content from GitHub (attempt", retryCount + 1, ")");
+        
+        // Use consistent owner/repo parameters with upload
+        const owner = GlobalVariables.currentUser;
+        const repo = GlobalVariables.currentRepoName;
+        
+        console.log("BackgroundModel: Using owner:", owner, "repo:", repo, "path:", fileName);
+        
         const result = await octokit.rest.repos.getContent({
-          owner: GlobalVariables.currentUser || GlobalVariables.currentRepo?.owner,
-          repo: GlobalVariables.currentRepoName || GlobalVariables.currentRepo?.repoName,
+          owner: owner,
+          repo: repo,
           path: fileName,
         });
 
         console.log("BackgroundModel: File content received, content length:", result.data.content?.length);
 
+        // Check if content is empty or missing
+        if (!result.data.content || result.data.content.length === 0) {
+          console.log("BackgroundModel: Empty content received, will retry if attempts remain");
+          throw new Error("Empty file content received from GitHub");
+        }
+
         // Convert base64 to blob URL
         // Clean base64 string by removing newlines (GitHub API adds formatting newlines)
         const base64String = result.data.content.replace(/\s/g, '');
         console.log("BackgroundModel: Cleaned base64 string length:", base64String.length);
+        
+        if (base64String.length === 0) {
+          throw new Error("Empty base64 content after cleaning");
+        }
         
         const binary = atob(base64String);
         const array = [];
@@ -70,17 +87,37 @@ export default function BackgroundModel({
         console.log("BackgroundModel: Created blob URL successfully:", url);
         setModelUrl(url);
       } catch (err) {
-        console.error("Error loading background 3D model:");
+        console.error("Error loading background 3D model (attempt", retryCount + 1, "):");
         console.error("Error message:", err.message);
+        
+        // Retry logic - GitHub might need a moment to make the file available
+        if (retryCount < 3 && (
+          err.message.includes("Empty file content") || 
+          err.message.includes("Empty base64 content") ||
+          err.status === 404
+        )) {
+          const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+          console.log(`BackgroundModel: Retrying in ${delay}ms...`);
+          setTimeout(() => {
+            loadModel(retryCount + 1);
+          }, delay);
+          return; // Don't set error state yet, we're retrying
+        }
+        
         console.error("Error stack:", err.stack);
         console.error("Error details:", {
           fileName,
-          owner: GlobalVariables.currentUser || GlobalVariables.currentRepo?.owner,
-          repo: GlobalVariables.currentRepoName || GlobalVariables.currentRepo?.repoName
+          owner: GlobalVariables.currentUser,
+          repo: GlobalVariables.currentRepoName,
+          retryCount
         });
-        setError(`Failed to load background model: ${err.message}`);
-      } finally {
+        setError(`Failed to load background model after ${retryCount + 1} attempts: ${err.message}`);
         setLoading(false);
+      } finally {
+        // Only set loading to false if we're not retrying
+        if (retryCount >= 3) {
+          setLoading(false);
+        }
       }
     };
 
