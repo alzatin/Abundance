@@ -27,6 +27,7 @@ export default function BackgroundModel({
     console.log("BackgroundModel: Loading model", fileName);
 
     const loadModel = async (retryCount = 0) => {
+      console.log("🎯 BACKGROUND MODEL: Setting loading = true");
       setLoading(true);
       setError(null);
       
@@ -175,6 +176,8 @@ export default function BackgroundModel({
         }
         console.log("Background model URL created successfully:", url);
         setModelUrl(url);
+        console.log("🎯 BACKGROUND MODEL: Setting loading = false (success)");
+        setLoading(false); // Clear loading state when successful
       } catch (err) {
         console.error("Error loading background 3D model (attempt", retryCount + 1, "):");
         console.error("Error message:", err.message);
@@ -202,12 +205,10 @@ export default function BackgroundModel({
           retryCount
         });
         setError(`Failed to load background model after ${retryCount + 1} attempts: ${err.message}`);
+        console.log("🎯 BACKGROUND MODEL: Setting loading = false (error)");
         setLoading(false);
       } finally {
-        // Only set loading to false if we're not retrying
-        if (retryCount >= 3) {
-          setLoading(false);
-        }
+        // Loading state is handled in success/error cases above
       }
     };
 
@@ -225,19 +226,22 @@ export default function BackgroundModel({
 
   // Don't render anything if model shouldn't be shown or no URL
   if (!showModel || !modelUrl) {
+    console.log("🎯 BACKGROUND MODEL: Not rendering - showModel:", showModel, "modelUrl:", !!modelUrl);
     return null;
   }
 
   if (loading) {
+    console.log("🎯 BACKGROUND MODEL: Not rendering - still loading");
     return null; // Could add a loading indicator here if desired
   }
 
   if (error) {
+    console.log("🎯 BACKGROUND MODEL: Not rendering - error:", error);
     console.warn("Background model error:", error);
     return null; // Silently fail to not interfere with CAD operations
   }
 
-  console.log("Rendering BackgroundModelMesh with URL:", modelUrl);
+  console.log("🎯 BACKGROUND MODEL: ✅ Rendering BackgroundModelMesh with URL:", modelUrl);
   return <BackgroundModelMesh url={modelUrl} />;
 }
 
