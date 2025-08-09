@@ -172,6 +172,11 @@ function CreateMode({
             backgroundUsdzFile,
             userUploadedFile
           });
+          // If user uploaded a file, ensure it stays enabled
+          if (userUploadedFile && backgroundUsdzFile) {
+            console.log("scanForBackgroundModels: Ensuring user uploaded file stays enabled");
+            setShowBackgroundModel(true);
+          }
         }
       } else {
         console.log("scanForBackgroundModels: No background model files found");
@@ -484,106 +489,113 @@ function CreateMode({
    */
   const uploadBackground3D = async function (file) {
     console.log("uploadBackground3D: Starting upload", { fileName: file.name, fileSize: file.size });
-    var reader = new FileReader();
+    
+    // Set userUploadedFile flag immediately to prevent auto-detection from interfering
+    setUserUploadedFile(true);
+    console.log("uploadBackground3D: Set userUploadedFile flag to prevent auto-detection interference");
+    
+    try {
+      // Read file as base64
+      const base64result = await new Promise((resolve, reject) => {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          const base64result = e.target.result.split(",")[1];
+          console.log("uploadBackground3D: File read successfully, base64 length:", base64result.length);
+          resolve(base64result);
+        };
+        reader.onerror = function (error) {
+          console.error("Error reading 3D model file:", error);
+          reject(new Error("Failed to read the 3D model file"));
+        };
+        reader.readAsDataURL(file);
+      });
 
-    reader.onload = function (e) {
-      const base64result = e.target.result.split(",")[1];
-      console.log("uploadBackground3D: File read successfully, base64 length:", base64result.length);
+      console.log("uploadBackground3D: Checking existing files");
+      const existingFiles = await authorizedUserOcto.rest.repos.getContent({
+        owner: GlobalVariables.currentUser,
+        repo: GlobalVariables.currentRepoName,
+        path: "",
+      });
 
-      (async () => {
-        try {
-          console.log("uploadBackground3D: Checking existing files");
-          const existingFiles = await authorizedUserOcto.rest.repos.getContent({
-            owner: GlobalVariables.currentUser,
-            repo: GlobalVariables.currentRepoName,
-            path: "",
-          });
+      let fileName = file.name;
+      const fileExtension = fileName.substring(fileName.lastIndexOf("."));
+      const baseName = fileName.substring(0, fileName.lastIndexOf("."));
+      let uniqueFileName = fileName;
+      let counter = 1;
 
-          let fileName = file.name;
-          const fileExtension = fileName.substring(fileName.lastIndexOf("."));
-          const baseName = fileName.substring(0, fileName.lastIndexOf("."));
-          let uniqueFileName = fileName;
-          let counter = 1;
+      // Incrementally rename the file until a unique name is found
+      while (
+        existingFiles.data.some(
+          (existingFile) => existingFile.name === uniqueFileName
+        )
+      ) {
+        uniqueFileName = `${baseName}_copy${counter}${fileExtension}`;
+        counter++;
+      }
 
-          // Incrementally rename the file until a unique name is found
-          while (
-            existingFiles.data.some(
-              (existingFile) => existingFile.name === uniqueFileName
-            )
-          ) {
-            uniqueFileName = `${baseName}_copy${counter}${fileExtension}`;
-            counter++;
-          }
+      if (uniqueFileName !== fileName) {
+        console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
+      }
 
-          if (uniqueFileName !== fileName) {
-            console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
-          }
+      console.log("uploadBackground3D: Uploading file to GitHub:", uniqueFileName);
+      const result = await Promise.race([
+        authorizedUserOcto.rest.repos.createOrUpdateFileContents({
+          owner: GlobalVariables.currentUser,
+          repo: GlobalVariables.currentRepoName,
+          path: uniqueFileName,
+          message: "Upload background 3D model",
+          content: base64result,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(
+            () => reject(new Error("File upload timed out")),
+            60000
+          )
+        ),
+      ]);
+      console.log("USDZ file uploaded successfully:", result);
 
-          console.log("uploadBackground3D: Uploading file to GitHub:", uniqueFileName);
-          const result = await Promise.race([
-            authorizedUserOcto.rest.repos.createOrUpdateFileContents({
-              owner: GlobalVariables.currentUser,
-              repo: GlobalVariables.currentRepoName,
-              path: uniqueFileName,
-              message: "Upload background 3D model",
-              content: base64result,
-            }),
-            new Promise((_, reject) =>
-              setTimeout(
-                () => reject(new Error("File upload timed out")),
-                60000
-              )
-            ),
-          ]);
-          console.log("USDZ file uploaded successfully:", result);
+      console.log("uploadBackground3D: Setting state before", { 
+        beforeBackgroundUsdzFile: backgroundUsdzFile,
+        beforeShowBackgroundModel: showBackgroundModel
+      });
 
-          console.log("uploadBackground3D: Setting state before", { 
-            beforeBackgroundUsdzFile: backgroundUsdzFile,
-            beforeShowBackgroundModel: showBackgroundModel
-          });
+      // Set state immediately after successful upload
+      console.log("uploadBackground3D: About to set state", { 
+        fileName: uniqueFileName, 
+        sha: result.data.content.sha, 
+        showModel: true 
+      });
+      
+      setBackgroundUsdzFile(uniqueFileName);
+      setBackgroundUsdzSha(result.data.content.sha);
+      setShowBackgroundModel(true); // Enable display by default when file is uploaded
+      console.log("uploadBackground3D: State setters called successfully");
 
-          // Set state with a small delay to ensure GitHub has processed the file
-          setTimeout(() => {
-            setBackgroundUsdzFile(uniqueFileName);
-            setBackgroundUsdzSha(result.data.content.sha);
-            setShowBackgroundModel(true); // Enable display by default when file is uploaded
-            setUserUploadedFile(true); // Mark that user uploaded a file
-            console.log("Upload success: setting state (delayed)", { 
-              fileName: uniqueFileName, 
-              sha: result.data.content.sha, 
-              showModel: true 
-            });
-          }, 500); // Small delay to let GitHub process the upload
+      // Small delay to allow React to process state updates, then log final state
+      setTimeout(() => {
+        console.log("uploadBackground3D: State after upload (100ms delay)", {
+          backgroundUsdzFile: uniqueFileName, // Use the actual value we set
+          showBackgroundModel: true
+        });
+      }, 100);
 
-          // Use setTimeout to log state after React has processed the state updates
-          setTimeout(() => {
-            console.log("uploadBackground3D: State after upload", {
-              backgroundUsdzFile,
-              showBackgroundModel
-            });
-          }, 100);
+      saveProject(setSaveState, "Background 3D Model Upload Save");
 
-          saveProject(setSaveState, "Background 3D Model Upload Save");
-
-          // Show upload notification
-          setImportNotification(`Background 3D model uploaded: ${uniqueFileName}`);
-          setTimeout(() => setImportNotification(null), 3000);
-        } catch (error) {
-          console.error("uploadBackground3D: Upload error", error);
-          setImportNotification(
-            `Failed to Upload 3D Model: Corrupt or exceeded size limit`
-          );
-          setTimeout(() => setImportNotification(null), 3000);
-          console.error("Error during 3D model upload:", error);
-        }
-      })();
-    };
-
-    reader.onerror = function (error) {
-      console.error("Error reading 3D model file:", error);
-      alert("Failed to read the 3D model file. Please try again.");
-    };
-    reader.readAsDataURL(file);
+      // Show upload notification
+      setImportNotification(`Background 3D model uploaded: ${uniqueFileName}`);
+      setTimeout(() => setImportNotification(null), 3000);
+      
+    } catch (error) {
+      console.error("uploadBackground3D: Upload error", error);
+      // Reset userUploadedFile flag on error
+      setUserUploadedFile(false);
+      setImportNotification(
+        `Failed to Upload 3D Model: Corrupt or exceeded size limit`
+      );
+      setTimeout(() => setImportNotification(null), 3000);
+      console.error("Error during 3D model upload:", error);
+    }
   };
 
   /**
