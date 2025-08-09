@@ -69,7 +69,15 @@ export default function ext({ children, ...props }) {
         shadows={true}
         onCreated={({ scene, camera, gl }) => {
           console.log("🎯 THREECONTEXT: Canvas created with scene:", scene);
-          console.log("🎯 THREECONTEXT: Camera:", camera);
+          console.log("🎯 THREECONTEXT: Camera:", {
+            type: camera.type,
+            position: camera.position,
+            rotation: camera.rotation,
+            zoom: camera.zoom,
+            near: camera.near,
+            far: camera.far,
+            up: camera.up
+          });
           console.log("🎯 THREECONTEXT: Renderer:", gl);
           console.log("🎯 THREECONTEXT: Scene children count:", scene.children.length);
           
@@ -82,8 +90,49 @@ export default function ext({ children, ...props }) {
                 name: child.name || "unnamed",
                 visible: child.visible,
                 position: child.position,
+                scale: child.scale,
+                renderOrder: child.renderOrder,
                 childrenCount: child.children?.length || 0
               });
+              
+              // If this child has children, show detailed info about them
+              if (child.children && child.children.length > 0) {
+                console.log(`🎯 THREECONTEXT: ${child.type} Child ${index} has ${child.children.length} nested children:`);
+                child.children.forEach((nestedChild, nestedIndex) => {
+                  console.log(`🎯 THREECONTEXT:   Nested Child ${nestedIndex}:`, {
+                    type: nestedChild.type,
+                    name: nestedChild.name || "unnamed",
+                    visible: nestedChild.visible,
+                    position: nestedChild.position,
+                    scale: nestedChild.scale,
+                    renderOrder: nestedChild.renderOrder,
+                    hasGeometry: !!nestedChild.geometry,
+                    hasMaterial: !!nestedChild.material,
+                    materialType: nestedChild.material?.type,
+                    materialVisible: nestedChild.material?.visible,
+                    materialOpacity: nestedChild.material?.opacity,
+                    materialTransparent: nestedChild.material?.transparent
+                  });
+                  
+                  // Show even deeper nesting if it exists
+                  if (nestedChild.children && nestedChild.children.length > 0) {
+                    console.log(`🎯 THREECONTEXT:   Nested child has ${nestedChild.children.length} sub-children`);
+                    nestedChild.children.forEach((subChild, subIndex) => {
+                      console.log(`🎯 THREECONTEXT:     Sub-child ${subIndex}:`, {
+                        type: subChild.type,
+                        name: subChild.name || "unnamed",
+                        visible: subChild.visible,
+                        hasGeometry: !!subChild.geometry,
+                        hasMaterial: !!subChild.material,
+                        geometryType: subChild.geometry?.type,
+                        vertexCount: subChild.geometry?.attributes?.position?.count || 0,
+                        materialType: subChild.material?.type,
+                        materialOpacity: subChild.material?.opacity
+                      });
+                    });
+                  }
+                });
+              }
             });
           };
           

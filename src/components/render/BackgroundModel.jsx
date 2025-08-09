@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import * as THREE from "three";
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import GlobalVariables from "../../js/globalvariables.js";
 
@@ -350,8 +351,27 @@ function BackgroundModelMesh({ url }) {
   
   // Position the model at the origin for debugging
   const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
   clonedScene.position.sub(center);
-  console.log("🎯 BACKGROUND MODEL: Centered model at origin, new position:", clonedScene.position);
+  
+  // Scale the model to a reasonable size for the camera view
+  // The camera is at [3000, 3000, 5000] so the model should be sized appropriately
+  const maxSize = Math.max(size.x, size.y, size.z);
+  if (maxSize > 0) {
+    // Scale to roughly 1000 units if it's too big or too small
+    const targetSize = 1000;
+    const scaleFactor = targetSize / maxSize;
+    clonedScene.scale.setScalar(scaleFactor);
+    console.log("🎯 BACKGROUND MODEL: Scaled model - originalSize:", maxSize, "scaleFactor:", scaleFactor, "newScale:", clonedScene.scale);
+  }
+  
+  console.log("🎯 BACKGROUND MODEL: Final model transform:", {
+    position: clonedScene.position,
+    scale: clonedScene.scale,
+    originalBoundingBox: { min: box.min, max: box.max },
+    originalSize: size,
+    originalCenter: center
+  });
   
   // Ensure all child objects are visible
   clonedScene.traverse((child) => {
