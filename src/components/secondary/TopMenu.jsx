@@ -26,6 +26,12 @@ function TopMenu({
   setAxes,
   setWire,
   setSolid,
+  backgroundUsdzFile,
+  setBackgroundUsdzFile,
+  backgroundUsdzSha,
+  setBackgroundUsdzSha,
+  showBackgroundModel,
+  setShowBackgroundModel,
 }) {
   let [shareDialog, setShareDialog] = useState(false);
   let [dialogContent, setDialog] = useState("");
@@ -291,6 +297,13 @@ function TopMenu({
               setAxes,
               setWire,
               setSolid,
+              backgroundUsdzFile,
+              setBackgroundUsdzFile,
+              backgroundUsdzSha,
+              setBackgroundUsdzSha,
+              showBackgroundModel,
+              setShowBackgroundModel,
+              authorizedUserOcto,
             }}
           />
         )

@@ -7,6 +7,7 @@ import {
 } from "@react-three/drei";
 import * as THREE from "three";
 import Controls from "./ThreeControls.jsx";
+import BackgroundModel from "./BackgroundModel.jsx";
 import globalvariables from "../../js/globalvariables.js";
 
 // We change the default orientation - threejs tends to use Y are the height,
@@ -25,6 +26,14 @@ export default function ext({ children, ...props }) {
 
   const [cellSection, setCellSection] = useState(100);
   const [axesScale, setAxesScale] = useState(0.3);
+
+  // Extract background model props
+  const {
+    backgroundUsdzFile,
+    showBackgroundModel,
+    authorizedUserOcto,
+    ...otherProps
+  } = props;
 
   useEffect(() => {
     if (gridScale < 10) {
@@ -89,6 +98,16 @@ export default function ext({ children, ...props }) {
         ) : (
           <ambientLight intensity={0.4} />
         )}
+        
+        {/* Background USDZ model - rendered behind CAD models */}
+        {backgroundUsdzFile && showBackgroundModel && (
+          <BackgroundModel 
+            fileName={backgroundUsdzFile}
+            showModel={showBackgroundModel}
+            authorizedUserOcto={authorizedUserOcto}
+          />
+        )}
+        
         {children}
       </Canvas>
     </Suspense>

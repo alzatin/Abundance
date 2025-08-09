@@ -29,6 +29,13 @@ const SettingsPopUp = ({
   setAxes,
   setWire,
   setSolid,
+  backgroundUsdzFile,
+  setBackgroundUsdzFile,
+  backgroundUsdzSha,
+  setBackgroundUsdzSha,
+  showBackgroundModel,
+  setShowBackgroundModel,
+  authorizedUserOcto,
 }) => {
   let repoTopics = [];
   if (Globalvariables.currentRepo.topics.length > 0) {
@@ -360,6 +367,77 @@ const SettingsPopUp = ({
                 }
                 label="Wireframe"
               />
+              <Divider flexItem style={{ margin: "10px 0" }} />
+              <Typography
+                style={{ margin: "10px 0" }}
+                gutterBottom
+                className="settings-labels"
+              >
+                Background Model
+              </Typography>
+              <div style={{ marginBottom: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    document.getElementById("backgroundUsdzInput").click();
+                  }}
+                  style={{
+                    padding: "8px 16px",
+                    marginRight: "10px",
+                    backgroundColor: "#2196f3",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Upload 3D Background Model
+                </button>
+                {backgroundUsdzFile && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      document.getElementById("backgroundUsdzDeleteInput").click();
+                    }}
+                    style={{
+                      padding: "8px 16px",
+                      backgroundColor: "#f44336",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Delete Background
+                  </button>
+                )}
+              </div>
+              <Typography 
+                variant="caption" 
+                style={{ color: "#666", fontSize: "12px", display: "block", marginBottom: "10px" }}
+              >
+                Supported formats: GLB, GLTF. Max file size: 25MB
+              </Typography>
+              {backgroundUsdzFile && (
+                <div style={{ marginBottom: "10px" }}>
+                  <Typography variant="body2" style={{ color: "#666" }}>
+                    Current file: {backgroundUsdzFile}
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={showBackgroundModel}
+                        onChange={(event) => {
+                          setShowBackgroundModel(event.target.checked);
+                        }}
+                        name="backgroundModel"
+                        color="secondary"
+                      />
+                    }
+                    label="Show Background Model"
+                  />
+                </div>
+              )}
             </FormGroup>
           </CustomTabPanel>
 

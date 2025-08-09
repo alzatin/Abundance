@@ -48,6 +48,11 @@ function CreateMode({
   const [wireParam, setWire] = useState(true);
   const [solidParam, setSolid] = useState(false);
 
+  /** State for background USDZ model */
+  const [backgroundUsdzFile, setBackgroundUsdzFile] = useState(null);
+  const [backgroundUsdzSha, setBackgroundUsdzSha] = useState(null);
+  const [showBackgroundModel, setShowBackgroundModel] = useState(false);
+
   /** State for import notifications */
   const [importNotification, setImportNotification] = useState(null);
 
@@ -393,6 +398,118 @@ function CreateMode({
   };
 
   /**
+   * Upload a 3D background file (GLB/GLTF) to GitHub
+   */
+  const uploadBackground3D = async function (file) {
+    var reader = new FileReader();
+
+    reader.onload = function (e) {
+      const base64result = e.target.result.split(",")[1];
+
+      (async () => {
+        try {
+          const existingFiles = await authorizedUserOcto.rest.repos.getContent({
+            owner: GlobalVariables.currentUser,
+            repo: GlobalVariables.currentRepoName,
+            path: "",
+          });
+
+          let fileName = file.name;
+          const fileExtension = fileName.substring(fileName.lastIndexOf("."));
+          const baseName = fileName.substring(0, fileName.lastIndexOf("."));
+          let uniqueFileName = fileName;
+          let counter = 1;
+
+          // Incrementally rename the file until a unique name is found
+          while (
+            existingFiles.data.some(
+              (existingFile) => existingFile.name === uniqueFileName
+            )
+          ) {
+            uniqueFileName = `${baseName}_copy${counter}${fileExtension}`;
+            counter++;
+          }
+
+          if (uniqueFileName !== fileName) {
+            console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
+          }
+
+          const result = await Promise.race([
+            authorizedUserOcto.rest.repos.createOrUpdateFileContents({
+              owner: GlobalVariables.currentUser,
+              repo: GlobalVariables.currentRepoName,
+              path: uniqueFileName,
+              message: "Upload background 3D model",
+              content: base64result,
+            }),
+            new Promise((_, reject) =>
+              setTimeout(
+                () => reject(new Error("File upload timed out")),
+                60000
+              )
+            ),
+          ]);
+          console.log("USDZ file uploaded successfully:", result);
+
+          setBackgroundUsdzFile(uniqueFileName);
+          setBackgroundUsdzSha(result.data.content.sha);
+          setShowBackgroundModel(true); // Enable display by default when file is uploaded
+          saveProject(setSaveState, "Background 3D Model Upload Save");
+
+          // Show upload notification
+          setImportNotification(`Background 3D model uploaded: ${uniqueFileName}`);
+          setTimeout(() => setImportNotification(null), 3000);
+        } catch (error) {
+          setImportNotification(
+            `Failed to Upload 3D Model: Corrupt or exceeded size limit`
+          );
+          setTimeout(() => setImportNotification(null), 3000);
+          console.error("Error during 3D model upload:", error);
+        }
+      })();
+    };
+
+    reader.onerror = function (error) {
+      console.error("Error reading 3D model file:", error);
+      alert("Failed to read the 3D model file. Please try again.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  /**
+   * Delete background 3D model file from GitHub
+   */
+  const deleteBackground3D = async function () {
+    if (!backgroundUsdzFile || !backgroundUsdzSha) {
+      return;
+    }
+    
+    try {
+      await authorizedUserOcto.rest.repos.deleteFile({
+        owner: GlobalVariables.currentUser,
+        repo: GlobalVariables.currentRepoName,
+        path: backgroundUsdzFile,
+        message: "Deleted background 3D model",
+        sha: backgroundUsdzSha,
+      });
+      console.log("Background 3D model file deleted successfully:", backgroundUsdzFile);
+
+      setBackgroundUsdzFile(null);
+      setBackgroundUsdzSha(null);
+      setShowBackgroundModel(false);
+
+      // Show delete notification
+      setImportNotification(`Background 3D model deleted: ${backgroundUsdzFile}`);
+      setTimeout(() => setImportNotification(null), 3000);
+    } catch (error) {
+      console.error("Error deleting background 3D model file:", error);
+      alert(
+        `Failed to delete 3D model file: ${backgroundUsdzFile}. The file will remain in your repository.`
+      );
+    }
+  };
+
+  /**
    * Saves project by making a commit to the Github repository.
    */
   const saveProject = async (setState, typeSave) => {
@@ -570,6 +687,12 @@ function CreateMode({
               setAxes,
               setWire,
               setSolid,
+              backgroundUsdzFile,
+              setBackgroundUsdzFile,
+              backgroundUsdzSha,
+              setBackgroundUsdzSha,
+              showBackgroundModel,
+              setShowBackgroundModel,
             }}
           />
 
@@ -589,6 +712,26 @@ function CreateMode({
             style={{ display: "none" }}
             onClick={() => {
               deleteAFile(activeAtom.fileName, activeAtom.sha);
+            }}
+          />
+          <input
+            type="file"
+            id="backgroundUsdzInput"
+            style={{ display: "none" }}
+            accept=".glb,.gltf"
+            onChange={(event) => {
+              let file = event.target.files[0];
+              if (file) {
+                uploadBackground3D(file);
+              }
+            }}
+          />
+          <input
+            type="button"
+            id="backgroundUsdzDeleteInput"
+            style={{ display: "none" }}
+            onClick={() => {
+              deleteBackground3D();
             }}
           />
           <FlowCanvas
@@ -636,6 +779,9 @@ function CreateMode({
                 wireMesh,
                 outdatedMesh,
                 setOutdatedMesh,
+                backgroundUsdzFile,
+                showBackgroundModel,
+                authorizedUserOcto,
               }}
             />
           </div>
