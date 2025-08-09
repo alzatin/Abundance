@@ -930,6 +930,9 @@ function CreateMode({
                   setAxes,
                   setWire,
                   setSolid,
+                  backgroundUsdzFile,
+                  showBackgroundModel,
+                  setShowBackgroundModel,
                 }}
               />
             ) : null}
