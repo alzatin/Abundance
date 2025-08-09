@@ -91,6 +91,19 @@ function CreateMode({
     z: "Undo", //saving this letter
   };
 
+  /** Component initialization debug */
+  useEffect(() => {
+    console.log("🚀 CreateMode: Component mounted and initialized", {
+      timestamp: new Date().toISOString(),
+      hasAuthorizedUserOcto: !!authorizedUserOcto,
+      currentUser: GlobalVariables.currentUser,
+      currentRepo: GlobalVariables.currentRepoName,
+      backgroundUsdzFile,
+      showBackgroundModel,
+      location: window.location.href
+    });
+  }, []); // Only run on mount
+
   /** Checks if activeAtom is topLevel to render goUp button */
   useEffect(() => {
     if (activeAtom && activeAtom.atomType == "Molecule") {
@@ -744,7 +757,28 @@ function CreateMode({
     ) {
       return (
         <>
-          <div id="headerBar">
+          {/* Global Debug Panel */}
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: '#ff9',
+            padding: '5px',
+            fontSize: '11px',
+            zIndex: 9999,
+            border: '2px solid #f80',
+            fontFamily: 'monospace'
+          }}>
+            <strong>🐛 GLOBAL DEBUG:</strong> CreateMode Active | 
+            backgroundUsdzFile: "{backgroundUsdzFile}" | 
+            showBackgroundModel: {showBackgroundModel?.toString()} | 
+            User: {GlobalVariables.currentUser} | 
+            Repo: {GlobalVariables.currentRepoName} | 
+            {new Date().toISOString()}
+          </div>
+          
+          <div id="headerBar" style={{ marginTop: '40px' }}>
             <img
               className="thumnail-logo"
               src={

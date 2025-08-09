@@ -438,12 +438,15 @@ const SettingsPopUp = ({
               >
                 Supported formats: GLB, GLTF. Max file size: 25MB
               </Typography>
-              {/* Debug background file state */}
-              <div style={{ padding: '10px', backgroundColor: '#f0f0f0', margin: '10px 0', fontSize: '12px' }}>
-                <strong>DEBUG:</strong> backgroundUsdzFile = "{backgroundUsdzFile}" | 
-                showBackgroundModel = {showBackgroundModel?.toString()} | 
-                truthy = {(!!backgroundUsdzFile).toString()} | 
-                Component ID = {componentId.current}
+              {/* Enhanced debug background file state */}
+              <div style={{ padding: '10px', backgroundColor: '#f0f0f0', margin: '10px 0', fontSize: '12px', border: '2px solid #ccc' }}>
+                <strong>🐛 BACKGROUND MODEL DEBUG PANEL:</strong><br/>
+                <strong>backgroundUsdzFile:</strong> "{backgroundUsdzFile}" (type: {typeof backgroundUsdzFile})<br/>
+                <strong>showBackgroundModel:</strong> {showBackgroundModel?.toString()} (type: {typeof showBackgroundModel})<br/>
+                <strong>truthy check:</strong> {(!!backgroundUsdzFile).toString()}<br/>
+                <strong>Component ID:</strong> {componentId.current}<br/>
+                <strong>Checkbox condition:</strong> {(!!backgroundUsdzFile) ? 'SHOULD SHOW ✅' : 'WILL NOT SHOW ❌'}<br/>
+                <strong>Render timestamp:</strong> {new Date().toISOString()}
               </div>
               {console.log("SettingsPopUp: Render check - backgroundUsdzFile:", backgroundUsdzFile, "truthy:", !!backgroundUsdzFile, "type:", typeof backgroundUsdzFile)}
               {backgroundUsdzFile && (
@@ -468,10 +471,15 @@ const SettingsPopUp = ({
                   />
                 </div>
               )}
-              {/* Debug when backgroundUsdzFile is falsy */}
+              {/* Enhanced debug when backgroundUsdzFile is falsy */}
               {!backgroundUsdzFile && (
-                <div style={{ padding: '5px', backgroundColor: '#ffe6e6', fontSize: '12px' }}>
-                  DEBUG: No checkbox shown - backgroundUsdzFile is falsy: "{backgroundUsdzFile}"
+                <div style={{ padding: '10px', backgroundColor: '#ffe6e6', fontSize: '12px', border: '2px solid red' }}>
+                  <strong>🚨 CHECKBOX NOT SHOWN:</strong><br/>
+                  <strong>Reason:</strong> backgroundUsdzFile is falsy<br/>
+                  <strong>Value:</strong> "{backgroundUsdzFile}"<br/>
+                  <strong>Type:</strong> {typeof backgroundUsdzFile}<br/>
+                  <strong>Possible causes:</strong> Upload failed, state not propagated, or wrong component instance<br/>
+                  <strong>Check console for upload logs and state propagation</strong>
                 </div>
               )}
               {!backgroundUsdzFile && console.log("SettingsPopUp: No background model controls shown - backgroundUsdzFile is falsy:", backgroundUsdzFile)}
