@@ -77,7 +77,7 @@ export default class CutLayout extends Atom {
       "Part Padding",
       this,
       "number",
-      GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 6 : .25
+      GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 10 : .4
     );
 
     this.addIO("output", "geometry", this, "geometry", "");
