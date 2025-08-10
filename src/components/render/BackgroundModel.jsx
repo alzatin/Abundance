@@ -248,6 +248,16 @@ function BackgroundModelMesh({ url }) {
   // Center the model at origin
   clonedScene.position.sub(center);
   
+  // Apply 90-degree rotation around X-axis
+  clonedScene.rotation.x = Math.PI / 2;
+  
+  // After rotation, calculate new bounding box and move model to positive Y
+  const rotatedBox = new THREE.Box3().setFromObject(clonedScene);
+  const minY = rotatedBox.min.y;
+  
+  // Move the model up so its bottom sits at Y=0 (entirely in positive Y)
+  clonedScene.position.y -= minY;
+  
   // Ensure all materials are visible
   clonedScene.traverse((child) => {
     child.visible = true;

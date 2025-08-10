@@ -698,28 +698,7 @@ function CreateMode({
     ) {
       return (
         <>
-          {/* Global Debug Panel */}
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: '#ff9',
-            padding: '5px',
-            fontSize: '11px',
-            zIndex: 9999,
-            border: '2px solid #f80',
-            fontFamily: 'monospace'
-          }}>
-            <strong>🐛 GLOBAL DEBUG:</strong> CreateMode Active | 
-            backgroundUsdzFile: "{backgroundUsdzFile}" | 
-            showBackgroundModel: {showBackgroundModel?.toString()} | 
-            User: {GlobalVariables.currentUser} | 
-            Repo: {GlobalVariables.currentRepoName} | 
-            {new Date().toISOString()}
-          </div>
-          
-          <div id="headerBar" style={{ marginTop: '40px' }}>
+          <div id="headerBar">
             <img
               className="thumnail-logo"
               src={
