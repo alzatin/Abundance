@@ -251,12 +251,28 @@ function BackgroundModelMesh({ url }) {
   // Apply 90-degree rotation around X-axis
   clonedScene.rotation.x = Math.PI / 2;
   
-  // After rotation, calculate new bounding box and move model to positive Y
+  // After rotation, calculate new bounding box and position the model
   const rotatedBox = new THREE.Box3().setFromObject(clonedScene);
-  const minY = rotatedBox.min.y;
+  const minZ = rotatedBox.min.z;
   
-  // Move the model up so its bottom sits at Y=0 (entirely in positive Y)
-  clonedScene.position.y -= minY;
+  // Move the model forward so its back sits at Z=0 (entirely in positive Z)
+  clonedScene.position.z -= minZ;
+  
+  // Scale the model based on project units (assume model is in meters)
+  let scaleFactor = 1;
+  if (GlobalVariables.topLevelMolecule && GlobalVariables.topLevelMolecule.unitsKey) {
+    const projectUnits = GlobalVariables.topLevelMolecule.unitsKey;
+    if (projectUnits === "MM") {
+      // Convert meters to millimeters
+      scaleFactor = 1000;
+    } else if (projectUnits === "Inches") {
+      // Convert meters to inches (1 meter = 39.3701 inches)
+      scaleFactor = 39.3701;
+    }
+    // For "Unitless", keep scale factor at 1
+  }
+  
+  clonedScene.scale.set(scaleFactor, scaleFactor, scaleFactor);
   
   // Ensure all materials are visible
   clonedScene.traverse((child) => {
