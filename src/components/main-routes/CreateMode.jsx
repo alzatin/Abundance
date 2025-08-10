@@ -90,19 +90,6 @@ function CreateMode({
     z: "Undo", //saving this letter
   };
 
-  /** Component initialization debug */
-  useEffect(() => {
-    console.log("🚀 CreateMode: Component mounted and initialized", {
-      timestamp: new Date().toISOString(),
-      hasAuthorizedUserOcto: !!authorizedUserOcto,
-      currentUser: GlobalVariables.currentUser,
-      currentRepo: GlobalVariables.currentRepoName,
-      backgroundUsdzFile,
-      showBackgroundModel,
-      location: window.location.href
-    });
-  }, []); // Only run on mount
-
   /** Checks if activeAtom is topLevel to render goUp button */
   useEffect(() => {
     if (activeAtom && activeAtom.atomType == "Molecule") {
