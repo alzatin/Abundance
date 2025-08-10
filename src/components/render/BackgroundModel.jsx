@@ -241,24 +241,7 @@ function BackgroundModelMesh({ url }) {
   clonedScene.rotation.set(0, 0, 0);
   clonedScene.visible = true;
   
-  // Calculate bounding box and center the model at origin
-  const box = new THREE.Box3().setFromObject(clonedScene);
-  const center = box.getCenter(new THREE.Vector3());
-  
-  // Center the model at origin
-  clonedScene.position.sub(center);
-  
-  // Apply 90-degree rotation around X-axis
-  clonedScene.rotation.x = Math.PI / 2;
-  
-  // After rotation, calculate new bounding box and position the model
-  const rotatedBox = new THREE.Box3().setFromObject(clonedScene);
-  const minZ = rotatedBox.min.z;
-  
-  // Move the model forward so its back sits at Z=0 (entirely in positive Z)
-  clonedScene.position.z -= minZ;
-  
-  // Scale the model based on project units (assume model is in meters)
+  // Scale the model first based on project units (assume model is in meters)
   let scaleFactor = 1;
   if (GlobalVariables.topLevelMolecule && GlobalVariables.topLevelMolecule.unitsKey) {
     const projectUnits = GlobalVariables.topLevelMolecule.unitsKey;
@@ -273,6 +256,25 @@ function BackgroundModelMesh({ url }) {
   }
   
   clonedScene.scale.set(scaleFactor, scaleFactor, scaleFactor);
+  
+  // Calculate bounding box and center the model at origin (after scaling)
+  const box = new THREE.Box3().setFromObject(clonedScene);
+  const center = box.getCenter(new THREE.Vector3());
+  
+  // Center the model at origin (Y-axis centering)
+  clonedScene.position.set(-center.x, -center.y, -center.z);
+  
+  // Apply 90-degree rotation around X-axis
+  clonedScene.rotation.x = Math.PI / 2;
+  
+  // After rotation, calculate new bounding box and position for positive Z
+  const rotatedBox = new THREE.Box3().setFromObject(clonedScene);
+  const minZ = rotatedBox.min.z;
+  const centerY = rotatedBox.getCenter(new THREE.Vector3()).y;
+  
+  // Move the model so it sits entirely in positive Z and is centered in Y
+  clonedScene.position.z -= minZ;
+  clonedScene.position.y -= centerY;
   
   // Ensure all materials are visible
   clonedScene.traverse((child) => {
