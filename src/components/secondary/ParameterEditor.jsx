@@ -23,6 +23,9 @@ export default (function ParamsEditor({
   setWire,
   setSolid,
   compiledBom,
+  backgroundUsdzFile,
+  showBackgroundModel,
+  setShowBackgroundModel,
 }) {
   let inputParams = {};
   let exportParams = {};
@@ -124,39 +127,48 @@ export default (function ParamsEditor({
   ]);
 
   /** Creates Leva panel with grid settings */
-  useControls(
-    {
-      grid: {
-        value: gridParam,
-        label: "Grid",
-        onChange: (value) => {
-          setGrid(value);
-        },
-      },
-      axes: {
-        value: axesParam,
-        label: "Axes",
-        onChange: (value) => {
-          setAxes(value);
-        },
-      },
-      wire: {
-        value: wireParam,
-        label: "Output Wire",
-        onChange: (value) => {
-          setWire(value);
-        },
-      },
-      wireframe: {
-        value: solidParam,
-        label: "Wireframe",
-        onChange: (value) => {
-          setSolid(value);
-        },
+  const renderSettings = {
+    grid: {
+      value: gridParam,
+      label: "Grid",
+      onChange: (value) => {
+        setGrid(value);
       },
     },
-    { store: store2 }
-  );
+    axes: {
+      value: axesParam,
+      label: "Axes",
+      onChange: (value) => {
+        setAxes(value);
+      },
+    },
+    wire: {
+      value: wireParam,
+      label: "Output Wire",
+      onChange: (value) => {
+        setWire(value);
+      },
+    },
+    wireframe: {
+      value: solidParam,
+      label: "Wireframe",
+      onChange: (value) => {
+        setSolid(value);
+      },
+    },
+    backgroundModel: {
+      value: backgroundUsdzFile ? showBackgroundModel : false,
+      label: "Background Model",
+      disabled: !backgroundUsdzFile,
+      onChange: (value) => {
+        if (backgroundUsdzFile) {
+          setShowBackgroundModel(value);
+        }
+      },
+    },
+  };
+
+  useControls(renderSettings, { store: store2 }, [backgroundUsdzFile, showBackgroundModel]);
 
   // color theme for Leva
   const abundanceTheme = {
