@@ -13,284 +13,97 @@ export default function BackgroundModel({
   showModel, 
   authorizedUserOcto 
 }) {
-  const [modelUrl, setModelUrl] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [model, setModel] = useState(null);
 
   useEffect(() => {
     if (!fileName || !showModel) {
-      setModelUrl(null);
+      setModel(null);
       return;
     }
 
-    const loadModel = async (retryCount = 0) => {
-      setLoading(true);
-      setError(null);
-      
+    const loadModel = async () => {
       try {
         const octokit = authorizedUserOcto || new Octokit();
         
-        // Use consistent owner/repo parameters with upload
-        const owner = GlobalVariables.currentUser;
-        const repo = GlobalVariables.currentRepoName;
-        
         const result = await octokit.rest.repos.getContent({
-          owner: owner,
-          repo: repo,
+          owner: GlobalVariables.currentUser,
+          repo: GlobalVariables.currentRepoName,
           path: fileName,
         });
 
         let url;
 
-        // For large files (>1MB), GitHub doesn't include content in the API response
-        // Instead, we need to use the download_url or fetch via raw file URL
+        // For large files (>1MB), use download_url
         if (!result.data.content || result.data.content.length === 0) {
-          
-          if (result.data.download_url) {
-            // Fetch the file directly using the download URL
-            const response = await fetch(result.data.download_url);
-            
-            if (!response.ok) {
-              throw new Error(`Failed to fetch file from download URL: ${response.status} ${response.statusText}`);
-            }
-            
-            const arrayBuffer = await response.arrayBuffer();
-            
-            // Determine MIME type based on file extension
-            const extension = fileName.toLowerCase().split('.').pop();
-            let mimeType = "application/octet-stream";
-            if (extension === "glb") {
-              mimeType = "model/gltf-binary";
-            } else if (extension === "gltf") {
-              mimeType = "model/gltf+json";
-            }
-            
-            const blob = new Blob([arrayBuffer], { type: mimeType });
-            url = URL.createObjectURL(blob);
-          } else {
-            // If no download_url, try constructing raw file URL as fallback
-            const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${fileName}`;
-            
-            try {
-              const response = await fetch(rawUrl);
-              if (!response.ok) {
-                throw new Error(`Failed to fetch file from raw URL: ${response.status} ${response.statusText}`);
-              }
-              
-              const arrayBuffer = await response.arrayBuffer();
-              
-              // Determine MIME type based on file extension
-              const extension = fileName.toLowerCase().split('.').pop();
-              let mimeType = "application/octet-stream";
-              if (extension === "glb") {
-                mimeType = "model/gltf-binary";
-              } else if (extension === "gltf") {
-                mimeType = "model/gltf+json";
-              }
-              
-              const blob = new Blob([arrayBuffer], { type: mimeType });
-              url = URL.createObjectURL(blob);
-            } catch (rawError) {
-              throw new Error("Empty file content received from GitHub, no download URL available, and raw file access failed");
-            }
-          }
+          const response = await fetch(result.data.download_url);
+          const arrayBuffer = await response.arrayBuffer();
+          const blob = new Blob([arrayBuffer], { type: "model/gltf-binary" });
+          url = URL.createObjectURL(blob);
         } else {
-          // Small files with base64 content (original logic)
-          
-          // Convert base64 to blob URL
-          // Clean base64 string by removing newlines (GitHub API adds formatting newlines)
+          // For small files, use base64 content
           const base64String = result.data.content.replace(/\s/g, '');
-          
-          if (base64String.length === 0) {
-            throw new Error("Empty base64 content after cleaning");
-          }
-          
           const binary = atob(base64String);
-          const array = [];
+          const array = new Uint8Array(binary.length);
           for (let i = 0; i < binary.length; i++) {
-            array.push(binary.charCodeAt(i));
+            array[i] = binary.charCodeAt(i);
           }
-          
-          // Determine MIME type based on file extension
-          const extension = fileName.toLowerCase().split('.').pop();
-          let mimeType = "application/octet-stream";
-          if (extension === "glb") {
-            mimeType = "model/gltf-binary";
-          } else if (extension === "gltf") {
-            mimeType = "model/gltf+json";
-          }
-          
-          const blob = new Blob([new Uint8Array(array)], {
-            type: mimeType,
-          });
-          
+          const blob = new Blob([array], { type: "model/gltf-binary" });
           url = URL.createObjectURL(blob);
         }
-        setModelUrl(url);
-        setLoading(false); // Clear loading state when successful
-      } catch (err) {
-        // Retry logic - GitHub might need a moment to make the file available
-        if (retryCount < 3 && (
-          err.message.includes("Empty file content received from GitHub") || 
-          err.message.includes("Empty base64 content") ||
-          err.status === 404 ||
-          err.message.includes("raw file access failed")
-        )) {
-          const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
-          setTimeout(() => {
-            loadModel(retryCount + 1);
-          }, delay);
-          return; // Don't set error state yet, we're retrying
-        }
-        
-        setError(`Failed to load background model after ${retryCount + 1} attempts: ${err.message}`);
-        setLoading(false);
+
+        // Load the GLTF model
+        const loader = new GLTFLoader();
+        loader.load(url, (gltf) => {
+          if (gltf.scene) {
+            const clonedScene = gltf.scene.clone();
+            
+            // Scale based on project units (assume model is in meters)
+            let scaleFactor = 1;
+            if (GlobalVariables.topLevelMolecule?.unitsKey === "MM") {
+              scaleFactor = 1000; // meters to millimeters
+            } else if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
+              scaleFactor = 39.3701; // meters to inches
+            }
+            clonedScene.scale.set(scaleFactor, scaleFactor, scaleFactor);
+            
+            // Center and position the model
+            const box = new THREE.Box3().setFromObject(clonedScene);
+            const center = box.getCenter(new THREE.Vector3());
+            clonedScene.position.set(-center.x, -center.y, -center.z);
+            
+            // Rotate 90 degrees around X-axis
+            clonedScene.rotation.x = Math.PI / 2;
+            
+            // Position entirely in positive Z-axis, centered in Y
+            const rotatedBox = new THREE.Box3().setFromObject(clonedScene);
+            const minZ = rotatedBox.min.z;
+            const centerY = rotatedBox.getCenter(new THREE.Vector3()).y;
+            clonedScene.position.z -= minZ;
+            clonedScene.position.y -= centerY;
+            
+            // Ensure materials are visible
+            clonedScene.traverse((child) => {
+              if (child.material) {
+                child.material.transparent = false;
+                child.material.opacity = 1.0;
+              }
+            });
+
+            setModel(clonedScene);
+          }
+          URL.revokeObjectURL(url);
+        });
+      } catch (error) {
+        console.warn("Failed to load background model:", error);
       }
     };
 
     loadModel();
   }, [fileName, showModel, authorizedUserOcto]);
 
-  // Cleanup function to revoke blob URLs when component unmounts
-  useEffect(() => {
-    return () => {
-      if (modelUrl) {
-        URL.revokeObjectURL(modelUrl);
-      }
-    };
-  }, [modelUrl]);
-
-  // Don't render anything if model shouldn't be shown or no URL
-  if (!showModel || !modelUrl) {
+  if (!showModel || !model) {
     return null;
   }
 
-  if (loading) {
-    return null; // Could add a loading indicator here if desired
-  }
-
-  if (error) {
-    console.warn("Background model error:", error);
-    return null; // Silently fail to not interfere with CAD operations
-  }
-
-  return <BackgroundModelMesh url={modelUrl} />;
-}
-
-/**
- * Separate component for the actual 3D model rendering
- * This is separated to handle the useGLTF hook properly
- */
-function BackgroundModelMesh({ url }) {
-  const [model, setModel] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    setModel(null);
-    
-    const loader = new GLTFLoader();
-    
-    loader.load(
-      url,
-      (gltf) => {
-        if (gltf.scene && gltf.scene.children.length > 0) {
-          setModel(gltf);
-          setError(null);
-        } else {
-          setError(new Error("Model loaded but contains no visible geometry"));
-        }
-        setLoading(false);
-      },
-      (progress) => {
-        // Progress callback - optional logging
-      },
-      (error) => {
-        setError(new Error(`GLTFLoader failed: ${error.message || 'Unknown error'}`));
-        setModel(null);
-        setLoading(false);
-      }
-    );
-
-    // Cleanup function
-    return () => {
-      setLoading(false);
-    };
-  }, [url]);
-  
-  if (loading) {
-    return null;
-  }
-  
-  if (error) {
-    console.error("Background model render error:", error);
-    return null;
-  }
-  
-  if (!model || !model.scene) {
-    return null;
-  }
-  
-  // Clone the scene to avoid conflicts
-  const clonedScene = model.scene.clone();
-  
-  // Position the model at origin and ensure it's visible
-  clonedScene.position.set(0, 0, 0);
-  clonedScene.rotation.set(0, 0, 0);
-  clonedScene.visible = true;
-  
-  // Scale the model first based on project units (assume model is in meters)
-  let scaleFactor = 1;
-  if (GlobalVariables.topLevelMolecule && GlobalVariables.topLevelMolecule.unitsKey) {
-    const projectUnits = GlobalVariables.topLevelMolecule.unitsKey;
-    if (projectUnits === "MM") {
-      // Convert meters to millimeters
-      scaleFactor = 1000;
-    } else if (projectUnits === "Inches") {
-      // Convert meters to inches (1 meter = 39.3701 inches)
-      scaleFactor = 39.3701;
-    }
-    // For "Unitless", keep scale factor at 1
-  }
-  
-  clonedScene.scale.set(scaleFactor, scaleFactor, scaleFactor);
-  
-  // Calculate bounding box and center the model at origin (after scaling)
-  const box = new THREE.Box3().setFromObject(clonedScene);
-  const center = box.getCenter(new THREE.Vector3());
-  
-  // Center the model at origin (Y-axis centering)
-  clonedScene.position.set(-center.x, -center.y, -center.z);
-  
-  // Apply 90-degree rotation around X-axis
-  clonedScene.rotation.x = Math.PI / 2;
-  
-  // After rotation, calculate new bounding box and position for positive Z
-  const rotatedBox = new THREE.Box3().setFromObject(clonedScene);
-  const minZ = rotatedBox.min.z;
-  const centerY = rotatedBox.getCenter(new THREE.Vector3()).y;
-  
-  // Move the model so it sits entirely in positive Z and is centered in Y
-  clonedScene.position.z -= minZ;
-  clonedScene.position.y -= centerY;
-  
-  // Ensure all materials are visible
-  clonedScene.traverse((child) => {
-    child.visible = true;
-    if (child.material) {
-      child.material.transparent = false;
-      child.material.opacity = 1.0;
-      child.material.depthTest = true;
-      child.material.depthWrite = true;
-    }
-  });
-
-  return (
-    <primitive 
-      object={clonedScene}
-      renderOrder={-1}
-    />
-  );
+  return <primitive object={model} renderOrder={-1} />;
 }

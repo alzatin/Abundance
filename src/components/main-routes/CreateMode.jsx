@@ -48,11 +48,10 @@ function CreateMode({
   const [wireParam, setWire] = useState(true);
   const [solidParam, setSolid] = useState(false);
 
-  /** State for background USDZ model */
+  /** State for background 3D model */
   const [backgroundUsdzFile, setBackgroundUsdzFile] = useState(null);
   const [backgroundUsdzSha, setBackgroundUsdzSha] = useState(null);
   const [showBackgroundModel, setShowBackgroundModel] = useState(false);
-  const [userUploadedFile, setUserUploadedFile] = useState(false); // Track if user uploaded a file
 
   /** State for import notifications */
   const [importNotification, setImportNotification] = useState(null);
@@ -128,70 +127,6 @@ function CreateMode({
     //Clearing the interval
     return () => clearInterval(myInterval);
   }, []);
-
-  /**
-   * Scan repository for background 3D model files when project loads
-   */
-  const scanForBackgroundModels = async () => {
-    if (!authorizedUserOcto) {
-      return;
-    }
-    
-    if (!GlobalVariables.currentUser || !GlobalVariables.currentRepoName) {
-      return;
-    }
-    
-    try {
-      const files = await authorizedUserOcto.rest.repos.getContent({
-        owner: GlobalVariables.currentUser,
-        repo: GlobalVariables.currentRepoName,
-        path: "",
-      });
-
-      // Look for GLB or GLTF files
-      const backgroundFiles = files.data.filter(file => 
-        file.type === 'file' && 
-        (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf'))
-      );
-
-      if (backgroundFiles.length > 0) {
-        // Use the first background model file found
-        const firstFile = backgroundFiles[0];
-        
-        // Only set if we don't already have a background file set OR if user hasn't uploaded a file
-        // This prevents overriding user uploads
-        if (!backgroundUsdzFile && !userUploadedFile) {
-          setBackgroundUsdzFile(firstFile.name);
-          setBackgroundUsdzSha(firstFile.sha);
-          // Don't auto-enable the display, let user choose
-          setShowBackgroundModel(false);
-        } else {
-          // If user uploaded a file, ensure it stays enabled
-          if (userUploadedFile && backgroundUsdzFile) {
-            setShowBackgroundModel(true);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("scanForBackgroundModels: Full error:", error);
-    }
-  };
-
-  // Scan for background models when component mounts or project changes
-  useEffect(() => {
-    console.log("useEffect: Scan trigger check", {
-      hasOctokit: !!authorizedUserOcto,
-      currentUser: GlobalVariables.currentUser,
-      currentRepoName: GlobalVariables.currentRepoName,
-      currentBackgroundFile: backgroundUsdzFile,
-      userUploadedFile,
-      timestamp: new Date().toISOString()
-    });
-    
-    if (authorizedUserOcto && GlobalVariables.currentUser && GlobalVariables.currentRepoName) {
-      scanForBackgroundModels();
-    }
-  }, [authorizedUserOcto, GlobalVariables.currentUser, GlobalVariables.currentRepoName]);
 
   const handleBodyClick = (e) => {
     if (e.metaKey && e.key == "s") {
@@ -479,86 +414,37 @@ function CreateMode({
    * Upload a 3D background file (GLB/GLTF) to GitHub
    */
   const uploadBackground3D = async function (file) {
-    // Set userUploadedFile flag immediately to prevent auto-detection from interfering
-    setUserUploadedFile(true);
-    
     try {
       // Read file as base64
       const base64result = await new Promise((resolve, reject) => {
-        var reader = new FileReader();
+        const reader = new FileReader();
         reader.onload = function (e) {
-          const base64result = e.target.result.split(",")[1];
-          resolve(base64result);
+          resolve(e.target.result.split(",")[1]);
         };
-        reader.onerror = function (error) {
-          console.error("Error reading 3D model file:", error);
-          reject(new Error("Failed to read the 3D model file"));
-        };
+        reader.onerror = reject;
         reader.readAsDataURL(file);
       });
 
-      const existingFiles = await authorizedUserOcto.rest.repos.getContent({
+      const result = await authorizedUserOcto.rest.repos.createOrUpdateFileContents({
         owner: GlobalVariables.currentUser,
         repo: GlobalVariables.currentRepoName,
-        path: "",
+        path: file.name,
+        message: "Upload background 3D model",
+        content: base64result,
       });
 
-      let fileName = file.name;
-      const fileExtension = fileName.substring(fileName.lastIndexOf("."));
-      const baseName = fileName.substring(0, fileName.lastIndexOf("."));
-      let uniqueFileName = fileName;
-      let counter = 1;
-
-      // Incrementally rename the file until a unique name is found
-      while (
-        existingFiles.data.some(
-          (existingFile) => existingFile.name === uniqueFileName
-        )
-      ) {
-        uniqueFileName = `${baseName}_copy${counter}${fileExtension}`;
-        counter++;
-      }
-
-      if (uniqueFileName !== fileName) {
-        console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
-      }
-
-      const result = await Promise.race([
-        authorizedUserOcto.rest.repos.createOrUpdateFileContents({
-          owner: GlobalVariables.currentUser,
-          repo: GlobalVariables.currentRepoName,
-          path: uniqueFileName,
-          message: "Upload background 3D model",
-          content: base64result,
-        }),
-        new Promise((_, reject) =>
-          setTimeout(
-            () => reject(new Error("File upload timed out")),
-            60000
-          )
-        ),
-      ]);
-
-      // Set state immediately after successful upload
-      setBackgroundUsdzFile(uniqueFileName);
+      setBackgroundUsdzFile(file.name);
       setBackgroundUsdzSha(result.data.content.sha);
-      setShowBackgroundModel(true); // Enable display by default when file is uploaded
+      setShowBackgroundModel(true);
 
       saveProject(setSaveState, "Background 3D Model Upload Save");
-
-      // Show upload notification
-      setImportNotification(`Background 3D model uploaded: ${uniqueFileName}`);
+      setImportNotification(`Background 3D model uploaded: ${file.name}`);
       setTimeout(() => setImportNotification(null), 3000);
       
     } catch (error) {
-      console.error("uploadBackground3D: Upload error", error);
-      // Reset userUploadedFile flag on error
-      setUserUploadedFile(false);
-      setImportNotification(
-        `Failed to Upload 3D Model: Corrupt or exceeded size limit`
-      );
+      console.error("Error uploading 3D model:", error);
+      setImportNotification("Failed to Upload 3D Model");
       setTimeout(() => setImportNotification(null), 3000);
-      console.error("Error during 3D model upload:", error);
     }
   };
 
@@ -582,16 +468,12 @@ function CreateMode({
       setBackgroundUsdzFile(null);
       setBackgroundUsdzSha(null);
       setShowBackgroundModel(false);
-      setUserUploadedFile(false); // Reset user upload flag
 
-      // Show delete notification
-      setImportNotification(`Background 3D model deleted: ${backgroundUsdzFile}`);
+      setImportNotification(`Background 3D model deleted`);
       setTimeout(() => setImportNotification(null), 3000);
     } catch (error) {
       console.error("Error deleting background 3D model file:", error);
-      alert(
-        `Failed to delete 3D model file: ${backgroundUsdzFile}. The file will remain in your repository.`
-      );
+      alert(`Failed to delete 3D model file. The file will remain in your repository.`);
     }
   };
 
