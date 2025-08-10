@@ -169,7 +169,15 @@ function CreateMode({
     if (authorizedUserOcto && GlobalVariables.currentUser && GlobalVariables.currentRepoName) {
       scanForBackgroundModels();
     }
-  }, [authorizedUserOcto, GlobalVariables.currentUser, GlobalVariables.currentRepoName]);
+  }, [authorizedUserOcto, `${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`]);
+
+  // Reset background model state when project changes to ensure clean state
+  useEffect(() => {
+    setBackgroundUsdzFile(null);
+    setBackgroundUsdzSha(null);
+    setShowBackgroundModel(false);
+    setUserUploadedFile(false);
+  }, [`${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`]);
 
   const handleBodyClick = (e) => {
     if (e.metaKey && e.key == "s") {
