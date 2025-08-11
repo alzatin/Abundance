@@ -1,97 +1,40 @@
-import GlobalVariables from "../../js/globalvariables.js";
-import { saveAs } from "file-saver";
+import { Engine } from "./engine.js";
 
-
-let kiriEngine = null;
-
-export const initKiriMoto = () => {
-  // Dynamically load the Kiri:Moto script
-  const script = document.createElement("script");
-  script.src = "https://grid.space/code/engine.js"; // this comes from the grid.space Kiri:Moto API -- https://docs.grid.space/projects/kiri-moto/apis
-  script.async = true;
-  script.onload = () => {
-    if (window.kiri) {
-      kiriEngine = window.kiri.newEngine();
-      console.log("Kiri:Moto script loaded successfully");
-      GlobalVariables.kirimotoInitialized = true; // Set a flag to indicate Kiri:Moto is initialized
-    }
-  };
-
-  script.onerror = () => {
-    console.error("Failed to load Kiri:Moto script");
-  };
-  document.body.appendChild(script);
+const display_message = (message) => {
+  console.log(message);
 };
 
-//This function generates G-code and calls the callback but doesn't download
-export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, extra, gcodeCallback, progressCallback) => {
-    
-    kiriEngine = window.kiri.newEngine(); //Create a new Kiri:Moto engine instance to start with a clean slate
+const kiriEngine = new Engine({ workURL: "./worker.js" });
+console.log(kiriEngine);
 
-  if (!kiriEngine) {
-    console.error("Kiri:Moto engine is not initialized yet.");
-    return;
-  }
-
+const generateGcode = (
+  stlUrl,
+  centerPos,
+  toolSize,
+  passes,
+  speed,
+  extra,
+  gcodeCallback
+) => {
+  console.log("passes", passes);
   if (!stlUrl) {
     console.error("STL URL is not available.");
     return;
   }
 
-  // Track slicing progress with a timer
-  let slicingTimer = null;
-  let slicingStartTime = null;
-  let slicingProgressStart = 0.6;
-  let slicingProgressEnd = 0.8;
-  
-  const startSlicingProgress = () => {
-    slicingStartTime = Date.now();
-    let currentProgress = slicingProgressStart;
-    
-    slicingTimer = setInterval(() => {
-      const elapsed = Date.now() - slicingStartTime;
-      // Gradually increase progress over time, with diminishing returns
-      // This creates a more realistic progress feel during slicing
-      const timeBasedProgress = Math.min(0.18, 0.18 * (1 - Math.exp(-elapsed / 10000))); // Exponential approach to 0.18 (80%-60%)
-      currentProgress = slicingProgressStart + timeBasedProgress;
-      
-      if (progressCallback && currentProgress < slicingProgressEnd) {
-        progressCallback(currentProgress);
-      }
-    }, 500); // Update every 500ms during slicing
-  };
-  
-  const stopSlicingProgress = () => {
-    if (slicingTimer) {
-      clearInterval(slicingTimer);
-      slicingTimer = null;
-    }
-  };
-
   kiriEngine
     .setListener((message) => {
       console.log("Kiri:Moto Message:", message);
-      // Check if message contains slicing progress information
-      if (message && typeof message === 'object') {
-        if (message.progress !== undefined && slicingStartTime) {
-          // If Kiri:Moto provides progress during slicing, use it
-          const slicingProgress = slicingProgressStart + (slicingProgressEnd - slicingProgressStart) * message.progress;
-          if (progressCallback) progressCallback(slicingProgress);
-        }
-      }
     })
     .load(stlUrl)
     .then((eng) => {
-        if (progressCallback) progressCallback(0.1); // 10% - STL loaded
-        return eng.move(centerPos[0],centerPos[1],0);//Move the model to line up with where the parts were before
+      console.log(centerPos);
+      return eng.move(centerPos[0], centerPos[1], 0); //Move the model to line up with where the parts were before
     })
     .then((eng) => {
-        if (progressCallback) progressCallback(0.15); // 15% - Model moved
-    //   console.log("Kiri:Moto STL loaded successfully");
       return eng.setMode("CAM");
     })
-    .then((eng) =>{
-        if (progressCallback) progressCallback(0.2); // 20% - Mode set
+    .then((eng) => {
       const bounds = eng.widget.getBoundingBox();
       const x = bounds.max.x - bounds.min.x;
       const y = bounds.max.y - bounds.min.y;
@@ -101,16 +44,15 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
         y: y + 10,
         z: z,
         center: {
-          x: x/2, //I'm not sure this is right. We might need to actually find the middle of the bounds
-          y: y/2,
-          z: z/2,
+          x: x / 2,
+          y: y / 2,
+          z: z / 2,
         },
       });
       return eng;
     })
-    .then((eng) => {
-        if (progressCallback) progressCallback(0.25); // 25% - Stock set
-        return eng.setTools([
+    .then((eng) =>
+      eng.setTools([
         {
           id: 1000,
           number: 1,
@@ -124,9 +66,8 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
           taper_tip: 0,
         },
       ])
-    })
+    )
     .then((eng) => {
-        if (progressCallback) progressCallback(0.3); // 30% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
       eng.setProcess({
@@ -145,8 +86,8 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
         camRoughPlunge: 250,
         camRoughStock: 0,
         camRoughStockZ: 0,
-        camRoughAll: true,
-        camRoughVoid: false,
+        camRoughAll: false,
+        camRoughVoid: true,
         camRoughFlat: true,
         camRoughTop: true,
         camRoughIn: true,
@@ -155,10 +96,10 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
         camOutlineTool: 1000,
         camOutlineSpindle: 1000,
         camOutlineTop: true,
-        camOutlineDown: z / passes,
+        camOutlineDown: 3,
         camOutlineOver: 0.4,
         camOutlineOverCount: 1,
-        camOutlineSpeed: speed,
+        camOutlineSpeed: 800,
         camOutlinePlunge: 250,
         camOutlineWide: false,
         camOutlineDogbone: true,
@@ -215,13 +156,16 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
         camPocketOutline: false,
         camPocketZTop: 0,
         camPocketZBottom: 0,
-        camDrillTool: 1000,
+        camDrillTool: 1006,
         camDrillSpindle: 1000,
         camDrillDownSpeed: 250,
         camDrillDown: 5,
         camDrillDwell: 250,
         camDrillLift: 2,
         camDrillMark: false,
+        camDrillFromStockTop: false,
+        camDrillThru: 5,
+        camDrillPrecision: 1,
         camDrillingOn: false,
         camRegisterSpeed: 1000,
         camRegisterThru: 5,
@@ -277,18 +221,40 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
         outputInvertY: false,
         camExpertFast: false,
         camTrueShadow: false,
+        camArcEnabled: false,
+        camArcTolerance: 0.15,
+        camArcResolution: 5,
         camForceZMax: false,
         camFirstZMax: false,
         camToolInit: true,
         camFullEngage: 0.8,
         ops: [
+          /* {
+            type: "rough",
+            tool: 1000,
+            spindle: 1000,
+            down: 4,
+            step: 0.4,
+            rate: 1000,
+            plunge: 250,
+            leave: 0,
+            leavez: 0,
+            all: false,
+            voids: true,
+            flats: true,
+            inside: true,
+            omitthru: false,
+            ov_topz: 0,
+            ov_botz: 0,
+            ov_conv: false,
+          },*/
           {
             type: "outline",
             tool: 1000,
             spindle: 1000,
-            step: (z+extra) / passes,
+            step: (z + extra) / passes,
             steps: 1,
-            down: (z+extra) / passes,
+            down: (z + extra) / passes,
             rate: speed,
             plunge: 250,
             dogbones: true,
@@ -307,15 +273,31 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
           },
         ],
         op2: [],
-        camDrillThru: 5,
-        camDrillPrecision: 1,
+        camLevelStepZ: 0,
+        camLevelInset: 0.5,
+        camRegisterOffset: 10,
+        camHelicalTool: 1000,
+        camHelicalSpindle: 1000,
+        camHelicalDownSpeed: 250,
+        camHelicalSpeed: 1000,
+        camHelicalDown: 5,
+        camHelicalBottomFinish: true,
+        camHelicalThru: 0,
+        camHelicalOffset: "auto",
+        camHelicalForceStartAngle: false,
+        camHelicalStartAngle: 0,
+        camHelicalOffsetOverride: 0,
+        camHelicalEntry: false,
+        camHelicalEntryOffset: 0,
+        camHelicalReverse: false,
+        camHelicalClockwise: true,
+        camRoughOmitThru: false,
         "~camConventional": false,
-      })
+      });
       return eng;
     })
-    .then((eng) => {
-        if (progressCallback) progressCallback(0.5); // 50% - Process set
-        return eng.setDevice({
+    .then((eng) =>
+      eng.setDevice({
         mode: "CAM",
         internal: 0,
         bedHeight: 2.5,
@@ -340,27 +322,15 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
         imageURL: "",
         useLaser: false,
       })
-    })
-    .then((eng) => {
-        if (progressCallback) progressCallback(0.6); // 60% - Device set
-        startSlicingProgress(); // Start granular progress tracking for slicing
-        return eng.slice();
-    })
-    .then((eng) => {
-        stopSlicingProgress(); // Stop the slicing progress timer
-        if (progressCallback) progressCallback(0.8); // 80% - Slicing complete
-        return eng.prepare();
-    })
-    .then((eng) => {
-        if (progressCallback) progressCallback(0.9); // 90% - Preparation complete
-        return eng.export();
-    })
+    )
+    .then((eng) => eng.slice())
+    .then((eng) => eng.prepare())
+    .then((eng) => eng.export())
     .then((gcode) => {
-      if (progressCallback) progressCallback(1.0); // 100% - Export complete
       gcodeCallback(gcode); // Only call the callback, don't download
+      console.log(gcode);
     })
     .catch((error) => {
-      stopSlicingProgress(); // Ensure timer is cleaned up on error
       console.error("Kiri:Moto Error:", error);
     })
     .finally(() => {
@@ -369,13 +339,6 @@ export const generateKirimoto = (stlUrl, centerPos, toolSize, passes, speed, ext
     });
 };
 
-//Function to download G-code from a G-code string
-export const downloadGcode = (gcode, filename = "output.gcode") => {
-  if (!gcode) {
-    console.error("No G-code available to download.");
-    return;
-  }
-  
-  const blob = new Blob([gcode], { type: "text/plain" });
-  saveAs(blob, filename);
-};
+Object.assign(window, {
+  generateGcode,
+});
