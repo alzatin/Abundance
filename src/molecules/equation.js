@@ -84,15 +84,15 @@ export default class Equation extends Atom {
   }
 
   /**
-   * Add and remove inputs as needed from the atom
+   * Extracts variable names from the current equation using mathjs AST parsing.
+   * Only true variables (not function names) are returned.
+   * @returns {string[]} Array of variable names
    */
-  addAndRemoveInputs() {
-    // Use mathjs to parse the equation and extract variables (not function names)
+  _extractVariablesFromEquation() {
     let variables = [];
     try {
       const node = parse(this.currentEquation);
       node.traverse(function (n, path, parent) {
-        // Only add as variable if not a function name (i.e., not the function being called)
         if (
           n.isSymbolNode &&
           !(
@@ -108,10 +108,17 @@ export default class Equation extends Atom {
       // Remove duplicates
       variables = [...new Set(variables)];
     } catch (e) {
-      // If the equation is invalid, don't add any variables
       variables = [];
     }
+    return variables;
+  }
 
+  /**
+   * Add and remove inputs as needed from the atom
+   */
+  addAndRemoveInputs() {
+    // Use AST-based variable extraction
+    let variables = this._extractVariablesFromEquation();
     //Remove any inputs which are not needed
     const deleteExtraInputs = () => {
       this.inputs.forEach((input) => {
@@ -141,56 +148,8 @@ export default class Equation extends Atom {
       var substitutedEquation = this.currentEquation;
       this.name = this.currentEquation;
 
-      // Find all the variables in this equation using word boundaries to avoid function names
-      var re = /\b[a-zA-Z]+\b/g;
-      const allMatches = this.currentEquation.match(re);
-
-      // Filter out common math function names to avoid treating them as variables
-      const mathFunctions = new Set([
-        "sin",
-        "cos",
-        "tan",
-        "asin",
-        "acos",
-        "atan",
-        "atan2",
-        "sinh",
-        "cosh",
-        "tanh",
-        "asinh",
-        "acosh",
-        "atanh",
-        "sqrt",
-        "cbrt",
-        "exp",
-        "log",
-        "log10",
-        "log2",
-        "abs",
-        "sign",
-        "ceil",
-        "floor",
-        "round",
-        "trunc",
-        "min",
-        "max",
-        "mean",
-        "median",
-        "mode",
-        "std",
-        "var",
-        "pi",
-        "e",
-        "i",
-        "true",
-        "false",
-        "null",
-        "undefined",
-      ]);
-
-      const variables = allMatches
-        ? allMatches.filter((match) => !mathFunctions.has(match.toLowerCase()))
-        : [];
+      // Use AST-based variable extraction for consistency
+      const variables = this._extractVariablesFromEquation();
 
       if (variables.length > 0) {
         for (var variable of variables) {
