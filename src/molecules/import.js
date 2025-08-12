@@ -63,7 +63,7 @@ export default class Import extends Atom {
     if (typeof this.ioValues !== "undefined") {
       this.ioValues.forEach((ioValue) => {
         //for each saved value
-        this.addIO("input", ioValue.name, this, "geometry", "");
+        this.addIO("input", ioValue.name, this, "number", 5);
       });
     }
 
