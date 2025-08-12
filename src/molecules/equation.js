@@ -198,9 +198,9 @@ export default class Equation extends Atom {
         : [];
 
       if (variables.length > 0) {
-        for (var variable in variables) {
+        for (var variable of variables) {
           for (var i = 0; i < this.inputs.length; i++) {
-            if (this.inputs[i].name == variables[variable]) {
+            if (this.inputs[i].name == variable) {
               // Use word boundaries in replacement to avoid partial matches
               const variablePattern = new RegExp(
                 `\\b${this.inputs[i].name}\\b`,
