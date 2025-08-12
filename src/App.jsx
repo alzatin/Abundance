@@ -178,9 +178,19 @@ export default function ReplicadApp() {
         owner: project.owner,
         repo: project.repoName,
       })
-      .then((response) => {
-        //content will be base64 encoded
-        let rawFile = JSON.parse(GlobalVariables.fromBinaryStr(atob(response.data.content)));
+      .then(async (response) => {
+        let rawFileContent;
+        
+        // Handle large files (>1MB) using download_url
+        if (!response.data.content || response.data.content.length === 0) {
+          const fileResponse = await fetch(response.data.download_url);
+          rawFileContent = await fileResponse.text();
+        } else {
+          // Handle small files using base64 content with UTF-8 encoding
+          rawFileContent = GlobalVariables.fromBinaryStr(atob(response.data.content));
+        }
+        
+        let rawFile = JSON.parse(rawFileContent);
 
         if (rawFile.filetypeVersion == 1) {
           GlobalVariables.topLevelMolecule.deserialize(rawFile);
