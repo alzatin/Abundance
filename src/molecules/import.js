@@ -114,39 +114,60 @@ export default class Import extends Atom {
     this.processing = true;
 
     if (this.fileName != null) {
-      this.getAFile().then((result) => {
-        this.sha = result.data.sha;
-        this.file = this.newBlobFromBase64(result);
-        let file = this.file;
-        let fileType = this.type;
+      this.getAFile()
+        .then((result) => {
+          this.sha = result.data.sha;
+          this.file = this.newBlobFromBase64(result);
+          let file = this.file;
+          let fileType = this.type;
 
-        let funcToCall =
-          fileType == "STL"
-            ? GlobalVariables.cad.importingSTL
-            : fileType == "SVG"
-            ? GlobalVariables.cad.importingSVG
-            : fileType == "STEP"
-            ? GlobalVariables.cad.importingSTEP
-            : null;
+          let funcToCall =
+            fileType == "STL"
+              ? GlobalVariables.cad.importingSTL
+              : fileType == "SVG"
+              ? GlobalVariables.cad.importingSVG
+              : fileType == "STEP"
+              ? GlobalVariables.cad.importingSTEP
+              : null;
 
-        if (funcToCall == null) {
-          throw new Error("Invalid file type");
-        }
+          if (funcToCall == null) {
+            throw new Error("Invalid file type");
+          }
 
-        let svgWidthIO = this.findIOValue("SVG Width");
-        funcToCall(this.uniqueID, file, svgWidthIO ? svgWidthIO : 1)
-          .then((result) => {
-            this.basicThreadValueProcessing();
-            this.sendToRender();
-          })
-          .catch((error) => {
-            alert(`Error processing file: ${error.message || error}`);
-            this.alertingErrorHandler();
-          });
-        if (this.type == "SVG") {
-          this.addIO("input", "SVG Width", this, "number", 5, true);
-        }
-      });
+          let svgWidthIO = this.findIOValue("SVG Width");
+          funcToCall(this.uniqueID, file, svgWidthIO ? svgWidthIO : 1)
+            .then((result) => {
+              this.basicThreadValueProcessing();
+              this.sendToRender();
+            })
+            .catch((error) => {
+              alert(`Error processing file: ${error.message || error}`);
+              this.alertingErrorHandler();
+            });
+          if (this.type == "SVG") {
+            this.addIO("input", "SVG Width", this, "number", 5, true);
+          }
+        })
+        .catch((error) => {
+          // Handle file not found error - reset atom state to allow re-upload
+          if (error.status === 404) {
+            console.log(
+              `File not found in repository: ${this.fileName}. Resetting import atom to allow re-upload.`
+            );
+            this.fileName = null;
+            this.type = null;
+            this.sha = null;
+            this.processing = false;
+          } else {
+            // For other errors, show error message but don't reset state
+            console.error(`Error retrieving file: ${error.message || error}`);
+            // Only show alert in browser environment (not during tests)
+            if (typeof alert !== "undefined") {
+              alert(`Error retrieving file: ${error.message || error}`);
+            }
+            this.processing = false;
+          }
+        });
     }
   }
 
