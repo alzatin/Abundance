@@ -87,10 +87,6 @@ export default class Equation extends Atom {
    * Add and remove inputs as needed from the atom
    */
   addAndRemoveInputs() {
-    console.log(
-      "Adding and removing inputs for equation:",
-      this.currentEquation
-    );
     // Use mathjs to parse the equation and extract variables (not function names)
     let variables = [];
     try {
@@ -126,7 +122,6 @@ export default class Equation extends Atom {
       });
     };
     deleteExtraInputs();
-    console.log("Variables found in equation:", variables);
     //Add any inputs which are needed
     if (variables.length > 0) {
       for (var variable of variables) {
@@ -230,7 +225,6 @@ export default class Equation extends Atom {
   createLevaInputs(setInputChanged) {
     // recreate inputs
     let inputParams = {};
-    console.log(this.inputs);
     /** Runs through active atom inputs and adds IO parameters to default param*/
     if (this.inputs) {
       this.inputs.map((input) => {
