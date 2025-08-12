@@ -61,9 +61,19 @@ describe('ID Remapping Logic Test', () => {
     });
   }
 
-  // Replicate the molecule remapIDs logic
+  // Replicate the FIXED molecule remapIDs logic
   function moleculeRemapIDs(json) {
     let idPairs = {};
+    
+    // Always ensure the main atom/molecule gets a new ID if it doesn't already have one assigned
+    if (json.uniqueID && !json.uniqueID.toString().startsWith('temp-new-')) {
+      let oldMainID = json.uniqueID;
+      let newMainID = generateUniqueID();
+      idPairs[oldMainID] = newMainID;
+      json.uniqueID = newMainID;
+    }
+    
+    // Handle nested atoms if they exist
     if (json.allAtoms) {
       json.allAtoms.forEach((atom) => {
         let oldID = atom.uniqueID;
@@ -71,20 +81,25 @@ describe('ID Remapping Logic Test', () => {
         idPairs[oldID] = newID;
         atom.uniqueID = newID;
       });
-      json.allConnectors.forEach((connector) => {
-        if (connector.ap1ID && idPairs[connector.ap1ID]) {
-          connector.ap1ID = idPairs[connector.ap1ID];
-        }
-        if (connector.ap2ID && idPairs[connector.ap2ID]) {
-          connector.ap2ID = idPairs[connector.ap2ID];
-        }
-        if (connector.ap2ID && idPairs[connector.ap2ID]) {
-          connector.ap2ID = idPairs[connector.ap2ID];
-        }
-      });
-
-      return json;
+      
+      // Handle connectors if they exist
+      if (json.allConnectors) {
+        json.allConnectors.forEach((connector) => {
+          if (connector.ap1ID && idPairs[connector.ap1ID]) {
+            connector.ap1ID = idPairs[connector.ap1ID];
+          }
+          if (connector.ap2ID && idPairs[connector.ap2ID]) {
+            connector.ap2ID = idPairs[connector.ap2ID];
+          }
+          // Also remap connector's own uniqueID if it exists
+          if (connector.uniqueID) {
+            connector.uniqueID = generateUniqueID();
+          }
+        });
+      }
     }
+
+    return json;
   }
 
   it('should properly remap IDs with GlobalVariables.remapIDsForPaste', () => {
@@ -187,6 +202,55 @@ describe('ID Remapping Logic Test', () => {
     expect(remapped.allAtoms[0].uniqueID).toBeDefined();
     
     console.log('After molecule.remapIDs - internal atom has new ID:', remapped.allAtoms[0].uniqueID);
+  });
+
+  it('should demonstrate the fix for molecule.remapIDs', () => {
+    const mockAtomData = {
+      atomType: 'GitHubMolecule',
+      name: 'TestGitHubMolecule',
+      uniqueID: 'molecule-123',
+      x: 0.3,
+      y: 0.3,
+      // This is how molecule.serialize() structures nested atoms
+      allAtoms: [
+        {
+          atomType: 'Circle',
+          name: 'InternalCircle1',
+          uniqueID: 'atom-456',
+          x: 0.2,
+          y: 0.2
+        }
+      ],
+      allConnectors: [
+        {
+          ap1ID: 'some-attachment-point',
+          ap2ID: 'atom-456',
+          uniqueID: 'connector-789'
+        }
+      ]
+    };
+
+    // Apply the fixed molecule remapIDs
+    const remapped = moleculeRemapIDs(mockAtomData);
+
+    console.log('After FIXED molecule.remapIDs:', JSON.stringify(remapped, null, 2));
+
+    // The main molecule should get a new ID
+    expect(remapped.uniqueID).not.toBe('molecule-123');
+    expect(remapped.uniqueID).toBeDefined();
+    
+    // Internal atoms should get new IDs
+    expect(remapped.allAtoms[0].uniqueID).not.toBe('atom-456');
+    expect(remapped.allAtoms[0].uniqueID).toBeDefined();
+    
+    // Connectors should be updated where applicable
+    expect(remapped.allConnectors[0].uniqueID).not.toBe('connector-789');
+    expect(remapped.allConnectors[0].uniqueID).toBeDefined();
+    
+    // ap2ID should be updated to match the new internal atom ID
+    expect(remapped.allConnectors[0].ap2ID).toBe(remapped.allAtoms[0].uniqueID);
+    
+    console.log('Fixed molecule.remapIDs - all IDs properly remapped');
   });
 
   it('should demonstrate the potential issue with the current flowCanvas logic', () => {
