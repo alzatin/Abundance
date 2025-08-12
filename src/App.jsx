@@ -180,7 +180,7 @@ export default function ReplicadApp() {
       })
       .then((response) => {
         //content will be base64 encoded
-        let rawFile = JSON.parse(atob(response.data.content));
+        let rawFile = JSON.parse(GlobalVariables.fromBinaryStr(atob(response.data.content)));
 
         if (rawFile.filetypeVersion == 1) {
           GlobalVariables.topLevelMolecule.deserialize(rawFile);
