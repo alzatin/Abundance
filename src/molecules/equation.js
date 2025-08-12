@@ -91,12 +91,21 @@ export default class Equation extends Atom {
       "Adding and removing inputs for equation:",
       this.currentEquation
     );
-    // Use mathjs to parse the equation and extract variables
+    // Use mathjs to parse the equation and extract variables (not function names)
     let variables = [];
     try {
       const node = parse(this.currentEquation);
-      node.traverse(function (n) {
-        if (n.isSymbolNode) {
+      node.traverse(function (n, path, parent) {
+        // Only add as variable if not a function name (i.e., not the function being called)
+        if (
+          n.isSymbolNode &&
+          !(
+            parent &&
+            parent.isFunctionNode &&
+            parent.fn &&
+            parent.fn.name === n.name
+          )
+        ) {
           variables.push(n.name);
         }
       });
