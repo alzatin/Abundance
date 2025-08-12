@@ -186,8 +186,8 @@ export default function ReplicadApp() {
           const fileResponse = await fetch(response.data.download_url);
           rawFileContent = await fileResponse.text();
         } else {
-          // Handle small files using base64 content
-          rawFileContent = atob(response.data.content);
+          // Handle small files using base64 content with UTF-8 encoding
+          rawFileContent = GlobalVariables.fromBinaryStr(atob(response.data.content));
         }
         
         let rawFile = JSON.parse(rawFileContent);

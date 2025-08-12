@@ -255,13 +255,15 @@ export default memo(function FlowCanvas({
         } else {
           // Regular paste without connectors
           GlobalVariables.atomsSelected.forEach((item) => {
-            let newAtomID = GlobalVariables.generateUniqueID();
-            item.uniqueID = newAtomID;
             if (
               item.atomType == "Molecule" ||
               item.atomType == "GitHubMolecule"
             ) {
+              // For molecules, use comprehensive ID remapping that handles nested atoms
               item = GlobalVariables.currentMolecule.remapIDs(item);
+            } else {
+              // For simple atoms, just assign a new unique ID
+              item.uniqueID = GlobalVariables.generateUniqueID();
             }
             GlobalVariables.currentMolecule.placeAtom(item, true);
           });
