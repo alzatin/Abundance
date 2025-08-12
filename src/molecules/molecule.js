@@ -259,7 +259,7 @@ export default class Molecule extends Atom {
             );
             GlobalVariables.topLevelMolecule.nodesOnTheScreen = []; // <-- clear the array
 
-            let rawFile = JSON.parse(atob(response.data.content));
+            let rawFile = JSON.parse(GlobalVariables.fromBinaryStr(atob(response.data.content)));
 
             if (rawFile.filetypeVersion == 1) {
               GlobalVariables.topLevelMolecule.deserialize(rawFile);
@@ -1002,7 +1002,7 @@ export default class Molecule extends Atom {
           repo: gitObj.repoName,
         })
         .then((response) => {
-          let rawFile = JSON.parse(atob(response.data.content));
+          let rawFile = JSON.parse(GlobalVariables.fromBinaryStr(atob(response.data.content)));
           let rawFileWithNewIds = this.remapIDs(rawFile);
           rawFileWithNewIds.atomType = "GitHubMolecule";
 
