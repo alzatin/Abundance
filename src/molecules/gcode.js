@@ -40,7 +40,7 @@ export default class Gcode extends Atom {
      * @type {string}
      */
     this.description =
-      "Generates Maslow gcode from the input geometry. For single parts, generates one gcode file. For assemblies, extracts individual parts, sorts them left to right based on bounding boxes, generates gcode for each part sequentially, and concatenates the results into one file.";
+      "Generates Maslow gcode from the input geometry. For single parts, generates one gcode file. For assemblies, extracts individual parts, sorts them based on the selected direction (Left, Right, Top, or Bottom) using bounding boxes, generates gcode for each part sequentially, and concatenates the results into one file.";
 
     this.blob = null;
     /**
@@ -85,6 +85,12 @@ export default class Gcode extends Atom {
      * @type {boolean}
      */
     this._isProcessingAssembly = false;
+
+    /**
+     * Direction to sort parts in assemblies
+     * @type {string}
+     */
+    this.sortDirection = "Left";
   }
 
   /**
@@ -162,7 +168,7 @@ export default class Gcode extends Atom {
       if (isAssembly) {
         // For assemblies, extract parts and generate G-code sequentially
         const parts = await this._extractPartsFromAssembly(inputID);
-        const sortedParts = await this._sortPartsLeftToRight(parts);
+        const sortedParts = await this._sortParts(parts);
         await this._generateSequentialGcode(sortedParts);
       } else {
         // For single parts, use the original method
@@ -290,8 +296,8 @@ export default class Gcode extends Atom {
       // Extract individual parts from assembly
       const parts = await this._extractPartsFromAssembly(inputID);
 
-      // Sort parts left to right based on bounding boxes
-      const sortedParts = await this._sortPartsLeftToRight(parts);
+      // Sort parts based on selected direction
+      const sortedParts = await this._sortParts(parts);
 
       if (window.location.pathname.includes("/run/")) {
         // Generate G-code for each part sequentially
@@ -315,20 +321,22 @@ export default class Gcode extends Atom {
   }
 
   /**
-   * Sort parts from left to right based on their bounding boxes
+   * Sort parts based on the selected direction using their bounding boxes
    * @param {Array} parts - Array of part IDs
    * @returns {Promise<Array>} Sorted array of part IDs
    */
-  async _sortPartsLeftToRight(parts) {
+  async _sortParts(parts) {
     const partsWithBounds = [];
 
     for (const partID of parts) {
       try {
         const bounds = await GlobalVariables.cad.getBoundingBox(partID);
         const centerX = (bounds.max[0] + bounds.min[0]) / 2;
+        const centerY = (bounds.max[1] + bounds.min[1]) / 2;
         partsWithBounds.push({
           id: partID,
           centerX: centerX,
+          centerY: centerY,
           bounds: bounds,
         });
       } catch (err) {
@@ -336,8 +344,29 @@ export default class Gcode extends Atom {
       }
     }
 
-    // Sort by X coordinate (left to right)
-    partsWithBounds.sort((a, b) => a.centerX - b.centerX);
+    // Sort based on the selected direction
+    switch (this.sortDirection) {
+      case "Left":
+        // Sort by X coordinate ascending (left to right)
+        partsWithBounds.sort((a, b) => a.centerX - b.centerX);
+        break;
+      case "Right":
+        // Sort by X coordinate descending (right to left)
+        partsWithBounds.sort((a, b) => b.centerX - a.centerX);
+        break;
+      case "Top":
+        // Sort by Y coordinate descending (top to bottom, assuming Y+ is up)
+        partsWithBounds.sort((a, b) => b.centerY - a.centerY);
+        break;
+      case "Bottom":
+        // Sort by Y coordinate ascending (bottom to top)
+        partsWithBounds.sort((a, b) => a.centerY - b.centerY);
+        break;
+      default:
+        // Default to left to right
+        partsWithBounds.sort((a, b) => a.centerX - b.centerX);
+        break;
+    }
 
     return partsWithBounds.map((part) => part.id);
   }
@@ -540,6 +569,16 @@ export default class Gcode extends Atom {
       });
     }
 
+    // Add sort direction dropdown for assembly processing
+    inputParams["Assembly Sort Direction"] = {
+      value: this.sortDirection,
+      options: ["Left", "Right", "Top", "Bottom"],
+      label: "Sort Direction",
+      onChange: (value) => {
+        this.sortDirection = value;
+      },
+    };
+
     inputParams["Generate Gcode"] = button(() => this._generateGcode(), {});
 
     const partName = this.findIOValue("Part Name") || this.partName || "output";
@@ -578,11 +617,12 @@ export default class Gcode extends Atom {
   };
 
   /**
-   * Add the part name to the object which is saved for this molecule
+   * Add the part name and sort direction to the object which is saved for this molecule
    */
   serialize(offset = { x: 0, y: 0 }) {
     var superSerialObject = super.serialize(offset);
     superSerialObject.partName = this.partName;
+    superSerialObject.sortDirection = this.sortDirection;
 
     return superSerialObject;
   }
