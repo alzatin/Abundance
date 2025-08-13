@@ -208,32 +208,54 @@ const generateGcode = (
         camOriginOffZ: 0,
         camToolInit: true,
         
-        // Operation definitions - THIS is where we control the passes
-        ops: [
-          {
-            type: "outline",
-            tool: 1000,
-            spindle: 1000,
-            step: (z + extra) / passes,    // Total depth divided by passes
-            steps: passes,                 // Number of steps (passes) to take
-            down: (z + extra),            // Total depth to cut
-            rate: speed,
-            plunge: 250,
-            dogbones: true,
-            omitvoid: false,
-            omitthru: false,
-            outside: true,
-            inside: false,
-            wide: false,
-            top: true,
-            ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: false,
-          },
-          {
+        // Operation definitions - Create one operation per pass for explicit control
+        ops: (() => {
+          const operations = [];
+          const totalDepth = z + extra;
+          const depthPerPass = totalDepth / passes;
+          
+          console.log("🎯 CREATING EXPLICIT OPERATIONS FOR PASSES:");
+          console.log("  - Total depth:", totalDepth);
+          console.log("  - Depth per pass:", depthPerPass);
+          console.log("  - Number of passes:", passes);
+          
+          // Create one operation for each pass
+          for (let i = 1; i <= passes; i++) {
+            const currentDepth = depthPerPass * i;
+            console.log(`  - Pass ${i}: cutting to depth -${currentDepth.toFixed(3)}`);
+            
+            operations.push({
+              type: "outline",
+              tool: 1000,
+              spindle: 1000,
+              step: depthPerPass,           // Depth for this specific pass
+              steps: 1,                     // Single step per operation
+              down: currentDepth,           // Depth for this pass
+              rate: speed,
+              plunge: 250,
+              dogbones: true,
+              omitvoid: false,
+              omitthru: false,
+              outside: true,
+              inside: false,
+              wide: false,
+              top: true,
+              ov_topz: 0,
+              ov_botz: 0,
+              ov_conv: false,
+            });
+          }
+          
+          // Add separator
+          operations.push({
             type: "|",
-          },
-        ],
+          });
+          
+          console.log("  - Total operations created:", operations.length - 1); // -1 for separator
+          console.log("=".repeat(60));
+          
+          return operations;
+        })(),
         op2: [],
       });
       
