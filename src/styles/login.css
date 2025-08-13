@@ -873,3 +873,30 @@
     display: none;
   }
 }
+
+/* Context menu for project right-click */
+.context-menu {
+  position: fixed;
+  background: #fff;
+  border: 2px solid #3e3d3d;
+  border-radius: 5px;
+  z-index: 1000;
+  box-shadow: 0 4px 16px rgba(62, 61, 61, 0.15);
+  min-width: 150px;
+  font-family: "Roboto", "Work Sans", Arial, sans-serif;
+  color: #474747;
+  padding: 4px 0;
+}
+.context-menu-btn {
+  padding: 10px 18px;
+  border: none;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  font-size: 0.9em;
+  transition: background 0.2s, color 0.2s;
+}
+.context-menu-btn:hover {
+  background: #e9ddf2;
+}
