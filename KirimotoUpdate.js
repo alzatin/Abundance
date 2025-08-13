@@ -195,9 +195,9 @@ const generateGcode = (
         camOutlineTool: 1000,
         camOutlineSpindle: 1000,
         camOutlineTop: true,
-        camOutlineDown: camOutlineDownValue,
+        camOutlineDown: (z + extra) / passes,  // Depth per outline operation
         camOutlineOver: 0.4,
-        camOutlineOverCount: camOutlineOverCountValue,
+        camOutlineOverCount: passes,           // Number of outline operations
         camOutlineSpeed: speed,
         camOutlinePlunge: 250,
         camOutlineWide: false,
@@ -217,8 +217,8 @@ const generateGcode = (
         camContourBottom: false,
         camContourCurves: false,
         camContourIn: false,
-        camContourXOn: true,
-        camContourYOn: true,
+        camContourXOn: false,  // Disable contour operations to prevent extra passes
+        camContourYOn: false,  // Disable contour operations to prevent extra passes
         camLatheTool: 1000,
         camLatheSpindle: 1000,
         camLatheOver: 0.1,
@@ -285,7 +285,7 @@ const generateGcode = (
         camTabsHeight: 5,
         camTabsDepth: 5,
         camTabsMidline: false,
-        camDepthFirst: true,
+        camDepthFirst: false,  // Disable depth-first to prevent automatic multi-pass generation
         camEaseDown: false,
         camEaseAngle: 10,
         camOriginTop: true,
@@ -345,9 +345,9 @@ const generateGcode = (
             type: "outline",
             tool: 1000,
             spindle: 1000,
-            step: operationStepValue,
-            steps: operationStepsValue,
-            down: operationDownValue,
+            step: (z + extra),  // Total depth for single operation
+            steps: 1,           // Always 1 step per operation
+            down: (z + extra),  // Total depth
             rate: speed,
             plunge: 250,
             dogbones: true,
