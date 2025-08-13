@@ -1121,6 +1121,59 @@ export default class Molecule extends Atom {
   }
 
   /**
+   * Finds selected atoms with geometry outputs
+   * @returns {Array} Array of atoms that are selected and have geometry outputs
+   */
+  findSelectedAtomsWithGeometryOutput() {
+    return this.nodesOnTheScreen.filter((atom) => {
+      return atom.selected && atom.output && atom.output.valueType === "geometry";
+    });
+  }
+
+  /**
+   * Finds the first available geometry input on an atom
+   * @param {object} atom - The atom to search for geometry inputs
+   * @returns {object|null} The first available geometry input or null if none found
+   */
+  findFirstAvailableGeometryInput(atom) {
+    if (!atom.inputs) return null;
+    
+    return atom.inputs.find((input) => {
+      return input.valueType === "geometry" && input.connectors.length === 0;
+    }) || null;
+  }
+
+  /**
+   * Auto-creates connector from selected atom with geometry output to new atom with geometry input
+   * @param {object} newAtom - The newly placed atom
+   */
+  autoCreateConnector(newAtom) {
+    // Find selected atoms with geometry outputs
+    const selectedGeometryAtoms = this.findSelectedAtomsWithGeometryOutput();
+    
+    if (selectedGeometryAtoms.length === 0) {
+      return; // No selected atoms with geometry outputs
+    }
+
+    // Find first available geometry input on the new atom
+    const geometryInput = this.findFirstAvailableGeometryInput(newAtom);
+    
+    if (!geometryInput) {
+      return; // New atom doesn't have an available geometry input
+    }
+
+    // Use the first selected atom with geometry output (could be enhanced to be smarter)
+    const sourceAtom = selectedGeometryAtoms[0];
+    
+    // Create connector using the existing placeConnector logic
+    this.placeConnector({
+      ap1ID: sourceAtom.uniqueID,
+      ap2ID: newAtom.uniqueID,
+      ap2Name: geometryInput.name,
+    });
+  }
+
+  /**
    * Places a new atom inside the molecule
    * @param {object} newAtomObj - An object defining the new atom to be placed
    * @param {array} moleculeList - Only passed if we are placing an instance of Molecule.
@@ -1221,6 +1274,10 @@ export default class Molecule extends Atom {
             }
 
             atom.updateValue();
+            
+            // Auto-create connector from selected atoms with geometry output to new atom
+            this.autoCreateConnector(atom);
+            
             const flowCanvas = document.querySelector("#flow-canvas");
             if (!flowCanvas) {
               console.warn("Flow canvas element not found");
