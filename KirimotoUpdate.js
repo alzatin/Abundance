@@ -18,20 +18,6 @@ const generateGcode = (
   gcodeCallback,
   progressCallback
 ) => {
-  // === COMPREHENSIVE DEBUG LOGGING START ===
-  console.log("🚀 GCODE GENERATION STARTED");
-  console.log("📥 INPUT PARAMETERS:");
-  console.log("  - stlUrl:", stlUrl ? "✓ Available" : "❌ Missing");
-  console.log("  - centerPos:", centerPos);
-  console.log("  - toolSize:", toolSize);
-  console.log("  - passes:", passes, "(TYPE:", typeof passes, ")");
-  console.log("  - speed:", speed);
-  console.log("  - extra:", extra, "(TYPE:", typeof extra, ")");
-  console.log("  - gcodeCallback:", gcodeCallback ? "✓ Available" : "❌ Missing");
-  console.log("  - progressCallback:", progressCallback ? "✓ Available" : "❌ Missing");
-  console.log("=".repeat(60));
-  // === COMPREHENSIVE DEBUG LOGGING END ===
-
   if (!stlUrl) {
     console.error("STL URL is not available.");
     return;
@@ -71,8 +57,6 @@ const generateGcode = (
   };
   kiriEngine
     .setListener((message) => {
-      console.log("🎧 KIRI:MOTO MESSAGE:", message);
-      
       // Check if message contains slicing progress information
       if (message && typeof message === "object") {
         if (message.progress !== undefined && slicingStartTime) {
@@ -82,11 +66,6 @@ const generateGcode = (
             (slicingProgressEnd - slicingProgressStart) * message.progress;
           if (progressCallback) progressCallback(slicingProgress);
         }
-        
-        // Log any interesting message properties
-        if (message.type) console.log("  - Message type:", message.type);
-        if (message.data) console.log("  - Message data:", message.data);
-        if (message.error) console.log("  - Message error:", message.error);
       }
     })
     .load(stlUrl)
@@ -138,32 +117,6 @@ const generateGcode = (
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
       
-      // === BOUNDS AND CALCULATION LOGGING ===
-      console.log("📏 GEOMETRY ANALYSIS:");
-      console.log("  - bounds.min:", bounds.min);
-      console.log("  - bounds.max:", bounds.max);
-      console.log("  - calculated z (height):", z);
-      console.log("  - extra cut depth:", extra);
-      console.log("  - total depth (z + extra):", (z + extra));
-      console.log("  - requested passes:", passes);
-      console.log("=".repeat(60));
-      
-      // === CALCULATED VALUES FOR KIRI:MOTO ===
-      console.log("🧮 CALCULATED VALUES:");
-      console.log("  STRATEGY: Use single operation with steps parameter to control passes");
-      console.log("  - Total depth:", (z + extra));
-      console.log("  - Passes requested:", passes);
-      console.log("  - Step per pass:", (z + extra) / passes);
-      console.log("  OPERATION DEFINITION:");
-      console.log("    - steps:", passes, "(number of passes)");
-      console.log("    - step:", (z + extra) / passes, "(depth per pass)");
-      console.log("    - down:", (z + extra), "(total depth)");
-      console.log("  GLOBAL SETTINGS:");
-      console.log("    - camOutlineOverCount: 1 (no global multiplier)");
-      console.log("    - camRoughOn: false (no roughing)");
-      console.log("    - camContourXOn/YOn: false (no contour operations)");
-      console.log("=".repeat(60));
-      
       eng.setProcess({
         processName: "default",
         // Disable ALL automatic operation generation
@@ -214,15 +167,9 @@ const generateGcode = (
           const totalDepth = z + extra;
           const depthPerPass = totalDepth / passes;
           
-          console.log("🎯 CREATING EXPLICIT OPERATIONS FOR PASSES:");
-          console.log("  - Total depth:", totalDepth);
-          console.log("  - Depth per pass:", depthPerPass);
-          console.log("  - Number of passes:", passes);
-          
           // Create one operation for each pass
           for (let i = 1; i <= passes; i++) {
             const currentDepth = depthPerPass * i;
-            console.log(`  - Pass ${i}: cutting to depth -${currentDepth.toFixed(3)}`);
             
             operations.push({
               type: "outline",
@@ -251,16 +198,10 @@ const generateGcode = (
             type: "|",
           });
           
-          console.log("  - Total operations created:", operations.length - 1); // -1 for separator
-          console.log("=".repeat(60));
-          
           return operations;
         })(),
         op2: [],
       });
-      
-      console.log("⚙️ PROCESS CONFIGURATION SET SUCCESSFULLY");
-      console.log("=".repeat(60));
       
       return eng;
     })
@@ -301,24 +242,6 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.8); // 80% - Slicing done
       stopSlicingProgress(); // Stop the slicing progress timer
       
-      console.log("🔧 SLICING COMPLETED - ANALYZING RESULTS");
-      
-      // Try to inspect what Kiri:Moto generated
-      try {
-        if (eng.widget && eng.widget.slices) {
-          console.log("  - Number of slices generated:", eng.widget.slices.length);
-        }
-        if (eng.print && eng.print.output) {
-          console.log("  - Print output available:", !!eng.print.output);
-        }
-        // Try to access internal state
-        console.log("  - Widget state:", eng.widget ? "Available" : "Not available");
-        console.log("  - Print state:", eng.print ? "Available" : "Not available");
-      } catch (e) {
-        console.log("  - Could not inspect Kiri:Moto internal state:", e.message);
-      }
-      console.log("=".repeat(60));
-      
       return eng;
     })
     .then((eng) => eng.prepare())
@@ -328,49 +251,6 @@ const generateGcode = (
     })
     .then((eng) => eng.export())
     .then((gcode) => {
-      console.log("📄 G-CODE ANALYSIS:");
-      console.log("  - Total G-code length:", gcode ? gcode.length : "No G-code generated");
-      
-      if (gcode) {
-        // Analyze the G-code for movement patterns
-        const lines = gcode.split('\n');
-        const zMovements = lines.filter(line => line.includes('Z') && (line.includes('G1') || line.includes('G0')));
-        const uniqueZValues = new Set();
-        
-        zMovements.forEach(line => {
-          const zMatch = line.match(/Z([-\d\.]+)/);
-          if (zMatch) {
-            uniqueZValues.add(parseFloat(zMatch[1]));
-          }
-        });
-        
-        const sortedZValues = Array.from(uniqueZValues).sort((a, b) => b - a); // Sort descending
-        
-        console.log("  - Total lines:", lines.length);
-        console.log("  - Z-movement lines:", zMovements.length);
-        console.log("  - Unique Z depths:", sortedZValues.length);
-        console.log("  - Z depths found:", sortedZValues);
-        
-        // Count passes by looking for cutting operations at different depths
-        const cuttingDepths = sortedZValues.filter(z => z < 0); // Negative Z values are cuts
-        console.log("  - Cutting depths (negative Z):", cuttingDepths);
-        console.log("  - Estimated number of cutting passes:", cuttingDepths.length);
-        
-        // Look for specific patterns
-        const toolDownMovements = lines.filter(line => 
-          line.includes('Z') && line.includes('G1') && line.match(/Z-[\d\.]+/)
-        );
-        console.log("  - Tool down movements (G1 Z-*):", toolDownMovements.length);
-        
-        if (toolDownMovements.length > 0) {
-          console.log("  - First few tool down movements:");
-          toolDownMovements.slice(0, 5).forEach((line, i) => {
-            console.log(`    ${i + 1}: ${line.trim()}`);
-          });
-        }
-      }
-      console.log("=".repeat(60));
-      
       gcodeCallback(gcode); // Only call the callback, don't download
       if (progressCallback) progressCallback(1.0); // 100% - Export complete
     })

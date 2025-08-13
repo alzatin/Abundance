@@ -133,11 +133,6 @@ describe("G-code Pass Count Configuration", () => {
       down: totalDepth,                   // 6.5mm total depth
     };
     
-    console.log(`\nCurrent config for ${requestedPasses} passes:`);
-    console.log(`step=${currentConfig.step.toFixed(2)}mm, steps=${currentConfig.steps}, down=${currentConfig.down}mm`);
-    console.log(`Theory: Kiri:Moto should cut ${currentConfig.down}mm total, taking ${currentConfig.step.toFixed(2)}mm per pass`);
-    console.log(`Expected result: ${Math.ceil(currentConfig.down / currentConfig.step)} passes`);
-    
     expect(Math.ceil(currentConfig.down / currentConfig.step)).toBe(requestedPasses);
   });
 
@@ -147,16 +142,12 @@ describe("G-code Pass Count Configuration", () => {
     const extra = 1.5;
     const totalDepth = z + extra; // 6.5
     
-    console.log(`\nExperimenting with ${requestedPasses} passes, total depth ${totalDepth}mm:`);
-    
     // Current approach (back to original with original calculation)
     const approach1 = {
       step: totalDepth / requestedPasses, // 2.17mm per step
       steps: 1,                          // 1 step per operation
       down: totalDepth / requestedPasses, // 2.17mm per operation
     };
-    console.log(`Approach 1 (current): step=${approach1.step.toFixed(2)}, steps=${approach1.steps}, down=${approach1.down.toFixed(2)}`);
-    console.log(`  -> Kiri:Moto might see: ${Math.ceil(totalDepth / approach1.step)} operations of ${approach1.down.toFixed(2)}mm each`);
     
     // Alternative: fixed step depth, multiple steps
     const approach2 = {
@@ -164,7 +155,6 @@ describe("G-code Pass Count Configuration", () => {
       steps: Math.ceil(totalDepth),       // 7 steps total
       down: totalDepth,                   // 6.5mm total
     };
-    console.log(`Approach 2: step=${approach2.step}, steps=${approach2.steps}, down=${approach2.down}`);
     
     // Alternative: divide total by passes, but set down to total
     const approach3 = {
@@ -172,7 +162,6 @@ describe("G-code Pass Count Configuration", () => {
       steps: requestedPasses,             // 3 steps
       down: totalDepth,                   // 6.5mm total
     };
-    console.log(`Approach 3: step=${approach3.step.toFixed(2)}, steps=${approach3.steps}, down=${approach3.down}`);
     
     // Test different interpretation: maybe down should be step * steps?
     const approach4 = {
@@ -180,7 +169,6 @@ describe("G-code Pass Count Configuration", () => {
       steps: 1,                          // 1 step
       down: totalDepth,                   // 6.5mm total (not step * steps)
     };
-    console.log(`Approach 4: step=${approach4.step.toFixed(2)}, steps=${approach4.steps}, down=${approach4.down}`);
     
     expect(approach1.step * requestedPasses).toBeCloseTo(totalDepth);
   });
@@ -214,8 +202,6 @@ describe("G-code Pass Count Configuration", () => {
       
       // New config explicitly tells Kiri:Moto the number of steps
       expect(newConfig.step * newConfig.steps).toBe(totalDepth);
-      
-      console.log(`Passes ${requestedPasses}: Old (step=${oldConfig.step.toFixed(2)}, steps=${oldConfig.steps}, down=${oldConfig.down.toFixed(2)}), New (step=${newConfig.step.toFixed(2)}, steps=${newConfig.steps}, down=${newConfig.down})`);
     });
   });
 });
