@@ -120,6 +120,50 @@ describe("G-code Pass Count Configuration", () => {
     // Result: Exactly 2 passes of 3.25mm each = 6.5mm total
   });
 
+  test("should experiment with different parameter combinations", () => {
+    const requestedPasses = 3;
+    const z = 5;
+    const extra = 1.5;
+    const totalDepth = z + extra; // 6.5
+    
+    console.log(`\nExperimenting with ${requestedPasses} passes, total depth ${totalDepth}mm:`);
+    
+    // Current approach (back to original with original calculation)
+    const approach1 = {
+      step: totalDepth / requestedPasses, // 2.17mm per step
+      steps: 1,                          // 1 step per operation
+      down: totalDepth / requestedPasses, // 2.17mm per operation
+    };
+    console.log(`Approach 1 (current): step=${approach1.step.toFixed(2)}, steps=${approach1.steps}, down=${approach1.down.toFixed(2)}`);
+    console.log(`  -> Kiri:Moto might see: ${Math.ceil(totalDepth / approach1.step)} operations of ${approach1.down.toFixed(2)}mm each`);
+    
+    // Alternative: fixed step depth, multiple steps
+    const approach2 = {
+      step: 1.0,                          // Fixed 1mm per step
+      steps: Math.ceil(totalDepth),       // 7 steps total
+      down: totalDepth,                   // 6.5mm total
+    };
+    console.log(`Approach 2: step=${approach2.step}, steps=${approach2.steps}, down=${approach2.down}`);
+    
+    // Alternative: divide total by passes, but set down to total
+    const approach3 = {
+      step: totalDepth / requestedPasses, // 2.17mm per step
+      steps: requestedPasses,             // 3 steps
+      down: totalDepth,                   // 6.5mm total
+    };
+    console.log(`Approach 3: step=${approach3.step.toFixed(2)}, steps=${approach3.steps}, down=${approach3.down}`);
+    
+    // Test different interpretation: maybe down should be step * steps?
+    const approach4 = {
+      step: totalDepth / requestedPasses, // 2.17mm per step  
+      steps: 1,                          // 1 step
+      down: totalDepth,                   // 6.5mm total (not step * steps)
+    };
+    console.log(`Approach 4: step=${approach4.step.toFixed(2)}, steps=${approach4.steps}, down=${approach4.down}`);
+    
+    expect(approach1.step * requestedPasses).toBeCloseTo(totalDepth);
+  });
+
   test("should demonstrate old vs new behavior", () => {
     const testCases = [
       { requestedPasses: 1, z: 5, extra: 1.5 },
