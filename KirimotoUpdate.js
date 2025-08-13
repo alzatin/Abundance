@@ -149,167 +149,50 @@ const generateGcode = (
       console.log("=".repeat(60));
       
       // === CALCULATED VALUES FOR KIRI:MOTO ===
-      const depthPerPass = (z + extra) / passes;
-      
       console.log("🧮 CALCULATED VALUES:");
-      console.log("  STRATEGY: Create", passes, "explicit operations instead of relying on global multiplier");
+      console.log("  STRATEGY: Use single operation with steps parameter to control passes");
       console.log("  - Total depth:", (z + extra));
       console.log("  - Passes requested:", passes);
-      console.log("  - Depth per pass:", depthPerPass);
-      console.log("  GLOBAL PROCESS SETTINGS:");
-      console.log("    - camOutlineDown:", depthPerPass, "(depth per single operation)");
-      console.log("    - camOutlineOverCount: 1 (disable global multiplier)");
-      console.log("  OPERATIONS ARRAY:");
-      console.log("    - Will create", passes, "explicit outline operations");
-      console.log("    - Each operation: down =", depthPerPass, ", step =", depthPerPass, ", steps = 1");
-      
-      // Create operations array for debugging
-      const explicitOps = Array.from({ length: passes }, (_, i) => ({
-        type: "outline",
-        tool: 1000,
-        spindle: 1000,
-        step: depthPerPass,
-        steps: 1,
-        down: depthPerPass,
-        rate: speed,
-        plunge: 250,
-        dogbones: true,
-        omitvoid: false,
-        omitthru: false,
-        outside: true,
-        inside: false,
-        wide: false,
-        top: true,
-        ov_topz: 0,
-        ov_botz: 0,
-        ov_conv: false,
-      }));
-      
-      console.log("  CREATED OPERATIONS:");
-      explicitOps.forEach((op, i) => {
-        console.log(`    Operation ${i + 1}: type=${op.type}, down=${op.down}, step=${op.step}, steps=${op.steps}`);
-      });
+      console.log("  - Step per pass:", (z + extra) / passes);
+      console.log("  OPERATION DEFINITION:");
+      console.log("    - steps:", passes, "(number of passes)");
+      console.log("    - step:", (z + extra) / passes, "(depth per pass)");
+      console.log("    - down:", (z + extra), "(total depth)");
+      console.log("  GLOBAL SETTINGS:");
+      console.log("    - camOutlineOverCount: 1 (no global multiplier)");
+      console.log("    - camRoughOn: false (no roughing)");
+      console.log("    - camContourXOn/YOn: false (no contour operations)");
       console.log("=".repeat(60));
       
       eng.setProcess({
         processName: "default",
-        camLevelTool: 1000,
-        camLevelSpindle: 1000,
-        camLevelOver: 0.5,
-        camLevelSpeed: 1000,
-        camLevelDown: 0,
-        camLevelStock: true,
-        camRoughTool: 1000,
-        camRoughSpindle: 1000,
-        camRoughDown: z / passes,
-        camRoughOver: 0.4,
-        camRoughSpeed: speed,
-        camRoughPlunge: 250,
-        camRoughStock: 0,
-        camRoughStockZ: 0,
-        camRoughAll: true,
-        camRoughVoid: false,
-        camRoughFlat: true,
-        camRoughTop: true,
-        camRoughIn: true,
-        camRoughOn: false,  // Disable roughing to prevent extra passes
-        camRoughOmitVoid: false,
+        // Disable ALL automatic operation generation
+        camRoughOn: false,         // No roughing operations
+        camContourXOn: false,      // No X contour operations
+        camContourYOn: false,      // No Y contour operations
+        camDrillingOn: false,      // No drilling operations
+        camDepthFirst: false,      // No depth-first processing
+        
+        // Basic tool settings
         camOutlineTool: 1000,
         camOutlineSpindle: 1000,
-        camOutlineTop: true,
-        camOutlineDown: depthPerPass,          // Depth per single operation
-        camOutlineOver: 0.4,
-        camOutlineOverCount: 1,                // Disable global multiplier - use explicit ops instead
         camOutlineSpeed: speed,
         camOutlinePlunge: 250,
-        camOutlineWide: false,
+        camOutlineOver: 0.4,
+        
+        // CRITICAL: Disable global outline multiplier
+        camOutlineOverCount: 1,    // Only process operations in ops array, don't multiply
+        camOutlineDown: 1,         // Minimal global setting, real control is in ops array
+        camOutlineTop: true,
         camOutlineDogbone: true,
         camOutlineOmitThru: false,
         camOutlineOmitVoid: false,
         camOutlineOut: true,
         camOutlineIn: false,
-        camOutlineOn: true,
-        camContourTool: 1000,
-        camContourSpindle: 1000,
-        camContourOver: 0.5,
-        camContourSpeed: speed,
-        camContourAngle: 85,
-        camContourLeave: 0,
-        camContourReduce: 2,
-        camContourBottom: false,
-        camContourCurves: false,
-        camContourIn: false,
-        camContourXOn: false,  // Disable contour operations to prevent extra passes
-        camContourYOn: false,  // Disable contour operations to prevent extra passes
-        camLatheTool: 1000,
-        camLatheSpindle: 1000,
-        camLatheOver: 0.1,
-        camLatheAngle: 1,
-        camLatheSpeed: 500,
-        camLatheLinear: true,
-        camTolerance: 0,
-        camTraceTool: 1000,
-        camTraceSpindle: 1000,
-        camTraceType: "follow",
-        camTraceOver: 0.5,
-        camTraceDown: 0,
-        camTraceThru: 0,
-        camTraceSpeed: speed,
-        camTracePlunge: 200,
-        camTraceOffOver: 0,
-        camTraceDogbone: false,
-        camTraceMerge: true,
-        camTraceLines: false,
-        camTraceZTop: 0,
-        camTraceZBottom: 0,
-        camPocketSpindle: 1000,
-        camPocketTool: 1000,
-        camPocketOver: 0.25,
-        camPocketDown: 1,
-        camPocketSpeed: speed,
-        camPocketPlunge: 200,
-        camPocketExpand: 0,
-        camPocketSmooth: 0,
-        camPocketRefine: 20,
-        camPocketFollow: 5,
-        camPocketContour: false,
-        camPocketEngrave: false,
-        camPocketOutline: false,
-        camPocketZTop: 0,
-        camPocketZBottom: 0,
-        camDrillTool: 1000,
-        camDrillSpindle: 1000,
-        camDrillDownSpeed: 250,
-        camDrillDown: 5,
-        camDrillDwell: 250,
-        camDrillLift: 2,
-        camDrillMark: false,
-        camDrillingOn: false,
-        camRegisterSpeed: 1000,
-        camRegisterThru: 5,
-        camFlipAxis: "X",
-        camFlipOther: "",
-        camLaserEnable: ["M321"],
-        camLaserDisable: ["M322"],
-        camLaserOn: ["M3"],
-        camLaserOff: ["M5"],
-        camLaserSpeed: 100,
-        camLaserPower: 1,
-        camLaserAdaptive: false,
-        camLaserAdaptMod: false,
-        camLaserFlatten: false,
-        camLaserFlatZ: 0,
-        camLaserPowerMin: 0,
-        camLaserPowerMax: 1,
-        camLaserZMin: 0,
-        camLaserZMax: 0,
-        camTabsWidth: 5,
-        camTabsHeight: 5,
-        camTabsDepth: 5,
-        camTabsMidline: false,
-        camDepthFirst: false,  // Disable depth-first to prevent automatic multi-pass generation
-        camEaseDown: false,
-        camEaseAngle: 10,
+        camOutlineWide: false,
+        camOutlineOn: true,        // Enable outline processing
+        
+        // Minimal required settings
         camOriginTop: true,
         camZAnchor: "middle",
         camZOffset: 0,
@@ -319,58 +202,39 @@ const generateGcode = (
         camZThru: 0,
         camFastFeed: 6000,
         camFastFeedZ: 300,
-        camFlatness: 0.001,
-        camContourBridge: 0,
-        camStockX: 20,
-        camStockY: 5,
-        camStockZ: 5,
-        camStockOffset: true,
-        camStockClipTo: false,
-        camStockIndexed: false,
-        camStockIndexGrid: true,
-        camIndexAxis: 0,
-        camIndexAbs: true,
-        camConventional: false,
         camOriginCenter: false,
         camOriginOffX: 0,
         camOriginOffY: 0,
         camOriginOffZ: 0,
-        outputInvertX: false,
-        outputInvertY: false,
-        camExpertFast: false,
-        camTrueShadow: false,
-        camForceZMax: false,
-        camFirstZMax: false,
         camToolInit: true,
-        camFullEngage: 0.8,
+        
+        // Operation definitions - THIS is where we control the passes
         ops: [
-          // Create explicit outline operations for each pass
-          ...explicitOps,
+          {
+            type: "outline",
+            tool: 1000,
+            spindle: 1000,
+            step: (z + extra) / passes,    // Total depth divided by passes
+            steps: passes,                 // Number of steps (passes) to take
+            down: (z + extra),            // Total depth to cut
+            rate: speed,
+            plunge: 250,
+            dogbones: true,
+            omitvoid: false,
+            omitthru: false,
+            outside: true,
+            inside: false,
+            wide: false,
+            top: true,
+            ov_topz: 0,
+            ov_botz: 0,
+            ov_conv: false,
+          },
           {
             type: "|",
           },
         ],
         op2: [],
-        camLevelStepZ: 0,
-        camLevelInset: 0.5,
-        camRegisterOffset: 10,
-        camHelicalTool: 1000,
-        camHelicalSpindle: 1000,
-        camHelicalDownSpeed: 250,
-        camHelicalSpeed: 1000,
-        camHelicalDown: 5,
-        camHelicalBottomFinish: true,
-        camHelicalThru: 0,
-        camHelicalOffset: "auto",
-        camHelicalForceStartAngle: false,
-        camHelicalStartAngle: 0,
-        camHelicalOffsetOverride: 0,
-        camHelicalEntry: false,
-        camHelicalEntryOffset: 0,
-        camHelicalReverse: false,
-        camHelicalClockwise: true,
-        camRoughOmitThru: false,
-        "~camConventional": false,
       });
       
       console.log("⚙️ PROCESS CONFIGURATION SET SUCCESSFULLY");
