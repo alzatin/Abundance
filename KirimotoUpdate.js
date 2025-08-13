@@ -105,7 +105,7 @@ const generateGcode = (
           metric: false,
           shaft_diam: toolSize,
           shaft_len: 1,
-          flute_diam: 0.25,
+          flute_diam: toolSize,
           flute_len: 2,
           taper_tip: 0,
         },
@@ -115,6 +115,7 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.3); // 30% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
+      
       eng.setProcess({
         processName: "default",
         camLevelTool: 1000,
