@@ -415,12 +415,12 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
         onClick={() => {
           GlobalVariables.currentRepo = node.node;
         }}
+        onContextMenu={(e) => handleProjectRightClick(e, node.node)} // <-- add right-click handler for list mode
       >
         <p className="project_name_list">{node.node.repoName}</p>
 
         <p className="project_name_list">{node.node.owner}</p>
         <p style={{ width: "20%", display: "block" }}>
-          {" "}
           {node.node.topics && node.node.topics.includes("abundance-tool")
             ? "\u{1F528} "
             : null}
@@ -485,6 +485,22 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
     repoName: "Name",
   };
 
+  // Add effect to close context menu on outside click
+  React.useEffect(() => {
+    if (!contextMenu.visible) return;
+    const handleClickOutside = (event) => {
+      // Only close if click is outside the context menu
+      const menu = document.querySelector(".context-menu");
+      if (menu && !menu.contains(event.target)) {
+        handleCloseContextMenu();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [contextMenu.visible]);
+
   return (
     <>
       <div className="project-item-div">
@@ -523,12 +539,15 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
             >
               See Repository
             </button>
-            <button
-              className="context-menu-btn"
-              onClick={() => handleMenuAction("delete")}
-            >
-              Delete
-            </button>
+            {contextMenu.node &&
+              contextMenu.node.owner === GlobalVariables.currentUser && (
+                <button
+                  className="context-menu-btn"
+                  onClick={() => handleMenuAction("delete")}
+                >
+                  Delete
+                </button>
+              )}
           </div>
         </div>
       )}
