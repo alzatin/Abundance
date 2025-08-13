@@ -1276,10 +1276,7 @@ export default class Molecule extends Atom {
             atom.updateValue();
             
             // Auto-create connector from selected atoms with geometry output to new atom
-            // Use setTimeout to ensure atom placement is complete before creating connector
-            setTimeout(() => {
-              this.autoCreateConnector(atom);
-            }, 0);
+            this.autoCreateConnector(atom);
             
             const flowCanvas = document.querySelector("#flow-canvas");
             if (!flowCanvas) {
