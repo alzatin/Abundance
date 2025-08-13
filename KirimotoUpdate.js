@@ -1,4 +1,5 @@
 import { Engine } from "./engine.js";
+import GlobalVariables from "./src/js/globalvariables.js";
 
 const display_message = (message) => {
   console.log(message);
@@ -102,7 +103,7 @@ const generateGcode = (
           number: 1,
           type: "endmill",
           name: "end 1/4",
-          metric: true,
+          metric: GlobalVariables.topLevelMolecule.unitsKey === "MM",
           shaft_diam: toolSize,
           shaft_len: 1,
           flute_diam: toolSize,
