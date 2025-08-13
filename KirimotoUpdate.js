@@ -149,24 +149,46 @@ const generateGcode = (
       console.log("=".repeat(60));
       
       // === CALCULATED VALUES FOR KIRI:MOTO ===
-      const camOutlineDownValue = (z + extra) / passes;
-      const camOutlineOverCountValue = passes;
-      const operationStepValue = (z + extra) / passes;
-      const operationStepsValue = passes;
-      const operationDownValue = (z + extra) / passes;
+      const depthPerPass = (z + extra) / passes;
       
       console.log("🧮 CALCULATED VALUES:");
+      console.log("  STRATEGY: Create", passes, "explicit operations instead of relying on global multiplier");
+      console.log("  - Total depth:", (z + extra));
+      console.log("  - Passes requested:", passes);
+      console.log("  - Depth per pass:", depthPerPass);
       console.log("  GLOBAL PROCESS SETTINGS:");
-      console.log("    - camOutlineDown:", camOutlineDownValue, "(depth per operation)");
-      console.log("    - camOutlineOverCount:", camOutlineOverCountValue, "(number of operations)");
-      console.log("  OPERATION SETTINGS:");
-      console.log("    - step:", operationStepValue, "(depth per step)");
-      console.log("    - steps:", operationStepsValue, "(number of steps)");
-      console.log("    - down:", operationDownValue, "(down parameter)");
-      console.log("  VERIFICATION:");
-      console.log("    - Total depth check:", operationStepsValue, "×", operationDownValue, "=", (operationStepsValue * operationDownValue));
-      console.log("    - Expected total:", (z + extra));
-      console.log("    - Match:", (Math.abs((operationStepsValue * operationDownValue) - (z + extra)) < 0.001) ? "✅ YES" : "❌ NO");
+      console.log("    - camOutlineDown:", depthPerPass, "(depth per single operation)");
+      console.log("    - camOutlineOverCount: 1 (disable global multiplier)");
+      console.log("  OPERATIONS ARRAY:");
+      console.log("    - Will create", passes, "explicit outline operations");
+      console.log("    - Each operation: down =", depthPerPass, ", step =", depthPerPass, ", steps = 1");
+      
+      // Create operations array for debugging
+      const explicitOps = Array.from({ length: passes }, (_, i) => ({
+        type: "outline",
+        tool: 1000,
+        spindle: 1000,
+        step: depthPerPass,
+        steps: 1,
+        down: depthPerPass,
+        rate: speed,
+        plunge: 250,
+        dogbones: true,
+        omitvoid: false,
+        omitthru: false,
+        outside: true,
+        inside: false,
+        wide: false,
+        top: true,
+        ov_topz: 0,
+        ov_botz: 0,
+        ov_conv: false,
+      }));
+      
+      console.log("  CREATED OPERATIONS:");
+      explicitOps.forEach((op, i) => {
+        console.log(`    Operation ${i + 1}: type=${op.type}, down=${op.down}, step=${op.step}, steps=${op.steps}`);
+      });
       console.log("=".repeat(60));
       
       eng.setProcess({
@@ -195,9 +217,9 @@ const generateGcode = (
         camOutlineTool: 1000,
         camOutlineSpindle: 1000,
         camOutlineTop: true,
-        camOutlineDown: (z + extra) / passes,  // Depth per outline operation
+        camOutlineDown: depthPerPass,          // Depth per single operation
         camOutlineOver: 0.4,
-        camOutlineOverCount: passes,           // Number of outline operations
+        camOutlineOverCount: 1,                // Disable global multiplier - use explicit ops instead
         camOutlineSpeed: speed,
         camOutlinePlunge: 250,
         camOutlineWide: false,
@@ -322,45 +344,8 @@ const generateGcode = (
         camToolInit: true,
         camFullEngage: 0.8,
         ops: [
-          /* {
-            type: "rough",
-            tool: 1000,
-            spindle: 1000,
-            down: 4,
-            step: 0.4,
-            rate: 1000,
-            plunge: 250,
-            leave: 0,
-            leavez: 0,
-            all: false,
-            voids: true,
-            flats: true,
-            inside: true,
-            omitthru: false,
-            ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: false,
-          },*/
-          {
-            type: "outline",
-            tool: 1000,
-            spindle: 1000,
-            step: (z + extra),  // Total depth for single operation
-            steps: 1,           // Always 1 step per operation
-            down: (z + extra),  // Total depth
-            rate: speed,
-            plunge: 250,
-            dogbones: true,
-            omitvoid: false,
-            omitthru: false,
-            outside: true,
-            inside: false,
-            wide: false,
-            top: true,
-            ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: false,
-          },
+          // Create explicit outline operations for each pass
+          ...explicitOps,
           {
             type: "|",
           },
