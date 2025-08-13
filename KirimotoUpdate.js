@@ -89,9 +89,9 @@ const generateGcode = (
         y: y + 10,
         z: z,
         center: {
-          x: x / 2,
-          y: y / 2,
-          z: z,
+          x: (bounds.max.x + bounds.min.x) / 2,
+          y: (bounds.max.y + bounds.min.y) / 2,
+          z: (bounds.max.z + bounds.min.z) / 2,
         },
       });
       return eng;
