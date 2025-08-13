@@ -119,123 +119,33 @@ const generateGcode = (
       
       eng.setProcess({
         processName: "default",
-        camLevelTool: 1000,
-        camLevelSpindle: 1000,
-        camLevelOver: 0.5,
-        camLevelSpeed: 1000,
-        camLevelDown: 0,
-        camLevelStock: true,
-        camRoughTool: 1000,
-        camRoughSpindle: 1000,
-        camRoughDown: z / passes,
-        camRoughOver: 0.4,
-        camRoughSpeed: speed,
-        camRoughPlunge: 250,
-        camRoughStock: 0,
-        camRoughStockZ: 0,
-        camRoughAll: true,
-        camRoughVoid: false,
-        camRoughFlat: true,
-        camRoughTop: true,
-        camRoughIn: true,
-        camRoughOn: true,
-        camRoughOmitVoid: false,
+        // Disable ALL automatic operation generation
+        camRoughOn: false,         // No roughing operations
+        camContourXOn: false,      // No X contour operations
+        camContourYOn: false,      // No Y contour operations
+        camDrillingOn: false,      // No drilling operations
+        camDepthFirst: false,      // No depth-first processing
+        
+        // Basic tool settings
         camOutlineTool: 1000,
         camOutlineSpindle: 1000,
-        camOutlineTop: true,
-        camOutlineDown: z / passes,
-        camOutlineOver: 0.4,
-        camOutlineOverCount: 1,
         camOutlineSpeed: speed,
         camOutlinePlunge: 250,
-        camOutlineWide: false,
+        camOutlineOver: 0.4,
+        
+        // CRITICAL: Disable global outline multiplier
+        camOutlineOverCount: 1,    // Only process operations in ops array, don't multiply
+        camOutlineDown: 1,         // Minimal global setting, real control is in ops array
+        camOutlineTop: true,
         camOutlineDogbone: true,
         camOutlineOmitThru: false,
         camOutlineOmitVoid: false,
         camOutlineOut: true,
         camOutlineIn: false,
-        camOutlineOn: true,
-        camContourTool: 1000,
-        camContourSpindle: 1000,
-        camContourOver: 0.5,
-        camContourSpeed: speed,
-        camContourAngle: 85,
-        camContourLeave: 0,
-        camContourReduce: 2,
-        camContourBottom: false,
-        camContourCurves: false,
-        camContourIn: false,
-        camContourXOn: true,
-        camContourYOn: true,
-        camLatheTool: 1000,
-        camLatheSpindle: 1000,
-        camLatheOver: 0.1,
-        camLatheAngle: 1,
-        camLatheSpeed: 500,
-        camLatheLinear: true,
-        camTolerance: 0,
-        camTraceTool: 1000,
-        camTraceSpindle: 1000,
-        camTraceType: "follow",
-        camTraceOver: 0.5,
-        camTraceDown: 0,
-        camTraceThru: 0,
-        camTraceSpeed: speed,
-        camTracePlunge: 200,
-        camTraceOffOver: 0,
-        camTraceDogbone: false,
-        camTraceMerge: true,
-        camTraceLines: false,
-        camTraceZTop: 0,
-        camTraceZBottom: 0,
-        camPocketSpindle: 1000,
-        camPocketTool: 1000,
-        camPocketOver: 0.25,
-        camPocketDown: 1,
-        camPocketSpeed: speed,
-        camPocketPlunge: 200,
-        camPocketExpand: 0,
-        camPocketSmooth: 0,
-        camPocketRefine: 20,
-        camPocketFollow: 5,
-        camPocketContour: false,
-        camPocketEngrave: false,
-        camPocketOutline: false,
-        camPocketZTop: 0,
-        camPocketZBottom: 0,
-        camDrillTool: 1000,
-        camDrillSpindle: 1000,
-        camDrillDownSpeed: 250,
-        camDrillDown: 5,
-        camDrillDwell: 250,
-        camDrillLift: 2,
-        camDrillMark: false,
-        camDrillingOn: false,
-        camRegisterSpeed: 1000,
-        camRegisterThru: 5,
-        camFlipAxis: "X",
-        camFlipOther: "",
-        camLaserEnable: ["M321"],
-        camLaserDisable: ["M322"],
-        camLaserOn: ["M3"],
-        camLaserOff: ["M5"],
-        camLaserSpeed: 100,
-        camLaserPower: 1,
-        camLaserAdaptive: false,
-        camLaserAdaptMod: false,
-        camLaserFlatten: false,
-        camLaserFlatZ: 0,
-        camLaserPowerMin: 0,
-        camLaserPowerMax: 1,
-        camLaserZMin: 0,
-        camLaserZMax: 0,
-        camTabsWidth: 5,
-        camTabsHeight: 5,
-        camTabsDepth: 5,
-        camTabsMidline: false,
-        camDepthFirst: true,
-        camEaseDown: false,
-        camEaseAngle: 10,
+        camOutlineWide: false,
+        camOutlineOn: true,        // Enable outline processing
+        
+        // Minimal required settings
         camOriginTop: true,
         camZAnchor: "middle",
         camZOffset: 0,
@@ -245,96 +155,54 @@ const generateGcode = (
         camZThru: 0,
         camFastFeed: 6000,
         camFastFeedZ: 300,
-        camFlatness: 0.001,
-        camContourBridge: 0,
-        camStockX: 20,
-        camStockY: 5,
-        camStockZ: 5,
-        camStockOffset: true,
-        camStockClipTo: false,
-        camStockIndexed: false,
-        camStockIndexGrid: true,
-        camIndexAxis: 0,
-        camIndexAbs: true,
-        camConventional: false,
         camOriginCenter: false,
         camOriginOffX: 0,
         camOriginOffY: 0,
         camOriginOffZ: 0,
-        outputInvertX: false,
-        outputInvertY: false,
-        camExpertFast: false,
-        camTrueShadow: false,
-        camForceZMax: false,
-        camFirstZMax: false,
         camToolInit: true,
-        camFullEngage: 0.8,
-        ops: [
-          /* {
-            type: "rough",
-            tool: 1000,
-            spindle: 1000,
-            down: 4,
-            step: 0.4,
-            rate: 1000,
-            plunge: 250,
-            leave: 0,
-            leavez: 0,
-            all: false,
-            voids: true,
-            flats: true,
-            inside: true,
-            omitthru: false,
-            ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: false,
-          },*/
-          {
-            type: "outline",
-            tool: 1000,
-            spindle: 1000,
-            step: (z + extra) / passes,
-            steps: 1,
-            down: (z + extra) / passes,
-            rate: speed,
-            plunge: 250,
-            dogbones: true,
-            omitvoid: false,
-            omitthru: false,
-            outside: true,
-            inside: false,
-            wide: false,
-            top: true,
-            ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: false,
-          },
-          {
+        
+        // Operation definitions - Create one operation per pass for explicit control
+        ops: (() => {
+          const operations = [];
+          const totalDepth = z + extra;
+          const depthPerPass = totalDepth / passes;
+          
+          // Create one operation for each pass
+          for (let i = 1; i <= passes; i++) {
+            const currentDepth = depthPerPass * i;
+            
+            operations.push({
+              type: "outline",
+              tool: 1000,
+              spindle: 1000,
+              step: depthPerPass,           // Depth for this specific pass
+              steps: 1,                     // Single step per operation
+              down: currentDepth,           // Depth for this pass
+              rate: speed,
+              plunge: 250,
+              dogbones: true,
+              omitvoid: false,
+              omitthru: false,
+              outside: true,
+              inside: false,
+              wide: false,
+              top: true,
+              ov_topz: 0,
+              ov_botz: 0,
+              ov_conv: false,
+            });
+          }
+          
+          // Add separator
+          operations.push({
             type: "|",
-          },
-        ],
+          });
+          
+          return operations;
+        })(),
         op2: [],
-        camLevelStepZ: 0,
-        camLevelInset: 0.5,
-        camRegisterOffset: 10,
-        camHelicalTool: 1000,
-        camHelicalSpindle: 1000,
-        camHelicalDownSpeed: 250,
-        camHelicalSpeed: 1000,
-        camHelicalDown: 5,
-        camHelicalBottomFinish: true,
-        camHelicalThru: 0,
-        camHelicalOffset: "auto",
-        camHelicalForceStartAngle: false,
-        camHelicalStartAngle: 0,
-        camHelicalOffsetOverride: 0,
-        camHelicalEntry: false,
-        camHelicalEntryOffset: 0,
-        camHelicalReverse: false,
-        camHelicalClockwise: true,
-        camRoughOmitThru: false,
-        "~camConventional": false,
       });
+      
       return eng;
     })
     .then((eng) =>
@@ -373,6 +241,7 @@ const generateGcode = (
     .then((eng) => {
       if (progressCallback) progressCallback(0.8); // 80% - Slicing done
       stopSlicingProgress(); // Stop the slicing progress timer
+      
       return eng;
     })
     .then((eng) => eng.prepare())
