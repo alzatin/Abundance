@@ -84,11 +84,11 @@ describe("G-code Pass Count Configuration", () => {
     const extra = 1.5;
     const totalDepth = z + extra;
     
-    // PROPOSED FIX: Set steps to the number of passes
+    // CORRECT FIX: Set steps to the number of passes and down to total depth
     const fixedConfig = {
       step: totalDepth / requestedPasses, // 3.25mm per pass
-      steps: requestedPasses, // FIXED: Set to actual number of passes
-      down: totalDepth, // FIXED: Set to total depth, not per-pass depth
+      steps: requestedPasses, // Set to actual number of passes
+      down: totalDepth, // Set to total depth
     };
     
     expect(fixedConfig.step).toBe(3.25);
@@ -99,31 +99,25 @@ describe("G-code Pass Count Configuration", () => {
     // "Cut 6.5mm total depth, in 2 steps of 3.25mm each"
   });
 
-  test("should validate the implemented fix approach", () => {
+  test("should validate the new fix approach", () => {
     const requestedPasses = 2;
     const z = 5;
     const extra = 1.5;
     const totalDepth = z + extra;
     
-    // IMPLEMENTED FIX: Adjust the step calculation to account for the extra pass
-    const implementedConfig = {
-      step: totalDepth / (requestedPasses + 1), // Reduce step size to account for extra pass
-      steps: 1,
-      down: totalDepth / (requestedPasses + 1),
+    // NEW FIX: Set steps to requested passes and down to total depth
+    const newConfig = {
+      step: totalDepth / requestedPasses, // 3.25mm per step
+      steps: requestedPasses,             // Number of steps = requested passes
+      down: totalDepth,                   // Total depth for the operation
     };
     
-    expect(implementedConfig.step).toBeCloseTo(6.5 / 3); // ~2.17mm per pass
-    expect(implementedConfig.steps).toBe(1);
-    expect(implementedConfig.down).toBeCloseTo(6.5 / 3);
+    expect(newConfig.step).toBe(3.25);
+    expect(newConfig.steps).toBe(2);
+    expect(newConfig.down).toBe(6.5);
     
-    // With Kiri:Moto generating (requestedPasses + 1) passes of ~2.17mm each:
-    // 3 passes × 2.17mm = ~6.5mm total depth
-    const actualPasses = requestedPasses + 1; // Kiri:Moto adds 1 extra
-    const totalWithImplementedFix = implementedConfig.step * actualPasses;
-    expect(totalWithImplementedFix).toBeCloseTo(6.5);
-    
-    // The user requests 2 passes, Kiri:Moto generates 3, but now each pass is smaller
-    // so the total depth is correct and the user effectively gets 2 meaningful passes
+    // This tells Kiri:Moto: "Cut 6.5mm total, in 2 steps of 3.25mm each"
+    // Result: Exactly 2 passes of 3.25mm each = 6.5mm total
   });
 
   test("should demonstrate old vs new behavior", () => {
@@ -139,28 +133,24 @@ describe("G-code Pass Count Configuration", () => {
       // OLD BEHAVIOR (before fix)
       const oldConfig = {
         step: totalDepth / requestedPasses,
+        steps: 1,  // Always 1 step
         down: totalDepth / requestedPasses,
       };
       
       // NEW BEHAVIOR (after fix)  
       const newConfig = {
-        step: totalDepth / (requestedPasses + 1),
-        down: totalDepth / (requestedPasses + 1),
+        step: totalDepth / requestedPasses,
+        steps: requestedPasses,  // Set to requested passes
+        down: totalDepth,        // Total depth
       };
       
-      // With old config, if Kiri:Moto generates (requestedPasses + 1) passes:
-      const oldTotalDepth = oldConfig.step * (requestedPasses + 1);
+      // Old config might cause Kiri:Moto to generate extra passes
+      // because it sees steps=1 and calculates how many operations are needed
       
-      // With new config, if Kiri:Moto generates (requestedPasses + 1) passes:
-      const newTotalDepth = newConfig.step * (requestedPasses + 1);
+      // New config explicitly tells Kiri:Moto the number of steps
+      expect(newConfig.step * newConfig.steps).toBe(totalDepth);
       
-      // Old behavior would cut too deep
-      expect(oldTotalDepth).toBeGreaterThan(totalDepth);
-      
-      // New behavior should cut the correct total depth
-      expect(newTotalDepth).toBeCloseTo(totalDepth);
-      
-      console.log(`Passes ${requestedPasses}: Old depth ${oldTotalDepth.toFixed(2)}mm, New depth ${newTotalDepth.toFixed(2)}mm, Target ${totalDepth}mm`);
+      console.log(`Passes ${requestedPasses}: Old (step=${oldConfig.step.toFixed(2)}, steps=${oldConfig.steps}, down=${oldConfig.down.toFixed(2)}), New (step=${newConfig.step.toFixed(2)}, steps=${newConfig.steps}, down=${newConfig.down})`);
     });
   });
 });
