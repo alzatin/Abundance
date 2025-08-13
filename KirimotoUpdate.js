@@ -190,7 +190,7 @@ const generateGcode = (
         camRoughFlat: true,
         camRoughTop: true,
         camRoughIn: true,
-        camRoughOn: true,
+        camRoughOn: false,  // Disable roughing to prevent extra passes
         camRoughOmitVoid: false,
         camOutlineTool: 1000,
         camOutlineSpindle: 1000,
