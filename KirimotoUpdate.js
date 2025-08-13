@@ -102,7 +102,7 @@ const generateGcode = (
           number: 1,
           type: "endmill",
           name: "end 1/4",
-          metric: false,
+          metric: true,
           shaft_diam: toolSize,
           shaft_len: 1,
           flute_diam: toolSize,
