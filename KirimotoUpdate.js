@@ -116,27 +116,18 @@ const generateGcode = (
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
       
-      // Calculate stepover values as percentage of tool size
-      const roughStepover = toolSize * 0.4; // 40% stepover for roughing
-      const outlineStepover = toolSize * 0.4; // 40% stepover for outline
-      const levelStepover = toolSize * 0.5; // 50% stepover for leveling
-      const contourStepover = toolSize * 0.5; // 50% stepover for contouring
-      const traceStepover = toolSize * 0.5; // 50% stepover for tracing
-      const pocketStepover = toolSize * 0.25; // 25% stepover for pocketing
-      const latheStepover = toolSize * 0.1; // 10% stepover for lathe operations
-      
       eng.setProcess({
         processName: "default",
         camLevelTool: 1000,
         camLevelSpindle: 1000,
-        camLevelOver: levelStepover,
+        camLevelOver: 0.5,
         camLevelSpeed: 1000,
         camLevelDown: 0,
         camLevelStock: true,
         camRoughTool: 1000,
         camRoughSpindle: 1000,
         camRoughDown: z / passes,
-        camRoughOver: roughStepover,
+        camRoughOver: 0.4,
         camRoughSpeed: speed,
         camRoughPlunge: 250,
         camRoughStock: 0,
@@ -152,7 +143,7 @@ const generateGcode = (
         camOutlineSpindle: 1000,
         camOutlineTop: true,
         camOutlineDown: z / passes,
-        camOutlineOver: outlineStepover,
+        camOutlineOver: 0.4,
         camOutlineOverCount: 1,
         camOutlineSpeed: speed,
         camOutlinePlunge: 250,
@@ -165,7 +156,7 @@ const generateGcode = (
         camOutlineOn: true,
         camContourTool: 1000,
         camContourSpindle: 1000,
-        camContourOver: contourStepover,
+        camContourOver: 0.5,
         camContourSpeed: speed,
         camContourAngle: 85,
         camContourLeave: 0,
@@ -177,7 +168,7 @@ const generateGcode = (
         camContourYOn: true,
         camLatheTool: 1000,
         camLatheSpindle: 1000,
-        camLatheOver: latheStepover,
+        camLatheOver: 0.1,
         camLatheAngle: 1,
         camLatheSpeed: 500,
         camLatheLinear: true,
@@ -185,7 +176,7 @@ const generateGcode = (
         camTraceTool: 1000,
         camTraceSpindle: 1000,
         camTraceType: "follow",
-        camTraceOver: traceStepover,
+        camTraceOver: 0.5,
         camTraceDown: 0,
         camTraceThru: 0,
         camTraceSpeed: speed,
@@ -198,7 +189,7 @@ const generateGcode = (
         camTraceZBottom: 0,
         camPocketSpindle: 1000,
         camPocketTool: 1000,
-        camPocketOver: pocketStepover,
+        camPocketOver: 0.25,
         camPocketDown: 1,
         camPocketSpeed: speed,
         camPocketPlunge: 200,
