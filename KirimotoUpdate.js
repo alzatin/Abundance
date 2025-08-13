@@ -295,7 +295,7 @@ const generateGcode = (
             spindle: 1000,
             step: (z + extra) / passes,
             steps: 1,
-            down: (z + extra) / passes,
+            down: (z + extra),
             rate: speed,
             plunge: 250,
             dogbones: true,

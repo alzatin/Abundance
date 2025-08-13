@@ -120,6 +120,27 @@ describe("G-code Pass Count Configuration", () => {
     // Result: Exactly 2 passes of 3.25mm each = 6.5mm total
   });
 
+  test("should show current approach: step per pass, down total depth", () => {
+    const requestedPasses = 3;
+    const z = 5;
+    const extra = 1.5;
+    const totalDepth = z + extra; // 6.5
+    
+    // Current approach: step = depth per pass, down = total depth
+    const currentConfig = {
+      step: totalDepth / requestedPasses, // 2.17mm per step
+      steps: 1,                          // 1 operation
+      down: totalDepth,                   // 6.5mm total depth
+    };
+    
+    console.log(`\nCurrent config for ${requestedPasses} passes:`);
+    console.log(`step=${currentConfig.step.toFixed(2)}mm, steps=${currentConfig.steps}, down=${currentConfig.down}mm`);
+    console.log(`Theory: Kiri:Moto should cut ${currentConfig.down}mm total, taking ${currentConfig.step.toFixed(2)}mm per pass`);
+    console.log(`Expected result: ${Math.ceil(currentConfig.down / currentConfig.step)} passes`);
+    
+    expect(Math.ceil(currentConfig.down / currentConfig.step)).toBe(requestedPasses);
+  });
+
   test("should experiment with different parameter combinations", () => {
     const requestedPasses = 3;
     const z = 5;
