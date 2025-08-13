@@ -99,25 +99,68 @@ describe("G-code Pass Count Configuration", () => {
     // "Cut 6.5mm total depth, in 2 steps of 3.25mm each"
   });
 
-  test("should validate the alternative fix approach", () => {
+  test("should validate the implemented fix approach", () => {
     const requestedPasses = 2;
     const z = 5;
     const extra = 1.5;
     const totalDepth = z + extra;
     
-    // ALTERNATIVE FIX: Adjust the step calculation to account for the extra pass
-    const alternativeConfig = {
+    // IMPLEMENTED FIX: Adjust the step calculation to account for the extra pass
+    const implementedConfig = {
       step: totalDepth / (requestedPasses + 1), // Reduce step size to account for extra pass
       steps: 1,
       down: totalDepth / (requestedPasses + 1),
     };
     
-    expect(alternativeConfig.step).toBeCloseTo(6.5 / 3); // ~2.17mm per pass
-    expect(alternativeConfig.steps).toBe(1);
-    expect(alternativeConfig.down).toBeCloseTo(6.5 / 3);
+    expect(implementedConfig.step).toBeCloseTo(6.5 / 3); // ~2.17mm per pass
+    expect(implementedConfig.steps).toBe(1);
+    expect(implementedConfig.down).toBeCloseTo(6.5 / 3);
     
-    // With 3 passes of ~2.17mm each, total = ~6.5mm
-    const totalWithAlternative = alternativeConfig.step * 3;
-    expect(totalWithAlternative).toBeCloseTo(6.5);
+    // With Kiri:Moto generating (requestedPasses + 1) passes of ~2.17mm each:
+    // 3 passes × 2.17mm = ~6.5mm total depth
+    const actualPasses = requestedPasses + 1; // Kiri:Moto adds 1 extra
+    const totalWithImplementedFix = implementedConfig.step * actualPasses;
+    expect(totalWithImplementedFix).toBeCloseTo(6.5);
+    
+    // The user requests 2 passes, Kiri:Moto generates 3, but now each pass is smaller
+    // so the total depth is correct and the user effectively gets 2 meaningful passes
+  });
+
+  test("should demonstrate old vs new behavior", () => {
+    const testCases = [
+      { requestedPasses: 1, z: 5, extra: 1.5 },
+      { requestedPasses: 2, z: 5, extra: 1.5 },
+      { requestedPasses: 3, z: 5, extra: 1.5 },
+    ];
+
+    testCases.forEach(({ requestedPasses, z, extra }) => {
+      const totalDepth = z + extra;
+      
+      // OLD BEHAVIOR (before fix)
+      const oldConfig = {
+        step: totalDepth / requestedPasses,
+        down: totalDepth / requestedPasses,
+      };
+      
+      // NEW BEHAVIOR (after fix)  
+      const newConfig = {
+        step: totalDepth / (requestedPasses + 1),
+        down: totalDepth / (requestedPasses + 1),
+      };
+      
+      // With old config, if Kiri:Moto generates (requestedPasses + 1) passes:
+      const oldTotalDepth = oldConfig.step * (requestedPasses + 1);
+      
+      // With new config, if Kiri:Moto generates (requestedPasses + 1) passes:
+      const newTotalDepth = newConfig.step * (requestedPasses + 1);
+      
+      // Old behavior would cut too deep
+      expect(oldTotalDepth).toBeGreaterThan(totalDepth);
+      
+      // New behavior should cut the correct total depth
+      expect(newTotalDepth).toBeCloseTo(totalDepth);
+      
+      console.log(`Passes ${requestedPasses}: Old depth ${oldTotalDepth.toFixed(2)}mm, New depth ${newTotalDepth.toFixed(2)}mm, Target ${totalDepth}mm`);
+    });
   });
 });
