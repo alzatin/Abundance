@@ -1,4 +1,5 @@
 import { Engine } from "./engine.js";
+import GlobalVariables from "./src/js/globalvariables.js";
 
 const display_message = (message) => {
   console.log(message);
@@ -54,10 +55,8 @@ const generateGcode = (
       slicingTimer = null;
     }
   };
-
   kiriEngine
     .setListener((message) => {
-      console.log("Kiri:Moto Message:", message);
       // Check if message contains slicing progress information
       if (message && typeof message === "object") {
         if (message.progress !== undefined && slicingStartTime) {
@@ -72,7 +71,7 @@ const generateGcode = (
     .load(stlUrl)
     .then((eng) => {
       if (progressCallback) progressCallback(0.1); // 10% - STL loaded
-      return eng.move(centerPos[0], centerPos[1], 0); //Move the model to line up with where the parts were before
+      return eng.moveTo(centerPos[0], centerPos[1], 0); //Move the model to line up with where the parts were before
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.15); // 15% - Model moved
@@ -92,7 +91,7 @@ const generateGcode = (
         center: {
           x: x / 2,
           y: y / 2,
-          z: z / 2,
+          z: z,
         },
       });
       return eng;
@@ -104,10 +103,10 @@ const generateGcode = (
           number: 1,
           type: "endmill",
           name: "end 1/4",
-          metric: false,
+          metric: GlobalVariables.topLevelMolecule.unitsKey === "MM",
           shaft_diam: toolSize,
           shaft_len: 1,
-          flute_diam: 0.25,
+          flute_diam: toolSize,
           flute_len: 2,
           taper_tip: 0,
         },
@@ -117,6 +116,7 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.3); // 30% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
+      
       eng.setProcess({
         processName: "default",
         camLevelTool: 1000,
@@ -133,8 +133,8 @@ const generateGcode = (
         camRoughPlunge: 250,
         camRoughStock: 0,
         camRoughStockZ: 0,
-        camRoughAll: false,
-        camRoughVoid: true,
+        camRoughAll: true,
+        camRoughVoid: false,
         camRoughFlat: true,
         camRoughTop: true,
         camRoughIn: true,
@@ -143,10 +143,10 @@ const generateGcode = (
         camOutlineTool: 1000,
         camOutlineSpindle: 1000,
         camOutlineTop: true,
-        camOutlineDown: 3,
+        camOutlineDown: z / passes,
         camOutlineOver: 0.4,
         camOutlineOverCount: 1,
-        camOutlineSpeed: 800,
+        camOutlineSpeed: speed,
         camOutlinePlunge: 250,
         camOutlineWide: false,
         camOutlineDogbone: true,
@@ -203,16 +203,13 @@ const generateGcode = (
         camPocketOutline: false,
         camPocketZTop: 0,
         camPocketZBottom: 0,
-        camDrillTool: 1006,
+        camDrillTool: 1000,
         camDrillSpindle: 1000,
         camDrillDownSpeed: 250,
         camDrillDown: 5,
         camDrillDwell: 250,
         camDrillLift: 2,
         camDrillMark: false,
-        camDrillFromStockTop: false,
-        camDrillThru: 5,
-        camDrillPrecision: 1,
         camDrillingOn: false,
         camRegisterSpeed: 1000,
         camRegisterThru: 5,
@@ -268,9 +265,6 @@ const generateGcode = (
         outputInvertY: false,
         camExpertFast: false,
         camTrueShadow: false,
-        camArcEnabled: false,
-        camArcTolerance: 0.15,
-        camArcResolution: 5,
         camForceZMax: false,
         camFirstZMax: false,
         camToolInit: true,

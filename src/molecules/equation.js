@@ -1,7 +1,6 @@
 import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
-import { button } from "leva";
-import { or } from "mathjs";
+import { parse } from "mathjs";
 
 /**
  * This class creates the Equation atom.
@@ -85,25 +84,41 @@ export default class Equation extends Atom {
   }
 
   /**
+   * Extracts variable names from the current equation using mathjs AST parsing.
+   * Only true variables (not function names) are returned.
+   * @returns {string[]} Array of variable names
+   */
+  _extractVariablesFromEquation() {
+    let variables = [];
+    try {
+      const node = parse(this.currentEquation);
+      node.traverse(function (n, path, parent) {
+        if (
+          n.isSymbolNode &&
+          !(
+            parent &&
+            parent.isFunctionNode &&
+            parent.fn &&
+            parent.fn.name === n.name
+          )
+        ) {
+          variables.push(n.name);
+        }
+      });
+      // Remove duplicates
+      variables = [...new Set(variables)];
+    } catch (e) {
+      variables = [];
+    }
+    return variables;
+  }
+
+  /**
    * Add and remove inputs as needed from the atom
    */
   addAndRemoveInputs() {
-    //Find all the variables in this equation using word boundaries to avoid function names
-    var re = /\b[a-zA-Z]+\b/g;
-    const allMatches = this.currentEquation.match(re);
-    
-    // Filter out common math function names to avoid treating them as variables
-    const mathFunctions = new Set([
-      'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2',
-      'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh',
-      'sqrt', 'cbrt', 'exp', 'log', 'log10', 'log2',
-      'abs', 'sign', 'ceil', 'floor', 'round', 'trunc',
-      'min', 'max', 'mean', 'median', 'mode', 'std', 'var',
-      'pi', 'e', 'i', 'true', 'false', 'null', 'undefined'
-    ]);
-    
-    const variables = allMatches ? allMatches.filter(match => !mathFunctions.has(match.toLowerCase())) : [];
-
+    // Use AST-based variable extraction
+    let variables = this._extractVariablesFromEquation();
     //Remove any inputs which are not needed
     const deleteExtraInputs = () => {
       this.inputs.forEach((input) => {
@@ -114,12 +129,11 @@ export default class Equation extends Atom {
       });
     };
     deleteExtraInputs();
-
     //Add any inputs which are needed
     if (variables.length > 0) {
-      for (var variable in variables) {
-        if (!this.inputs.some((input) => input.name === variables[variable])) {
-          this.addIO("input", variables[variable], this, "number", 1);
+      for (var variable of variables) {
+        if (!this.inputs.some((input) => input.name === variable)) {
+          this.addIO("input", variable, this, "number", 1);
         }
       }
     }
@@ -134,28 +148,18 @@ export default class Equation extends Atom {
       var substitutedEquation = this.currentEquation;
       this.name = this.currentEquation;
 
-      // Find all the variables in this equation using word boundaries to avoid function names
-      var re = /\b[a-zA-Z]+\b/g;
-      const allMatches = this.currentEquation.match(re);
-      
-      // Filter out common math function names to avoid treating them as variables
-      const mathFunctions = new Set([
-        'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2',
-        'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh',
-        'sqrt', 'cbrt', 'exp', 'log', 'log10', 'log2',
-        'abs', 'sign', 'ceil', 'floor', 'round', 'trunc',
-        'min', 'max', 'mean', 'median', 'mode', 'std', 'var',
-        'pi', 'e', 'i', 'true', 'false', 'null', 'undefined'
-      ]);
-      
-      const variables = allMatches ? allMatches.filter(match => !mathFunctions.has(match.toLowerCase())) : [];
-      
+      // Use AST-based variable extraction for consistency
+      const variables = this._extractVariablesFromEquation();
+
       if (variables.length > 0) {
-        for (var variable in variables) {
+        for (var variable of variables) {
           for (var i = 0; i < this.inputs.length; i++) {
-            if (this.inputs[i].name == variables[variable]) {
+            if (this.inputs[i].name == variable) {
               // Use word boundaries in replacement to avoid partial matches
-              const variablePattern = new RegExp(`\\b${this.inputs[i].name}\\b`, 'g');
+              const variablePattern = new RegExp(
+                `\\b${this.inputs[i].name}\\b`,
+                "g"
+              );
               substitutedEquation = substitutedEquation.replace(
                 variablePattern,
                 this.findIOValue(this.inputs[i].name)

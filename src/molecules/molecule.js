@@ -259,7 +259,7 @@ export default class Molecule extends Atom {
             );
             GlobalVariables.topLevelMolecule.nodesOnTheScreen = []; // <-- clear the array
 
-            let rawFile = JSON.parse(atob(response.data.content));
+            let rawFile = JSON.parse(GlobalVariables.fromBinaryStr(atob(response.data.content)));
 
             if (rawFile.filetypeVersion == 1) {
               GlobalVariables.topLevelMolecule.deserialize(rawFile);
@@ -1002,7 +1002,7 @@ export default class Molecule extends Atom {
           repo: gitObj.repoName,
         })
         .then((response) => {
-          let rawFile = JSON.parse(atob(response.data.content));
+          let rawFile = JSON.parse(GlobalVariables.fromBinaryStr(atob(response.data.content)));
           let rawFileWithNewIds = this.remapIDs(rawFile);
           rawFileWithNewIds.atomType = "GitHubMolecule";
 
@@ -1069,6 +1069,16 @@ export default class Molecule extends Atom {
   /** Gives new unique IDs to all atoms in a json object and remaps the connections with the attachment points */
   remapIDs(json) {
     let idPairs = {};
+    
+    // Always ensure the main atom/molecule gets a new ID if it doesn't already have one assigned
+    if (json.uniqueID && !json.uniqueID.toString().startsWith('temp-new-')) {
+      let oldMainID = json.uniqueID;
+      let newMainID = GlobalVariables.generateUniqueID();
+      idPairs[oldMainID] = newMainID;
+      json.uniqueID = newMainID;
+    }
+    
+    // Handle nested atoms if they exist
     if (json.allAtoms) {
       json.allAtoms.forEach((atom) => {
         let oldID = atom.uniqueID;
@@ -1076,20 +1086,25 @@ export default class Molecule extends Atom {
         idPairs[oldID] = newID;
         atom.uniqueID = newID;
       });
-      json.allConnectors.forEach((connector) => {
-        if (connector.ap1ID && idPairs[connector.ap1ID]) {
-          connector.ap1ID = idPairs[connector.ap1ID];
-        }
-        if (connector.ap2ID && idPairs[connector.ap2ID]) {
-          connector.ap2ID = idPairs[connector.ap2ID];
-        }
-        if (connector.ap2ID && idPairs[connector.ap2ID]) {
-          connector.ap2ID = idPairs[connector.ap2ID];
-        }
-      });
-
-      return json;
+      
+      // Handle connectors if they exist
+      if (json.allConnectors) {
+        json.allConnectors.forEach((connector) => {
+          if (connector.ap1ID && idPairs[connector.ap1ID]) {
+            connector.ap1ID = idPairs[connector.ap1ID];
+          }
+          if (connector.ap2ID && idPairs[connector.ap2ID]) {
+            connector.ap2ID = idPairs[connector.ap2ID];
+          }
+          // Also remap connector's own uniqueID if it exists
+          if (connector.uniqueID) {
+            connector.uniqueID = GlobalVariables.generateUniqueID();
+          }
+        });
+      }
     }
+
+    return json;
   }
 
   /**

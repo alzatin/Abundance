@@ -53,13 +53,19 @@ export default class Import extends Atom {
      */
     this.sha = null;
 
-    this.SVGwidth = 10;
-
     this.addIO("output", "geometry", this, "geometry", "");
 
     this.importOptions = ["SVG", "STL", "STEP"];
 
     this.importIndex = 0;
+
+    //This loads any inputs which this atom had when last saved.
+    if (typeof this.ioValues !== "undefined") {
+      this.ioValues.forEach((ioValue) => {
+        //for each saved value
+        this.addIO("input", ioValue.name, this, "number", 5);
+      });
+    }
 
     this.setValues(values);
   }
@@ -108,35 +114,60 @@ export default class Import extends Atom {
     this.processing = true;
 
     if (this.fileName != null) {
-      this.getAFile().then((result) => {
-        this.sha = result.data.sha;
-        this.file = this.newBlobFromBase64(result);
-        let file = this.file;
-        let fileType = this.type;
+      this.getAFile()
+        .then((result) => {
+          this.sha = result.data.sha;
+          this.file = this.newBlobFromBase64(result);
+          let file = this.file;
+          let fileType = this.type;
 
-        let funcToCall =
-          fileType == "STL"
-            ? GlobalVariables.cad.importingSTL
-            : fileType == "SVG"
-            ? GlobalVariables.cad.importingSVG
-            : fileType == "STEP"
-            ? GlobalVariables.cad.importingSTEP
-            : null;
+          let funcToCall =
+            fileType == "STL"
+              ? GlobalVariables.cad.importingSTL
+              : fileType == "SVG"
+              ? GlobalVariables.cad.importingSVG
+              : fileType == "STEP"
+              ? GlobalVariables.cad.importingSTEP
+              : null;
 
-        if (funcToCall == null) {
-          throw new Error("Invalid file type");
-        }
+          if (funcToCall == null) {
+            throw new Error("Invalid file type");
+          }
 
-        funcToCall(this.uniqueID, file, this.SVGwidth)
-          .then((result) => {
-            this.basicThreadValueProcessing();
-            this.sendToRender();
-          })
-          .catch((error) => {
-            alert(`Error processing file: ${error.message || error}`);
-            this.alertingErrorHandler();
-          });
-      });
+          let svgWidthIO = this.findIOValue("SVG Width");
+          funcToCall(this.uniqueID, file, svgWidthIO ? svgWidthIO : 1)
+            .then((result) => {
+              this.basicThreadValueProcessing();
+              this.sendToRender();
+            })
+            .catch((error) => {
+              alert(`Error processing file: ${error.message || error}`);
+              this.alertingErrorHandler();
+            });
+          if (this.type == "SVG") {
+            this.addIO("input", "SVG Width", this, "number", 5, true);
+          }
+        })
+        .catch((error) => {
+          // Handle file not found error - reset atom state to allow re-upload
+          if (error.status === 404) {
+            console.log(
+              `File not found in repository: ${this.fileName}. Resetting import atom to allow re-upload.`
+            );
+            this.fileName = null;
+            this.type = null;
+            this.sha = null;
+            this.processing = false;
+          } else {
+            // For other errors, show error message but don't reset state
+            console.error(`Error retrieving file: ${error.message || error}`);
+            // Only show alert in browser environment (not during tests)
+            if (typeof alert !== "undefined") {
+              alert(`Error retrieving file: ${error.message || error}`);
+            }
+            this.processing = false;
+          }
+        });
     }
   }
 
@@ -185,16 +216,29 @@ export default class Import extends Atom {
         },
       };
     } else {
-      if (this.type == "SVG") {
-        inputParams["Width"] = {
-          value: this.SVGwidth, //href to the file
-          label: "Width",
-          step: 0.01,
-          onChange: (value) => {
-            this.SVGwidth = value;
-            this.updateValue();
-          },
-        };
+      if (this.inputs) {
+        this.inputs.map((input) => {
+          const checkConnector = () => {
+            return input.connectors.length > 0;
+          };
+
+          /* Makes inputs for Io's other than geometry */
+          if (input.valueType !== "geometry") {
+            inputParams[this.uniqueID + input.name] = {
+              value: input.value,
+              label: input.name,
+              step: 0.25,
+              disabled: checkConnector(),
+              onChange: (value) => {
+                if (input.value !== value) {
+                  input.setValue(value);
+                  this.updateValue();
+                }
+              },
+            };
+          }
+        });
+        return inputParams;
       }
     }
     return inputParams;
@@ -269,7 +313,6 @@ export default class Import extends Atom {
     superSerialObject.fileName = this.fileName; // might delete, maybe we just save as library object
     superSerialObject.name = this.name;
     superSerialObject.type = this.type;
-    superSerialObject.SVGwidth = this.SVGwidth;
     superSerialObject.repoOwner = this.repoOwner;
     superSerialObject.repoName = this.repoName;
 

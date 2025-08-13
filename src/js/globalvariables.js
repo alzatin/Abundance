@@ -429,11 +429,17 @@ class GlobalVariables {
    * @param {str} The string to encode
    */
   toBinaryStr(str) {
-    const encoder = new TextEncoder();
-    // 1: split the UTF-16 string into an array of bytes
-    const charCodes = encoder.encode(str);
-    // 2: concatenate byte data to create a binary string
-    return String.fromCharCode(...charCodes);
+    // Use percent encoding to safely convert UTF-8 to binary for btoa
+    return unescape(encodeURIComponent(str));
+  }
+
+  /**
+   * A function to decode strings that were encoded with toBinaryStr and passed through atob
+   * @param {str} The binary string to decode back to UTF-8
+   */
+  fromBinaryStr(binaryStr) {
+    // Decode percent-encoded UTF-8 back to original string
+    return decodeURIComponent(escape(binaryStr));
   }
 
   /**

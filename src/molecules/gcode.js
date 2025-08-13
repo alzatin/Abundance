@@ -594,7 +594,7 @@ export default class Gcode extends Atom {
         const fileName = this._isProcessingAssembly
           ? `${currentPartName}_assembly.gcode`
           : `${currentPartName}.gcode`;
-        this, downloadGcode(this.gcodeString, fileName);
+        this.downloadGcode(this.gcodeString, fileName);
       } else {
         console.warn("No G-code available. Please generate G-code first.");
         // You could also show an alert or notification to the user here
