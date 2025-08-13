@@ -72,8 +72,6 @@ export default class Gcode extends Atom {
 
     this.addIO("output", "Gcode", this, "geometry", "");
 
-    this.setValues(values);
-
     this.partName = this.parent.name;
 
     this.stlURL = null; // Store the STL URL
@@ -91,6 +89,8 @@ export default class Gcode extends Atom {
      * @type {string}
      */
     this.sortDirection = "Left";
+
+    this.setValues(values);
   }
 
   /**
