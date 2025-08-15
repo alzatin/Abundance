@@ -557,11 +557,14 @@ function CreateMode({
     setState(5); //Set the state to 5% to show the progress bar
 
     let finalSVG;
-    finalSVG = await GlobalVariables.topLevelMolecule
-      .generateProjectThumbnail()
-      .catch((error) => {
-        console.error("Error generating final project thumbnail: ", error);
-      });
+    // Only generate thumbnail for user-triggered saves, not auto saves
+    if (typeSave !== "Auto Save") {
+      finalSVG = await GlobalVariables.topLevelMolecule
+        .generateProjectThumbnail()
+        .catch((error) => {
+          console.error("Error generating final project thumbnail: ", error);
+        });
+    }
 
     setState(10);
     var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
