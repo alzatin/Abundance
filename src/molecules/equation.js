@@ -119,20 +119,32 @@ export default class Equation extends Atom {
   addAndRemoveInputs() {
     // Use AST-based variable extraction
     let variables = this._extractVariablesFromEquation();
+    // Only add inputs for variables NOT present in parent molecule's inputs
+    let moleculeInputs = [];
+    if (this.parentMolecule && this.parentMolecule.inputs) {
+      moleculeInputs = this.parentMolecule.inputs.map((input) => input.name);
+    }
     //Remove any inputs which are not needed
     const deleteExtraInputs = () => {
       this.inputs.forEach((input) => {
-        if (!variables.includes(input.name)) {
+        // Remove if not in variables OR if now a molecule input
+        if (
+          !variables.includes(input.name) ||
+          moleculeInputs.includes(input.name)
+        ) {
           this.removeIO("input", input.name, this);
           deleteExtraInputs(); //This needs to be called recursively to make sure all the inputs are deleted
         }
       });
     };
     deleteExtraInputs();
-    //Add any inputs which are needed
+    //Add any inputs which are needed and NOT molecule inputs
     if (variables.length > 0) {
       for (var variable of variables) {
-        if (!this.inputs.some((input) => input.name === variable)) {
+        if (
+          !this.inputs.some((input) => input.name === variable) &&
+          !moleculeInputs.includes(variable)
+        ) {
           this.addIO("input", variable, this, "number", 1);
         }
       }
@@ -153,19 +165,34 @@ export default class Equation extends Atom {
 
       if (variables.length > 0) {
         for (var variable of variables) {
-          for (var i = 0; i < this.inputs.length; i++) {
-            if (this.inputs[i].name == variable) {
-              // Use word boundaries in replacement to avoid partial matches
-              const variablePattern = new RegExp(
-                `\\b${this.inputs[i].name}\\b`,
-                "g"
-              );
-              substitutedEquation = substitutedEquation.replace(
-                variablePattern,
-                this.findIOValue(this.inputs[i].name)
-              );
+          // First, try to find in parent molecule's inputs
+          let value = null;
+          if (this.parentMolecule && this.parentMolecule.inputs) {
+            for (var j = 0; j < this.parentMolecule.inputs.length; j++) {
+              if (this.parentMolecule.inputs[j].name == variable) {
+                value = this.parentMolecule.inputs[j].value;
+                break;
+              }
             }
           }
+          // If not found, try to find in this atom's inputs
+          if (value === null) {
+            for (var i = 0; i < this.inputs.length; i++) {
+              if (this.inputs[i].name == variable) {
+                value = this.findIOValue(this.inputs[i].name);
+                break;
+              }
+            }
+          }
+          // If still not found, skip substitution (or set to 0)
+          if (value === null) value = 0;
+
+          // Use word boundaries in replacement to avoid partial matches
+          const variablePattern = new RegExp(`\\b${variable}\\b`, "g");
+          substitutedEquation = substitutedEquation.replace(
+            variablePattern,
+            value
+          );
         }
       }
 
