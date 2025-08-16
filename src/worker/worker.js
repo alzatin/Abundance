@@ -713,7 +713,6 @@ function visualizeGcode(targetID, gcode) {
   let edges = [];
   // Split the gcode into lines
   const lines = gcode.split("\n");
-  console.log("G-code lines:", lines);
   lines.forEach((line) => {
     // Normalize line: trim whitespace and uppercase for robust matching
     const cmd = line.trim().toUpperCase();
@@ -738,24 +737,34 @@ function visualizeGcode(targetID, gcode) {
       ) {
         return; // Skip truly negligible movements
       }
-      console.log(`G-code movement: X=${x}, Y=${y}, Z=${z}`);
 
       // Create a line from the current position to the new position
       edges.push(util.replicad.makeLine(currentPosition, [x, y, z]));
-      console.log(edges);
+
       currentPosition = [x, y, z];
     }
   });
-  console.log("Edges created from G-code:", edges);
   // Create a wire from the edges
-  const wire = util.replicad.assembleWire(edges);
-  library[targetID] = {
-    geometry: [wire],
-    tags: [],
-    plane: new Plane().pivot(0, "Y"),
-    color: util.defaultColor,
-    bom: [],
-  };
+  if (edges.length === 0) {
+    // Nothing to visualize; avoid assembling an empty wire
+    library[targetID] = {
+      geometry: [],
+      tags: [],
+      plane: new Plane().pivot(0, "Y"),
+      color: util.defaultColor,
+      bom: [],
+    };
+    return;
+  } else {
+    const wire = util.replicad.assembleWire(edges);
+    library[targetID] = {
+      geometry: [wire],
+      tags: [],
+      plane: new Plane().pivot(0, "Y"),
+      color: util.defaultColor,
+      bom: [],
+    };
+  }
 }
 
 /**
