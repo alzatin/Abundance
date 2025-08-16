@@ -181,7 +181,7 @@ const generateGcode = (
               down: currentDepth,           // Depth for this pass
               rate: speed,
               plunge: 250,
-              dogbones: true,
+              dogbones: false,
               omitvoid: false,
               omitthru: false,
               outside: false,               // Do NOT cut outside edges
@@ -203,9 +203,9 @@ const generateGcode = (
               down: currentDepth,           // Depth for this pass
               rate: speed,
               plunge: 250,
-              dogbones: true,
+              dogbones: false,
               omitvoid: false,
-              omitthru: false,
+              omitthru: true,
               outside: true,                // Cut outside edges after interior
               inside: false,                // Do NOT cut inside shapes in this operation
               wide: false,
