@@ -161,16 +161,17 @@ const generateGcode = (
         camOriginOffZ: 0,
         camToolInit: true,
         
-        // Operation definitions - Create one operation per pass for explicit control
+        // Operation definitions - Create two operations per pass: interior first, then exterior
         ops: (() => {
           const operations = [];
           const totalDepth = z + extra;
           const depthPerPass = totalDepth / passes;
           
-          // Create one operation for each pass
+          // Create two operations for each pass: interior cuts first, then exterior cuts
           for (let i = 1; i <= passes; i++) {
             const currentDepth = depthPerPass * i;
             
+            // First operation: Cut interior shapes (inside cuts)
             operations.push({
               type: "outline",
               tool: 1000,
@@ -183,8 +184,30 @@ const generateGcode = (
               dogbones: true,
               omitvoid: false,
               omitthru: false,
-              outside: true,
-              inside: false,
+              outside: false,               // Do NOT cut outside edges
+              inside: true,                 // Cut inside/interior shapes first
+              wide: false,
+              top: true,
+              ov_topz: 0,
+              ov_botz: 0,
+              ov_conv: false,
+            });
+            
+            // Second operation: Cut exterior shapes (outside cuts)
+            operations.push({
+              type: "outline",
+              tool: 1000,
+              spindle: 1000,
+              step: depthPerPass,           // Depth for this specific pass
+              steps: 1,                     // Single step per operation
+              down: currentDepth,           // Depth for this pass
+              rate: speed,
+              plunge: 250,
+              dogbones: true,
+              omitvoid: false,
+              omitthru: false,
+              outside: true,                // Cut outside edges after interior
+              inside: false,                // Do NOT cut inside shapes in this operation
               wide: false,
               top: true,
               ov_topz: 0,
