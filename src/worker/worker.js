@@ -78,10 +78,10 @@ async function layout(
     .then((resultArray) => {
       const [layedOutAssembly, positions, rotatedAssembly] = resultArray;
       library[targetID] = layedOutAssembly;
-      
+
       // Store the rotated assembly for reuse in displayLayout to avoid calling rotateForLayout again
       library[rotatedAssemblyKey] = rotatedAssembly;
-      
+
       return positions;
     });
 }
@@ -109,7 +109,7 @@ async function displayLayout(
   // Check if we have a pre-rotated assembly from a previous layout call
   const rotatedAssemblyKey = inputID + "_rotated";
   const rotatedAssembly = library[rotatedAssemblyKey];
-  
+
   if (rotatedAssembly) {
     // Use the pre-rotated assembly to avoid calling rotateForLayout again
     library[targetID] = await cutlayout.displayLayoutWithRotatedAssembly(
@@ -126,10 +126,10 @@ async function displayLayout(
       warningCallback,
       layoutConfig
     );
-    
+
     // Cache the rotated assembly for future displayLayout calls
     library[rotatedAssemblyKey] = newRotatedAssembly;
-    
+
     // Store the final result
     library[targetID] = result;
   }
@@ -714,41 +714,57 @@ function visualizeGcode(targetID, gcode) {
   // Split the gcode into lines
   const lines = gcode.split("\n");
   lines.forEach((line) => {
+    // Normalize line: trim whitespace and uppercase for robust matching
+    const cmd = line.trim().toUpperCase();
     // Only process lines that start with G0 or G1
-    if (line.startsWith("G0") || line.startsWith("G1")) {
+    if (cmd.startsWith("G0") || cmd.startsWith("G1")) {
       // Parse the line for X, Y, Z values
-      const xMatch = line.match(/X([\d.-]+)/);
-      const yMatch = line.match(/Y([\d.-]+)/);
-      const zMatch = line.match(/Z([\d.-]+)/);
+      const xMatch = cmd.match(/X([\d.-]+)/);
+      const yMatch = cmd.match(/Y([\d.-]+)/);
+      const zMatch = cmd.match(/Z([\d.-]+)/);
 
       // Update coordinates if found, otherwise keep the previous value
       let x = xMatch ? Number(xMatch[1]) : currentPosition[0];
       let y = yMatch ? Number(yMatch[1]) : currentPosition[1];
       let z = zMatch ? Number(zMatch[1]) : currentPosition[2];
 
-      //Reduce the number of edges by combining small movements
-      const threshold = 5; // Threshold for small movements
+      // Lower threshold to capture all movements
+      const threshold = 0.001; // Accept nearly all movements
       if (
         Math.abs(x - currentPosition[0]) < threshold &&
         Math.abs(y - currentPosition[1]) < threshold &&
         Math.abs(z - currentPosition[2]) < threshold
       ) {
-        return; // Skip small movements
+        return; // Skip truly negligible movements
       }
+
+      // Create a line from the current position to the new position
       edges.push(util.replicad.makeLine(currentPosition, [x, y, z]));
+
       currentPosition = [x, y, z];
     }
   });
-
   // Create a wire from the edges
-  const wire = util.replicad.assembleWire(edges);
-  library[targetID] = {
-    geometry: [wire],
-    tags: [],
-    plane: new Plane().pivot(0, "Y"),
-    color: util.defaultColor,
-    bom: [],
-  };
+  if (edges.length === 0) {
+    // Nothing to visualize; avoid assembling an empty wire
+    library[targetID] = {
+      geometry: [],
+      tags: [],
+      plane: new Plane().pivot(0, "Y"),
+      color: util.defaultColor,
+      bom: [],
+    };
+    return;
+  } else {
+    const wire = util.replicad.assembleWire(edges);
+    library[targetID] = {
+      geometry: [wire],
+      tags: [],
+      plane: new Plane().pivot(0, "Y"),
+      color: util.defaultColor,
+      bom: [],
+    };
+  }
 }
 
 /**
@@ -854,15 +870,15 @@ async function isAssembly(inputID) {
 async function extractParts(assemblyID) {
   await started;
   const assembly = getOrThrow(assemblyID);
-  
+
   if (!util.isAssembly(assembly)) {
     // If it's not an assembly, return the original ID
     return [assemblyID];
   }
-  
+
   const parts = [];
   let partIndex = 0;
-  
+
   // Extract each part from the assembly and store it in the library
   util.actOnLeafs(assembly, (leaf) => {
     if (leaf.geometry && leaf.geometry.length > 0) {
@@ -872,7 +888,7 @@ async function extractParts(assemblyID) {
     }
     return leaf;
   });
-  
+
   return parts;
 }
 
