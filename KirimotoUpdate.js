@@ -56,6 +56,8 @@ const generateGcode = (
     }
   };
 
+  console.log(kiriEngine);
+
   kiriEngine
     .setListener((message) => {
       // Check if message contains slicing progress information
@@ -72,6 +74,7 @@ const generateGcode = (
     .load(stlUrl)
     // should to call widget.setTopZ here ideally
     .then((eng) => {
+      eng.widget.boundingBoxNeedsUpdate = true; // Ensure bounding box is updated
       if (progressCallback) progressCallback(0.1); // 10% - STL loaded
       return eng.setMode("CAM");
     })
@@ -84,17 +87,18 @@ const generateGcode = (
       return eng.setStock({
         x: x + 10,
         y: y + 10,
-        z: 100,
+        z: z + 10 + 1.524, // stock thickness = part thickness + margin + cut-through
         center: {
           x: x / 2,
           y: y / 2,
-          z: 12.5,
+          z: (z + 5 + 1.524) / 2, // correct center for full stock thickness
         },
       });
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.2); // 20% - Stock set
-      return eng.moveTo(centerPos[0], centerPos[1], 0); //Move the model to line up with where the parts were before
+      eng.moveTo(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
+      return eng;
     })
     .then((eng) =>
       eng.setTools([
@@ -119,13 +123,15 @@ const generateGcode = (
       const x = bounds.max.x - bounds.min.x;
       const y = bounds.max.y - bounds.min.y;
       const z = bounds.max.z - bounds.min.z;
+      const zBottom = -z - 1.524; // cut through part thickness plus cut-through
+      const down = Math.abs(zBottom) / passes; // positive value per pass
       return eng.setProcess({
         camEaseAngle: 10,
         camEaseDown: true,
         camZAnchor: "bottom",
         camDepthFirst: false,
         camZThru: 1.524,
-        camZBottom: -25, // temp hack to get around setTopZ bug
+        camZBottom: zBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
         ops: [
           {
@@ -134,7 +140,7 @@ const generateGcode = (
             spindle: 13000,
             step: 0.4,
             steps: 1,
-            down: z / passes,
+            down: down, // correct depth per pass
             rate: 635,
             plunge: 51,
             dogbones: false,
