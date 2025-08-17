@@ -233,7 +233,6 @@ const generateGcode = (
     })
     .then((gcode) => {
       console.log("G-code generated successfully.");
-      console.log(gcode);
       gcodeCallback(gcode); // Only call the callback, don't download
       if (progressCallback) progressCallback(1.0); // 100% - Export complete
     })
