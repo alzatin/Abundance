@@ -6,7 +6,6 @@ const display_message = (message) => {
 };
 
 const kiriEngine = new Engine({ workURL: "./worker.js" });
-console.log(kiriEngine);
 
 const generateGcode = (
   stlUrl,
@@ -18,6 +17,9 @@ const generateGcode = (
   gcodeCallback,
   progressCallback
 ) => {
+  const STOCK_MARGIN = 10;
+  const CUT_THROUGH = 1.524;
+
   if (!stlUrl) {
     console.error("STL URL is not available.");
     return;
@@ -56,6 +58,8 @@ const generateGcode = (
     }
   };
 
+  console.log(kiriEngine);
+
   kiriEngine
     .setListener((message) => {
       // Check if message contains slicing progress information
@@ -72,6 +76,7 @@ const generateGcode = (
     .load(stlUrl)
     // should to call widget.setTopZ here ideally
     .then((eng) => {
+      eng.widget.boundingBoxNeedsUpdate = true; // Ensure bounding box is updated
       if (progressCallback) progressCallback(0.1); // 10% - STL loaded
       return eng.setMode("CAM");
     })
@@ -82,19 +87,20 @@ const generateGcode = (
       const y = bounds.max.y - bounds.min.y;
       const z = bounds.max.z - bounds.min.z;
       return eng.setStock({
-        x: x + 10,
-        y: y + 10,
-        z: 100,
+        x: x + STOCK_MARGIN,
+        y: y + STOCK_MARGIN,
+        z: z + STOCK_MARGIN + CUT_THROUGH, // stock thickness = part thickness + margin + cut-through
         center: {
           x: x / 2,
           y: y / 2,
-          z: 12.5,
+          z: z + STOCK_MARGIN / 2 + CUT_THROUGH / 2, // correct center for full stock thickness
         },
       });
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.2); // 20% - Stock set
-      return eng.moveTo(centerPos[0], centerPos[1], 0); //Move the model to line up with where the parts were before
+      eng.moveTo(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
+      return eng;
     })
     .then((eng) =>
       eng.setTools([
@@ -116,16 +122,22 @@ const generateGcode = (
     .then((eng) => {
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
       const bounds = eng.widget.getBoundingBox();
-      const x = bounds.max.x - bounds.min.x;
-      const y = bounds.max.y - bounds.min.y;
       const z = bounds.max.z - bounds.min.z;
+      const zBottom = -z - CUT_THROUGH; // cut through part thickness plus cut-through
+      // Add small epsilon to avoid floating point errors causing extra pass
+      const epsilon = 0.0001;
+      const validPasses = Math.max(1, Math.floor(Number(passes) || 1));
+      const down = Math.abs(zBottom) / validPasses + epsilon; // positive value per pass
+
+      // Debug logging for pass calculation
+      console.log("CAM pass debug:", { passes, z, zBottom, down });
       return eng.setProcess({
         camEaseAngle: 10,
         camEaseDown: true,
         camZAnchor: "bottom",
         camDepthFirst: false,
-        camZThru: 1.524,
-        camZBottom: -25, // temp hack to get around setTopZ bug
+        camZThru: CUT_THROUGH,
+        camZBottom: zBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
         ops: [
           {
@@ -134,7 +146,7 @@ const generateGcode = (
             spindle: 13000,
             step: 0.4,
             steps: 1,
-            down: z / passes,
+            down: down, // correct depth per pass
             rate: 635,
             plunge: 51,
             dogbones: false,
