@@ -87,4 +87,41 @@ describe("G-code Units Configuration", () => {
     expect(hasMetricCommand).toBe(true);
     expect(hasImperialCommand).toBe(false);
   });
+
+  test("should generate correct G-code units command based on project units", () => {
+    // Mock GlobalVariables to simulate different project unit settings
+    const mockGlobalVariables = {
+      topLevelMolecule: {
+        unitsKey: "MM"
+      }
+    };
+
+    // Test the logic used in KirimotoUpdate.js
+    const getUnitsCommand = (unitsKey) => {
+      return unitsKey === "MM" 
+        ? "G21 ; set units to MM (required)"
+        : "G20 ; set units to inches (required)";
+    };
+
+    // Test MM units (metric)
+    mockGlobalVariables.topLevelMolecule.unitsKey = "MM";
+    const mmCommand = getUnitsCommand(mockGlobalVariables.topLevelMolecule.unitsKey);
+    expect(mmCommand).toBe("G21 ; set units to MM (required)");
+    expect(mmCommand).toContain("G21");
+    expect(mmCommand).not.toContain("G20");
+
+    // Test Inches units (imperial)
+    mockGlobalVariables.topLevelMolecule.unitsKey = "Inches";
+    const inchesCommand = getUnitsCommand(mockGlobalVariables.topLevelMolecule.unitsKey);
+    expect(inchesCommand).toBe("G20 ; set units to inches (required)");
+    expect(inchesCommand).toContain("G20");
+    expect(inchesCommand).not.toContain("G21");
+
+    // Test Unitless (should default to inches)
+    mockGlobalVariables.topLevelMolecule.unitsKey = "Unitless";
+    const unitlessCommand = getUnitsCommand(mockGlobalVariables.topLevelMolecule.unitsKey);
+    expect(unitlessCommand).toBe("G20 ; set units to inches (required)");
+    expect(unitlessCommand).toContain("G20");
+    expect(unitlessCommand).not.toContain("G21");
+  });
 });

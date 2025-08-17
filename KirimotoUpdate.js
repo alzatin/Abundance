@@ -163,8 +163,13 @@ const generateGcode = (
         ],
       });
     })
-    .then((eng) =>
-      eng.setDevice({
+    .then((eng) => {
+      // Set G-code units based on project units
+      const unitsCommand = GlobalVariables.topLevelMolecule.unitsKey === "MM" 
+        ? "G21 ; set units to MM (required)"
+        : "G20 ; set units to inches (required)";
+
+      return eng.setDevice({
         mode: "CAM",
         internal: 0,
         bedHeight: 2.5,
@@ -174,7 +179,7 @@ const generateGcode = (
         originCenter: false,
         spindleMax: 24000,
         gcodePre: [
-          "G20 ; set units to inches (required)",
+          unitsCommand,
           "G90 ; absolute position mode (required)",
         ],
         gcodePost: ["M05 ; spindle off", "M30 ; program end"],
@@ -190,8 +195,8 @@ const generateGcode = (
         gcodeStrip: false,
         deviceName: "Tormach.24R",
         useLaser: false,
-      })
-    )
+      });
+    })
     .then((eng) => {
       if (progressCallback) progressCallback(0.5); // 50% - Process set
       startSlicingProgress();
