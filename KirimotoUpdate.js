@@ -17,6 +17,9 @@ const generateGcode = (
   gcodeCallback,
   progressCallback
 ) => {
+  const STOCK_MARGIN = 10;
+  const CUT_THROUGH = 1.524;
+
   if (!stlUrl) {
     console.error("STL URL is not available.");
     return;
@@ -84,13 +87,13 @@ const generateGcode = (
       const y = bounds.max.y - bounds.min.y;
       const z = bounds.max.z - bounds.min.z;
       return eng.setStock({
-        x: x + 10,
-        y: y + 10,
-        z: z + 10 + 1.524, // stock thickness = part thickness + margin + cut-through
+        x: x + STOCK_MARGIN,
+        y: y + STOCK_MARGIN,
+        z: z + STOCK_MARGIN + CUT_THROUGH, // stock thickness = part thickness + margin + cut-through
         center: {
           x: x / 2,
           y: y / 2,
-          z: (z + 5 + 1.524) / 2, // correct center for full stock thickness
+          z: z + STOCK_MARGIN / 2 + CUT_THROUGH / 2, // correct center for full stock thickness
         },
       });
     })
@@ -120,7 +123,7 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
-      const zBottom = -z - 1.524; // cut through part thickness plus cut-through
+      const zBottom = -z - CUT_THROUGH; // cut through part thickness plus cut-through
       // Add small epsilon to avoid floating point errors causing extra pass
       const epsilon = 0.0001;
       const validPasses = Math.max(1, Math.floor(Number(passes) || 1));
@@ -133,7 +136,7 @@ const generateGcode = (
         camEaseDown: true,
         camZAnchor: "bottom",
         camDepthFirst: false,
-        camZThru: 1.524,
+        camZThru: CUT_THROUGH,
         camZBottom: zBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
         ops: [
