@@ -6,7 +6,6 @@ const display_message = (message) => {
 };
 
 const kiriEngine = new Engine({ workURL: "./worker.js" });
-console.log(kiriEngine);
 
 const generateGcode = (
   stlUrl,
@@ -120,8 +119,6 @@ const generateGcode = (
     .then((eng) => {
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
       const bounds = eng.widget.getBoundingBox();
-      const x = bounds.max.x - bounds.min.x;
-      const y = bounds.max.y - bounds.min.y;
       const z = bounds.max.z - bounds.min.z;
       const zBottom = -z - 1.524; // cut through part thickness plus cut-through
       const down = Math.abs(zBottom) / passes; // positive value per pass
