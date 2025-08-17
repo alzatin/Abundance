@@ -121,7 +121,13 @@ const generateGcode = (
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
       const zBottom = -z - 1.524; // cut through part thickness plus cut-through
-      const down = Math.abs(zBottom) / passes; // positive value per pass
+      // Add small epsilon to avoid floating point errors causing extra pass
+      const epsilon = 0.0001;
+      const validPasses = Math.max(1, Math.floor(Number(passes) || 1));
+      const down = Math.abs(zBottom) / validPasses + epsilon; // positive value per pass
+
+      // Debug logging for pass calculation
+      console.log("CAM pass debug:", { passes, z, zBottom, down });
       return eng.setProcess({
         camEaseAngle: 10,
         camEaseDown: true,
