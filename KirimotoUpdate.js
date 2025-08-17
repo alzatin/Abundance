@@ -160,14 +160,35 @@ const generateGcode = (
             ov_botz: 0,
             ov_conv: true,
           },
+          /*{
+            type: "outline",
+            tool: 1000,
+            spindle: 13000,
+            step: 0.4,
+            steps: 1,
+            down: down, // correct depth per pass
+            rate: 635,
+            plunge: 51,
+            dogbones: false,
+            omitvoid: false,
+            omitthru: false,
+            outside: false,
+            inside: false,
+            wide: false,
+            top: false,
+            ov_topz: 0,
+            ov_botz: 0,
+            ov_conv: true,
+          },*/
         ],
       });
     })
     .then((eng) => {
       // Set G-code units based on project units
-      const unitsCommand = GlobalVariables.topLevelMolecule.unitsKey === "MM" 
-        ? "G21 ; set units to MM (required)"
-        : "G20 ; set units to inches (required)";
+      const unitsCommand =
+        GlobalVariables.topLevelMolecule.unitsKey === "MM"
+          ? "G21 ; set units to MM (required)"
+          : "G20 ; set units to Inches (required)";
 
       return eng.setDevice({
         mode: "CAM",
@@ -179,7 +200,7 @@ const generateGcode = (
         originCenter: false,
         spindleMax: 24000,
         gcodePre: [
-          unitsCommand,
+          "G21 ; set units to MM (required)",
           "G90 ; absolute position mode (required)",
         ],
         gcodePost: ["M05 ; spindle off", "M30 ; program end"],
