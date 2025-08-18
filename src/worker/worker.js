@@ -615,7 +615,7 @@ function downExport(ID, fileType, svgResolution, units) {
 
       return blob;
     } else if (fileType == "STL") {
-      return library[ID].geometry[0].clone().blobSTL();
+      return library[ID].geometry[0].clone().blobSTL({tolerance: 0.1});
     } else {
       return library[ID].geometry[0].clone().blobSTEP();
     }
