@@ -13939,9 +13939,8 @@ var require_pngjs = __commonJS({
                 }
                 node = elems;
                 do {
-                  n =
-                    s.heap[1];
-                    /*SMALLEST*/
+                  n = s.heap[1];
+                  /*SMALLEST*/
                   s.heap[1] = s.heap[s.heap_len--];
                   /*SMALLEST*/
                   pqdownheap(
@@ -13950,9 +13949,8 @@ var require_pngjs = __commonJS({
                     1
                     /*SMALLEST*/
                   );
-                  m =
-                    s.heap[1];
-                    /*SMALLEST*/
+                  m = s.heap[1];
+                  /*SMALLEST*/
                   s.heap[--s.heap_max] = n;
                   s.heap[--s.heap_max] = m;
                   tree[node * 2] = tree[n * 2] + tree[m * 2];
@@ -13960,7 +13958,7 @@ var require_pngjs = __commonJS({
                     (s.depth[n] >= s.depth[m] ? s.depth[n] : s.depth[m]) + 1;
                   tree[n * 2 + 1] = tree[m * 2 + 1] = node;
                   s.heap[1] =
-                  /*SMALLEST*/
+                    /*SMALLEST*/
                     node++;
                   pqdownheap(
                     s,
@@ -13969,9 +13967,8 @@ var require_pngjs = __commonJS({
                     /*SMALLEST*/
                   );
                 } while (s.heap_len >= 2);
-                s.heap[--s.heap_max] =
-                  s.heap[1];
-                  /*SMALLEST*/
+                s.heap[--s.heap_max] = s.heap[1];
+                /*SMALLEST*/
                 gen_bitlen(s, desc);
                 gen_codes(tree, max_code, s.bl_count);
               }
@@ -105541,9 +105538,8 @@ var __webpack_modules__ = {
                   }
                   node = elems;
                   do {
-                    n =
-                      s.heap[1];
-                      /*SMALLEST*/
+                    n = s.heap[1];
+                    /*SMALLEST*/
                     s.heap[1] = s.heap[s.heap_len--];
                     /*SMALLEST*/
                     pqdownheap(
@@ -105552,9 +105548,8 @@ var __webpack_modules__ = {
                       1
                       /*SMALLEST*/
                     );
-                    m =
-                      s.heap[1];
-                      /*SMALLEST*/
+                    m = s.heap[1];
+                    /*SMALLEST*/
                     s.heap[--s.heap_max] = n;
                     s.heap[--s.heap_max] = m;
                     tree[node * 2] = tree[n * 2] + tree[m * 2];
@@ -105562,7 +105557,7 @@ var __webpack_modules__ = {
                       (s.depth[n] >= s.depth[m] ? s.depth[n] : s.depth[m]) + 1;
                     tree[n * 2 + 1] = tree[m * 2 + 1] = node;
                     s.heap[1] =
-                    /*SMALLEST*/
+                      /*SMALLEST*/
                       node++;
                     pqdownheap(
                       s,
@@ -105571,9 +105566,8 @@ var __webpack_modules__ = {
                       /*SMALLEST*/
                     );
                   } while (s.heap_len >= 2);
-                  s.heap[--s.heap_max] =
-                    s.heap[1];
-                    /*SMALLEST*/
+                  s.heap[--s.heap_max] = s.heap[1];
+                  /*SMALLEST*/
                   gen_bitlen(s, desc);
                   gen_codes(tree, max_code, s.bl_count);
                 }
@@ -120958,7 +120952,7 @@ function indexVertices(pos) {
 var Instance;
 manifold_default({
   locateFile() {
-    return "../wasm/manifold.wasm";
+    return "/wasm/manifold.wasm";
   },
 }).then((inst) => {
   inst.setup();
@@ -127894,9 +127888,9 @@ function printDownload(output, api4, names) {
     volume: volume2,
   } = output;
   const fileroot = names[0] || "print";
-  const filename = `${fileroot}-${/* @__PURE__ */ new Date()
-    .getTime()
-    .toString(36)}`;
+  const filename = `${fileroot}-${
+    /* @__PURE__ */ new Date().getTime().toString(36)
+  }`;
   api4.modal.show("xsla");
   let settings4 = api4.conf.get(),
     process3 = settings4.process,
