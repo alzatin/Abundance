@@ -143,7 +143,7 @@ const generateGcode = (
           {
             type: "outline",
             tool: 1000,
-            spindle: 13000,
+            spindle: speed,
             step: 0.4,
             steps: 1,
             down: down, // correct depth per pass
