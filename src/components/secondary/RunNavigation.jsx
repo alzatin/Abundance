@@ -157,13 +157,10 @@ function RunNavigation({
         let awsUser = await fetch(queryUserApiUrl);
         let awsUserJson = await awsUser.json();
 
-        console.log(awsUserJson);
-
         return awsUserJson;
       };
 
       fetchUserData().then((awsUserJson) => {
-        console.log(awsUserJson);
         const isLiked = awsUserJson.repos.some(
           (project) => project.owner === owner && project.repoName === repoName
         );
@@ -173,7 +170,6 @@ function RunNavigation({
 
           //should disable instead of just graying out
         } else {
-          console.log("not starred");
           document.getElementById("Star-button").style.backgroundColor =
             "var(--abundance-color-hightlightOffWhite)";
           starred = false;
@@ -270,7 +266,6 @@ function RunNavigation({
           "Content-type": "application/json; charset=UTF-8",
         },
       }).then((response) => {
-        console.log(response);
         //reenable button after api call so user can unlike
         console.log("added to liked projects");
         document.getElementById("Star-button").disabled = false;
@@ -326,7 +321,6 @@ function RunNavigation({
         "Content-type": "application/json; charset=UTF-8",
       },
     }).then((response) => {
-      console.log(response.json());
       console.log("unliked");
       //reenable button after api call so user can unlike
       document.getElementById("Star-button").disabled = false;
@@ -429,7 +423,6 @@ function RunNavigation({
                 "Content-type": "application/json; charset=UTF-8",
               },
             }).then((response) => {
-              console.log(response.json());
               GlobalVariables.currentRepo = forkedNodeBody;
               setRedirectType(null);
               navigate(

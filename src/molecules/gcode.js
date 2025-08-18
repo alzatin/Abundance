@@ -287,7 +287,11 @@ export default class Gcode extends Atom {
                   (bounds.max[1] + bounds.min[1]) / 2,
                   (bounds.max[2] + bounds.min[2]) / 2,
                 ];
-                if (window.location.pathname.includes("/run/")) {
+                // Generate gcode automatically if in run mode OR if output is connected
+                if (
+                  window.location.pathname.includes("/run/") ||
+                  (this.output && this.output.connectors.length > 0)
+                ) {
                   this._generateGcode();
                 }
               });
@@ -312,7 +316,11 @@ export default class Gcode extends Atom {
       // Sort parts based on selected direction
       const sortedParts = await this._sortParts(parts);
 
-      if (window.location.pathname.includes("/run/")) {
+      // Generate G-code automatically if in run mode OR if output is connected
+      if (
+        window.location.pathname.includes("/run/") ||
+        (this.output && this.output.connectors.length > 0)
+      ) {
         // Generate G-code for each part sequentially
         await this._generateSequentialGcode(sortedParts);
       }
@@ -619,6 +627,9 @@ export default class Gcode extends Atom {
 
   //Function to download G-code from a G-code string
   downloadGcode(gcode, filename = "output.gcode") {
+    if (this.gcodeGenerated && !gcode) {
+      gcode = this.gcodeString; // Use the stored G-code string if not provided
+    }
     if (!gcode) {
       console.error("No G-code available to download.");
       return;
@@ -626,6 +637,20 @@ export default class Gcode extends Atom {
 
     const blob = new Blob([gcode], { type: "text/plain" });
     saveAs(blob, filename);
+  }
+
+  /**
+   * Begin propagation from this gcode atom if its output is connected to something.
+   * This ensures gcode is automatically generated when needed for proper propagation.
+   */
+  beginPropagation() {
+    // Check if the output is connected to something
+    if (this.output && this.output.connectors.length > 0) {
+      // Only trigger if gcode hasn't been generated yet
+      if (!this.gcodeGenerated) {
+        this.updateValue();
+      }
+    }
   }
 
   /**

@@ -225,8 +225,8 @@ export default class Molecule extends Atom {
     );
     // this is wrong and only a placeholder for kiri forum questions
     gcodeAtoms.forEach((atom) => {
-      exportParams[`Download Gcode – ${this.uniqueID}`] = button(() =>
-        atom.clickKiriButton()
+      exportParams[`Download Gcode – ${atom.partName}`] = button(() =>
+        atom.downloadGcode()
       );
     });
 
