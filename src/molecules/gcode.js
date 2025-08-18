@@ -256,7 +256,7 @@ export default class Gcode extends Atom {
     this._isProcessingAssembly = false;
     const idForVisExport = GlobalVariables.generateUniqueID();
     GlobalVariables.cad
-      .visExport(idForVisExport, inputID, "STL") //What a hack, we shouldn't be using uniqueID+1 here
+      .visExport(idForVisExport, inputID, "STL")
       .then((result) => {
         const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         GlobalVariables.cad
