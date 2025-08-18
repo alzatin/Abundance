@@ -606,7 +606,7 @@ export default class Gcode extends Atom {
   }
 
   //Function to download G-code from a G-code string
-  downloadGcode = (gcode, filename = "output.gcode") => {
+  downloadGcode(gcode, filename = "output.gcode") {
     if (!gcode) {
       console.error("No G-code available to download.");
       return;
@@ -614,7 +614,7 @@ export default class Gcode extends Atom {
 
     const blob = new Blob([gcode], { type: "text/plain" });
     saveAs(blob, filename);
-  };
+  }
 
   /**
    * Add the part name and sort direction to the object which is saved for this molecule
