@@ -5,7 +5,7 @@ const display_message = (message) => {
   console.log(message);
 };
 
-const kiriEngine = new Engine({ workURL: "./worker.js" });
+const kiriEngine = new Engine({ workURL: "/worker.js" });
 
 const generateGcode = (
   stlUrl,
