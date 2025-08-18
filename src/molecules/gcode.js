@@ -254,7 +254,12 @@ export default class Gcode extends Atom {
    */
   async _processSinglePart(inputID) {
     this._isProcessingAssembly = false;
-    const units = GlobalVariables?.topLevelMolecule?.unitsKey || "MM";
+    const units =
+      GlobalVariables &&
+      GlobalVariables.topLevelMolecule &&
+      GlobalVariables.topLevelMolecule.unitsKey
+        ? GlobalVariables.topLevelMolecule.unitsKey
+        : "MM";
     GlobalVariables.cad
       .visExport(this.uniqueID + 1, inputID, "STL", null, units) //What a hack, we shouldn't be using uniqueID+1 here
       .then((result) => {
@@ -394,7 +399,12 @@ export default class Gcode extends Atom {
           partID,
           "STL"
         );
-        const units = GlobalVariables.topLevelMolecule.unitsKey || "MM";
+        const units =
+          GlobalVariables &&
+          GlobalVariables.topLevelMolecule &&
+          GlobalVariables.topLevelMolecule.unitsKey
+            ? GlobalVariables.topLevelMolecule.unitsKey
+            : "MM";
         const stlBlob = await GlobalVariables.cad.downExport(
           this.uniqueID + 100 + i,
           "STL",
