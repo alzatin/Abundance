@@ -394,13 +394,12 @@ export default class Gcode extends Atom {
           partID,
           "STL"
         );
+        const units = GlobalVariables?.topLevelMolecule?.unitsKey || "MM";
         const stlBlob = await GlobalVariables.cad.downExport(
           this.uniqueID + 100 + i,
-    // … existing code above …
-    const units = GlobalVariables?.topLevelMolecule?.unitsKey || "MM";
-    GlobalVariables.cad
-      .downExport(this.uniqueID + 1, "STL", units);
-    // … existing code below …
+          "STL",
+          units
+        );
         const stlURL = URL.createObjectURL(stlBlob);
 
         // Get part bounds for centering
