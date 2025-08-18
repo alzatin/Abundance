@@ -225,8 +225,8 @@ export default class Molecule extends Atom {
     );
     // this is wrong and only a placeholder for kiri forum questions
     gcodeAtoms.forEach((atom) => {
-      exportParams[`Download Gcode – ${this.uniqueID}`] = button(() =>
-        atom.clickKiriButton()
+      exportParams[`Gcode – ${atom.partName}`] = button(() =>
+        atom.downloadGcode()
       );
     });
 
@@ -251,17 +251,14 @@ export default class Molecule extends Atom {
             path: "project.abundance",
           })
           .then((response) => {
-            // Clear the nodesOnTheScreen array before deserialization to avoid doubling
+            // Delete nodes so deserialize doesn't repeat, could be useful to not delete for a diff in the future
+
             GlobalVariables.topLevelMolecule.nodesOnTheScreen.forEach(
               (atom) => {
                 atom.deleteNode();
               }
             );
-            GlobalVariables.topLevelMolecule.nodesOnTheScreen = []; // <-- clear the array
-
-            let rawFile = JSON.parse(
-              GlobalVariables.fromBinaryStr(atob(response.data.content))
-            );
+            let rawFile = JSON.parse(atob(response.data.content));
 
             if (rawFile.filetypeVersion == 1) {
               GlobalVariables.topLevelMolecule.deserialize(rawFile);
@@ -724,46 +721,33 @@ export default class Molecule extends Atom {
   recomputeMolecule(outputID) {
     try {
       this.processing = true;
-      const loadingDiv = document.querySelector(".loading");
-      loadingDiv.style.display = "flex";
+      const centeredText = document.querySelector(".loading");
+      centeredText.style.display = "flex";
 
-      GlobalVariables.cad
-        .molecule(this.uniqueID, outputID)
-        .then(() => {
-          //If we're currently inside this molecule, we don't want to pass the update to the next level until we leave
-          if (GlobalVariables.currentMolecule !== this) {
-            this.basicThreadValueProcessing();
-          } else {
-            this.awaitingPropagationFlag = true;
-          }
+      GlobalVariables.cad.molecule(this.uniqueID, outputID).then(() => {
+        //If we're currently inside this molecule, we don't want to pass the update to the next level until we leave
+        if (GlobalVariables.currentMolecule !== this) {
+          this.basicThreadValueProcessing();
+        } else {
+          this.awaitingPropagationFlag = true;
+        }
 
-          // Compile BOM at the top level to capture the entire project
-          if (GlobalVariables.topLevelMolecule === this) {
-            GlobalVariables.topLevelMolecule
-              .compileBom()
-              .then((result) => {
-                GlobalVariables.topLevelMolecule.compiledBom = result;
-              })
-              .catch((err) => {
-                console.warn("Failed to compile BOM at top level:", err);
-              });
-          }
-
-          if (this.selected) {
-            this.sendToRender();
-          } else {
-            loadingDiv.style.display = "none"; // Hide loading if not selected
-          }
-        })
-        .catch((err) => {
-          this.setError(err);
-        });
+        // Compile BOM at the top level to capture the entire project
+        if (GlobalVariables.topLevelMolecule === this) {
+          GlobalVariables.topLevelMolecule
+            .compileBom()
+            .then((result) => {
+              GlobalVariables.topLevelMolecule.compiledBom = result;
+            })
+            .catch((err) => {
+              console.warn("Failed to compile BOM at top level:", err);
+            });
+        }
+        if (this.selected) {
+          this.sendToRender();
+        }
+      });
     } catch (err) {
-      // Hide loading dots if there's an error in the try block
-      const loadingDots = document.querySelector(".loading");
-      if (loadingDots) {
-        loadingDots.style.display = "none";
-      }
       this.setError(err);
     }
   }
@@ -985,14 +969,11 @@ export default class Molecule extends Atom {
     });
   }
   /**
-   * Loads a project into this GitHub molecule from GitHub based on the passed GitHub object.
-   * This function is async and execution time depends on project complexity and network speed.
-   * @param {object} gitObj - An object containing the GitHub repository information (owner, repoName, etc).
-   * @param {object} oldObject - (Optional) The previous atom object to recover IO values from.
-   * @param {object} oldParentObjectConnectors - (Optional) Connectors from the parent object to remap.
+   * Loads a project into this GitHub molecule from github based on the passed github ID. This function is async and execution time depends on project complexity, and network speed.
+   * @param {number} id - The GitHub project ID for the project to be loaded.
    */
   async loadGithubMoleculeByName(
-    gitObj,
+    item,
     oldObject = {},
     oldParentObjectConnectors = {}
   ) {
@@ -1000,13 +981,11 @@ export default class Molecule extends Atom {
     try {
       await octokit
         .request("GET /repos/{owner}/{repo}/contents/project.abundance", {
-          owner: gitObj.owner,
-          repo: gitObj.repoName,
+          owner: item.owner,
+          repo: item.repoName,
         })
         .then((response) => {
-          let rawFile = JSON.parse(
-            GlobalVariables.fromBinaryStr(atob(response.data.content))
-          );
+          let rawFile = JSON.parse(atob(response.data.content));
           let rawFileWithNewIds = this.remapIDs(rawFile);
           rawFileWithNewIds.atomType = "GitHubMolecule";
 
@@ -1020,7 +999,7 @@ export default class Molecule extends Atom {
               uniqueID: newMoleculeUniqueID,
               x: this.x,
               y: this.y,
-              parentRepo: gitObj,
+              parentRepo: item,
               topLevel: false,
               ioValues: oldObject.ioValues,
             };
@@ -1038,7 +1017,7 @@ export default class Molecule extends Atom {
             }
             valuesToOverwriteInLoadedVersion = {
               uniqueID: newMoleculeUniqueID,
-              parentRepo: gitObj,
+              parentRepo: item,
               x: xPos,
               y: yPos,
               topLevel: false,
@@ -1073,16 +1052,6 @@ export default class Molecule extends Atom {
   /** Gives new unique IDs to all atoms in a json object and remaps the connections with the attachment points */
   remapIDs(json) {
     let idPairs = {};
-
-    // Always ensure the main atom/molecule gets a new ID if it doesn't already have one assigned
-    if (json.uniqueID && !json.uniqueID.toString().startsWith("temp-new-")) {
-      let oldMainID = json.uniqueID;
-      let newMainID = GlobalVariables.generateUniqueID();
-      idPairs[oldMainID] = newMainID;
-      json.uniqueID = newMainID;
-    }
-
-    // Handle nested atoms if they exist
     if (json.allAtoms) {
       json.allAtoms.forEach((atom) => {
         let oldID = atom.uniqueID;
@@ -1090,25 +1059,20 @@ export default class Molecule extends Atom {
         idPairs[oldID] = newID;
         atom.uniqueID = newID;
       });
+      json.allConnectors.forEach((connector) => {
+        if (connector.ap1ID && idPairs[connector.ap1ID]) {
+          connector.ap1ID = idPairs[connector.ap1ID];
+        }
+        if (connector.ap2ID && idPairs[connector.ap2ID]) {
+          connector.ap2ID = idPairs[connector.ap2ID];
+        }
+        if (connector.ap2ID && idPairs[connector.ap2ID]) {
+          connector.ap2ID = idPairs[connector.ap2ID];
+        }
+      });
 
-      // Handle connectors if they exist
-      if (json.allConnectors) {
-        json.allConnectors.forEach((connector) => {
-          if (connector.ap1ID && idPairs[connector.ap1ID]) {
-            connector.ap1ID = idPairs[connector.ap1ID];
-          }
-          if (connector.ap2ID && idPairs[connector.ap2ID]) {
-            connector.ap2ID = idPairs[connector.ap2ID];
-          }
-          // Also remap connector's own uniqueID if it exists
-          if (connector.uniqueID) {
-            connector.uniqueID = GlobalVariables.generateUniqueID();
-          }
-        });
-      }
+      return json;
     }
-
-    return json;
   }
 
   /**
@@ -1122,65 +1086,6 @@ export default class Molecule extends Atom {
       atom.deleteNode(backgroundClickAfter, deletePath, silent);
     });
     super.deleteNode(backgroundClickAfter, deletePath, silent);
-  }
-
-  /**
-   * Finds selected atoms with geometry outputs
-   * @returns {Array} Array of atoms that are selected and have geometry outputs
-   */
-  findSelectedAtomsWithGeometryOutput() {
-    return this.nodesOnTheScreen.filter((atom) => {
-      return (
-        atom.selected && atom.output && atom.output.valueType === "geometry"
-      );
-    });
-  }
-
-  /**
-   * Finds the first available geometry input on an atom
-   * @param {object} atom - The atom to search for geometry inputs
-   * @returns {object|null} The first available geometry input or null if none found
-   */
-  findFirstAvailableGeometryInput(atom) {
-    if (!atom.inputs) return null;
-
-    return (
-      atom.inputs.find((input) => {
-        return input.valueType === "geometry" && input.connectors.length === 0;
-      }) || null
-    );
-  }
-
-  /**
-   * Auto-creates connector from selected atom with geometry output to new atom with geometry input
-   * @param {object} newAtom - The newly placed atom
-   */
-  async autoCreateConnector(newAtom) {
-    // Find selected atoms with geometry outputs
-    const selectedGeometryAtoms = this.findSelectedAtomsWithGeometryOutput();
-
-    if (selectedGeometryAtoms.length === 0) {
-      return; // No selected atoms with geometry outputs
-    }
-
-    // Find first available geometry input on the new atom
-    const geometryInput = this.findFirstAvailableGeometryInput(newAtom);
-
-    if (!geometryInput) {
-      return; // New atom doesn't have an available geometry input
-    }
-
-    // Use the first selected atom with geometry output (could be enhanced to be smarter)
-    const sourceAtom = selectedGeometryAtoms[0];
-
-    // Create connector using the existing placeConnector logic
-    this.placeConnector({
-      ap1ID: sourceAtom.uniqueID,
-      ap2ID: newAtom.uniqueID,
-      ap2Name: geometryInput.name,
-    });
-
-    sourceAtom.updateValue(); // Update the new atom's value after connecting
   }
 
   /**
@@ -1283,10 +1188,7 @@ export default class Molecule extends Atom {
               }
             }
 
-            this.autoCreateConnector(atom);
-
             atom.updateValue();
-
             const flowCanvas = document.querySelector("#flow-canvas");
             if (!flowCanvas) {
               console.warn("Flow canvas element not found");
