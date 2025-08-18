@@ -62,10 +62,22 @@ export default class Gcode extends Atom {
     this.progress = 1.0;
 
     this.addIO("input", "Geometry", this, "geometry", null);
-    this.addIO("input", "Tool Size", this, "number", 6.35);
+    this.addIO(
+      "input",
+      "Tool Size",
+      this,
+      "number",
+      GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 6.35 : 0.25
+    );
     this.addIO("input", "Passes", this, "number", 3);
     this.addIO("input", "Speed", this, "number", 1500);
-    this.addIO("input", "Cut Through", this, "number", 1.5);
+    this.addIO(
+      "input",
+      "Cut Through",
+      this,
+      "number",
+      GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 1.35 : 0.25
+    );
     this.addIO("input", "Part Name", this, "string", this.parent.name);
     //this.addIO("input", "tabs", this, "string", "true");
     //this.addIO("input", "safe height", this, "number", 6);
