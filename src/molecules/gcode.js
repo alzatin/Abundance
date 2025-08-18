@@ -254,12 +254,13 @@ export default class Gcode extends Atom {
    */
   async _processSinglePart(inputID) {
     this._isProcessingAssembly = false;
-
+    const idForVisExport = GlobalVariables.generateUniqueID();
     GlobalVariables.cad
-      .visExport(this.uniqueID + 1, inputID, "STL") //What a hack, we shouldn't be using uniqueID+1 here
+      .visExport(idForVisExport, inputID, "STL")
       .then((result) => {
+        const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         GlobalVariables.cad
-          .downExport(this.uniqueID + 1, "STL")
+          .downExport(idForVisExport, "STL", null, units)
           .then((result) => {
             //Delete anything previously stored
             if (this.stlURL) {
@@ -267,7 +268,7 @@ export default class Gcode extends Atom {
             }
             this.stlURL = URL.createObjectURL(result); // Store the STL URL
             GlobalVariables.cad
-              .getBoundingBox(this.uniqueID + 1)
+              .getBoundingBox(idForVisExport)
               .then((bounds) => {
                 this.center = [
                   (bounds.max[0] + bounds.min[0]) / 2,
@@ -388,22 +389,21 @@ export default class Gcode extends Atom {
         this.progress = partProgress;
         this.sendToRender();
 
+        const idForVisExport = GlobalVariables.generateUniqueID();
         // Generate STL for this part
-        await GlobalVariables.cad.visExport(
-          this.uniqueID + 100 + i,
-          partID,
-          "STL"
-        );
+        await GlobalVariables.cad.visExport(idForVisExport, partID, "STL");
+        const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         const stlBlob = await GlobalVariables.cad.downExport(
-          this.uniqueID + 100 + i,
-          "STL"
+          idForVisExport,
+          "STL",
+          null,
+          units
         );
+
         const stlURL = URL.createObjectURL(stlBlob);
 
         // Get part bounds for centering
-        const bounds = await GlobalVariables.cad.getBoundingBox(
-          this.uniqueID + 100 + i
-        );
+        const bounds = await GlobalVariables.cad.getBoundingBox(idForVisExport);
         const center = [
           (bounds.max[0] + bounds.min[0]) / 2,
           (bounds.max[1] + bounds.min[1]) / 2,

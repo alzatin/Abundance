@@ -109,7 +109,7 @@ const generateGcode = (
           number: 1,
           type: "endmill",
           name: "end 1/4",
-          metric: GlobalVariables.topLevelMolecule.unitsKey === "MM",
+          metric: true,
           shaft_diam: toolSize,
           shaft_len: 1,
           flute_diam: toolSize,
@@ -184,12 +184,6 @@ const generateGcode = (
       });
     })
     .then((eng) => {
-      // Set G-code units based on project units
-      const unitsCommand =
-        GlobalVariables.topLevelMolecule.unitsKey === "MM"
-          ? "G21 ; set units to MM (required)"
-          : "G20 ; set units to Inches (required)";
-
       return eng.setDevice({
         mode: "CAM",
         internal: 0,
