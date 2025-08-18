@@ -258,8 +258,9 @@ export default class Gcode extends Atom {
     GlobalVariables.cad
       .visExport(this.uniqueID + 1, inputID, "STL") //What a hack, we shouldn't be using uniqueID+1 here
       .then((result) => {
+        const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         GlobalVariables.cad
-          .downExport(this.uniqueID + 1, "STL")
+          .downExport(this.uniqueID + 1, "STL", null, units)
           .then((result) => {
             //Delete anything previously stored
             if (this.stlURL) {
@@ -394,10 +395,14 @@ export default class Gcode extends Atom {
           partID,
           "STL"
         );
+        const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         const stlBlob = await GlobalVariables.cad.downExport(
-          this.uniqueID + 100 + i,
-          "STL"
+          this.uniqueID + 1,
+          "STL",
+          null,
+          units
         );
+
         const stlURL = URL.createObjectURL(stlBlob);
 
         // Get part bounds for centering
