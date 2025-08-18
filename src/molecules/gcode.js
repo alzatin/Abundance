@@ -394,7 +394,7 @@ export default class Gcode extends Atom {
           partID,
           "STL"
         );
-        const units = GlobalVariables?.topLevelMolecule?.unitsKey || "MM";
+        const units = GlobalVariables.topLevelMolecule.unitsKey || "MM";
         const stlBlob = await GlobalVariables.cad.downExport(
           this.uniqueID + 100 + i,
           "STL",
