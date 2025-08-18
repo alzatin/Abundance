@@ -13,12 +13,12 @@ const generateGcode = (
   toolSize,
   passes,
   speed,
-  extra,
+  cutThrough,
   gcodeCallback,
   progressCallback
 ) => {
   const STOCK_MARGIN = 10;
-  const CUT_THROUGH = 0.3;
+  const CUT_THROUGH = cutThrough || 2.5; // Default cut-through thickness if not provided
 
   if (!stlUrl) {
     console.error("STL URL is not available.");
