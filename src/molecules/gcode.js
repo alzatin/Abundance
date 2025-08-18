@@ -288,10 +288,8 @@ export default class Gcode extends Atom {
                   (bounds.max[2] + bounds.min[2]) / 2,
                 ];
                 // Generate gcode automatically if in run mode OR if output is connected
-                if (
-                  window.location.pathname.includes("/run/") ||
-                  (this.output && this.output.connectors.length > 0)
-                ) {
+                if (window.location.pathname.includes("/run/") || 
+                    (this.output && this.output.connectors.length > 0)) {
                   this._generateGcode();
                 }
               });
@@ -317,10 +315,8 @@ export default class Gcode extends Atom {
       const sortedParts = await this._sortParts(parts);
 
       // Generate G-code automatically if in run mode OR if output is connected
-      if (
-        window.location.pathname.includes("/run/") ||
-        (this.output && this.output.connectors.length > 0)
-      ) {
+      if (window.location.pathname.includes("/run/") || 
+          (this.output && this.output.connectors.length > 0)) {
         // Generate G-code for each part sequentially
         await this._generateSequentialGcode(sortedParts);
       }
@@ -627,9 +623,6 @@ export default class Gcode extends Atom {
 
   //Function to download G-code from a G-code string
   downloadGcode(gcode, filename = "output.gcode") {
-    if (this.gcodeGenerated && !gcode) {
-      gcode = this.gcodeString; // Use the stored G-code string if not provided
-    }
     if (!gcode) {
       console.error("No G-code available to download.");
       return;
