@@ -18,7 +18,7 @@ const generateGcode = (
   progressCallback
 ) => {
   const STOCK_MARGIN = 10;
-  const CUT_THROUGH = 1.524;
+  const CUT_THROUGH = 0.3;
 
   if (!stlUrl) {
     console.error("STL URL is not available.");
@@ -89,7 +89,7 @@ const generateGcode = (
       return eng.setStock({
         x: x + STOCK_MARGIN,
         y: y + STOCK_MARGIN,
-        z: z + STOCK_MARGIN + CUT_THROUGH, // stock thickness = part thickness + margin + cut-through
+        z: z + CUT_THROUGH, // stock thickness = part thickness + cut-through
         center: {
           x: x / 2,
           y: y / 2,
