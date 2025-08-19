@@ -157,7 +157,6 @@ export default class Gcode extends Atom {
       this.progress = 1.0; // Complete progress
       GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
       this.basicThreadValueProcessing();
-      this.sendToRender();
     };
   }
 
@@ -188,7 +187,7 @@ export default class Gcode extends Atom {
         const progressCallback = (progress) => {
           this.progress = progress;
           // Force a redraw to show progress update
-          this.sendToRender();
+          //this.sendToRender();
         };
         window.generateGcode(
           this.stlURL,
@@ -198,6 +197,7 @@ export default class Gcode extends Atom {
           this.findIOValue("Speed"),
           this.findIOValue("Cut Through"),
           gcodeCallback
+          //progressCallback
         );
       }
     } catch (err) {
@@ -205,7 +205,7 @@ export default class Gcode extends Atom {
       this.setError(err);
       this.progress = 1.0;
       this.processing = false;
-      this.sendToRender();
+      //this.sendToRender();
     }
   }
 
@@ -397,7 +397,7 @@ export default class Gcode extends Atom {
       try {
         // Update progress
         this.progress = partProgress;
-        this.sendToRender();
+        //this.sendToRender();
 
         const idForVisExport = GlobalVariables.generateUniqueID();
         // Generate STL for this part
@@ -444,7 +444,6 @@ export default class Gcode extends Atom {
     // Visualize the concatenated G-code
     GlobalVariables.cad.visualizeGcode(this.uniqueID, this.gcodeString);
     this.basicThreadValueProcessing();
-    this.sendToRender();
   }
 
   /**
@@ -647,7 +646,7 @@ export default class Gcode extends Atom {
         geometryInputConnected = true;
       }
     });
-    
+
     // Only trigger if geometry is connected (main input for gcode generation)
     if (geometryInputConnected && !this.gcodeGenerated) {
       this.updateValue();
