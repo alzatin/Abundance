@@ -187,7 +187,7 @@ export default class Gcode extends Atom {
         const progressCallback = (progress) => {
           this.progress = progress;
           // Force a redraw to show progress update
-          this.sendToRender();
+          //this.sendToRender();
         };
         window.generateGcode(
           this.stlURL,
@@ -204,7 +204,7 @@ export default class Gcode extends Atom {
       this.setError(err);
       this.progress = 1.0;
       this.processing = false;
-      this.sendToRender();
+      //this.sendToRender();
     }
   }
 
@@ -396,7 +396,7 @@ export default class Gcode extends Atom {
       try {
         // Update progress
         this.progress = partProgress;
-        this.sendToRender();
+        //this.sendToRender();
 
         const idForVisExport = GlobalVariables.generateUniqueID();
         // Generate STL for this part
@@ -443,7 +443,6 @@ export default class Gcode extends Atom {
     // Visualize the concatenated G-code
     GlobalVariables.cad.visualizeGcode(this.uniqueID, this.gcodeString);
     this.basicThreadValueProcessing();
-    this.sendToRender();
   }
 
   /**
