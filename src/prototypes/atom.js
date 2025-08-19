@@ -766,45 +766,70 @@ export default class Atom {
    */
   async evaluateEquation(equation) {
     try {
-      // Substitute numbers into the string
-      var substitutedEquation = equation;
-      // Use AST-based variable extraction for consistency
-      const variables = await this.extractVariablesFromEquation(equation);
+      let substitutedEquation = String(equation ?? "").trim();
+      const variables = await this.extractVariablesFromEquation(
+        substitutedEquation
+      );
+      const unresolved = [];
+      const resolvedValues = {};
       if (variables.length > 0) {
-        for (var variable of variables) {
-          // First, try to find in parent molecule's inputs
+        const parentInputs =
+          (this.parent && this.parent.inputs) ||
+          (this.parentMolecule && this.parentMolecule.inputs) ||
+          [];
+        for (const variable of variables) {
           let value = null;
-          console.log(this);
-          if (this.parent && this.parent.inputs) {
-            for (var j = 0; j < this.parent.inputs.length; j++) {
-              // If the variable matches a parent input, use its value
-              if (this.parent.inputs[j].name == variable) {
-                value = this.parent.inputs[j].value;
-                break;
-              }
+          // Try parent inputs first
+          for (let j = 0; j < parentInputs.length; j++) {
+            if (parentInputs[j].name === variable) {
+              value = parentInputs[j].value;
+              break;
             }
           }
-          // If not found, try to find in this atom's inputs
-          if (value === null) {
-            for (var i = 0; i < this.inputs.length; i++) {
-              if (this.inputs[i].name == variable) {
+          // Then this atom's inputs
+          if (value === null || value === undefined) {
+            for (let i = 0; i < this.inputs.length; i++) {
+              if (this.inputs[i].name === variable) {
                 value = this.findIOValue(this.inputs[i].name);
                 break;
               }
             }
           }
-          // If still not found, skip substitution (or set to 0)
-          if (value === null) value = 0;
-          // Use word boundaries in replacement to avoid partial matches
-          const variablePattern = new RegExp(`\\b${variable}\\b`, "g");
-          substitutedEquation = substitutedEquation.replace(
-            variablePattern,
-            value
-          );
+          let num = Number(value);
+          if (
+            value === null ||
+            value === undefined ||
+            (typeof value === "string" && value.trim() === "") ||
+            !Number.isFinite(num)
+          ) {
+            unresolved.push(variable);
+          } else {
+            resolvedValues[variable] = num;
+          }
         }
       }
-      // Evaluate the substituted equation
-      return GlobalVariables.limitedEvaluate(substitutedEquation);
+      if (unresolved.length) {
+        const msg = `Variable(s) not found: ${unresolved.join(
+          ", "
+        )}. Make sure the variables you are using exist as inputs`;
+        console.warn(msg);
+        throw new Error(msg);
+      } else {
+        this.clearAlert();
+        // Substitute all resolved variables
+        for (const variable of Object.keys(resolvedValues)) {
+          const safeVar = variable.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const variablePattern = new RegExp(`\\b${safeVar}\\b`, "gu");
+          substitutedEquation = substitutedEquation.replace(
+            variablePattern,
+            String(resolvedValues[variable])
+          );
+        }
+        const result = await GlobalVariables.limitedEvaluate(
+          substitutedEquation
+        );
+        return result;
+      }
     } catch (error) {
       console.error("Error evaluating equation:", error);
       this.setError(error);
