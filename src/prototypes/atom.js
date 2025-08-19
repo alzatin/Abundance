@@ -166,6 +166,9 @@ export default class Atom {
           //Find the matching IO and set it to be the saved value
           if (ioValue.name == io.name && io.type == "input") {
             io.value = ioValue.ioValue;
+            if ("currentEquation" in ioValue) {
+              io.currentEquation = ioValue.currentEquation;
+            }
           }
         });
       });
@@ -603,6 +606,7 @@ export default class Atom {
         var saveIO = {
           name: io.name,
           ioValue: io.getValue(),
+          currentEquation: io.currentEquation || null,
         };
         ioValues.push(saveIO);
       }
@@ -737,17 +741,16 @@ export default class Atom {
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry") {
           inputParams[this.uniqueID + input.name] = {
-            value: input.value,
+            value: input.currentEquation ? input.currentEquation : input.value,
             label: input.name,
             step: 0.25,
             type: LevaInputs.STRING,
             disabled: checkConnector(),
             onChange: async (value) => {
               let currentEquation = String(value).trim();
-              this.currentEquation = currentEquation;
+              input.currentEquation = currentEquation;
               // Evaluate the equation and wait for the result
               let result = await this.evaluateEquation(currentEquation);
-              console.log("Evaluated result:", result);
               input.setValue(result);
               //this.sendToRender();
             },
