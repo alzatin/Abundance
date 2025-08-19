@@ -770,20 +770,13 @@ export default class Atom {
       var substitutedEquation = equation;
       // Use AST-based variable extraction for consistency
       const variables = await this.extractVariablesFromEquation(equation);
-      console.log("Extracted variables:", variables);
       if (variables.length > 0) {
         for (var variable of variables) {
           // First, try to find in parent molecule's inputs
           let value = null;
           console.log(this);
           if (this.parent && this.parent.inputs) {
-            console.log("this.parent exists, checking inputs");
             for (var j = 0; j < this.parent.inputs.length; j++) {
-              console.log(
-                "Checking parent molecule input:",
-                this.parent.inputs[j].name
-              );
-              console.log("Against variable:", variable);
               // If the variable matches a parent input, use its value
               if (this.parent.inputs[j].name == variable) {
                 value = this.parent.inputs[j].value;
@@ -802,7 +795,6 @@ export default class Atom {
           }
           // If still not found, skip substitution (or set to 0)
           if (value === null) value = 0;
-          console.log("Substituting variable:", variable, "with value:", value);
           // Use word boundaries in replacement to avoid partial matches
           const variablePattern = new RegExp(`\\b${variable}\\b`, "g");
           substitutedEquation = substitutedEquation.replace(
@@ -811,7 +803,6 @@ export default class Atom {
           );
         }
       }
-
       // Evaluate the substituted equation
       return GlobalVariables.limitedEvaluate(substitutedEquation);
     } catch (error) {
