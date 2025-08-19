@@ -157,7 +157,6 @@ export default class Gcode extends Atom {
       this.progress = 1.0; // Complete progress
       GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
       this.basicThreadValueProcessing();
-      this.sendToRender();
     };
   }
 
@@ -647,7 +646,7 @@ export default class Gcode extends Atom {
         geometryInputConnected = true;
       }
     });
-    
+
     // Only trigger if geometry is connected (main input for gcode generation)
     if (geometryInputConnected && !this.gcodeGenerated) {
       this.updateValue();
