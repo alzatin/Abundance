@@ -2,6 +2,16 @@ import AttachmentPoint from "./attachmentpoint";
 import GlobalVariables from "../js/globalvariables.js";
 import showdown from "showdown";
 import globalvariables from "../js/globalvariables.js";
+import { parse } from "mathjs";
+
+import {
+  useControls,
+  useCreateStore,
+  LevaPanel,
+  button,
+  Leva,
+  LevaInputs,
+} from "leva";
 
 // Make this an enum once we're using typescript
 const AlertType = Object.freeze({
@@ -730,18 +740,112 @@ export default class Atom {
             value: input.value,
             label: input.name,
             step: 0.25,
+            type: LevaInputs.STRING,
             disabled: checkConnector(),
-            onChange: (value) => {
-              if (input.value !== value) {
-                input.setValue(value);
-                //this.sendToRender();
-              }
+            onChange: async (value) => {
+              let currentEquation = String(value).trim();
+              this.currentEquation = currentEquation;
+              // Evaluate the equation and wait for the result
+              let result = await this.evaluateEquation(currentEquation);
+              console.log("Evaluated result:", result);
+              input.setValue(result);
+              //this.sendToRender();
             },
           };
         }
       });
       return inputParams;
     }
+  }
+
+  /**
+   * Evaluate the equation
+   */
+  async evaluateEquation(equation) {
+    try {
+      // Substitute numbers into the string
+      var substitutedEquation = equation;
+      // Use AST-based variable extraction for consistency
+      const variables = await this.extractVariablesFromEquation(equation);
+      console.log("Extracted variables:", variables);
+      if (variables.length > 0) {
+        for (var variable of variables) {
+          // First, try to find in parent molecule's inputs
+          let value = null;
+          console.log(this);
+          if (this.parent && this.parent.inputs) {
+            console.log("this.parent exists, checking inputs");
+            for (var j = 0; j < this.parent.inputs.length; j++) {
+              console.log(
+                "Checking parent molecule input:",
+                this.parent.inputs[j].name
+              );
+              console.log("Against variable:", variable);
+              // If the variable matches a parent input, use its value
+              if (this.parent.inputs[j].name == variable) {
+                value = this.parent.inputs[j].value;
+                break;
+              }
+            }
+          }
+          // If not found, try to find in this atom's inputs
+          if (value === null) {
+            for (var i = 0; i < this.inputs.length; i++) {
+              if (this.inputs[i].name == variable) {
+                value = this.findIOValue(this.inputs[i].name);
+                break;
+              }
+            }
+          }
+          // If still not found, skip substitution (or set to 0)
+          if (value === null) value = 0;
+          console.log("Substituting variable:", variable, "with value:", value);
+          // Use word boundaries in replacement to avoid partial matches
+          const variablePattern = new RegExp(`\\b${variable}\\b`, "g");
+          substitutedEquation = substitutedEquation.replace(
+            variablePattern,
+            value
+          );
+        }
+      }
+
+      // Evaluate the substituted equation
+      return GlobalVariables.limitedEvaluate(substitutedEquation);
+    } catch (error) {
+      console.error("Error evaluating equation:", error);
+      this.setError(error);
+      return NaN;
+    }
+  }
+
+  /**
+   * Extracts variable names from the current equation using mathjs AST parsing.
+   * Only true variables (not function names) are returned.
+   * @returns {string[]} Array of variable names
+   */
+  async extractVariablesFromEquation(equation) {
+    let variables = [];
+    try {
+      const node = parse(equation);
+      node.traverse(function (n, path, parent) {
+        if (
+          n.isSymbolNode &&
+          !(
+            parent &&
+            parent.isFunctionNode &&
+            parent.fn &&
+            parent.fn.name === n.name
+          )
+        ) {
+          variables.push(n.name);
+        }
+      });
+      // Remove duplicates
+      variables = [...new Set(variables)];
+    } catch (e) {
+      variables = [];
+    }
+    return variables;
   }
   /**
    * Find the value of an input for with a given name.
