@@ -197,6 +197,7 @@ export default class Gcode extends Atom {
           this.findIOValue("Speed"),
           this.findIOValue("Cut Through"),
           gcodeCallback
+          //progressCallback
         );
       }
     } catch (err) {
