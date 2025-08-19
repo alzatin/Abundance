@@ -605,6 +605,27 @@ export default class Molecule extends Atom {
         atom.updateValue(); //Tell that input to update it's value
       }
     });
+    // Propagate input change to dependent IOs
+    if (targetName) {
+      this.propagateInputChange(targetName);
+    }
+  }
+  /**
+   * Propagate input value changes to all IOs whose currentEquation references the changed input name
+   */
+  async propagateInputChange(inputName) {
+    for (const atom of this.nodesOnTheScreen) {
+      for (const io of atom.inputs) {
+        if (io.currentEquation && io.currentEquation.includes(inputName)) {
+          try {
+            const result = await atom.evaluateEquation(io.currentEquation);
+            io.setValue(result);
+          } catch (e) {
+            // Error already handled in evaluateEquation
+          }
+        }
+      }
+    }
   }
 
   compileBom() {
