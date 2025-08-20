@@ -173,7 +173,7 @@ export default class Molecule extends Atom {
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry") {
           inputParams[this.uniqueID + input.name] = {
-            value: input.value,
+            value: input.currentEquation ? input.currentEquation : input.value,
             label: input.name,
             type: LevaInputs.STRING,
             disabled: checkConnector(),

@@ -104,7 +104,7 @@ export default class Text extends Atom {
                   input.name
                 );
                 if (Number.isFinite(result)) {
-                  input.setValue(value);
+                  input.setValue(result);
                 }
               } catch (err) {
                 input.setValue(NaN);
