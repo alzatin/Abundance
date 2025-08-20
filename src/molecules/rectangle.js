@@ -80,6 +80,6 @@ export default class Rectangle extends Atom {
       .then(() => {
         this.basicThreadValueProcessing();
       })
-      .catch((err) => this.alertingErrorHandler(err));
+      .catch((err) => this.alertingErrorHandler());
   }
 }

@@ -199,8 +199,7 @@ export default class Equation extends Atom {
       // Evaluate the substituted equation
       return GlobalVariables.limitedEvaluate(substitutedEquation);
     } catch (error) {
-      console.error("Error evaluating equation:", error);
-      this.setError(error);
+      this.alertingErrorHandler(error);
       return NaN;
     }
   }
