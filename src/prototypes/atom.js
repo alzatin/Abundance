@@ -2,6 +2,16 @@ import AttachmentPoint from "./attachmentpoint";
 import GlobalVariables from "../js/globalvariables.js";
 import showdown from "showdown";
 import globalvariables from "../js/globalvariables.js";
+import { parse } from "mathjs";
+
+import {
+  useControls,
+  useCreateStore,
+  LevaPanel,
+  button,
+  Leva,
+  LevaInputs,
+} from "leva";
 
 // Make this an enum once we're using typescript
 const AlertType = Object.freeze({
@@ -156,6 +166,9 @@ export default class Atom {
           //Find the matching IO and set it to be the saved value
           if (ioValue.name == io.name && io.type == "input") {
             io.value = ioValue.ioValue;
+            if ("currentEquation" in ioValue) {
+              io.currentEquation = ioValue.currentEquation;
+            }
           }
         });
       });
@@ -593,6 +606,7 @@ export default class Atom {
         var saveIO = {
           name: io.name,
           ioValue: io.getValue(),
+          currentEquation: io.currentEquation || null,
         };
         ioValues.push(saveIO);
       }
@@ -727,14 +741,25 @@ export default class Atom {
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry") {
           inputParams[this.uniqueID + input.name] = {
-            value: input.value,
+            value: input.currentEquation ? input.currentEquation : input.value,
             label: input.name,
             step: 0.25,
+            type: LevaInputs.STRING,
             disabled: checkConnector(),
-            onChange: (value) => {
-              if (input.value !== value) {
-                input.setValue(value);
-                //this.sendToRender();
+            onChange: async (value) => {
+              let currentEquation = String(value).trim();
+              input.currentEquation = currentEquation;
+              try {
+                const result = await this.evaluateEquation(
+                  currentEquation,
+                  input.name
+                );
+                if (Number.isFinite(result)) {
+                  input.setValue(result);
+                }
+              } catch (err) {
+                input.setValue(NaN);
+                this.alertingErrorHandler()(err);
               }
             },
           };
@@ -742,6 +767,104 @@ export default class Atom {
       });
       return inputParams;
     }
+  }
+
+  /**
+   * Evaluate the equation
+   */
+  async evaluateEquation(equation) {
+    let substitutedEquation = String(equation ?? "").trim();
+    const variables = await this.extractVariablesFromEquation(
+      substitutedEquation
+    );
+    const unresolved = [];
+    const resolvedValues = {};
+    if (variables.length > 0) {
+      const parentInputs =
+        (this.parent && this.parent.inputs) ||
+        (this.parentMolecule && this.parentMolecule.inputs) ||
+        [];
+      for (const variable of variables) {
+        let value = null;
+        // Try parent inputs first
+        for (let j = 0; j < parentInputs.length; j++) {
+          if (parentInputs[j].name === variable) {
+            value = parentInputs[j].value;
+            break;
+          }
+        }
+        // Then this atom's inputs
+        if (value === null || value === undefined) {
+          for (let i = 0; i < this.inputs.length; i++) {
+            if (this.inputs[i].name === variable) {
+              value = this.findIOValue(this.inputs[i].name);
+              break;
+            }
+          }
+        }
+        let num = Number(value);
+        if (
+          value === null ||
+          value === undefined ||
+          (typeof value === "string" && value.trim() === "") ||
+          !Number.isFinite(num)
+        ) {
+          unresolved.push(variable);
+        } else {
+          resolvedValues[variable] = num;
+        }
+      }
+    }
+    if (unresolved.length) {
+      const msg = `Variable(s) not found: ${unresolved.join(
+        ", "
+      )}. Make sure the variables you are using exist as inputs`;
+      console.warn(msg);
+      throw new Error(msg);
+    } else {
+      this.clearAlert();
+      // Substitute all resolved variables
+      for (const variable of Object.keys(resolvedValues)) {
+        const safeVar = variable.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const variablePattern = new RegExp(`\\b${safeVar}\\b`, "gu");
+        substitutedEquation = substitutedEquation.replace(
+          variablePattern,
+          String(resolvedValues[variable])
+        );
+      }
+      const result = await GlobalVariables.limitedEvaluate(substitutedEquation);
+      return result;
+    }
+  }
+
+  /**
+   * Extracts variable names from the current equation using mathjs AST parsing.
+   * Only true variables (not function names) are returned.
+   * @returns {string[]} Array of variable names
+   */
+  async extractVariablesFromEquation(equation) {
+    let variables = [];
+    try {
+      const node = parse(equation);
+      node.traverse(function (n, path, parent) {
+        if (
+          n.isSymbolNode &&
+          !(
+            parent &&
+            parent.isFunctionNode &&
+            parent.fn &&
+            parent.fn.name === n.name
+          )
+        ) {
+          variables.push(n.name);
+        }
+      });
+      // Remove duplicates
+      variables = [...new Set(variables)];
+    } catch (e) {
+      variables = [];
+    }
+    return variables;
   }
   /**
    * Find the value of an input for with a given name.
