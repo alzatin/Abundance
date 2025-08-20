@@ -65,31 +65,10 @@ export default class Rotate extends Atom {
   createLevaInputs() {
     let inputParams = {};
 
-    /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs) {
-      this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
+    // Merge the returned value from super.createLevaInputs into inputParams
+    Object.assign(inputParams, super.createLevaInputs(inputParams));
 
-        /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry") {
-          inputParams[this.uniqueID + input.name] = {
-            value: input.value,
-            label: input.name,
-            step: 0.5,
-            disabled: checkConnector(),
-            onChange: (value) => {
-              if (input.value !== value) {
-                console.log(input.name, value);
-                input.setValue(value);
-              }
-            },
-          };
-        }
-      });
-      return inputParams;
-    }
+    return inputParams;
   }
 
   /**
