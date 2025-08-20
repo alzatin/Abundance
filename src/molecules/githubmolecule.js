@@ -83,7 +83,7 @@ export default class GitHubMolecule extends Molecule {
             onChange: async (value) => {
               /* If the user has set the type as string don't evaluate as equation */
               if (input.type && input.valueType?.toUpperCase() === "STRING") {
-                input.setValue(result);
+                input.setValue(value);
               } else {
                 let currentEquation = String(value).trim();
                 input.currentEquation = currentEquation;

@@ -118,6 +118,7 @@ export default class Text extends Atom {
             value: input.currentEquation ? input.currentEquation : input.value,
             label: input.name,
             type: LevaInputs.STRING,
+            disabled: checkConnector(),
             onChange: async (value) => {
               if (input.value !== value) {
                 input.setValue(value);
