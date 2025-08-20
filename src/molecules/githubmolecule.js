@@ -73,22 +73,36 @@ export default class GitHubMolecule extends Molecule {
         const checkConnector = () => {
           return input.connectors.length > 0;
         };
-
-        inputParams[this.uniqueID + input.name] = {
-          value: input.value,
-          label: input.name,
-          disabled: checkConnector(),
-          step: 0.01,
-          onChange: (value) => {
-            if (input.value !== value) {
-              input.setValue(value);
-              //this.sendToRender();
-            }
-          },
-        };
-        if (input.type && input.valueType) {
-          inputParams[this.uniqueID + input.name].type =
-            LevaInputs[input.valueType.toUpperCase()];
+        /* Makes inputs for Io's other than geometry */
+        if (input.valueType !== "geometry") {
+          inputParams[this.uniqueID + input.name] = {
+            value: input.value,
+            label: input.name,
+            disabled: checkConnector(),
+            type: LevaInputs.STRING,
+            disabled: checkConnector(),
+            onChange: async (value) => {
+              /* If the user has set the type as string don't evaluate as equation */
+              if (input.type && input.valueType?.toUpperCase() === "STRING") {
+                input.setValue(result);
+              } else {
+                let currentEquation = String(value).trim();
+                input.currentEquation = currentEquation;
+                try {
+                  const result = await this.evaluateEquation(
+                    currentEquation,
+                    input.name
+                  );
+                  if (Number.isFinite(result)) {
+                    input.setValue(result);
+                  }
+                } catch (err) {
+                  input.setValue(NaN);
+                  this.alertingErrorHandler()(err);
+                }
+              }
+            },
+          };
         }
       });
       inputParams["Reload From Github"] = button(() =>
