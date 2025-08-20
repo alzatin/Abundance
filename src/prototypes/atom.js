@@ -749,10 +749,18 @@ export default class Atom {
             onChange: async (value) => {
               let currentEquation = String(value).trim();
               input.currentEquation = currentEquation;
-              // Evaluate the equation and wait for the result
-              let result = await this.evaluateEquation(currentEquation);
-              input.setValue(result);
-              //this.sendToRender();
+              try {
+                const result = await this.evaluateEquation(
+                  currentEquation,
+                  input.name
+                );
+                if (Number.isFinite(result)) {
+                  input.setValue(result);
+                }
+              } catch (err) {
+                input.setValue(NaN);
+                this.alertingErrorHandler()(err);
+              }
             },
           };
         }
@@ -765,75 +773,67 @@ export default class Atom {
    * Evaluate the equation
    */
   async evaluateEquation(equation) {
-    try {
-      let substitutedEquation = String(equation ?? "").trim();
-      const variables = await this.extractVariablesFromEquation(
-        substitutedEquation
-      );
-      const unresolved = [];
-      const resolvedValues = {};
-      if (variables.length > 0) {
-        const parentInputs =
-          (this.parent && this.parent.inputs) ||
-          (this.parentMolecule && this.parentMolecule.inputs) ||
-          [];
-        for (const variable of variables) {
-          let value = null;
-          // Try parent inputs first
-          for (let j = 0; j < parentInputs.length; j++) {
-            if (parentInputs[j].name === variable) {
-              value = parentInputs[j].value;
+    let substitutedEquation = String(equation ?? "").trim();
+    const variables = await this.extractVariablesFromEquation(
+      substitutedEquation
+    );
+    const unresolved = [];
+    const resolvedValues = {};
+    if (variables.length > 0) {
+      const parentInputs =
+        (this.parent && this.parent.inputs) ||
+        (this.parentMolecule && this.parentMolecule.inputs) ||
+        [];
+      for (const variable of variables) {
+        let value = null;
+        // Try parent inputs first
+        for (let j = 0; j < parentInputs.length; j++) {
+          if (parentInputs[j].name === variable) {
+            value = parentInputs[j].value;
+            break;
+          }
+        }
+        // Then this atom's inputs
+        if (value === null || value === undefined) {
+          for (let i = 0; i < this.inputs.length; i++) {
+            if (this.inputs[i].name === variable) {
+              value = this.findIOValue(this.inputs[i].name);
               break;
             }
           }
-          // Then this atom's inputs
-          if (value === null || value === undefined) {
-            for (let i = 0; i < this.inputs.length; i++) {
-              if (this.inputs[i].name === variable) {
-                value = this.findIOValue(this.inputs[i].name);
-                break;
-              }
-            }
-          }
-          let num = Number(value);
-          if (
-            value === null ||
-            value === undefined ||
-            (typeof value === "string" && value.trim() === "") ||
-            !Number.isFinite(num)
-          ) {
-            unresolved.push(variable);
-          } else {
-            resolvedValues[variable] = num;
-          }
+        }
+        let num = Number(value);
+        if (
+          value === null ||
+          value === undefined ||
+          (typeof value === "string" && value.trim() === "") ||
+          !Number.isFinite(num)
+        ) {
+          unresolved.push(variable);
+        } else {
+          resolvedValues[variable] = num;
         }
       }
-      if (unresolved.length) {
-        const msg = `Variable(s) not found: ${unresolved.join(
-          ", "
-        )}. Make sure the variables you are using exist as inputs`;
-        console.warn(msg);
-        throw new Error(msg);
-      } else {
-        this.clearAlert();
-        // Substitute all resolved variables
-        for (const variable of Object.keys(resolvedValues)) {
-          const safeVar = variable.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          const variablePattern = new RegExp(`\\b${safeVar}\\b`, "gu");
-          substitutedEquation = substitutedEquation.replace(
-            variablePattern,
-            String(resolvedValues[variable])
-          );
-        }
-        const result = await GlobalVariables.limitedEvaluate(
-          substitutedEquation
+    }
+    if (unresolved.length) {
+      const msg = `Variable(s) not found: ${unresolved.join(
+        ", "
+      )}. Make sure the variables you are using exist as inputs`;
+      console.warn(msg);
+      throw new Error(msg);
+    } else {
+      this.clearAlert();
+      // Substitute all resolved variables
+      for (const variable of Object.keys(resolvedValues)) {
+        const safeVar = variable.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const variablePattern = new RegExp(`\\b${safeVar}\\b`, "gu");
+        substitutedEquation = substitutedEquation.replace(
+          variablePattern,
+          String(resolvedValues[variable])
         );
-        return result;
       }
-    } catch (error) {
-      console.error("Error evaluating equation:", error);
-      this.setError(error);
-      return NaN;
+      const result = await GlobalVariables.limitedEvaluate(substitutedEquation);
+      return result;
     }
   }
 
