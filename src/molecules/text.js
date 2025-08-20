@@ -1,6 +1,7 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import Fonts from "../js/fonts.js";
+import { LevaInputs } from "leva";
 
 /**
  * This class creates the circle atom.
@@ -87,16 +88,39 @@ export default class Text extends Atom {
         };
 
         /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry") {
+        if (input.valueType !== "geometry" && input.name !== "Text") {
           inputParams[this.uniqueID + input.name] = {
-            value: input.value,
+            value: input.currentEquation ? input.currentEquation : input.value,
             label: input.name,
             step: 0.25,
+            type: LevaInputs.STRING,
             disabled: checkConnector(),
-            onChange: (value) => {
+            onChange: async (value) => {
+              let currentEquation = String(value).trim();
+              input.currentEquation = currentEquation;
+              try {
+                const result = await this.evaluateEquation(
+                  currentEquation,
+                  input.name
+                );
+                if (Number.isFinite(result)) {
+                  input.setValue(value);
+                }
+              } catch (err) {
+                input.setValue(NaN);
+                this.alertingErrorHandler()(err);
+              }
+            },
+          };
+        }
+        if (input.name === "Text") {
+          inputParams[this.uniqueID + "Text"] = {
+            value: input.currentEquation ? input.currentEquation : input.value,
+            label: input.name,
+            type: LevaInputs.STRING,
+            onChange: async (value) => {
               if (input.value !== value) {
                 input.setValue(value);
-                //this.sendToRender();
               }
             },
           };
