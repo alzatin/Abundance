@@ -93,7 +93,9 @@ export default class GitHubMolecule extends Molecule {
                     input.name
                   );
                   if (Number.isFinite(result)) {
-                    input.setValue(result);
+                    if (result !== input.value) {
+                      input.setValue(result);
+                    }
                   }
                 } catch (err) {
                   input.setValue(NaN);
