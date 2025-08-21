@@ -4,6 +4,8 @@ import ReplicadMesh from "../render/ReplicadMesh.jsx";
 import WireframeMesh from "../render/WireframeMesh.jsx";
 import globalvariables from "../../js/globalvariables.js";
 
+import ParamsMenu from "../secondary/ParamsMenu.jsx";
+
 function useWindowSize() {
   // Initialize state with undefined width/height so server and client renders match
   // Learn more here: https://joshwcomeau.com/react/the-perils-of-rehydration/
@@ -39,6 +41,7 @@ function useWindowSize() {
 }
 
 export default memo(function LowerHalf({
+  activeAtom,
   gridParam,
   axesParam,
   wireParam,
@@ -68,6 +71,7 @@ export default memo(function LowerHalf({
 
   return (
     <>
+      <ParamsMenu activeAtom={activeAtom} />
       <div
         className="jscad-container"
         style={{
@@ -84,10 +88,10 @@ export default memo(function LowerHalf({
         >
           {wireMesh ? (
             <ThreeContext
-              {...{ 
-                cameraZoom, 
-                gridParam, 
-                axesParam, 
+              {...{
+                cameraZoom,
+                gridParam,
+                axesParam,
                 outdatedMesh,
                 backgroundUsdzFile,
                 showBackgroundModel,

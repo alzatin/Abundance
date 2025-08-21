@@ -1,108 +1,64 @@
-import { useEffect, useRef, useState } from "react";
-
-// Define the control config types
-export type NumberControlConfig = {
-  type: "number";
-  value: number;
-  min?: number;
-  max?: number;
-  step?: number;
-  label?: string;
-  order?: number;
-};
-export type BooleanControlConfig = {
-  type: "boolean";
-  value: boolean;
-  label?: string;
-  order?: number;
-};
-export type StringControlConfig = {
-  type: "string";
-  value: string;
-  label?: string;
-  order?: number;
-};
-export type SelectControlConfig = {
-  type: "select";
-  value: string;
-  options: string[] | Record<string, string>;
-  label?: string;
-  order?: number;
-};
-export type ColorControlConfig = {
-  type: "color";
-  value: string;
-  label?: string;
-  order?: number;
-};
-export type RangeControlConfig = {
-  type: "range";
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  label?: string;
-  order?: number;
-};
-
-export type ControlConfig =
-  | NumberControlConfig
-  | BooleanControlConfig
-  | StringControlConfig
-  | SelectControlConfig
-  | ColorControlConfig
-  | RangeControlConfig;
-
-type ControlsState<T extends Record<string, ControlConfig>> = {
-  [K in keyof T]: T[K]["value"];
-};
-
-type SetControlValue<T extends Record<string, ControlConfig>> = <
-  K extends keyof T
->(
-  key: K,
-  value: T[K]["value"]
-) => void;
+import React, { useState, useCallback } from "react";
 
 /**
- * useControls
- * Registers and manages a set of controls.
- * Returns current values and a setter for values.
+ * Controls API:
+ * - Initial controls are passed as an object.
+ * - You can register new controls at runtime with registerControl(key, config).
+ * - You can remove controls at runtime with removeControl(key).
+ * - setControlValue(key, value) updates a control's value.
+ *
+ * Usage:
+ *   const [values, setControlValue, { registerControl, removeControl }] = useControls(initialConfig);
  */
-export function useControls<T extends Record<string, ControlConfig>>(
-  initialControls: T
-): [ControlsState<T>, SetControlValue<T>] {
-  // Store the controls config in a ref so it doesn't change on every re-render
-  const controlsRef = useRef<T>(initialControls);
-
-  // State for control values
-  const [values, setValues] = useState<ControlsState<T>>(() => {
-    const initial: Partial<ControlsState<T>> = {};
-    for (const key in initialControls) {
-      initial[key] = initialControls[key].value;
+export function useControls(initialConfig = {}) {
+  // Store controls object: { key: config }
+  const [controls, setControls] = useState(() => ({ ...initialConfig }));
+  // Store values separately: { key: value }
+  const [values, setValues] = useState(() => {
+    const vals = {};
+    for (const key in initialConfig) {
+      vals[key] = initialConfig[key].value;
     }
-    return initial as ControlsState<T>;
+    return vals;
   });
 
-  // Effect to update values when initialControls changes
-  useEffect(() => {
-    controlsRef.current = initialControls;
-    setValues(() => {
-      const initial: Partial<ControlsState<T>> = {};
-      for (const key in initialControls) {
-        initial[key] = initialControls[key].value;
-      }
-      return initial as ControlsState<T>;
+  // Set control value
+  const setControlValue = useCallback((key, value) => {
+    setValues((v) => ({ ...v, [key]: value }));
+  }, []);
+
+  // Register a new control
+  const registerControl = useCallback((key, config) => {
+    setControls((c) => ({ ...c, [key]: config }));
+    setValues((v) => ({ ...v, [key]: config.value }));
+  }, []);
+
+  // Remove a control
+  const removeControl = useCallback((key) => {
+    setControls((c) => {
+      const next = { ...c };
+      delete next[key];
+      return next;
     });
-  }, [JSON.stringify(initialControls)]);
+    setValues((v) => {
+      const next = { ...v };
+      delete next[key];
+      return next;
+    });
+  }, []);
 
-  // Set a value for a control
-  const setControlValue: SetControlValue<T> = (key, value) => {
-    setValues((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
+  // Optionally, update config for an existing control
+  const updateControl = useCallback((key, config) => {
+    setControls((c) => ({ ...c, [key]: config }));
+    // Optionally update value if a new value is passed
+    if (config.value !== undefined) {
+      setValues((v) => ({ ...v, [key]: config.value }));
+    }
+  }, []);
 
-  return [values, setControlValue];
+  return [
+    values,
+    setControlValue,
+    { controls, registerControl, removeControl, updateControl },
+  ];
 }

@@ -123,11 +123,11 @@ function CreateMode({
     if (!authorizedUserOcto) {
       return;
     }
-    
+
     if (!GlobalVariables.currentUser || !GlobalVariables.currentRepoName) {
       return;
     }
-    
+
     try {
       const files = await authorizedUserOcto.rest.repos.getContent({
         owner: GlobalVariables.currentUser,
@@ -136,15 +136,17 @@ function CreateMode({
       });
 
       // Look for GLB or GLTF files
-      const backgroundFiles = files.data.filter(file => 
-        file.type === 'file' && 
-        (file.name.toLowerCase().endsWith('.glb') || file.name.toLowerCase().endsWith('.gltf'))
+      const backgroundFiles = files.data.filter(
+        (file) =>
+          file.type === "file" &&
+          (file.name.toLowerCase().endsWith(".glb") ||
+            file.name.toLowerCase().endsWith(".gltf"))
       );
 
       if (backgroundFiles.length > 0) {
         // Use the first background model file found
         const firstFile = backgroundFiles[0];
-        
+
         // Only set if we don't already have a background file set OR if user hasn't uploaded a file
         // This prevents overriding user uploads
         if (!backgroundUsdzFile && !userUploadedFile) {
@@ -166,10 +168,17 @@ function CreateMode({
 
   // Scan for background models when component mounts or project changes
   useEffect(() => {
-    if (authorizedUserOcto && GlobalVariables.currentUser && GlobalVariables.currentRepoName) {
+    if (
+      authorizedUserOcto &&
+      GlobalVariables.currentUser &&
+      GlobalVariables.currentRepoName
+    ) {
       scanForBackgroundModels();
     }
-  }, [authorizedUserOcto, `${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`]);
+  }, [
+    authorizedUserOcto,
+    `${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`,
+  ]);
 
   // Reset background model state when project changes to ensure clean state
   useEffect(() => {
@@ -439,7 +448,7 @@ function CreateMode({
     if (fileName == null) {
       return;
     }
-    
+
     try {
       await authorizedUserOcto.rest.repos.deleteFile({
         owner: GlobalVariables.currentUser,
@@ -467,7 +476,7 @@ function CreateMode({
   const uploadBackground3D = async function (file) {
     // Set userUploadedFile flag immediately to prevent auto-detection from interfering
     setUserUploadedFile(true);
-    
+
     try {
       // Read file as base64
       const base64result = await new Promise((resolve, reject) => {
@@ -483,22 +492,24 @@ function CreateMode({
       const fileExtension = file.name.substring(file.name.lastIndexOf("."));
       const backgroundFileName = `background${fileExtension}`;
 
-      const result = await authorizedUserOcto.rest.repos.createOrUpdateFileContents({
-        owner: GlobalVariables.currentUser,
-        repo: GlobalVariables.currentRepoName,
-        path: backgroundFileName,
-        message: "Upload background 3D model",
-        content: base64result,
-      });
+      const result =
+        await authorizedUserOcto.rest.repos.createOrUpdateFileContents({
+          owner: GlobalVariables.currentUser,
+          repo: GlobalVariables.currentRepoName,
+          path: backgroundFileName,
+          message: "Upload background 3D model",
+          content: base64result,
+        });
 
       setBackgroundUsdzFile(backgroundFileName);
       setBackgroundUsdzSha(result.data.content.sha);
       setShowBackgroundModel(true);
 
       saveProject(setSaveState, "Background 3D Model Upload Save");
-      setImportNotification(`Background 3D model uploaded: ${backgroundFileName}`);
+      setImportNotification(
+        `Background 3D model uploaded: ${backgroundFileName}`
+      );
       setTimeout(() => setImportNotification(null), 3000);
-      
     } catch (error) {
       console.error("Error uploading 3D model:", error);
       // Reset userUploadedFile flag on error
@@ -515,7 +526,7 @@ function CreateMode({
     if (!backgroundUsdzFile || !backgroundUsdzSha) {
       return;
     }
-    
+
     try {
       await authorizedUserOcto.rest.repos.deleteFile({
         owner: GlobalVariables.currentUser,
@@ -534,7 +545,9 @@ function CreateMode({
       setTimeout(() => setImportNotification(null), 3000);
     } catch (error) {
       console.error("Error deleting background 3D model file:", error);
-      alert(`Failed to delete 3D model file. The file will remain in your repository.`);
+      alert(
+        `Failed to delete 3D model file. The file will remain in your repository.`
+      );
     }
   };
 
@@ -805,6 +818,7 @@ function CreateMode({
 
             <LowerHalf
               {...{
+                activeAtom,
                 gridParam,
                 axesParam,
                 wireParam,
