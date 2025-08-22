@@ -1,4 +1,69 @@
 import React, { useState, useCallback } from "react";
+// Supported control config types
+export interface ButtonControlConfig {
+  type: "button";
+  label?: string;
+  order?: number;
+  onClick: () => void;
+}
+export interface NumberControlConfig {
+  type: "number";
+  value: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  label?: string;
+  order?: number;
+}
+
+export interface BooleanControlConfig {
+  type: "boolean";
+  value: boolean;
+  label?: string;
+  order?: number;
+}
+
+export interface StringControlConfig {
+  type: "string";
+  value: string;
+  label?: string;
+  order?: number;
+}
+
+export interface SelectControlConfig {
+  type: "select";
+  value: string;
+  options: string[] | Record<string, string>;
+  label?: string;
+  order?: number;
+}
+
+export interface ColorControlConfig {
+  type: "color";
+  value: string;
+  label?: string;
+  order?: number;
+}
+
+export interface RangeControlConfig {
+  type: "range";
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  label?: string;
+  order?: number;
+}
+
+// Union type for all admitted controls
+export type ControlConfig =
+  | NumberControlConfig
+  | BooleanControlConfig
+  | StringControlConfig
+  | SelectControlConfig
+  | ColorControlConfig
+  | RangeControlConfig
+  | ButtonControlConfig;
 
 /**
  * Controls API:
@@ -11,6 +76,10 @@ import React, { useState, useCallback } from "react";
  *   const [values, setControlValue, { registerControl, removeControl }] = useControls(initialConfig);
  */
 export function useControls(initialConfig = {}) {
+  // Accept dependency array as second argument
+  const args = arguments;
+  const deps = args.length > 1 ? args[1] : [];
+
   // Store controls object: { key: config }
   const [controls, setControls] = useState(() => ({ ...initialConfig }));
   // Store values separately: { key: value }
@@ -21,6 +90,16 @@ export function useControls(initialConfig = {}) {
     }
     return vals;
   });
+
+  // Reset controls and values when dependencies change
+  React.useEffect(() => {
+    setControls({ ...initialConfig });
+    const vals = {};
+    for (const key in initialConfig) {
+      vals[key] = initialConfig[key].value;
+    }
+    setValues(vals);
+  }, deps);
 
   // Set control value
   const setControlValue = useCallback((key, value) => {

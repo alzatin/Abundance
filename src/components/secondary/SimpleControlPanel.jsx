@@ -202,6 +202,7 @@ export function SimpleControlPanel({
   id = "simple-control-panel",
   position = { top: 40, left: 40 },
   panelId,
+  title = "CONTROLS",
 }) {
   const [controlValues, setControlValue] = useControls(controls);
   const [collapsed, setCollapsed] = useState(false);
@@ -253,7 +254,7 @@ export function SimpleControlPanel({
             <div
               style={{ fontWeight: 700, fontSize: 15, letterSpacing: "0.5px" }}
             >
-              CONTROLS
+              {title}
             </div>
             <div style={{ display: "flex", gap: 5 }}>
               <button
@@ -279,6 +280,12 @@ export function SimpleControlPanel({
             <div style={controlListStyle}>
               {Object.entries(controls).map(([key, config]) => {
                 const label = config.label || key;
+                const handleChange = (value) => {
+                  setControlValue(key, value);
+                  if (typeof config.onChange === "function") {
+                    config.onChange(value, key);
+                  }
+                };
                 switch (config.type) {
                   case "number":
                   case "range":
@@ -292,9 +299,7 @@ export function SimpleControlPanel({
                           min={config.min}
                           max={config.max}
                           step={config.step}
-                          onChange={(e) =>
-                            setControlValue(key, Number(e.target.value))
-                          }
+                          onChange={(e) => handleChange(Number(e.target.value))}
                         />
                       </div>
                     );
@@ -306,9 +311,7 @@ export function SimpleControlPanel({
                           type="checkbox"
                           style={checkboxStyle}
                           checked={!!controlValues[key]}
-                          onChange={(e) =>
-                            setControlValue(key, e.target.checked)
-                          }
+                          onChange={(e) => handleChange(e.target.checked)}
                         />
                       </div>
                     );
@@ -320,7 +323,7 @@ export function SimpleControlPanel({
                           type="text"
                           style={inputStyle}
                           value={controlValues[key]}
-                          onChange={(e) => setControlValue(key, e.target.value)}
+                          onChange={(e) => handleChange(e.target.value)}
                         />
                       </div>
                     );
@@ -332,7 +335,7 @@ export function SimpleControlPanel({
                           type="color"
                           style={colorStyle}
                           value={controlValues[key]}
-                          onChange={(e) => setControlValue(key, e.target.value)}
+                          onChange={(e) => handleChange(e.target.value)}
                         />
                       </div>
                     );
@@ -343,7 +346,7 @@ export function SimpleControlPanel({
                         <select
                           style={selectStyle}
                           value={controlValues[key]}
-                          onChange={(e) => setControlValue(key, e.target.value)}
+                          onChange={(e) => handleChange(e.target.value)}
                         >
                           {Array.isArray(config.options)
                             ? config.options.map((opt) => (
@@ -359,6 +362,29 @@ export function SimpleControlPanel({
                                 )
                               )}
                         </select>
+                      </div>
+                    );
+                  case "button":
+                    return (
+                      <div key={key} style={labelStyle}>
+                        <button
+                          style={{
+                            ...inputStyle,
+                            cursor: "pointer",
+                            fontWeight: 600,
+                            background: "#3e7aff",
+                            color: "#fff",
+                            border: "none",
+                            padding: "6px 16px",
+                          }}
+                          onClick={() => {
+                            if (typeof config.onClick === "function") {
+                              config.onClick(key);
+                            }
+                          }}
+                        >
+                          {label || "Button"}
+                        </button>
                       </div>
                     );
                   default:
