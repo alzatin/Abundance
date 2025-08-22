@@ -122,6 +122,18 @@ const inputStyle = {
   flex: "1 1 0",
 };
 
+const inputDisabledStyle = {
+  color: "#8ea9ff",
+  background: "#232832",
+  cursor: "not-allowed",
+  opacity: 0.7,
+};
+
+const inputFocusedStyle = {
+  border: "2px solid var(--abundance-color-brightPurple)",
+  boxShadow: "0 0 0 2px var(--abundance-color-transparentHighlight)",
+};
+
 const checkboxStyle = {
   width: 18,
   height: 18,
@@ -207,6 +219,15 @@ export function SimpleControlPanel({
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls);
 
+  // Focus management
+  const controlKeys = Object.keys(controls);
+  const [focusedIndex, setFocusedIndex] = useState(0);
+  const inputRefs = React.useRef([]);
+
+  // Collapsed panel state
+  const [collapsed, setCollapsed] = useState(false);
+  const [contentCollapsed, setContentCollapsed] = useState(false);
+
   // Ensure initial values are set when controls prop changes
   React.useEffect(() => {
     Object.entries(controls).forEach(([key, config]) => {
@@ -214,13 +235,32 @@ export function SimpleControlPanel({
         setControlValue(key, config.value);
       }
     });
+    setFocusedIndex(0); // Default focus to first control on controls change
   }, [controls]);
-  const [collapsed, setCollapsed] = useState(false);
-  const [contentCollapsed, setContentCollapsed] = useState(false);
 
-  // Close panel: just collapse for demo
-  const [hidden, setHidden] = useState(false);
-  if (hidden) return null;
+  // Focus the current control when focusedIndex changes
+  React.useEffect(() => {
+    if (inputRefs.current[focusedIndex]) {
+      inputRefs.current[focusedIndex].focus();
+    }
+  }, [focusedIndex, controlKeys.length]);
+
+  // Keyboard navigation
+  const handleKeyDown = (e) => {
+    if (e.key === "ArrowDown") {
+      setFocusedIndex((i) => Math.min(i + 1, controlKeys.length - 1));
+      e.preventDefault();
+    } else if (e.key === "ArrowUp") {
+      setFocusedIndex((i) => Math.max(i - 1, 0));
+      e.preventDefault();
+    }
+  };
+
+  // Programmatic focus setter
+  const focusControl = (key) => {
+    const idx = controlKeys.indexOf(key);
+    if (idx !== -1) setFocusedIndex(idx);
+  };
 
   // Only show values for existing controls
   const filteredControlValues = Object.fromEntries(
@@ -236,6 +276,8 @@ export function SimpleControlPanel({
           ? { ...collapsedStyle, ...position }
           : { ...panelStyle, ...position }),
       }}
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
     >
       {/* Collapsed panel */}
       {collapsed && (
@@ -293,7 +335,8 @@ export function SimpleControlPanel({
           {/* Controls */}
           {!contentCollapsed && (
             <div style={controlListStyle}>
-              {Object.entries(controls).map(([key, config]) => {
+              {controlKeys.map((key, idx) => {
+                const config = controls[key];
                 const label = config.label || key;
                 const handleChange = (value) => {
                   setControlValue(key, value);
@@ -301,65 +344,136 @@ export function SimpleControlPanel({
                     config.onChange(value, key);
                   }
                 };
+                const isFocused = focusedIndex === idx && !config.disable;
+                const isDisabled = config.disabled;
+                const commonProps = {
+                  ref: (el) => (inputRefs.current[idx] = el),
+                  tabIndex: isDisabled ? -1 : 0,
+                  onFocus: isDisabled ? undefined : () => setFocusedIndex(idx),
+                  onBlur: () => {},
+                  style: isDisabled
+                    ? { ...inputStyle, ...inputDisabledStyle }
+                    : isFocused
+                    ? { ...inputStyle, ...inputFocusedStyle }
+                    : inputStyle,
+                  disabled: isDisabled,
+                };
                 switch (config.type) {
                   case "number":
                   case "range":
                     return (
                       <div key={key} style={labelStyle}>
-                        <span style={{ width: 90 }}>{label}:</span>
+                        <span
+                          style={{
+                            width: 90,
+                            color: isDisabled
+                              ? inputDisabledStyle.color
+                              : undefined,
+                          }}
+                        >
+                          {label}:
+                        </span>
                         <input
                           type="number"
-                          style={inputStyle}
                           value={controlValues[key] ?? 0}
                           min={config.min}
                           max={config.max}
                           step={config.step}
                           onChange={(e) => handleChange(Number(e.target.value))}
+                          {...commonProps}
                         />
                       </div>
                     );
                   case "boolean":
                     return (
                       <div key={key} style={labelStyle}>
-                        <span style={{ width: 90 }}>{label}:</span>
+                        <span
+                          style={{
+                            width: 90,
+                            color: isDisabled
+                              ? inputDisabledStyle.color
+                              : undefined,
+                          }}
+                        >
+                          {label}:
+                        </span>
                         <input
                           type="checkbox"
-                          style={checkboxStyle}
                           checked={!!controlValues[key]}
                           onChange={(e) => handleChange(e.target.checked)}
+                          {...commonProps}
                         />
                       </div>
                     );
                   case "string":
                     return (
                       <div key={key} style={labelStyle}>
-                        <span style={{ width: 90 }}>{label}:</span>
+                        <span
+                          style={{
+                            width: 90,
+                            color: isDisabled
+                              ? inputDisabledStyle.color
+                              : undefined,
+                          }}
+                        >
+                          {label}:
+                        </span>
                         <input
                           type="text"
-                          style={inputStyle}
                           value={controlValues[key] ?? ""}
                           onChange={(e) => handleChange(e.target.value)}
+                          {...commonProps}
                         />
                       </div>
                     );
                   case "color":
                     return (
                       <div key={key} style={labelStyle}>
-                        <span style={{ width: 90 }}>{label}:</span>
+                        <span
+                          style={{
+                            width: 90,
+                            color: isDisabled
+                              ? inputDisabledStyle.color
+                              : undefined,
+                          }}
+                        >
+                          {label}:
+                        </span>
                         <input
                           type="color"
-                          style={colorStyle}
                           value={controlValues[key] ?? "#000000"}
                           onChange={(e) => handleChange(e.target.value)}
+                          style={
+                            isDisabled
+                              ? { ...colorStyle, ...inputDisabledStyle }
+                              : isFocused
+                              ? { ...colorStyle, ...inputFocusedStyle }
+                              : colorStyle
+                          }
+                          ref={(el) => (inputRefs.current[idx] = el)}
+                          tabIndex={isDisabled ? -1 : 0}
+                          onFocus={
+                            isDisabled ? undefined : () => setFocusedIndex(idx)
+                          }
+                          onBlur={() => {}}
+                          disabled={isDisabled}
                         />
                       </div>
                     );
                   case "select":
                     return (
                       <div key={key} style={labelStyle}>
-                        <span style={{ width: 90 }}>{label}:</span>
+                        <span
+                          style={{
+                            width: 90,
+                            color: isDisabled
+                              ? inputDisabledStyle.color
+                              : undefined,
+                          }}
+                        >
+                          {label}:
+                        </span>
                         <select
-                          style={selectStyle}
                           value={
                             controlValues[key] ??
                             (Array.isArray(config.options)
@@ -367,6 +481,7 @@ export function SimpleControlPanel({
                               : Object.keys(config.options)[0])
                           }
                           onChange={(e) => handleChange(e.target.value)}
+                          {...commonProps}
                         >
                           {Array.isArray(config.options)
                             ? config.options.map((opt) => (
@@ -388,20 +503,51 @@ export function SimpleControlPanel({
                     return (
                       <div key={key} style={labelStyle}>
                         <button
-                          style={{
-                            ...inputStyle,
-                            cursor: "pointer",
-                            fontWeight: 600,
-                            background: "#3e7aff",
-                            color: "#fff",
-                            border: "none",
-                            padding: "6px 16px",
-                          }}
+                          style={
+                            isDisabled
+                              ? {
+                                  ...inputStyle,
+                                  ...inputDisabledStyle,
+                                  cursor: "not-allowed",
+                                  fontWeight: 600,
+                                  background: "#3e7aff",
+                                  color: "#fff",
+                                  border: "none",
+                                  padding: "6px 16px",
+                                }
+                              : isFocused
+                              ? {
+                                  ...inputStyle,
+                                  ...inputFocusedStyle,
+                                  cursor: "pointer",
+                                  fontWeight: 600,
+                                  background: "#3e7aff",
+                                  color: "#fff",
+                                  border: "none",
+                                  padding: "6px 16px",
+                                }
+                              : {
+                                  ...inputStyle,
+                                  cursor: "pointer",
+                                  fontWeight: 600,
+                                  background: "#3e7aff",
+                                  color: "#fff",
+                                  border: "none",
+                                  padding: "6px 16px",
+                                }
+                          }
                           onClick={() => {
                             if (typeof config.onClick === "function") {
                               config.onClick(key);
                             }
                           }}
+                          ref={(el) => (inputRefs.current[idx] = el)}
+                          tabIndex={isDisabled ? -1 : 0}
+                          onFocus={
+                            isDisabled ? undefined : () => setFocusedIndex(idx)
+                          }
+                          onBlur={() => {}}
+                          disabled={isDisabled}
                         >
                           {label || "Button"}
                         </button>

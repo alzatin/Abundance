@@ -15,21 +15,6 @@
   --abundance-color-hightlightOffWhite: #fffffff6;
   --abundance-color-mediumGrey: #545252;
   --abundance-color-veryLightPurpleHighlight: #f9e9fd;
-
-  /* Control Panel Variables - Required for styling */
-  --panel-background: #181818;
-  --panel-foreground: #d6d6d6;
-  --panel-border: #2f2f2f;
-  --panel-separator: #2a2a2a;
-  --control-background: #2a2a2a;
-  --control-background-hover: #323232;
-  --control-background-active: #3a3a3a;
-  --control-border: #3a3a3a;
-  --control-accent: #00bcd4;
-  --control-accent-hover: #26c6da;
-  --control-text: #d6d6d6;
-  --control-text-muted: #969696;
-  --control-label: #bfbfbf;
 }
 
 .dark-theme {

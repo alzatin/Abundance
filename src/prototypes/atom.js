@@ -788,7 +788,7 @@ export default class Atom {
             type: "string",
             value: input.currentEquation ? input.currentEquation : input.value,
             label: input.name,
-            //disabled: checkConnector(),
+            disabled: checkConnector(),
             onChange: async (value) => {
               let currentEquation = String(value).trim();
               input.currentEquation = currentEquation;

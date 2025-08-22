@@ -5,6 +5,7 @@ export interface ButtonControlConfig {
   label?: string;
   order?: number;
   onClick: () => void;
+  disabled?: boolean;
 }
 export interface NumberControlConfig {
   type: "number";
@@ -14,6 +15,7 @@ export interface NumberControlConfig {
   step?: number;
   label?: string;
   order?: number;
+  disabled?: boolean;
 }
 
 export interface BooleanControlConfig {
@@ -21,6 +23,7 @@ export interface BooleanControlConfig {
   value: boolean;
   label?: string;
   order?: number;
+  disabled?: boolean;
 }
 
 export interface StringControlConfig {
@@ -28,6 +31,7 @@ export interface StringControlConfig {
   value: string;
   label?: string;
   order?: number;
+  disabled?: boolean;
 }
 
 export interface SelectControlConfig {
@@ -36,6 +40,7 @@ export interface SelectControlConfig {
   options: string[] | Record<string, string>;
   label?: string;
   order?: number;
+  disabled?: boolean;
 }
 
 export interface ColorControlConfig {
@@ -43,6 +48,7 @@ export interface ColorControlConfig {
   value: string;
   label?: string;
   order?: number;
+  disabled?: boolean;
 }
 
 export interface RangeControlConfig {
@@ -53,6 +59,7 @@ export interface RangeControlConfig {
   step?: number;
   label?: string;
   order?: number;
+  disabled?: boolean;
 }
 
 // Union type for all admitted controls
