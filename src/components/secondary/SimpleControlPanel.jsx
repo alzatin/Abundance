@@ -222,6 +222,11 @@ export function SimpleControlPanel({
   const [hidden, setHidden] = useState(false);
   if (hidden) return null;
 
+  // Only show values for existing controls
+  const filteredControlValues = Object.fromEntries(
+    Object.entries(controlValues).filter(([key]) => key in controls)
+  );
+
   return (
     <div
       id={id}
@@ -276,13 +281,13 @@ export function SimpleControlPanel({
               >
                 <CaretDownIcon size={14} collapsed={contentCollapsed} />
               </button>
-              <button
+              {/*<button
                 style={closeButtonStyle}
                 onClick={() => setHidden(true)}
                 title="Close panel"
               >
                 <XIcon size={14} />
-              </button>
+              </button>*/}
             </div>
           </div>
           {/* Controls */}
@@ -406,7 +411,7 @@ export function SimpleControlPanel({
                     return null;
                 }
               })}
-              {/* Debug values */}
+              {/* Debug values 
               <div
                 style={{
                   marginTop: 18,
@@ -428,9 +433,9 @@ export function SimpleControlPanel({
                     margin: 0,
                   }}
                 >
-                  {JSON.stringify(controlValues, null, 2)}
+                  {JSON.stringify(filteredControlValues, null, 2)}
                 </pre>
-              </div>
+              </div>*/}
             </div>
           )}
         </>

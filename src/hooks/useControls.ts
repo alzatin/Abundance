@@ -101,9 +101,12 @@ export function useControls(initialConfig = {}) {
     setValues(vals);
   }, deps);
 
-  // Set control value
+  // Set control value only if different
   const setControlValue = useCallback((key, value) => {
-    setValues((v) => ({ ...v, [key]: value }));
+    setValues((v) => {
+      if (v[key] === value) return v;
+      return { ...v, [key]: value };
+    });
   }, []);
 
   // Register a new control

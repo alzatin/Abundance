@@ -755,7 +755,8 @@ export default class Atom {
                   currentEquation,
                   input.name
                 );
-                if (Number.isFinite(result)) {
+                if (result !== input.value) {
+                  // console.log("val changed:", input.value, "->", result);
                   input.setValue(result);
                 }
               } catch (err) {
@@ -783,11 +784,9 @@ export default class Atom {
 
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry") {
-          console.log("Creating input for:", input.currentEquation);
-
           inputParams[this.uniqueID + input.name] = {
-            type: "number",
-            value: input.value,
+            type: "string",
+            value: input.currentEquation ? input.currentEquation : input.value,
             label: input.name,
             //disabled: checkConnector(),
             onChange: async (value) => {
@@ -799,9 +798,13 @@ export default class Atom {
                   input.name
                 );
                 if (Number.isFinite(result)) {
-                  input.setValue(result);
+                  if (result !== input.value) {
+                    console.log("val changed:", input.value, "->", result);
+                    input.setValue(result);
+                  }
                 }
               } catch (err) {
+                console.log("setting value to NaN");
                 input.setValue(NaN);
                 this.alertingErrorHandler()(err);
               }

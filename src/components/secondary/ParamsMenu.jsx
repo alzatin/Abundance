@@ -90,10 +90,11 @@ export default function ParamsMenu({ activeAtom }) {
     return { ...inputParams };
   }, [inputParams]);
 
-  const [values, setControlValue, { controls, registerControl }] = useControls(
-    inputParamsConfig,
-    [activeAtom]
-  );
+  const [
+    values,
+    setControlValue,
+    { controls, registerControl, removeControl },
+  ] = useControls(inputParamsConfig, [activeAtom]);
 
   console.log("Control values:", values);
   return (
