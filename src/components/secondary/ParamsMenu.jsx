@@ -2,7 +2,6 @@ import React from "react";
 import { useEffect, useMemo } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
-import on from "../../js/circular-menu/src/on";
 
 export default function ParamsMenu({ activeAtom }) {
   const unusedDefault = {
@@ -101,7 +100,7 @@ export default function ParamsMenu({ activeAtom }) {
       <SimpleControlPanel
         controls={controls}
         id="atom-inputs-panel"
-        position={{ top: 32, left: 32 }}
+        position={{ top: 300, left: 10 }}
         title={activeAtom?.name || "Controls"}
       />
       {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>

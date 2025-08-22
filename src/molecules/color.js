@@ -166,32 +166,6 @@ export default class Color extends Atom {
   }
 
   /**
-   * Create Leva Menu Inputs - returns to ParameterEditor
-   */
-  createLevaInputs() {
-    let inputParams = {};
-    /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs) {
-      this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
-
-        inputParams[this.uniqueID + "color"] = {
-          value: Object.keys(this.colorOptions)[this.selectedColorIndex],
-          label: "Color",
-          options: Object.keys(this.colorOptions),
-          onChange: (value) => {
-            this.changeColor(Object.keys(this.colorOptions).indexOf(value));
-            this.sendToRender();
-          },
-        };
-      });
-      return inputParams;
-    }
-  }
-
-  /**
    * Add the color choice to the object which is saved for this molecule
    */
   serialize(offset = { x: 0, y: 0 }) {
