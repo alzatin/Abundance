@@ -12,6 +12,7 @@ import {
   Leva,
   LevaInputs,
 } from "leva";
+import on from "../js/circular-menu/src/on.js";
 
 // Make this an enum once we're using typescript
 const AlertType = Object.freeze({
@@ -769,7 +770,7 @@ export default class Atom {
     }
   }
 
-  createInputParams = (activeAtom, handleAddControl) => {
+  createInputParams(activeAtom, handleAddControl, setControlValue) {
     console.log("Creating input params for:", activeAtom.name);
     let inputParams = {};
 
@@ -782,10 +783,12 @@ export default class Atom {
 
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry") {
+          console.log("Creating input for:", input.currentEquation);
+
           inputParams[this.uniqueID + input.name] = {
-            value: input.currentEquation ? input.currentEquation : input.value,
+            type: "number",
+            value: input.value,
             label: input.name,
-            type: "string",
             //disabled: checkConnector(),
             onChange: async (value) => {
               let currentEquation = String(value).trim();
@@ -806,9 +809,9 @@ export default class Atom {
           };
         }
       });
-      return inputParams;
     }
-  };
+    return inputParams;
+  }
 
   /**
    * Evaluate the equation

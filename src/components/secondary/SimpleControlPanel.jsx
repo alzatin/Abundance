@@ -204,7 +204,17 @@ export function SimpleControlPanel({
   panelId,
   title = "CONTROLS",
 }) {
-  const [controlValues, setControlValue] = useControls(controls);
+  const [controlValues, setControlValue, { controls: registeredControls }] =
+    useControls(controls);
+
+  // Ensure initial values are set when controls prop changes
+  React.useEffect(() => {
+    Object.entries(controls).forEach(([key, config]) => {
+      if (config.value !== undefined) {
+        setControlValue(key, config.value);
+      }
+    });
+  }, [controls]);
   const [collapsed, setCollapsed] = useState(false);
   const [contentCollapsed, setContentCollapsed] = useState(false);
 
@@ -295,7 +305,7 @@ export function SimpleControlPanel({
                         <input
                           type="number"
                           style={inputStyle}
-                          value={controlValues[key]}
+                          value={controlValues[key] ?? 0}
                           min={config.min}
                           max={config.max}
                           step={config.step}
@@ -322,7 +332,7 @@ export function SimpleControlPanel({
                         <input
                           type="text"
                           style={inputStyle}
-                          value={controlValues[key]}
+                          value={controlValues[key] ?? ""}
                           onChange={(e) => handleChange(e.target.value)}
                         />
                       </div>
@@ -334,7 +344,7 @@ export function SimpleControlPanel({
                         <input
                           type="color"
                           style={colorStyle}
-                          value={controlValues[key]}
+                          value={controlValues[key] ?? "#000000"}
                           onChange={(e) => handleChange(e.target.value)}
                         />
                       </div>
@@ -345,7 +355,12 @@ export function SimpleControlPanel({
                         <span style={{ width: 90 }}>{label}:</span>
                         <select
                           style={selectStyle}
-                          value={controlValues[key]}
+                          value={
+                            controlValues[key] ??
+                            (Array.isArray(config.options)
+                              ? config.options[0]
+                              : Object.keys(config.options)[0])
+                          }
                           onChange={(e) => handleChange(e.target.value)}
                         >
                           {Array.isArray(config.options)
@@ -416,12 +431,6 @@ export function SimpleControlPanel({
                   {JSON.stringify(controlValues, null, 2)}
                 </pre>
               </div>
-            </div>
-          )}
-          {/* Panel footer */}
-          {!contentCollapsed && (
-            <div style={footerStyle}>
-              <span>Ctrl+; to toggle</span>
             </div>
           )}
         </>

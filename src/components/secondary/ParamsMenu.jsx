@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
 import on from "../../js/circular-menu/src/on";
@@ -8,7 +8,7 @@ export default function ParamsMenu({ activeAtom }) {
   const unusedDefault = {
     position: {
       type: "number",
-      value: 0,
+      value: 5,
       min: -100,
       max: 100,
       step: 1,
@@ -23,13 +23,13 @@ export default function ParamsMenu({ activeAtom }) {
     },
     color: {
       type: "color",
-      value: "#3b82f6",
+      value: "#733f70ff",
       label: "Color",
       order: 3,
     },
     speed: {
       type: "range",
-      value: 50,
+      value: 30,
       min: 0,
       max: 100,
       step: 1,
@@ -71,15 +71,31 @@ export default function ParamsMenu({ activeAtom }) {
     });
   };
 
-  const inputParams =
-    activeAtom !== null
-      ? activeAtom.createInputParams(activeAtom, handleAddControl)
-      : {};
+  const handleSetValue = (key, value) => {
+    setControlValue(key, value);
+  };
+
+  let inputParams = {};
+
+  if (activeAtom) {
+    inputParams = activeAtom.createInputParams(
+      activeAtom,
+      handleAddControl,
+      handleSetValue
+    );
+    //inputParams = unusedDefault;
+  }
+
+  const inputParamsConfig = useMemo(() => {
+    return { ...inputParams };
+  }, [inputParams]);
 
   const [values, setControlValue, { controls, registerControl }] = useControls(
-    inputParams,
+    inputParamsConfig,
     [activeAtom]
   );
+
+  console.log("Control values:", values);
   return (
     <div>
       <SimpleControlPanel
