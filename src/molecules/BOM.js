@@ -121,6 +121,23 @@ export default class AddBOMTag extends Atom {
     return bomParams;
   }
 
+  createInputParams() {
+    let inputParams = {};
+    for (const key in this.BOMitem) {
+      inputParams[this.uniqueID + key] = {
+        type: "string",
+        value: this.BOMitem[key],
+        label: key,
+        disabled: false,
+        onChange: (value) => {
+          this.BOMitem[key] = value;
+          this.updateValue();
+        },
+      };
+    }
+    return inputParams;
+  }
+
   /**
    * Add the bom item to the saved object
    */

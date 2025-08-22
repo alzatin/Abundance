@@ -59,7 +59,7 @@ export default class Constant extends Atom {
     this.value = 10.0;
 
     this.setValues(values); //This will overwrite the default value if one is loaded
-    
+
     this.addIO("output", "number", this, "number", this.value);
 
     this.decreaseToProcessCountByOne(); //Since there is nothing upstream this needs to be removed from the list here
@@ -91,6 +91,35 @@ export default class Constant extends Atom {
 
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
+  }
+
+  createInputParams() {
+    // Create the Leva input for the constant name
+    let inputParams = {};
+    inputParams["constant number"] = {
+      type: "string",
+      value: this.name,
+      label: "Constant Name",
+      disabled: false,
+      onChange: (value) => {
+        this.name = value;
+      },
+    };
+    // Create the Leva input for the constant value
+    inputParams[this.uniqueID + this.name] = {
+      type: "number",
+      value: this.value,
+      label: this.name,
+      disabled: false,
+      step: 0.01,
+      onChange: (value) => {
+        if (this.value !== value) {
+          this.output.setValue(value);
+          this.updateValue();
+        }
+      },
+    };
+    return inputParams;
   }
   /**
    * Create Leva Menu Input - returns to ParameterEditor
@@ -133,9 +162,9 @@ export default class Constant extends Atom {
   /**
    * Starts propagation from this atom since it is not waiting for anything up stream.
    */
-    beginPropagation(force = false) {
-      this.output.setValue(this.value);
-    }
+  beginPropagation(force = false) {
+    this.output.setValue(this.value);
+  }
 
   /**
    * Send the value of this atom to the 3D display. Used to display the number

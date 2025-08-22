@@ -126,6 +126,45 @@ export default class Color extends Atom {
     this.updateValue();
   }
 
+  createInputParams() {
+    let inputParams = {};
+
+    inputParams[this.uniqueID + "color"] = {
+      type: "select",
+      value: Object.keys(this.colorOptions)[this.selectedColorIndex],
+      label: "Color",
+      options: Object.keys(this.colorOptions),
+      onChange: (value) => {
+        this.changeColor(Object.keys(this.colorOptions).indexOf(value));
+        this.sendToRender();
+      },
+    };
+    /** Runs through active atom inputs and adds IO parameters to default param*/
+    if (this.inputs.every((x) => x.ready)) {
+      this.inputs.map((input) => {
+        const checkConnector = () => {
+          return input.connectors.length > 0;
+        };
+        /* Makes inputs for Io's other than geometry */
+        if (input.valueType !== "geometry") {
+          inputParams[this.uniqueID + input.name] = {
+            type: "number",
+            value: input.value,
+            label: input.name,
+            disabled: checkConnector(),
+            step: 0.01,
+            onChange: (value) => {
+              if (input.value !== value) {
+                input.setValue(value);
+              }
+            },
+          };
+        }
+      });
+    }
+    return inputParams;
+  }
+
   /**
    * Create Leva Menu Inputs - returns to ParameterEditor
    */
@@ -147,22 +186,6 @@ export default class Color extends Atom {
             this.sendToRender();
           },
         };
-
-        /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry") {
-          inputParams[this.uniqueID + input.name] = {
-            value: input.value,
-            label: input.name,
-            disabled: checkConnector(),
-            step: 0.01,
-            onChange: (value) => {
-              if (input.value !== value) {
-                input.setValue(value);
-                //this.sendToRender();
-              }
-            },
-          };
-        }
       });
       return inputParams;
     }

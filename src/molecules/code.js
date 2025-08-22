@@ -199,6 +199,57 @@ export default class Code extends Atom {
     }
   }
 
+  createInputParams() {
+    let inputParams = {};
+    /** Runs through active atom inputs and adds IO parameters to default param*/
+    if (this.inputs.every((x) => x.ready)) {
+      this.inputs.map((input) => {
+        const checkConnector = () => {
+          return input.connectors.length > 0;
+        };
+
+        inputParams[this.uniqueID + input.name] = {
+          type: "number",
+          value: input.value,
+          label: input.name,
+          disabled: checkConnector(),
+          step: 0.01,
+          onChange: (value) => {
+            if (input.value !== value) {
+              input.setValue(value);
+            }
+          },
+        };
+      });
+
+      inputParams["Edit Code"] = {
+        type: "button",
+        label: "Edit Code",
+        order: 7,
+        onClick: () => {
+          this.editCode();
+        },
+      };
+      inputParams["Save Code"] = {
+        type: "button",
+        label: "Save Code",
+        order: 8,
+        onClick: () => {
+          this.saveCode();
+        },
+      };
+      inputParams["Close Editor"] = {
+        type: "button",
+        label: "Close Editor",
+        order: 9,
+        onClick: () => {
+          this.closeCode();
+        },
+      };
+      return inputParams;
+    }
+  }
+
   /**
    * Called when code editor save button is clicked. Updates the code and value of the atom.
    */
