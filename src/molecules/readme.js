@@ -87,22 +87,19 @@ export default class Readme extends Atom {
     this.readmeText = newText;
   }
 
-  /**
-   * Creates the Leva input for this atom
-   */
-  createLevaInputs() {
+  createInputParams() {
     let inputParams = {};
 
-    inputParams[this.name + this.uniqueID] = {
+    super.createInputParams();
+    inputParams["readme text" + this.uniqueID] = {
+      type: "string",
       value: this.readmeText,
-      label: this.name,
-      rows: 10,
+      label: "Readme Text",
       onChange: (value) => {
-        if (this.readmeText !== value) {
-          this.setValue(value);
-        }
+        this.setValue(value);
       },
     };
+
     return inputParams;
   }
 

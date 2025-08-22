@@ -98,7 +98,7 @@ export default class Export extends Atom {
     }
   }
 
-  createLevaInputs() {
+  createInputParams() {
     let inputParams = {};
     const exportOptions = ["STL", "SVG", "STEP"];
 
@@ -111,6 +111,7 @@ export default class Export extends Atom {
         };
         if (input.name == "File Type") {
           inputParams[this.uniqueID + "file_ops"] = {
+            type: "select",
             value: input.value,
             options: exportOptions,
             disabled: checkConnector(),
@@ -126,6 +127,7 @@ export default class Export extends Atom {
         /* Makes inputs for Io's other than geometry */
         if (input.name == "Resolution (dpi)") {
           inputParams[this.uniqueID + input.name] = {
+            type: "number",
             value: input.value,
             label: input.name,
             disabled: this.findIOValue("File Type") != "SVG" ? true : false,
@@ -139,6 +141,7 @@ export default class Export extends Atom {
         }
         if (input.name == "Part Name") {
           inputParams[this.uniqueID + input.name] = {
+            type: "string",
             value: this.partName,
             label: input.name,
             disabled: checkConnector(),
@@ -153,10 +156,13 @@ export default class Export extends Atom {
       });
     }
 
-    inputParams["Download File"] = button(() =>
-      //this.loadFile(importOptions[importIndex])
-      this.exportFile()
-    );
+    inputParams["Download File"] = {
+      type: "button",
+      label: "Download File",
+      onClick: () => {
+        this.exportFile();
+      },
+    };
 
     return inputParams;
   }

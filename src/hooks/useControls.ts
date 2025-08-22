@@ -1,5 +1,12 @@
 import React, { useState, useCallback } from "react";
 // Supported control config types
+export interface PointControlConfig {
+  type: "point";
+  value: [number, number, number];
+  label?: string;
+  order?: number;
+  disabled?: boolean;
+}
 export interface ButtonControlConfig {
   type: "button";
   label?: string;
@@ -70,7 +77,8 @@ export type ControlConfig =
   | SelectControlConfig
   | ColorControlConfig
   | RangeControlConfig
-  | ButtonControlConfig;
+  | ButtonControlConfig
+  | PointControlConfig;
 
 /**
  * Controls API:

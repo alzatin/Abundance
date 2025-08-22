@@ -771,8 +771,7 @@ export default class Atom {
     }
   }
 
-  createInputParams(activeAtom, handleAddControl, setControlValue) {
-    console.log("Creating input params for:", activeAtom.name);
+  createInputParams(handleAddControl, setControlValue) {
     let inputParams = {};
 
     /** Runs through active atom inputs and adds IO parameters to default param*/

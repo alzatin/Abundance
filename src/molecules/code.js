@@ -170,35 +170,6 @@ export default class Code extends Atom {
     }
   }
 
-  createLevaInputs() {
-    let inputParams = {};
-    /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs.every((x) => x.ready)) {
-      this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
-
-        inputParams[this.uniqueID + input.name] = {
-          value: input.value,
-          label: input.name,
-          disabled: checkConnector(),
-          step: 0.01,
-          onChange: (value) => {
-            if (input.value !== value) {
-              input.setValue(value);
-              //this.sendToRender();
-            }
-          },
-        };
-      });
-      inputParams["Edit Code"] = button(() => this.editCode());
-      inputParams["Save Code"] = button(() => this.saveCode());
-      inputParams["Close Editor"] = button(() => this.closeCode());
-      return inputParams;
-    }
-  }
-
   createInputParams() {
     let inputParams = {};
     /** Runs through active atom inputs and adds IO parameters to default param*/

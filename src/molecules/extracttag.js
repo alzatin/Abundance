@@ -90,7 +90,7 @@ export default class ExtractTag extends Atom {
     return true;
   }
 
-  createLevaInputs(setInputChanged) {
+  createInputParams() {
     var inputID = this.findIOValue("geometry");
     this.processing = true;
     GlobalVariables.cad.extractAllTags(inputID, this.tag).then((result) => {
@@ -98,19 +98,21 @@ export default class ExtractTag extends Atom {
         this.processing = true;
         this.tagList = result;
         setInputChanged(this.tagList);
-      }
+      } //REVISE FOR NEW MENU
       this.processing = false;
     });
     let tagList = this.tagList;
     let inputParams = {};
 
     inputParams[this.uniqueID + "extracting"] = {
+      type: "string",
       value: this.tag,
       label: "Tag",
       disabled: true,
     };
 
     inputParams[this.uniqueID + "tag_ops"] = {
+      type: "select",
       value: "Select Tag",
       options: tagList,
       label: "Extract Tag",

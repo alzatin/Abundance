@@ -121,35 +121,7 @@ export default class Constant extends Atom {
     };
     return inputParams;
   }
-  /**
-   * Create Leva Menu Input - returns to ParameterEditor
-   */
-  createLevaInputs() {
-    // Create the Leva input for the constant name
-    let outputParams = {};
-    outputParams["constant number"] = {
-      value: this.name,
-      label: "Constant Name",
-      disabled: false,
-      onChange: (value) => {
-        this.name = value;
-      },
-    };
-    // Create the Leva input for the constant value
-    outputParams[this.uniqueID + this.name] = {
-      value: this.value,
-      label: this.name,
-      disabled: false,
-      step: 0.01,
-      onChange: (value) => {
-        if (this.value !== value) {
-          this.output.setValue(value);
-          this.updateValue();
-        }
-      },
-    };
-    return outputParams;
-  }
+
   /**
    * Set's the output value for constant
    */

@@ -205,44 +205,22 @@ export default class Import extends Atom {
     }
   }
 
-  createLevaInputs() {
+  createInputParams() {
+    //REVISE FOR NEW MENU
     let inputParams = {};
     if (this.fileName == null) {
       inputParams[this.uniqueID + "file_ops"] = {
+        type: "select",
         options: this.importOptions,
         label: "File Type",
         onChange: (value) => {
           this.importIndex = this.importOptions.indexOf(value);
         },
       };
-    } else {
-      if (this.inputs) {
-        this.inputs.map((input) => {
-          const checkConnector = () => {
-            return input.connectors.length > 0;
-          };
-
-          /* Makes inputs for Io's other than geometry */
-          if (input.valueType !== "geometry") {
-            inputParams[this.uniqueID + input.name] = {
-              value: input.value,
-              label: input.name,
-              step: 0.25,
-              disabled: checkConnector(),
-              onChange: (value) => {
-                if (input.value !== value) {
-                  input.setValue(value);
-                  this.updateValue();
-                }
-              },
-            };
-          }
-        });
-        return inputParams;
-      }
     }
     return inputParams;
   }
+
   /**
    * Creates an input element to load a file and calls import function in CreateMode
    */

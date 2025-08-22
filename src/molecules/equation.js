@@ -205,11 +205,8 @@ export default class Equation extends Atom {
     }
   }
 
-  /**
-   * Create Leva Menu Inputs - returns to ParameterEditor
-   */
-  createLevaInputs(setInputChanged) {
-    // recreate inputs
+  createInputParams(handleAddControl, setControlValue) {
+    // Create input parameters for the atom
     let inputParams = {};
     /** Runs through active atom inputs and adds IO parameters to default param*/
     if (this.inputs) {
@@ -217,18 +214,16 @@ export default class Equation extends Atom {
         const checkConnector = () => {
           return input.connectors.length > 0;
         };
-
-        /* Some input parameters (inlcuding equation and result) live in the parameter editor file so they can use the set, get functions */
-
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry") {
           inputParams[input.name] = {
             value: input.value,
+            type: "string",
             disabled: checkConnector(),
             step: 0.01,
             onChange: (value) => {
               input.setValue(value);
-              setInputChanged(value);
+              //setInputChanged(value); NEEDS TO BE REVISED FOR NEW MENU
               //this.sendToRender();
             },
             order: -2,

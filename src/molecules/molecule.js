@@ -139,12 +139,12 @@ export default class Molecule extends Atom {
     GlobalVariables.c.fill();
   }
 
-  /**
-   * Create Leva Menu Input - returns to ParameterEditor
-   */
-  createLevaInputs() {
+  createInputParams() {
     let inputParams = {};
+
+    super.createInputParams();
     inputParams["molecule name" + this.uniqueID] = {
+      type: "string",
       value: this.topLevel ? GlobalVariables.currentRepoName : this.name,
       label: "Molecule Name",
       disabled: this.topLevel ? true : false,
@@ -154,6 +154,7 @@ export default class Molecule extends Atom {
     };
     if (this.topLevel == true) {
       inputParams["molecule name" + this.uniqueID + "units"] = {
+        type: "select",
         value: this.unitsKey,
         label: "Project Units",
         options: Object.keys(this.units),
@@ -163,51 +164,14 @@ export default class Molecule extends Atom {
         },
       };
     }
-    /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs) {
-      this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
-
-        /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry") {
-          inputParams[this.uniqueID + input.name] = {
-            value: input.currentEquation ? input.currentEquation : input.value,
-            label: input.name,
-            type: LevaInputs.STRING,
-            disabled: checkConnector(),
-            onChange: async (value) => {
-              /* If the user has set the type as string don't evaluate as equation */
-              if (input.type && input.valueType?.toUpperCase() === "STRING") {
-                input.setValue(value);
-              } else {
-                let currentEquation = String(value).trim();
-                input.currentEquation = currentEquation;
-                try {
-                  const result = await this.evaluateEquation(
-                    currentEquation,
-                    input.name
-                  );
-                  if (Number.isFinite(result)) {
-                    input.setValue(result);
-                  }
-                } catch (err) {
-                  input.setValue(NaN);
-                  this.alertingErrorHandler()(err);
-                }
-              }
-            },
-          };
-        }
-      });
-    }
-
     if (GlobalVariables.currentRepo.parentRepo != null && this.topLevel) {
-      inputParams["Reload from Github"] = button(() => {
-        //Future compare to main branch
-        this.reloadFork();
-      });
+      inputParams["Reload from Github"] = {
+        type: "button",
+        label: "Reload from Github",
+        onClick: () => {
+          this.reloadFork();
+        },
+      };
     }
 
     return inputParams;

@@ -77,7 +77,7 @@ export default class Text extends Atom {
     GlobalVariables.c.closePath();
   }
 
-  createLevaInputs() {
+  createInputParams() {
     let inputParams = {};
 
     /** Runs through active atom inputs and adds IO parameters to default param*/
@@ -90,10 +90,10 @@ export default class Text extends Atom {
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry" && input.name !== "Text") {
           inputParams[this.uniqueID + input.name] = {
+            type: "string",
             value: input.currentEquation ? input.currentEquation : input.value,
             label: input.name,
             step: 0.25,
-            type: LevaInputs.STRING,
             disabled: checkConnector(),
             onChange: async (value) => {
               let currentEquation = String(value).trim();
@@ -104,7 +104,9 @@ export default class Text extends Atom {
                   input.name
                 );
                 if (Number.isFinite(result)) {
-                  input.setValue(result);
+                  if (result !== input.value) {
+                    input.setValue(result);
+                  }
                 }
               } catch (err) {
                 input.setValue(NaN);
@@ -115,9 +117,9 @@ export default class Text extends Atom {
         }
         if (input.name === "Text") {
           inputParams[this.uniqueID + "Text"] = {
-            value: input.currentEquation ? input.currentEquation : input.value,
+            type: "string",
+            value: input.value,
             label: input.name,
-            type: LevaInputs.STRING,
             disabled: checkConnector(),
             onChange: async (value) => {
               if (input.value !== value) {
@@ -131,6 +133,7 @@ export default class Text extends Atom {
     const fontOptions = Fonts;
 
     inputParams[this.uniqueID + "FontFamily"] = {
+      type: "select",
       value: Object.keys(fontOptions)[this.selectedFontIndex],
       label: "Font Family",
       options: Object.keys(fontOptions),

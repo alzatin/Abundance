@@ -81,10 +81,11 @@ export default class Tag extends Atom {
     GlobalVariables.topLevelMolecule.projectAvailableTags = newProjectTags;
   }
 
-  createLevaInputs() {
+  createInputParams() {
     let inputParams = {};
 
     inputParams[this.uniqueID + "custom_string"] = {
+      type: "string",
       value: this.tags[0],
       label: "Add Tag",
       disabled: false,

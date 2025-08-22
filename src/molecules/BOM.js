@@ -104,23 +104,6 @@ export default class AddBOMTag extends Atom {
     GlobalVariables.c.closePath();
   }
 
-  /** Leva inputs for bom  */
-  createLevaInputs() {
-    let bomParams = {};
-    for (const key in this.BOMitem) {
-      bomParams[key] = {
-        value: this.BOMitem[key],
-        label: key,
-        disabled: false,
-        onChange: (value) => {
-          this.BOMitem[key] = value;
-          this.updateValue();
-        },
-      };
-    }
-    return bomParams;
-  }
-
   createInputParams() {
     let inputParams = {};
     for (const key in this.BOMitem) {

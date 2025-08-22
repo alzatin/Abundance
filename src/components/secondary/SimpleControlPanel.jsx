@@ -99,6 +99,8 @@ const headerStyle = {
 const controlListStyle = {
   padding: "12px",
   background: "var(--panel-background)",
+  maxHeight: "340px", // You can adjust this value as needed
+  overflowY: "auto",
 };
 
 const labelStyle = {
@@ -359,6 +361,67 @@ export function SimpleControlPanel({
                   disabled: isDisabled,
                 };
                 switch (config.type) {
+                  case "point":
+                    return (
+                      <div key={key} style={labelStyle}>
+                        <span
+                          style={{
+                            width: 90,
+                            color: isDisabled
+                              ? inputDisabledStyle.color
+                              : undefined,
+                          }}
+                        >
+                          {label}:
+                        </span>
+                        {["X", "Y", "Z"].map((axis, axisIdx) => (
+                          <input
+                            key={axis}
+                            type="number"
+                            value={
+                              Array.isArray(controlValues[key])
+                                ? controlValues[key][axisIdx] ?? 0
+                                : 0
+                            }
+                            onChange={(e) => {
+                              if (!isDisabled) {
+                                const val = Number(e.target.value);
+                                const arr = Array.isArray(controlValues[key])
+                                  ? [...controlValues[key]]
+                                  : [0, 0, 0];
+                                arr[axisIdx] = val;
+                                handleChange(arr);
+                              }
+                            }}
+                            style={
+                              isDisabled
+                                ? {
+                                    ...inputStyle,
+                                    ...inputDisabledStyle,
+                                    width: 50,
+                                    marginRight: 4,
+                                  }
+                                : isFocused
+                                ? {
+                                    ...inputStyle,
+                                    ...inputFocusedStyle,
+                                    width: 50,
+                                    marginRight: 4,
+                                  }
+                                : { ...inputStyle, width: 50, marginRight: 4 }
+                            }
+                            ref={
+                              axisIdx === 0
+                                ? (el) => (inputRefs.current[idx] = el)
+                                : undefined
+                            }
+                            tabIndex={isDisabled ? -1 : 0}
+                            disabled={isDisabled}
+                            aria-label={axis}
+                          />
+                        ))}
+                      </div>
+                    );
                   case "number":
                   case "range":
                     return (

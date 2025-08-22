@@ -79,7 +79,6 @@ export default function ParamsMenu({ activeAtom }) {
 
   if (activeAtom) {
     inputParams = activeAtom.createInputParams(
-      activeAtom,
       handleAddControl,
       handleSetValue
     );
