@@ -3,6 +3,7 @@ import GlobalVariables from "../js/globalvariables.js";
 //import GlobalVariables from '../js/globalvariables.js'
 import { proxy } from "comlink";
 import { button, LevaInputs } from "leva";
+import { Status } from "../prototypes/observableEntity.js";
 
 /**
  * Rearrange all input geometries to fit on a sheet of material. Parts are packed
@@ -55,31 +56,28 @@ export default class CutLayout extends Atom {
 
     this.cancelationHandle = undefined;
 
-    this.addIO("input", "geometry", this, "geometry", null);
-
-    this.addIO(
-      "input",
-      "Sheet Width",
-      this,
-      "number",
-      GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 2438 : 96
-    );
-    this.addIO(
-      "input",
-      "Sheet Height",
-      this,
-      "number",
-      GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 1219 : 48
-    );
-    this.addIO(
-      "input",
-      "Part Padding",
-      this,
-      "number",
-      GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 10 : 0.4
-    );
-
-    this.addIO("output", "geometry", this, "geometry", "");
+    this.addAllIOs([
+      { name: "geometry", valueType: "geometry", type: "input" },
+      {
+        name: "Sheet Width",
+        valueType: "number",
+        defaultValue:
+          GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 2438 : 96,
+      },
+      {
+        name: "Sheet Height",
+        valueType: "number",
+        defaultValue:
+          GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 1219 : 48,
+      },
+      {
+        name: "Part Padding",
+        valueType: "number",
+        defaultValue:
+          GlobalVariables.topLevelMolecule.unitsKey == "MM" ? 10 : 0.4,
+      },
+      { name: "geometry", valueType: "geometry", type: "output" },
+    ]);
 
     this.setValues(values);
   }
@@ -158,45 +156,46 @@ export default class CutLayout extends Atom {
     }
   }
 
-  handleNewPlacements(placements) {
+  handleNewPlacements(placements, isFinalPlacement = false) {
     this.placements = placements;
-    this.basicThreadValueProcessing();
-    this.updateValue();
-    // this.createInputParams(); NEEDS REVISION
+    this.displayLayout(isFinalPlacement);
+    if (this.setInputChanged) {
+      this.setInputChanged(this.placements);
+    }
   }
 
   /**
-   * We only want the layout to update when the button is pressed not when the inputs update so we block the regular update value behavior
+   * Read placements in backward compatible way. Updates this.placements to the
+   * current format if necessary. Returns well-formatted placements.
    */
-  updateValue() {
-    super.updateValue();
+  getPlacements() {
+    if (
+      this.placements != undefined &&
+      this.placements.length > 0 &&
+      !Array.isArray(this.placements[0])
+    ) {
+      this.placements = [this.placements];
+    }
+    return this.placements;
+  }
 
-    if (this.inputs.every((x) => x.ready)) {
-      this.processing = true;
+  displayLayout(isFinalPlacement = false) {
+    const placements = this.getPlacements();
+
+    if (this.inputsAreReady()) {
       var inputID = this.findIOValue("geometry");
       var sheetWidth = this.findIOValue("Sheet Width");
       var sheetHeight = this.findIOValue("Sheet Height");
       var partPadding = this.findIOValue("Part Padding");
-
-      if (!inputID) {
-        this.setError('"geometry" input is missing');
-        return;
-      }
-      // if positions isn't a list of lists, nest it so that it is
-      if (
-        this.placements != undefined &&
-        this.placements.length > 0 &&
-        !Array.isArray(this.placements[0])
-      ) {
-        this.placements = [this.placements];
-      }
-
-      GlobalVariables.cad
+      const priorStatus = this.status;
+      this.setProcessing();
+      return GlobalVariables.cad
         .displayLayout(
           this.uniqueID,
           inputID,
-          this.placements,
+          placements,
           proxy((message) => {
+            // TODO(tristan): warnings get cleared whenever we setReady.
             this.setWarning(message);
           }),
           {
@@ -209,29 +208,59 @@ export default class CutLayout extends Atom {
               ],
           }
         )
-        .then(() => {
-          this.basicThreadValueProcessing();
-          this.progress = 1.0;
-          this.cancelationHandle = undefined;
-          this.processing = false;
-        })
-        .catch(this.alertingErrorHandler());
+        .then((result) => {
+          if (this.selected) {
+            this.sendToRender();
+          }
+          // Only update our status if this is the final placement
+          if (isFinalPlacement) {
+            this.setReady(result);
+          } else {
+            this.setStatus(priorStatus);
+            this.value = result;
+          }
+        });
+    }
+  }
+
+  onUpstreamChange() {
+    // No-op if this atom is disabled
+    if (this.status === Status.DISABLED) {
+      return;
+    }
+
+    // Check for errors in inputs first
+    if (this.inputsHaveErrors()) {
+      this.setUpstreamError();
+      return;
+    }
+
+    // If the upstream geometry has changed, we need to reset our status as stale
+    // However, computation must be manually triggered via the "compute layout" button
+    // so there's not much else to do here.
+
+    // TODO: add logic for whether upstream changes have made the current
+    // placements stale.
+    if (this.placements?.length > 0) {
+      this.displayLayout(true);
+    } else {
+      this.setWaiting();
     }
   }
 
   /**
    * Pass the input geometry to a worker function to compute the translation.
    */
-  updateValueButton() {
-    super.updateValue();
-
-    if (this.inputs.every((x) => x.ready)) {
+  updateValueButton(setInputsChanged) {
+    this.setInputsChanged = setInputsChanged;
+    if (this.inputsAreReady()) {
+      // Only checks AP inputs, not the placement values themselves.
       if (this.cancelationHandle) {
         // There's an in-progress nesting worker. Cancel it and start another nesting
         // computation with the new inputs.
         this.cancelationHandle();
       }
-      this.processing = true;
+      this.setProcessing();
       var inputID = this.findIOValue("geometry");
       var sheetWidth = this.findIOValue("Sheet Width");
       var sheetHeight = this.findIOValue("Sheet Height");
@@ -268,13 +297,12 @@ export default class CutLayout extends Atom {
           this.placements
         )
         .then((positions) => {
-          this.handleNewPlacements(positions);
+          this.handleNewPlacements(positions, true);
         })
         .catch(this.alertingErrorHandler())
         .finally(() => {
-          this.progress = 1.0;
           this.cancelationHandle = undefined;
-          this.processing = false;
+          this.progress = 1.0;
         });
     }
   }
@@ -309,11 +337,10 @@ export default class CutLayout extends Atom {
 
     //Expose the stored positions
     let part_counter = 0;
-    const totalSheets = this.placements.length;
-    this.placements.forEach((sheet, index) => {
+    const totalSheets = placements.length;
+    placements.forEach((sheet, index) => {
       sheet.forEach((placement, part_num) => {
         inputParams[this.uniqueID + "position" + part_counter] = {
-          type: "point",
           value: {
             x: placement.translate.x,
             y: placement.translate.y,
@@ -326,7 +353,7 @@ export default class CutLayout extends Atom {
             const indexNumber = match ? parseInt(match[1], 10) : null;
 
             if (indexNumber != null) {
-              const placement = this.placements.flat()[indexNumber];
+              const placement = placements.flat()[indexNumber];
               //Update the placement with the new value];
               //If anything has changed we need to update the value and recompute
               if (
@@ -338,7 +365,7 @@ export default class CutLayout extends Atom {
                 placement.translate.y = value.y;
                 placement.rotate = value.z;
 
-                this.updateValue();
+                this.handleNewPlacements(this.getPlacements(), true);
               }
             }
           },

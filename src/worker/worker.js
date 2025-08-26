@@ -10,7 +10,7 @@ import * as tags from "./tags.js";
 import * as codeLib from "./code.js";
 
 var library = {};
-
+let defaultMesh = undefined;
 const started = util.init();
 
 function getOrThrow(id) {
@@ -27,7 +27,7 @@ async function code(targetID, codeText, argumentsArray) {
   await started;
   const result = await codeLib.executeCode(codeText, argumentsArray, library);
   library[targetID] = result;
-  return true;
+  return targetID;
 }
 
 /**
@@ -105,7 +105,6 @@ async function displayLayout(
   layoutConfig
 ) {
   await started;
-
   // Check if we have a pre-rotated assembly from a previous layout call
   const rotatedAssemblyKey = inputID + "_rotated";
   const rotatedAssembly = library[rotatedAssemblyKey];
@@ -134,7 +133,7 @@ async function displayLayout(
     library[targetID] = result;
   }
 
-  return true;
+  return targetID;
 }
 
 /**
@@ -198,7 +197,7 @@ function createMesh(thickness) {
 async function circle(id, diameter) {
   await started;
   library[id] = await shapes.circle(diameter);
-  return true;
+  return id;
 }
 
 /**
@@ -211,7 +210,7 @@ async function circle(id, diameter) {
 async function rectangle(id, x, y) {
   await started;
   library[id] = await shapes.rectangle(x, y);
-  return true;
+  return id;
 }
 
 /**
@@ -224,7 +223,7 @@ async function rectangle(id, x, y) {
 async function regularPolygon(id, radius, numberOfSides) {
   await started;
   library[id] = await shapes.regularPolygon(radius, numberOfSides);
-  return true;
+  return id;
 }
 
 /**
@@ -240,7 +239,7 @@ async function text(id, text, fontSize, fontFamily) {
   return started.then(async () => {
     const result = await shapes.text(text, fontSize, fontFamily);
     library[id] = result;
-    return true;
+    return id;
   });
 }
 
@@ -256,7 +255,7 @@ async function loftShapes(targetID, inputsIDs) {
   library[targetID] = await interaction.loftShapes(
     (inputsIDs || []).map(getOrThrow)
   );
-  return true;
+  return targetID;
 }
 
 /**
@@ -269,7 +268,7 @@ async function loftShapes(targetID, inputsIDs) {
 async function extrude(targetID, inputID, height) {
   await started;
   library[targetID] = await actions.extrude(getOrThrow(inputID), height);
-  return true;
+  return targetID;
 }
 
 /**
@@ -286,7 +285,7 @@ async function move(geom, x, y, z, targetID = null) {
   const result = await actions.move(toGeometry(geom, "move-geometry"), x, y, z);
   if (targetID) {
     library[targetID] = result;
-    return true;
+    return targetID;
   } else {
     return result;
   }
@@ -308,7 +307,7 @@ async function rotate(geom, x, y, z, targetID = null) {
   const result = await actions.rotate(asGeom, x, y, z);
   if (targetID) {
     library[targetID] = result;
-    return true;
+    return targetID;
   } else {
     return result;
   }
@@ -328,7 +327,7 @@ async function scale(geom, scaleFactor, targetID = null) {
   const result = await actions.scale(geom, scaleFactor);
   if (targetID) {
     library[targetID] = result;
-    return true;
+    return targetID;
   } else {
     return result;
   }
@@ -350,7 +349,7 @@ async function fillet(geom, radius, targetID = null) {
   );
   if (targetID) {
     library[targetID] = result;
-    return true;
+    return targetID;
   } else {
     return result;
   }
@@ -372,7 +371,7 @@ async function chamfer(geom, size, targetID = null) {
   );
   if (targetID) {
     library[targetID] = result;
-    return true;
+    return targetID;
   } else {
     return result;
   }
@@ -398,7 +397,7 @@ function difference(targetID, input1ID, input2ID) {
       getOrThrow(input1ID),
       getOrThrow(input2ID)
     );
-    return true;
+    return targetID;
   });
 }
 
@@ -414,7 +413,7 @@ function shrinkWrapSketches(targetID, inputIDs) {
     library[targetID] = await interaction.shrinkWrapSketches(
       inputIDs.map(getOrThrow)
     );
-    return true;
+    return targetID;
   });
 }
 
@@ -433,7 +432,7 @@ function intersect(input1ID, input2ID, targetID = null) {
     );
     if (targetID) {
       library[targetID] = result;
-      return true;
+      return targetID;
     } else {
       return result;
     }
@@ -450,18 +449,17 @@ function intersect(input1ID, input2ID, targetID = null) {
 function tag(targetID, inputID, TAG) {
   return started.then(() => {
     library[targetID] = tags.tag(getOrThrow(inputID), TAG);
-    return true;
+    return targetID;
   });
 }
 
 /**
  * Extracts and returns all tags from a geometry and its subassemblies.
  * @param {string} inputID - The library ID of the geometry to extract tags from
- * @param {string} tag - Currently unused parameter (kept for compatibility)
  * @returns {Promise<string[]>} A promise that resolves to an array of all unique tags, with "Select Tag" as the first element
  * @throws {Error} Throws an error if the geometry with the specified ID is not found in the library
  */
-function extractAllTags(inputID, tag) {
+function extractAllTags(inputID) {
   return started.then(() => {
     return tags.extractAllTags(getOrThrow(inputID));
   });
@@ -478,7 +476,7 @@ function extractAllTags(inputID, tag) {
 function color(targetID, inputID, color) {
   return started.then(() => {
     library[targetID] = tags.color(getOrThrow(inputID), color);
-    return true;
+    return targetID;
   });
 }
 
@@ -492,7 +490,7 @@ function color(targetID, inputID, color) {
 function bom(targetID, inputID, BOM) {
   return started.then(() => {
     library[targetID] = tags.bom(getOrThrow(inputID), BOM);
-    return true;
+    return targetID;
   });
 }
 
@@ -507,7 +505,7 @@ function bom(targetID, inputID, BOM) {
 async function extractTag(targetID, inputID, TAG) {
   await started;
   library[targetID] = tags.extractTag(getOrThrow(inputID), TAG);
-  return true;
+  return targetID;
 }
 
 /**
@@ -525,7 +523,7 @@ function output(targetID, inputID) {
       throw new Error("Nothing is connected to the output");
     }
 
-    return true;
+    return targetID;
   });
 }
 
@@ -543,7 +541,7 @@ function molecule(targetID, inputID) {
     } else {
       throw new Error("output ID is undefined");
     }
-    return true;
+    return targetID;
   });
 }
 
@@ -561,7 +559,7 @@ function extractBomList(inputID) {
  * @param {string} targetID - The unique identifier to store the prepared export geometry in the library
  * @param {string} inputID - The library ID of the geometry to prepare for export
  * @param {string} fileType - The file type for export ("STL", "STEP", or "SVG")
- * @returns {Promise<boolean>} A promise that resolves to true when the export preparation is completed successfully
+ * @returns {Promise<targetID>} A promise that resolves to ID of the result when the export preparation is completed successfully
  */
 function visExport(targetID, inputID, fileType) {
   return started.then(() => {
@@ -593,7 +591,7 @@ function visExport(targetID, inputID, fileType) {
         plane: library[inputID].plane,
       };
     }
-    return true;
+    return targetID;
   });
 }
 
@@ -615,7 +613,7 @@ function downExport(ID, fileType, svgResolution, units) {
 
       return blob;
     } else if (fileType == "STL") {
-      return library[ID].geometry[0].clone().blobSTL({tolerance: 0.1});
+      return library[ID].geometry[0].clone().blobSTL({ tolerance: 0.1 });
     } else {
       return library[ID].geometry[0].clone().blobSTEP();
     }
@@ -637,7 +635,7 @@ async function importingSTEP(targetID, file) {
     color: util.defaultColor,
     bom: [],
   };
-  return true;
+  return targetID;
 }
 
 /**
@@ -655,7 +653,7 @@ async function importingSTL(targetID, file) {
     color: util.defaultColor,
     bom: [],
   };
-  return true;
+  return targetID;
 }
 
 /**
@@ -693,7 +691,7 @@ async function importingSVG(targetID, svg, width) {
       bom: [],
     };
 
-    return true;
+    return targetID;
   } catch (error) {
     //add alert  ----> Try tweaking your file here https://iconly.io/tools/svg-convert-stroke-to-fill "
 
@@ -754,7 +752,6 @@ function visualizeGcode(targetID, gcode) {
       color: util.defaultColor,
       bom: [],
     };
-    return;
   } else {
     const wire = util.replicad.assembleWire(edges);
     library[targetID] = {
@@ -765,6 +762,7 @@ function visualizeGcode(targetID, gcode) {
       bom: [],
     };
   }
+  return targetID;
 }
 
 /**
@@ -858,7 +856,7 @@ function getBoundingBox(inputID) {
  */
 async function isAssembly(inputID) {
   await started;
-  const geometry = library[inputID];
+  const geometry = getOrThrow(inputID);
   return util.isAssembly(geometry);
 }
 
@@ -902,7 +900,7 @@ async function assembly(inputIDs, targetID = null) {
   const result = await interaction.assembly(inputIDs.map(getOrThrow));
   if (targetID != null) {
     library[targetID] = result;
-    return true;
+    return targetID;
   } else {
     return result;
   }
@@ -918,7 +916,7 @@ async function assembly(inputIDs, targetID = null) {
 function fusion(targetID, inputIDs) {
   return started.then(async () => {
     library[targetID] = await interaction.fusion(inputIDs.map(getOrThrow));
-    return true;
+    return targetID;
   });
 }
 
@@ -976,13 +974,23 @@ let colorOptions = {
   White: "#FFFCF7",
   "Keep Out": "#E0E0E0",
 };
+
 /**
- * Generates a default mesh for display when no output is available.
+ * Generates and memoizes default mesh for display when no output is available.
  * @param {string} id - The unique identifier to store the default mesh in the library
  * @returns {Promise} A promise that resolves to the default text mesh
  */
-async function generateDefaultMesh(id) {
-  return await text(id, "No output to display", 28, "ROBOTO");
+async function generateDefaultMesh() {
+  if (defaultMesh == undefined) {
+    const libId = await text(
+      "default-mesh",
+      "No output to display",
+      28,
+      "ROBOTO"
+    );
+    defaultMesh = await generateDisplayMesh(libId);
+  }
+  return defaultMesh;
 }
 
 /**
@@ -1097,9 +1105,7 @@ function generateDisplayMesh(id) {
   return started.then(() => {
     if (library[id] == undefined || id == undefined) {
       //throw new Error("ID not found in library");
-      generateDefaultMesh(id).then((result) => {
-        // Default mesh generated
-      });
+      return generateDefaultMesh();
     }
     let meshArray = [];
 
@@ -1162,7 +1168,6 @@ function generateDisplayMesh(id) {
         throw new Error("Error generating display mesh" + e);
       }
     });
-
     return finalMeshes;
   });
 }

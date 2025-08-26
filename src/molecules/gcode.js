@@ -1,7 +1,6 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import { button } from "leva";
-
 import { saveAs } from "file-saver";
 
 /**
@@ -60,31 +59,39 @@ export default class Gcode extends Atom {
      * @type {number}
      */
     this.progress = 1.0;
+    this.parent = values?.parent;
+    this.partName = this.parent?.name ?? "output";
 
-    this.addIO("input", "Geometry", this, "geometry", null);
-    this.addIO(
-      "input",
-      "Tool Size",
-      this,
-      "number",
-      GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 6.35 : 0.25
-    );
-    this.addIO("input", "Passes", this, "number", 3);
-    this.addIO("input", "Speed", this, "number", 1500);
-    this.addIO(
-      "input",
-      "Cut Through",
-      this,
-      "number",
-      GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 1.35 : 0.25
-    );
-    this.addIO("input", "Part Name", this, "string", this.parent.name);
-    //this.addIO("input", "tabs", this, "string", "true");
-    //this.addIO("input", "safe height", this, "number", 6);
+    this.addAllIOs([
+      { name: "geometry", valueType: "geometry" },
+      {
+        name: "Tool Size",
+        valueType: "number",
+        defaultValue:
+          GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 6.35 : 0.25,
+      },
+      { name: "Passes", valueType: "number", defaultValue: 3 },
+      { name: "Speed", valueType: "number", defaultValue: 1500 },
+      {
+        name: "Cut Through",
+        valueType: "number",
+        defaultValue:
+          GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 1.35 : 0.25,
+      },
+      {
+        name: "Part Name",
+        valueType: "string",
+        defaultValue: this.partName,
+      },
+      {
+        name: "output",
+        valueType: "geometry",
+        defaultValue: null,
+        type: "output",
+      },
+    ]);
 
-    this.addIO("output", "Gcode", this, "geometry", "");
-
-    this.partName = this.parent.name;
+    this.setValues(values);
 
     this.stlURL = null; // Store the STL URL
 
@@ -155,8 +162,7 @@ export default class Gcode extends Atom {
       this.gcodeString = gcode;
       this.gcodeGenerated = true;
       this.progress = 1.0; // Complete progress
-      GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode);
-      this.basicThreadValueProcessing();
+      this.setReady(GlobalVariables.cad.visualizeGcode(this.uniqueID, gcode));
     };
   }
 
@@ -168,10 +174,11 @@ export default class Gcode extends Atom {
     // Initialize progress tracking
     this.progress = 0.0;
     this.processing = true;
+    this.setProcessing();
 
     try {
       // Get the current input ID
-      let inputID = this.findIOValue("Geometry");
+      let inputID = this.findIOValue("geometry");
 
       // Check if the input is an assembly
       const isAssembly = await this._checkIfAssembly(inputID);
@@ -180,7 +187,8 @@ export default class Gcode extends Atom {
         // For assemblies, extract parts and generate G-code sequentially
         const parts = await this._extractPartsFromAssembly(inputID);
         const sortedParts = await this._sortParts(parts);
-        await this._generateSequentialGcode(sortedParts);
+        const resultID = await this._generateSequentialGcode(sortedParts);
+        this.setReady(resultID);
       } else {
         // For single parts, use the original method
         const gcodeCallback = this._createGcodeCallback();
@@ -210,21 +218,6 @@ export default class Gcode extends Atom {
   }
 
   /**
-   * Generate a layered outline of the part where the tool will cut
-   */
-  updateValue() {
-    super.updateValue();
-    try {
-      let inputID = this.findIOValue("Geometry");
-
-      // Check if input is an assembly and handle accordingly
-      this._handleGeometryInput(inputID);
-    } catch (err) {
-      this.setError(err);
-    }
-  }
-
-  /**
    * Handle geometry input - either single part or assembly
    * @param {string} inputID - The input geometry ID
    */
@@ -250,14 +243,10 @@ export default class Gcode extends Atom {
    * Check if the input geometry is an assembly
    * @param {string} inputID - The input geometry ID
    * @returns {Promise<boolean>} True if it's an assembly
+   * @throws {Error} If the input ID is not found
    */
   async _checkIfAssembly(inputID) {
-    return new Promise((resolve) => {
-      GlobalVariables.cad
-        .isAssembly(inputID)
-        .then(resolve)
-        .catch(() => resolve(false));
-    });
+    return GlobalVariables.cad.isAssembly(inputID);
   }
 
   /**
@@ -441,9 +430,9 @@ export default class Gcode extends Atom {
     this.gcodeGenerated = true;
     this.progress = 1.0;
 
-    // Visualize the concatenated G-code
-    GlobalVariables.cad.visualizeGcode(this.uniqueID, this.gcodeString);
-    this.basicThreadValueProcessing();
+    // Generate visualization for the final G-code and store in library under
+    // this.uniqueID
+    return GlobalVariables.cad.visualizeGcode(this.uniqueID, this.gcodeString);
   }
 
   /**
@@ -535,6 +524,87 @@ export default class Gcode extends Atom {
       .join("\n");
 
     return result;
+  }
+
+  onUpstreamChange() {
+    this.setWaiting();
+  }
+
+  createLevaInputs() {
+    let inputParams = {};
+
+    /** Runs through active atom inputs and adds IO parameters to default param*/
+    if (this.inputs) {
+      this.inputs.map((input) => {
+        const checkConnector = () => {
+          return input.connectors.length > 0;
+        };
+
+        /* Some input parameters (inlcuding equation and result) live in the parameter editor file so they can use the set, get functions */
+
+        /* Makes inputs for Io's other than geometry */
+        if (input.valueType !== "geometry") {
+          if (input.name == "Part Name") {
+            inputParams[this.uniqueID + input.name] = {
+              value: this.partName,
+              label: input.name,
+              disabled: checkConnector(),
+              onChange: (value) => {
+                if (input.value !== value) {
+                  input.setValue(value);
+                  this.partName = value;
+                }
+              },
+            };
+          } else {
+            inputParams[input.name] = {
+              value: input.value,
+              disabled: checkConnector(),
+              step: 0.01,
+              onChange: (value) => {
+                input.setValue(value);
+              },
+              order: -2,
+            };
+          }
+        }
+      });
+    }
+
+    // Add sort direction dropdown for assembly processing
+    inputParams["Assembly Sort Direction"] = {
+      value: this.sortDirection,
+      options: ["Left", "Right", "Top", "Bottom"],
+      label: "Sort Direction",
+      onChange: (value) => {
+        this.sortDirection = value;
+      },
+    };
+
+    inputParams["Generate Gcode"] = button(() => this._generateGcode(), {});
+
+    const partName = this.findIOValue("Part Name") || this.partName || "output";
+    // For assemblies, show "Assembly" in the button name, otherwise use the part name
+    const displayName = this._isProcessingAssembly
+      ? `${partName}_assembly`
+      : partName;
+    inputParams[`Download Gcode - ${displayName}`] = button(() => {
+      if (this.gcodeGenerated && this.gcodeString) {
+        // Get the current part name dynamically when button is clicked
+        const currentPartName =
+          this.findIOValue("Part Name") || this.partName || "output";
+        const fileName = this._isProcessingAssembly
+          ? `${currentPartName}_assembly.gcode`
+          : `${currentPartName}.gcode`;
+        this.downloadGcode(this.gcodeString, fileName);
+      } else {
+        console.warn("No G-code available. Please generate G-code first.");
+        // You could also show an alert or notification to the user here
+        alert("No G-code available. Please generate G-code first.");
+      }
+    }, {});
+
+    return inputParams;
   }
 
   //Function to download G-code from a G-code string

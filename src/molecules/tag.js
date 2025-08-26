@@ -13,10 +13,6 @@ export default class Tag extends Atom {
   constructor(values) {
     super(values);
 
-    this.addIO("input", "geometry", this, "geometry", "", false, true);
-    //this.addIO("input", "tag", this, "string", "Tag String");
-    this.addIO("output", "geometry", this, "geometry", "");
-
     /**
      * This atom's name
      * @type {string}
@@ -39,6 +35,11 @@ export default class Tag extends Atom {
 
     /** Array of tags for this atom */
     this.tags = [""];
+
+    this.addAllIOs([
+      { name: "geometry", valueType: "geometry" },
+      { name: "geometry", valueType: "geometry", type: "output" },
+    ]);
 
     this.setValues(values);
   }
@@ -90,10 +91,12 @@ export default class Tag extends Atom {
       label: "Add Tag",
       disabled: false,
       onChange: (value) => {
-        this.tags = [];
-        this.tags.push(value); // Add the new tag to the array
-        this.name = this.tags.toString();
-        this.updateValue();
+        const newVal = [value];
+        if (this.name !== newVal.toString()) {
+          this.tags = newVal;
+          this.name = newVal.toString();
+          this.onUpstreamChange();
+        }
       },
     };
 
@@ -102,27 +105,13 @@ export default class Tag extends Atom {
   /**
    * Add a tag to the input geometry. The substance is not changed.
    */
-  updateValue() {
-    super.updateValue();
-
-    if (this.inputs.every((x) => x.ready)) {
-      this.processing = true;
-      var inputID = this.findIOValue("geometry");
-      var tags = this.tags;
-      GlobalVariables.cad
-        .tag(this.uniqueID, inputID, tags)
-        .then(() => {
-          this.basicThreadValueProcessing();
-        })
-        .catch(this.alertingErrorHandler());
-    }
-  }
   /**
-   * Send the value of this atom to the 3D display. Used to display the number
+   * Compute the tagged geometry.
    */
-  sendToRender() {
-    // do nothing
-    console.log("tag has nothing to render");
+  compute(inputs) {
+    const inputID = inputs.geometry;
+    const tags = this.tags;
+    return GlobalVariables.cad.tag(this.uniqueID, inputID, tags);
   }
 
   /**

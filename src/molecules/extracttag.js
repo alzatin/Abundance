@@ -1,5 +1,6 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
+import { ObservableEntity, Status } from "../prototypes/observableEntity.js";
 
 /**
  * The cut away tag adds a tag to a part indicating that it should be cut away from the rest of the model in the next assembly. Essentially it creates a negitive version of itself.
@@ -37,9 +38,6 @@ export default class ExtractTag extends Atom {
      */
     this.description = "Extracts geometry containing the specified tag.";
 
-    this.addIO("input", "geometry", this, "geometry", null, false, true);
-    this.addIO("output", "geometry", this, "geometry", null);
-
     /** Index for initial tag dropdown
      * @type {number}
      */
@@ -48,9 +46,15 @@ export default class ExtractTag extends Atom {
     /** Selected Tag
      * @type {string}
      */
-    this.tag = "";
+    this.tag = undefined;
 
-    this.tagList = [];
+    /** Value stored in tagList Observable is a struct of {source: "geomID", tags: ["tag1", "tag2"...]} */
+    this.tagList = { source: undefined, tags: [] };
+
+    this.addAllIOs([
+      { name: "input", valueType: "geometry" },
+      { name: "output", valueType: "geometry", type: "output" },
+    ]);
 
     this.setValues(values);
   }
@@ -90,6 +94,7 @@ export default class ExtractTag extends Atom {
     return true;
   }
 
+<<<<<<< HEAD
   createInputParams() {
     var inputID = this.findIOValue("geometry");
     this.processing = true;
@@ -102,6 +107,10 @@ export default class ExtractTag extends Atom {
       this.processing = false;
     });
     let tagList = this.tagList;
+=======
+  createLevaInputs(setInputChanged, inputState) {
+    let tagList = this.tagList.tags || [];
+>>>>>>> upstream/main
     let inputParams = {};
 
     inputParams[this.uniqueID + "extracting"] = {
@@ -120,31 +129,78 @@ export default class ExtractTag extends Atom {
         setInputChanged(value);
         if (this.tag != value && value != "Select Tag") {
           this.tag = value;
-          this.updateValue();
-          //this.sendToRender();
+          this.onUpstreamChange();
         }
       },
     };
     return inputParams;
   }
 
+  compute(inputs) {
+    const inputID = inputs.input;
+    console.log("extracting tag", this.tag, "from input geom: ", inputID);
+    return GlobalVariables.cad.extractTag(this.uniqueID, inputID, this.tag);
+  }
+
   /**
-   * Adds the cutAway tag to the part
+   * Override default behavior since extractTag is a two-step process
+   * We first need to extract the list of candidate tags from the input geometry
+   * then wait on the user to select one before we can proceed with extraction.
    */
-  updateValue() {
-    super.updateValue();
+  onUpstreamChange() {
+    // No-op if this atom is disabled
+    if (this.status === Status.DISABLED) {
+      return;
+    }
 
-    if (this.inputs.every((x) => x.ready)) {
-      this.processing = true;
-      var inputID = this.findIOValue("geometry");
-      var tag = this.tag;
+    // Check for errors in inputs first
+    if (this.inputsHaveErrors()) {
+      this.setUpstreamError();
+      return;
+    }
 
-      GlobalVariables.cad
-        .extractTag(this.uniqueID, inputID, tag)
-        .then(() => {
-          this.basicThreadValueProcessing();
-        })
-        .catch(this.alertingErrorHandler());
+    if (this.inputsAreReady()) {
+      // Geometry input exists and is ready.
+      const geomId = this.findIOValue("input");
+
+      if (!geomId) {
+        throw new Error("inputs ready but couldn't find geometry id");
+      }
+
+      if (!this.tagList.source || this.tagList.source != geomId) {
+        this.setProcessing();
+        GlobalVariables.cad
+          .extractAllTags(geomId)
+          .then((result) => {
+            // Implicit recursion since we're observing tagList with onUpstreamChange
+            this.setWaiting();
+            this.tagList = { source: geomId, tags: result };
+          })
+          .catch(this.alertingErrorHandler());
+      }
+
+      if (this.tag) {
+        if (this.tag != "Select Tag") {
+          // A legit tag has been selected and we're ready to go!
+          this.setProcessing();
+          this.compute({ input: geomId })
+            .then((value) => {
+              console.log(
+                `Extracted tag ${this.tag} from geometry ${geomId}, result:`,
+                value
+              );
+              this.setReady(value);
+            })
+            .catch(this.alertingErrorHandler());
+        }
+      }
+    } else {
+      // Input's aren't ready. Clear our current list
+      if (this.tagList.source) {
+        // there was a valid input geometry but it's been removed.
+        this.tagList = { source: undefined, tags: [] };
+      }
+      this.setWaiting();
     }
   }
 

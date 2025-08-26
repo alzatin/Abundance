@@ -1,6 +1,7 @@
 import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
 import { parse } from "mathjs";
+import { Status } from "../prototypes/observableEntity.js";
 
 /**
  * This class creates the Equation atom.
@@ -13,7 +14,7 @@ export default class Equation extends Atom {
   constructor(values) {
     super(values);
 
-    this.addIO("output", "result", this, "number", 0);
+    this.addIO("result", "number", 0, "output");
 
     /**
      * This atom's name
@@ -124,6 +125,7 @@ export default class Equation extends Atom {
     if (this.parentMolecule && this.parentMolecule.inputs) {
       moleculeInputs = this.parentMolecule.inputs.map((input) => input.name);
     }
+
     //Remove any inputs which are not needed
     const deleteExtraInputs = () => {
       this.inputs.forEach((input) => {
@@ -140,14 +142,22 @@ export default class Equation extends Atom {
     deleteExtraInputs();
     //Add any inputs which are needed and NOT molecule inputs
     if (variables.length > 0) {
+      let inputArgs = [];
       for (var variable of variables) {
         if (
           !this.inputs.some((input) => input.name === variable) &&
           !moleculeInputs.includes(variable)
         ) {
-          this.addIO("input", variable, this, "number", 1);
+          inputArgs.push({
+            name: variable,
+            valueType: "number",
+            defaultValue: 1,
+          });
         }
       }
+      // Batch add so that compute only gets called back once all inputs are
+      // constructed.
+      this.addAllIOs(inputArgs);
     }
   }
 
@@ -205,6 +215,15 @@ export default class Equation extends Atom {
     }
   }
 
+  rerenderLevaInputs() {
+    if (this.setInputChanged) {
+      const representativeHash =
+        this.currentEquation +
+        this.inputs.map((input) => input.getValue()).join(",");
+      this.setInputChanged(representativeHash);
+    }
+  }
+
   createInputParams(handleAddControl, setControlValue, setCurrentEquation) {
     // Create input parameters for the atom
     let inputParams = {};
@@ -233,22 +252,39 @@ export default class Equation extends Atom {
         const checkConnector = () => {
           return input.connectors.length > 0;
         };
+
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry") {
           inputParams[input.name] = {
-            value: input.value,
+            value: input.getValue(),
             type: "number",
             disabled: checkConnector(),
             step: 0.01,
             onChange: (value) => {
-              if (input.value !== value) {
-                input.setValue(value);
-                //setInputChanged(value); NEEDS TO BE REVISED FOR NEW MENU
-              }
+              input.setReady(value);
+              this.rerenderLevaInputs();
             },
           };
         }
       });
+
+      inputParams[`${this.uniqueID}currentEquation`] = {
+        value: this.currentEquation,
+        label: "Current Equation",
+        disabled: false,
+        onChange: (value) => {
+          if (this.currentEquation !== value) {
+            this.setEquation(value);
+          }
+        },
+        order: -3,
+      };
+
+      inputParams[`${this.uniqueID}result`] = {
+        value: this.getState().value, // Possibly undefined if computation is in progress.
+        label: "Result",
+        disabled: true,
+      };
     }
 
     inputParams[this.uniqueID + "result"] = {
@@ -261,28 +297,18 @@ export default class Equation extends Atom {
     return inputParams;
   }
 
-  /**
-   * Evaluate the equation adding and removing inputs as needed
-   */
-  updateValue() {
-    // super.updateValue();
-    try {
-      this.addAndRemoveInputs();
+  inputsAreReady() {
+    return (
+      this.currentEquation &&
+      this.inputs.every((input) => input.getState().status == Status.READY)
+    );
+  }
 
-      if (this.inputs.every((x) => x.ready)) {
-        this.decreaseToProcessCountByOne();
-
-        //Evaluate the equation
-        this.value = this.evaluateEquation();
-
-        this.output.setValue(this.value);
-        this.output.ready = true;
-        this.clearAlert();
-      }
-    } catch (err) {
-      console.warn(err);
-      this.setError(err);
-    }
+  compute(_) {
+    return new Promise((resolve, reject) => {
+      this.value = this.evaluateEquation();
+      resolve(this.value);
+    });
   }
 
   /**
@@ -302,7 +328,8 @@ export default class Equation extends Atom {
    */
   setEquation(newEquation) {
     this.currentEquation = String(newEquation).trim(); //convert to string first, then remove leading and trailing whitespace
-    this.updateValue();
+    this.addAndRemoveInputs();
+    this.rerenderLevaInputs();
   }
 
   /**

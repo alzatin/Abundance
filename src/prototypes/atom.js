@@ -12,6 +12,7 @@ import {
   Leva,
   LevaInputs,
 } from "leva";
+import { ObservableEntity, Status } from "./observableEntity.js";
 import on from "../js/circular-menu/src/on.js";
 
 // Make this an enum once we're using typescript
@@ -25,12 +26,36 @@ const AlertType = Object.freeze({
 /**
  * This class is the prototype for all atoms.
  */
-export default class Atom {
+export default class Atom extends ObservableEntity {
+  static SELECTED_COLOR = "#484848";
+  static DEFAULT_COLOR = "#F3EFEF";
+
+  static statusAsColor(status, selected = false) {
+    if (selected) {
+      return Atom.SELECTED_COLOR;
+    }
+    switch (status) {
+      case Status.DISABLED:
+        return "#CC00CC"; // light purple
+      case Status.WAITING:
+        return "#6bcfd6"; // light-blue
+      case Status.PROCESSING:
+        return "blue";
+      case Status.ERROR:
+        return "red";
+      case Status.UPSTREAM_ERROR:
+        return "#eed202";
+      case Status.READY:
+        return Atom.DEFAULT_COLOR;
+    }
+  }
+
   /**
    * The constructor function.
    * @param {object} values An array of values passed in which will be assigned to the class as this.x
    */
   constructor(values) {
+    super();
     //Setup default values
     /**
      * An array of all of the input attachment points connected to this atom
@@ -46,7 +71,8 @@ export default class Atom {
      * This atom's unique ID. Often overwritten later when loading
      * @type {number}
      */
-    this.uniqueID = GlobalVariables.generateUniqueID();
+    this.uniqueID = values?.uniqueID || GlobalVariables.cad.generateUniqueID();
+
     /**
      * A description of this atom
      * @type {string}
@@ -67,21 +93,7 @@ export default class Atom {
      * @type {number}
      */
     this.radius = 1 / 60;
-    /**
-     * This atom's default color (ie when not selected or processing)
-     * @type {string}
-     */
-    this.defaultColor = "#F3EFEF";
-    /**
-     * This atom's color when selected
-     * @type {string}
-     */
-    this.selectedColor = "#484848";
-    /**
-     * The color currently used for strokes
-     * @type {string}
-     */
-    this.strokeColor = "#484848";
+
     /**
      * A flag to indicate if this atom is currently selected
      * @type {boolean}
@@ -97,16 +109,7 @@ export default class Atom {
      * @type {string}
      */
     this.name = "name0";
-    /**
-     * This atom's parent, usually the molecule which contains this atom...how is this different from this.parent?
-     * @type {object}
-     */
-    this.parentMolecule = null;
-    /**
-     * This atom's value...Is can this be done away with? Are we basically storing the value in the output now?
-     * @type {object}
-     */
-    this.value = null;
+
     /**
      * A flag to indicate if this atom is currently being dragged on the screen.
      * @type {boolean}
@@ -118,16 +121,6 @@ export default class Atom {
      */
     this.showHover = false;
     /**
-     * The X coordinate of this atom now
-     * @type {number}
-     */
-    this.x = 0;
-    /**
-     * The Y coordinate of this atom now
-     * @type {number}
-     */
-    this.y = 0;
-    /**
      * A message displayed next to the atom. Set the type and the message to display the alert. Cleared each time the output is regenerated.
      * @type {object}
      */
@@ -135,17 +128,21 @@ export default class Atom {
       type: AlertType.NONE,
       message: "",
     };
-    /**
-     * A flag to indicate if the atom is currently computing a new output. Turns the molecule blue.
-     * @type {boolean}
-     */
-    this.processing = false;
 
-    for (var key in values) {
-      /**
-       * Assign each of the values in values as this.value
-       */
-      this[key] = values[key];
+    this.subscribe(this.selfSubscriber.bind(this), "self-clear-alert");
+  }
+
+  selfSubscriber() {
+    const status = this.getState().status;
+    if (status != Status.ERROR) {
+      this.alert = {
+        type: AlertType.NONE,
+        message: "",
+      };
+    }
+    if (status == Status.READY && this.selected) {
+      // if status just became ready and we're selected, update the render
+      this.sendToRender();
     }
   }
 
@@ -163,12 +160,12 @@ export default class Atom {
     if (typeof this.ioValues !== "undefined") {
       this.ioValues.forEach((ioValue) => {
         //for each saved value
-        this.inputs.forEach((io) => {
+        this.inputs.forEach((ap) => {
           //Find the matching IO and set it to be the saved value
-          if (ioValue.name == io.name && io.type == "input") {
-            io.value = ioValue.ioValue;
+          if (ioValue.name == ap.name && ap.type == "input") {
+            ap.value = ioValue.ioValue;
             if ("currentEquation" in ioValue) {
-              io.currentEquation = ioValue.currentEquation;
+              ap.currentEquation = ioValue.currentEquation;
             }
           }
         });
@@ -192,19 +189,10 @@ export default class Atom {
     GlobalVariables.c.beginPath();
     GlobalVariables.c.font = GlobalVariables.canvasFont;
 
-    if (this.processing) {
-      GlobalVariables.c.fillStyle = "blue";
-    } else if (this.selected) {
-      GlobalVariables.c.fillStyle = this.selectedColor;
-      GlobalVariables.c.strokeStyle = this.selectedColor;
-      this.color = this.selectedColor;
-      this.strokeColor = this.defaultColor;
-    } else {
-      GlobalVariables.c.fillStyle = this.defaultColor;
-      GlobalVariables.c.strokeStyle = this.selectedColor;
-      this.color = this.defaultColor;
-      this.strokeColor = this.selectedColor;
-    }
+    this.color = Atom.statusAsColor(this.getState().status, this.selected);
+    GlobalVariables.c.fillStyle = this.color;
+    GlobalVariables.c.strokeStyle = Atom.SELECTED_COLOR;
+    let strokeColor = this.selected ? Atom.DEFAULT_COLOR : Atom.SELECTED_COLOR;
 
     GlobalVariables.c.beginPath();
     if (drawType == "rect") {
@@ -233,7 +221,7 @@ export default class Atom {
     }
     GlobalVariables.c.textAlign = "start";
     GlobalVariables.c.fill();
-    GlobalVariables.c.strokeStyle = this.strokeColor;
+    GlobalVariables.c.strokeStyle = strokeColor;
     GlobalVariables.c.fillStyle = "white";
     GlobalVariables.c.stroke();
     GlobalVariables.c.closePath();
@@ -246,7 +234,7 @@ export default class Atom {
       yInPixels - radiusInPixels
     );
     GlobalVariables.c.fill();
-    GlobalVariables.c.strokeStyle = this.strokeColor;
+    GlobalVariables.c.strokeStyle = strokeColor;
     GlobalVariables.c.lineWidth = 1;
     GlobalVariables.c.stroke();
     GlobalVariables.c.closePath();
@@ -262,7 +250,7 @@ export default class Atom {
             break;
           case AlertType.INFO:
             prefix = "INFO: ";
-            this.color = this.defaultColor;
+            this.color = Atom.DEFAULT_COLOR;
             break;
         }
 
@@ -295,54 +283,92 @@ export default class Atom {
     }
   }
 
-  /**
-   * Adds a new attachment point to this atom
-   * @param {boolean} type - The type of the IO (input or output)
-   * @param {string} name - The name of the new attachment point
-   * @param {object} target - The atom to attach the new attachment point to. Should we force this to always be this one?
-   * @param {string} valueType - Describes the type of value the input is expecting options are number, geometry, array
-   * @param {object} defaultValue - The default value to be used when the value is not yet set
-   */
-  addIO(type, name, target, valueType, defaultValue, ready, primary = false) {
-    //compute the baseline offset from parent node
-    if (
-      target.inputs.find((o) => o.name === name && o.type === type) == undefined
-    ) {
+  _subscribeToInputs() {
+    this.inputs.forEach((input) => {
+      input.subscribe(
+        () => {
+          this.onUpstreamChange();
+        },
+        this.uniqueID,
+        false // Force no immediate callback
+      );
+    });
+    if (this.inputs.length > 0) {
+      this.onUpstreamChange();
+    }
+  }
+
+  _addIOWithoutSubscribing(
+    name,
+    valueType,
+    defaultValue = undefined,
+    type = "input"
+  ) {
+    const prior = this.inputs.find((o) => o.name === name && o.type === type);
+    if (prior == undefined) {
       var offset;
       if (type == "input") {
-        offset = -1 * target.scaledRadius;
+        offset = -1 * this.scaledRadius;
       } else {
-        offset = target.scaledRadius;
+        offset = this.scaledRadius;
       }
       var newAp = new AttachmentPoint({
-        parentMolecule: target,
+        parentMolecule: this,
         defaultOffsetX: offset,
         defaultOffsetY: 0,
         type: type,
         valueType: valueType,
         name: name,
-        primary: primary,
         value: defaultValue,
         defaultValue: defaultValue,
         uniqueID: GlobalVariables.generateUniqueID(),
         atomType: "AttachmentPoint",
-        ready: true,
       });
-
       if (type == "input") {
-        target.inputs.push(newAp);
+        this.inputs.push(newAp);
       } else {
-        target.output = newAp;
+        this.output = newAp;
       }
+      return newAp;
+    } else {
+      return prior;
     }
   }
 
-  updateIO(type, name, target, valueType, value) {
-    let ap = target.inputs.find((o) => o.name === name && o.type === type);
-    if (ap) {
-      ap.valueType = valueType;
-      ap.value = value;
-    }
+  /**
+   * Add multiple IOs to this atom. Doesn't subscribe until all IOs have been added.
+   *
+   * ioList should be a list of {name: "inputName", valueType: "number"|"geometry", defaultValue: 0|undefined, type: "output"|undefined}
+   */
+  addAllIOs(ioList) {
+    ioList.forEach((io) => {
+      this._addIOWithoutSubscribing(
+        io.name,
+        io.valueType,
+        io.defaultValue,
+        io.type
+      );
+    });
+    this._subscribeToInputs();
+  }
+
+  /**
+   * Adds a new attachment point to this atom
+   * @param {string} name - The name of the new attachment point
+   * @param {string} valueType - Describes the type of value the input is expecting options are number, geometry, array
+   * @param {object} defaultValue - The default value to be used when the value is not yet set
+   * @param {string} type - Default is "input", may be overwritten to "output"
+   */
+  //type, name, target, valueType, defaultValue, ready, primary = false)
+  addIO(name, valueType, defaultValue = undefined, type = "input") {
+    const io = this._addIOWithoutSubscribing(
+      name,
+      valueType,
+      defaultValue,
+      type
+    );
+    this._subscribeToInputs();
+    return io;
   }
 
   /**
@@ -357,6 +383,7 @@ export default class Atom {
     target.inputs.forEach((input) => {
       if (input.name == name && input.type == type) {
         target.inputs.splice(target.inputs.indexOf(input), 1);
+        input.unsubscribe(this.uniqueID);
         input.deleteSelf(silent);
       }
     });
@@ -370,19 +397,10 @@ export default class Atom {
    */
   alertingErrorHandler() {
     return (err) => {
-      this.processing = false;
       console.log("Error in atom: " + this.name);
       console.log(err);
-      this.setError(err.message || "Unkown error occurred");
+      this.setError(err || "Unknown error occurred");
     };
-  }
-
-  /**
-   * Set an Error alert to display next to the atom.
-   * @param {string} message - The message to display.
-   */
-  setError(message) {
-    this.alert = { type: AlertType.ERROR, message: String(message) };
   }
 
   /**
@@ -402,7 +420,7 @@ export default class Atom {
    * Clears the alert message attached to this atom.
    */
   clearAlert() {
-    this.color = this.defaultColor;
+    this.color = Atom.DEFAULT_COLOR;
     this.alert = { type: AlertType.NONE, message: "" };
   }
 
@@ -422,6 +440,60 @@ export default class Atom {
         this.selected = true;
       }
     }
+  }
+
+  /**
+   * Enable this atom and all it's upstream connections.
+   *
+   * Returns a boolean indicating if the atom became enabled (true) or was already enabled (false).
+   */
+  enable() {
+    // Case 1: This atom is already enabled - this call is therefore a no-op. Return false.
+    if (this.isEnabled()) {
+      return false;
+    }
+
+    // Check if this atom has input connections
+    const hasUpstreamConnections = this.inputs.some(
+      (input) => input.connectors && input.connectors.length > 0
+    );
+
+    if (hasUpstreamConnections) {
+      // Case 2: This atom has input connections - switch to waiting then enable upstream atoms.
+      this.setWaiting();
+      const upstreamEnableResults = [];
+      this.inputs.forEach((input) => {
+        if (input.connectors && input.connectors.length > 0) {
+          input.connectors.forEach((connector) => {
+            // Find the upstream atom through the connector
+            // attachmentPoint1 is the output (upstream), attachmentPoint2 is the input (this atom)
+            const upstreamAtom = connector.attachmentPoint1?.parentMolecule;
+            if (upstreamAtom && upstreamAtom !== this) {
+              // Recursively enable the upstream atom
+              upstreamEnableResults.push(upstreamAtom.enable());
+            }
+          });
+        }
+      });
+
+      // Special case where all our inputs were already enabled.
+      // Kick off propagation from here without delay
+      if (upstreamEnableResults.every((res) => res === false)) {
+        this.onUpstreamChange();
+      }
+    } else {
+      this.setWaiting(); // transition out of disabled.
+      this.onUpstreamChange(); // prompt atom to compute it's value and callback its subscribers.
+    }
+    return true;
+  }
+
+  /**
+   * Check if this atom is currently enabled (not in DISABLED status)
+   * @returns {boolean} true if enabled, false if disabled
+   */
+  isEnabled() {
+    return this.status !== Status.DISABLED;
   }
 
   /**
@@ -559,12 +631,7 @@ export default class Atom {
    */
   deleteNode(backgroundClickAfter = true, deletePath = true, silent = false) {
     this.inputs.forEach((input) => {
-      //disable the inputs before deleting
-      input.ready = false;
-    });
-
-    const inputsCopy = [...this.inputs]; //Make a copy of the inputs list to delete all of them
-    inputsCopy.forEach((input) => {
+      input.unsubscribe(this.uniqueID);
       input.deleteSelf(silent);
     });
     if (this.output) {
@@ -576,11 +643,11 @@ export default class Atom {
     this.parent.nodesOnTheScreen.splice(
       this.parent.nodesOnTheScreen.indexOf(this),
       1
-    ); //remove this node from the list
+    );
   }
 
   /**
-   * Runs with each frame to draw the atom.
+   * UI rendering update. Runs with each frame to draw the atom.
    */
   update() {
     this.inputs.forEach((child) => {
@@ -599,20 +666,19 @@ export default class Atom {
   serialize(offset = { x: 0, y: 0 }) {
     //Offsets are used to make copy and pasted atoms move over a little bit
     var ioValues = [];
-    this.inputs.forEach((io) => {
+    this.inputs.forEach((ap) => {
       if (
-        typeof io.getValue() == "number" ||
-        typeof io.getValue() == "string"
+        typeof ap.getValue() == "number" ||
+        typeof ap.getValue() == "string"
       ) {
         var saveIO = {
-          name: io.name,
-          ioValue: io.getValue(),
-          currentEquation: io.currentEquation || null,
+          name: ap.name,
+          ioValue: ap.getValue(),
+          currentEquation: ap.currentEquation || null,
         };
         ioValues.push(saveIO);
       }
     });
-
     var object = {
       atomType: this.atomType,
       name: this.name,
@@ -635,25 +701,87 @@ export default class Atom {
   }
 
   /**
-   * Set's the output value and shows the atom output on the 3D view.
+   * Compute the value of this atom. This must be overwritten by each atom type.
+   * Passed the list of input values.
+   *
+   * Return a promise which resolves to the computed value or throws an error
+   * if computation fails.
    */
-  decreaseToProcessCountByOne() {
-    GlobalVariables.topLevelMolecule.census();
+  compute(...args) {
+    throw new Error(
+      "compute method must be overwritten. Missing in subclass: " +
+        this.constructor.name
+    );
+  }
+
+  setError(err) {
+    if (err instanceof Error) {
+      err = err.message;
+    }
+    this.alert = { type: AlertType.ERROR, message: String(err) };
+    this.setStatus(Status.ERROR);
   }
 
   /**
-   * Token update value function to give each atom one by default
-   * @param {string} inputName - The name of the input that changed (optional)
+   * Return true if our inputs are ready for us to compute a value.
    */
-  updateValue(inputName) {
-    // If called with an input name parameter (from AttachmentPoint),
-    // just call the main updateValue logic
-    if (inputName !== undefined) {
-      this.updateValue();
+  inputsAreReady() {
+    return this.inputs.every((input) => {
+      return input.getState().status == Status.READY;
+    });
+  }
+
+  /**
+   * Return true if any of our inputs have an error or upstream error.
+   */
+  inputsHaveErrors() {
+    return this.inputs.some((input) => {
+      const status = input.getState().status;
+      return status === Status.ERROR || status === Status.UPSTREAM_ERROR;
+    });
+  }
+
+  /**
+   * This method defines the core logic for propagating changes in the DAG.
+   *
+   * Called any time an input to this atom changes (including an input
+   * becoming stale, becoming ready etc). There are two possible cases:
+   * 1. After the change all inputs are ready. Set self to processing (and propagate this
+   *   change downstream). Then compute a new value for this atom asynchronously and update
+   *   to either READY or ERROR once that computation is done.
+   * 2. If not all inputs are ready, set self to stale and propagate this change downstream
+   *   as well.
+   */
+  onUpstreamChange() {
+    // No-op if this atom isn't enabled
+    if (!this.isEnabled()) {
       return;
     }
 
-    this.waitOnComingInformation();
+    // Check for errors in inputs first
+    if (this.inputsHaveErrors()) {
+      this.setUpstreamError();
+      return;
+    }
+
+    if (this.inputsAreReady()) {
+      const argsDict = Object.fromEntries(
+        this.inputs.map((input) => [input.name, input.getState().value])
+      );
+
+      // const inputVals = this.inputs.map((input) => {input.getValue());
+      this.setProcessing();
+      this.compute(argsDict)
+        .then((value) => {
+          this.setReady(value);
+        })
+        .catch(this.alertingErrorHandler());
+    } else {
+      this.setWaiting();
+      GlobalVariables.cad
+        .deleteFromLibrary(this.uniqueID)
+        .catch(this.alertingErrorHandler());
+    }
   }
 
   /**
@@ -667,40 +795,6 @@ export default class Atom {
       });
     });
   }
-
-  /**
-   * Sets the atom to wait on coming information. Basically a pass through, but used for molecules
-   */
-  waitOnComingInformation() {
-    if (this.output) {
-      this.output.waitOnComingInformation();
-    }
-    if (this.processing) {
-      //console.log("information sent to something processing");
-      // this.processing = false;
-    }
-  }
-
-  /**
-   * Calls a worker thread to compute the atom's value.
-   */
-  basicThreadValueProcessing() {
-    this.decreaseToProcessCountByOne();
-    this.clearAlert();
-    if (this.output) {
-      this.output.setValue(this.uniqueID);
-      this.output.ready = true;
-    }
-    this.processing = false;
-    if (this.selected) {
-      this.sendToRender();
-    }
-  }
-
-  /**
-   * Starts propagation placeholder. Most atom types do not begin propagation.
-   */
-  beginPropagation() {}
 
   /**
    * Returns an array of length two indicating that this is one atom and if it is waiting to be computed
@@ -747,16 +841,15 @@ export default class Atom {
             step: 0.25,
             type: LevaInputs.STRING,
             disabled: checkConnector(),
-            onChange: async (value) => {
+            onChange: (value) => {
               let currentEquation = String(value).trim();
               input.currentEquation = currentEquation;
               try {
-                const result = await this.evaluateEquation(
+                const result = this.evaluateEquation(
                   currentEquation,
                   input.name
                 );
-                if (result !== input.value) {
-                  // console.log("val changed:", input.value, "->", result);
+                if (Number.isFinite(result)) {
                   input.setValue(result);
                 }
               } catch (err) {
@@ -769,6 +862,52 @@ export default class Atom {
       });
       return inputParams;
     }
+  }
+
+  createInputParams(handleAddControl, setControlValue) {
+    let inputParams = {};
+
+    /** Runs through active atom inputs and adds IO parameters to default param*/
+    if (this.inputs) {
+      this.inputs.map((input) => {
+        const checkConnector = () => {
+          return input.connectors.length > 0;
+        };
+
+        /* Makes inputs for Io's other than geometry */
+        if (input.valueType !== "geometry") {
+          inputParams[this.uniqueID + input.name] = {
+            type: "string",
+            value: input.currentEquation ? input.currentEquation : input.value,
+            label: input.name,
+            disabled: checkConnector(),
+            onChange: async (value) => {
+              let currentEquation = String(value).trim();
+              input.currentEquation = currentEquation;
+              try {
+                const result = await this.evaluateEquation(
+                  currentEquation,
+                  input.name
+                );
+                if (result !== input.value) {
+                  // console.log("val changed:", input.value, "->", result);
+                  input.setValue(result);
+                if (Number.isFinite(result)) {
+                  if (result !== input.value) {
+                    input.setValue(result);
+                  }
+                }
+              } catch (err) {
+                console.log("setting value to NaN");
+                input.setValue(NaN);
+                this.alertingErrorHandler()(err);
+              }
+            },
+          };
+        }
+      });
+    }
+    return inputParams;
   }
 
   createInputParams(handleAddControl, setControlValue) {
@@ -818,11 +957,9 @@ export default class Atom {
   /**
    * Evaluate the equation
    */
-  async evaluateEquation(equation) {
+  evaluateEquation(equation) {
     let substitutedEquation = String(equation ?? "").trim();
-    const variables = await this.extractVariablesFromEquation(
-      substitutedEquation
-    );
+    const variables = this.extractVariablesFromEquation(substitutedEquation);
     const unresolved = [];
     const resolvedValues = {};
     if (variables.length > 0) {
@@ -878,7 +1015,7 @@ export default class Atom {
           String(resolvedValues[variable])
         );
       }
-      const result = await GlobalVariables.limitedEvaluate(substitutedEquation);
+      const result = GlobalVariables.limitedEvaluate(substitutedEquation);
       return result;
     }
   }
@@ -888,7 +1025,7 @@ export default class Atom {
    * Only true variables (not function names) are returned.
    * @returns {string[]} Array of variable names
    */
-  async extractVariablesFromEquation(equation) {
+  extractVariablesFromEquation(equation) {
     let variables = [];
     try {
       const node = parse(equation);
@@ -912,6 +1049,7 @@ export default class Atom {
     }
     return variables;
   }
+
   /**
    * Find the value of an input for with a given name.
    * @param {string} ioName - The name of the target attachment point.

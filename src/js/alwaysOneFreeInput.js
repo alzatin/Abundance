@@ -1,3 +1,5 @@
+import { Status } from "../prototypes/observableEntity.js";
+
 //This module is used to create atoms which do not have a set number of inputs, but instead always have one input free.
 
 /**
@@ -50,18 +52,48 @@ export const addOrDeletePorts = (target) => {
   //Add or delete ports as needed
   if (howManyInputPortsAvailable(target) == 0) {
     //We need to make a new port available
-    findHighestInput(target);
-    target.addIO(
-      "input",
-      "Shape " + (findHighestInput(target) + 1),
-      target,
-      "geometry",
-      "",
-      true
-    );
+    const highest = findHighestInput(target);
+    target.addIO("Shape " + (highest + 1), "geometry");
   }
   if (howManyInputPortsAvailable(target) >= 2) {
     //We need to remove the empty port
     deleteEmptyPort(target);
   }
+};
+
+/**
+ * Determines if inputs are ready for an alwaysOneFreeInput atom.
+ * Specifically, returns true iff:
+ *  * there is at least one other input with a connector
+ *  * and all other inputs have a connection and are in the READY status.
+ */
+export const inputsReadyIgnoringFreeAP = (target) => {
+  const connected = target.inputs.filter(
+    (input) => input.connectors.length > 0
+  );
+  return (
+    connected.length > 0 &&
+    connected.every((input) => input.getState().status == Status.READY)
+  );
+};
+
+export const initializeInputsFromSaved = (target, ioValues) => {
+  const ioList = [{ name: "geometry", valueType: "geometry", type: "output" }];
+  if (typeof ioValues !== "undefined") {
+    ioValues.forEach((ioValue) => {
+      //for each saved value
+      ioList.push({
+        name: ioValue.name,
+        valueType: "geometry",
+      });
+    });
+  }
+  if (ioList.length === 1) {
+    //If there are no inputs, add a default input
+    ioList.push({
+      name: "Shape 1",
+      valueType: "geometry",
+    });
+  }
+  target.addAllIOs(ioList);
 };

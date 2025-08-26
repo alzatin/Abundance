@@ -64,11 +64,10 @@ export default class Color extends Atom {
       White: "#FFFCF7",
       "Keep Out": "#D9544D",
     };
-
-    this.addIO("input", "geometry", this, "geometry", null, false, true);
-    this.addIO("output", "geometry", this, "geometry", null);
-
-    this.selectedValueColor;
+    this.addAllIOs([
+      { name: "color", valueType: "string", type: "output" },
+      { name: "geometry", valueType: "geometry", type: "input" },
+    ]);
 
     this.setValues(values);
   }
@@ -97,37 +96,16 @@ export default class Color extends Atom {
   }
 
   /**
-   * Applies a color tag to the object in a worker thread.
+   * Compute & return a promise of the colored geometry
    */
-  updateValue() {
-    super.updateValue();
-
-    if (this.inputs.every((x) => x.ready)) {
-      this.processing = true;
-      var inputID = this.findIOValue("geometry");
-      var color = Object.values(this.colorOptions)[this.selectedColorIndex];
-      this.selectedValueColor = Object.keys(this.colorOptions)[
-        this.selectedColorIndex
-      ];
-      GlobalVariables.cad
-        .color(this.uniqueID, inputID, color)
-        .then(() => {
-          this.basicThreadValueProcessing();
-        })
-        .catch(this.alertingErrorHandler());
-    }
-  }
-
-  /**
-   * Updates the value of the selected color and then the value.
-   */
-  changeColor(index) {
-    this.selectedColorIndex = index;
-    this.updateValue();
+  compute(inputs) {
+    const color = Object.values(this.colorOptions)[this.selectedColorIndex];
+    return GlobalVariables.cad.color(this.uniqueID, inputs.geometry, color);
   }
 
   createInputParams() {
     let inputParams = {};
+    /** Runs through active atom inputs and adds IO parameters to default param*/
 
     inputParams[this.uniqueID + "color"] = {
       type: "select",

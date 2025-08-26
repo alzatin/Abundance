@@ -115,20 +115,23 @@ export default class Code extends Atom {
           */\n\
       ";
 
-    this.addIO("output", "geometry", this, "geometry", "");
-
     //This loads any inputs which this atom had when last saved.
-    if (typeof this.ioValues !== "undefined") {
-      this.ioValues.forEach((ioValue) => {
-        //for each saved value
-        this.addIO("input", ioValue.name, this, "geometry", "");
-      });
-    }
+    this.x = values.x || 0;
+    this.y = values.y || 0;
+    this.parent = values.parent || null;
+    this.uniqueID = values.uniqueID || GlobalVariables.generateUniqueID();
+
+    // Special behavior for code atoms requires that ap's are explicitly set to ready
+    values.ioValues?.forEach((ioValue) => {
+      const ap = this.addIO(ioValue.name, "geometry");
+      ap.setReady(ioValue.ioValue);
+    });
+    this.addIO("output", "geometry", null, "output");
 
     this.setValues([]);
     this.code = values.code || this.code;
 
-    this.parseInputs(false);
+    this.parseInputs();
   }
 
   /**
@@ -149,76 +152,53 @@ export default class Code extends Atom {
     );
   }
 
-  /**
-   * Begin propagation from this code atom if it has no inputs or if none of the inputs are connected.
-   */
-  beginPropagation() {
-    //If there are no inputs
-    if (this.inputs.length == 0) {
-      this.updateValue();
-    }
-
-    //If none of the inputs are connected
-    var connectedInput = false;
-    this.inputs.forEach((input) => {
-      if (input.connectors.length > 0) {
-        connectedInput = true;
-      }
-    });
-    if (!connectedInput) {
-      this.updateValue();
-    }
-  }
-
   createInputParams() {
     let inputParams = {};
     /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs.every((x) => x.ready)) {
-      this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
+    this.inputs.map((input) => {
+      const checkConnector = () => {
+        return input.connectors.length > 0;
+      };
 
-        inputParams[this.uniqueID + input.name] = {
-          type: "number",
-          value: input.value,
-          label: input.name,
-          disabled: checkConnector(),
-          step: 0.01,
-          onChange: (value) => {
-            if (input.value !== value) {
-              input.setValue(value);
-            }
-          },
-        };
-      });
+      inputParams[this.uniqueID + input.name] = {
+        type: "number",
+        value: input.value,
+        label: input.name,
+        disabled: checkConnector(),
+        step: 0.01,
+        onChange: (value) => {
+          if (input.value !== value) {
+            input.setValue(value);
+          }
+        },
+      };
+    });
 
-      inputParams["Edit Code"] = {
-        type: "button",
-        label: "Edit Code",
-        order: 7,
-        onClick: () => {
-          this.editCode();
-        },
-      };
-      inputParams["Save Code"] = {
-        type: "button",
-        label: "Save Code",
-        order: 8,
-        onClick: () => {
-          this.saveCode();
-        },
-      };
-      inputParams["Close Editor"] = {
-        type: "button",
-        label: "Close Editor",
-        order: 9,
-        onClick: () => {
-          this.closeCode();
-        },
-      };
-      return inputParams;
-    }
+    inputParams["Edit Code"] = {
+      type: "button",
+      label: "Edit Code",
+      order: 7,
+      onClick: () => {
+        this.editCode();
+      },
+    };
+    inputParams["Save Code"] = {
+      type: "button",
+      label: "Save Code",
+      order: 8,
+      onClick: () => {
+        this.saveCode();
+      },
+    };
+    inputParams["Close Editor"] = {
+      type: "button",
+      label: "Close Editor",
+      order: 9,
+      onClick: () => {
+        this.closeCode();
+      },
+    };
+    return inputParams;
   }
 
   /**
@@ -228,81 +208,44 @@ export default class Code extends Atom {
     this.code = code;
 
     this.parseInputs();
-    this.updateValue();
+    this.onUpstreamChange();
     this.sendToRender();
+  }
+
+  /**
+   * Generate custom error message if we can parse the the error stack for
+   * line number in the users code.
+   * @param {*} err
+   */
+  setError(err) {
+    let logged = false;
+    if (err.stack && err.stack.includes("eval")) {
+      // If the error stack contains "eval", we can try to extract the line number
+      const lineMatch = err.stack.match(/<anonymous>:(\d+):(\d+)/);
+      if (lineMatch) {
+        const lineNumber = lineMatch[1];
+        super.setError(
+          `User code error at line ${lineNumber}: ${err.name} - ${err.message}`
+        );
+        logged = true;
+      }
+    }
+    if (!logged) {
+      super.setError(err.name + ": " + err.message);
+    }
   }
 
   /**
    * Grab the code as a text string and execute it.
    */
-  updateValue(value) {
-    super.updateValue();
-    //Parse the inputs
-    if (this.inputs.every((x) => x.ready)) {
-      var inputValues = [];
-      this.inputs.forEach((io) => {
-        if (io.connectors.length > 0 && io.type == "input") {
-          inputValues.push(io.getValue());
-        }
-      });
-      var argumentsArray = {};
-      this.inputs.forEach((input) => {
-        argumentsArray[input.name] = input.value;
-      });
-
-      console.log("reevaluating code atom with inputs: ", argumentsArray);
-      GlobalVariables.cad
-        .code(this.uniqueID, this.code, argumentsArray)
-        .then((result) => {
-          if (result === true) {
-            //Code atom returned geometry
-            this.basicThreadValueProcessing();
-          } else {
-            //Code atom returned a number
-            this.customThreadValueProcessing(result);
-          }
-        })
-        .catch((err) => {
-          this.processing = false;
-          console.log(err);
-          // try to extract line number trace from the evaluated code
-          let logged = false;
-          if (err.stack && err.stack.includes("eval")) {
-            // If the error stack contains "eval", we can try to extract the line number
-            const lineMatch = err.stack.match(/<anonymous>:(\d+):(\d+)/);
-            if (lineMatch) {
-              const lineNumber = lineMatch[1];
-              this.setError(
-                `User code error at line ${lineNumber}: ${err.name} - ${err.message}`
-              );
-              logged = true;
-            }
-          }
-          if (!logged) {
-            this.setError(err.name + ": " + err.message);
-          }
-        });
-    }
-  }
-
-  /**
-   * Override the standard basic thread processing function to allow passing of numbers or geometry depending on what we have
-   */
-  customThreadValueProcessing(returnedNumber) {
-    this.decreaseToProcessCountByOne();
-    this.clearAlert();
-    if (this.output) {
-      this.value = returnedNumber;
-      this.output.setValue(returnedNumber);
-      this.output.ready = true;
-    }
-    this.processing = false;
+  compute(argumentsArray) {
+    return GlobalVariables.cad.code(this.uniqueID, this.code, argumentsArray);
   }
 
   /**
    * This function reads the string of inputs the user specifies and adds them to the atom.
    */
-  parseInputs(ready = true) {
+  parseInputs() {
     const variables = /Inputs:\[\s*([^)]+?)\s*\]/.exec(this.code);
 
     if (variables) {
@@ -318,13 +261,19 @@ export default class Code extends Atom {
         if (existingInput) {
           // value is already set to the existing input's value
         } else {
-          this.addIO("input", name, this, "geometry", value, ready);
+          this._addIOWithoutSubscribing(name, "geometry", value, "input");
         }
       });
 
-      this.inputs = this.inputs.filter((input) =>
-        variableNames.includes(input.name)
-      );
+      const inputList = [...this.inputs]; // shallow copy b/c we're about to make modifications to this.inputs
+      inputList.forEach((input) => {
+        if (!variableNames.includes(input.name)) {
+          this.removeIO(input.type, input.name, this);
+        }
+      });
+
+      // Batch changes and only subscribe at the end
+      this._subscribeToInputs();
     }
   }
 

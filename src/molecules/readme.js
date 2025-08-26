@@ -22,7 +22,7 @@ export default class Readme extends Atom {
      * The text to appear in the README file
      * @type {string}
      */
-    this.readmeText = "Readme text here";
+    this.readMeText = "Readme text here";
     /**
      * This atom's type
      * @type {string}
@@ -55,8 +55,12 @@ export default class Readme extends Atom {
      */
     this.global = true;
 
-    this.addIO("input", "geometry", this, "geometry", undefined);
-
+    this.addAllIOs([
+      {
+        name: "geometry",
+        valueType: "geometry",
+      },
+    ]);
     this.setValues(values);
   }
 
@@ -79,12 +83,11 @@ export default class Readme extends Atom {
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
-  } // 8801
-  /**
-   * Update the readme text. Called when the readme text has been edited.
-   */
-  setValue(newText) {
-    this.readmeText = newText;
+  }
+
+  setReady(newText) {
+    this.readMeText = newText;
+    super.setReady(newText);
   }
 
   createInputParams() {
@@ -95,8 +98,14 @@ export default class Readme extends Atom {
       type: "string",
       value: this.readmeText,
       label: "Readme Text",
+    inputParams[this.name + this.uniqueID] = {
+      value: this.readMeText,
+      label: this.name,
+      rows: 10,
       onChange: (value) => {
-        this.setValue(value);
+        if (this.readMeText !== value) {
+          this.setReady(value);
+        }
       },
     };
 
@@ -122,13 +131,13 @@ export default class Readme extends Atom {
         .then((res) => {
           if (res !== null) {
             return {
-              readMeText: this.readmeText,
+              readMeText: this.readMeText,
               svg: res,
               uniqueID: this.uniqueID,
             };
           } else {
             return {
-              readMeText: this.readmeText,
+              readMeText: this.readMeText,
               svg: null,
               uniqueID: this.uniqueID,
             };
@@ -143,20 +152,10 @@ export default class Readme extends Atom {
   }
 
   /**
-   * Skip write to display when this atom is clicked
+   * This atom has no output, but compute must still be defined.
    */
-  sendToRender() {
-    console.log("nothing to render in readme");
-  }
-
-  /**
-   * Call super delete node and then grab input that calls function to delete the file from github
-   */
-  deleteNode() {
-    super.deleteNode();
-    // var f = document.getElementById("fileDeleteInput");
-    //f.value = this.fileName;
-    //f.click();
+  compute(inputs) {
+    return Promise.resolve(this.readMeText);
   }
 
   /**
@@ -166,7 +165,7 @@ export default class Readme extends Atom {
     //Save the readme text to the serial stream
     var valuesObj = super.serialize(values);
 
-    valuesObj.readmeText = this.readmeText;
+    valuesObj.readMeText = this.readMeText;
     valuesObj.global = this.global;
 
     return valuesObj;
