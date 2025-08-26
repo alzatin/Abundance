@@ -1,5 +1,6 @@
 import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
+import { Status } from "../prototypes/observableEntity.js";
 
 /**
  * This class creates the constant atom instance which can be used to define a numerical constant.
@@ -58,11 +59,9 @@ export default class Constant extends Atom {
      */
     this.value = 10.0;
 
-    this.setValues(values); //This will overwrite the default value if one is loaded
-    
-    this.addIO("output", "number", this, "number", this.value);
+    this.addAllIOs([{ name: "number", valueType: "number", type: "output" }]);
 
-    this.decreaseToProcessCountByOne(); //Since there is nothing upstream this needs to be removed from the list here
+    this.setValues(values); //This will overwrite the default value if one is loaded
   }
 
   /**
@@ -114,35 +113,20 @@ export default class Constant extends Atom {
       step: 0.01,
       onChange: (value) => {
         if (this.value !== value) {
-          this.output.setValue(value);
-          this.updateValue();
+          // Update to a new value with READY status
+          this.setReady(value);
         }
       },
     };
     return outputParams;
   }
-  /**
-   * Set's the output value for constant
-   */
-  updateValue() {
-    this.value = this.output.getValue();
-    this.output.ready = true;
-    this.processing = false;
-  }
 
-  /**
-   * Starts propagation from this atom since it is not waiting for anything up stream.
-   */
-    beginPropagation(force = false) {
-      this.output.setValue(this.value);
+  enable() {
+    if (this.getState().status == Status.DISABLED) {
+      this.setReady(this.value);
+      return true;
     }
-
-  /**
-   * Send the value of this atom to the 3D display. Used to display the number
-   */
-  sendToRender() {
-    //Send code to jotcad to render
-    GlobalVariables.writeToDisplay(this.uniqueID);
+    return false;
   }
 
   /**

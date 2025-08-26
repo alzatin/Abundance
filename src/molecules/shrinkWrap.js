@@ -1,5 +1,9 @@
 import Atom from "../prototypes/atom.js";
-import { addOrDeletePorts } from "../js/alwaysOneFreeInput.js";
+import {
+  addOrDeletePorts,
+  initializeInputsFromSaved,
+  inputsReadyIgnoringFreeAP,
+} from "../js/alwaysOneFreeInput.js";
 import GlobalVariables from "../js/globalvariables.js";
 
 /**
@@ -12,8 +16,6 @@ export default class shrinkWrap extends Atom {
    */
   constructor(values) {
     super(values);
-
-    this.addIO("output", "geometry", this, "geometry", "");
 
     /**
      * This atom's name
@@ -39,12 +41,8 @@ export default class shrinkWrap extends Atom {
 
     this.setValues(values);
 
-    if (typeof this.ioValues !== "undefined") {
-      this.ioValues.forEach((ioValue) => {
-        //for each saved value
-        this.addIO("input", ioValue.name, this, "geometry", "");
-      });
-    }
+    //Initialize an appropriate number of input APs based on saved ioValues
+    initializeInputsFromSaved(this, this.ioValues);
 
     this.setValues([]);
   }
@@ -93,30 +91,22 @@ export default class shrinkWrap extends Atom {
     GlobalVariables.c.closePath();
   }
 
-  /**
-   * Generates a list of all of the input shapes, then passes them to a worker thread to compute the hull
-   */
-  updateValue() {
-    super.updateValue();
+  inputsAreReady() {
+    return inputsReadyIgnoringFreeAP(this);
+  }
 
-    if (this.inputs.every((x) => x.ready)) {
-      this.processing = true;
-      var inputsList = [];
-      this.inputs.forEach((io) => {
-        if (io.connectors.length > 0) {
-          inputsList.push(io.getValue());
-        }
-      });
-      GlobalVariables.cad
-        .shrinkWrapSketches(this.uniqueID, inputsList)
-        .then(() => {
-          this.basicThreadValueProcessing();
-        })
-        .catch(this.alertingErrorHandler());
+  compute(inputs) {
+    addOrDeletePorts(this); // clean up ports then check if we're in a ready state.
+    // Preserve input order.
+    const nonnullInputIds = this.inputs
+      .filter((io) => io.connectors.length > 0)
+      .map((io) => inputs[io.name])
+      .filter(Boolean);
 
-      //Delete or add ports as needed
-      addOrDeletePorts(this);
-    }
+    return GlobalVariables.cad.shrinkWrapSketches(
+      this.uniqueID,
+      nonnullInputIds
+    );
   }
 
   /**

@@ -4,6 +4,7 @@ import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import { button } from "leva";
 import { re } from "mathjs";
 import { LevaInputs } from "leva";
+import { Status } from "../prototypes/observableEntity.js";
 
 /**
  * This class creates the GitHubMolecule atom.
@@ -61,6 +62,27 @@ export default class GitHubMolecule extends Molecule {
     return clickProcessed;
   }
 
+  onChildError() {
+    // find the causal error.
+    let buffer = [this.getOutputAtom()];
+    while (buffer.length > 0) {
+      let atom = buffer.shift();
+      if (atom.getState().status === Status.ERROR) {
+        this.setError(atom.alert?.message);
+        return;
+      }
+      if (atom.getState().status === Status.UPSTREAM_ERROR) {
+        atom.inputs.forEach((input) => {
+          if (input.connectors.length > 0) {
+            buffer.push(input.connectors[0].attachmentPoint1.parentMolecule);
+          }
+        });
+      }
+    }
+    // Failed to find cause. set something generic.
+    this.setError("An unknown error occurred in a child atom.");
+  }
+
   /**
    * Create Leva Menu Input - returns to ParameterEditor
    */
@@ -73,22 +95,47 @@ export default class GitHubMolecule extends Molecule {
         const checkConnector = () => {
           return input.connectors.length > 0;
         };
+        /*
+
+*/
         /* Makes inputs for Io's other than geometry */
+
+        inputParams[this.uniqueID + input.name] = {
+          value: input.value,
+          label: input.name,
+          disabled: checkConnector(),
+          step: 0.01,
+          onChange: (value) => {
+            if (input.value !== value) {
+              input.setValue(value);
+              //this.sendToRender();
+            }
+          },
+        };
+        if (input.type && input.valueType) {
+          inputParams[this.uniqueID + input.name].type =
+            LevaInputs[input.valueType.toUpperCase()];
+        }
+        if (input.valueType == "geometry") {
+          inputParams[this.uniqueID + input.name].disabled = true;
+        }
+
+        /*
         if (input.valueType !== "geometry") {
           inputParams[this.uniqueID + input.name] = {
             value: input.currentEquation ? input.currentEquation : input.value,
             label: input.name,
             type: LevaInputs.STRING,
             disabled: checkConnector(),
-            onChange: async (value) => {
+            onChange: (value) => {
               /* If the user has set the type as string don't evaluate as equation */
-              if (input.type && input.valueType?.toUpperCase() === "STRING") {
+        /*              if (input.type && input.valueType?.toUpperCase() === "STRING") {
                 input.setValue(value);
               } else {
                 let currentEquation = String(value).trim();
                 input.currentEquation = currentEquation;
                 try {
-                  const result = await this.evaluateEquation(
+                  const result = this.evaluateEquation(
                     currentEquation,
                     input.name
                   );
@@ -103,8 +150,7 @@ export default class GitHubMolecule extends Molecule {
                 }
               }
             },
-          };
-        }
+          };*/
       });
       inputParams["Reload From Github"] = button(() =>
         this.reloadMoleculeFromGithub()

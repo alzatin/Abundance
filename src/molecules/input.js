@@ -1,5 +1,6 @@
 import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
+import { Status } from "../prototypes/observableEntity.js";
 
 /**
  * This class creates the input atom.
@@ -68,14 +69,78 @@ export default class Input extends Atom {
      */
     this.tooltipElement = null;
 
-    this.addIO("output", "number or geometry", this, this.type, this.value);
+    this.addIO("number or geometry", this.type, this.value, "output");
 
     // Set values first to ensure this.name is correct before creating the parent input
     this.setValues(values);
 
     //Add a new input to the current molecule
     if (typeof this.parent !== "undefined") {
-      this.parent.addIO("input", this.name, this.parent, this.type, this.value);
+      // parent should subscribe so it can manage it's ready/processing/etc state
+      this.parentAP = this.parent.addIO(
+        this.name,
+        this.type,
+        this.value,
+        "input"
+      );
+      // We also subscribe directly to the parent ap.
+      this.parentAP.subscribe(() => {
+        this.onUpstreamChange(); // Subscribe with our callback instead of our parent's which is default.
+      }, this.uniqueID);
+    } else {
+      throw new Error(
+        "constructed an input with undefined parent. IDK what to do here"
+      );
+    }
+  }
+
+  enable() {
+    // Instead of the usual enable behavior, we want to push the propagation of
+    // enable-ment up to our parent's attachment points if any.
+    if (this.status !== Status.DISABLED) {
+      return false;
+    }
+    let didPropagateUpstream = false;
+    if (this.parentAP) {
+      if (this.parentAP.connectors && this.parentAP.connectors.length > 0) {
+        this.parentAP.connectors.forEach((connector) => {
+          const upstreamAtom = connector.attachmentPoint1?.parentMolecule;
+          if (upstreamAtom && upstreamAtom !== this) {
+            // Recursively enable the upstream atom
+            this.setWaiting();
+            didPropagateUpstream = upstreamAtom.enable();
+          }
+        });
+      }
+    }
+    if (!didPropagateUpstream) {
+      if (this.parentAP?.getValue()) {
+        this.setReady(this.parentAP.getValue());
+      } else {
+        this.setWaiting();
+      }
+    }
+    return true;
+  }
+
+  onUpstreamChange() {
+    // No-op if this atom is disabled
+    if (this.status === Status.DISABLED) {
+      return;
+    }
+
+    // This is called when the parent attachment point changes
+    // We need to update the value of this input atom
+    if (this.parentAP) {
+      const parentState = this.parentAP.getState();
+      this.setStatus(parentState.status, parentState.value);
+    } else {
+      // This is a top-level input atom. Set to our value and mark as ready
+      if (this.value) {
+        this.setReady(this.value);
+      } else {
+        this.setWaiting();
+      }
     }
   }
 
@@ -131,37 +196,11 @@ export default class Input extends Atom {
     }
 
     //Set colors
-    if (this.processing) {
-      GlobalVariables.c.fillStyle = "blue";
-    } else if (this.selected) {
-      GlobalVariables.c.fillStyle = this.selectedColor;
-      GlobalVariables.c.strokeStyle = this.defaultColor;
-      /**
-       * This background color
-       * @type {string}
-       */
-      this.color = this.selectedColor;
-      /**
-       * This atoms accent color
-       * @type {string}
-       */
-      this.strokeColor = this.defaultColor;
-    } else {
-      GlobalVariables.c.fillStyle = this.defaultColor;
-      GlobalVariables.c.strokeStyle = this.selectedColor;
-      this.color = this.defaultColor;
-      this.strokeColor = this.selectedColor;
-    }
-
-    // Draw the inputs
-    this.inputs.forEach((input) => {
-      input.draw();
-    });
-
-    // Draw the output
-    if (this.output) {
-      this.output.draw();
-    }
+    GlobalVariables.c.fillStyle = Atom.DEFAULT_COLOR;
+    this.color = Atom.statusAsColor(this.status, this.selected);
+    GlobalVariables.c.strokeStyle = this.selected
+      ? Atom.DEFAULT_COLOR
+      : Atom.SELECTED_COLOR;
 
     GlobalVariables.c.beginPath();
     GlobalVariables.c.moveTo(0, yInPixels + this.height / 2);
@@ -170,7 +209,9 @@ export default class Input extends Atom {
     GlobalVariables.c.lineTo(this.width, yInPixels - this.height / 2);
     GlobalVariables.c.lineTo(0, yInPixels - this.height / 2);
     GlobalVariables.c.lineWidth = 1;
+    GlobalVariables.c.fillStyle = this.color;
     GlobalVariables.c.fill();
+    GlobalVariables.c.fillStyle = Atom.DEFAULT_COLOR;
     GlobalVariables.c.closePath();
     GlobalVariables.c.stroke();
     GlobalVariables.c.font = GlobalVariables.fontSize;
@@ -184,6 +225,16 @@ export default class Input extends Atom {
       5,
       yInPixels + 3
     );
+
+    // Draw the inputs
+    this.inputs.forEach((input) => {
+      input.draw();
+    });
+
+    // Draw the output
+    if (this.output) {
+      this.output.draw();
+    }
   }
 
   /**
@@ -310,28 +361,6 @@ export default class Input extends Atom {
   }
 
   /**
-   * Grabs the new value from the parent molecule's input, sets this atoms value, then propagates.
-   */
-  updateValue() {
-    this.parent.inputs.forEach((input) => {
-      //Grab the value for this input from the parent's inputs list
-      if (input.name == this.name) {
-        //If we have found the matching input
-        this.decreaseToProcessCountByOne();
-        this.value = input.getValue();
-        this.output.waitOnComingInformation(); //Lock all of the dependents
-        this.output.setValue(this.value);
-        this.parent.updateIO(
-          "input",
-          this.name,
-          this.parent,
-          this.type,
-          this.value
-        );
-      }
-    });
-  }
-  /**
    * Create Leva Menu Inputs for Editable Input Names - returns to ParameterEditor
    */
   createLevaInputs() {
@@ -340,9 +369,10 @@ export default class Input extends Atom {
       value: this.name,
       label: "Input Name",
       disabled: false,
-      onChange: (value) => {
-        if (this.name !== value) {
-          this.name = value;
+      onChange: (newName) => {
+        if (this.name !== newName) {
+          this.name = newName;
+          this.parentAP.name = newName; // Update the attachment point name
         }
       },
     };
@@ -351,19 +381,13 @@ export default class Input extends Atom {
       label: "Input Type",
       disabled: false,
       options: ["number", "string", "geometry", "array"],
-      onChange: (value) => {
-        if (this.type !== value) {
-          this.type = value;
-          this.output.valueType = value;
+      onChange: (newType) => {
+        if (this.type !== newType) {
+          this.type = newType;
+          this.output.valueType = newType;
           //Add a new input to the current molecule
-          if (typeof this.parent !== "undefined") {
-            this.parent.updateIO(
-              "input",
-              this.name,
-              this.parent,
-              this.type,
-              this.value
-            );
+          if (this.parentAP) {
+            this.parentAP.valueType = newType;
           }
         }
       },

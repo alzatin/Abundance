@@ -12,10 +12,6 @@ export default class RegularPolygon extends Atom {
   constructor(values) {
     super(values);
 
-    this.addIO("input", "number of sides", this, "number", 6);
-    this.addIO("input", "diameter", this, "number", 10.0);
-    this.addIO("output", "geometry", this, "geometry", "");
-
     /**
      * This atom's name
      * @type {string}
@@ -32,6 +28,12 @@ export default class RegularPolygon extends Atom {
      */
     this.description =
       "Creates a new regular polygon. Corners are on the diameter.";
+
+    this.addAllIOs([
+      { name: "number of sides", valueType: "number", defaultValue: 6 },
+      { name: "diameter", valueType: "number", defaultValue: 10.0 },
+      { name: "geometry", valueType: "geometry", type: "output" },
+    ]);
 
     this.setValues(values);
   }
@@ -76,30 +78,17 @@ export default class RegularPolygon extends Atom {
   }
 
   /**
-   * Starts propagation from this atom if it is not waiting for anything up stream.
+   * Computes the geometry of the regular polygon.
+   * @param {*} argsDict - dictionary of arguments keyed by their names (as set by addIO in constructor)
+   * @property {number} argsDict.diameter - the diameter of the regular polygon
+   * @property {number} argsDict["number of sides"] - the number of sides
+   * @returns promise containing the ID of the created geometry
    */
-
-  beginPropagation(force = false) {
-    //Check to see if a value already exists. Generate it if it doesn't. Only do this for circles, rectangles, and regular polygons
-
-    this.inputs.forEach((input) => {
-      input.beginPropagation();
-    });
-  }
-
-  /**
-   * Create a new regular polygon in a worker thread.
-   */
-  updateValue() {
-    super.updateValue();
-    var numberOfSides = this.findIOValue("number of sides");
-    var diameter = this.findIOValue("diameter");
-
-    GlobalVariables.cad
-      .regularPolygon(this.uniqueID, diameter / 2, numberOfSides)
-      .then(() => {
-        this.basicThreadValueProcessing();
-      })
-      .catch(this.alertingErrorHandler());
+  compute(argsDict) {
+    return GlobalVariables.cad.regularPolygon(
+      this.uniqueID,
+      argsDict.diameter / 2,
+      argsDict["number of sides"]
+    );
   }
 }

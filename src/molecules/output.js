@@ -1,5 +1,6 @@
 import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
+import { Status } from "../prototypes/observableEntity.js";
 
 /**
  * This class creates the output atom. The goal is that the output atom is fully transparent to the molecule which contains it
@@ -64,34 +65,16 @@ export default class Output extends Atom {
      */
     this.description =
       "Connect geometry here to make it available in the next level up. ";
+    this.addAllIOs([{ name: "number or geometry", valueType: "geometry" }]);
 
     this.setValues(values);
-
-    this.addIO("input", "number or geometry", this, "geometry", undefined);
   }
 
-  /**
-   * Take the input value of this function and pass it to the parent Molecule to go up one level.
-   */
-  updateValue() {
-    super.updateValue();
-    if (this.inputs.every((x) => x.ready)) {
-      //still need to understand this
-      this.decreaseToProcessCountByOne();
-
-      var inputID = this.findIOValue("number or geometry");
-      GlobalVariables.cad
-        .output(this.uniqueID, inputID)
-        .then(() => {
-          this.basicThreadValueProcessing();
-          //Recompute molecule gets called if we have successfully updated the value of output
-          this.parent.recomputeMolecule(this.uniqueID);
-        })
-        .catch(this.alertingErrorHandler());
-
-      //Propagate passes the updated value on while parent.updateValue is called when one of the molecule inputs changes
-      this.parent.propagate();
-    }
+  compute(argsDict) {
+    return GlobalVariables.cad.output(
+      this.uniqueID,
+      argsDict["number or geometry"]
+    );
   }
 
   /**
@@ -107,13 +90,6 @@ export default class Output extends Atom {
   }
 
   /**
-   * Sets the parent molecule output to wait on coming information
-   */
-  waitOnComingInformation() {
-    this.parent.output.waitOnComingInformation();
-  }
-
-  /**
    * Override super delete function to prevent output from being deleted
    */
   deleteNode() {}
@@ -122,7 +98,34 @@ export default class Output extends Atom {
    * A function to allow you to still call the delete function if needed.
    */
   deleteOutputAtom(deletePath = true) {
+    // Clear all subscribers (typically just the parent molecule)
+    this.unsubscribeAll();
     super.deleteNode(false, deletePath);
+  }
+
+  inputsAreReady() {
+    return this.inputs.length > 0 && super.inputsAreReady();
+  }
+
+  onUpstreamChange() {
+    // No-op if this atom is disabled
+    if (this.status === Status.DISABLED) {
+      return;
+    }
+
+    if (this.uniqueID == "9f9d507e-3da6-4de1-885d-f2896e8c8ff2") {
+      console.log(
+        "update received. initial status: " +
+          this.status +
+          " input status: " +
+          this.inputs[0].status
+      );
+      const result = super.onUpstreamChange();
+      console.log("update received. final status: " + this.status);
+      return result;
+    } else {
+      return super.onUpstreamChange();
+    }
   }
 
   /**
@@ -137,31 +140,11 @@ export default class Output extends Atom {
     this.height = radiusInPixels;
 
     //Set colors
-    if (this.processing) {
-      GlobalVariables.c.fillStyle = "blue";
-    } else if (this.selected) {
-      GlobalVariables.c.fillStyle = this.selectedColor;
-      GlobalVariables.c.strokeStyle = this.defaultColor;
-      /**
-       * This background color
-       * @type {string}
-       */
-      this.color = this.selectedColor;
-      /**
-       * This atoms accent color
-       * @type {string}
-       */
-      this.strokeColor = this.defaultColor;
-    } else {
-      GlobalVariables.c.fillStyle = this.defaultColor;
-      GlobalVariables.c.strokeStyle = this.selectedColor;
-      this.color = this.defaultColor;
-      this.strokeColor = this.selectedColor;
-    }
-
-    this.inputs.forEach((child) => {
-      child.draw();
-    });
+    GlobalVariables.c.fillStyle = Atom.DEFAULT_COLOR;
+    this.color = Atom.statusAsColor(this.status, this.selected);
+    GlobalVariables.c.strokeStyle = this.selected
+      ? Atom.DEFAULT_COLOR
+      : Atom.SELECTED_COLOR;
 
     GlobalVariables.c.beginPath();
     GlobalVariables.c.font = "10px Work Sans";
@@ -190,5 +173,9 @@ export default class Output extends Atom {
     GlobalVariables.c.lineJoin = "round";
     GlobalVariables.c.stroke();
     GlobalVariables.c.closePath();
+
+    this.inputs.forEach((child) => {
+      child.draw();
+    });
   }
 }
