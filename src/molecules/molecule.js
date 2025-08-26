@@ -129,7 +129,7 @@ export default class Molecule extends Atom {
             atom.atomType == "GitHubMolecule"
           ) {
             const [ready, total] = atom.getCompletionTuple();
-            childCount += total;
+            childCount += total - 1; // remove 1 because we already counted the molecule itself
             readyChildCount += ready;
           } else if (atom.getState().status === Status.READY) {
             readyChildCount++;
