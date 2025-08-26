@@ -777,31 +777,6 @@ export default class Atom extends ObservableEntity {
   }
 
   /**
-   * Used to walk back out the tree generating a list of constants...used for evolve
-   */
-  walkBackForConstants(callback) {
-    //Pass the call further up the chain
-    this.inputs.forEach((input) => {
-      input.connectors.forEach((connector) => {
-        connector.walkBackForConstants(callback);
-      });
-    });
-  }
-
-  /**
-   * Returns an array of length two indicating that this is one atom and if it is waiting to be computed
-   */
-  census() {
-    var waiting = 0;
-    this.inputs.forEach((input) => {
-      if (input.ready != true) {
-        waiting = 1;
-      }
-    });
-    return [1, waiting];
-  }
-
-  /**
    * Send the value of this atom to the 3D display.
    */
   sendToRender() {
@@ -870,12 +845,14 @@ export default class Atom extends ObservableEntity {
    */
   evaluateEquation(equation) {
     let substitutedEquation = String(equation ?? "").trim();
-    
+
     // Handle empty or whitespace-only equations gracefully
     if (!substitutedEquation) {
-      throw new Error("Empty mathematical expression. Please enter a valid expression.");
+      throw new Error(
+        "Empty mathematical expression. Please enter a valid expression."
+      );
     }
-    
+
     const variables = this.extractVariablesFromEquation(substitutedEquation);
     const unresolved = [];
     const resolvedValues = {};
@@ -939,7 +916,7 @@ export default class Atom extends ObservableEntity {
           String(resolvedValues[variable])
         );
       }
-      
+
       // Safely evaluate the mathematical expression with error handling
       try {
         const result = GlobalVariables.limitedEvaluate(substitutedEquation);
