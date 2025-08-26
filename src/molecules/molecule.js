@@ -110,7 +110,9 @@ export default class Molecule extends Atom {
 
   // Returns a tuple of [READY_child_count, total_child_count]
   getCompletionTuple() {
-    let childCount = this.nodesOnTheScreen.length;
+    let childCount = this.nodesOnTheScreen.filter(
+      (atom) => atom.status !== Status.DISABLED
+    ).length;
     if (childCount === 0) {
       return [1, 1]; // be nice about division by 0
     }
