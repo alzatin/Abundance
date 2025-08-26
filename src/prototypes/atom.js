@@ -889,9 +889,7 @@ export default class Atom extends ObservableEntity {
                   currentEquation,
                   input.name
                 );
-                if (result !== input.value) {
-                  // console.log("val changed:", input.value, "->", result);
-                  input.setValue(result);
+
                 if (Number.isFinite(result)) {
                   if (result !== input.value) {
                     input.setValue(result);

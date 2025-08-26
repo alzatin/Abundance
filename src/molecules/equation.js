@@ -268,31 +268,13 @@ export default class Equation extends Atom {
         }
       });
 
-      inputParams[`${this.uniqueID}currentEquation`] = {
-        value: this.currentEquation,
-        label: "Current Equation",
-        disabled: false,
-        onChange: (value) => {
-          if (this.currentEquation !== value) {
-            this.setEquation(value);
-          }
-        },
-        order: -3,
-      };
-
       inputParams[`${this.uniqueID}result`] = {
+        type: "number",
         value: this.getState().value, // Possibly undefined if computation is in progress.
         label: "Result",
         disabled: true,
       };
     }
-
-    inputParams[this.uniqueID + "result"] = {
-      type: "number",
-      label: "Result",
-      value: this.evaluateEquation(),
-      disabled: true,
-    };
 
     return inputParams;
   }

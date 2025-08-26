@@ -113,8 +113,8 @@ export default class Color extends Atom {
       label: "Color",
       options: Object.keys(this.colorOptions),
       onChange: (value) => {
-        this.changeColor(Object.keys(this.colorOptions).indexOf(value));
-        this.sendToRender();
+        this.selectedColorIndex = Object.keys(this.colorOptions).indexOf(value);
+        this.onUpstreamChange();
       },
     };
     /** Runs through active atom inputs and adds IO parameters to default param*/

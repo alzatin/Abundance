@@ -252,7 +252,7 @@ export default class CutLayout extends Atom {
    * Pass the input geometry to a worker function to compute the translation.
    */
   updateValueButton(setInputsChanged) {
-    this.setInputsChanged = setInputsChanged;
+    //this.setInputsChanged = setInputsChanged;
     if (this.inputsAreReady()) {
       // Only checks AP inputs, not the placement values themselves.
       if (this.cancelationHandle) {
@@ -308,14 +308,8 @@ export default class CutLayout extends Atom {
   }
 
   createInputParams() {
-    // if positions isn't a list of lists, nest it so that it is. Required for back-compatibility
-    if (
-      this.placements != undefined &&
-      this.placements.length > 0 &&
-      !Array.isArray(this.placements[0])
-    ) {
-      this.placements = [this.placements];
-    }
+    //this.setInputChanged = setInputChanged;
+    const placements = this.getPlacements();
 
     let inputParams = super.createInputParams();
 

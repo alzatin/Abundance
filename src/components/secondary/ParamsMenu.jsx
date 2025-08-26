@@ -60,7 +60,7 @@ export default function ParamsMenu({ activeAtom }) {
       },
     },
   };
-  const [currentEquation, setCurrentEquation] = useState("");
+  const [inputChanged, setInputChanged] = useState("");
   const handleAddControl = (type, value, label) => {
     const newId = `custom_${Date.now()}`;
     registerControl(newId, {
@@ -81,20 +81,20 @@ export default function ParamsMenu({ activeAtom }) {
     inputParams = activeAtom.createInputParams(
       handleAddControl,
       handleSetValue,
-      setCurrentEquation
+      setInputChanged
     );
     //inputParams = unusedDefault;
   }
 
   const inputParamsConfig = useMemo(() => {
     return { ...inputParams };
-  }, [inputParams, currentEquation]);
+  }, [inputParams]);
 
   const [
     values,
     setControlValue,
     { controls, registerControl, removeControl },
-  ] = useControls(inputParamsConfig, [activeAtom]);
+  ] = useControls(inputParamsConfig, [activeAtom, inputChanged]);
 
   console.log("Control values:", values);
   return (
