@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
 
@@ -60,6 +60,7 @@ export default function ParamsMenu({ activeAtom }) {
       },
     },
   };
+  const [currentEquation, setCurrentEquation] = useState("");
   const handleAddControl = (type, value, label) => {
     const newId = `custom_${Date.now()}`;
     registerControl(newId, {
@@ -79,14 +80,15 @@ export default function ParamsMenu({ activeAtom }) {
   if (activeAtom) {
     inputParams = activeAtom.createInputParams(
       handleAddControl,
-      handleSetValue
+      handleSetValue,
+      setCurrentEquation
     );
     //inputParams = unusedDefault;
   }
 
   const inputParamsConfig = useMemo(() => {
     return { ...inputParams };
-  }, [inputParams]);
+  }, [inputParams, currentEquation]);
 
   const [
     values,

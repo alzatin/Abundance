@@ -205,11 +205,30 @@ export default class Equation extends Atom {
     }
   }
 
-  createInputParams(handleAddControl, setControlValue) {
+  createInputParams(handleAddControl, setControlValue, setCurrentEquation) {
     // Create input parameters for the atom
     let inputParams = {};
+
+    /* Make an input for the equation itself */
+    inputParams[this.uniqueID + "currentequation"] = {
+      value: this.currentEquation,
+      label: "Current Equation",
+      disabled: false,
+      type: "string",
+      onChange: async (value) => {
+        if (this.currentEquation !== value) {
+          this.setEquation(value);
+          setCurrentEquation(value);
+          //setInputChanged(this.currentEquation);
+          //let result = await this.evaluateEquation();
+          //setControlValue(this.uniqueID + "result", result);
+        }
+      },
+      order: -3,
+    };
     /** Runs through active atom inputs and adds IO parameters to default param*/
     if (this.inputs) {
+      console.log(this.inputs);
       this.inputs.map((input) => {
         const checkConnector = () => {
           return input.connectors.length > 0;
@@ -218,20 +237,28 @@ export default class Equation extends Atom {
         if (input.valueType !== "geometry") {
           inputParams[input.name] = {
             value: input.value,
-            type: "string",
+            type: "number",
             disabled: checkConnector(),
             step: 0.01,
             onChange: (value) => {
-              input.setValue(value);
-              //setInputChanged(value); NEEDS TO BE REVISED FOR NEW MENU
-              //this.sendToRender();
+              if (input.value !== value) {
+                input.setValue(value);
+                //setInputChanged(value); NEEDS TO BE REVISED FOR NEW MENU
+              }
             },
-            order: -2,
           };
         }
       });
-      return inputParams;
     }
+
+    inputParams[this.uniqueID + "result"] = {
+      type: "number",
+      label: "Result",
+      value: this.evaluateEquation(),
+      disabled: true,
+    };
+
+    return inputParams;
   }
 
   /**

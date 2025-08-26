@@ -121,10 +121,10 @@ export default (function ParamsEditor({
     compiledBom,
   ]);
 
-  const [, set] = useControls(() => inputParamsConfig, { store: store1 }, [
+  /*  const [, set] = useControls(() => inputParamsConfig, { store: store1 }, [
     activeAtom,
     inputChanged,
-  ]);
+  ]);*/
 
   /** Creates Leva panel with grid settings */
   const renderSettings = {
@@ -168,7 +168,10 @@ export default (function ParamsEditor({
     },
   };
 
-  useControls(renderSettings, { store: store2 }, [backgroundUsdzFile, showBackgroundModel]);
+  useControls(renderSettings, { store: store2 }, [
+    backgroundUsdzFile,
+    showBackgroundModel,
+  ]);
 
   // color theme for Leva
   const abundanceTheme = {
