@@ -307,8 +307,8 @@ export default class CutLayout extends Atom {
     }
   }
 
-  createInputParams() {
-    //this.setInputChanged = setInputChanged;
+  createInputParams(handleAddControl, handleSetValue, setInputChanged) {
+    this.setInputChanged = setInputChanged;
     const placements = this.getPlacements();
 
     let inputParams = super.createInputParams();
@@ -335,11 +335,12 @@ export default class CutLayout extends Atom {
     placements.forEach((sheet, index) => {
       sheet.forEach((placement, part_num) => {
         inputParams[this.uniqueID + "position" + part_counter] = {
-          value: {
-            x: placement.translate.x,
-            y: placement.translate.y,
-            z: placement.rotate,
-          },
+          type: "point",
+          value: [
+            placement.translate.x,
+            placement.translate.y,
+            placement.rotate,
+          ],
           label: prepareLabel(index, part_num, totalSheets),
           step: 0.01,
           onChange: (value, index) => {

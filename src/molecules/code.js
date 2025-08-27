@@ -273,6 +273,7 @@ export default class Code extends Atom {
             const existingInput = this.inputs.find(
               (input) => input.name === inputName
             );
+
             if (!existingInput) {
               console.log("Adding new input:", inputName);
               this._addIOWithoutSubscribing(
