@@ -215,7 +215,7 @@ export default class Equation extends Atom {
     }
   }
 
-  rerenderLevaInputs() {
+  rerenderInputs() {
     if (this.setInputChanged) {
       const representativeHash =
         this.currentEquation +
@@ -224,7 +224,8 @@ export default class Equation extends Atom {
     }
   }
 
-  createInputParams(handleAddControl, setControlValue, setCurrentEquation) {
+  createInputParams(handleAddControl, setControlValue, setInputChanged) {
+    this.setInputChanged = setInputChanged;
     // Create input parameters for the atom
     let inputParams = {};
 
@@ -237,10 +238,7 @@ export default class Equation extends Atom {
       onChange: async (value) => {
         if (this.currentEquation !== value) {
           this.setEquation(value);
-          setCurrentEquation(value);
-          //setInputChanged(this.currentEquation);
-          //let result = await this.evaluateEquation();
-          //setControlValue(this.uniqueID + "result", result);
+          this.rerenderInputs();
         }
       },
       order: -3,
@@ -262,7 +260,7 @@ export default class Equation extends Atom {
             step: 0.01,
             onChange: (value) => {
               input.setReady(value);
-              this.rerenderLevaInputs();
+              this.rerenderInputs();
             },
           };
         }
@@ -311,7 +309,7 @@ export default class Equation extends Atom {
   setEquation(newEquation) {
     this.currentEquation = String(newEquation).trim(); //convert to string first, then remove leading and trailing whitespace
     this.addAndRemoveInputs();
-    this.rerenderLevaInputs();
+    this.rerenderInputs();
   }
 
   /**
