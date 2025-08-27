@@ -255,13 +255,28 @@ export function SimpleControlPanel({
     }
   }, [focusedIndex, controlKeys.length]);
 
-  // Keyboard navigation
+  // Keyboard navigation (skip disabled inputs)
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
-      setFocusedIndex((i) => Math.min(i + 1, controlKeys.length - 1));
+      let next = focusedIndex;
+      do {
+        next = next + 1;
+      } while (
+        next < controlKeys.length &&
+        controls[controlKeys[next]]?.disabled
+      );
+      if (next < controlKeys.length) {
+        setFocusedIndex(next);
+      }
       e.preventDefault();
     } else if (e.key === "ArrowUp") {
-      setFocusedIndex((i) => Math.max(i - 1, 0));
+      let prev = focusedIndex;
+      do {
+        prev = prev - 1;
+      } while (prev >= 0 && controls[controlKeys[prev]]?.disabled);
+      if (prev >= 0) {
+        setFocusedIndex(prev);
+      }
       e.preventDefault();
     }
   };
