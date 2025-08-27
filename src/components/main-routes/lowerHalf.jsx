@@ -5,6 +5,7 @@ import WireframeMesh from "../render/WireframeMesh.jsx";
 import globalvariables from "../../js/globalvariables.js";
 
 import ParamsMenu from "../secondary/ParamsMenu.jsx";
+import RenderMenu from "../secondary/RenderMenu.jsx";
 
 function useWindowSize() {
   // Initialize state with undefined width/height so server and client renders match
@@ -72,6 +73,7 @@ export default memo(function LowerHalf({
   return (
     <>
       <ParamsMenu activeAtom={activeAtom} />
+      <RenderMenu activeAtom={activeAtom} />
       <div
         className="jscad-container"
         style={{

@@ -225,6 +225,7 @@ export function SimpleControlPanel({
   position = { top: 40, left: 40 },
   panelId,
   title = "CONTROLS",
+  initialCollapsed = false,
 }) {
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls);
@@ -235,7 +236,7 @@ export function SimpleControlPanel({
   const inputRefs = React.useRef([]);
 
   // Collapsed panel state
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [contentCollapsed, setContentCollapsed] = useState(false);
 
   // Ensure initial values are set when controls prop changes
