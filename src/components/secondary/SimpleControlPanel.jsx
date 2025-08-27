@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useControls } from "../../hooks/useControls";
+import { color } from "@uiw/react-codemirror";
 
 // SVG icons (Settings, X, CaretDown)
 const SettingsIcon = ({ size = 14 }) => (
@@ -36,7 +37,7 @@ const CaretDownIcon = ({ size = 12, collapsed }) => (
     <polyline
       points="7 9 10 12 13 9"
       fill="none"
-      stroke="#8ea9ff"
+      stroke="#c4a3d5"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -52,8 +53,8 @@ const panelVars = {
   "--panel-separator": "#31343b",
   "--control-background-hover": "#292e3b",
   "--control-text": "#e0e5ef",
-  "--control-text-muted": "#8ea9ff",
-  "--control-accent": "#3e7aff",
+  "--control-text-muted": "#c4a3d5",
+  "--control-accent": "#c4a3d5",
 };
 
 const panelStyle = {
@@ -69,6 +70,13 @@ const panelStyle = {
   color: "var(--panel-foreground)",
   userSelect: "none",
   transition: "box-shadow 0.2s",
+};
+
+const panelTitleStyle = {
+  fontWeight: 700,
+  fontSize: 15,
+  letterSpacing: "0.5px",
+  color: "var(--abundance-color-mainPurple)",
 };
 
 const collapsedStyle = {
@@ -125,7 +133,7 @@ const inputStyle = {
 };
 
 const inputDisabledStyle = {
-  color: "#8ea9ff",
+  color: "var(--control-text-muted)",
   background: "#232832",
   cursor: "not-allowed",
   opacity: 0.7,
@@ -153,7 +161,7 @@ const colorStyle = {
   width: 32,
   height: 32,
   borderRadius: 6,
-  border: "1px solid #3e7aff",
+  border: "1px solid var(--abundance-color-brightPurple)",
   padding: 0,
   background: "#181c23",
   marginLeft: 6,
@@ -310,11 +318,7 @@ export function SimpleControlPanel({
           </button>
           {/* Panel header */}
           <div style={headerStyle}>
-            <div
-              style={{ fontWeight: 700, fontSize: 15, letterSpacing: "0.5px" }}
-            >
-              {title}
-            </div>
+            <div style={panelTitleStyle}>{title}</div>
             <div style={{ display: "flex", gap: 5 }}>
               <button
                 style={arrowButtonStyle}

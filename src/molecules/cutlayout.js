@@ -307,7 +307,7 @@ export default class CutLayout extends Atom {
     }
   }
 
-  createInputParams(handleAddControl, handleSetValue, setInputChanged) {
+  createInputParams(setInputChanged) {
     this.setInputChanged = setInputChanged;
     const placements = this.getPlacements();
 

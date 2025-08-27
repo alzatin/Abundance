@@ -249,7 +249,6 @@ export default class Code extends Atom {
    * This function reads the string of inputs the user specifies and adds them to the atom.
    */
   parseInputs() {
-    console.log("parse inputs runs");
     // Match Inputs = [{inputName: ..., type: ..., defaultValue: ...}, ...]
     // Try to extract a const Inputs = [...] block
     // Only parse the first Inputs declaration (const Inputs = [...] or Inputs = [...])
@@ -266,7 +265,6 @@ export default class Code extends Atom {
         try {
           const sandboxFn = new Function(firstMatch[0] + "; return Inputs;");
           const inputsArray = sandboxFn();
-          console.log("Parsed Inputs Array from const Inputs:", inputsArray);
           const variableNames = [];
           inputsArray.forEach(({ inputName, type, defaultValue }) => {
             variableNames.push(inputName);
@@ -275,7 +273,6 @@ export default class Code extends Atom {
             );
 
             if (!existingInput) {
-              console.log("Adding new input:", inputName);
               this._addIOWithoutSubscribing(
                 inputName,
                 type,

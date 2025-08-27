@@ -826,6 +826,7 @@ export default class Atom extends ObservableEntity {
 
     /** Runs through active atom inputs and adds IO parameters to default param*/
     if (this.inputs) {
+      console.log(this.inputs);
       this.inputs.map((input) => {
         const checkConnector = () => {
           return input.connectors.length > 0;
@@ -834,7 +835,7 @@ export default class Atom extends ObservableEntity {
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry") {
           inputParams[this.uniqueID + input.name] = {
-            type: "string",
+            type: "string", //forcing string type to evaluate as equation
             value: input.currentEquation ? input.currentEquation : input.value,
             label: input.name,
             disabled: checkConnector(),
@@ -849,50 +850,6 @@ export default class Atom extends ObservableEntity {
 
                 if (Number.isFinite(result)) {
                   if (result !== input.value) {
-                    input.setValue(result);
-                  }
-                }
-              } catch (err) {
-                console.log("setting value to NaN");
-                input.setValue(NaN);
-                this.alertingErrorHandler()(err);
-              }
-            },
-          };
-        }
-      });
-    }
-    return inputParams;
-  }
-
-  createInputParams(handleAddControl, setControlValue) {
-    let inputParams = {};
-
-    /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs) {
-      this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
-
-        /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry") {
-          inputParams[this.uniqueID + input.name] = {
-            type: "string",
-            value: input.currentEquation ? input.currentEquation : input.value,
-            label: input.name,
-            disabled: checkConnector(),
-            onChange: async (value) => {
-              let currentEquation = String(value).trim();
-              input.currentEquation = currentEquation;
-              try {
-                const result = await this.evaluateEquation(
-                  currentEquation,
-                  input.name
-                );
-                if (Number.isFinite(result)) {
-                  if (result !== input.value) {
-                    console.log("val changed:", input.value, "->", result);
                     input.setValue(result);
                   }
                 }

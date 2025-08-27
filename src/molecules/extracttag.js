@@ -94,8 +94,9 @@ export default class ExtractTag extends Atom {
     return true;
   }
 
-  createInputParams() {
+  createInputParams(setInputChanged) {
     let tagList = this.tagList.tags || [];
+    console.log("tag list:", tagList);
     let inputParams = {};
 
     inputParams[this.uniqueID + "extracting"] = {

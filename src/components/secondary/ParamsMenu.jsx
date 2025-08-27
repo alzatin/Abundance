@@ -2,6 +2,7 @@ import React from "react";
 import { useEffect, useState, useMemo } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
+import GlobalVariables from "../../js/globalvariables";
 
 export default function ParamsMenu({ activeAtom }) {
   const unusedDefault = {
@@ -78,11 +79,7 @@ export default function ParamsMenu({ activeAtom }) {
   let inputParams = {};
 
   if (activeAtom) {
-    inputParams = activeAtom.createInputParams(
-      handleAddControl,
-      handleSetValue,
-      setInputChanged
-    );
+    inputParams = activeAtom.createInputParams(setInputChanged);
     //inputParams = unusedDefault;
   }
 
@@ -96,13 +93,14 @@ export default function ParamsMenu({ activeAtom }) {
     { controls, registerControl, removeControl },
   ] = useControls(inputParamsConfig, [activeAtom, inputChanged]);
 
-  console.log("Control values:", values);
+  const screenHeight = window.innerHeight;
+
   return (
     <div>
       <SimpleControlPanel
         controls={controls}
         id="atom-inputs-panel"
-        position={{ top: 300, left: 10 }}
+        position={{ top: screenHeight / 2, left: 10 }}
         title={activeAtom?.name || "Controls"}
       />
       {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>

@@ -98,7 +98,7 @@ export default class Export extends Atom {
     );
   }
 
-  createInputParams() {
+  createInputParams(setInputChanged) {
     let inputParams = {};
     const exportOptions = ["STL", "SVG", "STEP"];
 
@@ -120,12 +120,17 @@ export default class Export extends Atom {
               if (input.value !== value) {
                 this.type = value;
                 input.setValue(value);
+                setInputChanged(value);
               }
             },
           };
         }
         /* Makes inputs for Io's other than geometry */
-        if (input.name == "Resolution (dpi)") {
+
+        if (
+          input.name == "Resolution (dpi)" &&
+          this.findIOValue("File Type") === "SVG"
+        ) {
           inputParams[this.uniqueID + input.name] = {
             type: "number",
             value: input.value,

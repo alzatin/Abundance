@@ -173,7 +173,7 @@ export default class Import extends Atom {
     });
   }
 
-  createInputParams(handleAddControl, setControlValue, setInputChanged) {
+  createInputParams(setInputChanged) {
     //REVISE FOR NEW MENU
     let inputParams = {};
     if (this.fileName == null) {

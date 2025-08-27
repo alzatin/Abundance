@@ -224,7 +224,7 @@ export default class Equation extends Atom {
     }
   }
 
-  createInputParams(handleAddControl, setControlValue, setInputChanged) {
+  createInputParams(setInputChanged) {
     this.setInputChanged = setInputChanged;
     // Create input parameters for the atom
     let inputParams = {};
