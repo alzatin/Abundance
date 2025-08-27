@@ -5,7 +5,6 @@ import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
 import TopMenu from "../secondary/TopMenu.jsx";
 import FlowCanvas from "./flowCanvas.jsx";
 import LowerHalf from "./lowerHalf.jsx";
-import ParamsEditor from "../secondary/ParameterEditor.jsx";
 import CodeWindow from "../secondary/codeWindow.jsx";
 import {
   BrowserRouter as Router,
@@ -796,26 +795,6 @@ function CreateMode({
             }}
           />
           <div className="parent flex-parent" id="lowerHalf">
-            {activeAtom ? (
-              <ParamsEditor
-                {...{
-                  gridParam,
-                  axesParam,
-                  wireParam,
-                  solidParam,
-                  activeAtom,
-                  setActiveAtom,
-                  setGrid,
-                  setAxes,
-                  setWire,
-                  setSolid,
-                  backgroundUsdzFile,
-                  showBackgroundModel,
-                  setShowBackgroundModel,
-                }}
-              />
-            ) : null}
-
             <LowerHalf
               {...{
                 activeAtom,

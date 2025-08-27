@@ -820,51 +820,8 @@ export default class Atom extends ObservableEntity {
       this.setError(err);
     }
   }
-  /**
-   * Create Leva Menu Inputs - returns to ParameterEditor
-   */
-  createLevaInputs() {
-    let inputParams = {};
 
-    /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs) {
-      this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
-
-        /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry") {
-          inputParams[this.uniqueID + input.name] = {
-            value: input.currentEquation ? input.currentEquation : input.value,
-            label: input.name,
-            step: 0.25,
-            type: LevaInputs.STRING,
-            disabled: checkConnector(),
-            onChange: (value) => {
-              let currentEquation = String(value).trim();
-              input.currentEquation = currentEquation;
-              try {
-                const result = this.evaluateEquation(
-                  currentEquation,
-                  input.name
-                );
-                if (Number.isFinite(result)) {
-                  input.setValue(result);
-                }
-              } catch (err) {
-                input.setValue(NaN);
-                this.alertingErrorHandler()(err);
-              }
-            },
-          };
-        }
-      });
-      return inputParams;
-    }
-  }
-
-  createInputParams(handleAddControl, setControlValue) {
+  createInputParams() {
     let inputParams = {};
 
     /** Runs through active atom inputs and adds IO parameters to default param*/

@@ -83,9 +83,6 @@ export default class GitHubMolecule extends Molecule {
     this.setError("An unknown error occurred in a child atom.");
   }
 
-  /**
-   * Create Leva Menu Input - returns to ParameterEditor
-   */
   createInputParams() {
     let inputParams = {};
 

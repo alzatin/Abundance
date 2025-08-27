@@ -7,7 +7,6 @@ import GlobalVariables from "../../js/globalvariables.js";
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 
 import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
-import ParamsEditor from "../secondary/ParameterEditor.jsx";
 import RunNavigation from "../secondary/RunNavigation.jsx";
 import Molecule from "../../molecules/molecule.js";
 import {
@@ -160,23 +159,6 @@ function runMode({
       ></canvas>
       <ToggleRunCreate {...{ run: true, isItOwned }} />
 
-      {activeAtom ? (
-        <ParamsEditor
-          {...{
-            run: true,
-            activeAtom,
-            setActiveAtom,
-            gridParam,
-            axesParam,
-            wireParam,
-            solidParam,
-            setGrid,
-            setAxes,
-            setWire,
-            setSolid,
-          }}
-        />
-      ) : null}
       {GlobalVariables.currentRepo ? (
         <RunNavigation
           {...{ authorizedUserOcto, activeAtom, redirectType, setRedirectType }}
