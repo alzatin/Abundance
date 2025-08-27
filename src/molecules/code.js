@@ -124,7 +124,7 @@ export default class Code extends Atom {
 
     // Special behavior for code atoms requires that ap's are explicitly set to ready
     values.ioValues?.forEach((ioValue) => {
-      const ap = this.addIO(ioValue.name, "geometry");
+      const ap = this.addIO(ioValue.name, ioValue.valueType);
       ap.setReady(ioValue.ioValue);
     });
     this.addIO("output", "geometry", null, "output");
@@ -161,10 +161,10 @@ export default class Code extends Atom {
         return input.connectors.length > 0;
       };
 
-      console.log(input);
+      console.log(input.valueType);
 
       inputParams[this.uniqueID + input.name] = {
-        type: "string",
+        type: input.valueType ? input.valueType : "string",
         value: input.value,
         label: input.name,
         disabled: checkConnector(),
