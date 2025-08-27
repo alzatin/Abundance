@@ -108,6 +108,7 @@ const headerStyle = {
   background: "var(--panel-background)",
   borderTopLeftRadius: 8,
   borderTopRightRadius: 8,
+  height: 24,
 };
 
 const getControlListStyle = (maxHeight) => ({
