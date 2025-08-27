@@ -3,25 +3,78 @@ import { useEffect, useState, useMemo } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
+import { re } from "mathjs";
 
-export default function ParamsMenu({ activeAtom }) {
+export default function ParamsMenu({
+  activeAtom,
+  gridParam,
+  axesParam,
+  wireParam,
+  solidParam,
+  setGrid,
+  setAxes,
+  setWire,
+  setSolid,
+  backgroundUsdzFile,
+  setBackgroundUsdzFile,
+  showBackgroundModel,
+  setShowBackgroundModel,
+}) {
   const [inputChanged, setInputChanged] = useState("");
-  let inputParams = {};
+  let renderParams = {};
 
-  if (activeAtom) {
-    inputParams = activeAtom.createInputParams(setInputChanged);
-    //inputParams = unusedDefault;
-  }
-
-  const inputParamsConfig = useMemo(() => {
-    return { ...inputParams };
-  }, [inputParams]);
+  /** Creates Leva panel with grid settings */
+  const renderSettings = {
+    grid: {
+      value: gridParam,
+      label: "Grid",
+      type: "boolean",
+      onChange: (value) => {
+        setGrid(value);
+      },
+    },
+    axes: {
+      value: axesParam,
+      label: "Axes",
+      type: "boolean",
+      onChange: (value) => {
+        setAxes(value);
+      },
+    },
+    wire: {
+      value: wireParam,
+      label: "Output Wire",
+      type: "boolean",
+      onChange: (value) => {
+        setWire(value);
+      },
+    },
+    wireframe: {
+      value: solidParam,
+      label: "Wireframe",
+      type: "boolean",
+      onChange: (value) => {
+        setSolid(value);
+      },
+    },
+    backgroundModel: {
+      value: backgroundUsdzFile ? showBackgroundModel : false,
+      label: "Background Model",
+      type: "boolean",
+      disabled: !backgroundUsdzFile,
+      onChange: (value) => {
+        if (backgroundUsdzFile) {
+          setShowBackgroundModel(value);
+        }
+      },
+    },
+  };
 
   const [
     values,
     setControlValue,
     { controls, registerControl, removeControl },
-  ] = useControls(inputParamsConfig, [inputChanged]);
+  ] = useControls(renderSettings, [inputChanged]);
 
   const screenHeight = window.innerHeight;
 
@@ -30,9 +83,10 @@ export default function ParamsMenu({ activeAtom }) {
       <SimpleControlPanel
         controls={controls}
         id="atom-render-panel"
-        position={{ top: screenHeight / 2 - 30, left: 10 }}
+        position={{ top: screenHeight / 2 - 10, left: 10 }}
         title={"Render Controls" || "Controls"}
         initialCollapsed={true}
+        minWidth={330}
       />
       {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
         Add Custom Control

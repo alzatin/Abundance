@@ -14,6 +14,9 @@ import {
 import NewProjectPopUp from "../secondary/NewProjectPopUp.jsx";
 import { Link } from "react-router-dom";
 
+import ParamsMenu from "../secondary/ParamsMenu.jsx";
+import RenderMenu from "../secondary/RenderMenu.jsx";
+
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
  * a user has been authorized access to a project.
@@ -656,6 +659,24 @@ function CreateMode({
     ) {
       return (
         <>
+          <ParamsMenu activeAtom={activeAtom} />
+          <RenderMenu
+            {...{
+              activeAtom,
+              gridParam,
+              axesParam,
+              wireParam,
+              solidParam,
+              setGrid,
+              setAxes,
+              setWire,
+              setSolid,
+              backgroundUsdzFile,
+              setBackgroundUsdzFile,
+              showBackgroundModel,
+              setShowBackgroundModel,
+            }}
+          />
           <div id="headerBar">
             <img
               className="thumnail-logo"
@@ -733,8 +754,6 @@ function CreateMode({
               setSolid,
               backgroundUsdzFile,
               setBackgroundUsdzFile,
-              backgroundUsdzSha,
-              setBackgroundUsdzSha,
               showBackgroundModel,
               setShowBackgroundModel,
             }}

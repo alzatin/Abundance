@@ -5,10 +5,16 @@ import { color } from "@uiw/react-codemirror";
 // SVG icons (Settings, X, CaretDown)
 const SettingsIcon = ({ size = 14 }) => (
   <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-    <circle cx="10" cy="10" r="8" stroke="#8ea9ff" strokeWidth="2" />
+    <circle
+      cx="10"
+      cy="10"
+      r="8"
+      stroke="var(--control-text-muted)"
+      strokeWidth="2"
+    />
     <path
       d="M10 7v3l2 2"
-      stroke="#8ea9ff"
+      stroke="var(--control-text-muted)"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -57,20 +63,20 @@ const panelVars = {
   "--control-accent": "#c4a3d5",
 };
 
-const panelStyle = {
+const getPanelStyle = (minWidth) => ({
   position: "absolute",
   background: "var(--panel-background)",
   border: "1px solid var(--panel-border)",
   boxShadow: "0 4px 16px rgba(20,24,31,0.16)",
   borderRadius: 8,
-  minWidth: 280,
+  minWidth,
   padding: 0,
   zIndex: 1000,
   fontFamily: "JetBrains Mono, monospace",
   color: "var(--panel-foreground)",
   userSelect: "none",
   transition: "box-shadow 0.2s",
-};
+});
 
 const panelTitleStyle = {
   fontWeight: 700,
@@ -80,7 +86,7 @@ const panelTitleStyle = {
 };
 
 const collapsedStyle = {
-  ...panelStyle,
+  ...getPanelStyle(380),
   width: 38,
   height: 38,
   minWidth: 0,
@@ -104,12 +110,12 @@ const headerStyle = {
   borderTopRightRadius: 8,
 };
 
-const controlListStyle = {
+const getControlListStyle = (maxHeight) => ({
   padding: "12px",
   background: "var(--panel-background)",
-  maxHeight: "340px", // You can adjust this value as needed
+  maxHeight: `${maxHeight}px`,
   overflowY: "auto",
-};
+});
 
 const labelStyle = {
   display: "flex",
@@ -226,6 +232,8 @@ export function SimpleControlPanel({
   panelId,
   title = "CONTROLS",
   initialCollapsed = false,
+  minWidth = 280,
+  maxHeight = 340, // <-- new prop
 }) {
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls);
@@ -300,7 +308,7 @@ export function SimpleControlPanel({
         ...panelVars,
         ...(collapsed
           ? { ...collapsedStyle, ...position }
-          : { ...panelStyle, ...position }),
+          : { ...getPanelStyle(minWidth), ...position }),
       }}
       tabIndex={-1}
       onKeyDown={handleKeyDown}
@@ -327,7 +335,9 @@ export function SimpleControlPanel({
           {/* Collapse/expand arrow */}
           <button
             style={arrowButtonStyle}
-            onClick={() => setCollapsed(true)}
+            onClick={() => {
+              setCollapsed((c) => !c);
+            }}
             title="Collapse Panel"
           >
             <SettingsIcon size={15} />
@@ -338,7 +348,11 @@ export function SimpleControlPanel({
             <div style={{ display: "flex", gap: 5 }}>
               <button
                 style={arrowButtonStyle}
-                onClick={() => setContentCollapsed((c) => !c)}
+                onClick={() => {
+                  initialCollapsed && !contentCollapsed
+                    ? setCollapsed((c) => !c)
+                    : setContentCollapsed((c) => !c);
+                }}
                 title={
                   contentCollapsed ? "Expand controls" : "Collapse controls"
                 }
@@ -356,7 +370,7 @@ export function SimpleControlPanel({
           </div>
           {/* Controls */}
           {!contentCollapsed && (
-            <div style={controlListStyle}>
+            <div style={getControlListStyle(maxHeight)}>
               {controlKeys.map((key, idx) => {
                 const config = controls[key];
                 const label = config.label || key;

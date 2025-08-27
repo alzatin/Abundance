@@ -826,7 +826,6 @@ export default class Atom extends ObservableEntity {
 
     /** Runs through active atom inputs and adds IO parameters to default param*/
     if (this.inputs) {
-      console.log(this.inputs);
       this.inputs.map((input) => {
         const checkConnector = () => {
           return input.connectors.length > 0;

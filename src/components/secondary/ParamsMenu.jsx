@@ -100,8 +100,10 @@ export default function ParamsMenu({ activeAtom }) {
       <SimpleControlPanel
         controls={controls}
         id="atom-inputs-panel"
-        position={{ top: screenHeight / 2 + 30, left: 10 }}
+        position={{ top: screenHeight / 2 - 10, left: 55 }}
         title={activeAtom?.name || "Controls"}
+        minWidth={280}
+        maxHeight={400}
       />
       {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
         Add Custom Control
