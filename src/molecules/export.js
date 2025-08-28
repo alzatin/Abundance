@@ -1,6 +1,5 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
-import { button, LevaInputs } from "leva";
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import { saveAs } from "file-saver";
 
@@ -194,7 +193,7 @@ export default class Export extends Atom {
         console.log("File type");
         saveAs(result, partName + "." + fileType.toLowerCase());
       })
-      .catch(this.alertingErrorHandler());
+      .catch(this.alertingErrorHandler);
   }
   /**
    * Add the file name to the object which is saved for this molecule

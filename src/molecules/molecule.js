@@ -1,10 +1,10 @@
 import Atom from "../prototypes/atom.js";
 import Connector from "../prototypes/connector.js";
 import GlobalVariables from "../js/globalvariables.js";
-import { button } from "leva";
+
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import { BOMEntry } from "../js/BOM";
-import { LevaInputs } from "leva";
+
 import { Status } from "../prototypes/observableEntity.js";
 
 /**

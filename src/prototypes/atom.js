@@ -1,19 +1,7 @@
 import AttachmentPoint from "./attachmentpoint";
 import GlobalVariables from "../js/globalvariables.js";
-import showdown from "showdown";
-import globalvariables from "../js/globalvariables.js";
 import { parse } from "mathjs";
-
-import {
-  useControls,
-  useCreateStore,
-  LevaPanel,
-  button,
-  Leva,
-  LevaInputs,
-} from "leva";
 import { ObservableEntity, Status } from "./observableEntity.js";
-import on from "../js/circular-menu/src/on.js";
 
 // Make this an enum once we're using typescript
 const AlertType = Object.freeze({

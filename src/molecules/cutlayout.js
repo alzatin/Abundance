@@ -2,7 +2,6 @@ import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 //import GlobalVariables from '../js/globalvariables.js'
 import { proxy } from "comlink";
-import { button, LevaInputs } from "leva";
 import { Status } from "../prototypes/observableEntity.js";
 
 /**

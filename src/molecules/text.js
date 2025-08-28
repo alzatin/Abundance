@@ -1,7 +1,6 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import Fonts from "../js/fonts.js";
-import { LevaInputs } from "leva";
 
 /**
  * This class creates the circle atom.

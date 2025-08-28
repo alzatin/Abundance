@@ -1,6 +1,5 @@
 import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
-import { button, LevaInputs } from "leva";
 
 /**
  * This class creates the tag atom.

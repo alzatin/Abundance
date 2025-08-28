@@ -93,7 +93,6 @@ export default class Constant extends Atom {
   }
 
   createInputParams() {
-    // Create the Leva input for the constant name
     let inputParams = {};
     inputParams["constant number"] = {
       type: "string",
@@ -104,7 +103,7 @@ export default class Constant extends Atom {
         this.name = value;
       },
     };
-    // Create the Leva input for the constant value
+    // Create the input for the constant value
     inputParams[this.uniqueID + this.name] = {
       type: "number",
       value: this.value,

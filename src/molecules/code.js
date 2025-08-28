@@ -1,7 +1,6 @@
 import Atom from "../prototypes/atom.js";
 
 import GlobalVariables from "../js/globalvariables.js";
-import { button } from "leva";
 
 /**
  * The Code molecule type adds support for executing arbitrary jsxcad code.

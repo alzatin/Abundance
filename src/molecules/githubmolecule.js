@@ -1,9 +1,6 @@
 import Molecule from "../molecules/molecule";
 import GlobalVariables from "../js/globalvariables.js";
-import { Octokit } from "https://esm.sh/octokit@2.0.19";
-import { button } from "leva";
-import { re } from "mathjs";
-import { LevaInputs } from "leva";
+
 import { Status } from "../prototypes/observableEntity.js";
 
 /**
