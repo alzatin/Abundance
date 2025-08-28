@@ -858,17 +858,24 @@ export default class Atom extends ObservableEntity {
     const variables = this.extractVariablesFromEquation(substitutedEquation);
     const unresolved = [];
     const resolvedValues = {};
+    const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
     if (variables.length > 0) {
       const parentInputs =
         (this.parent && this.parent.inputs) ||
         (this.parentMolecule && this.parentMolecule.inputs) ||
         [];
       for (const variable of variables) {
+        if (BUILTIN_CONSTS.has(variable)) {
+          continue; // let evaluator handle it
+        }
         let value = null;
         // Try parent inputs first
         for (let j = 0; j < parentInputs.length; j++) {
           if (parentInputs[j].name === variable) {
-            value = parentInputs[j].value;
+            value =
+              typeof parentInputs[j].getValue === "function"
+                ? parentInputs[j].getValue()
+                : parentInputs[j].value;
             break;
           }
         }

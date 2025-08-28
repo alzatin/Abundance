@@ -71,7 +71,8 @@ export default class Text extends Atom {
     let inputParams = { ...super.createInputParams() };
 
     if (this.inputs) {
-      this.inputs.map((input) => {
+      this.inputs.forEach((input) => {
+        if (input.name !== "Text") return;
         const checkConnector = () => {
           return input.connectors.length > 0;
         };
