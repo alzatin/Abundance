@@ -68,56 +68,25 @@ export default class Text extends Atom {
   }
 
   createInputParams() {
-    let inputParams = {};
+    let inputParams = { ...super.createInputParams() };
 
-    /** Runs through active atom inputs and adds IO parameters to default param*/
     if (this.inputs) {
       this.inputs.map((input) => {
         const checkConnector = () => {
           return input.connectors.length > 0;
         };
 
-        /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry" && input.name !== "Text") {
-          inputParams[this.uniqueID + input.name] = {
-            type: "string",
-            value: input.currentEquation ? input.currentEquation : input.value,
-            label: input.name,
-            step: 0.25,
-            disabled: checkConnector(),
-            onChange: async (value) => {
-              let currentEquation = String(value).trim();
-              input.currentEquation = currentEquation;
-              try {
-                const result = await this.evaluateEquation(
-                  currentEquation,
-                  input.name
-                );
-                if (Number.isFinite(result)) {
-                  if (result !== input.value) {
-                    input.setValue(result);
-                  }
-                }
-              } catch (err) {
-                input.setValue(NaN);
-                this.alertingErrorHandler()(err);
-              }
-            },
-          };
-        }
-        if (input.name === "Text") {
-          inputParams[this.uniqueID + "Text"] = {
-            type: "string",
-            value: input.value,
-            label: input.name,
-            disabled: checkConnector(),
-            onChange: async (value) => {
-              if (input.value !== value) {
-                input.setValue(value);
-              }
-            },
-          };
-        }
+        inputParams[this.uniqueID + "Text"] = {
+          type: "string",
+          value: input.value,
+          label: input.name,
+          disabled: checkConnector(),
+          onChange: async (value) => {
+            if (input.value !== value) {
+              input.setValue(value);
+            }
+          },
+        };
       });
     }
     const fontOptions = Fonts;

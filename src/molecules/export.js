@@ -134,7 +134,7 @@ export default class Export extends Atom {
             type: "number",
             value: input.value,
             label: input.name,
-            disabled: this.findIOValue("File Type") != "SVG" ? true : false,
+            disabled: false,
             step: 0.01,
             onChange: (value) => {
               if (input.value !== value) {

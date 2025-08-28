@@ -502,6 +502,7 @@ function CreateMode({
           path: backgroundFileName,
           message: "Upload background 3D model",
           content: base64result,
+          ...(backgroundUsdzSha ? { sha: backgroundUsdzSha } : {}),
         });
 
       setBackgroundUsdzFile(backgroundFileName);
@@ -655,10 +656,7 @@ function CreateMode({
   const screenHeight = window.innerHeight;
 
   if (authorizedUserOcto) {
-    if (
-      GlobalVariables.currentRepo.owner.login ==
-      GlobalVariables.currentRepo.owner.login
-    ) {
+    if (GlobalVariables.currentRepo.owner === GlobalVariables.currentUser) {
       return (
         <>
           <ParamsMenu
@@ -678,7 +676,6 @@ function CreateMode({
               setWire,
               setSolid,
               backgroundUsdzFile,
-              setBackgroundUsdzFile,
               showBackgroundModel,
               setShowBackgroundModel,
             }}

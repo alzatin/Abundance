@@ -157,7 +157,7 @@ export default class Molecule extends Atom {
   }
 
   createInputParams() {
-    let inputParams = {};
+    let inputParams = { ...super.createInputParams() };
 
     inputParams["molecule name" + this.uniqueID] = {
       type: "string",
@@ -189,51 +189,12 @@ export default class Molecule extends Atom {
         },
       };
     }
-    /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs) {
-      this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
-
-        /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry") {
-          inputParams[this.uniqueID + input.name] = {
-            type: "string", //forcing string type to evaluate as equation
-            value: input.currentEquation ? input.currentEquation : input.value,
-            label: input.name,
-            disabled: checkConnector(),
-            onChange: async (value) => {
-              let currentEquation = String(value).trim();
-              input.currentEquation = currentEquation;
-              try {
-                const result = await this.evaluateEquation(
-                  currentEquation,
-                  input.name
-                );
-
-                if (Number.isFinite(result)) {
-                  if (result !== input.value) {
-                    input.setValue(result);
-                  }
-                }
-              } catch (err) {
-                console.log("setting value to NaN");
-                input.setValue(NaN);
-                this.alertingErrorHandler()(err);
-              }
-            },
-          };
-        }
-      });
-    }
 
     return inputParams;
   }
 
   createExportMenuInputs() {
     let exportParams = {};
-    const exportOptions = ["STL", "SVG", "STEP"];
     const exportAtoms = this.nodesOnTheScreen.filter(
       (node) => node.atomType === "Export"
     );

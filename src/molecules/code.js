@@ -302,7 +302,6 @@ export default class Code extends Atom {
         arrStr = arrStr.replace(/'/g, '"');
         try {
           const inputsArray = JSON.parse(`[${arrStr}]`);
-          console.log("Parsed Inputs Array:", inputsArray);
           const variableNames = [];
           inputsArray.forEach(({ inputName, type, defaultValue }) => {
             variableNames.push(inputName);
@@ -310,7 +309,6 @@ export default class Code extends Atom {
               (input) => input.name === inputName
             );
             if (!existingInput) {
-              console.log("Adding new input:", inputName);
               this._addIOWithoutSubscribing(
                 inputName,
                 type,

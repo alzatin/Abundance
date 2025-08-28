@@ -826,14 +826,11 @@ export default class Atom extends ObservableEntity {
             value: input.currentEquation ? input.currentEquation : input.value,
             label: input.name,
             disabled: checkConnector(),
-            onChange: async (value) => {
+            onChange: (value) => {
               let currentEquation = String(value).trim();
               input.currentEquation = currentEquation;
               try {
-                const result = await this.evaluateEquation(
-                  currentEquation,
-                  input.name
-                );
+                const result = this.evaluateEquation(currentEquation);
 
                 if (Number.isFinite(result)) {
                   if (result !== input.value) {

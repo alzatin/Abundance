@@ -1,9 +1,6 @@
-import React from "react";
-import { useEffect, useState, useMemo } from "react";
+import { useState } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
-import GlobalVariables from "../../js/globalvariables";
-import { re } from "mathjs";
 
 export default function RenderMenu({
   activeAtom,

@@ -350,15 +350,17 @@ export default class CutLayout extends Atom {
               const placement = placements.flat()[indexNumber];
               //Update the placement with the new value];
               //If anything has changed we need to update the value and recompute
+              const [x, y, z] = Array.isArray(value)
+                ? value
+                : [value?.x, value?.y, value?.z];
               if (
-                placement.translate.x !== value.x ||
-                placement.translate.y !== value.y ||
-                placement.rotate !== value.z
+                placement.translate.x !== x ||
+                placement.translate.y !== y ||
+                placement.rotate !== z
               ) {
-                placement.translate.x = value.x;
-                placement.translate.y = value.y;
-                placement.rotate = value.z;
-
+                placement.translate.x = x;
+                placement.translate.y = y;
+                placement.rotate = z;
                 this.handleNewPlacements(this.getPlacements(), true);
               }
             }
