@@ -86,7 +86,7 @@ export default function ParamsMenu({
         position={{ top: screenHeight / 2 - 10, left: 10 }}
         title={"Render Controls" || "Controls"}
         initialCollapsed={true}
-        minWidth={330}
+        minWidth={335}
       />
       {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
         Add Custom Control

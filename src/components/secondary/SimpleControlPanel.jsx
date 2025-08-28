@@ -152,11 +152,14 @@ const inputFocusedStyle = {
 };
 
 const checkboxStyle = {
-  width: 18,
+  width: 30,
   height: 18,
-  accentColor: "#3e7aff",
-  marginLeft: 3,
-  marginRight: 4,
+  accentColor: "white",
+  marginLeft: 80,
+  marginRight: 0,
+  backgroundColor:
+    "var(--abundance-color-lightPurple)" /* Background for checked state */,
+  borderColor: "#cfa1cfff" /* Border for checked state */,
 };
 
 const selectStyle = {
@@ -495,12 +498,67 @@ export function SimpleControlPanel({
                         >
                           {label}:
                         </span>
-                        <input
-                          type="checkbox"
-                          checked={!!controlValues[key]}
-                          onChange={(e) => handleChange(e.target.checked)}
-                          {...commonProps}
-                        />
+                        <label
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            cursor: isDisabled ? "not-allowed" : "pointer",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!!controlValues[key]}
+                            onChange={(e) => handleChange(e.target.checked)}
+                            disabled={isDisabled}
+                            style={{ display: "none" }}
+                            ref={inputRefs.current[idx]}
+                            tabIndex={isDisabled ? -1 : 0}
+                          />
+                          <span
+                            style={{
+                              width: checkboxStyle.width,
+                              height: checkboxStyle.height,
+                              marginLeft: checkboxStyle.marginLeft,
+                              marginRight: checkboxStyle.marginRight,
+                              borderRadius: 5,
+                              border: `1px solid ${
+                                !!controlValues[key]
+                                  ? checkboxStyle.borderColor
+                                  : "#888"
+                              }`,
+                              background: !!controlValues[key]
+                                ? checkboxStyle.backgroundColor
+                                : "#e4d3e7ff",
+                              display: "inline-block",
+                              position: "relative",
+                              transition: "border 0.2s, background 0.2s",
+                              boxSizing: "border-box",
+                              opacity: isDisabled ? 0.7 : 1,
+                            }}
+                          >
+                            {!!controlValues[key] && (
+                              <svg
+                                width={checkboxStyle.width}
+                                height={checkboxStyle.height}
+                                viewBox="0 0 18 18"
+                                style={{
+                                  position: "absolute",
+                                  top: 0,
+                                  left: 0,
+                                }}
+                              >
+                                <polyline
+                                  points="4,9 8,13 14,5"
+                                  fill="none"
+                                  stroke={checkboxStyle.accentColor}
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            )}
+                          </span>
+                        </label>
                       </div>
                     );
                   case "string":
