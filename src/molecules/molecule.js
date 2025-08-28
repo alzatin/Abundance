@@ -757,15 +757,18 @@ export default class Molecule extends Atom {
     // Always show the top-level BOM, which contains the complete project BOM
     const bomToShow =
       GlobalVariables.topLevelMolecule?.compiledBom || this.compiledBom;
+    console.log("bomToShow", bomToShow);
     if (bomToShow) {
       if (bomToShow.length > 0) {
         bomToShow.map((item) => {
           bomParams[item.BOMitemName] = {
+            type: "number",
             value: item.numberNeeded,
             label: item.BOMitemName + " x",
             disabled: true,
           };
         });
+
         bomParams["Download List of Materials"] = button(() => {
           var fileName =
             GlobalVariables.currentRepoName + "-Bill-of-Materials.txt";

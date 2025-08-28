@@ -238,6 +238,8 @@ export function SimpleControlPanel({
   initialCollapsed = false,
   minWidth = 280,
   maxHeight = 340, // <-- new prop
+  collapsedIcon = SettingsIcon, // new prop, defaults to SettingsIcon
+  collapsedOffset = [0, 0], // new prop: [x, y] offset for expanded panel
 }) {
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls);
@@ -312,7 +314,18 @@ export function SimpleControlPanel({
         ...panelVars,
         ...(collapsed
           ? { ...collapsedStyle, ...position }
-          : { ...getPanelStyle(minWidth), ...position }),
+          : {
+              ...getPanelStyle(minWidth),
+              ...position,
+              top:
+                (typeof position.top === "number"
+                  ? position.top
+                  : parseInt(position.top || 0, 10)) + collapsedOffset[1],
+              left:
+                (typeof position.left === "number"
+                  ? position.left
+                  : parseInt(position.left || 0, 10)) + collapsedOffset[0],
+            }),
       }}
       tabIndex={-1}
       onKeyDown={handleKeyDown}
@@ -330,7 +343,7 @@ export function SimpleControlPanel({
           onClick={() => setCollapsed(false)}
           title="Open Panel"
         >
-          <SettingsIcon size={18} />
+          {React.createElement(collapsedIcon, { size: 18 })}
         </div>
       )}
       {/* Expanded panel */}

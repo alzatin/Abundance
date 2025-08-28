@@ -74,7 +74,11 @@ export default function ParamsMenu({
     values,
     setControlValue,
     { controls, registerControl, removeControl },
-  ] = useControls(renderSettings, [inputChanged]);
+  ] = useControls(renderSettings, [
+    inputChanged,
+    backgroundUsdzFile,
+    showBackgroundModel,
+  ]);
 
   const screenHeight = window.innerHeight;
 
@@ -86,7 +90,8 @@ export default function ParamsMenu({
         position={{ top: screenHeight / 2 - 10, left: 10 }}
         title={"Render Controls" || "Controls"}
         initialCollapsed={true}
-        minWidth={335}
+        minWidth={280}
+        collapsedOffset={[45, 0]}
       />
       {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
         Add Custom Control

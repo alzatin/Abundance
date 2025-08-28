@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 
 import ParamsMenu from "../secondary/ParamsMenu.jsx";
 import RenderMenu from "../secondary/RenderMenu.jsx";
+import BomMenu from "../secondary/BomMenu.jsx";
 
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
@@ -675,6 +676,11 @@ function CreateMode({
               setBackgroundUsdzFile,
               showBackgroundModel,
               setShowBackgroundModel,
+            }}
+          />
+          <BomMenu
+            {...{
+              activeAtom,
             }}
           />
           <div id="headerBar">
