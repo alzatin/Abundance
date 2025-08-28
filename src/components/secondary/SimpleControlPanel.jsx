@@ -397,7 +397,7 @@ export function SimpleControlPanel({
                     config.onChange(value, key);
                   }
                 };
-                const isFocused = focusedIndex === idx && !config.disable;
+                const isFocused = focusedIndex === idx && !config.disabled;
                 const isDisabled = config.disabled;
                 const commonProps = {
                   ref: (el) => (inputRefs.current[idx] = el),
@@ -523,8 +523,14 @@ export function SimpleControlPanel({
                             checked={!!controlValues[key]}
                             onChange={(e) => handleChange(e.target.checked)}
                             disabled={isDisabled}
-                            style={{ display: "none" }}
-                            ref={inputRefs.current[idx]}
+                            style={{
+                              position: "absolute",
+                              opacity: 0,
+                              width: 1,
+                              height: 1,
+                              pointerEvents: "none",
+                            }}
+                            ref={(el) => (inputRefs.current[idx] = el)}
                             tabIndex={isDisabled ? -1 : 0}
                           />
                           <span

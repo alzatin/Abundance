@@ -766,7 +766,6 @@ export default class Molecule extends Atom {
     // Always show the top-level BOM, which contains the complete project BOM
     const bomToShow =
       GlobalVariables.topLevelMolecule?.compiledBom || this.compiledBom;
-    console.log("bomToShow", bomToShow);
     if (bomToShow) {
       if (bomToShow.length > 0) {
         bomToShow.map((item) => {
@@ -778,14 +777,18 @@ export default class Molecule extends Atom {
           };
         });
 
-        bomParams["Download List of Materials"] = button(() => {
-          var fileName =
-            GlobalVariables.currentRepoName + "-Bill-of-Materials.txt";
-          var fileContent = this.formatBom();
-          var myFile = new Blob([fileContent], { type: "text/plain" });
+        bomParams["Download List of Materials"] = {
+          type: "button",
+          label: "Download List of Materials",
+          onClick: () => {
+            var fileName =
+              GlobalVariables.currentRepoName + "-Bill-of-Materials.txt";
+            var fileContent = this.formatBom();
+            var myFile = new Blob([fileContent], { type: "text/plain" });
 
-          saveAs(myFile, fileName + "." + "txt");
-        });
+            saveAs(myFile, fileName + "." + "txt");
+          },
+        };
       }
     }
     return bomParams;

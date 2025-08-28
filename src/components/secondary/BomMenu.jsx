@@ -4,22 +4,18 @@ import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
 
-export default function BomMenu({ activeAtom }) {
+export default function BomMenu({ activeAtom, id }) {
   const [inputChanged, setInputChanged] = useState("");
   let compiledBom = {};
 
-  if (activeAtom !== null) {
-    if (activeAtom.atomType == "Molecule") {
-      compiledBom = activeAtom.createLevaBom();
-    }
+  if (activeAtom !== null && activeAtom.atomType == "Molecule") {
+    compiledBom = activeAtom.createLevaBom();
   }
-  console.log("compiledBom", compiledBom);
   const [
     values,
     setControlValue,
     { controls, registerControl, removeControl },
-  ] = useControls(compiledBom, [inputChanged, activeAtom]);
-  console.log("controls", controls);
+  ] = useControls(compiledBom, [activeAtom]);
 
   const screenHeight = window.innerHeight;
 
@@ -54,21 +50,14 @@ export default function BomMenu({ activeAtom }) {
     <div>
       <SimpleControlPanel
         controls={controls}
-        id="atom-render-panel"
+        id={id}
         position={{ top: screenHeight / 2 + 35, left: 10 }}
-        title={"Bill of Materials" || "Controls"}
+        title={"Bill of Materials"}
         initialCollapsed={true}
         minWidth={280}
         collapsedIcon={DollarIcon}
-        collapsedOffset={[45, -45]} // shifts expanded panel by 45px right, 35px down
+        collapsedOffset={[45, -45]} // shifts expanded panel by 45px right, 45px down
       />
-      {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
-        Add Custom Control
-      </button>
-      <div style={{ marginTop: 40 }}>
-        <strong>Current Values:</strong>
-        <pre>{JSON.stringify(values, null, 2)}</pre>
-      </div>*/}
     </div>
   );
 }

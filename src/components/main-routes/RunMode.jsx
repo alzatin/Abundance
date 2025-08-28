@@ -141,10 +141,12 @@ function runMode({
       <ParamsMenu
         activeAtom={activeAtom}
         position={{ top: 30, left: screenWidth - 320 }}
+        id={"atom-run-params-panel"}
       />
       <ExportMenu
         activeAtom={activeAtom}
         position={{ top: 75, left: screenWidth - 365 }}
+        id={"atom-run-export-panel"}
       />
       <RenderMenu
         {...{
@@ -159,7 +161,8 @@ function runMode({
           setSolid,
         }}
         position={{ top: 30, left: screenWidth - 365 }}
-        offset={[45, 0]}
+        positionOffset={[45, 0]}
+        id={"atom-run-render-panel"}
       />
       <div id="headerBarRun">
         <img

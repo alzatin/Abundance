@@ -16,14 +16,13 @@ export default function RenderMenu({
   setWire,
   setSolid,
   backgroundUsdzFile,
-  setBackgroundUsdzFile,
   showBackgroundModel,
   setShowBackgroundModel,
   position,
   positionOffset,
+  id,
 }) {
   const [inputChanged, setInputChanged] = useState("");
-  let renderParams = {};
 
   /** Creates Leva panel with grid settings */
   const renderSettings = {
@@ -88,20 +87,13 @@ export default function RenderMenu({
     <div>
       <SimpleControlPanel
         controls={controls}
-        id="atom-render-panel"
+        id={id}
         position={position || { top: screenHeight / 2 - 10, left: 10 }}
-        title={"Render Controls" || "Controls"}
+        title={"Render Controls"}
         initialCollapsed={true}
         minWidth={280}
         collapsedOffset={positionOffset || [45, 0]}
       />
-      {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
-        Add Custom Control
-      </button>
-      <div style={{ marginTop: 40 }}>
-        <strong>Current Values:</strong>
-        <pre>{JSON.stringify(values, null, 2)}</pre>
-      </div>*/}
     </div>
   );
 }

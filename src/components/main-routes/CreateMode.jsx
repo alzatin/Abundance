@@ -664,6 +664,7 @@ function CreateMode({
           <ParamsMenu
             activeAtom={activeAtom}
             position={{ top: screenHeight / 2 - 10, left: 55 }}
+            id={"atom-create-params-panel"}
           />
           <RenderMenu
             {...{
@@ -681,10 +682,12 @@ function CreateMode({
               showBackgroundModel,
               setShowBackgroundModel,
             }}
+            id={"atom-create-render-panel"}
           />
           <BomMenu
             {...{
               activeAtom,
+              id: "atom-bom-panel",
             }}
           />
           <div id="headerBar">

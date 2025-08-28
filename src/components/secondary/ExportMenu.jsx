@@ -19,9 +19,7 @@ export default function ExportMenu({ activeAtom, position }) {
     values,
     setControlValue,
     { controls, registerControl, removeControl },
-  ] = useControls(exportParamsConfig, [inputChanged, activeAtom]);
-
-  const screenHeight = window.innerHeight;
+  ] = useControls(exportParamsConfig, [activeAtom]);
 
   // Export icon, same size and style as SettingsIcon
   const ExportIcon = ({ size = 14 }) => (
@@ -56,19 +54,12 @@ export default function ExportMenu({ activeAtom, position }) {
         controls={controls}
         id="atom-render-panel"
         position={position}
-        title={"Export" || "Controls"}
+        title={"Export"}
         initialCollapsed={true}
         minWidth={280}
         collapsedIcon={ExportIcon}
         collapsedOffset={[50, -45]} // shifts expanded panel by 45px right, 0px down
       />
-      {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
-        Add Custom Control
-      </button>
-      <div style={{ marginTop: 40 }}>
-        <strong>Current Values:</strong>
-        <pre>{JSON.stringify(values, null, 2)}</pre>
-      </div>*/}
     </div>
   );
 }
