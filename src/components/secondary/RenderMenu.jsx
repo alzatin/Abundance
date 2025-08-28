@@ -5,7 +5,7 @@ import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
 import { re } from "mathjs";
 
-export default function ParamsMenu({
+export default function RenderMenu({
   activeAtom,
   gridParam,
   axesParam,
@@ -19,6 +19,8 @@ export default function ParamsMenu({
   setBackgroundUsdzFile,
   showBackgroundModel,
   setShowBackgroundModel,
+  position,
+  positionOffset,
 }) {
   const [inputChanged, setInputChanged] = useState("");
   let renderParams = {};
@@ -87,11 +89,11 @@ export default function ParamsMenu({
       <SimpleControlPanel
         controls={controls}
         id="atom-render-panel"
-        position={{ top: screenHeight / 2 - 10, left: 10 }}
+        position={position || { top: screenHeight / 2 - 10, left: 10 }}
         title={"Render Controls" || "Controls"}
         initialCollapsed={true}
         minWidth={280}
-        collapsedOffset={[45, 0]}
+        collapsedOffset={positionOffset || [45, 0]}
       />
       {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
         Add Custom Control

@@ -231,7 +231,7 @@ export default class Molecule extends Atom {
     return inputParams;
   }
 
-  createLevaExport() {
+  createExportMenuInputs() {
     let exportParams = {};
     const exportOptions = ["STL", "SVG", "STEP"];
     const exportAtoms = this.nodesOnTheScreen.filter(
@@ -242,10 +242,14 @@ export default class Molecule extends Atom {
       const partName =
         atom.inputs.filter((input) => input.name === "Part Name")[0]?.value ||
         "Unnamed Part";
-      exportParams[`Export ${partName}`] = button(() => {
-        atom.exportFile();
-        console.log(`Exporting: ${partName}`);
-      });
+      exportParams[`Export ${partName}`] = {
+        type: "button",
+        label: `Export ${partName}`,
+        onClick: () => {
+          atom.exportFile();
+          console.log(`Exporting: ${partName}`);
+        },
+      };
     });
 
     const gcodeAtoms = this.nodesOnTheScreen.filter(
@@ -253,9 +257,14 @@ export default class Molecule extends Atom {
     );
     // this is wrong and only a placeholder for kiri forum questions
     gcodeAtoms.forEach((atom) => {
-      exportParams[`Download Gcode – ${atom.partName}`] = button(() =>
-        atom.downloadGcode()
-      );
+      exportParams[`Download Gcode – ${atom.partName}`] = {
+        type: "button",
+        label: `Download Gcode – ${atom.partName}`,
+        onClick: () => {
+          atom.downloadGcode();
+          console.log(`Downloading Gcode: ${atom.partName}`);
+        },
+      };
     });
 
     return exportParams;

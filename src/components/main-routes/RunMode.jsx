@@ -10,6 +10,8 @@ import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
 import RunNavigation from "../secondary/RunNavigation.jsx";
 import Molecule from "../../molecules/molecule.js";
 import ParamsMenu from "../secondary/ParamsMenu.jsx";
+import ExportMenu from "../secondary/ExportMenu.jsx";
+import RenderMenu from "../secondary/RenderMenu.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -138,7 +140,26 @@ function runMode({
     <>
       <ParamsMenu
         activeAtom={activeAtom}
-        position={{ top: 70, left: screenWidth - 320 }}
+        position={{ top: 30, left: screenWidth - 320 }}
+      />
+      <ExportMenu
+        activeAtom={activeAtom}
+        position={{ top: 75, left: screenWidth - 365 }}
+      />
+      <RenderMenu
+        {...{
+          activeAtom,
+          gridParam,
+          axesParam,
+          wireParam,
+          solidParam,
+          setGrid,
+          setAxes,
+          setWire,
+          setSolid,
+        }}
+        position={{ top: 30, left: screenWidth - 365 }}
+        offset={[45, 0]}
       />
       <div id="headerBarRun">
         <img
