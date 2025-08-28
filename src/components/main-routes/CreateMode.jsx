@@ -652,6 +652,7 @@ function CreateMode({
       setState
     );
   };
+  const screenHeight = window.innerHeight;
 
   if (authorizedUserOcto) {
     if (
@@ -660,7 +661,10 @@ function CreateMode({
     ) {
       return (
         <>
-          <ParamsMenu activeAtom={activeAtom} />
+          <ParamsMenu
+            activeAtom={activeAtom}
+            position={{ top: screenHeight / 2 - 10, left: 55 }}
+          />
           <RenderMenu
             {...{
               activeAtom,

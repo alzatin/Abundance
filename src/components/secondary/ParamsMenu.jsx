@@ -4,7 +4,7 @@ import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
 
-export default function ParamsMenu({ activeAtom }) {
+export default function ParamsMenu({ activeAtom, position }) {
   const unusedDefault = {
     position: {
       type: "number",
@@ -100,7 +100,7 @@ export default function ParamsMenu({ activeAtom }) {
       <SimpleControlPanel
         controls={controls}
         id="atom-inputs-panel"
-        position={{ top: screenHeight / 2 - 10, left: 55 }}
+        position={position || { top: screenHeight / 2 - 10, left: 55 }}
         title={activeAtom?.name || "Controls"}
         minWidth={280}
         maxHeight={400}

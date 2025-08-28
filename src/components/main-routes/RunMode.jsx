@@ -9,6 +9,7 @@ import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
 import RunNavigation from "../secondary/RunNavigation.jsx";
 import Molecule from "../../molecules/molecule.js";
+import ParamsMenu from "../secondary/ParamsMenu.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -130,9 +131,15 @@ function runMode({
       setOwned(true);
     }
   }, []);
+  const screenHeight = window.innerHeight;
+  const screenWidth = window.innerWidth;
 
   return (
     <>
+      <ParamsMenu
+        activeAtom={activeAtom}
+        position={{ top: 70, left: screenWidth - 320 }}
+      />
       <div id="headerBarRun">
         <img
           className="thumnail-logo"
