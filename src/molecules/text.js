@@ -1,7 +1,6 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import Fonts from "../js/fonts.js";
-import { LevaInputs } from "leva";
 
 /**
  * This class creates the circle atom.
@@ -68,62 +67,33 @@ export default class Text extends Atom {
     GlobalVariables.c.closePath();
   }
 
-  createLevaInputs() {
-    let inputParams = {};
+  createInputParams() {
+    let inputParams = { ...super.createInputParams() };
 
-    /** Runs through active atom inputs and adds IO parameters to default param*/
     if (this.inputs) {
-      this.inputs.map((input) => {
+      this.inputs.forEach((input) => {
+        if (input.name !== "Text") return;
         const checkConnector = () => {
           return input.connectors.length > 0;
         };
 
-        /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry" && input.name !== "Text") {
-          inputParams[this.uniqueID + input.name] = {
-            value: input.currentEquation ? input.currentEquation : input.value,
-            label: input.name,
-            step: 0.25,
-            type: LevaInputs.STRING,
-            disabled: checkConnector(),
-            onChange: async (value) => {
-              let currentEquation = String(value).trim();
-              input.currentEquation = currentEquation;
-              try {
-                const result = await this.evaluateEquation(
-                  currentEquation,
-                  input.name
-                );
-                if (Number.isFinite(result)) {
-                  if (result !== input.value) {
-                    input.setValue(result);
-                  }
-                }
-              } catch (err) {
-                input.setValue(NaN);
-                this.alertingErrorHandler()(err);
-              }
-            },
-          };
-        }
-        if (input.name === "Text") {
-          inputParams[this.uniqueID + "Text"] = {
-            value: input.currentEquation ? input.currentEquation : input.value,
-            label: input.name,
-            type: LevaInputs.STRING,
-            disabled: checkConnector(),
-            onChange: async (value) => {
-              if (input.value !== value) {
-                input.setValue(value);
-              }
-            },
-          };
-        }
+        inputParams[this.uniqueID + "Text"] = {
+          type: "string",
+          value: input.value,
+          label: input.name,
+          disabled: checkConnector(),
+          onChange: async (value) => {
+            if (input.value !== value) {
+              input.setValue(value);
+            }
+          },
+        };
       });
     }
     const fontOptions = Fonts;
 
     inputParams[this.uniqueID + "FontFamily"] = {
+      type: "select",
       value: Object.keys(fontOptions)[this.selectedFontIndex],
       label: "Font Family",
       options: Object.keys(fontOptions),

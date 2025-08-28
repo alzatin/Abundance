@@ -25,6 +25,7 @@ window.addEventListener(
 );
 
 export default memo(function FlowCanvas({
+  activeAtom,
   loadProject,
   setActiveAtom,
   shortCuts,

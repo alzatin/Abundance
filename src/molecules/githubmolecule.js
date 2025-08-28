@@ -1,9 +1,6 @@
 import Molecule from "../molecules/molecule";
 import GlobalVariables from "../js/globalvariables.js";
-import { Octokit } from "https://esm.sh/octokit@2.0.19";
-import { button } from "leva";
-import { re } from "mathjs";
-import { LevaInputs } from "leva";
+
 import { Status } from "../prototypes/observableEntity.js";
 
 /**
@@ -83,80 +80,16 @@ export default class GitHubMolecule extends Molecule {
     this.setError("An unknown error occurred in a child atom.");
   }
 
-  /**
-   * Create Leva Menu Input - returns to ParameterEditor
-   */
-  createLevaInputs() {
+  createInputParams() {
     let inputParams = {};
 
-    /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs) {
-      this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
-        /*
-
-*/
-        /* Makes inputs for Io's other than geometry */
-
-        inputParams[this.uniqueID + input.name] = {
-          value: input.value,
-          label: input.name,
-          disabled: checkConnector(),
-          step: 0.01,
-          onChange: (value) => {
-            if (input.value !== value) {
-              input.setValue(value);
-              //this.sendToRender();
-            }
-          },
-        };
-        if (input.type && input.valueType) {
-          inputParams[this.uniqueID + input.name].type =
-            LevaInputs[input.valueType.toUpperCase()];
-        }
-        if (input.valueType == "geometry") {
-          inputParams[this.uniqueID + input.name].disabled = true;
-        }
-
-        /*
-        if (input.valueType !== "geometry") {
-          inputParams[this.uniqueID + input.name] = {
-            value: input.currentEquation ? input.currentEquation : input.value,
-            label: input.name,
-            type: LevaInputs.STRING,
-            disabled: checkConnector(),
-            onChange: (value) => {
-              /* If the user has set the type as string don't evaluate as equation */
-        /*              if (input.type && input.valueType?.toUpperCase() === "STRING") {
-                input.setValue(value);
-              } else {
-                let currentEquation = String(value).trim();
-                input.currentEquation = currentEquation;
-                try {
-                  const result = this.evaluateEquation(
-                    currentEquation,
-                    input.name
-                  );
-                  if (Number.isFinite(result)) {
-                    if (result !== input.value) {
-                      input.setValue(result);
-                    }
-                  }
-                } catch (err) {
-                  input.setValue(NaN);
-                  this.alertingErrorHandler()(err);
-                }
-              }
-            },
-          };*/
-      });
-      inputParams["Reload From Github"] = button(() =>
-        this.reloadMoleculeFromGithub()
-      );
-      return inputParams;
-    }
+    inputParams = super.createInputParams();
+    inputParams["Reload From Github"] = {
+      type: "button",
+      label: "Reload From Github",
+      onClick: () => this.reloadMoleculeFromGithub(),
+    };
+    return inputParams;
   }
 
   /**

@@ -39,6 +39,7 @@ function useWindowSize() {
 }
 
 export default memo(function LowerHalf({
+  activeAtom,
   gridParam,
   axesParam,
   wireParam,
@@ -84,10 +85,10 @@ export default memo(function LowerHalf({
         >
           {wireMesh ? (
             <ThreeContext
-              {...{ 
-                cameraZoom, 
-                gridParam, 
-                axesParam, 
+              {...{
+                cameraZoom,
+                gridParam,
+                axesParam,
                 outdatedMesh,
                 backgroundUsdzFile,
                 showBackgroundModel,

@@ -1,6 +1,6 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
-import { button } from "leva";
+
 import { saveAs } from "file-saver";
 
 /**
@@ -90,8 +90,6 @@ export default class Gcode extends Atom {
         type: "output",
       },
     ]);
-
-    this.setValues(values);
 
     this.stlURL = null; // Store the STL URL
 
@@ -530,7 +528,7 @@ export default class Gcode extends Atom {
     this.setWaiting();
   }
 
-  createLevaInputs() {
+  createInputParams() {
     let inputParams = {};
 
     /** Runs through active atom inputs and adds IO parameters to default param*/
@@ -546,6 +544,7 @@ export default class Gcode extends Atom {
         if (input.valueType !== "geometry") {
           if (input.name == "Part Name") {
             inputParams[this.uniqueID + input.name] = {
+              type: "string",
               value: this.partName,
               label: input.name,
               disabled: checkConnector(),
@@ -558,6 +557,7 @@ export default class Gcode extends Atom {
             };
           } else {
             inputParams[input.name] = {
+              type: "number",
               value: input.value,
               disabled: checkConnector(),
               step: 0.01,
@@ -573,6 +573,7 @@ export default class Gcode extends Atom {
 
     // Add sort direction dropdown for assembly processing
     inputParams["Assembly Sort Direction"] = {
+      type: "select",
       value: this.sortDirection,
       options: ["Left", "Right", "Top", "Bottom"],
       label: "Sort Direction",
@@ -581,29 +582,38 @@ export default class Gcode extends Atom {
       },
     };
 
-    inputParams["Generate Gcode"] = button(() => this._generateGcode(), {});
+    inputParams["Generate Gcode"] = {
+      type: "button",
+      label: "Generate Gcode",
+      onClick: () => {
+        this._generateGcode();
+      },
+    };
 
     const partName = this.findIOValue("Part Name") || this.partName || "output";
     // For assemblies, show "Assembly" in the button name, otherwise use the part name
     const displayName = this._isProcessingAssembly
       ? `${partName}_assembly`
       : partName;
-    inputParams[`Download Gcode - ${displayName}`] = button(() => {
-      if (this.gcodeGenerated && this.gcodeString) {
-        // Get the current part name dynamically when button is clicked
-        const currentPartName =
-          this.findIOValue("Part Name") || this.partName || "output";
-        const fileName = this._isProcessingAssembly
-          ? `${currentPartName}_assembly.gcode`
-          : `${currentPartName}.gcode`;
-        this.downloadGcode(this.gcodeString, fileName);
-      } else {
-        console.warn("No G-code available. Please generate G-code first.");
-        // You could also show an alert or notification to the user here
-        alert("No G-code available. Please generate G-code first.");
-      }
-    }, {});
-
+    inputParams[`Download Gcode - ${displayName}`] = {
+      type: "button",
+      label: `Download Gcode - ${displayName}`,
+      onClick: () => {
+        if (this.gcodeGenerated && this.gcodeString) {
+          // Get the current part name dynamically when button is clicked
+          const currentPartName =
+            this.findIOValue("Part Name") || this.partName || "output";
+          const fileName = this._isProcessingAssembly
+            ? `${currentPartName}_assembly.gcode`
+            : `${currentPartName}.gcode`;
+          this.downloadGcode(this.gcodeString, fileName);
+        } else {
+          console.warn("No G-code available. Please generate G-code first.");
+          // You could also show an alert or notification to the user here
+          alert("No G-code available. Please generate G-code first.");
+        }
+      },
+    };
     return inputParams;
   }
 

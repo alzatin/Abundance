@@ -1,7 +1,6 @@
 import Atom from "../prototypes/atom.js";
 
 import GlobalVariables from "../js/globalvariables.js";
-import { button } from "leva";
 
 /**
  * The Code molecule type adds support for executing arbitrary jsxcad code.
@@ -33,97 +32,98 @@ export default class Code extends Atom {
      * The code contained within the atom stored as a string.
      * @type {string}
      */
-    this.code =
-      " \n\
-      //Inputs:[inputShape, dist, height]\n\
-      //This defines the molecules inputs and creates variables with the same names which can be referenced in the code\n\
-      \n\
-      //Takes the address and gets the shape from the library\n\
-      let importedShape = library[inputShape]\n\
-      \n\
-      //This makes a new copy of of the shape (to prevent garbage collection issues),\n\
-      //and moves it in the X direction. Note that this will not work if the input is an assembly\n\
-      let movedShape = importedShape.geometry[0].clone().translate([dist,0,0])\n\
-      \n\
-      //Console.log works for debugging to better see what is happening under the hood\n\
-      console.log(\"Shape:\")\n\
-      console.log(importedShape);\n\
-      \n\
-      //Shapes stored in the library have tags, a color, a plane, and a bill of materials like this. We don't modify them here\n\
-      let shape1 = {\n\
-        geometry: [movedShape],\n\
-        tags: importedShape.tags,\n\
-        color: importedShape.color,\n\
-        plane: importedShape.plane,\n\
-        bom: importedShape.bom\n\
-      }\n\
-      \n\
-      //We could at this point return shape1 as a complete shape and it will be automatically written to the library for us\n\
-      //return shape1\n\
-      \n\
-      //We can also create a new shape from scratch\n\
-      let createdRectangle = replicad.drawRectangle(5,7)\n\
-      //This is the plane we are going to put our new shape on\n\
-      const newPlane = new replicad.Plane().pivot(0, 'Y');\n\
-      //And we extrude the shape to make it 3D\n\
-      let createdShape = createdRectangle.sketchOnPlane(newPlane).extrude(height)\n\
-      \n\
-      //For our new geometry we need to define the tags, color, plane, etc\n\
-      let shape2 = {\n\
-          geometry: [createdShape], \n\
-          tags: [\"aTag\"],\n\
-          color: '#A3CE5B',\n\
-          plane: newPlane,\n\
-          bom: []\n\
-      }\n\
-      \n\
-      //Then we can return our created shape in just the same way\n\
-      //return shape2\n\
-      \n\
-      //If we want to return both shapes at once, we can create an assembly with them\n\
-      let anAssembly = {\n\
-        geometry: [shape1, shape2], \n\
-        tags: [\"aNewTag\"],\n\
-        color: '#A3CF5B',\n\
-        plane: newPlane,\n\
-        bom: []\n\
-      }\n\
-      \n\
-      //And we can return that in the same way\n\
-      return anAssembly\n\
-      \n\
-      \n\
-          /**\n\
-          To Use the Code Atom, enter your inputs to the input list a.e Inputs:[shape, height]\n\
-          If your input is connected to another atom with a replicad geometry you can access its geometry by looking up its ID in your library. a.e library[Input1].geometry[0] \n\
-          Use any replicad available methods to modify your geometry. Learn more about all of the available methods at \n\
-          https://replicad.xyz/docs/introapp/UserGuide.html \n\
-          Return a replicad object that includes geometry, color, tags and plane. \n\
-      \n\
-      \n\
-          Example Code Atom:\n\
-      \n\
-            Inputs:[shape, x];\n\
-      \n\
-            let finalShape = library[shape].geometry[0].clone.translate[x,0,0]\n\
-      \n\
-            return {geometry: finalShape, color: library[shape].color, plane: library[shape].plane, tags: library[shape].tags }\n\
-      \n\
-            - See more examples at _______ \n\
-      \n\
-      \n\
-          */\n\
-      ";
+    this.code = `
+      Inputs = [
+       {inputName: "shape", type: "geometry", defaultValue: null},
+      {inputName: "dist", type: "number", defaultValue: 5},
+        {inputName: "height", type: "number", defaultValue: 10}
+      ]
+      //This defines the molecules inputs and creates variables with the same names which can be referenced in the code
+
+      //Takes the address and gets the shape from the library
+      let importedShape = library[shape]
+
+      //This makes a new copy of the shape and moves it in the X direction
+      let movedShape = importedShape.geometry[0].clone().translate([dist,0,0])
+
+      //Console.log works for debugging to better see what is happening under the hood
+      console.log("Shape:")
+      console.log(importedShape);
+
+      //Shapes stored in the library have tags, a color, a plane, and a bill of materials like this. We don't modify them here
+      let shape1 = {
+        geometry: [movedShape],
+        tags: importedShape.tags,
+        color: importedShape.color,
+        plane: importedShape.plane,
+        bom: importedShape.bom
+      }
+
+      //We could at this point return shape1 as a complete shape and it will be automatically written to the library for us
+      //return shape1
+
+      //We can also create a new shape from scratch
+      let createdRectangle = replicad.drawRectangle(5,7)
+      //This is the plane we are going to put our new shape on
+      const newPlane = new replicad.Plane().pivot(0, 'Y');
+      //And we extrude the shape to make it 3D
+      let createdShape = createdRectangle.sketchOnPlane(newPlane).extrude(height)
+
+      //For our new geometry we need to define the tags, color, plane, etc
+      let shape2 = {
+          geometry: [createdShape],
+          tags: ["aTag"],
+          color: '#A3CE5B',
+          plane: newPlane,
+          bom: []
+      }
+
+      //Then we can return our created shape in just the same way
+      //return shape2
+
+      //If we want to return both shapes at once, we can create an assembly with them
+      let anAssembly = {
+        geometry: [shape1, shape2],
+        tags: ["aNewTag"],
+        color: '#A3CF5B',
+        plane: newPlane,
+        bom: []
+      }
+
+      //And we can return that in the same way
+      return anAssembly
+
+      /**
+      To Use the Code Atom, enter your inputs to the input list as an object array:
+      Inputs = [
+        {inputName: "shape", type: "geometry", defaultValue: null},
+        {inputName: "dist", type: "number", defaultValue: 5},
+        {inputName: "height", type: "number", defaultValue: 10}
+      ]
+      If your input is connected to another atom with a replicad geometry you can access its geometry by looking up its ID in your library. a.e library[Input1].geometry[0]
+      Use any replicad available methods to modify your geometry. Learn more about all of the available methods at
+      https://replicad.xyz/docs/introapp/UserGuide.html
+      Return a replicad object that includes geometry, color, tags and plane.
+
+      Example Code Atom:
+        Inputs = [
+          {inputName: "shape", type: "geometry", defaultValue: null},
+          {inputName: "x", type: "number", defaultValue: 5}
+        ]
+        let finalShape = library[shape].geometry[0].clone().translate([x,0,0])
+        return {geometry: finalShape, color: library[shape].color, plane: library[shape].plane, tags: library[shape].tags }
+      */
+      `;
 
     //This loads any inputs which this atom had when last saved.
     this.x = values.x || 0;
     this.y = values.y || 0;
     this.parent = values.parent || null;
     this.uniqueID = values.uniqueID || GlobalVariables.generateUniqueID();
-    
+
     // Special behavior for code atoms requires that ap's are explicitly set to ready
     values.ioValues?.forEach((ioValue) => {
-      const ap = this.addIO(ioValue.name, "geometry");
+      const ap = this.addIO(ioValue.name, ioValue.valueType);
       ap.setReady(ioValue.ioValue);
     });
     this.addIO("output", "geometry", null, "output");
@@ -152,7 +152,7 @@ export default class Code extends Atom {
     );
   }
 
-  createLevaInputs() {
+  createInputParams() {
     let inputParams = {};
     /** Runs through active atom inputs and adds IO parameters to default param*/
     this.inputs.map((input) => {
@@ -160,7 +160,10 @@ export default class Code extends Atom {
         return input.connectors.length > 0;
       };
 
+      console.log(input.valueType);
+
       inputParams[this.uniqueID + input.name] = {
+        type: input.valueType ? input.valueType : "string",
         value: input.value,
         label: input.name,
         disabled: checkConnector(),
@@ -168,14 +171,35 @@ export default class Code extends Atom {
         onChange: (value) => {
           if (input.value !== value) {
             input.setValue(value);
-            //this.sendToRender();
           }
         },
       };
     });
-    inputParams["Edit Code"] = button(() => this.editCode());
-    inputParams["Save Code"] = button(() => this.saveCode());
-    inputParams["Close Editor"] = button(() => this.closeCode());
+
+    inputParams["Edit Code"] = {
+      type: "button",
+      label: "Edit Code",
+      order: 7,
+      onClick: () => {
+        this.editCode();
+      },
+    };
+    inputParams["Save Code"] = {
+      type: "button",
+      label: "Save Code",
+      order: 8,
+      onClick: () => {
+        this.saveCode();
+      },
+    };
+    inputParams["Close Editor"] = {
+      type: "button",
+      label: "Close Editor",
+      order: 9,
+      onClick: () => {
+        this.closeCode();
+      },
+    };
     return inputParams;
   }
 
@@ -224,33 +248,109 @@ export default class Code extends Atom {
    * This function reads the string of inputs the user specifies and adds them to the atom.
    */
   parseInputs() {
-    const variables = /Inputs:\[\s*([^)]+?)\s*\]/.exec(this.code);
+    // Match Inputs = [{inputName: ..., type: ..., defaultValue: ...}, ...]
+    // Try to extract a const Inputs = [...] block
+    // Only parse the first Inputs declaration (const Inputs = [...] or Inputs = [...])
+    // Remove all block comments and line comments before matching Inputs array
+    let codeNoComments = this.code.replace(/\/\*[\s\S]*?\*\//g, ""); // Remove block comments
+    codeNoComments = codeNoComments.replace(/\/\/.*$/gm, ""); // Remove line comments
+    const allInputsMatches = [
+      ...codeNoComments.matchAll(/(?:const\s+)?Inputs\s*=\s*\[(.*?)]\s*;?/gs),
+    ];
+    if (allInputsMatches.length > 0) {
+      const firstMatch = allInputsMatches[0];
+      // If it's a const declaration, use safe eval
+      if (/const\s+Inputs\s*=/.test(firstMatch[0])) {
+        try {
+          const sandboxFn = new Function(firstMatch[0] + "; return Inputs;");
+          const inputsArray = sandboxFn();
+          const variableNames = [];
+          inputsArray.forEach(({ inputName, type, defaultValue }) => {
+            variableNames.push(inputName);
+            const existingInput = this.inputs.find(
+              (input) => input.name === inputName
+            );
 
+            if (!existingInput) {
+              this._addIOWithoutSubscribing(
+                inputName,
+                type,
+                defaultValue,
+                "input"
+              );
+            }
+          });
+          // Remove any inputs not in the new array
+          const inputList = [...this.inputs];
+          inputList.forEach((input) => {
+            if (!variableNames.includes(input.name)) {
+              this.removeIO(input.type, input.name, this);
+            }
+          });
+          this._subscribeToInputs();
+          return;
+        } catch (e) {
+          console.warn("Failed to eval const Inputs array from code:", e);
+        }
+      } else {
+        // Otherwise, parse as JSON
+        let arrStr = firstMatch[1];
+        arrStr = arrStr.replace(/\n/g, ""); // Remove newlines
+        arrStr = arrStr.replace(/\r/g, ""); // Remove carriage returns
+        arrStr = arrStr.replace(/,\s*]/, "]"); // Remove trailing comma before closing bracket
+        arrStr = arrStr.replace(/(\w+)\s*:/g, '"$1":');
+        arrStr = arrStr.replace(/'/g, '"');
+        try {
+          const inputsArray = JSON.parse(`[${arrStr}]`);
+          const variableNames = [];
+          inputsArray.forEach(({ inputName, type, defaultValue }) => {
+            variableNames.push(inputName);
+            const existingInput = this.inputs.find(
+              (input) => input.name === inputName
+            );
+            if (!existingInput) {
+              this._addIOWithoutSubscribing(
+                inputName,
+                type,
+                defaultValue,
+                "input"
+              );
+            }
+          });
+          // Remove any inputs not in the new array
+          const inputList = [...this.inputs];
+          inputList.forEach((input) => {
+            if (!variableNames.includes(input.name)) {
+              this.removeIO(input.type, input.name, this);
+            }
+          });
+          this._subscribeToInputs();
+          return;
+        } catch (e) {
+          console.warn("Failed to parse Inputs array from code:", e);
+        }
+      }
+    }
+    // Fallback: legacy string parsing
+    const variables = /Inputs:\[\s*([^)]+?)\s*\]/.exec(this.code);
     if (variables) {
       const variableNames = [];
       const parsedVariables =
         variables[1]?.split(/\s*,\s*/).map((v) => v.split(/\s*=\s*/)) || [];
-
       parsedVariables.forEach(([name, defaultVal]) => {
         const value = defaultVal || 10;
         variableNames.push(name);
-
         const existingInput = this.inputs.find((input) => input.name === name);
-        if (existingInput) {
-          // value is already set to the existing input's value
-        } else {
+        if (!existingInput) {
           this._addIOWithoutSubscribing(name, "geometry", value, "input");
         }
       });
-
-      const inputList = [...this.inputs]; // shallow copy b/c we're about to make modifications to this.inputs
+      const inputList = [...this.inputs];
       inputList.forEach((input) => {
         if (!variableNames.includes(input.name)) {
           this.removeIO(input.type, input.name, this);
         }
       });
-
-      // Batch changes and only subscribe at the end
       this._subscribeToInputs();
     }
   }

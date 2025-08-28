@@ -1,6 +1,5 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
-import { button, LevaInputs } from "leva";
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 
 /**
@@ -173,22 +172,34 @@ export default class Import extends Atom {
     });
   }
 
-  createLevaInputs() {
+  createInputParams(setInputChanged) {
+    //REVISE FOR NEW MENU
     let inputParams = {};
     if (this.fileName == null) {
       inputParams[this.uniqueID + "file_ops"] = {
+        type: "select",
         options: this.importOptions,
         label: "File Type",
         onChange: (value) => {
           this.importIndex = this.importOptions.indexOf(value);
         },
       };
+
+      inputParams[this.uniqueID + "Load File"] = {
+        type: "button",
+        label: "Load File",
+        onClick: () => {
+          setControlValue(this.uniqueID + "Loaded File", this.fileName);
+          this.loadFile(this.importOptions[this.importIndex], setInputChanged);
+        },
+      };
     } else {
       if (this.type == "SVG") {
         inputParams["Width"] = {
+          type: "number",
           value: this.SVGwidth, //href to the file
           label: "Width",
-          step: 0.01,
+          step: 1,
           onChange: (value) => {
             this.SVGwidth = value;
             this.loadAndPropagate();
@@ -196,12 +207,19 @@ export default class Import extends Atom {
         };
       }
     }
+    inputParams[this.uniqueID + "Loaded File"] = {
+      type: "string",
+      value: this.fileName ? this.fileName : "", //href to the file
+      label: "Loaded File",
+      disabled: true,
+    };
     return inputParams;
   }
+
   /**
    * Creates an input element to load a file and calls import function in CreateMode
    */
-  loadFile(type, onLoadComplete) {
+  loadFile(type, onLoadComplete, setInputChanged) {
     var f = document.getElementById("fileLoaderInput");
     f.accept = "." + type.toLowerCase();
     f.onchange = (event) => {

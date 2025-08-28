@@ -60,19 +60,6 @@ export default class Rotate extends Atom {
     GlobalVariables.c.stroke();
     GlobalVariables.c.closePath();
   }
-
-  /**
-   * Create Leva Menu Inputs - returns to ParameterEditor
-   */
-  createLevaInputs() {
-    let inputParams = {};
-
-    // Merge the returned value from super.createLevaInputs into inputParams
-    Object.assign(inputParams, super.createLevaInputs(inputParams));
-
-    return inputParams;
-  }
-
   /**
    * Compute the rotated geometry.
    */

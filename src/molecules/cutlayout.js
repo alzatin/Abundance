@@ -2,7 +2,6 @@ import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 //import GlobalVariables from '../js/globalvariables.js'
 import { proxy } from "comlink";
-import { button, LevaInputs } from "leva";
 import { Status } from "../prototypes/observableEntity.js";
 
 /**
@@ -252,7 +251,7 @@ export default class CutLayout extends Atom {
    * Pass the input geometry to a worker function to compute the translation.
    */
   updateValueButton(setInputsChanged) {
-    this.setInputsChanged = setInputsChanged;
+    //this.setInputsChanged = setInputsChanged;
     if (this.inputsAreReady()) {
       // Only checks AP inputs, not the placement values themselves.
       if (this.cancelationHandle) {
@@ -307,18 +306,19 @@ export default class CutLayout extends Atom {
     }
   }
 
-  /**
-   * Add the "Compute Layout" button to the leva inputs.
-   */
-  createLevaInputs(setInputChanged) {
+  createInputParams(setInputChanged) {
     this.setInputChanged = setInputChanged;
     const placements = this.getPlacements();
 
-    let inputParams = super.createLevaInputs();
+    let inputParams = super.createInputParams();
 
-    inputParams["Compute Layout"] = button(() => {
-      this.updateValueButton();
-    });
+    inputParams["Compute Layout"] = {
+      type: "button",
+      label: "Compute Layout",
+      onClick: () => {
+        this.updateValueButton();
+      },
+    };
 
     let prepareLabel = (sheet, index, totalsheets) => {
       if (totalsheets > 1) {
@@ -334,11 +334,12 @@ export default class CutLayout extends Atom {
     placements.forEach((sheet, index) => {
       sheet.forEach((placement, part_num) => {
         inputParams[this.uniqueID + "position" + part_counter] = {
-          value: {
-            x: placement.translate.x,
-            y: placement.translate.y,
-            z: placement.rotate,
-          },
+          type: "point",
+          value: [
+            placement.translate.x,
+            placement.translate.y,
+            placement.rotate,
+          ],
           label: prepareLabel(index, part_num, totalSheets),
           step: 0.01,
           onChange: (value, index) => {
@@ -349,15 +350,17 @@ export default class CutLayout extends Atom {
               const placement = placements.flat()[indexNumber];
               //Update the placement with the new value];
               //If anything has changed we need to update the value and recompute
+              const [x, y, z] = Array.isArray(value)
+                ? value
+                : [value?.x, value?.y, value?.z];
               if (
-                placement.translate.x !== value.x ||
-                placement.translate.y !== value.y ||
-                placement.rotate !== value.z
+                placement.translate.x !== x ||
+                placement.translate.y !== y ||
+                placement.rotate !== z
               ) {
-                placement.translate.x = value.x;
-                placement.translate.y = value.y;
-                placement.rotate = value.z;
-
+                placement.translate.x = x;
+                placement.translate.y = y;
+                placement.rotate = z;
                 this.handleNewPlacements(this.getPlacements(), true);
               }
             }

@@ -215,7 +215,7 @@ export default class Equation extends Atom {
     }
   }
 
-  rerenderLevaInputs() {
+  rerenderInputs() {
     if (this.setInputChanged) {
       const representativeHash =
         this.currentEquation +
@@ -224,15 +224,28 @@ export default class Equation extends Atom {
     }
   }
 
-  /**
-   * Create Leva Menu Inputs - returns to ParameterEditor
-   */
-  createLevaInputs(setInputChanged) {
+  createInputParams(setInputChanged) {
     this.setInputChanged = setInputChanged;
-    // recreate inputs
+    // Create input parameters for the atom
     let inputParams = {};
+
+    /* Make an input for the equation itself */
+    inputParams[this.uniqueID + "currentequation"] = {
+      value: this.currentEquation,
+      label: "Current Equation",
+      disabled: false,
+      type: "string",
+      onChange: async (value) => {
+        if (this.currentEquation !== value) {
+          this.setEquation(value);
+          this.rerenderInputs();
+        }
+      },
+      order: -3,
+    };
     /** Runs through active atom inputs and adds IO parameters to default param*/
     if (this.inputs) {
+      console.log(this.inputs);
       this.inputs.map((input) => {
         const checkConnector = () => {
           return input.connectors.length > 0;
@@ -242,37 +255,26 @@ export default class Equation extends Atom {
         if (input.valueType !== "geometry") {
           inputParams[input.name] = {
             value: input.getValue(),
+            type: "number",
             disabled: checkConnector(),
             step: 0.01,
             onChange: (value) => {
               input.setReady(value);
-              this.rerenderLevaInputs();
+              this.rerenderInputs();
             },
-            order: -2,
           };
         }
       });
 
-      inputParams[`${this.uniqueID}currentEquation`] = {
-        value: this.currentEquation,
-        label: "Current Equation",
-        disabled: false,
-        onChange: (value) => {
-          if (this.currentEquation !== value) {
-            this.setEquation(value);
-          }
-        },
-        order: -3,
-      };
-
       inputParams[`${this.uniqueID}result`] = {
+        type: "number",
         value: this.getState().value, // Possibly undefined if computation is in progress.
         label: "Result",
         disabled: true,
       };
-
-      return inputParams;
     }
+
+    return inputParams;
   }
 
   inputsAreReady() {
@@ -307,7 +309,7 @@ export default class Equation extends Atom {
   setEquation(newEquation) {
     this.currentEquation = String(newEquation).trim(); //convert to string first, then remove leading and trailing whitespace
     this.addAndRemoveInputs();
-    this.rerenderLevaInputs();
+    this.rerenderInputs();
   }
 
   /**

@@ -90,13 +90,13 @@ export default class Readme extends Atom {
     super.setReady(newText);
   }
 
-  /**
-   * Creates the Leva input for this atom
-   */
-  createLevaInputs() {
+  createInputParams() {
     let inputParams = {};
 
+    super.createInputParams();
+
     inputParams[this.name + this.uniqueID] = {
+      type: "string",
       value: this.readMeText,
       label: this.name,
       rows: 10,
@@ -106,6 +106,7 @@ export default class Readme extends Atom {
         }
       },
     };
+
     return inputParams;
   }
 

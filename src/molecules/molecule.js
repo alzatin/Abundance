@@ -1,10 +1,10 @@
 import Atom from "../prototypes/atom.js";
 import Connector from "../prototypes/connector.js";
 import GlobalVariables from "../js/globalvariables.js";
-import { button } from "leva";
+
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import { BOMEntry } from "../js/BOM";
-import { LevaInputs } from "leva";
+
 import { Status } from "../prototypes/observableEntity.js";
 
 /**
@@ -156,13 +156,11 @@ export default class Molecule extends Atom {
     GlobalVariables.c.fill();
   }
 
-  /**
-   * Overrides the usual CreateLevaInputs function because the
-   * inputs to the molecule atom aren't simple attachment points.
-   */
-  createLevaInputs() {
-    let inputParams = {};
+  createInputParams() {
+    let inputParams = { ...super.createInputParams() };
+
     inputParams["molecule name" + this.uniqueID] = {
+      type: "string",
       value: this.topLevel ? GlobalVariables.currentRepoName : this.name,
       label: "Molecule Name",
       disabled: this.topLevel ? true : false,
@@ -172,6 +170,7 @@ export default class Molecule extends Atom {
     };
     if (this.topLevel == true) {
       inputParams["molecule name" + this.uniqueID + "units"] = {
+        type: "select",
         value: this.unitsKey,
         label: "Project Units",
         options: Object.keys(this.units),
@@ -181,61 +180,21 @@ export default class Molecule extends Atom {
         },
       };
     }
-    /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs) {
-      this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
-
-        /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry") {
-          inputParams[this.uniqueID + input.name] = {
-            value: input.currentEquation ? input.currentEquation : input.value,
-            label: input.name,
-            type: LevaInputs.STRING,
-            disabled: checkConnector(),
-            onChange: (value) => {
-              /* If the user has set the type as string don't evaluate as equation */
-              if (input.type && input.valueType?.toUpperCase() === "STRING") {
-                input.setValue(value);
-              } else {
-                let currentEquation = String(value).trim();
-                input.currentEquation = currentEquation;
-                try {
-                  const result = this.evaluateEquation(
-                    currentEquation,
-                    input.name
-                  );
-                  if (Number.isFinite(result)) {
-                    if (result !== input.value) {
-                      input.setValue(result);
-                    }
-                  }
-                } catch (err) {
-                  input.setValue(NaN);
-                  this.alertingErrorHandler()(err);
-                }
-              }
-            },
-          };
-        }
-      });
-    }
-
     if (GlobalVariables.currentRepo.parentRepo != null && this.topLevel) {
-      inputParams["Reload from Github"] = button(() => {
-        //Future compare to main branch
-        this.reloadFork();
-      });
+      inputParams["Reload from Github"] = {
+        type: "button",
+        label: "Reload from Github",
+        onClick: () => {
+          this.reloadFork();
+        },
+      };
     }
 
     return inputParams;
   }
 
-  createLevaExport() {
+  createExportMenuInputs() {
     let exportParams = {};
-    const exportOptions = ["STL", "SVG", "STEP"];
     const exportAtoms = this.nodesOnTheScreen.filter(
       (node) => node.atomType === "Export"
     );
@@ -244,10 +203,14 @@ export default class Molecule extends Atom {
       const partName =
         atom.inputs.filter((input) => input.name === "Part Name")[0]?.value ||
         "Unnamed Part";
-      exportParams[`Export ${partName}`] = button(() => {
-        atom.exportFile();
-        console.log(`Exporting: ${partName}`);
-      });
+      exportParams[`Export ${partName}`] = {
+        type: "button",
+        label: `Export ${partName}`,
+        onClick: () => {
+          atom.exportFile();
+          console.log(`Exporting: ${partName}`);
+        },
+      };
     });
 
     const gcodeAtoms = this.nodesOnTheScreen.filter(
@@ -255,9 +218,14 @@ export default class Molecule extends Atom {
     );
     // this is wrong and only a placeholder for kiri forum questions
     gcodeAtoms.forEach((atom) => {
-      exportParams[`Download Gcode – ${atom.partName}`] = button(() =>
-        atom.downloadGcode()
-      );
+      exportParams[`Download Gcode – ${atom.partName}`] = {
+        type: "button",
+        label: `Download Gcode – ${atom.partName}`,
+        onClick: () => {
+          atom.downloadGcode();
+          console.log(`Downloading Gcode: ${atom.partName}`);
+        },
+      };
     });
 
     return exportParams;
@@ -763,19 +731,25 @@ export default class Molecule extends Atom {
       if (bomToShow.length > 0) {
         bomToShow.map((item) => {
           bomParams[item.BOMitemName] = {
+            type: "number",
             value: item.numberNeeded,
             label: item.BOMitemName + " x",
             disabled: true,
           };
         });
-        bomParams["Download List of Materials"] = button(() => {
-          var fileName =
-            GlobalVariables.currentRepoName + "-Bill-of-Materials.txt";
-          var fileContent = this.formatBom();
-          var myFile = new Blob([fileContent], { type: "text/plain" });
 
-          saveAs(myFile, fileName + "." + "txt");
-        });
+        bomParams["Download List of Materials"] = {
+          type: "button",
+          label: "Download List of Materials",
+          onClick: () => {
+            var fileName =
+              GlobalVariables.currentRepoName + "-Bill-of-Materials.txt";
+            var fileContent = this.formatBom();
+            var myFile = new Blob([fileContent], { type: "text/plain" });
+
+            saveAs(myFile, fileName + "." + "txt");
+          },
+        };
       }
     }
     return bomParams;

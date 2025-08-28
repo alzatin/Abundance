@@ -364,12 +364,10 @@ export default class Input extends Atom {
     }
   }
 
-  /**
-   * Create Leva Menu Inputs for Editable Input Names - returns to ParameterEditor
-   */
-  createLevaInputs() {
-    let inputNames = {};
-    inputNames[this.uniqueID] = {
+  createInputParams() {
+    let inputParams = {};
+    inputParams[this.uniqueID] = {
+      type: "string",
       value: this.name,
       label: "Input Name",
       disabled: false,
@@ -380,7 +378,8 @@ export default class Input extends Atom {
         }
       },
     };
-    inputNames[this.uniqueID + "type"] = {
+    inputParams[this.uniqueID + "type"] = {
+      type: "select",
       value: this.type,
       label: "Input Type",
       disabled: false,
@@ -396,8 +395,9 @@ export default class Input extends Atom {
         }
       },
     };
-    return inputNames;
+    return inputParams;
   }
+
   /**
    * Returns the current value being output
    */

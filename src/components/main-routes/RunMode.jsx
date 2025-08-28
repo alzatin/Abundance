@@ -7,9 +7,11 @@ import GlobalVariables from "../../js/globalvariables.js";
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 
 import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
-import ParamsEditor from "../secondary/ParameterEditor.jsx";
 import RunNavigation from "../secondary/RunNavigation.jsx";
 import Molecule from "../../molecules/molecule.js";
+import ParamsMenu from "../secondary/ParamsMenu.jsx";
+import ExportMenu from "../secondary/ExportMenu.jsx";
+import RenderMenu from "../secondary/RenderMenu.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -131,9 +133,37 @@ function runMode({
       setOwned(true);
     }
   }, []);
+  const screenHeight = window.innerHeight;
+  const screenWidth = window.innerWidth;
 
   return (
     <>
+      <ParamsMenu
+        activeAtom={activeAtom}
+        position={{ top: 30, left: screenWidth - 320 }}
+        id={"atom-run-params-panel"}
+      />
+      <ExportMenu
+        activeAtom={activeAtom}
+        position={{ top: 75, left: screenWidth - 365 }}
+        id={"atom-run-export-panel"}
+      />
+      <RenderMenu
+        {...{
+          activeAtom,
+          gridParam,
+          axesParam,
+          wireParam,
+          solidParam,
+          setGrid,
+          setAxes,
+          setWire,
+          setSolid,
+        }}
+        position={{ top: 30, left: screenWidth - 365 }}
+        positionOffset={[45, 0]}
+        id={"atom-run-render-panel"}
+      />
       <div id="headerBarRun">
         <img
           className="thumnail-logo"
@@ -160,23 +190,6 @@ function runMode({
       ></canvas>
       <ToggleRunCreate {...{ run: true, isItOwned }} />
 
-      {activeAtom ? (
-        <ParamsEditor
-          {...{
-            run: true,
-            activeAtom,
-            setActiveAtom,
-            gridParam,
-            axesParam,
-            wireParam,
-            solidParam,
-            setGrid,
-            setAxes,
-            setWire,
-            setSolid,
-          }}
-        />
-      ) : null}
       {GlobalVariables.currentRepo ? (
         <RunNavigation
           {...{ authorizedUserOcto, activeAtom, redirectType, setRedirectType }}

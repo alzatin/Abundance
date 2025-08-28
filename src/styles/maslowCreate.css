@@ -617,68 +617,6 @@ Sidebar navigation
   font-size: 11px;
 }
 
-/*new leva sidebar */
-.paramEditorDiv {
-  max-height: 45%;
-  position: absolute;
-  top: 47%;
-  left: 0px;
-  width: 100%;
-  z-index: 3;
-  overflow-x: auto;
-  box-sizing: content-box;
-  -ms-overflow-style: none; /* for Internet Explorer, Edge */
-  scrollbar-width: none; /* for Firefox */
-}
-.paramEditorDiv::-webkit-scrollbar {
-  display: none; /* for Chrome, Safari, and Opera */
-}
-
-.paramEditorDivRun {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 250px;
-  z-index: 3;
-}
-
-.exportEditorDivRun {
-  position: absolute;
-  top: 60px;
-  right: 10px;
-  width: 250px;
-  z-index: 3;
-}
-
-.gridEditorDiv {
-  position: absolute;
-  top: 87%;
-  left: 10px;
-  width: 250px;
-  z-index: 3;
-}
-.gridEditorDivRun {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 250px;
-  z-index: 5;
-}
-.bomEditorDiv {
-  position: absolute;
-  top: 87%;
-  left: 300px;
-  width: 250px;
-  z-index: 3;
-}
-.bomEditorDivRun {
-  position: absolute;
-  top: 160px;
-  right: 10px;
-  width: 250px;
-  z-index: 2;
-}
-
 /* Run Navigation Mobile */
 
 .run-navigation {
@@ -946,48 +884,6 @@ Sidebar navigation
     align-self: center;
   }
 
-  /*new leva sidebar */
-  .paramEditorDiv {
-    max-height: 25%;
-    position: absolute;
-    top: 53%;
-    left: 10px;
-    width: 250px;
-    z-index: 3;
-    overflow-x: auto;
-    box-sizing: content-box;
-    -ms-overflow-style: none; /* for Internet Explorer, Edge */
-    scrollbar-width: none; /* for Firefox */
-  }
-  .paramEditorDivRun {
-    position: absolute;
-    top: 19%;
-    right: 10px;
-    width: 280px;
-    z-index: 3;
-  }
-  .exportEditorDivRun {
-    position: absolute;
-    top: 12%;
-    right: 10px;
-    width: 280px;
-    z-index: 3;
-  }
-
-  .gridEditorDiv {
-    position: absolute;
-    top: 47%;
-    left: 10px;
-    width: 280px;
-    z-index: 3;
-  }
-  .gridEditorDivRun {
-    position: absolute;
-    top: 5%;
-    right: 10px;
-    width: 280px;
-    z-index: 5;
-  }
   .switch {
     position: fixed;
     width: 45px;
@@ -1028,62 +924,6 @@ Sidebar navigation
 
 /* Medium devices (landscape tablets, 768px and up) */
 @media (min-width: 768px) {
-  /*new leva sidebar */
-  .paramEditorDiv {
-    max-height: 45%;
-    position: absolute;
-    top: 53%;
-    left: 10px;
-    width: 250px;
-    z-index: 3;
-    overflow-x: auto;
-    box-sizing: content-box;
-    -ms-overflow-style: none; /* for Internet Explorer, Edge */
-    scrollbar-width: none; /* for Firefox */
-  }
-  .paramEditorDivRun {
-    position: absolute;
-    top: 19%;
-    right: 10px;
-    width: 280px;
-    z-index: 3;
-  }
-  .exportEditorDivRun {
-    position: absolute;
-    top: 12%;
-    right: 10px;
-    width: 280px;
-    z-index: 3;
-  }
-
-  .gridEditorDiv {
-    position: absolute;
-    top: 47%;
-    left: 10px;
-    width: 280px;
-    z-index: 3;
-  }
-  .gridEditorDivRun {
-    position: absolute;
-    top: 5%;
-    right: 10px;
-    width: 280px;
-    z-index: 5;
-  }
-  .bomEditorDiv {
-    position: absolute;
-    top: 47%;
-    left: 300px;
-    width: 280px;
-    z-index: 3;
-  }
-  .bomEditorDivRun {
-    position: absolute;
-    top: 5%;
-    right: 310px;
-    width: 280px;
-    z-index: 2;
-  }
   /* Run Navigation */
 
   .run-navigation {
@@ -1185,64 +1025,6 @@ Sidebar navigation
 
 /* Large devices (laptops/desktops, 992px and up) */
 @media only screen and (min-width: 992px) {
-  /*new leva sidebar */
-  .paramEditorDiv {
-    max-height: 45%;
-    position: absolute;
-    top: 53%;
-    left: 10px;
-    width: 250px;
-    z-index: 3;
-    overflow-x: auto;
-    box-sizing: content-box;
-    -ms-overflow-style: none; /* for Internet Explorer, Edge */
-    scrollbar-width: none; /* for Firefox */
-  }
-  .paramEditorDivRun {
-    position: absolute;
-    top: 19%;
-    right: 10px;
-    width: 280px;
-    z-index: 3;
-  }
-  .exportEditorDivRun {
-    position: absolute;
-    top: 12%;
-    right: 10px;
-    width: 280px;
-    z-index: 3;
-  }
-
-  .gridEditorDiv {
-    position: absolute;
-    top: 47%;
-    left: 10px;
-    width: 280px;
-    z-index: 3;
-  }
-  .gridEditorDivRun {
-    position: absolute;
-    top: 5%;
-    right: 10px;
-    width: 280px;
-    z-index: 5;
-  }
-  .bomEditorDiv {
-    position: absolute;
-    top: 47%;
-    left: 300px;
-    width: 280px;
-    z-index: 3;
-  }
-  .bomEditorDivRun {
-    position: absolute;
-    top: 5%;
-    right: 310px;
-    width: 280px;
-    z-index: 2;
-  }
-  /* Run Navigation */
-
   .run-navigation {
     position: absolute;
     width: 60px;

@@ -95,11 +95,11 @@ export default class AddBOMTag extends Atom {
     GlobalVariables.c.closePath();
   }
 
-  /** Leva inputs for bom  */
-  createLevaInputs() {
-    let bomParams = {};
+  createInputParams() {
+    let inputParams = {};
     for (const key in this.BOMitem) {
-      bomParams[key] = {
+      inputParams[this.uniqueID + key] = {
+        type: "string",
         value: this.BOMitem[key],
         label: key,
         disabled: false,
@@ -109,7 +109,7 @@ export default class AddBOMTag extends Atom {
         },
       };
     }
-    return bomParams;
+    return inputParams;
   }
 
   /**

@@ -91,13 +91,11 @@ export default class Constant extends Atom {
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
   }
-  /**
-   * Create Leva Menu Input - returns to ParameterEditor
-   */
-  createLevaInputs() {
-    // Create the Leva input for the constant name
-    let outputParams = {};
-    outputParams["constant number"] = {
+
+  createInputParams() {
+    let inputParams = {};
+    inputParams["constant number"] = {
+      type: "string",
       value: this.name,
       label: "Constant Name",
       disabled: false,
@@ -105,8 +103,9 @@ export default class Constant extends Atom {
         this.name = value;
       },
     };
-    // Create the Leva input for the constant value
-    outputParams[this.uniqueID + this.name] = {
+    // Create the input for the constant value
+    inputParams[this.uniqueID + this.name] = {
+      type: "number",
       value: this.value,
       label: this.name,
       disabled: false,
@@ -118,7 +117,7 @@ export default class Constant extends Atom {
         }
       },
     };
-    return outputParams;
+    return inputParams;
   }
 
   enable() {

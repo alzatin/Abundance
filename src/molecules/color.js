@@ -103,14 +103,12 @@ export default class Color extends Atom {
     return GlobalVariables.cad.color(this.uniqueID, inputs.geometry, color);
   }
 
-  /**
-   * Create Leva Menu Inputs - returns to ParameterEditor
-   */
-  createLevaInputs() {
+  createInputParams() {
     let inputParams = {};
     /** Runs through active atom inputs and adds IO parameters to default param*/
 
     inputParams[this.uniqueID + "color"] = {
+      type: "select",
       value: Object.keys(this.colorOptions)[this.selectedColorIndex],
       label: "Color",
       options: Object.keys(this.colorOptions),
@@ -119,6 +117,29 @@ export default class Color extends Atom {
         this.onUpstreamChange();
       },
     };
+    /** Runs through active atom inputs and adds IO parameters to default param*/
+    if (this.inputs.every((x) => x.ready)) {
+      this.inputs.map((input) => {
+        const checkConnector = () => {
+          return input.connectors.length > 0;
+        };
+        /* Makes inputs for Io's other than geometry */
+        if (input.valueType !== "geometry") {
+          inputParams[this.uniqueID + input.name] = {
+            type: "number",
+            value: input.value,
+            label: input.name,
+            disabled: checkConnector(),
+            step: 0.01,
+            onChange: (value) => {
+              if (input.value !== value) {
+                input.setValue(value);
+              }
+            },
+          };
+        }
+      });
+    }
     return inputParams;
   }
 

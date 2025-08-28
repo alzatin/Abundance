@@ -1,17 +1,6 @@
 import AttachmentPoint from "./attachmentpoint";
 import GlobalVariables from "../js/globalvariables.js";
-import showdown from "showdown";
-import globalvariables from "../js/globalvariables.js";
 import { parse } from "mathjs";
-
-import {
-  useControls,
-  useCreateStore,
-  LevaPanel,
-  button,
-  Leva,
-  LevaInputs,
-} from "leva";
 import { ObservableEntity, Status } from "./observableEntity.js";
 
 // Make this an enum once we're using typescript
@@ -819,10 +808,8 @@ export default class Atom extends ObservableEntity {
       this.setError(err);
     }
   }
-  /**
-   * Create Leva Menu Inputs - returns to ParameterEditor
-   */
-  createLevaInputs() {
+
+  createInputParams() {
     let inputParams = {};
 
     /** Runs through active atom inputs and adds IO parameters to default param*/
@@ -835,25 +822,23 @@ export default class Atom extends ObservableEntity {
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry") {
           inputParams[this.uniqueID + input.name] = {
+            type: "string", //forcing string type to evaluate as equation
             value: input.currentEquation ? input.currentEquation : input.value,
             label: input.name,
-            step: 0.25,
-            type: LevaInputs.STRING,
             disabled: checkConnector(),
             onChange: (value) => {
               let currentEquation = String(value).trim();
               input.currentEquation = currentEquation;
               try {
-                const result = this.evaluateEquation(
-                  currentEquation,
-                  input.name
-                );
+                const result = this.evaluateEquation(currentEquation);
+
                 if (Number.isFinite(result)) {
                   if (result !== input.value) {
                     input.setValue(result);
                   }
                 }
               } catch (err) {
+                console.log("setting value to NaN");
                 input.setValue(NaN);
                 this.alertingErrorHandler()(err);
               }
@@ -861,8 +846,8 @@ export default class Atom extends ObservableEntity {
           };
         }
       });
-      return inputParams;
     }
+    return inputParams;
   }
 
   /**
@@ -873,17 +858,24 @@ export default class Atom extends ObservableEntity {
     const variables = this.extractVariablesFromEquation(substitutedEquation);
     const unresolved = [];
     const resolvedValues = {};
+    const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
     if (variables.length > 0) {
       const parentInputs =
         (this.parent && this.parent.inputs) ||
         (this.parentMolecule && this.parentMolecule.inputs) ||
         [];
       for (const variable of variables) {
+        if (BUILTIN_CONSTS.has(variable)) {
+          continue; // let evaluator handle it
+        }
         let value = null;
         // Try parent inputs first
         for (let j = 0; j < parentInputs.length; j++) {
           if (parentInputs[j].name === variable) {
-            value = parentInputs[j].value;
+            value =
+              typeof parentInputs[j].getValue === "function"
+                ? parentInputs[j].getValue()
+                : parentInputs[j].value;
             break;
           }
         }
