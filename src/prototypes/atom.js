@@ -818,9 +818,20 @@ export default class Atom extends ObservableEntity {
         const checkConnector = () => {
           return input.connectors.length > 0;
         };
-
         /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry") {
+        if (input.valueType === "string") {
+          inputParams[this.uniqueID + input.name] = {
+            type: input.valueType,
+            value: input.value,
+            label: input.name,
+            disabled: checkConnector(),
+            onChange: (value) => {
+              if (input.value !== value) {
+                input.setValue(value);
+              }
+            },
+          };
+        } else if (input.valueType !== "geometry") {
           inputParams[this.uniqueID + input.name] = {
             type: "string", //forcing string type to evaluate as equation
             value: input.currentEquation ? input.currentEquation : input.value,

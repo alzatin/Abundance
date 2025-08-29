@@ -17,7 +17,7 @@ export default function RenderMenu({
   setShowBackgroundModel,
   position,
   id,
-  collapsed,
+  contentCollapsed,
   collapsedOffset,
   setContentCollapsed,
 }) {
@@ -92,7 +92,7 @@ export default function RenderMenu({
         title={"Render Controls"}
         initialCollapsed={true}
         minWidth={280}
-        contentCollapsed={collapsed}
+        contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
       />
     </div>
