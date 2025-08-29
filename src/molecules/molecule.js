@@ -163,8 +163,7 @@ export default class Molecule extends Atom {
       type: "string",
       value: this.topLevel ? GlobalVariables.currentRepoName : this.name,
       label: "Molecule Name",
-      disabled:
-        this.topLevel || this.atomType == "GitHubMolecule" ? true : false,
+      disabled: this.topLevel || this.atomType === "GitHubMolecule",
       onChange: (value) => {
         this.name = value;
       },
@@ -1361,21 +1360,41 @@ export default class Molecule extends Atom {
   }
   /** Force mouse events for activeAtom selection that triggers menu */
   makeActiveAtom(flowCanvas, atom) {
-    const mouseDownEvent = new MouseEvent("mousedown", {
-      bubbles: true,
-      cancelable: true,
-      clientX: GlobalVariables.widthToPixels(atom.x),
-      clientY: GlobalVariables.heightToPixels(atom.y),
-    });
-    flowCanvas.dispatchEvent(mouseDownEvent);
+    const rect = flowCanvas.getBoundingClientRect();
+    const clientX = rect.left + GlobalVariables.widthToPixels(atom.x);
+    const clientY = rect.top + GlobalVariables.heightToPixels(atom.y);
 
-    const mouseUpEvent = new MouseEvent("mouseup", {
+    const down = new MouseEvent("mousedown", {
       bubbles: true,
       cancelable: true,
-      clientX: GlobalVariables.widthToPixels(atom.x),
-      clientY: GlobalVariables.heightToPixels(atom.y),
+      view: window,
+      clientX,
+      clientY,
+      button: 0,
+      buttons: 1,
     });
-    flowCanvas.dispatchEvent(mouseUpEvent);
+    flowCanvas.dispatchEvent(down);
+
+    const up = new MouseEvent("mouseup", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX,
+      clientY,
+      button: 0,
+      buttons: 0,
+    });
+    flowCanvas.dispatchEvent(up);
+
+    const click = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX,
+      clientY,
+      button: 0,
+    });
+    flowCanvas.dispatchEvent(click);
   }
   /**
    * Places a new connector within the molecule

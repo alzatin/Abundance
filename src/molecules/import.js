@@ -189,7 +189,6 @@ export default class Import extends Atom {
         type: "button",
         label: "Load File",
         onClick: () => {
-          setInputChanged(this.fileName);
           this.loadFile(this.importOptions[this.importIndex], setInputChanged);
         },
       };

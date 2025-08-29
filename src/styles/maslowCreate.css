@@ -603,7 +603,6 @@ Sidebar navigation
   background-color: var(--abundance-color-background);
   border-radius: 5px;
   display: flex;
-  font-size: 14px;
   font-family: "JetBrains Mono", monospace;
   font-weight: 550;
   font-size: 13px;
@@ -626,7 +625,6 @@ Sidebar navigation
   background-color: var(--abundance-color-background);
   border-radius: 5px;
   display: flex;
-  font-size: 14px;
   font-family: "JetBrains Mono, monospace";
   font-weight: 550;
   font-size: 15px;

@@ -184,7 +184,6 @@ function runMode({
           setContentCollapsed: setRenderContentCollapsed,
           position: { top: 30, left: screenWidth - 365 },
         }}
-        positionOffset={[45, 0]}
         id={"atom-run-render-panel"}
       />
       <BomMenu

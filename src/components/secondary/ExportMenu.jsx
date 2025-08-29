@@ -57,13 +57,13 @@ export default function ExportMenu({
     <div>
       <SimpleControlPanel
         controls={controls}
-        id="atom-render-panel"
+        id="atom-export-panel"
         position={position}
         title={"Export"}
         initialCollapsed={true}
         minWidth={280}
         collapsedIcon={ExportIcon}
-        collapsedOffset={[45, -45]} // shifts expanded panel by 45px right, 0px down
+        collapsedOffset={[45, -45]}
         contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
       />

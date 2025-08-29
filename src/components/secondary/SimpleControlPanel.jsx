@@ -380,7 +380,8 @@ export function SimpleControlPanel({
               <button
                 style={arrowButtonStyle}
                 onClick={() => {
-                  initialCollapsed && !contentCollapsed
+                  initialCollapsed &&
+                  !contentCollapsed /*if panel is initially collapsed set both content and collapse to expanded */
                     ? (setCollapsed((c) => !c), setContentCollapsed((c) => !c))
                     : setContentCollapsed((c) => !c);
                 }}
