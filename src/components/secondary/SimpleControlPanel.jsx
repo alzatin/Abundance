@@ -253,6 +253,17 @@ export function SimpleControlPanel({
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [contentCollapsed, setContentCollapsed] = useState(false);
 
+  // Debounce timer for input changes
+  const debounceTimeout = React.useRef();
+
+  // Debounced onChange helper
+  const handleDebouncedChange = (value, key, onChange) => {
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    debounceTimeout.current = setTimeout(() => {
+      onChange(value, key);
+    }, 300); // 300ms delay
+  };
+
   // Ensure initial values are set when controls prop changes
   React.useEffect(() => {
     Object.entries(controls).forEach(([key, config]) => {
@@ -393,7 +404,16 @@ export function SimpleControlPanel({
                 const label = config.label || key;
                 const handleChange = (value) => {
                   setControlValue(key, value);
-                  if (typeof config.onChange === "function") {
+                  // For debounced types, call debounced handler
+                  if (
+                    typeof config.onChange === "function" &&
+                    (config.type === "string" ||
+                      config.type === "number" ||
+                      config.type === "range")
+                  ) {
+                    handleDebouncedChange(value, key, config.onChange);
+                  } else if (typeof config.onChange === "function") {
+                    // For other types, call directly
                     config.onChange(value, key);
                   }
                 };
