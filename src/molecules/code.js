@@ -152,16 +152,13 @@ export default class Code extends Atom {
     );
   }
 
-  createInputParams() {
+  createInputParams(setInputChanged) {
     let inputParams = {};
     /** Runs through active atom inputs and adds IO parameters to default param*/
     this.inputs.map((input) => {
       const checkConnector = () => {
         return input.connectors.length > 0;
       };
-
-      console.log(input.valueType);
-
       inputParams[this.uniqueID + input.name] = {
         type: input.valueType ? input.valueType : "string",
         value: input.value,
@@ -190,6 +187,14 @@ export default class Code extends Atom {
       order: 8,
       onClick: () => {
         this.saveCode();
+        setInputChanged(
+          this.inputs
+            .map(
+              (input) =>
+                `${input.name}:${input.defaultValue}:${input.valueType}`
+            )
+            .join("|")
+        );
       },
     };
     inputParams["Close Editor"] = {
@@ -278,6 +283,11 @@ export default class Code extends Atom {
                 defaultValue,
                 "input"
               );
+            } else {
+              // Update type and defaultValue if changed
+              if (existingInput.valueType !== type) {
+                existingInput.valueType = type;
+              }
             }
           });
           // Remove any inputs not in the new array
