@@ -1347,6 +1347,7 @@ export default class Molecule extends Atom {
             this.autoCreateConnector(atom);
             atom.selected = true; // TODO: this feels hacky. probably should forward to it's children?
             atom.enable(); // Enable the atom after placing it
+            this.makeActiveAtom(flowCanvas, atom);
           }
         }
       }
@@ -1357,6 +1358,24 @@ export default class Molecule extends Atom {
       console.warn(err);
       return Promise.resolve();
     }
+  }
+  /** Force mouse events for activeAtom selection that triggers menu */
+  makeActiveAtom(flowCanvas, atom) {
+    const mouseDownEvent = new MouseEvent("mousedown", {
+      bubbles: true,
+      cancelable: true,
+      clientX: GlobalVariables.widthToPixels(atom.x),
+      clientY: GlobalVariables.heightToPixels(atom.y),
+    });
+    flowCanvas.dispatchEvent(mouseDownEvent);
+
+    const mouseUpEvent = new MouseEvent("mouseup", {
+      bubbles: true,
+      cancelable: true,
+      clientX: GlobalVariables.widthToPixels(atom.x),
+      clientY: GlobalVariables.heightToPixels(atom.y),
+    });
+    flowCanvas.dispatchEvent(mouseUpEvent);
   }
   /**
    * Places a new connector within the molecule
