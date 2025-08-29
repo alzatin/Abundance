@@ -61,6 +61,21 @@ export default class Gcode extends Atom {
     this.progress = 1.0;
     this.parent = values?.parent;
     this.partName = this.parent?.name ?? "output";
+    this.tools = [
+      {
+        id: 1000,
+        number: 1,
+        type: "endmill",
+        name: "end 1/4",
+        metric: false,
+        shaft_diam: 0.25,
+        shaft_len: 1,
+        flute_diam: 0.25,
+        flute_len: 2,
+        taper_tip: 0,
+        order: 5,
+      },
+    ];
 
     this.addAllIOs([
       { name: "geometry", valueType: "geometry" },
@@ -195,7 +210,11 @@ export default class Gcode extends Atom {
           // Force a redraw to show progress update
           //this.sendToRender();
         };
-        console.log(this.stlURL);
+        // Find the selected tool object by name
+        const selectedToolName = this.findIOValue("Tool");
+        const selectedToolObj =
+          this.tools.find((tool) => tool.name === selectedToolName) ||
+          this.tools[0];
         window.generateGcode(
           this.stlURL,
           this.center,
@@ -203,6 +222,7 @@ export default class Gcode extends Atom {
           this.findIOValue("Passes"),
           this.findIOValue("Speed"),
           this.findIOValue("Cut Through"),
+          selectedToolObj,
           gcodeCallback
           //progressCallback
         );
@@ -542,14 +562,22 @@ export default class Gcode extends Atom {
   createInputParams() {
     let inputParams = {};
 
+    /*inputParams[this.uniqueID + "Tool"] = {
+      type: "select",
+      value: this.findIOValue("Tool") || "end 1/4",
+      options: this.tools.map((tool) => tool.name),
+      label: "Tool",
+      onChange: (value) => {
+        this.setIOValue("Tool", value);
+      },
+    };*/
+
     /** Runs through active atom inputs and adds IO parameters to default param*/
     if (this.inputs) {
       this.inputs.map((input) => {
         const checkConnector = () => {
           return input.connectors.length > 0;
         };
-
-        /* Some input parameters (inlcuding equation and result) live in the parameter editor file so they can use the set, get functions */
 
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry") {

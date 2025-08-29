@@ -14,11 +14,12 @@ const generateGcode = (
   passes,
   speed,
   cutThrough,
+  tool,
   gcodeCallback,
   progressCallback
 ) => {
   const STOCK_MARGIN = 10;
-  const CUT_THROUGH = 0.25; // Default cut-through thickness if not provided
+  const CUT_THROUGH = cutThrough || 0.25; // Default cut-through thickness if not provided
 
   if (!stlUrl) {
     console.error("STL URL is not available.");
@@ -110,9 +111,9 @@ const generateGcode = (
           type: "endmill",
           name: "end 1/4",
           metric: false,
-          shaft_diam: 0.1,
+          shaft_diam: toolSize,
           shaft_len: 1,
-          flute_diam: 0.1,
+          flute_diam: toolSize,
           flute_len: 2,
           taper_tip: 0,
           order: 5,
@@ -123,15 +124,14 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
-      const zBottom = -z - CUT_THROUGH; // cut through part thickness plus cut-through
       // Add small epsilon to avoid floating point errors causing extra pass
       const epsilon = 0.0001;
       const validPasses = Math.max(1, Math.floor(Number(passes) || 1));
       const down =
-        validPasses == 1 ? 1000 : Math.abs(zBottom) / validPasses + epsilon; // positive value per pass
+        validPasses == 1 ? 1000 : Math.abs(z) / validPasses + epsilon; // positive value per pass
 
       // Debug logging for pass calculation
-      console.log("CAM pass debug:", { passes, z, zBottom, down });
+
       return eng.setProcess({
         camEaseAngle: 10,
         camEaseDown: true,
@@ -169,7 +169,7 @@ const generateGcode = (
             spindle: speed,
             step: 0.4,
             steps: 1,
-            down: 10000, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
+            down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
             rate: 635,
             plunge: 51,
             dogbones: false,
