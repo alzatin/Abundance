@@ -693,6 +693,8 @@ function CreateMode({
               setShowBackgroundModel,
               contentCollapsed,
               setContentCollapsed,
+              position: { top: screenHeight / 2 - 10, left: 10 },
+              collapsedOffset: [45, 0],
             }}
             id={"atom-create-render-panel"}
           />
@@ -702,6 +704,8 @@ function CreateMode({
               id: "atom-bom-panel",
               contentCollapsed: bomContentCollapsed,
               setContentCollapsed: setBomContentCollapsed,
+              position: { top: screenHeight / 2 + 35, left: 10 },
+              collapsedOffset: [45, -45],
             }}
           />
           <div id="headerBar">

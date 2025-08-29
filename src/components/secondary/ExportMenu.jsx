@@ -4,7 +4,12 @@ import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
 
-export default function ExportMenu({ activeAtom, position }) {
+export default function ExportMenu({
+  activeAtom,
+  position,
+  contentCollapsed,
+  setContentCollapsed,
+}) {
   const [inputChanged, setInputChanged] = useState("");
   let exportParams = {};
 
@@ -58,7 +63,9 @@ export default function ExportMenu({ activeAtom, position }) {
         initialCollapsed={true}
         minWidth={280}
         collapsedIcon={ExportIcon}
-        collapsedOffset={[50, -45]} // shifts expanded panel by 45px right, 0px down
+        collapsedOffset={[45, -45]} // shifts expanded panel by 45px right, 0px down
+        contentCollapsed={contentCollapsed}
+        setContentCollapsed={setContentCollapsed}
       />
     </div>
   );

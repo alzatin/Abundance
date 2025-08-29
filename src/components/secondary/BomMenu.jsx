@@ -9,6 +9,8 @@ export default function BomMenu({
   id,
   contentCollapsed,
   setContentCollapsed,
+  position,
+  collapsedOffset,
 }) {
   const [inputChanged, setInputChanged] = useState("");
   let compiledBom = {};
@@ -56,12 +58,12 @@ export default function BomMenu({
       <SimpleControlPanel
         controls={controls}
         id={id}
-        position={{ top: screenHeight / 2 + 35, left: 10 }}
+        position={position || { top: screenHeight / 2 - 10, left: 55 }}
         title={"Bill of Materials"}
         initialCollapsed={true}
         minWidth={280}
         collapsedIcon={DollarIcon}
-        collapsedOffset={[45, -45]} // shifts expanded panel by 45px right, 45px down
+        collapsedOffset={collapsedOffset} // shifts expanded panel by 45px right, 45px down
         contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
       />
