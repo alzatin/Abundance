@@ -85,7 +85,7 @@ export default class Gcode extends Atom {
         defaultValue:
           GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 6.35 : 0.25,
       },
-      { name: "Passes", valueType: "number", defaultValue: 3 },
+      { name: "Passes", valueType: "number", defaultValue: 1 },
       { name: "Speed", valueType: "number", defaultValue: 1500 },
       {
         name: "Cut Through",
