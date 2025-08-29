@@ -163,7 +163,8 @@ export default class Molecule extends Atom {
       type: "string",
       value: this.topLevel ? GlobalVariables.currentRepoName : this.name,
       label: "Molecule Name",
-      disabled: this.topLevel ? true : false,
+      disabled:
+        this.topLevel || this.atomType == "GitHubMolecule" ? true : false,
       onChange: (value) => {
         this.name = value;
       },
