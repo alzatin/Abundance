@@ -61,6 +61,21 @@ export default class Gcode extends Atom {
     this.progress = 1.0;
     this.parent = values?.parent;
     this.partName = this.parent?.name ?? "output";
+    this.tools = [
+      {
+        id: 1000,
+        number: 1,
+        type: "endmill",
+        name: "end 1/4",
+        metric: false,
+        shaft_diam: 0.25,
+        shaft_len: 1,
+        flute_diam: 0.25,
+        flute_len: 2,
+        taper_tip: 0,
+        order: 5,
+      },
+    ];
 
     this.addAllIOs([
       { name: "geometry", valueType: "geometry" },
@@ -70,7 +85,7 @@ export default class Gcode extends Atom {
         defaultValue:
           GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 6.35 : 0.25,
       },
-      { name: "Passes", valueType: "number", defaultValue: 3 },
+      { name: "Passes", valueType: "number", defaultValue: 1 },
       { name: "Speed", valueType: "number", defaultValue: 1500 },
       {
         name: "Cut Through",
@@ -195,6 +210,11 @@ export default class Gcode extends Atom {
           // Force a redraw to show progress update
           //this.sendToRender();
         };
+        // Find the selected tool object by name
+        const selectedToolName = this.findIOValue("Tool");
+        const selectedToolObj =
+          this.tools.find((tool) => tool.name === selectedToolName) ||
+          this.tools[0];
         window.generateGcode(
           this.stlURL,
           this.center,
@@ -202,6 +222,7 @@ export default class Gcode extends Atom {
           this.findIOValue("Passes"),
           this.findIOValue("Speed"),
           this.findIOValue("Cut Through"),
+          selectedToolObj,
           gcodeCallback
           //progressCallback
         );
@@ -223,12 +244,13 @@ export default class Gcode extends Atom {
     try {
       // Check if the input is an assembly
       const isAssembly = await this._checkIfAssembly(inputID);
-
+      console.log("handle geometry input:", inputID);
       if (isAssembly) {
         // Process as assembly - extract parts and generate G-code sequentially
         await this._processAssembly(inputID);
       } else {
         // Process as single part (original behavior)
+
         await this._processSinglePart(inputID);
       }
     } catch (err) {
@@ -252,6 +274,7 @@ export default class Gcode extends Atom {
    * @param {string} inputID - The input geometry ID
    */
   async _processSinglePart(inputID) {
+    console.log("Processing single part:", inputID);
     this._isProcessingAssembly = false;
     const idForVisExport = GlobalVariables.generateUniqueID();
     GlobalVariables.cad
@@ -526,10 +549,28 @@ export default class Gcode extends Atom {
 
   onUpstreamChange() {
     this.setWaiting();
+    try {
+      let inputID = this.findIOValue("geometry");
+
+      // Check if input is an assembly and handle accordingly
+      this._handleGeometryInput(inputID);
+    } catch (err) {
+      this.setError(err);
+    }
   }
 
   createInputParams() {
     let inputParams = {};
+
+    /*inputParams[this.uniqueID + "Tool"] = {
+      type: "select",
+      value: this.findIOValue("Tool") || "end 1/4",
+      options: this.tools.map((tool) => tool.name),
+      label: "Tool",
+      onChange: (value) => {
+        this.setIOValue("Tool", value);
+      },
+    };*/
 
     /** Runs through active atom inputs and adds IO parameters to default param*/
     if (this.inputs) {
@@ -537,8 +578,6 @@ export default class Gcode extends Atom {
         const checkConnector = () => {
           return input.connectors.length > 0;
         };
-
-        /* Some input parameters (inlcuding equation and result) live in the parameter editor file so they can use the set, get functions */
 
         /* Makes inputs for Io's other than geometry */
         if (input.valueType !== "geometry") {
@@ -629,31 +668,6 @@ export default class Gcode extends Atom {
 
     const blob = new Blob([gcode], { type: "text/plain" });
     saveAs(blob, filename);
-  }
-
-  /**
-   * Begin propagation from this gcode atom.
-   * Like other atoms, trigger updateValue when inputs are not connected.
-   */
-  beginPropagation() {
-    // If there are no inputs (shouldn't happen for gcode, but for consistency)
-    if (this.inputs.length == 0) {
-      this.updateValue();
-      return;
-    }
-
-    // If none of the geometry inputs are connected, don't auto-generate
-    var geometryInputConnected = false;
-    this.inputs.forEach((input) => {
-      if (input.name === "Geometry" && input.connectors.length > 0) {
-        geometryInputConnected = true;
-      }
-    });
-
-    // Only trigger if geometry is connected (main input for gcode generation)
-    if (geometryInputConnected && !this.gcodeGenerated) {
-      this.updateValue();
-    }
   }
 
   /**
