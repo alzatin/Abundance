@@ -195,6 +195,7 @@ export default class Gcode extends Atom {
           // Force a redraw to show progress update
           //this.sendToRender();
         };
+        console.log(this.stlURL);
         window.generateGcode(
           this.stlURL,
           this.center,
@@ -223,12 +224,13 @@ export default class Gcode extends Atom {
     try {
       // Check if the input is an assembly
       const isAssembly = await this._checkIfAssembly(inputID);
-
+      console.log("handle geometry input:", inputID);
       if (isAssembly) {
         // Process as assembly - extract parts and generate G-code sequentially
         await this._processAssembly(inputID);
       } else {
         // Process as single part (original behavior)
+
         await this._processSinglePart(inputID);
       }
     } catch (err) {
@@ -252,6 +254,7 @@ export default class Gcode extends Atom {
    * @param {string} inputID - The input geometry ID
    */
   async _processSinglePart(inputID) {
+    console.log("Processing single part:", inputID);
     this._isProcessingAssembly = false;
     const idForVisExport = GlobalVariables.generateUniqueID();
     GlobalVariables.cad
@@ -526,6 +529,14 @@ export default class Gcode extends Atom {
 
   onUpstreamChange() {
     this.setWaiting();
+    try {
+      let inputID = this.findIOValue("geometry");
+
+      // Check if input is an assembly and handle accordingly
+      this._handleGeometryInput(inputID);
+    } catch (err) {
+      this.setError(err);
+    }
   }
 
   createInputParams() {
@@ -629,31 +640,6 @@ export default class Gcode extends Atom {
 
     const blob = new Blob([gcode], { type: "text/plain" });
     saveAs(blob, filename);
-  }
-
-  /**
-   * Begin propagation from this gcode atom.
-   * Like other atoms, trigger updateValue when inputs are not connected.
-   */
-  beginPropagation() {
-    // If there are no inputs (shouldn't happen for gcode, but for consistency)
-    if (this.inputs.length == 0) {
-      this.updateValue();
-      return;
-    }
-
-    // If none of the geometry inputs are connected, don't auto-generate
-    var geometryInputConnected = false;
-    this.inputs.forEach((input) => {
-      if (input.name === "Geometry" && input.connectors.length > 0) {
-        geometryInputConnected = true;
-      }
-    });
-
-    // Only trigger if geometry is connected (main input for gcode generation)
-    if (geometryInputConnected && !this.gcodeGenerated) {
-      this.updateValue();
-    }
   }
 
   /**

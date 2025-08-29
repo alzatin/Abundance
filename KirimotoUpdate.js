@@ -18,7 +18,7 @@ const generateGcode = (
   progressCallback
 ) => {
   const STOCK_MARGIN = 10;
-  const CUT_THROUGH = cutThrough || 2.5; // Default cut-through thickness if not provided
+  const CUT_THROUGH = 0.25; // Default cut-through thickness if not provided
 
   if (!stlUrl) {
     console.error("STL URL is not available.");
@@ -89,11 +89,11 @@ const generateGcode = (
       return eng.setStock({
         x: x + STOCK_MARGIN,
         y: y + STOCK_MARGIN,
-        z: z + CUT_THROUGH, // stock thickness = part thickness + cut-through
+        z: z, // stock thickness = part thickness + cut-through
         center: {
           x: x / 2,
           y: y / 2,
-          z: z + STOCK_MARGIN / 2 + CUT_THROUGH / 2, // correct center for full stock thickness
+          z: z / 2, // correct center for full stock thickness
         },
       });
     })
@@ -109,10 +109,10 @@ const generateGcode = (
           number: 1,
           type: "endmill",
           name: "end 1/4",
-          metric: true,
-          shaft_diam: toolSize,
+          metric: false,
+          shaft_diam: 0.1,
           shaft_len: 1,
-          flute_diam: toolSize,
+          flute_diam: 0.1,
           flute_len: 2,
           taper_tip: 0,
           order: 5,
@@ -127,7 +127,8 @@ const generateGcode = (
       // Add small epsilon to avoid floating point errors causing extra pass
       const epsilon = 0.0001;
       const validPasses = Math.max(1, Math.floor(Number(passes) || 1));
-      const down = Math.abs(zBottom) / validPasses + epsilon; // positive value per pass
+      const down =
+        validPasses == 1 ? 1000 : Math.abs(zBottom) / validPasses + epsilon; // positive value per pass
 
       // Debug logging for pass calculation
       console.log("CAM pass debug:", { passes, z, zBottom, down });
@@ -137,7 +138,9 @@ const generateGcode = (
         camZAnchor: "bottom",
         camDepthFirst: false,
         camZThru: CUT_THROUGH,
-        camZBottom: zBottom, // temp hack to get around setTopZ bug
+        camZClearance: 3,
+        camZTop: 0, // top of stock
+        camZBottom: -z, // temp hack to get around setTopZ bug
         camToolInit: true,
         ops: [
           {
@@ -146,13 +149,33 @@ const generateGcode = (
             spindle: speed,
             step: 0.4,
             steps: 1,
-            down: down, // correct depth per pass
+            down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
             rate: 635,
             plunge: 51,
             dogbones: false,
             omitvoid: false,
             omitthru: false,
             outside: false,
+            inside: true,
+            wide: false,
+            top: false,
+            ov_topz: 0,
+            ov_botz: 0,
+            ov_conv: true,
+          },
+          {
+            type: "outline",
+            tool: 1000,
+            spindle: speed,
+            step: 0.4,
+            steps: 1,
+            down: 10000, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
+            rate: 635,
+            plunge: 51,
+            dogbones: false,
+            omitvoid: false,
+            omitthru: true,
+            outside: true,
             inside: false,
             wide: false,
             top: false,
@@ -160,26 +183,6 @@ const generateGcode = (
             ov_botz: 0,
             ov_conv: true,
           },
-          /*{
-            type: "outline",
-            tool: 1000,
-            spindle: 13000,
-            step: 0.4,
-            steps: 1,
-            down: down, // correct depth per pass
-            rate: 635,
-            plunge: 51,
-            dogbones: false,
-            omitvoid: false,
-            omitthru: false,
-            outside: false,
-            inside: false,
-            wide: false,
-            top: false,
-            ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: true,
-          },*/
         ],
       });
     })
