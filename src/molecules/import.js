@@ -189,7 +189,7 @@ export default class Import extends Atom {
         type: "button",
         label: "Load File",
         onClick: () => {
-          setControlValue(this.uniqueID + "Loaded File", this.fileName);
+          setInputChanged(this.fileName);
           this.loadFile(this.importOptions[this.importIndex], setInputChanged);
         },
       };
