@@ -163,7 +163,7 @@ export default class Molecule extends Atom {
       type: "string",
       value: this.topLevel ? GlobalVariables.currentRepoName : this.name,
       label: "Molecule Name",
-      disabled: this.topLevel ? true : false,
+      disabled: this.topLevel || this.atomType === "GitHubMolecule",
       onChange: (value) => {
         this.name = value;
       },
@@ -1346,6 +1346,7 @@ export default class Molecule extends Atom {
             this.autoCreateConnector(atom);
             atom.selected = true; // TODO: this feels hacky. probably should forward to it's children?
             atom.enable(); // Enable the atom after placing it
+            this.makeActiveAtom(flowCanvas, atom);
           }
         }
       }
@@ -1356,6 +1357,44 @@ export default class Molecule extends Atom {
       console.warn(err);
       return Promise.resolve();
     }
+  }
+  /** Force mouse events for activeAtom selection that triggers menu */
+  makeActiveAtom(flowCanvas, atom) {
+    const rect = flowCanvas.getBoundingClientRect();
+    const clientX = rect.left + GlobalVariables.widthToPixels(atom.x);
+    const clientY = rect.top + GlobalVariables.heightToPixels(atom.y);
+
+    const down = new MouseEvent("mousedown", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX,
+      clientY,
+      button: 0,
+      buttons: 1,
+    });
+    flowCanvas.dispatchEvent(down);
+
+    const up = new MouseEvent("mouseup", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX,
+      clientY,
+      button: 0,
+      buttons: 0,
+    });
+    flowCanvas.dispatchEvent(up);
+
+    const click = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX,
+      clientY,
+      button: 0,
+    });
+    flowCanvas.dispatchEvent(click);
   }
   /**
    * Places a new connector within the molecule

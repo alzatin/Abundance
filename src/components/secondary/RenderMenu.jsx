@@ -16,8 +16,10 @@ export default function RenderMenu({
   showBackgroundModel,
   setShowBackgroundModel,
   position,
-  positionOffset,
   id,
+  collapsed,
+  collapsedOffset,
+  setContentCollapsed,
 }) {
   const [inputChanged, setInputChanged] = useState("");
 
@@ -85,11 +87,13 @@ export default function RenderMenu({
       <SimpleControlPanel
         controls={controls}
         id={id}
-        position={position || { top: screenHeight / 2 - 10, left: 10 }}
+        position={position || { top: screenHeight / 2 + 10, left: 10 }}
+        collapsedOffset={collapsedOffset || [45, 0]}
         title={"Render Controls"}
         initialCollapsed={true}
         minWidth={280}
-        collapsedOffset={positionOffset || [45, 0]}
+        contentCollapsed={collapsed}
+        setContentCollapsed={setContentCollapsed}
       />
     </div>
   );

@@ -53,7 +53,7 @@ const CaretDownIcon = ({ size = 12, collapsed }) => (
 
 // CSS variable-driven styles
 const panelVars = {
-  "--panel-background": "#232832",
+  "--panel-background": "var(--abundance-color-background)",
   "--panel-foreground": "#e0e5ef",
   "--panel-border": "#272a31",
   "--panel-separator": "#31343b",
@@ -240,6 +240,8 @@ export function SimpleControlPanel({
   maxHeight = 340, // <-- new prop
   collapsedIcon = SettingsIcon, // new prop, defaults to SettingsIcon
   collapsedOffset = [0, 0], // new prop: [x, y] offset for expanded panel
+  contentCollapsed,
+  setContentCollapsed,
 }) {
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls);
@@ -251,7 +253,17 @@ export function SimpleControlPanel({
 
   // Collapsed panel state
   const [collapsed, setCollapsed] = useState(initialCollapsed);
-  const [contentCollapsed, setContentCollapsed] = useState(false);
+
+  // Debounce timer for input changes
+  const debounceTimeout = React.useRef();
+
+  // Debounced onChange helper
+  const handleDebouncedChange = (value, key, onChange) => {
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    debounceTimeout.current = setTimeout(() => {
+      onChange(value, key);
+    }, 300); // 300ms delay
+  };
 
   // Ensure initial values are set when controls prop changes
   React.useEffect(() => {
@@ -317,6 +329,8 @@ export function SimpleControlPanel({
           : {
               ...getPanelStyle(minWidth),
               ...position,
+              maxHeight: maxHeight ? `${maxHeight}px` : undefined,
+              overflowY: maxHeight ? "auto" : undefined,
               top:
                 (typeof position.top === "number"
                   ? position.top
@@ -340,7 +354,7 @@ export function SimpleControlPanel({
             alignItems: "center",
             justifyContent: "center",
           }}
-          onClick={() => setCollapsed(false)}
+          onClick={() => (setCollapsed(false), setContentCollapsed((c) => !c))}
           title="Open Panel"
         >
           {React.createElement(collapsedIcon, { size: 18 })}
@@ -366,8 +380,9 @@ export function SimpleControlPanel({
               <button
                 style={arrowButtonStyle}
                 onClick={() => {
-                  initialCollapsed && !contentCollapsed
-                    ? setCollapsed((c) => !c)
+                  initialCollapsed &&
+                  !contentCollapsed /*if panel is initially collapsed set both content and collapse to expanded */
+                    ? (setCollapsed((c) => !c), setContentCollapsed((c) => !c))
                     : setContentCollapsed((c) => !c);
                 }}
                 title={
@@ -393,7 +408,16 @@ export function SimpleControlPanel({
                 const label = config.label || key;
                 const handleChange = (value) => {
                   setControlValue(key, value);
-                  if (typeof config.onChange === "function") {
+                  // For debounced types, call debounced handler
+                  if (
+                    typeof config.onChange === "function" &&
+                    (config.type === "string" ||
+                      config.type === "number" ||
+                      config.type === "range")
+                  ) {
+                    handleDebouncedChange(value, key, config.onChange);
+                  } else if (typeof config.onChange === "function") {
+                    // For other types, call directly
                     config.onChange(value, key);
                   }
                 };

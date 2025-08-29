@@ -4,7 +4,13 @@ import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
 
-export default function ParamsMenu({ activeAtom, position, id }) {
+export default function ParamsMenu({
+  activeAtom,
+  position,
+  id,
+  contentCollapsed,
+  setContentCollapsed,
+}) {
   const unusedDefault = {
     position: {
       type: "number",
@@ -103,7 +109,9 @@ export default function ParamsMenu({ activeAtom, position, id }) {
         position={position || { top: screenHeight / 2 - 10, left: 55 }}
         title={activeAtom?.name || "Controls"}
         minWidth={280}
-        maxHeight={400}
+        maxHeight={screenHeight / 2}
+        contentCollapsed={contentCollapsed}
+        setContentCollapsed={setContentCollapsed}
       />
       {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
         Add Custom Control

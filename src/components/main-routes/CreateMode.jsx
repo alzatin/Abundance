@@ -70,6 +70,17 @@ function CreateMode({
 
   const lastSaveData = useRef({}); // The object saved last time the project was saved...used for comparison
 
+  /** State for menu content collapsing */
+  const [contentCollapsed, setContentCollapsed] = useState(true);
+  const [bomContentCollapsed, setBomContentCollapsed] = useState(true);
+  const [paramContentCollapsed, setParamContentCollapsed] = useState(false);
+  /*Collapses param content when other menus are expanded */
+  useEffect(() => {
+    if (!contentCollapsed || !bomContentCollapsed) {
+      setParamContentCollapsed(true);
+    }
+  }, [contentCollapsed, bomContentCollapsed]);
+
   /**
    * Object containing letters and values used for keyboard shortcuts
    * @type {object?}
@@ -663,6 +674,8 @@ function CreateMode({
             activeAtom={activeAtom}
             position={{ top: screenHeight / 2 - 10, left: 55 }}
             id={"atom-create-params-panel"}
+            contentCollapsed={paramContentCollapsed}
+            setContentCollapsed={setParamContentCollapsed}
           />
           <RenderMenu
             {...{
@@ -678,6 +691,10 @@ function CreateMode({
               backgroundUsdzFile,
               showBackgroundModel,
               setShowBackgroundModel,
+              contentCollapsed,
+              setContentCollapsed,
+              position: { top: screenHeight / 2 - 10, left: 10 },
+              collapsedOffset: [45, 0],
             }}
             id={"atom-create-render-panel"}
           />
@@ -685,6 +702,10 @@ function CreateMode({
             {...{
               activeAtom,
               id: "atom-bom-panel",
+              contentCollapsed: bomContentCollapsed,
+              setContentCollapsed: setBomContentCollapsed,
+              position: { top: screenHeight / 2 + 35, left: 10 },
+              collapsedOffset: [45, -45],
             }}
           />
           <div id="headerBar">

@@ -12,6 +12,7 @@ import Molecule from "../../molecules/molecule.js";
 import ParamsMenu from "../secondary/ParamsMenu.jsx";
 import ExportMenu from "../secondary/ExportMenu.jsx";
 import RenderMenu from "../secondary/RenderMenu.jsx";
+import BomMenu from "../secondary/BomMenu.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -75,6 +76,22 @@ function runMode({
   useEffect(() => {
     setCameraZoom(mesh[0] ? mesh[0].cameraZoom : 1);
   }, [mesh]);
+
+  /** State for menu content collapsing */
+  const [renderContentCollapsed, setRenderContentCollapsed] = useState(true);
+  const [bomContentCollapsed, setBomContentCollapsed] = useState(true);
+  const [paramContentCollapsed, setParamContentCollapsed] = useState(false);
+  const [exportContentCollapsed, setExportContentCollapsed] = useState(true);
+  /*Collapses param content when other menus are expanded */
+  useEffect(() => {
+    if (
+      !renderContentCollapsed ||
+      !bomContentCollapsed ||
+      !exportContentCollapsed
+    ) {
+      setParamContentCollapsed(true);
+    }
+  }, [renderContentCollapsed, bomContentCollapsed, exportContentCollapsed]);
 
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;
@@ -142,11 +159,15 @@ function runMode({
         activeAtom={activeAtom}
         position={{ top: 30, left: screenWidth - 320 }}
         id={"atom-run-params-panel"}
+        contentCollapsed={paramContentCollapsed}
+        setContentCollapsed={setParamContentCollapsed}
       />
       <ExportMenu
         activeAtom={activeAtom}
         position={{ top: 75, left: screenWidth - 365 }}
         id={"atom-run-export-panel"}
+        contentCollapsed={exportContentCollapsed}
+        setContentCollapsed={setExportContentCollapsed}
       />
       <RenderMenu
         {...{
@@ -159,10 +180,21 @@ function runMode({
           setAxes,
           setWire,
           setSolid,
+          contentCollapsed: renderContentCollapsed,
+          setContentCollapsed: setRenderContentCollapsed,
+          position: { top: 30, left: screenWidth - 365 },
         }}
-        position={{ top: 30, left: screenWidth - 365 }}
-        positionOffset={[45, 0]}
         id={"atom-run-render-panel"}
+      />
+      <BomMenu
+        {...{
+          activeAtom,
+          id: "atom-run-bom-panel",
+          contentCollapsed: bomContentCollapsed,
+          setContentCollapsed: setBomContentCollapsed,
+          position: { top: 120, left: screenWidth - 365 },
+        }}
+        collapsedOffset={[45, -90]}
       />
       <div id="headerBarRun">
         <img
