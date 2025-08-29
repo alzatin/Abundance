@@ -4,7 +4,12 @@ import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
 
-export default function BomMenu({ activeAtom, id }) {
+export default function BomMenu({
+  activeAtom,
+  id,
+  contentCollapsed,
+  setContentCollapsed,
+}) {
   const [inputChanged, setInputChanged] = useState("");
   let compiledBom = {};
 
@@ -57,6 +62,8 @@ export default function BomMenu({ activeAtom, id }) {
         minWidth={280}
         collapsedIcon={DollarIcon}
         collapsedOffset={[45, -45]} // shifts expanded panel by 45px right, 45px down
+        contentCollapsed={contentCollapsed}
+        setContentCollapsed={setContentCollapsed}
       />
     </div>
   );

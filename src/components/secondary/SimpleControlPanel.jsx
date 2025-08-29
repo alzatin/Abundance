@@ -240,6 +240,8 @@ export function SimpleControlPanel({
   maxHeight = 340, // <-- new prop
   collapsedIcon = SettingsIcon, // new prop, defaults to SettingsIcon
   collapsedOffset = [0, 0], // new prop: [x, y] offset for expanded panel
+  contentCollapsed,
+  setContentCollapsed,
 }) {
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls);
@@ -251,7 +253,6 @@ export function SimpleControlPanel({
 
   // Collapsed panel state
   const [collapsed, setCollapsed] = useState(initialCollapsed);
-  const [contentCollapsed, setContentCollapsed] = useState(false);
 
   // Debounce timer for input changes
   const debounceTimeout = React.useRef();
@@ -353,7 +354,7 @@ export function SimpleControlPanel({
             alignItems: "center",
             justifyContent: "center",
           }}
-          onClick={() => setCollapsed(false)}
+          onClick={() => (setCollapsed(false), setContentCollapsed((c) => !c))}
           title="Open Panel"
         >
           {React.createElement(collapsedIcon, { size: 18 })}
@@ -380,7 +381,7 @@ export function SimpleControlPanel({
                 style={arrowButtonStyle}
                 onClick={() => {
                   initialCollapsed && !contentCollapsed
-                    ? setCollapsed((c) => !c)
+                    ? (setCollapsed((c) => !c), setContentCollapsed((c) => !c))
                     : setContentCollapsed((c) => !c);
                 }}
                 title={

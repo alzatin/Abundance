@@ -18,6 +18,8 @@ export default function RenderMenu({
   position,
   positionOffset,
   id,
+  collapsed,
+  setContentCollapsed,
 }) {
   const [inputChanged, setInputChanged] = useState("");
 
@@ -90,6 +92,8 @@ export default function RenderMenu({
         initialCollapsed={true}
         minWidth={280}
         collapsedOffset={positionOffset || [45, 0]}
+        contentCollapsed={collapsed}
+        setContentCollapsed={setContentCollapsed}
       />
     </div>
   );
