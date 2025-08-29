@@ -328,6 +328,8 @@ export function SimpleControlPanel({
           : {
               ...getPanelStyle(minWidth),
               ...position,
+              maxHeight: maxHeight ? `${maxHeight}px` : undefined,
+              overflowY: maxHeight ? "auto" : undefined,
               top:
                 (typeof position.top === "number"
                   ? position.top

@@ -103,7 +103,7 @@ export default function ParamsMenu({ activeAtom, position, id }) {
         position={position || { top: screenHeight / 2 - 10, left: 55 }}
         title={activeAtom?.name || "Controls"}
         minWidth={280}
-        maxHeight={400}
+        maxHeight={screenHeight / 2}
       />
       {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
         Add Custom Control
