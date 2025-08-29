@@ -604,9 +604,9 @@ Sidebar navigation
   border-radius: 5px;
   display: flex;
   font-size: 14px;
-  font-family: "JetBrains Mono, monospace";
+  font-family: "JetBrains Mono", monospace;
   font-weight: 550;
-  font-size: 15px;
+  font-size: 13px;
   letter-spacing: 1px;
   color: var(--abundance-color-mainPurple);
 }
@@ -903,7 +903,7 @@ Sidebar navigation
   .switch {
     position: fixed;
     width: 45px;
-    top: 47%;
+    top: 48%;
     right: 5px;
     z-index: 2;
     font-size: 11px;
