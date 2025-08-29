@@ -15,7 +15,7 @@ export default function BomMenu({
   const [inputChanged, setInputChanged] = useState("");
   let compiledBom = {};
 
-  if (activeAtom !== null && activeAtom.atomType == "Molecule") {
+  if (activeAtom?.atomType == "Molecule") {
     compiledBom = activeAtom.createLevaBom();
   }
   const [
