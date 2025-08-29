@@ -183,6 +183,25 @@ const generateGcode = (
             ov_botz: 0,
             ov_conv: true,
           },
+          /*{
+            type: "rough",
+            tool: 1000,
+            spindle: 1000,
+            down: 1000,
+            step: 1,
+            rate: 1000,
+            plunge: 250,
+            leave: 0,
+            leavez: 0,
+            all: false,
+            voids: true,
+            flats: true,
+            inside: true,
+            omitthru: false,
+            ov_topz: 0,
+            ov_botz: 0,
+            ov_conv: false,
+          },*/
         ],
       });
     })
