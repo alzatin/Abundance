@@ -15,6 +15,7 @@
   --abundance-color-hightlightOffWhite: #fffffff6;
   --abundance-color-mediumGrey: #545252;
   --abundance-color-veryLightPurpleHighlight: #f9e9fd;
+  --abundance-color-background: #232832;
 }
 
 .dark-theme {
@@ -231,14 +232,6 @@ body {
 }
 .runContainer {
   display: flex;
-}
-
-#runMode_button {
-  font-size: 13px;
-  padding: 0 3px 0 3px;
-  color: var(--abundance-color-veryLightPurpleHighlight);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
 }
 
 #modelViewer {
@@ -603,18 +596,41 @@ Sidebar navigation
   top: 39%;
   right: 15%;
   z-index: 2;
-  font-size: 11px;
+}
+
+.switch button {
+  width: 100px;
+  background-color: var(--abundance-color-background);
+  border-radius: 5px;
+  display: flex;
+  font-size: 14px;
+  font-family: "JetBrains Mono, monospace";
+  font-weight: 550;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: var(--abundance-color-mainPurple);
 }
 
 /* The switch - the box around the slider */
 .switch_run {
   position: fixed;
   width: 45px;
-  height: 24px;
+  height: 23px;
   top: 1vh;
   left: 20px;
   z-index: 2;
-  font-size: 11px;
+}
+
+.switch_run button {
+  width: 100px;
+  background-color: var(--abundance-color-background);
+  border-radius: 5px;
+  display: flex;
+  font-size: 14px;
+  font-family: "JetBrains Mono, monospace";
+  font-weight: 550;
+  font-size: 15px;
+  letter-spacing: 1px;
 }
 
 /* Run Navigation Mobile */
@@ -949,6 +965,7 @@ Sidebar navigation
     width: 100%;
     height: 100%;
   }
+
   /* The switch - the box around the slider */
   .switch_run {
     top: 20px;
@@ -956,6 +973,7 @@ Sidebar navigation
   .switch {
     right: 70px;
   }
+
   .thumnail-logo {
     width: 25px;
     height: 25px;

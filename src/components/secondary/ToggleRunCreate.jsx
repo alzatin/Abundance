@@ -28,14 +28,7 @@ function ToggleRunCreate({ run, isItOwned }) {
             style={{ position: "absolute" }}
           >
             <label title="Create/Run Mode" className="switch">
-              <button
-                style={{
-                  width: "100px",
-                  backgroundColor: "#3F4243",
-                  borderRadius: "12px",
-                  display: "flex",
-                }}
-              >
+              <button>
                 <p id="runMode_button">Run Mode</p>
                 <svg
                   width="12"
@@ -69,14 +62,7 @@ function ToggleRunCreate({ run, isItOwned }) {
             onClick={handleChange}
           >
             <label title="Create/Run Mode" className="switch_run">
-              <button
-                style={{
-                  width: "100px",
-                  backgroundColor: "#3F4243",
-                  borderRadius: "12px",
-                  display: "flex",
-                }}
-              >
+              <button>
                 <svg
                   width="12"
                   height="8"

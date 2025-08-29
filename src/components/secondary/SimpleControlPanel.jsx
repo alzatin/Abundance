@@ -53,7 +53,7 @@ const CaretDownIcon = ({ size = 12, collapsed }) => (
 
 // CSS variable-driven styles
 const panelVars = {
-  "--panel-background": "#232832",
+  "--panel-background": "var(--abundance-color-background)",
   "--panel-foreground": "#e0e5ef",
   "--panel-border": "#272a31",
   "--panel-separator": "#31343b",
