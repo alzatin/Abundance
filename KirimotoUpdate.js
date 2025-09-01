@@ -14,9 +14,10 @@ const generateGcode = (
   passes,
   speed,
   cutThrough,
-  tool,
   gcodeCallback,
-  progressCallback
+  progressCallback,
+  partProgressCallback,
+  tool
 ) => {
   const STOCK_MARGIN = 10;
   const CUT_THROUGH = cutThrough || 0.25; // Default cut-through thickness if not provided
@@ -130,12 +131,6 @@ const generateGcode = (
       const validPasses = Math.max(1, Math.floor(Number(passes) || 1));
 
       const down = validPasses == 1 ? 1000 : Math.abs(zBottom) / validPasses;
-
-      // Debug logging for pass calculation
-      console.log("Valid passes:", validPasses);
-      console.log("z:", z);
-      console.log("zBottom:", zBottom);
-      console.log("down:", down);
 
       return eng.setProcess({
         camEaseAngle: 10,

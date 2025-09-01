@@ -298,7 +298,7 @@ export default class Gcode extends Atom {
                   (bounds.max[2] + bounds.min[2]) / 2,
                 ];
                 // Always generate gcode when geometry input is processed
-                this._generateGcode();
+                //this._generateGcode();
               });
           });
       })
@@ -312,6 +312,7 @@ export default class Gcode extends Atom {
    * @param {string} inputID - The input assembly ID
    */
   async _processAssembly(inputID) {
+    console.log("processing assembly:", inputID);
     try {
       this._isProcessingAssembly = true;
 
@@ -548,14 +549,16 @@ export default class Gcode extends Atom {
   }
 
   onUpstreamChange() {
-    this.setWaiting();
-    try {
-      let inputID = this.findIOValue("geometry");
+    // Check for errors in inputs first
+    if (this.inputsHaveErrors()) {
+      this.setUpstreamError();
+      return;
+    }
 
-      // Check if input is an assembly and handle accordingly
-      this._handleGeometryInput(inputID);
-    } catch (err) {
-      this.setError(err);
+    if (this.findIOValue("geometry") !== null) {
+      this._handleGeometryInput(this.findIOValue("geometry"));
+    } else {
+      this.setWaiting();
     }
   }
 
