@@ -495,7 +495,7 @@ export default class Gcode extends Atom {
             partGcodeCallback(gcode);
           },
           partProgressCallback,
-          selectedToolObj
+          selectedToolObj // Pass the selected tool object/ disabled currently
         );
       } catch (err) {
         clearTimeout(timeout);
