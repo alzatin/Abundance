@@ -243,6 +243,8 @@ export function SimpleControlPanel({
   contentCollapsed,
   setContentCollapsed,
 }) {
+  // Collapsed panel state
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
   // Sync collapsed state with contentCollapsed if initialCollapsed is true
   useEffect(() => {
     if (initialCollapsed) {
@@ -257,9 +259,6 @@ export function SimpleControlPanel({
   const controlKeys = Object.keys(controls);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const inputRefs = React.useRef([]);
-
-  // Collapsed panel state
-  const [collapsed, setCollapsed] = useState(initialCollapsed);
 
   // Debounce timer for input changes
   const debounceTimeout = React.useRef();
