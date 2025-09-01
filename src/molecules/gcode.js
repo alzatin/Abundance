@@ -471,6 +471,12 @@ export default class Gcode extends Atom {
         // Each part gets equal weight in the overall progress
       };
 
+      // Use the same tool selection logic as single-part
+      const selectedToolName = this.findIOValue("Tool");
+      const selectedToolObj =
+        this.tools.find((tool) => tool.name === selectedToolName) ||
+        this.tools[0];
+
       // Set a timeout in case generation fails
       const timeout = setTimeout(() => {
         reject(new Error(`G-code generation timeout for part ${partNumber}`));
@@ -488,7 +494,8 @@ export default class Gcode extends Atom {
             clearTimeout(timeout);
             partGcodeCallback(gcode);
           },
-          partProgressCallback
+          partProgressCallback,
+          selectedToolObj
         );
       } catch (err) {
         clearTimeout(timeout);
