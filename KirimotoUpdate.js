@@ -255,6 +255,7 @@ const generateGcode = (
     })
     .catch((error) => {
       // Ensure timer is cleaned up on error
+      stopSlicingProgress();
       console.error("Kiri:Moto Error:", error);
     })
     .finally(() => {

@@ -295,7 +295,7 @@ export default class Gcode extends Atom {
                   (bounds.max[2] + bounds.min[2]) / 2,
                 ];
                 // Always generate gcode when geometry input is processed
-                //this._generateGcode();
+                this._generateGcode();
               });
           });
       })
