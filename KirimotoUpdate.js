@@ -161,7 +161,7 @@ const generateGcode = (
             omitvoid: false,
             omitthru: false,
             outside: false,
-            inside: true,
+            inside: false,
             wide: false,
             top: false,
             ov_topz: 0,
@@ -187,7 +187,7 @@ const generateGcode = (
             ov_topz: 0,
             ov_botz: 0,
             ov_conv: true,
-          },*/
+          },*
           /*{
             type: "rough",
             tool: 1000,
