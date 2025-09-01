@@ -560,7 +560,7 @@ export default class Gcode extends Atom {
   }
 
   createInputParams() {
-    let inputParams = {};
+    let inputParams = super.createInputParams();
 
     /*inputParams[this.uniqueID + "Tool"] = {
       type: "select",
@@ -571,44 +571,6 @@ export default class Gcode extends Atom {
         this.setIOValue("Tool", value);
       },
     };*/
-
-    /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs) {
-      this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
-
-        /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry") {
-          if (input.name == "Part Name") {
-            inputParams[this.uniqueID + input.name] = {
-              type: "string",
-              value: this.partName,
-              label: input.name,
-              disabled: checkConnector(),
-              onChange: (value) => {
-                if (input.value !== value) {
-                  input.setValue(value);
-                  this.partName = value;
-                }
-              },
-            };
-          } else {
-            inputParams[input.name] = {
-              type: "number",
-              value: input.value,
-              disabled: checkConnector(),
-              step: 0.01,
-              onChange: (value) => {
-                input.setValue(value);
-              },
-              order: -2,
-            };
-          }
-        }
-      });
-    }
 
     // Add sort direction dropdown for assembly processing
     inputParams["Assembly Sort Direction"] = {
