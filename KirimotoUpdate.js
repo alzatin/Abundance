@@ -90,7 +90,7 @@ const generateGcode = (
       return eng.setStock({
         x: x + STOCK_MARGIN,
         y: y + STOCK_MARGIN,
-        z: z, // stock thickness = part thickness + cut-through
+        z: z + CUT_THROUGH, // stock thickness = part thickness + cut-through
         center: {
           x: x / 2,
           y: y / 2,
@@ -127,7 +127,7 @@ const generateGcode = (
       const zBottom = z + CUT_THROUGH; // ensure cut through stock bottom
       // Add small epsilon to avoid floating point errors causing extra pass
       const epsilon = 0.0001;
-      const validPasses = Math.max(1, Math.floor(Number(passes - 1) || 1));
+      const validPasses = Math.max(1, Math.floor(Number(passes) || 1));
 
       const down = validPasses == 1 ? 1000 : Math.abs(zBottom) / validPasses;
 
