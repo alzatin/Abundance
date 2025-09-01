@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 import ParamsMenu from "../secondary/ParamsMenu.jsx";
 import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
+import GitSearchMenu from "../secondary/GitSearchMenu.jsx";
 
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
@@ -699,6 +700,16 @@ function CreateMode({
               setContentCollapsed: () => setExpandedMenu("bom"),
               position: { top: screenHeight / 2 + 35, left: 10 },
               collapsedOffset: [45, -45],
+            }}
+          />
+          <GitSearchMenu
+            {...{
+              activeAtom,
+              id: "atom-git-search-panel",
+              contentCollapsed: expandedMenu !== "git-search",
+              setContentCollapsed: () => setExpandedMenu("git-search"),
+              position: { top: screenHeight / 2 + 80, left: 10 },
+              collapsedOffset: [45, -80],
             }}
           />
           <div id="headerBar">
