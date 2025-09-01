@@ -545,16 +545,10 @@ export default class Gcode extends Atom {
   }
 
   onUpstreamChange() {
-    // Check for errors in inputs first
-    if (this.inputsHaveErrors()) {
-      this.setUpstreamError();
-      return;
-    }
+    this.setWaiting();
 
     if (this.findIOValue("geometry") !== null) {
       this._handleGeometryInput(this.findIOValue("geometry"));
-    } else {
-      this.setWaiting();
     }
   }
 
