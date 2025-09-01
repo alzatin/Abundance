@@ -6,7 +6,6 @@ import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import { BOMEntry } from "../js/BOM";
 
 import { Status } from "../prototypes/observableEntity.js";
-import { bom } from "../worker/tags.js";
 
 /**
  * This class creates the Molecule atom.
