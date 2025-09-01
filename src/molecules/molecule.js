@@ -6,6 +6,7 @@ import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import { BOMEntry } from "../js/BOM";
 
 import { Status } from "../prototypes/observableEntity.js";
+import { saveAs } from "file-saver";
 
 /**
  * This class creates the Molecule atom.
@@ -701,7 +702,7 @@ export default class Molecule extends Atom {
           "|" +
           item.numberNeeded +
           "|$" +
-          item.costUSD.toFixed(2) +
+          item.costUSD +
           "|" +
           convertLinks(item.source) +
           "|";
@@ -714,7 +715,7 @@ export default class Molecule extends Atom {
       "|" +
       totalParts +
       "|$" +
-      totalCost.toFixed(2) +
+      totalCost +
       "|" +
       " " +
       "|";
@@ -722,11 +723,11 @@ export default class Molecule extends Atom {
     return bomContent;
   }
 
-  createLevaBom() {
+  createBom(setInputChanged) {
+    this.setInputChanged = setInputChanged;
     let bomParams = {};
-    // Always show the top-level BOM, which contains the complete project BOM
-    const bomToShow =
-      GlobalVariables.topLevelMolecule?.compiledBom || this.compiledBom;
+    // Show this molecule’s compiled BOM (top-level = full project; nested = local)
+    const bomToShow = this.compiledBom;
     if (bomToShow) {
       if (bomToShow.length > 0) {
         bomToShow.map((item) => {
@@ -743,7 +744,7 @@ export default class Molecule extends Atom {
           label: "Download List of Materials",
           onClick: () => {
             var fileName =
-              GlobalVariables.currentRepoName + "-Bill-of-Materials.txt";
+              GlobalVariables.currentRepoName + "- Bill-of-Materials.txt";
             var fileContent = this.formatBom();
             var myFile = new Blob([fileContent], { type: "text/plain" });
 
@@ -792,6 +793,12 @@ export default class Molecule extends Atom {
           .molecule(this.uniqueID, state.value)
           .then((result) => {
             this.setReady(result);
+            this.compileBom().then((bom) => {
+              this.compiledBom = bom;
+              if (this.setInputChanged) {
+                this.setInputChanged(bom);
+              }
+            });
           })
           .catch(this.alertingErrorHandler);
       } else {

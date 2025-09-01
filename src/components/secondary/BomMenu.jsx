@@ -13,16 +13,16 @@ export default function BomMenu({
   collapsedOffset,
 }) {
   const [inputChanged, setInputChanged] = useState("");
-  let compiledBom = {};
+  let bomParams = {};
 
   if (activeAtom?.atomType == "Molecule") {
-    compiledBom = activeAtom.createLevaBom();
+    bomParams = activeAtom.createBom(setInputChanged);
   }
   const [
     values,
     setControlValue,
     { controls, registerControl, removeControl },
-  ] = useControls(compiledBom, [activeAtom]);
+  ] = useControls(bomParams, [activeAtom, inputChanged]);
 
   const screenHeight = window.innerHeight;
 
