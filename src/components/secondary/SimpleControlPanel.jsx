@@ -617,12 +617,30 @@ export function SimpleControlPanel({
                         >
                           {label}:
                         </span>
-                        <input
-                          type="text"
-                          value={controlValues[key] ?? ""}
-                          onChange={(e) => handleChange(e.target.value)}
-                          {...commonProps}
-                        />
+                        {config.multiline ? (
+                          <textarea
+                            value={controlValues[key] ?? ""}
+                            onChange={(e) => handleChange(e.target.value)}
+                            rows={config.rows || 3}
+                            style={{
+                              ...inputStyle,
+                              minHeight: 60,
+                              resize: "vertical",
+                              ...(isDisabled ? inputDisabledStyle : {}),
+                              ...(isFocused ? inputFocusedStyle : {}),
+                            }}
+                            ref={(el) => (inputRefs.current[idx] = el)}
+                            tabIndex={isDisabled ? -1 : 0}
+                            disabled={isDisabled}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            value={controlValues[key] ?? ""}
+                            onChange={(e) => handleChange(e.target.value)}
+                            {...commonProps}
+                          />
+                        )}
                       </div>
                     );
                   case "color":

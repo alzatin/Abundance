@@ -99,6 +99,7 @@ export default class Readme extends Atom {
       type: "string",
       value: this.readMeText,
       label: this.name,
+      multiline: true,
       rows: 10,
       onChange: (value) => {
         if (this.readMeText !== value) {
@@ -111,11 +112,15 @@ export default class Readme extends Atom {
   }
 
   async generateProjectThumbnail() {
-    let thumb = this.findIOValue("geometry");
-    //Generate a thumbnail for the project
-    if (thumb !== undefined) {
-      return GlobalVariables.cad.generateThumbnail(thumb);
-    } else {
+    try {
+      const geometry = this.findIOValue("geometry");
+      // Generate a thumbnail only if geometry is present
+      if (geometry != null) {
+        return GlobalVariables.cad.generateThumbnail(geometry);
+      }
+      return null;
+    } catch (error) {
+      console.error("Error generating project thumbnail:", error);
       return null;
     }
   }

@@ -39,6 +39,7 @@ export interface StringControlConfig {
   label?: string;
   order?: number;
   disabled?: boolean;
+  multiline?: boolean;
 }
 
 export interface SelectControlConfig {
