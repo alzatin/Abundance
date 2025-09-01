@@ -99,6 +99,7 @@ export default class Readme extends Atom {
       type: "string",
       value: this.readMeText,
       label: this.name,
+      multiline: true,
       rows: 10,
       onChange: (value) => {
         if (this.readMeText !== value) {
