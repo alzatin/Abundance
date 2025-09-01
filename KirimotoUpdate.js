@@ -124,23 +124,28 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
+      const zBottom = z + CUT_THROUGH; // ensure cut through stock bottom
       // Add small epsilon to avoid floating point errors causing extra pass
       const epsilon = 0.0001;
-      const validPasses = Math.max(1, Math.floor(Number(passes) || 1));
-      const down =
-        validPasses == 1 ? 1000 : Math.abs(z) / validPasses + epsilon; // positive value per pass
+      const validPasses = Math.max(1, Math.floor(Number(passes - 1) || 1));
+
+      const down = validPasses == 1 ? 1000 : Math.abs(zBottom) / validPasses;
 
       // Debug logging for pass calculation
+      console.log("Valid passes:", validPasses);
+      console.log("z:", z);
+      console.log("zBottom:", zBottom);
+      console.log("down:", down);
 
       return eng.setProcess({
         camEaseAngle: 10,
         camEaseDown: true,
         camZAnchor: "bottom",
         camDepthFirst: false,
-        camZThru: CUT_THROUGH,
+        camZThru: 0.01,
         camZClearance: 3,
         camZTop: 0, // top of stock
-        camZBottom: -z, // temp hack to get around setTopZ bug
+        camZBottom: -zBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
         ops: [
           {
@@ -163,7 +168,7 @@ const generateGcode = (
             ov_botz: 0,
             ov_conv: true,
           },
-          {
+          /*{
             type: "outline",
             tool: 1000,
             spindle: speed,
@@ -182,7 +187,7 @@ const generateGcode = (
             ov_topz: 0,
             ov_botz: 0,
             ov_conv: true,
-          },
+          },*/
           /*{
             type: "rough",
             tool: 1000,
