@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useControls } from "../../hooks/useControls";
 import { color } from "@uiw/react-codemirror";
 
@@ -243,6 +243,15 @@ export function SimpleControlPanel({
   contentCollapsed,
   setContentCollapsed,
 }) {
+  // Collapsed panel state
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
+  // Sync collapsed state with contentCollapsed if initialCollapsed is true
+  useEffect(() => {
+    if (initialCollapsed) {
+      setCollapsed(contentCollapsed);
+    }
+  }, [contentCollapsed, initialCollapsed]);
+
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls);
 
@@ -250,9 +259,6 @@ export function SimpleControlPanel({
   const controlKeys = Object.keys(controls);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const inputRefs = React.useRef([]);
-
-  // Collapsed panel state
-  const [collapsed, setCollapsed] = useState(initialCollapsed);
 
   // Debounce timer for input changes
   const debounceTimeout = React.useRef();
@@ -354,7 +360,7 @@ export function SimpleControlPanel({
             alignItems: "center",
             justifyContent: "center",
           }}
-          onClick={() => (setCollapsed(false), setContentCollapsed((c) => !c))}
+          onClick={() => (setCollapsed(false), setContentCollapsed())}
           title="Open Panel"
         >
           {React.createElement(collapsedIcon, { size: 18 })}
@@ -380,13 +386,21 @@ export function SimpleControlPanel({
               <button
                 style={arrowButtonStyle}
                 onClick={() => {
-                  initialCollapsed &&
-                  !contentCollapsed /*if panel is initially collapsed set both content and collapse to expanded */
-                    ? (setCollapsed((c) => !c), setContentCollapsed((c) => !c))
-                    : setContentCollapsed((c) => !c);
+                  if (contentCollapsed) {
+                    // Make this the active panel
+                    setContentCollapsed();
+                    if (initialCollapsed) setCollapsed(false);
+                  } else if (initialCollapsed) {
+                    // Allow collapsing to icon only for panels that start collapsed
+                    setCollapsed(true);
+                  }
                 }}
                 title={
-                  contentCollapsed ? "Expand controls" : "Collapse controls"
+                  contentCollapsed
+                    ? "Open controls"
+                    : initialCollapsed
+                    ? "Collapse panel"
+                    : "Active"
                 }
               >
                 <CaretDownIcon size={14} collapsed={contentCollapsed} />
