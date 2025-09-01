@@ -14,9 +14,10 @@ const generateGcode = (
   passes,
   speed,
   cutThrough,
-  tool,
   gcodeCallback,
-  progressCallback
+  progressCallback,
+  partProgressCallback,
+  tool
 ) => {
   const STOCK_MARGIN = 10;
   const CUT_THROUGH = cutThrough || 0.25; // Default cut-through thickness if not provided
@@ -131,12 +132,6 @@ const generateGcode = (
 
       const down = validPasses == 1 ? 1000 : Math.abs(zBottom) / validPasses;
 
-      // Debug logging for pass calculation
-      console.log("Valid passes:", validPasses);
-      console.log("z:", z);
-      console.log("zBottom:", zBottom);
-      console.log("down:", down);
-
       return eng.setProcess({
         camEaseAngle: 10,
         camEaseDown: true,
@@ -245,6 +240,7 @@ const generateGcode = (
       return eng.slice();
     })
     .then((eng) => {
+      stopSlicingProgress();
       if (progressCallback) progressCallback(0.9); // 80% - Slicing done
       return eng.prepare();
     })
@@ -254,11 +250,12 @@ const generateGcode = (
     })
     .then((gcode) => {
       console.log("G-code generated successfully.");
-      gcodeCallback(gcode); // Only call the callback, don't download
       if (progressCallback) progressCallback(1.0); // 100% - Export complete
+      gcodeCallback(gcode); // Only call the callback, don't download
     })
     .catch((error) => {
-      stopSlicingProgress(); // Ensure timer is cleaned up on error
+      // Ensure timer is cleaned up on error
+      stopSlicingProgress();
       console.error("Kiri:Moto Error:", error);
     })
     .finally(() => {

@@ -222,9 +222,9 @@ export default class Gcode extends Atom {
           this.findIOValue("Passes"),
           this.findIOValue("Speed"),
           this.findIOValue("Cut Through"),
-          selectedToolObj,
-          gcodeCallback
-          //progressCallback
+          gcodeCallback,
+          progressCallback,
+          selectedToolObj
         );
       }
     } catch (err) {
@@ -244,13 +244,11 @@ export default class Gcode extends Atom {
     try {
       // Check if the input is an assembly
       const isAssembly = await this._checkIfAssembly(inputID);
-      console.log("handle geometry input:", inputID);
       if (isAssembly) {
         // Process as assembly - extract parts and generate G-code sequentially
         await this._processAssembly(inputID);
       } else {
         // Process as single part (original behavior)
-
         await this._processSinglePart(inputID);
       }
     } catch (err) {
@@ -274,7 +272,6 @@ export default class Gcode extends Atom {
    * @param {string} inputID - The input geometry ID
    */
   async _processSinglePart(inputID) {
-    console.log("Processing single part:", inputID);
     this._isProcessingAssembly = false;
     const idForVisExport = GlobalVariables.generateUniqueID();
     GlobalVariables.cad
@@ -474,6 +471,12 @@ export default class Gcode extends Atom {
         // Each part gets equal weight in the overall progress
       };
 
+      // Use the same tool selection logic as single-part
+      const selectedToolName = this.findIOValue("Tool");
+      const selectedToolObj =
+        this.tools.find((tool) => tool.name === selectedToolName) ||
+        this.tools[0];
+
       // Set a timeout in case generation fails
       const timeout = setTimeout(() => {
         reject(new Error(`G-code generation timeout for part ${partNumber}`));
@@ -491,7 +494,8 @@ export default class Gcode extends Atom {
             clearTimeout(timeout);
             partGcodeCallback(gcode);
           },
-          partProgressCallback
+          partProgressCallback,
+          selectedToolObj // Pass the selected tool object/ disabled currently
         );
       } catch (err) {
         clearTimeout(timeout);
@@ -549,13 +553,9 @@ export default class Gcode extends Atom {
 
   onUpstreamChange() {
     this.setWaiting();
-    try {
-      let inputID = this.findIOValue("geometry");
 
-      // Check if input is an assembly and handle accordingly
-      this._handleGeometryInput(inputID);
-    } catch (err) {
-      this.setError(err);
+    if (this.findIOValue("geometry") !== null) {
+      this._handleGeometryInput(this.findIOValue("geometry"));
     }
   }
 
