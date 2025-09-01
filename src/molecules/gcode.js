@@ -222,9 +222,9 @@ export default class Gcode extends Atom {
           this.findIOValue("Passes"),
           this.findIOValue("Speed"),
           this.findIOValue("Cut Through"),
-          selectedToolObj,
-          gcodeCallback
-          //progressCallback
+          gcodeCallback,
+          progressCallback,
+          selectedToolObj
         );
       }
     } catch (err) {
@@ -244,13 +244,11 @@ export default class Gcode extends Atom {
     try {
       // Check if the input is an assembly
       const isAssembly = await this._checkIfAssembly(inputID);
-      console.log("handle geometry input:", inputID);
       if (isAssembly) {
         // Process as assembly - extract parts and generate G-code sequentially
         await this._processAssembly(inputID);
       } else {
         // Process as single part (original behavior)
-
         await this._processSinglePart(inputID);
       }
     } catch (err) {
@@ -274,7 +272,6 @@ export default class Gcode extends Atom {
    * @param {string} inputID - The input geometry ID
    */
   async _processSinglePart(inputID) {
-    console.log("Processing single part:", inputID);
     this._isProcessingAssembly = false;
     const idForVisExport = GlobalVariables.generateUniqueID();
     GlobalVariables.cad
@@ -312,7 +309,6 @@ export default class Gcode extends Atom {
    * @param {string} inputID - The input assembly ID
    */
   async _processAssembly(inputID) {
-    console.log("processing assembly:", inputID);
     try {
       this._isProcessingAssembly = true;
 

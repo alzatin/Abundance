@@ -240,6 +240,7 @@ const generateGcode = (
       return eng.slice();
     })
     .then((eng) => {
+      stopSlicingProgress();
       if (progressCallback) progressCallback(0.9); // 80% - Slicing done
       return eng.prepare();
     })
@@ -249,11 +250,11 @@ const generateGcode = (
     })
     .then((gcode) => {
       console.log("G-code generated successfully.");
-      gcodeCallback(gcode); // Only call the callback, don't download
       if (progressCallback) progressCallback(1.0); // 100% - Export complete
+      gcodeCallback(gcode); // Only call the callback, don't download
     })
     .catch((error) => {
-      stopSlicingProgress(); // Ensure timer is cleaned up on error
+      // Ensure timer is cleaned up on error
       console.error("Kiri:Moto Error:", error);
     })
     .finally(() => {
