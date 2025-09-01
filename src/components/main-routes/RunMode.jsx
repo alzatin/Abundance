@@ -78,20 +78,8 @@ function runMode({
   }, [mesh]);
 
   /** State for menu content collapsing */
-  const [renderContentCollapsed, setRenderContentCollapsed] = useState(true);
-  const [bomContentCollapsed, setBomContentCollapsed] = useState(true);
-  const [paramContentCollapsed, setParamContentCollapsed] = useState(false);
-  const [exportContentCollapsed, setExportContentCollapsed] = useState(true);
-  /*Collapses param content when other menus are expanded */
-  useEffect(() => {
-    if (
-      !renderContentCollapsed ||
-      !bomContentCollapsed ||
-      !exportContentCollapsed
-    ) {
-      setParamContentCollapsed(true);
-    }
-  }, [renderContentCollapsed, bomContentCollapsed, exportContentCollapsed]);
+  // Which menu is expanded: "params", "render", "bom", or "none"
+  const [expandedMenu, setExpandedMenu] = useState("params");
 
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;
@@ -159,15 +147,15 @@ function runMode({
         activeAtom={activeAtom}
         position={{ top: 30, left: screenWidth - 320 }}
         id={"atom-run-params-panel"}
-        contentCollapsed={paramContentCollapsed}
-        setContentCollapsed={setParamContentCollapsed}
+        contentCollapsed={expandedMenu !== "params"}
+        setContentCollapsed={() => setExpandedMenu("params")}
       />
       <ExportMenu
         activeAtom={activeAtom}
         position={{ top: 75, left: screenWidth - 365 }}
         id={"atom-run-export-panel"}
-        contentCollapsed={exportContentCollapsed}
-        setContentCollapsed={setExportContentCollapsed}
+        contentCollapsed={expandedMenu !== "export"}
+        setContentCollapsed={() => setExpandedMenu("export")}
       />
       <RenderMenu
         {...{
@@ -180,8 +168,8 @@ function runMode({
           setAxes,
           setWire,
           setSolid,
-          contentCollapsed: renderContentCollapsed,
-          setContentCollapsed: setRenderContentCollapsed,
+          contentCollapsed: expandedMenu !== "render",
+          setContentCollapsed: () => setExpandedMenu("render"),
           position: { top: 30, left: screenWidth - 365 },
         }}
         id={"atom-run-render-panel"}
@@ -190,8 +178,8 @@ function runMode({
         {...{
           activeAtom,
           id: "atom-run-bom-panel",
-          contentCollapsed: bomContentCollapsed,
-          setContentCollapsed: setBomContentCollapsed,
+          contentCollapsed: expandedMenu !== "bom",
+          setContentCollapsed: () => setExpandedMenu("bom"),
           position: { top: 120, left: screenWidth - 365 },
         }}
         collapsedOffset={[45, -90]}

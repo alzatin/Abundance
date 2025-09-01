@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useControls } from "../../hooks/useControls";
 import { color } from "@uiw/react-codemirror";
 
@@ -243,6 +243,13 @@ export function SimpleControlPanel({
   contentCollapsed,
   setContentCollapsed,
 }) {
+  // Sync collapsed state with contentCollapsed if initialCollapsed is true
+  useEffect(() => {
+    if (initialCollapsed) {
+      setCollapsed(contentCollapsed);
+    }
+  }, [contentCollapsed, initialCollapsed]);
+
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls);
 
