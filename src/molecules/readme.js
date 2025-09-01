@@ -113,16 +113,15 @@ export default class Readme extends Atom {
 
   async generateProjectThumbnail() {
     try {
-      let thumb = this.findIOValue("geometry");
-
-      //Generate a thumbnail for the project
-      if (thumb !== null) {
-        return GlobalVariables.cad.generateThumbnail(thumb);
-      } else {
-        return null;
+      const geometry = this.findIOValue("geometry");
+      // Generate a thumbnail only if geometry is present
+      if (geometry != null) {
+        return GlobalVariables.cad.generateThumbnail(geometry);
       }
+      return null;
     } catch (error) {
       console.error("Error generating project thumbnail:", error);
+      return null;
     }
   }
 
