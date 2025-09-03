@@ -113,6 +113,52 @@ function CreateMode({
     };
   });
 
+  const panelRef = useRef();
+
+  // When you want to trigger the panel keydown:
+  const forwardKeyToPanel = (event) => {
+    console.log("Forwarding key to panel:", event.key);
+    if (panelRef.current && panelRef.current.triggerPanelKeyDown) {
+      console.log("Triggering panel keydown");
+      panelRef.current.triggerPanelKeyDown(event);
+    }
+  };
+
+  /**
+   * Handles keydown events for keyboard shortcuts.
+   * @param {KeyboardEvent} e
+   */
+  const handleKeyDown = (e) => {
+    console.log("Key pressed:", e.key);
+    /*// Example: Save project with Ctrl+S or Cmd+S
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      e.preventDefault();
+      setSavePopUp(true);
+      saveProject(setSaveState, "User Save");
+    }
+    // Example: Toggle shortcut display with Ctrl+/
+    if ((e.ctrlKey || e.metaKey) && e.key === "/") {
+      e.preventDefault();
+      setShortCuts((prev) => !prev);
+    }
+    // Add more shortcuts as needed
+    // Example: Focus code window with Ctrl+Y
+    if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+      e.preventDefault();
+      const codeWindow = document.getElementById("codeWindowInput");
+      if (codeWindow) codeWindow.focus();
+    }*/
+    // Forward key to panel if needed
+    forwardKeyToPanel(e);
+  };
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   useEffect(() => {
     //Set autosave interval
     const myInterval = setInterval(() => {
@@ -670,6 +716,7 @@ function CreateMode({
             id={"atom-create-params-panel"}
             contentCollapsed={expandedMenu !== "params"}
             setContentCollapsed={() => setExpandedMenu("params")}
+            panelRef={panelRef}
           />
           <RenderMenu
             {...{

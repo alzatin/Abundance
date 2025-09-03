@@ -1,4 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { useControls } from "../../hooks/useControls";
 import { color } from "@uiw/react-codemirror";
 
@@ -229,20 +234,23 @@ const closeButtonStyle = {
  *   panelId?: string
  * }} props
  */
-export function SimpleControlPanel({
-  controls,
-  id = "simple-control-panel",
-  position = { top: 40, left: 40 },
-  panelId,
-  title = "CONTROLS",
-  initialCollapsed = false,
-  minWidth = 280,
-  maxHeight = 340, // <-- new prop
-  collapsedIcon = SettingsIcon, // new prop, defaults to SettingsIcon
-  collapsedOffset = [0, 0], // new prop: [x, y] offset for expanded panel
-  contentCollapsed,
-  setContentCollapsed,
-}) {
+export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
+  {
+    controls,
+    id = "simple-control-panel",
+    position = { top: 40, left: 40 },
+    panelId,
+    title = "CONTROLS",
+    initialCollapsed = false,
+    minWidth = 280,
+    maxHeight = 340, // <-- new prop
+    collapsedIcon = SettingsIcon, // new prop, defaults to SettingsIcon
+    collapsedOffset = [0, 0], // new prop: [x, y] offset for expanded panel
+    contentCollapsed,
+    setContentCollapsed,
+  },
+  ref
+) {
   // Collapsed panel state
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   // Sync collapsed state with contentCollapsed if initialCollapsed is true
@@ -252,6 +260,12 @@ export function SimpleControlPanel({
     }
   }, [contentCollapsed, initialCollapsed]);
 
+  useImperativeHandle(ref, () => ({
+    triggerPanelKeyDown: (event) => {
+      console.log("Key pressed in simple:", event.key);
+      handlePanelKeyDown(event);
+    },
+  }));
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls);
 
@@ -281,15 +295,32 @@ export function SimpleControlPanel({
     setFocusedIndex(0); // Default focus to first control on controls change
   }, [controls]);
 
-  // Focus the current control when focusedIndex changes
+  // Only focus input on keyboard event, not on mount/controls change
+  const [shouldFocus, setShouldFocus] = React.useState(false);
+
+  // Focus the current control when focusedIndex changes and shouldFocus is true
   React.useEffect(() => {
-    if (inputRefs.current[focusedIndex]) {
+    if (shouldFocus && inputRefs.current[focusedIndex]) {
       inputRefs.current[focusedIndex].focus();
+      setShouldFocus(false); // Reset after focusing
     }
-  }, [focusedIndex, controlKeys.length]);
+  }, [focusedIndex, controlKeys.length, shouldFocus]);
+
+  // Listen for keyboard events on the panel to trigger focus
+  const handlePanelKeyDown = (e) => {
+    // Focus if not already focused and key is printable or navigation
+    const isPrintable =
+      e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
+    const isNavigation = ["ArrowDown", "ArrowUp", "Tab"].includes(e.key);
+    if (!shouldFocus && (isPrintable || isNavigation)) {
+      setShouldFocus(true);
+    }
+    handleKeyDown(e);
+  };
 
   // Keyboard navigation (skip disabled inputs)
   const handleKeyDown = (e) => {
+    console.log("key handler in SimpleControlPanel");
     if (e.key === "ArrowDown") {
       let next = focusedIndex;
       do {
@@ -348,7 +379,7 @@ export function SimpleControlPanel({
             }),
       }}
       tabIndex={-1}
-      onKeyDown={handleKeyDown}
+      onKeyDown={handlePanelKeyDown}
     >
       {/* Collapsed panel */}
       {collapsed && (
@@ -892,4 +923,4 @@ export function SimpleControlPanel({
       )}
     </div>
   );
-}
+});

@@ -10,6 +10,7 @@ export default function ParamsMenu({
   id,
   contentCollapsed,
   setContentCollapsed,
+  panelRef,
 }) {
   const unusedDefault = {
     position: {
@@ -112,6 +113,7 @@ export default function ParamsMenu({
         maxHeight={screenHeight / 2}
         contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
+        ref={panelRef}
       />
       {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
         Add Custom Control
