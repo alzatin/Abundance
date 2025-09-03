@@ -512,6 +512,79 @@ export function SimpleControlPanel({
                       </div>
                     );
                   case "number":
+                  case "list":
+                    return (
+                      <div
+                        key={key}
+                        style={{
+                          ...labelStyle,
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 90,
+                            color: isDisabled
+                              ? inputDisabledStyle.color
+                              : undefined,
+                          }}
+                        >
+                          {label}:
+                        </span>
+                        <ul
+                          style={{
+                            width: "100%",
+                            padding: 0,
+                            margin: 0,
+                            listStyle: "none",
+                          }}
+                        >
+                          {Array.isArray(config.value) &&
+                          config.value.length > 0 ? (
+                            config.value.map((item, itemIdx) => {
+                              const handlers = {
+                                onClick: (e) =>
+                                  config.onItemClick &&
+                                  config.onItemClick(item, itemIdx, e),
+                                onMouseEnter: (e) =>
+                                  config.onItemMouseOver &&
+                                  config.onItemMouseOver(item, itemIdx, e),
+                                onMouseLeave: (e) =>
+                                  config.onItemMouseOut &&
+                                  config.onItemMouseOut(item, itemIdx, e),
+                              };
+                              return config.itemRenderer ? (
+                                config.itemRenderer(item, itemIdx, handlers)
+                              ) : (
+                                <li
+                                  key={itemIdx}
+                                  {...handlers}
+                                  style={{
+                                    padding: "6px 10px",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {typeof item === "string"
+                                    ? item
+                                    : JSON.stringify(item)}
+                                </li>
+                              );
+                            })
+                          ) : (
+                            <li
+                              style={{
+                                color: inputDisabledStyle.color,
+                                padding: "6px 10px",
+                              }}
+                            >
+                              No items
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    );
+
                   case "range":
                     return (
                       <div key={key} style={labelStyle}>
