@@ -91,7 +91,7 @@ const generateGcode = (
       return eng.setStock({
         x: x + STOCK_MARGIN,
         y: y + STOCK_MARGIN,
-        z: z + CUT_THROUGH, // stock thickness = part thickness + cut-through
+        z: z, // stock thickness = part thickness + cut-through
         center: {
           x: x / 2,
           y: y / 2,
@@ -125,19 +125,21 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
-      const zBottom = z + CUT_THROUGH; // ensure cut through stock bottom
-      // Add small epsilon to avoid floating point errors causing extra pass
-      const epsilon = 0.0001;
-      const validPasses = Math.max(1, Math.floor(Number(passes) || 1));
+      const zBottom = z; // ensure cut through stock bottom
 
-      const down = validPasses == 1 ? 1000 : Math.abs(zBottom) / validPasses;
+      const validPasses = passes - 1;
+
+      const down = validPasses == 0 ? 1000 : zBottom / validPasses;
+      console.log("Down:", down);
+      console.log("Valid Passes:", validPasses);
+      console.log("Z Bottom:", zBottom);
 
       return eng.setProcess({
         camEaseAngle: 10,
         camEaseDown: true,
         camZAnchor: "bottom",
         camDepthFirst: false,
-        camZThru: 0.01,
+        camZThru: down,
         camZClearance: 3,
         camZTop: 0, // top of stock
         camZBottom: -zBottom, // temp hack to get around setTopZ bug
@@ -156,14 +158,14 @@ const generateGcode = (
             omitvoid: false,
             omitthru: false,
             outside: false,
-            inside: false,
+            inside: true,
             wide: false,
             top: false,
             ov_topz: 0,
             ov_botz: 0,
             ov_conv: true,
           },
-          /*{
+          {
             type: "outline",
             tool: 1000,
             spindle: speed,
@@ -175,14 +177,14 @@ const generateGcode = (
             dogbones: false,
             omitvoid: false,
             omitthru: true,
-            outside: true,
+            outside: false,
             inside: false,
             wide: false,
             top: false,
             ov_topz: 0,
             ov_botz: 0,
             ov_conv: true,
-          },*
+          },
           /*{
             type: "rough",
             tool: 1000,
