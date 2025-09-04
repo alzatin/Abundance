@@ -791,7 +791,7 @@ function CreateMode({
               contentCollapsed: expandedMenu !== "git-search",
               setContentCollapsed: () => setExpandedMenu("git-search"),
               position: { top: screenHeight / 2 + 80, left: 10 },
-              collapsedOffset: [45, -80],
+              collapsedOffset: [45, -90],
               gitRef: gitRef,
             }}
           />
