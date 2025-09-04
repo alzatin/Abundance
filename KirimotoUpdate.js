@@ -131,6 +131,9 @@ const generateGcode = (
       const validPasses = Math.max(1, Math.floor(Number(passes) || 1));
 
       const down = validPasses == 1 ? 1000 : Math.abs(zBottom) / validPasses;
+      console.log("Down:", down);
+      console.log("Valid Passes:", validPasses);
+      console.log("Z Bottom:", zBottom);
 
       return eng.setProcess({
         camEaseAngle: 10,
@@ -156,14 +159,14 @@ const generateGcode = (
             omitvoid: false,
             omitthru: false,
             outside: false,
-            inside: false,
+            inside: true,
             wide: false,
             top: false,
             ov_topz: 0,
             ov_botz: 0,
             ov_conv: true,
           },
-          /*{
+          {
             type: "outline",
             tool: 1000,
             spindle: speed,
@@ -175,14 +178,14 @@ const generateGcode = (
             dogbones: false,
             omitvoid: false,
             omitthru: true,
-            outside: true,
+            outside: false,
             inside: false,
             wide: false,
             top: false,
             ov_topz: 0,
             ov_botz: 0,
             ov_conv: true,
-          },*
+          },
           /*{
             type: "rough",
             tool: 1000,
