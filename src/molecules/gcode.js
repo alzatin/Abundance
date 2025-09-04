@@ -87,6 +87,7 @@ export default class Gcode extends Atom {
       },
       { name: "Passes", valueType: "number", defaultValue: 1 },
       { name: "Speed", valueType: "number", defaultValue: 1500 },
+      { name: "Feedrate", valueType: "number", defaultValue: 635 },
       {
         name: "Cut Through",
         valueType: "number",
@@ -221,6 +222,7 @@ export default class Gcode extends Atom {
           this.findIOValue("Tool Size"),
           this.findIOValue("Passes"),
           this.findIOValue("Speed"),
+          this.findIOValue("Feedrate"),
           this.findIOValue("Cut Through"),
           gcodeCallback,
           progressCallback,
@@ -489,6 +491,7 @@ export default class Gcode extends Atom {
           this.findIOValue("Tool Size"),
           this.findIOValue("Passes"),
           this.findIOValue("Speed"),
+          this.findIOValue("Feedrate"),
           this.findIOValue("Cut Through"),
           (gcode) => {
             clearTimeout(timeout);
