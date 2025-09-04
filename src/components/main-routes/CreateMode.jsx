@@ -107,35 +107,54 @@ function CreateMode({
   }, [activeAtom]);
 
   useEffect(() => {
-    window.addEventListener("keydown", handleBodyClick);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener("keydown", handleBodyClick);
+      window.removeEventListener("keydown", handleKeyDown);
     };
-  });
+  }, []);
+  // Attach keyup event listener
+  useEffect(() => {
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
 
-  const panelRef = useRef();
-
-  // When you want to trigger the panel keydown:
-  const forwardKeyToPanel = (event) => {
-    console.log("Forwarding key to panel:", event.key);
-    if (panelRef.current && panelRef.current.triggerPanelKeyDown) {
-      console.log("Triggering panel keydown");
-      panelRef.current.triggerPanelKeyDown(event);
-    }
-  };
+  const expandedMenuRef = useRef(expandedMenu);
+  useEffect(() => {
+    expandedMenuRef.current = expandedMenu;
+  }, [expandedMenu]);
 
   /**
    * Handles keydown events for keyboard shortcuts.
    * @param {KeyboardEvent} e
    */
   const handleKeyDown = (e) => {
-    console.log("Key pressed:", e.key);
-    /*// Example: Save project with Ctrl+S or Cmd+S
+    //Save project with Ctrl+S or Cmd+S
     if ((e.ctrlKey || e.metaKey) && e.key === "s") {
       e.preventDefault();
       setSavePopUp(true);
       saveProject(setSaveState, "User Save");
     }
+    //Copy /paste listeners
+    if (e.key == "Control" || e.key == "Meta") {
+      GlobalVariables.ctrlDown = true;
+    }
+    if (e.key == "Shift" && !GlobalVariables.ctrlDown) {
+      // Trigger GitSearch Panel when Shift is pressed
+      setExpandedMenu(
+        expandedMenuRef.current === "git-search" ? "params" : "git-search"
+      );
+    } else {
+      if (expandedMenuRef.current === "git-search") {
+        forwardKeyToGitPanel(e);
+      }
+      if (expandedMenuRef.current !== "git-search") {
+        forwardKeyToPanel(e);
+      }
+    }
+
+    /*
     // Example: Toggle shortcut display with Ctrl+/
     if ((e.ctrlKey || e.metaKey) && e.key === "/") {
       e.preventDefault();
@@ -149,7 +168,31 @@ function CreateMode({
       if (codeWindow) codeWindow.focus();
     }*/
     // Forward key to panel if needed
-    forwardKeyToPanel(e);
+  };
+  /**
+   * Handles keyup events for keyboard shortcuts.
+   * @param {KeyboardEvent} e
+   */
+  const handleKeyUp = (e) => {
+    // Reset ctrlDown flag when Control or Meta key is released
+    if (e.key === "Control" || e.key === "Meta") {
+      GlobalVariables.ctrlDown = false;
+    }
+  };
+
+  const panelRef = useRef();
+  const gitRef = useRef();
+
+  // When you want to trigger the panel keydown:
+  const forwardKeyToPanel = (event) => {
+    if (panelRef.current && panelRef.current.triggerPanelKeyDown) {
+      panelRef.current.triggerPanelKeyDown(event);
+    }
+  };
+  const forwardKeyToGitPanel = (event) => {
+    if (gitRef.current && gitRef.current.triggerPanelKeyDown) {
+      gitRef.current.triggerPanelKeyDown(event);
+    }
   };
 
   useEffect(() => {
@@ -241,14 +284,6 @@ function CreateMode({
     setShowBackgroundModel(false);
     setUserUploadedFile(false);
   }, [`${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`]);
-
-  const handleBodyClick = (e) => {
-    if (e.metaKey && e.key == "s") {
-      e.preventDefault();
-      setSavePopUp(true);
-      saveProject(setSaveState, "User Save");
-    }
-  };
 
   function searchGithubMolecules(molecule) {
     return new Promise((resolve, reject) => {
@@ -757,6 +792,7 @@ function CreateMode({
               setContentCollapsed: () => setExpandedMenu("git-search"),
               position: { top: screenHeight / 2 + 80, left: 10 },
               collapsedOffset: [45, -80],
+              gitRef: gitRef,
             }}
           />
           <div id="headerBar">

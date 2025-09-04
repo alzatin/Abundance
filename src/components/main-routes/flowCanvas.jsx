@@ -138,14 +138,6 @@ export default memo(function FlowCanvas({
   };
 
   const keyDown = (e) => {
-    //Prevents default behavior of the browser on canvas to allow for copy/paste/delete
-    // if(e.srcElement.tagName.toLowerCase() !== ("textarea")
-    //     && e.srcElement.tagName.toLowerCase() !== ("input")
-    //     &&(!e.srcElement.isContentEditable)
-    //     && ['c','v','Backspace'].includes(e.key)){
-    //     e.preventDefault()
-    // }
-
     if (e.key == "Backspace" || e.key == "Delete") {
       /* Save undo state before deletion */
       GlobalVariables.saveUndoState("DELETE", "Deleted selected atoms");
@@ -162,17 +154,17 @@ export default memo(function FlowCanvas({
           }
         );
       });
+      //every time a key is pressed
+      GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
+        molecule.keyPress(e.key);
+      });
     }
 
-    //Copy /paste listeners
-    if (e.key == "Control" || e.key == "Meta") {
-      GlobalVariables.ctrlDown = true;
-    }
-    if (e.key == "Shift" && !GlobalVariables.ctrlDown) {
+    /* if (e.key == "Shift" && !GlobalVariables.ctrlDown) {
       // Trigger GitSearch when Shift is pressed
       setSearchingGitHub(true);
       setIsShortcutTriggered(true); // Set the shortcut flag
-    }
+    }*/
 
     if (GlobalVariables.ctrlDown && shortCuts.hasOwnProperty([e.key])) {
       e.preventDefault();
@@ -294,16 +286,9 @@ export default memo(function FlowCanvas({
         );
       }
     }
-    //every time a key is pressed
-    GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
-      molecule.keyPress(e.key);
-    });
   };
 
   const keyUp = (e) => {
-    if (e.key == "Control" || e.key == "Meta") {
-      GlobalVariables.ctrlDown = false;
-    }
     if (e.key == "Shift") {
       GlobalVariables.shiftDown = false;
     }

@@ -262,7 +262,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 
   useImperativeHandle(ref, () => ({
     triggerPanelKeyDown: (event) => {
-      console.log("Key pressed in simple:", event.key);
       handlePanelKeyDown(event);
     },
   }));
@@ -320,7 +319,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 
   // Keyboard navigation (skip disabled inputs)
   const handleKeyDown = (e) => {
-    console.log("key handler in SimpleControlPanel");
     if (e.key === "ArrowDown") {
       let next = focusedIndex;
       do {
