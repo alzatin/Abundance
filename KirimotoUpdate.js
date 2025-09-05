@@ -91,17 +91,17 @@ const generateGcode = (
       return eng.setStock({
         x: x + STOCK_MARGIN,
         y: y + STOCK_MARGIN,
-        z: z, // stock thickness = part thickness + cut-through
+        z: z + CUT_THROUGH, // stock thickness = part thickness + cut-through
         center: {
           x: x / 2,
           y: y / 2,
-          z: z / 2, // correct center for full stock thickness
+          z: z / 2 + CUT_THROUGH / 2, // correct center for full stock thickness
         },
       });
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.2); // 20% - Stock set
-      eng.moveTo(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
+      //eng.moveTo(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
       return eng;
     })
     .then((eng) =>
@@ -125,11 +125,11 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
-      const zBottom = z; // ensure cut through stock bottom
+      const zBottom = z + CUT_THROUGH; // ensure cut through stock bottom
 
-      const validPasses = passes - 1;
+      const validPasses = passes;
 
-      const down = validPasses == 0 ? 1000 : zBottom / validPasses;
+      const down = validPasses == 1 ? 1000 : zBottom / validPasses;
       console.log("Down:", down);
       console.log("Valid Passes:", validPasses);
       console.log("Z Bottom:", zBottom);
@@ -139,9 +139,9 @@ const generateGcode = (
         camEaseDown: true,
         camZAnchor: "bottom",
         camDepthFirst: false,
-        camZThru: down,
+        camZThru: 0,
         camZClearance: 3,
-        camZTop: 0, // top of stock
+        //camZTop: 0, // top of stock
         camZBottom: -zBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
         camOutlineSpeed: speed,
