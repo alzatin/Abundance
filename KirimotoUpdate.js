@@ -148,7 +148,7 @@ const generateGcode = (
           {
             type: "outline",
             tool: 1000,
-            spindle: speed,
+            spindle: 1000,
             step: 0.4,
             steps: 1,
             down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
@@ -168,7 +168,7 @@ const generateGcode = (
           {
             type: "outline",
             tool: 1000,
-            spindle: speed,
+            spindle: 1000,
             step: 0.4,
             steps: 1,
             down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22

@@ -25,7 +25,7 @@ describe("G-code Speed/Feedrate Configuration", () => {
           {
             type: "outline",
             tool: 1000,
-            spindle: speed,
+            spindle: 1000,
             step: 0.4,
             steps: 1,
             down: down,
@@ -45,7 +45,7 @@ describe("G-code Speed/Feedrate Configuration", () => {
           {
             type: "outline",
             tool: 1000,
-            spindle: speed,
+            spindle: 1000,
             step: 0.4,
             steps: 1,
             down: down,
@@ -173,5 +173,39 @@ describe("G-code Speed/Feedrate Configuration", () => {
 
     expect(result.ops[0].rate).toBe(defaultSpeed);
     expect(result.ops[1].rate).toBe(defaultSpeed);
+  });
+
+  test("should use default spindle speed (1000) regardless of user speed input", () => {
+    const mockGenerateGcode = createMockGenerateGcode();
+    
+    const testCases = [
+      { speed: 500, description: "slow speed input" },
+      { speed: 635, description: "default speed input" },
+      { speed: 1200, description: "fast speed input" },
+      { speed: 2000, description: "very fast speed input" },
+    ];
+
+    testCases.forEach(({ speed, description }) => {
+      const result = mockGenerateGcode(
+        "mock-stl-url",
+        [0, 0, 0],
+        6.35, // toolSize
+        1, // passes
+        speed, // speed input (should affect feedrate, not spindle)
+        1.35, // cutThrough
+        () => {}, // gcodeCallback
+        () => {}, // progressCallback
+        () => {}, // partProgressCallback
+        null // tool
+      );
+
+      // Spindle should always be 1000 regardless of speed input
+      expect(result.ops[0].spindle).toBe(1000);
+      expect(result.ops[1].spindle).toBe(1000);
+      
+      // Rate (feedrate) should use the user-provided speed
+      expect(result.ops[0].rate).toBe(speed);
+      expect(result.ops[1].rate).toBe(speed);
+    });
   });
 });
