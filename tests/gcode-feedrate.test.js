@@ -1,6 +1,6 @@
 import { expect, test, describe } from "vitest";
 
-describe("G-code Feedrate Configuration", () => {
+describe("G-code Speed/Feedrate Configuration", () => {
   // Mock the generateGcode function similar to KirimotoUpdate.js
   const createMockGenerateGcode = () => {
     return (
@@ -9,7 +9,6 @@ describe("G-code Feedrate Configuration", () => {
       toolSize,
       passes,
       speed,
-      feedrate,
       cutThrough,
       gcodeCallback,
       progressCallback,
@@ -30,7 +29,7 @@ describe("G-code Feedrate Configuration", () => {
             step: 0.4,
             steps: 1,
             down: down,
-            rate: feedrate, // This should use the user-provided feedrate
+            rate: speed, // This should use the user-provided speed as feedrate
             plunge: 51,
             dogbones: false,
             omitvoid: false,
@@ -50,7 +49,7 @@ describe("G-code Feedrate Configuration", () => {
             step: 0.4,
             steps: 1,
             down: down,
-            rate: feedrate, // This should also use the user-provided feedrate
+            rate: speed, // This should also use the user-provided speed as feedrate
             plunge: 51,
             dogbones: false,
             omitvoid: false,
@@ -68,18 +67,17 @@ describe("G-code Feedrate Configuration", () => {
     };
   };
 
-  test("should use user-provided feedrate instead of hardcoded value", () => {
+  test("should use user-provided speed as feedrate instead of hardcoded value", () => {
     const mockGenerateGcode = createMockGenerateGcode();
     
-    // Test with custom feedrate
-    const customFeedrate = 1200;
+    // Test with custom speed/feedrate
+    const customSpeed = 1200;
     const result = mockGenerateGcode(
       "mock-stl-url",
       [0, 0, 0],
       6.35, // toolSize
       2, // passes
-      1500, // speed
-      customFeedrate, // feedrate - this should be used
+      customSpeed, // speed - this should be used as feedrate
       1.35, // cutThrough
       () => {}, // gcodeCallback
       () => {}, // progressCallback
@@ -87,32 +85,31 @@ describe("G-code Feedrate Configuration", () => {
       null // tool
     );
 
-    // Both outline operations should use the custom feedrate
-    expect(result.ops[0].rate).toBe(customFeedrate);
-    expect(result.ops[1].rate).toBe(customFeedrate);
+    // Both outline operations should use the speed as feedrate
+    expect(result.ops[0].rate).toBe(customSpeed);
+    expect(result.ops[1].rate).toBe(customSpeed);
     expect(result.ops[0].rate).not.toBe(635); // Should not be the old hardcoded value
     expect(result.ops[1].rate).not.toBe(635); // Should not be the old hardcoded value
   });
 
-  test("should accept different feedrate values", () => {
+  test("should accept different speed values as feedrate", () => {
     const mockGenerateGcode = createMockGenerateGcode();
     
     const testCases = [
-      { feedrate: 500, description: "slow feedrate" },
-      { feedrate: 635, description: "default feedrate" },
-      { feedrate: 1000, description: "medium feedrate" },
-      { feedrate: 1500, description: "fast feedrate" },
-      { feedrate: 2000, description: "very fast feedrate" },
+      { speed: 500, description: "slow speed/feedrate" },
+      { speed: 635, description: "default speed/feedrate" },
+      { speed: 1000, description: "medium speed/feedrate" },
+      { speed: 1500, description: "fast speed/feedrate" },
+      { speed: 2000, description: "very fast speed/feedrate" },
     ];
 
-    testCases.forEach(({ feedrate, description }) => {
+    testCases.forEach(({ speed, description }) => {
       const result = mockGenerateGcode(
         "mock-stl-url",
         [0, 0, 0],
         6.35, // toolSize
         1, // passes
-        1500, // speed
-        feedrate, // feedrate to test
+        speed, // speed to test (used as feedrate)
         1.35, // cutThrough
         () => {}, // gcodeCallback
         () => {}, // progressCallback
@@ -120,8 +117,8 @@ describe("G-code Feedrate Configuration", () => {
         null // tool
       );
 
-      expect(result.ops[0].rate).toBe(feedrate);
-      expect(result.ops[1].rate).toBe(feedrate);
+      expect(result.ops[0].rate).toBe(speed);
+      expect(result.ops[1].rate).toBe(speed);
     });
   });
 
@@ -134,12 +131,12 @@ describe("G-code Feedrate Configuration", () => {
       ],
     };
 
-    // AFTER FIX: Both operations should use user-provided feedrate
-    const userFeedrate = 1200;
+    // AFTER FIX: Both operations should use user-provided speed as feedrate
+    const userSpeed = 1200;
     const newConfig = {
       ops: [
-        { type: "outline", rate: userFeedrate }, // uses user input
-        { type: "outline", rate: userFeedrate }, // uses user input
+        { type: "outline", rate: userSpeed }, // uses user input speed
+        { type: "outline", rate: userSpeed }, // uses user input speed
       ],
     };
 
@@ -148,17 +145,17 @@ describe("G-code Feedrate Configuration", () => {
     expect(oldConfig.ops[1].rate).toBe(635);
 
     // Verify the new config uses user input
-    expect(newConfig.ops[0].rate).toBe(userFeedrate);
-    expect(newConfig.ops[1].rate).toBe(userFeedrate);
+    expect(newConfig.ops[0].rate).toBe(userSpeed);
+    expect(newConfig.ops[1].rate).toBe(userSpeed);
     expect(newConfig.ops[0].rate).not.toBe(635);
     expect(newConfig.ops[1].rate).not.toBe(635);
   });
 
-  test("should maintain backward compatibility with default feedrate", () => {
-    // The default feedrate should be 635 to maintain compatibility
-    const defaultFeedrate = 635;
+  test("should maintain backward compatibility with default speed", () => {
+    // The default speed should be 635 to maintain compatibility for feedrate
+    const defaultSpeed = 635;
     
-    // When no feedrate is specified or default is used, should still work
+    // When no speed is specified or default is used, should still work
     const mockGenerateGcode = createMockGenerateGcode();
     
     const result = mockGenerateGcode(
@@ -166,8 +163,7 @@ describe("G-code Feedrate Configuration", () => {
       [0, 0, 0],
       6.35, // toolSize
       1, // passes
-      1500, // speed
-      defaultFeedrate, // using default feedrate
+      defaultSpeed, // using default speed (used as feedrate)
       1.35, // cutThrough
       () => {}, // gcodeCallback
       () => {}, // progressCallback
@@ -175,7 +171,7 @@ describe("G-code Feedrate Configuration", () => {
       null // tool
     );
 
-    expect(result.ops[0].rate).toBe(defaultFeedrate);
-    expect(result.ops[1].rate).toBe(defaultFeedrate);
+    expect(result.ops[0].rate).toBe(defaultSpeed);
+    expect(result.ops[1].rate).toBe(defaultSpeed);
   });
 });

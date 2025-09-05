@@ -13,7 +13,6 @@ const generateGcode = (
   toolSize,
   passes,
   speed,
-  feedrate,
   cutThrough,
   gcodeCallback,
   progressCallback,
@@ -153,7 +152,7 @@ const generateGcode = (
             step: 0.4,
             steps: 1,
             down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
-            rate: feedrate,
+            rate: speed,
             plunge: 51,
             dogbones: false,
             omitvoid: false,
@@ -173,7 +172,7 @@ const generateGcode = (
             step: 0.4,
             steps: 1,
             down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
-            rate: feedrate,
+            rate: speed,
             plunge: 51,
             dogbones: false,
             omitvoid: false,
