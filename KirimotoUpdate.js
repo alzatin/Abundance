@@ -157,11 +157,11 @@ const generateGcode = (
           {
             type: "outline",
             tool: 1000,
-            spindle: speed,
+            spindle: 1000,
             step: 0.4,
             steps: 1,
             down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
-            rate: 635,
+            rate: speed,
             plunge: 51,
             dogbones: false,
             omitvoid: false,
@@ -177,11 +177,11 @@ const generateGcode = (
           {
             type: "outline",
             tool: 1000,
-            spindle: speed,
+            spindle: 1000,
             step: 0.4,
             steps: 1,
             down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
-            rate: 635,
+            rate: speed,
             plunge: 51,
             dogbones: false,
             omitvoid: false,
@@ -229,6 +229,8 @@ const generateGcode = (
         gcodePre: [
           "G21 ; set units to MM (required)",
           "G90 ; absolute position mode (required)",
+          "G0 F3000 ; set default rapid move feedrate",
+          "G1 F1000 ; set default cutting feedrate",
         ],
         gcodePost: ["M05 ; spindle off", "M30 ; program end"],
         gcodeDwell: ["G4 P{time} ; dwell for {time}ms"],
