@@ -220,6 +220,8 @@ const generateGcode = (
         gcodePre: [
           "G21 ; set units to MM (required)",
           "G90 ; absolute position mode (required)",
+          "G0 F3000 ; set default rapid move feedrate",
+          "G1 F1000 ; set default cutting feedrate",
         ],
         gcodePost: ["M05 ; spindle off", "M30 ; program end"],
         gcodeDwell: ["G4 P{time} ; dwell for {time}ms"],
