@@ -1,8 +1,9 @@
-import React from "react";
 import { useEffect, useState, useMemo } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
+import { useQuery } from "react-query";
+import useDebounce from "../../hooks/useDebounce.js";
 
 export default function GitSearchMenu({
   activeAtom,
@@ -11,18 +12,263 @@ export default function GitSearchMenu({
   setContentCollapsed,
   position,
   collapsedOffset,
+  controlPanelRef,
+  gitRef,
 }) {
   const [inputChanged, setInputChanged] = useState("");
-  let bomParams = {};
+  const [search, setSearch] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [panelItem, setPanelItem] = useState({});
+  const [isHovering, setIsHovering] = useState(false);
+  const [yearShow, setYearShow] = useState("2024");
+  const [lastKey, setLastKey] = useState("");
 
-  if (activeAtom?.atomType == "Molecule") {
-    bomParams = activeAtom.createBom(setInputChanged);
+  const debouncedSearchTerm = useDebounce(search, 200);
+
+  const handleSearchBarValueChange = function (value) {
+    setSearch(value.toLowerCase());
+    //setSelectedIndex(-1); // Reset selection when search changes
+  };
+
+  let lastKeyQuery = lastKey
+    ? "&lastKey=" + lastKey.repoName + "~" + lastKey.owner
+    : "&lastKey";
+
+  let searchQuery;
+  if (search != "") {
+    searchQuery = "&query=" + search + "&yearShow=" + yearShow;
+  } else {
+    searchQuery = "&query" + "&yearShow=" + yearShow;
   }
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["search", debouncedSearchTerm],
+    queryFn: () => {
+      if (debouncedSearchTerm) {
+        return fetch(
+          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/scan-search-abundance?" +
+            "attribute=searchField" +
+            "&query=" +
+            debouncedSearchTerm +
+            "&yearShow=" +
+            yearShow +
+            "&user" +
+            lastKeyQuery
+        ).then((res) => res.json());
+      }
+      return undefined;
+    },
+  });
+
+  let getGitListItems = () => {
+    const localAtoms = getFilteredLocalAtoms(debouncedSearchTerm);
+    // Combine local atoms with GitHub results
+    const combinedResults = [...localAtoms];
+    if (data?.repos) {
+      combinedResults.push(
+        ...data.repos.map((repo) => ({ ...repo, isLocal: false }))
+      );
+    }
+    console.log("Combined Results:", combinedResults);
+    if (combinedResults.length === 0) {
+      return {};
+    }
+
+    return {
+      type: "list",
+      value: [...combinedResults],
+      label: "Results",
+      order: 2,
+      itemRenderer: (item, idx) => {
+        const isSelected = false; //selectedIndex === idx;
+        if (item.isLocal) {
+          return (
+            <li
+              onClick={(e) => !isLoading && handleItemClick(e, item)}
+              key={item.id}
+              onMouseEnter={() => handleMouseOver(item, key)}
+              onMouseLeave={() => handleMouseOut()}
+              className={`local-atom ${isSelected ? "selected" : ""}`}
+              title={`Local Atom - ${item.atomCategory}`}
+            >
+              {item.atomType}{" "}
+              <span className="atom-category">({item.atomCategory})</span>
+            </li>
+          );
+        } else {
+          return (
+            <li
+              onClick={(e) => !isLoading && handleItemClick(e, item)}
+              key={item.id}
+              onMouseEnter={() => handleMouseOver(item, key)}
+              onMouseLeave={() => handleMouseOut()}
+              className={`github-repo ${isSelected ? "selected" : ""}`}
+              title="GitHub Repository"
+            >
+              {item.repoName}
+            </li>
+          );
+        }
+      },
+    };
+  };
+  const gitList = useMemo(() => {
+    return getGitListItems();
+  }, [data, debouncedSearchTerm]);
+
+  console.log("Git List Items:", gitList);
+
+  /*if (isLoading) {
+    // Show local atoms even while loading GitHub results
+    if (localAtoms.length > 0) {
+      const items = localAtoms.map((atom, key) => {
+        const isSelected = selectedIndex === key;
+        return (
+          <li
+            key={atom.id}
+            className={`local-atom ${isSelected ? "selected" : ""} disabled`}
+            title={`Local Atom - ${atom.atomCategory}`}
+          >
+            {atom.atomType}{" "}
+            <span className="atom-category">({atom.atomCategory})</span>
+          </li>
+        );
+      });
+      items.push(
+        <li key="loading" className="loading-item">
+          Loading GitHub results...
+        </li>
+      );
+      return items;
+    }
+    return <li>Loading...</li>;
+  }
+
+  if (isError) {
+    // Show local atoms even if GitHub search fails
+    if (localAtoms.length > 0) {
+      const items = localAtoms.map((atom, key) => {
+        const isSelected = selectedIndex === key;
+        return (
+          <li
+            key={atom.id}
+            className={`local-atom ${isSelected ? "selected" : ""} disabled`}
+            title={`Local Atom - ${atom.atomCategory}`}
+          >
+            {atom.atomType}{" "}
+            <span className="atom-category">({atom.atomCategory})</span>
+          </li>
+        );
+      });
+      items.push(
+        <li key="error" className="error-item">
+          Error loading GitHub results
+        </li>
+      );
+      return items;
+    }
+    return <li>Error loading data</li>;
+  }*/
+
+  /*// Combine local atoms with GitHub results
+  const combinedResults = [...localAtoms];
+  if (data?.repos) {
+    combinedResults.push(
+      ...data.repos.map((repo) => ({ ...repo, isLocal: false }))
+    );
+  }
+  console.log("Combined Results:", combinedResults);
+  /*if (combinedResults.length === 0) {
+    return <li>No results found</li>;
+  }*/
+
+  const handleItemClick = (e, item) => {
+    e.stopPropagation(); // Prevent event propagation
+    if (item.isLocal) {
+      placeLocalAtom(e, item.atomType);
+    } else {
+      placeGitHubMolecule(e, item);
+    }
+  };
+
+  /*return combinedResults.map((item, key) => {
+    const isSelected = selectedIndex === key;
+
+    if (item.isLocal) {
+      return (
+        <li
+          onClick={(e) => !isLoading && handleItemClick(e, item)}
+          key={item.id}
+          onMouseEnter={() => handleMouseOver(item, key)}
+          onMouseLeave={() => handleMouseOut()}
+          className={`local-atom ${isSelected ? "selected" : ""}`}
+          title={`Local Atom - ${item.atomCategory}`}
+        >
+          {item.atomType}{" "}
+          <span className="atom-category">({item.atomCategory})</span>
+        </li>
+      );
+    } else {
+      return (
+        <li
+          onClick={(e) => !isLoading && handleItemClick(e, item)}
+          key={item.id}
+          onMouseEnter={() => handleMouseOver(item, key)}
+          onMouseLeave={() => handleMouseOut()}
+          className={`github-repo ${isSelected ? "selected" : ""}`}
+          title="GitHub Repository"
+        >
+          {item.repoName}
+        </li>
+      );
+    }
+  });*/
+
+  /**
+   * Filters local atoms based on search term
+   * @param {string} searchTerm - The search term to filter by
+   * @returns {Array} Array of matching local atoms
+   */
+  function getFilteredLocalAtoms(searchTerm) {
+    if (!searchTerm || searchTerm.length < 1) {
+      return [];
+    }
+
+    const filteredAtoms = [];
+    for (const key in GlobalVariables.availableTypes) {
+      const atom = GlobalVariables.availableTypes[key];
+      if (
+        atom.atomType?.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        atom.atomType?.toLowerCase() !== "box"
+      ) {
+        filteredAtoms.push({
+          id: `local-${key}`,
+          atomType: atom.atomType,
+          atomCategory: atom.atomCategory || "General",
+          isLocal: true,
+        });
+      }
+    }
+    return filteredAtoms;
+  }
+
+  let gitParams = {
+    gitsearch: {
+      type: "string",
+      value: "",
+      label: "Search",
+      order: 1,
+      onChange: (value) => {
+        handleSearchBarValueChange(value);
+      },
+    },
+    exampleList: gitList,
+  };
   const [
     values,
     setControlValue,
     { controls, registerControl, removeControl },
-  ] = useControls(bomParams, [activeAtom, inputChanged]);
+  ] = useControls(gitParams, [inputChanged, gitList]);
 
   const screenHeight = window.innerHeight;
 
@@ -57,6 +303,7 @@ export default function GitSearchMenu({
         collapsedOffset={collapsedOffset} // shifts expanded panel by 45px right, 45px down
         contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
+        ref={gitRef}
       />
     </div>
   );
