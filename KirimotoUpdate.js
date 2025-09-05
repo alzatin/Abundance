@@ -144,6 +144,11 @@ const generateGcode = (
         camZTop: 0, // top of stock
         camZBottom: -zBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
+        camOutlineSpeed: speed,
+        camRetractFeed: 300,
+        camSpindleSpeed: speed,
+        camFastFeed: 6000,
+        camFastFeedZ: 300,
         ops: [
           {
             type: "outline",
