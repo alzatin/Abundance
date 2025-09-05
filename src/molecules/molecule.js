@@ -122,20 +122,27 @@ export default class Molecule extends Atom {
       case Status.WAITING:
         return [0, childCount];
       case Status.PROCESSING:
+      case Status.PROCESSING: {
         let readyChildCount = 0;
         this.nodesOnTheScreen.forEach((atom) => {
+          const status = atom.getState().status;
+          if (status === Status.DISABLED) {
+            // Skip disabled children entirely (and their subtrees)
+            return;
+          }
           if (
-            atom.atomType == "Molecule" ||
-            atom.atomType == "GitHubMolecule"
+            atom.atomType === "Molecule" ||
+            atom.atomType === "GitHubMolecule"
           ) {
             const [ready, total] = atom.getCompletionTuple();
-            childCount += total - 1; // remove 1 because we already counted the molecule itself
+            childCount += total - 1; // exclude the nested molecule node itself
             readyChildCount += ready;
-          } else if (atom.getState().status === Status.READY) {
+          } else if (status === Status.READY) {
             readyChildCount++;
           }
         });
         return [readyChildCount, childCount];
+      }
       default:
         return [0, childCount];
     }
