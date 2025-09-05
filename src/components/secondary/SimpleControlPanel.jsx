@@ -756,6 +756,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           <input
                             type="text"
                             value={controlValues[key] ?? ""}
+                            placeholder={config.placeholder}
                             onChange={(e) => handleChange(e.target.value)}
                             {...commonProps}
                           />

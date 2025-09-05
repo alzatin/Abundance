@@ -4,6 +4,7 @@ import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
 import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
+import { placeholder } from "@uiw/react-codemirror";
 
 export default function GitSearchMenu({
   activeAtom,
@@ -301,6 +302,7 @@ export default function GitSearchMenu({
     gitsearch: {
       type: "string",
       value: "",
+      placeholder: "Search for GitHub Molecules",
       order: 1,
       onChange: (value) => {
         handleSearchBarValueChange(value);
