@@ -448,7 +448,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
             <div style={getControlListStyle(maxHeight)}>
               {controlKeys.map((key, idx) => {
                 const config = controls[key];
-                const label = config.label || key;
+                const label = config.label;
+                const inputFullWidth = !label;
                 const handleChange = (value) => {
                   setControlValue(key, value);
                   // For debounced types, call debounced handler
@@ -553,13 +554,14 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                       >
                         <span
                           style={{
-                            width: 90,
+                            width: inputFullWidth ? 0 : 90,
                             color: isDisabled
                               ? inputDisabledStyle.color
                               : undefined,
                           }}
                         >
-                          {label}:
+                          {label}
+                          {label ? ":" : ""}
                         </span>
                         <ul
                           style={{
@@ -725,13 +727,14 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                       <div key={key} style={labelStyle}>
                         <span
                           style={{
-                            width: 90,
+                            width: inputFullWidth ? 0 : 90,
                             color: isDisabled
                               ? inputDisabledStyle.color
                               : undefined,
                           }}
                         >
-                          {label}:
+                          {label}
+                          {label ? ":" : ""}
                         </span>
                         {config.multiline ? (
                           <textarea

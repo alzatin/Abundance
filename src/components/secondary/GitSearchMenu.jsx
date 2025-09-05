@@ -122,7 +122,7 @@ export default function GitSearchMenu({
     return {
       type: "list",
       value: [...combinedResults],
-      label: "Results",
+
       order: 2,
       itemRenderer: (item, idx) => {
         const isSelected = false; //selectedIndex === idx;
@@ -301,7 +301,6 @@ export default function GitSearchMenu({
     gitsearch: {
       type: "string",
       value: "",
-      label: "Search",
       order: 1,
       onChange: (value) => {
         handleSearchBarValueChange(value);
