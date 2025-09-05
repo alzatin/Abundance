@@ -145,7 +145,6 @@ const generateGcode = (
         camZBottom: -zBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
         camOutlineSpeed: speed,
-        // Minimal required settings
         camRapidFeed: 3000,
         camPlungeFeed: 300,
         camCutFeed: 1000,
