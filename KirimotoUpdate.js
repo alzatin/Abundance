@@ -158,7 +158,7 @@ const generateGcode = (
             steps: 1,
             down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
             rate: speed,
-            plunge: 51,
+            plunge: 300,
             dogbones: false,
             omitvoid: false,
             omitthru: false,
@@ -178,7 +178,7 @@ const generateGcode = (
             steps: 1,
             down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
             rate: speed,
-            plunge: 51,
+            plunge: 300,
             dogbones: false,
             omitvoid: false,
             omitthru: true,
