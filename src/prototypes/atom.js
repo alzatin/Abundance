@@ -870,6 +870,12 @@ export default class Atom extends ObservableEntity {
    */
   evaluateEquation(equation) {
     let substitutedEquation = String(equation ?? "").trim();
+    
+    // Handle empty or whitespace-only equations gracefully
+    if (!substitutedEquation) {
+      throw new Error("Empty mathematical expression. Please enter a valid expression.");
+    }
+    
     const variables = this.extractVariablesFromEquation(substitutedEquation);
     const unresolved = [];
     const resolvedValues = {};
@@ -933,8 +939,17 @@ export default class Atom extends ObservableEntity {
           String(resolvedValues[variable])
         );
       }
-      const result = GlobalVariables.limitedEvaluate(substitutedEquation);
-      return result;
+      
+      // Safely evaluate the mathematical expression with error handling
+      try {
+        const result = GlobalVariables.limitedEvaluate(substitutedEquation);
+        return result;
+      } catch (error) {
+        // Handle mathematical expression parsing errors gracefully
+        const msg = `Invalid mathematical expression: "${substitutedEquation}". ${error.message}`;
+        console.warn("Mathematical expression evaluation failed:", msg);
+        throw new Error(msg);
+      }
     }
   }
 

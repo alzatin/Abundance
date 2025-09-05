@@ -91,7 +91,7 @@ const generateGcode = (
       return eng.setStock({
         x: x + STOCK_MARGIN,
         y: y + STOCK_MARGIN,
-        z: z + CUT_THROUGH, // stock thickness = part thickness + cut-through
+        z: z, // stock thickness = part thickness + cut-through
         center: {
           x: x / 2,
           y: y / 2,
@@ -125,19 +125,21 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
-      const zBottom = z + CUT_THROUGH; // ensure cut through stock bottom
-      // Add small epsilon to avoid floating point errors causing extra pass
-      const epsilon = 0.0001;
-      const validPasses = Math.max(1, Math.floor(Number(passes) || 1));
+      const zBottom = z; // ensure cut through stock bottom
 
-      const down = validPasses == 1 ? 1000 : Math.abs(zBottom) / validPasses;
+      const validPasses = passes - 1;
+
+      const down = validPasses == 0 ? 1000 : zBottom / validPasses;
+      console.log("Down:", down);
+      console.log("Valid Passes:", validPasses);
+      console.log("Z Bottom:", zBottom);
 
       return eng.setProcess({
         camEaseAngle: 10,
         camEaseDown: true,
         camZAnchor: "bottom",
         camDepthFirst: false,
-        camZThru: 0.01,
+        camZThru: down,
         camZClearance: 3,
         camZTop: 0, // top of stock
         camZBottom: -zBottom, // temp hack to get around setTopZ bug
@@ -146,15 +148,35 @@ const generateGcode = (
           {
             type: "outline",
             tool: 1000,
-            spindle: speed,
+            spindle: 1000,
             step: 0.4,
             steps: 1,
             down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
-            rate: 635,
+            rate: speed,
             plunge: 51,
             dogbones: false,
             omitvoid: false,
             omitthru: false,
+            outside: false,
+            inside: true,
+            wide: false,
+            top: false,
+            ov_topz: 0,
+            ov_botz: 0,
+            ov_conv: true,
+          },
+          {
+            type: "outline",
+            tool: 1000,
+            spindle: 1000,
+            step: 0.4,
+            steps: 1,
+            down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
+            rate: speed,
+            plunge: 51,
+            dogbones: false,
+            omitvoid: false,
+            omitthru: true,
             outside: false,
             inside: false,
             wide: false,
@@ -163,26 +185,6 @@ const generateGcode = (
             ov_botz: 0,
             ov_conv: true,
           },
-          /*{
-            type: "outline",
-            tool: 1000,
-            spindle: speed,
-            step: 0.4,
-            steps: 1,
-            down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
-            rate: 635,
-            plunge: 51,
-            dogbones: false,
-            omitvoid: false,
-            omitthru: true,
-            outside: true,
-            inside: false,
-            wide: false,
-            top: false,
-            ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: true,
-          },*
           /*{
             type: "rough",
             tool: 1000,
@@ -218,6 +220,8 @@ const generateGcode = (
         gcodePre: [
           "G21 ; set units to MM (required)",
           "G90 ; absolute position mode (required)",
+          "G0 F3000 ; set default rapid move feedrate",
+          "G1 F1000 ; set default cutting feedrate",
         ],
         gcodePost: ["M05 ; spindle off", "M30 ; program end"],
         gcodeDwell: ["G4 P{time} ; dwell for {time}ms"],
