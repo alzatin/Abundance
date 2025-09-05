@@ -59,9 +59,54 @@ export default function GitSearchMenu({
       return undefined;
     },
   });
+  const handleMouseOver = (item, key) => {
+    setPanelItem(item);
+    setIsHovering(true);
+    //setSelectedIndex(key); // Sync mouse hover with keyboard selection
+  };
+  const handleMouseOut = () => {
+    setPanelItem({});
+    setIsHovering(false);
+    // Don't reset selectedIndex here to allow keyboard navigation to continue
+  };
 
   let getGitListItems = () => {
     const localAtoms = getFilteredLocalAtoms(debouncedSearchTerm);
+
+    if (isLoading || isError) {
+      // Show local atoms even while loading GitHub results
+      if (localAtoms.length > 0) {
+        console.log("Local Atoms while loading:", localAtoms);
+        return {
+          type: "list",
+          value: [...localAtoms],
+          label: "Local Results",
+          order: 1,
+          itemRenderer: (item, idx) => {
+            const isSelected = selectedIndex === idx;
+            return (
+              <li
+                key={item.id}
+                className={`local-atom ${
+                  isSelected ? "selected" : ""
+                } disabled`}
+                title={`Local Atom - ${item.atomCategory}`}
+              >
+                {item.atomType}{" "}
+                <span className="atom-category">({item.atomCategory})</span>
+              </li>
+            );
+          },
+        };
+      }
+      /*
+      items.push(
+        <li key="loading" className="loading-item">
+          Loading GitHub results...
+        </li>
+      );*/
+      //return { type: "list", value: [], label: "Loading...", order: 1 };
+    }
     // Combine local atoms with GitHub results
     const combinedResults = [...localAtoms];
     if (data?.repos) {
