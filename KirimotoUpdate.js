@@ -147,7 +147,7 @@ const generateGcode = (
         camOutlineSpeed: speed,
         camRapidFeed: 3000,
         camPlungeFeed: 300,
-        camCutFeed: 1000,
+        camCutFeed: speed,
         camRetractFeed: 300,
         camSpindleSpeed: speed,
         camFastFeed: 6000,
