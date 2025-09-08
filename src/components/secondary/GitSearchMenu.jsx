@@ -77,12 +77,6 @@ export default function GitSearchMenu({
     setInputValue("");
     setIsHovering(false);
     setParamsMenuExpanded();
-
-    // Ensure canvas regains focus after placing molecule
-    const flowCanvas = document.getElementById("flow-canvas");
-    if (flowCanvas) {
-      flowCanvas.focus();
-    }
   }
   /**
    * Runs when a local atom option is clicked to place a new atom from the circular menu atoms.
@@ -113,12 +107,6 @@ export default function GitSearchMenu({
     //setIsShortcutTriggered(false);
     setIsHovering(false);
     setParamsMenuExpanded();
-
-    // Ensure canvas regains focus after placing atom
-    const flowCanvas = document.getElementById("flow-canvas");
-    if (flowCanvas) {
-      flowCanvas.focus();
-    }
   }
   const handleMouseOver = (item, key) => {
     setPanelItem(item);
