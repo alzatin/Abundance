@@ -11,6 +11,7 @@ export default function GitSearchMenu({
   id,
   contentCollapsed,
   setContentCollapsed,
+  setParamsMenuExpanded,
   position,
   collapsedOffset,
   controlPanelRef,
@@ -75,6 +76,7 @@ export default function GitSearchMenu({
     //setIsShortcutTriggered(false);
     setInputValue("");
     setIsHovering(false);
+    setParamsMenuExpanded();
 
     // Ensure canvas regains focus after placing molecule
     const flowCanvas = document.getElementById("flow-canvas");
@@ -110,6 +112,7 @@ export default function GitSearchMenu({
     setInputValue("");
     //setIsShortcutTriggered(false);
     setIsHovering(false);
+    setParamsMenuExpanded();
 
     // Ensure canvas regains focus after placing atom
     const flowCanvas = document.getElementById("flow-canvas");
