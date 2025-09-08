@@ -14,6 +14,7 @@ export default function GitSearchMenu({
   collapsedOffset,
   controlPanelRef,
   gitRef,
+  setErrorNotification,
 }) {
   const [inputChanged, setInputChanged] = useState("");
   const [inputValue, setInputValue] = useState("");

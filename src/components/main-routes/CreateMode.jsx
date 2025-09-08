@@ -61,6 +61,9 @@ function CreateMode({
   /** State for import notifications */
   const [importNotification, setImportNotification] = useState(null);
 
+  /** State for error notification */
+  const [errorNotification, setErrorNotification] = useState(null);
+
   /** State for save progress bar */
   const [saveState, setSaveState] = useState(0);
   const [savePopUp, setSavePopUp] = useState(false);
@@ -793,6 +796,7 @@ function CreateMode({
               position: { top: screenHeight / 2 + 80, left: 10 },
               collapsedOffset: [45, -90],
               gitRef: gitRef,
+              setErrorNotification: setErrorNotification,
             }}
           />
           <div id="headerBar">
@@ -929,6 +933,8 @@ function CreateMode({
               cad,
               setWireMesh,
               importNotification,
+              errorNotification,
+              setErrorNotification,
             }}
           />
           <div className="parent flex-parent" id="lowerHalf">

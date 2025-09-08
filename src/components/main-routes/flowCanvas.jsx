@@ -30,6 +30,8 @@ export default memo(function FlowCanvas({
   shortCuts,
   authorizedUserOcto,
   importNotification,
+  errorNotification,
+  setErrorNotification,
 }) {
   /** State for github molecule search input */
   const [searchingGitHub, setSearchingGitHub] = useState(false);
@@ -39,9 +41,6 @@ export default memo(function FlowCanvas({
   /** State for undo notification */
   const [undoNotification, setUndoNotification] = useState(null);
   const [isShortcut, setIsShortcutTriggered] = useState(false);
-
-  /** State for error notification */
-  const [errorNotification, setErrorNotification] = useState(null);
 
   const canvasRef = useRef(null);
   const circleMenu = useRef(null);
