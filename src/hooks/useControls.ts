@@ -7,6 +7,18 @@ export interface PointControlConfig {
   order?: number;
   disabled?: boolean;
 }
+export interface ListControlConfig {
+  type: "list";
+  value: any[];
+  label?: string;
+  order?: number;
+  itemRenderer?: (item: any, idx: number, handlers: any) => React.ReactNode;
+  onItemClick?: (item: any, idx: number, event: React.MouseEvent) => void;
+  onItemMouseOver?: (item: any, idx: number, event: React.MouseEvent) => void;
+  onItemMouseOut?: (item: any, idx: number, event: React.MouseEvent) => void;
+  onItemKeyDown?: (item: any, idx: number, event: React.KeyboardEvent) => void;
+  disabled?: boolean;
+}
 export interface ButtonControlConfig {
   type: "button";
   label?: string;
@@ -79,7 +91,8 @@ export type ControlConfig =
   | ColorControlConfig
   | RangeControlConfig
   | ButtonControlConfig
-  | PointControlConfig;
+  | PointControlConfig
+  | ListControlConfig;
 
 /**
  * Controls API:

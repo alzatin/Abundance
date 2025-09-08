@@ -237,12 +237,14 @@ export default class Molecule extends Atom {
     let parent = GlobalVariables.currentRepo.parentRepo.split("/");
     let parentOwner = parent[0];
     let parentRepo = parent[1];
+    console.log(GlobalVariables.currentRepo);
     octokit
       .request("GET /repos/{owner}/{repo}", {
         owner: parentOwner,
         repo: parentRepo,
       })
       .then((response) => {
+        console.log("Fetched repository data:", response.data);
         octokit.rest.repos
           .getContent({
             owner: response.data.owner.login,
@@ -250,6 +252,8 @@ export default class Molecule extends Atom {
             path: "project.abundance",
           })
           .then((response) => {
+            console.log("Reloading project.abundance from parent repository");
+            console.log(response.data.content);
             // Clear the nodesOnTheScreen array before deserialization to avoid doubling
             GlobalVariables.topLevelMolecule.nodesOnTheScreen.forEach(
               (atom) => {
@@ -261,8 +265,11 @@ export default class Molecule extends Atom {
             let rawFile = JSON.parse(
               GlobalVariables.fromBinaryStr(atob(response.data.content))
             );
-
+            console.log("Raw file content:", rawFile);
             if (rawFile.filetypeVersion == 1) {
+              console.log(
+                "Deserializing project.abundance into topLevelMolecule"
+              );
               GlobalVariables.topLevelMolecule.deserialize(rawFile);
             }
             GlobalVariables.currentMolecule.selected = true;
@@ -985,7 +992,7 @@ export default class Molecule extends Atom {
       },
       false
     );
-
+    console.log(json);
     this.setValues(json); //Grab the values of everything from the passed object
     this.setValues(values); //Over write those values with the passed ones where needed
 

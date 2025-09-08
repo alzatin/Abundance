@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { useControls } from "../../hooks/useControls";
-import { color } from "@uiw/react-codemirror";
 
 // SVG icons (Settings, X, CaretDown)
 const SettingsIcon = ({ size = 14 }) => (
@@ -114,7 +118,7 @@ const headerStyle = {
 const getControlListStyle = (maxHeight) => ({
   padding: "12px",
   background: "var(--panel-background)",
-  maxHeight: `${maxHeight}px`,
+  maxHeight: `${maxHeight - 50}px`,
   overflowY: "auto",
 });
 
@@ -229,20 +233,23 @@ const closeButtonStyle = {
  *   panelId?: string
  * }} props
  */
-export function SimpleControlPanel({
-  controls,
-  id = "simple-control-panel",
-  position = { top: 40, left: 40 },
-  panelId,
-  title = "CONTROLS",
-  initialCollapsed = false,
-  minWidth = 280,
-  maxHeight = 340, // <-- new prop
-  collapsedIcon = SettingsIcon, // new prop, defaults to SettingsIcon
-  collapsedOffset = [0, 0], // new prop: [x, y] offset for expanded panel
-  contentCollapsed,
-  setContentCollapsed,
-}) {
+export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
+  {
+    controls,
+    id = "simple-control-panel",
+    position = { top: 40, left: 40 },
+    panelId,
+    title = "CONTROLS",
+    initialCollapsed = false,
+    minWidth = 280,
+    maxHeight = 340, // <-- new prop
+    collapsedIcon = SettingsIcon, // new prop, defaults to SettingsIcon
+    collapsedOffset = [0, 0], // new prop: [x, y] offset for expanded panel
+    contentCollapsed,
+    setContentCollapsed,
+  },
+  ref
+) {
   // Collapsed panel state
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   // Sync collapsed state with contentCollapsed if initialCollapsed is true
@@ -252,12 +259,18 @@ export function SimpleControlPanel({
     }
   }, [contentCollapsed, initialCollapsed]);
 
+  useImperativeHandle(ref, () => ({
+    triggerPanelKeyDown: (event) => {
+      handlePanelKeyDown(event);
+    },
+  }));
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls);
 
   // Focus management
   const controlKeys = Object.keys(controls);
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const [focusedListItem, setFocusedListItem] = useState({});
   const inputRefs = React.useRef([]);
 
   // Debounce timer for input changes
@@ -281,12 +294,28 @@ export function SimpleControlPanel({
     setFocusedIndex(0); // Default focus to first control on controls change
   }, [controls]);
 
-  // Focus the current control when focusedIndex changes
+  // Only focus input on keyboard event, not on mount/controls change
+  const [shouldFocus, setShouldFocus] = React.useState(false);
+
+  // Focus the current control when focusedIndex changes and shouldFocus is true
   React.useEffect(() => {
-    if (inputRefs.current[focusedIndex]) {
+    if (shouldFocus && inputRefs.current[focusedIndex]) {
       inputRefs.current[focusedIndex].focus();
+      setShouldFocus(false); // Reset after focusing
     }
-  }, [focusedIndex, controlKeys.length]);
+  }, [focusedIndex, controlKeys.length, shouldFocus]);
+
+  // Listen for keyboard events on the panel to trigger focus
+  const handlePanelKeyDown = (e) => {
+    // Focus if not already focused and key is printable or navigation
+    const isPrintable =
+      e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
+    const isNavigation = ["ArrowDown", "ArrowUp", "Tab"].includes(e.key);
+    if (!shouldFocus && (isPrintable || isNavigation)) {
+      setShouldFocus(true);
+    }
+    handleKeyDown(e);
+  };
 
   // Keyboard navigation (skip disabled inputs)
   const handleKeyDown = (e) => {
@@ -336,7 +365,8 @@ export function SimpleControlPanel({
               ...getPanelStyle(minWidth),
               ...position,
               maxHeight: maxHeight ? `${maxHeight}px` : undefined,
-              overflowY: maxHeight ? "auto" : undefined,
+              maxWidth: minWidth ? `${minWidth}px` : undefined,
+              overflowY: maxHeight ? "clip" : undefined,
               top:
                 (typeof position.top === "number"
                   ? position.top
@@ -348,7 +378,7 @@ export function SimpleControlPanel({
             }),
       }}
       tabIndex={-1}
-      onKeyDown={handleKeyDown}
+      onKeyDown={handlePanelKeyDown}
     >
       {/* Collapsed panel */}
       {collapsed && (
@@ -419,7 +449,8 @@ export function SimpleControlPanel({
             <div style={getControlListStyle(maxHeight)}>
               {controlKeys.map((key, idx) => {
                 const config = controls[key];
-                const label = config.label || key;
+                const label = config.label;
+                const inputFullWidth = !label;
                 const handleChange = (value) => {
                   setControlValue(key, value);
                   // For debounced types, call debounced handler
@@ -512,6 +543,198 @@ export function SimpleControlPanel({
                       </div>
                     );
                   case "number":
+                  case "list":
+                    return (
+                      <div
+                        key={key}
+                        style={{
+                          ...labelStyle,
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                        }}
+                        tabIndex={0}
+                        ref={(el) => (inputRefs.current[idx] = el)}
+                        onFocus={() => setFocusedIndex(idx)}
+                        onBlur={() =>
+                          setFocusedListItem({
+                            ...focusedListItem,
+                            [key]: -1,
+                          })
+                        }
+                        onKeyDown={(e) => {
+                          // If a list item is focused, handle Arrow keys for items
+                          const itemCount = config.value.length;
+                          const itemIdx = focusedListItem[key];
+
+                          if (itemIdx !== undefined && itemIdx !== -1) {
+                            if (e.key === "ArrowDown") {
+                              if (itemIdx < itemCount - 1) {
+                                setFocusedListItem({
+                                  ...focusedListItem,
+                                  [key]: itemIdx + 1,
+                                });
+                                e.preventDefault();
+                              } else {
+                                // At last item, move to next input
+                                setFocusedListItem({
+                                  ...focusedListItem,
+                                  [key]: -1,
+                                });
+                                if (idx < controlKeys.length - 1) {
+                                  setFocusedIndex(idx + 1);
+                                  inputRefs.current[idx + 1]?.focus();
+                                }
+                                e.preventDefault();
+                              }
+                            } else if (e.key === "ArrowUp") {
+                              if (itemIdx > 0) {
+                                setFocusedListItem({
+                                  ...focusedListItem,
+                                  [key]: itemIdx - 1,
+                                });
+                                e.preventDefault();
+                              } else {
+                                // At first item, move to previous input
+                                setFocusedListItem({
+                                  ...focusedListItem,
+                                  [key]: -1,
+                                });
+                                if (idx > 0) {
+                                  setFocusedIndex(idx - 1);
+                                  inputRefs.current[idx - 1]?.focus();
+                                }
+                                e.preventDefault();
+                              }
+                            } else if (e.key === "Escape") {
+                              setFocusedListItem({
+                                ...focusedListItem,
+                                [key]: -1,
+                              });
+                              inputRefs.current[idx]?.focus();
+                              e.preventDefault();
+                            } else if (e.key === "Enter") {
+                              if (config.onItemClick && itemIdx !== -1) {
+                                console.log("Enter pressed on item", itemIdx);
+                                const item = config.value[itemIdx];
+                                config.onItemClick(item, itemIdx, e);
+                              }
+                            }
+                          } else {
+                            // If no item is focused, ArrowDown moves to first item
+                            if (e.key === "ArrowDown" && itemCount > 0) {
+                              setFocusedListItem({
+                                ...focusedListItem,
+                                [key]: 0,
+                              });
+                              e.preventDefault();
+                            } else if (e.key === "ArrowUp") {
+                              // ArrowUp from input moves to previous input
+                              if (idx > 0) {
+                                setFocusedIndex(idx - 1);
+                                inputRefs.current[idx - 1]?.focus();
+                              }
+                              e.preventDefault();
+                            }
+                          }
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: inputFullWidth ? 0 : 90,
+                            color: isDisabled
+                              ? inputDisabledStyle.color
+                              : undefined,
+                          }}
+                        >
+                          {label}
+                          {label ? ":" : ""}
+                        </span>
+                        <ul
+                          style={{
+                            width: "100%",
+                            padding: 0,
+                            margin: 0,
+                            listStyle: "none",
+                          }}
+                        >
+                          {Array.isArray(config.value)
+                            ? config.value.map((item, itemIdx) => (
+                                <li
+                                  key={itemIdx}
+                                  tabIndex={-1}
+                                  style={{
+                                    background:
+                                      focusedListItem[key] === itemIdx
+                                        ? "#292e3b"
+                                        : undefined,
+                                    outline:
+                                      focusedListItem[key] === itemIdx
+                                        ? "2px solid var(--abundance-color-brightPurple)"
+                                        : undefined,
+                                    padding: "6px 10px",
+                                    cursor: config.onItemClick
+                                      ? "pointer"
+                                      : "default",
+                                  }}
+                                  onClick={(e) => {
+                                    if (config.onItemClick)
+                                      config.onItemClick(item, itemIdx, e);
+                                    setFocusedListItem({
+                                      ...focusedListItem,
+                                      [key]: -1,
+                                    });
+                                  }}
+                                  onFocus={() =>
+                                    setFocusedListItem({
+                                      ...focusedListItem,
+                                      [key]: itemIdx,
+                                    })
+                                  }
+                                  onMouseOver={() => {
+                                    if (config.onItemMouseOver)
+                                      config.onItemMouseOver(item, itemIdx);
+                                    setFocusedListItem({
+                                      ...focusedListItem,
+                                      [key]: itemIdx,
+                                    });
+                                  }}
+                                  onMouseOut={() => {
+                                    if (config.onItemMouseOut)
+                                      config.onItemMouseOut(item, itemIdx);
+                                    setFocusedListItem({
+                                      ...focusedListItem,
+                                      [key]: -1,
+                                    });
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (config.onItemKeyDown)
+                                      config.onItemKeyDown(item, itemIdx, e);
+                                    console.log(
+                                      "keydown item",
+                                      item,
+                                      itemIdx,
+                                      e.key
+                                    );
+                                  }}
+                                  onBlur={() =>
+                                    setFocusedListItem({
+                                      ...focusedListItem,
+                                      [key]: -1,
+                                    })
+                                  }
+                                >
+                                  {config.itemRenderer
+                                    ? config.itemRenderer(item, itemIdx, {
+                                        /* handlers */
+                                      })
+                                    : String(item)}
+                                </li>
+                              ))
+                            : null}
+                        </ul>
+                      </div>
+                    );
+
                   case "range":
                     return (
                       <div key={key} style={labelStyle}>
@@ -623,13 +846,14 @@ export function SimpleControlPanel({
                       <div key={key} style={labelStyle}>
                         <span
                           style={{
-                            width: 90,
+                            width: inputFullWidth ? 0 : 90,
                             color: isDisabled
                               ? inputDisabledStyle.color
                               : undefined,
                           }}
                         >
-                          {label}:
+                          {label}
+                          {label ? ":" : ""}
                         </span>
                         {config.multiline ? (
                           <textarea
@@ -651,6 +875,7 @@ export function SimpleControlPanel({
                           <input
                             type="text"
                             value={controlValues[key] ?? ""}
+                            placeholder={config.placeholder}
                             onChange={(e) => handleChange(e.target.value)}
                             {...commonProps}
                           />
@@ -819,4 +1044,4 @@ export function SimpleControlPanel({
       )}
     </div>
   );
-}
+});
