@@ -434,32 +434,6 @@ function RunNavigation({
       });
   };
 
-  /** Runs if star is clicked but there's no logged in user */
-  const loginLike = function () {
-    console.log("no user logged in, needs new trylogin");
-    const loginConfirm = confirm(
-      "You are not logged in. Would you like to log in?"
-    );
-    if (loginConfirm) {
-      loginRedirect();
-    } else {
-      // user clicked cancel and is redirected to the run mode
-    }
-  };
-
-  /** Runs if fork is clicked but there's no logged in user */
-  const loginRedirect = function (redirect) {
-    console.log("no user logged in, needs new trylogin");
-    const loginConfirm = confirm(
-      "You are not logged in. Would you like to log in?"
-    );
-    if (loginConfirm) {
-      console.log("login redirect");
-      loginHandler(redirect);
-    } else {
-      // user clicked cancel and is redirected to the run mode
-    }
-  };
   const loginHandler = (redirect) => {
     let forking = false;
     let liking = false;
@@ -521,7 +495,7 @@ function RunNavigation({
           onClick={() => {
             authorizedUserOcto
               ? forkProject(authorizedUserOcto)
-              : loginRedirect("fork");
+              : loginHandler("fork");
           }}
         >
           {forkSvg}
@@ -535,7 +509,7 @@ function RunNavigation({
               ? likeProject(authorizedUserOcto)
               : authorizedUserOcto && starred
               ? unlikeProject(authorizedUserOcto)
-              : loginRedirect("like");
+              : loginHandler("like");
           }}
         >
           {starSvg}

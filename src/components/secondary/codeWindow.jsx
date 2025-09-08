@@ -22,10 +22,6 @@ export default function CodeWindow(props) {
   const [docvalue, setdocValue] = useState("");
   const extensions = [keymap.of(defaultKeymap)];
 
-  loadLanguage("javascript");
-
-  langs.javascript();
-
   useEffect(() => {
     if (props.activeAtom != null) {
       setdocValue(props.activeAtom.code);
@@ -52,7 +48,6 @@ export default function CodeWindow(props) {
       semi: "error",
       "callback-return": "off",
     },
-
   };
 
   return (
@@ -72,7 +67,7 @@ export default function CodeWindow(props) {
             },
             preventDefault: true,
           }),
-          langs.javascript(),
+          javascript(),
           linter(
             esLint(new eslint.Linter(), {
               rules: {

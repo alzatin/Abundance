@@ -973,15 +973,6 @@ function CreateMode({
         navigate(
           `/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepoName}`
         );
-        const loginConfirm = confirm(
-          "You are not logged in. Would you like to log in?"
-        );
-
-        if (loginConfirm) {
-          loginRedirect();
-        } else {
-          // user clicked cancel and is redirected to the run mode
-        }
       });
   }
 }
