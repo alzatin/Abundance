@@ -4,6 +4,7 @@ import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
 import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
+import on from "../../js/circular-menu/src/on.js";
 
 export default function GitSearchMenu({
   activeAtom,
@@ -170,15 +171,27 @@ export default function GitSearchMenu({
       value: [...combinedResults],
 
       order: 2,
+      onItemClick: (item) => {
+        handleItemClick(null, item);
+      },
+      onItemMouseOver: (item) => {
+        handleMouseOver(item);
+      },
+      onItemMouseOut: () => {
+        handleMouseOut();
+      },
+      onItemKeyDown: (item, idx, event) => {
+        console.log("Key Down Event on Item:", item, "Event:", event);
+        if (event.key === "Enter") {
+          handleItemClick(event, item);
+        }
+      },
       itemRenderer: (item, idx) => {
         const isSelected = false; //selectedIndex === idx;
         if (item.isLocal) {
           return (
             <div
-              onClick={(e) => !isLoading && handleItemClick(e, item)}
               key={item.id}
-              onMouseEnter={() => handleMouseOver(item)}
-              onMouseLeave={() => handleMouseOut()}
               className={`local-atom ${isSelected ? "selected" : ""}`}
               title={`Local Atom - ${item.atomCategory}`}
             >
@@ -189,15 +202,7 @@ export default function GitSearchMenu({
         } else {
           return (
             <div
-              onClick={(e) => !isLoading && handleItemClick(e, item)}
               key={item.id}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleItemClick(e, item);
-                }
-              }}
-              onMouseEnter={() => handleMouseOver(item)}
-              onMouseLeave={() => handleMouseOut()}
               className={`github-repo ${isSelected ? "selected" : ""}`}
               title="GitHub Repository"
             >
@@ -213,7 +218,7 @@ export default function GitSearchMenu({
   }, [data, debouncedSearchTerm]);
 
   const handleItemClick = (e, item) => {
-    e.stopPropagation(); // Prevent event propagation
+    e?.stopPropagation(); // Prevent event propagation
     setIsHovering(false);
     if (item.isLocal) {
       placeLocalAtom(e, item.atomType);

@@ -612,6 +612,12 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                               });
                               inputRefs.current[idx]?.focus();
                               e.preventDefault();
+                            } else if (e.key === "Enter") {
+                              if (config.onItemClick && itemIdx !== -1) {
+                                console.log("Enter pressed on item", itemIdx);
+                                const item = config.value[itemIdx];
+                                config.onItemClick(item, itemIdx, e);
+                              }
                             }
                           } else {
                             // If no item is focused, ArrowDown moves to first item
@@ -685,10 +691,30 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                     })
                                   }
                                   onMouseOver={() => {
+                                    if (config.onItemMouseOver)
+                                      config.onItemMouseOver(item, itemIdx);
                                     setFocusedListItem({
                                       ...focusedListItem,
                                       [key]: itemIdx,
                                     });
+                                  }}
+                                  onMouseOut={() => {
+                                    if (config.onItemMouseOut)
+                                      config.onItemMouseOut(item, itemIdx);
+                                    setFocusedListItem({
+                                      ...focusedListItem,
+                                      [key]: -1,
+                                    });
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (config.onItemKeyDown)
+                                      config.onItemKeyDown(item, itemIdx, e);
+                                    console.log(
+                                      "keydown item",
+                                      item,
+                                      itemIdx,
+                                      e.key
+                                    );
                                   }}
                                   onBlur={() =>
                                     setFocusedListItem({
@@ -696,14 +722,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                       [key]: -1,
                                     })
                                   }
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                      setFocusedListItem({
-                                        ...focusedListItem,
-                                        [key]: -1,
-                                      });
-                                    }
-                                  }}
                                 >
                                   {config.itemRenderer
                                     ? config.itemRenderer(item, itemIdx, {

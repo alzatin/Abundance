@@ -16,6 +16,7 @@ export interface ListControlConfig {
   onItemClick?: (item: any, idx: number, event: React.MouseEvent) => void;
   onItemMouseOver?: (item: any, idx: number, event: React.MouseEvent) => void;
   onItemMouseOut?: (item: any, idx: number, event: React.MouseEvent) => void;
+  onItemKeyDown?: (item: any, idx: number, event: React.KeyboardEvent) => void;
   disabled?: boolean;
 }
 export interface ButtonControlConfig {
