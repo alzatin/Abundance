@@ -14,7 +14,6 @@ export default function GitSearchMenu({
   setParamsMenuExpanded,
   position,
   collapsedOffset,
-  controlPanelRef,
   gitRef,
   setErrorNotification,
 }) {
@@ -30,7 +29,6 @@ export default function GitSearchMenu({
 
   const handleSearchBarValueChange = function (value) {
     setInputValue(value.toLowerCase());
-    //setSelectedIndex(-1); // Reset selection when search changes
   };
 
   let lastKeyQuery = lastKey
@@ -305,9 +303,10 @@ export default function GitSearchMenu({
       {isHovering ? (
         <div
           className="GitProjectInfoPanel"
+          height={screenHeight / 2}
           style={{
             position: "absolute",
-            top: position?.top - 45 || 0,
+            top: position?.top - 85 || 0,
             left: position?.left + 350 || 0,
           }}
         >
