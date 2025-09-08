@@ -843,7 +843,6 @@ const ShowProjects = ({
         className="login-nav-item"
         onClick={() => {
           setNoUserBrowsing(false);
-          loginRedirect();
         }}
       >
         <p>Login</p>
