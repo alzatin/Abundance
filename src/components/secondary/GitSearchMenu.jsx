@@ -121,12 +121,10 @@ export default function GitSearchMenu({
   const handleMouseOver = (item, key) => {
     setPanelItem(item);
     setIsHovering(true);
-    //setSelectedIndex(key); // Sync mouse hover with keyboard selection
   };
   const handleMouseOut = () => {
     setPanelItem({});
     setIsHovering(false);
-    // Don't reset selectedIndex here to allow keyboard navigation to continue
   };
 
   let getGitListItems = () => {
@@ -306,6 +304,7 @@ export default function GitSearchMenu({
           title={"Github Molecule Search"}
           initialCollapsed={true}
           minWidth={280}
+          maxHeight={350}
           collapsedIcon={GitHubIcon}
           collapsedOffset={collapsedOffset} // shifts expanded panel by 45px right, 45px down
           contentCollapsed={contentCollapsed}

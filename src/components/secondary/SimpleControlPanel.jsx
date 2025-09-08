@@ -118,7 +118,7 @@ const headerStyle = {
 const getControlListStyle = (maxHeight) => ({
   padding: "12px",
   background: "var(--panel-background)",
-  maxHeight: `${maxHeight}px`,
+  maxHeight: `${maxHeight - 50}px`,
   overflowY: "auto",
 });
 
@@ -555,10 +555,17 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         tabIndex={0}
                         ref={(el) => (inputRefs.current[idx] = el)}
                         onFocus={() => setFocusedIndex(idx)}
+                        onBlur={() =>
+                          setFocusedListItem({
+                            ...focusedListItem,
+                            [key]: -1,
+                          })
+                        }
                         onKeyDown={(e) => {
                           // If a list item is focused, handle Arrow keys for items
                           const itemCount = config.value.length;
                           const itemIdx = focusedListItem[key];
+
                           if (itemIdx !== undefined && itemIdx !== -1) {
                             if (e.key === "ArrowDown") {
                               if (itemIdx < itemCount - 1) {
@@ -662,23 +669,40 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   ? "pointer"
                                   : "default",
                               }}
-                              onClick={
-                                config.onItemClick
-                                  ? (e) => config.onItemClick(item, itemIdx, e)
-                                  : undefined
-                              }
+                              onClick={(e) => {
+                                if (config.onItemClick)
+                                  config.onItemClick(item, itemIdx, e);
+                                setFocusedListItem({
+                                  ...focusedListItem,
+                                  [key]: -1,
+                                });
+                              }}
                               onFocus={() =>
                                 setFocusedListItem({
                                   ...focusedListItem,
                                   [key]: itemIdx,
                                 })
                               }
+                              onMouseOver={() => {
+                                setFocusedListItem({
+                                  ...focusedListItem,
+                                  [key]: itemIdx,
+                                });
+                              }}
                               onBlur={() =>
                                 setFocusedListItem({
                                   ...focusedListItem,
                                   [key]: -1,
                                 })
                               }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  setFocusedListItem({
+                                    ...focusedListItem,
+                                    [key]: -1,
+                                  });
+                                }
+                              }}
                             >
                               {config.itemRenderer
                                 ? config.itemRenderer(item, itemIdx, {
