@@ -70,7 +70,7 @@ export default function GitSearchMenu({
       // Auto-dismiss notification after 3 seconds
       setTimeout(() => setErrorNotification(null), 3000);
     });
-    setIsShortcutTriggered(false);
+    //setIsShortcutTriggered(false);
     setInputValue("");
     setIsHovering(false);
 
