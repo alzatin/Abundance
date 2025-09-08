@@ -159,74 +159,9 @@ export default function GitSearchMenu({
     };
   };
   const gitList = useMemo(() => {
+    console.log("Getting Git List Items with data:", data);
     return getGitListItems();
   }, [data, debouncedSearchTerm]);
-
-  console.log("Git List Items:", gitList);
-
-  /*if (isLoading) {
-    // Show local atoms even while loading GitHub results
-    if (localAtoms.length > 0) {
-      const items = localAtoms.map((atom, key) => {
-        const isSelected = selectedIndex === key;
-        return (
-          <li
-            key={atom.id}
-            className={`local-atom ${isSelected ? "selected" : ""} disabled`}
-            title={`Local Atom - ${atom.atomCategory}`}
-          >
-            {atom.atomType}{" "}
-            <span className="atom-category">({atom.atomCategory})</span>
-          </li>
-        );
-      });
-      items.push(
-        <li key="loading" className="loading-item">
-          Loading GitHub results...
-        </li>
-      );
-      return items;
-    }
-    return <li>Loading...</li>;
-  }
-
-  if (isError) {
-    // Show local atoms even if GitHub search fails
-    if (localAtoms.length > 0) {
-      const items = localAtoms.map((atom, key) => {
-        const isSelected = selectedIndex === key;
-        return (
-          <li
-            key={atom.id}
-            className={`local-atom ${isSelected ? "selected" : ""} disabled`}
-            title={`Local Atom - ${atom.atomCategory}`}
-          >
-            {atom.atomType}{" "}
-            <span className="atom-category">({atom.atomCategory})</span>
-          </li>
-        );
-      });
-      items.push(
-        <li key="error" className="error-item">
-          Error loading GitHub results
-        </li>
-      );
-      return items;
-    }
-    return <li>Error loading data</li>;
-  }*/
-
-  /*// Combine local atoms with GitHub results
-  const combinedResults = [...localAtoms];
-  if (data?.repos) {
-    combinedResults.push(
-      ...data.repos.map((repo) => ({ ...repo, isLocal: false }))
-    );
-  }
-  console.log("Combined Results:", combinedResults);
-  /*if (combinedResults.length === 0) {
-    return <li>No results found</li>;
-  }*/
 
   const handleItemClick = (e, item) => {
     e.stopPropagation(); // Prevent event propagation
@@ -236,39 +171,6 @@ export default function GitSearchMenu({
       placeGitHubMolecule(e, item);
     }
   };
-
-  /*return combinedResults.map((item, key) => {
-    const isSelected = selectedIndex === key;
-
-    if (item.isLocal) {
-      return (
-        <li
-          onClick={(e) => !isLoading && handleItemClick(e, item)}
-          key={item.id}
-          onMouseEnter={() => handleMouseOver(item, key)}
-          onMouseLeave={() => handleMouseOut()}
-          className={`local-atom ${isSelected ? "selected" : ""}`}
-          title={`Local Atom - ${item.atomCategory}`}
-        >
-          {item.atomType}{" "}
-          <span className="atom-category">({item.atomCategory})</span>
-        </li>
-      );
-    } else {
-      return (
-        <li
-          onClick={(e) => !isLoading && handleItemClick(e, item)}
-          key={item.id}
-          onMouseEnter={() => handleMouseOver(item, key)}
-          onMouseLeave={() => handleMouseOut()}
-          className={`github-repo ${isSelected ? "selected" : ""}`}
-          title="GitHub Repository"
-        >
-          {item.repoName}
-        </li>
-      );
-    }
-  });*/
 
   /**
    * Filters local atoms based on search term

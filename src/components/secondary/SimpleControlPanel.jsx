@@ -271,6 +271,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   // Focus management
   const controlKeys = Object.keys(controls);
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const [focusedListItem, setFocusedListItem] = useState({});
   const inputRefs = React.useRef([]);
 
   // Debounce timer for input changes
@@ -551,6 +552,78 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           flexDirection: "column",
                           alignItems: "flex-start",
                         }}
+                        tabIndex={0}
+                        ref={(el) => (inputRefs.current[idx] = el)}
+                        onFocus={() => setFocusedIndex(idx)}
+                        onKeyDown={(e) => {
+                          // If a list item is focused, handle Arrow keys for items
+                          const itemCount = config.value.length;
+                          const itemIdx = focusedListItem[key];
+                          if (itemIdx !== undefined && itemIdx !== -1) {
+                            if (e.key === "ArrowDown") {
+                              if (itemIdx < itemCount - 1) {
+                                setFocusedListItem({
+                                  ...focusedListItem,
+                                  [key]: itemIdx + 1,
+                                });
+                                e.preventDefault();
+                              } else {
+                                // At last item, move to next input
+                                setFocusedListItem({
+                                  ...focusedListItem,
+                                  [key]: -1,
+                                });
+                                if (idx < controlKeys.length - 1) {
+                                  setFocusedIndex(idx + 1);
+                                  inputRefs.current[idx + 1]?.focus();
+                                }
+                                e.preventDefault();
+                              }
+                            } else if (e.key === "ArrowUp") {
+                              if (itemIdx > 0) {
+                                setFocusedListItem({
+                                  ...focusedListItem,
+                                  [key]: itemIdx - 1,
+                                });
+                                e.preventDefault();
+                              } else {
+                                // At first item, move to previous input
+                                setFocusedListItem({
+                                  ...focusedListItem,
+                                  [key]: -1,
+                                });
+                                if (idx > 0) {
+                                  setFocusedIndex(idx - 1);
+                                  inputRefs.current[idx - 1]?.focus();
+                                }
+                                e.preventDefault();
+                              }
+                            } else if (e.key === "Escape") {
+                              setFocusedListItem({
+                                ...focusedListItem,
+                                [key]: -1,
+                              });
+                              inputRefs.current[idx]?.focus();
+                              e.preventDefault();
+                            }
+                          } else {
+                            // If no item is focused, ArrowDown moves to first item
+                            if (e.key === "ArrowDown" && itemCount > 0) {
+                              setFocusedListItem({
+                                ...focusedListItem,
+                                [key]: 0,
+                              });
+                              e.preventDefault();
+                            } else if (e.key === "ArrowUp") {
+                              // ArrowUp from input moves to previous input
+                              if (idx > 0) {
+                                setFocusedIndex(idx - 1);
+                                inputRefs.current[idx - 1]?.focus();
+                              }
+                              e.preventDefault();
+                            }
+                          }
+                        }}
                       >
                         <span
                           style={{
@@ -571,47 +644,49 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             listStyle: "none",
                           }}
                         >
-                          {Array.isArray(config.value) &&
-                          config.value.length > 0 ? (
-                            config.value.map((item, itemIdx) => {
-                              const handlers = {
-                                onClick: (e) =>
-                                  config.onItemClick &&
-                                  config.onItemClick(item, itemIdx, e),
-                                onMouseEnter: (e) =>
-                                  config.onItemMouseOver &&
-                                  config.onItemMouseOver(item, itemIdx, e),
-                                onMouseLeave: (e) =>
-                                  config.onItemMouseOut &&
-                                  config.onItemMouseOut(item, itemIdx, e),
-                              };
-                              return config.itemRenderer ? (
-                                config.itemRenderer(item, itemIdx, handlers)
-                              ) : (
-                                <li
-                                  key={itemIdx}
-                                  {...handlers}
-                                  style={{
-                                    padding: "6px 10px",
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  {typeof item === "string"
-                                    ? item
-                                    : JSON.stringify(item)}
-                                </li>
-                              );
-                            })
-                          ) : (
+                          {config.value.map((item, itemIdx) => (
                             <li
+                              key={itemIdx}
+                              tabIndex={-1}
                               style={{
-                                color: inputDisabledStyle.color,
+                                background:
+                                  focusedListItem[key] === itemIdx
+                                    ? "#292e3b"
+                                    : undefined,
+                                outline:
+                                  focusedListItem[key] === itemIdx
+                                    ? "2px solid var(--abundance-color-brightPurple)"
+                                    : undefined,
                                 padding: "6px 10px",
+                                cursor: config.onItemClick
+                                  ? "pointer"
+                                  : "default",
                               }}
+                              onClick={
+                                config.onItemClick
+                                  ? (e) => config.onItemClick(item, itemIdx, e)
+                                  : undefined
+                              }
+                              onFocus={() =>
+                                setFocusedListItem({
+                                  ...focusedListItem,
+                                  [key]: itemIdx,
+                                })
+                              }
+                              onBlur={() =>
+                                setFocusedListItem({
+                                  ...focusedListItem,
+                                  [key]: -1,
+                                })
+                              }
                             >
-                              No items
+                              {config.itemRenderer
+                                ? config.itemRenderer(item, itemIdx, {
+                                    /* handlers */
+                                  })
+                                : String(item)}
                             </li>
-                          )}
+                          ))}
                         </ul>
                       </div>
                     );
