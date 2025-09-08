@@ -5,7 +5,6 @@ import React, {
   useImperativeHandle,
 } from "react";
 import { useControls } from "../../hooks/useControls";
-import { color } from "@uiw/react-codemirror";
 
 // SVG icons (Settings, X, CaretDown)
 const SettingsIcon = ({ size = 14 }) => (
@@ -366,7 +365,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
               ...getPanelStyle(minWidth),
               ...position,
               maxHeight: maxHeight ? `${maxHeight}px` : undefined,
-              overflowY: maxHeight ? "auto" : undefined,
+              maxWidth: minWidth ? `${minWidth}px` : undefined,
+              overflowY: maxHeight ? "clip" : undefined,
               top:
                 (typeof position.top === "number"
                   ? position.top

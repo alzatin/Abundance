@@ -190,7 +190,7 @@ export default function GitSearchMenu({
             <li
               onClick={(e) => !isLoading && handleItemClick(e, item)}
               key={item.id}
-              onMouseEnter={() => handleMouseOver(item, key)}
+              onMouseEnter={() => handleMouseOver(item)}
               onMouseLeave={() => handleMouseOut()}
               className={`local-atom ${isSelected ? "selected" : ""}`}
               title={`Local Atom - ${item.atomCategory}`}
@@ -204,7 +204,7 @@ export default function GitSearchMenu({
             <li
               onClick={(e) => !isLoading && handleItemClick(e, item)}
               key={item.id}
-              onMouseEnter={() => handleMouseOver(item, key)}
+              onMouseEnter={() => handleMouseOver(item)}
               onMouseLeave={() => handleMouseOut()}
               className={`github-repo ${isSelected ? "selected" : ""}`}
               title="GitHub Repository"
@@ -297,20 +297,97 @@ export default function GitSearchMenu({
   );
 
   return (
-    <div>
-      <SimpleControlPanel
-        controls={controls}
-        id={id}
-        position={position || { top: screenHeight / 2 - 10, left: 55 }}
-        title={"Github Molecule Search"}
-        initialCollapsed={true}
-        minWidth={280}
-        collapsedIcon={GitHubIcon}
-        collapsedOffset={collapsedOffset} // shifts expanded panel by 45px right, 45px down
-        contentCollapsed={contentCollapsed}
-        setContentCollapsed={setContentCollapsed}
-        ref={gitRef}
-      />
-    </div>
+    <>
+      <div>
+        <SimpleControlPanel
+          controls={controls}
+          id={id}
+          position={position || { top: screenHeight / 2 - 10, left: 55 }}
+          title={"Github Molecule Search"}
+          initialCollapsed={true}
+          minWidth={280}
+          collapsedIcon={GitHubIcon}
+          collapsedOffset={collapsedOffset} // shifts expanded panel by 45px right, 45px down
+          contentCollapsed={contentCollapsed}
+          setContentCollapsed={setContentCollapsed}
+          ref={gitRef}
+        />
+      </div>
+      {isHovering ? (
+        <div
+          className="GitProjectInfoPanel"
+          style={{
+            position: "absolute",
+            top: position?.top - 45 || 0,
+            left: position?.left + 350 || 0,
+          }}
+        >
+          <div className="GitInfoLeft">
+            <img src={panelItem.svgURL}></img>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ transform: "scale(.7)" }}
+                width="16"
+                height="16"
+              >
+                <path d="M8 .2l4.9 15.2L0 6h16L3.1 15.4z" />
+              </svg>
+              <p style={{ fontSize: "0.5em" }}>
+                {panelItem.ranking || (panelItem.isLocal ? "Local" : "")}
+              </p>
+            </div>
+          </div>
+
+          <div className="GitInfo">
+            {panelItem.isLocal ? (
+              // Display info for local atoms
+              <>
+                <div>
+                  <strong>Atom Type: </strong>
+                  <span>{panelItem.atomType}</span>
+                </div>
+                <div>
+                  <strong>Category: </strong>
+                  <span>{panelItem.atomCategory || "General"}</span>
+                </div>
+                <div>
+                  <strong>Source: </strong>
+                  <span>Local Atom (Circular Menu)</span>
+                </div>
+                <div>
+                  <strong>Description: </strong>
+                  <span>Click to place this atom on the canvas</span>
+                </div>
+              </>
+            ) : (
+              // Display info for GitHub repos
+              <>
+                <div>
+                  <strong>Project Name: </strong>
+                  <span>{panelItem.repoName}</span>
+                </div>
+                <div>
+                  <strong>Creator: </strong>
+                  <span>{panelItem.owner}</span>
+                </div>
+                <div>
+                  <strong>Description: </strong>
+                  <span>{panelItem.description || null}</span>
+                </div>
+                <div>
+                  <strong>Topics: </strong>
+                  <span>{panelItem.topics}</span>
+                </div>
+                <div>
+                  <strong>Created: </strong>
+                  <span>{panelItem.dateCreated}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
