@@ -651,66 +651,68 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             listStyle: "none",
                           }}
                         >
-                          {config.value.map((item, itemIdx) => (
-                            <li
-                              key={itemIdx}
-                              tabIndex={-1}
-                              style={{
-                                background:
-                                  focusedListItem[key] === itemIdx
-                                    ? "#292e3b"
-                                    : undefined,
-                                outline:
-                                  focusedListItem[key] === itemIdx
-                                    ? "2px solid var(--abundance-color-brightPurple)"
-                                    : undefined,
-                                padding: "6px 10px",
-                                cursor: config.onItemClick
-                                  ? "pointer"
-                                  : "default",
-                              }}
-                              onClick={(e) => {
-                                if (config.onItemClick)
-                                  config.onItemClick(item, itemIdx, e);
-                                setFocusedListItem({
-                                  ...focusedListItem,
-                                  [key]: -1,
-                                });
-                              }}
-                              onFocus={() =>
-                                setFocusedListItem({
-                                  ...focusedListItem,
-                                  [key]: itemIdx,
-                                })
-                              }
-                              onMouseOver={() => {
-                                setFocusedListItem({
-                                  ...focusedListItem,
-                                  [key]: itemIdx,
-                                });
-                              }}
-                              onBlur={() =>
-                                setFocusedListItem({
-                                  ...focusedListItem,
-                                  [key]: -1,
-                                })
-                              }
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  setFocusedListItem({
-                                    ...focusedListItem,
-                                    [key]: -1,
-                                  });
-                                }
-                              }}
-                            >
-                              {config.itemRenderer
-                                ? config.itemRenderer(item, itemIdx, {
-                                    /* handlers */
-                                  })
-                                : String(item)}
-                            </li>
-                          ))}
+                          {Array.isArray(config.value)
+                            ? config.value.map((item, itemIdx) => (
+                                <li
+                                  key={itemIdx}
+                                  tabIndex={-1}
+                                  style={{
+                                    background:
+                                      focusedListItem[key] === itemIdx
+                                        ? "#292e3b"
+                                        : undefined,
+                                    outline:
+                                      focusedListItem[key] === itemIdx
+                                        ? "2px solid var(--abundance-color-brightPurple)"
+                                        : undefined,
+                                    padding: "6px 10px",
+                                    cursor: config.onItemClick
+                                      ? "pointer"
+                                      : "default",
+                                  }}
+                                  onClick={(e) => {
+                                    if (config.onItemClick)
+                                      config.onItemClick(item, itemIdx, e);
+                                    setFocusedListItem({
+                                      ...focusedListItem,
+                                      [key]: -1,
+                                    });
+                                  }}
+                                  onFocus={() =>
+                                    setFocusedListItem({
+                                      ...focusedListItem,
+                                      [key]: itemIdx,
+                                    })
+                                  }
+                                  onMouseOver={() => {
+                                    setFocusedListItem({
+                                      ...focusedListItem,
+                                      [key]: itemIdx,
+                                    });
+                                  }}
+                                  onBlur={() =>
+                                    setFocusedListItem({
+                                      ...focusedListItem,
+                                      [key]: -1,
+                                    })
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      setFocusedListItem({
+                                        ...focusedListItem,
+                                        [key]: -1,
+                                      });
+                                    }
+                                  }}
+                                >
+                                  {config.itemRenderer
+                                    ? config.itemRenderer(item, itemIdx, {
+                                        /* handlers */
+                                      })
+                                    : String(item)}
+                                </li>
+                              ))
+                            : null}
                         </ul>
                       </div>
                     );
