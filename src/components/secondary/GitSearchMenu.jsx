@@ -60,6 +60,64 @@ export default function GitSearchMenu({
       return undefined;
     },
   });
+
+  /**
+   * Runs when a menu option is clicked to place a new atom from searching on GitHub.
+   * @param {object} ev - The event triggered by clicking on a menu item.
+   */
+  function placeGitHubMolecule(e, item) {
+    GlobalVariables.currentMolecule.loadGithubMoleculeByName(item).catch(() => {
+      setErrorNotification(`Error: Project Missing`);
+      // Auto-dismiss notification after 3 seconds
+      setTimeout(() => setErrorNotification(null), 3000);
+    });
+    setSearchingGitHub(false);
+    setIsShortcutTriggered(false);
+    setSearch("");
+    setIsHovering(false);
+
+    // Ensure canvas regains focus after placing molecule
+    const flowCanvas = document.getElementById("flow-canvas");
+    if (flowCanvas) {
+      flowCanvas.focus();
+    }
+  }
+  /**
+   * Runs when a local atom option is clicked to place a new atom from the circular menu atoms.
+   * @param {object} ev - The event triggered by clicking on a menu item.
+   * @param {string} atomType - The type of atom to place.
+   */
+  function placeLocalAtom(e, atomType) {
+    GlobalVariables.currentMolecule.placeAtom(
+      {
+        x: GlobalVariables.pixelsToWidth(
+          GlobalVariables.lastClick
+            ? GlobalVariables.lastClick[0]
+            : window.innerWidth * 0.75
+        ),
+        y: GlobalVariables.pixelsToHeight(
+          GlobalVariables.lastClick
+            ? GlobalVariables.lastClick[1]
+            : window.innerHeight * 0.37
+        ),
+        parent: GlobalVariables.currentMolecule,
+        atomType: atomType,
+        uniqueID: GlobalVariables.generateUniqueID(),
+      },
+      true
+    );
+    setSearchingGitHub(false);
+
+    setSearch("");
+    setIsShortcutTriggered(false);
+    setIsHovering(false);
+
+    // Ensure canvas regains focus after placing atom
+    const flowCanvas = document.getElementById("flow-canvas");
+    if (flowCanvas) {
+      flowCanvas.focus();
+    }
+  }
   const handleMouseOver = (item, key) => {
     setPanelItem(item);
     setIsHovering(true);
