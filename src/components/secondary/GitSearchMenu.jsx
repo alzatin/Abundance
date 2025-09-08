@@ -4,7 +4,6 @@ import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
 import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
-import { placeholder } from "@uiw/react-codemirror";
 
 export default function GitSearchMenu({
   activeAtom,
@@ -17,17 +16,17 @@ export default function GitSearchMenu({
   gitRef,
 }) {
   const [inputChanged, setInputChanged] = useState("");
-  const [search, setSearch] = useState("");
+  const [inputValue, setInputValue] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [panelItem, setPanelItem] = useState({});
   const [isHovering, setIsHovering] = useState(false);
   const [yearShow, setYearShow] = useState("2024");
   const [lastKey, setLastKey] = useState("");
 
-  const debouncedSearchTerm = useDebounce(search, 200);
+  const debouncedSearchTerm = useDebounce(inputValue, 200);
 
   const handleSearchBarValueChange = function (value) {
-    setSearch(value.toLowerCase());
+    setInputValue(value.toLowerCase());
     //setSelectedIndex(-1); // Reset selection when search changes
   };
 
@@ -36,8 +35,8 @@ export default function GitSearchMenu({
     : "&lastKey";
 
   let searchQuery;
-  if (search != "") {
-    searchQuery = "&query=" + search + "&yearShow=" + yearShow;
+  if (debouncedSearchTerm != "") {
+    searchQuery = "&query=" + debouncedSearchTerm + "&yearShow=" + yearShow;
   } else {
     searchQuery = "&query" + "&yearShow=" + yearShow;
   }
@@ -71,9 +70,8 @@ export default function GitSearchMenu({
       // Auto-dismiss notification after 3 seconds
       setTimeout(() => setErrorNotification(null), 3000);
     });
-    setSearchingGitHub(false);
     setIsShortcutTriggered(false);
-    setSearch("");
+    setInputValue("");
     setIsHovering(false);
 
     // Ensure canvas regains focus after placing molecule
@@ -106,10 +104,9 @@ export default function GitSearchMenu({
       },
       true
     );
-    setSearchingGitHub(false);
 
-    setSearch("");
-    setIsShortcutTriggered(false);
+    setInputValue("");
+    //setIsShortcutTriggered(false);
     setIsHovering(false);
 
     // Ensure canvas regains focus after placing atom
@@ -133,7 +130,6 @@ export default function GitSearchMenu({
     if (isLoading || isError) {
       // Show local atoms even while loading GitHub results
       if (localAtoms.length > 0) {
-        console.log("Local Atoms while loading:", localAtoms);
         return {
           type: "list",
           value: [...localAtoms],
@@ -142,7 +138,7 @@ export default function GitSearchMenu({
           itemRenderer: (item, idx) => {
             const isSelected = selectedIndex === idx;
             return (
-              <li
+              <div
                 key={item.id}
                 className={`local-atom ${
                   isSelected ? "selected" : ""
@@ -151,18 +147,11 @@ export default function GitSearchMenu({
               >
                 {item.atomType}{" "}
                 <span className="atom-category">({item.atomCategory})</span>
-              </li>
+              </div>
             );
           },
         };
       }
-      /*
-      items.push(
-        <li key="loading" className="loading-item">
-          Loading GitHub results...
-        </li>
-      );*/
-      //return { type: "list", value: [], label: "Loading...", order: 1 };
     }
     // Combine local atoms with GitHub results
     const combinedResults = [...localAtoms];
@@ -171,7 +160,6 @@ export default function GitSearchMenu({
         ...data.repos.map((repo) => ({ ...repo, isLocal: false }))
       );
     }
-    console.log("Combined Results:", combinedResults);
     if (combinedResults.length === 0) {
       return {};
     }
@@ -185,7 +173,7 @@ export default function GitSearchMenu({
         const isSelected = false; //selectedIndex === idx;
         if (item.isLocal) {
           return (
-            <li
+            <div
               onClick={(e) => !isLoading && handleItemClick(e, item)}
               key={item.id}
               onMouseEnter={() => handleMouseOver(item)}
@@ -195,32 +183,37 @@ export default function GitSearchMenu({
             >
               {item.atomType}{" "}
               <span className="atom-category">({item.atomCategory})</span>
-            </li>
+            </div>
           );
         } else {
           return (
-            <li
+            <div
               onClick={(e) => !isLoading && handleItemClick(e, item)}
               key={item.id}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleItemClick(e, item);
+                }
+              }}
               onMouseEnter={() => handleMouseOver(item)}
               onMouseLeave={() => handleMouseOut()}
               className={`github-repo ${isSelected ? "selected" : ""}`}
               title="GitHub Repository"
             >
               {item.repoName}
-            </li>
+            </div>
           );
         }
       },
     };
   };
   const gitList = useMemo(() => {
-    console.log("Getting Git List Items with data:", data);
     return getGitListItems();
   }, [data, debouncedSearchTerm]);
 
   const handleItemClick = (e, item) => {
     e.stopPropagation(); // Prevent event propagation
+    setIsHovering(false);
     if (item.isLocal) {
       placeLocalAtom(e, item.atomType);
     } else {
@@ -259,14 +252,14 @@ export default function GitSearchMenu({
   let gitParams = {
     gitsearch: {
       type: "string",
-      value: "",
+      value: inputValue,
       placeholder: "Search for GitHub Molecules",
       order: 1,
       onChange: (value) => {
         handleSearchBarValueChange(value);
       },
     },
-    exampleList: gitList,
+    gitList: gitList,
   };
   const [
     values,

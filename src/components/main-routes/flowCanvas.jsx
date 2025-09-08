@@ -2,7 +2,6 @@ import React, { memo, useEffect, useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import Molecule from "../../molecules/molecule.js";
 import { createCMenu, cmenu } from "../../js/NewMenu.js";
-import GitSearch from "../secondary/GitSearch.jsx";
 import { useNavigate } from "react-router-dom";
 
 function onWindowResize() {
@@ -159,12 +158,6 @@ export default memo(function FlowCanvas({
         molecule.keyPress(e.key);
       });
     }
-
-    /* if (e.key == "Shift" && !GlobalVariables.ctrlDown) {
-      // Trigger GitSearch when Shift is pressed
-      setSearchingGitHub(true);
-      setIsShortcutTriggered(true); // Set the shortcut flag
-    }*/
 
     if (GlobalVariables.ctrlDown && shortCuts.hasOwnProperty([e.key])) {
       e.preventDefault();
@@ -583,19 +576,6 @@ export default memo(function FlowCanvas({
       </div>
       <div>
         <div id="circle-menu1" className="cn-menu1" ref={circleMenu}></div>
-        <GitSearch
-          {...{
-            search,
-            setSearch,
-            searchingGitHub,
-            setSearchingGitHub,
-            isHovering,
-            setIsHovering,
-            isShortcut,
-            setIsShortcutTriggered,
-            setErrorNotification,
-          }}
-        />
       </div>
 
       {/* Undo notification */}
