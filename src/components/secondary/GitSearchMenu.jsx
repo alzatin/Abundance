@@ -11,9 +11,9 @@ export default function GitSearchMenu({
   id,
   contentCollapsed,
   setContentCollapsed,
+  setParamsMenuExpanded,
   position,
   collapsedOffset,
-  controlPanelRef,
   gitRef,
   setErrorNotification,
 }) {
@@ -29,7 +29,6 @@ export default function GitSearchMenu({
 
   const handleSearchBarValueChange = function (value) {
     setInputValue(value.toLowerCase());
-    //setSelectedIndex(-1); // Reset selection when search changes
   };
 
   let lastKeyQuery = lastKey
@@ -75,12 +74,7 @@ export default function GitSearchMenu({
     //setIsShortcutTriggered(false);
     setInputValue("");
     setIsHovering(false);
-
-    // Ensure canvas regains focus after placing molecule
-    const flowCanvas = document.getElementById("flow-canvas");
-    if (flowCanvas) {
-      flowCanvas.focus();
-    }
+    setParamsMenuExpanded();
   }
   /**
    * Runs when a local atom option is clicked to place a new atom from the circular menu atoms.
@@ -110,12 +104,7 @@ export default function GitSearchMenu({
     setInputValue("");
     //setIsShortcutTriggered(false);
     setIsHovering(false);
-
-    // Ensure canvas regains focus after placing atom
-    const flowCanvas = document.getElementById("flow-canvas");
-    if (flowCanvas) {
-      flowCanvas.focus();
-    }
+    setParamsMenuExpanded();
   }
   const handleMouseOver = (item, key) => {
     setPanelItem(item);
@@ -314,9 +303,10 @@ export default function GitSearchMenu({
       {isHovering ? (
         <div
           className="GitProjectInfoPanel"
+          height={screenHeight / 2}
           style={{
             position: "absolute",
-            top: position?.top - 45 || 0,
+            top: position?.top - 85 || 0,
             left: position?.left + 350 || 0,
           }}
         >

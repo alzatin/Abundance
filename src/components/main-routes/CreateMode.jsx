@@ -793,6 +793,7 @@ function CreateMode({
               id: "atom-git-search-panel",
               contentCollapsed: expandedMenu !== "git-search",
               setContentCollapsed: () => setExpandedMenu("git-search"),
+              setParamsMenuExpanded: () => setExpandedMenu("params"),
               position: { top: screenHeight / 2 + 80, left: 10 },
               collapsedOffset: [45, -90],
               gitRef: gitRef,
