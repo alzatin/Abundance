@@ -151,6 +151,7 @@ export default class Atom extends ObservableEntity {
         this.inputs.forEach((ap) => {
           //Find the matching IO and set it to be the saved value
           if (ioValue.name == ap.name && ap.type == "input") {
+            console.log(ap);
             ap.value = ioValue.ioValue;
             if (
               "currentEquation" in ioValue &&
@@ -870,12 +871,14 @@ export default class Atom extends ObservableEntity {
    */
   evaluateEquation(equation) {
     let substitutedEquation = String(equation ?? "").trim();
-    
+
     // Handle empty or whitespace-only equations gracefully
     if (!substitutedEquation) {
-      throw new Error("Empty mathematical expression. Please enter a valid expression.");
+      throw new Error(
+        "Empty mathematical expression. Please enter a valid expression."
+      );
     }
-    
+
     const variables = this.extractVariablesFromEquation(substitutedEquation);
     const unresolved = [];
     const resolvedValues = {};
@@ -939,7 +942,7 @@ export default class Atom extends ObservableEntity {
           String(resolvedValues[variable])
         );
       }
-      
+
       // Safely evaluate the mathematical expression with error handling
       try {
         const result = GlobalVariables.limitedEvaluate(substitutedEquation);

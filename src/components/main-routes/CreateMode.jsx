@@ -144,7 +144,8 @@ function CreateMode({
       GlobalVariables.ctrlDown = true;
     }
     // Prevent forwarding if code atom is active, we don't want to interfere with code editing
-    if (activeAtom.type === "Code") return;
+    if (!document.getElementById("code-window").classList.contains("code-off"))
+      return;
 
     if (e.key == "Shift" && !GlobalVariables.ctrlDown) {
       // Trigger GitSearch Panel when Shift is pressed
