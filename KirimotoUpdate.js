@@ -111,7 +111,7 @@ const generateGcode = (
           number: 1,
           type: "endmill",
           name: "endmill",
-          metric: true,
+          metric: false,
           shaft_diam: toolSize,
           shaft_len: 1,
           flute_diam: toolSize,
@@ -213,6 +213,13 @@ const generateGcode = (
       });
     })
     .then((eng) => {
+      // Determine G-code units command based on project units
+      const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
+      const unitsCommand =
+        projectUnits === "MM"
+          ? "G21 ; set units to MM (required)"
+          : "G20 ; set units to inches (required)";
+
       return eng.setDevice({
         mode: "CAM",
         internal: 0,
@@ -223,7 +230,7 @@ const generateGcode = (
         originCenter: false,
         spindleMax: 24000,
         gcodePre: [
-          "G21 ; set units to MM (required)",
+          unitsCommand,
           "G90 ; absolute position mode (required)",
           "G0 F3000 ; set default rapid move feedrate",
           "G1 F1000 ; set default cutting feedrate",

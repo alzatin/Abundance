@@ -90,8 +90,7 @@ export default class Gcode extends Atom {
       {
         name: "Cut Through",
         valueType: "number",
-        defaultValue:
-          GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 1.35 : 0.25,
+        defaultValue: 0,
       },
       {
         name: "Part Name",
@@ -562,6 +561,9 @@ export default class Gcode extends Atom {
   createInputParams() {
     let inputParams = super.createInputParams();
 
+    //Temporarily disable the "Cut Through" input parameter
+    inputParams[this.uniqueID + "Cut Through"].disabled = true;
+
     /*inputParams[this.uniqueID + "Tool"] = {
       type: "select",
       value: this.findIOValue("Tool") || "end 1/4",
@@ -615,6 +617,7 @@ export default class Gcode extends Atom {
         }
       },
     };
+
     return inputParams;
   }
 
