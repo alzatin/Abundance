@@ -14,7 +14,9 @@ import LoginMode from "./components/main-routes/LoginMode.jsx";
 import RunMode from "./components/main-routes/RunMode.jsx";
 import CreateMode from "./components/main-routes/CreateMode.jsx";
 import UserGuidePage from "./components/main-routes/UserGuidePage.jsx";
-import cadWorker from "./worker/worker.ts?worker";
+import cadWorker from "./worker/worker.js?worker";
+import WorkerURL from "./worker/worker.js?url&worker";
+import * as workerpool from "workerpool";
 
 import { QueryClient, QueryClientProvider } from "react-query";
 import Callback from "./components/main-routes/CallBack.jsx";
@@ -45,6 +47,14 @@ const queryClient = new QueryClient();
  * The octokit instance which allows authenticated interaction with GitHub.
  * @type {object}
  */
+
+const pool = workerpool.pool(WorkerURL, {
+    maxWorkers: 3,
+    workerOpts: {
+        // By default, Vite uses a module worker in dev mode, which can cause your application to fail. Therefore, we need to use a module worker in dev mode and a classic worker in prod mode.
+        type: import.meta.env.PROD ? undefined : "module"
+    }
+});
 
 const cad = wrap(new cadWorker());
 
@@ -198,6 +208,7 @@ function AppContent() {
     }
 
     GlobalVariables.cad = cad;
+    GlobalVariables.pool = pool;
   }, [
     activeAtom,
     setMesh,

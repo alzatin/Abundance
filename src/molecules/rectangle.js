@@ -63,6 +63,8 @@ export default class Rectangle extends Atom {
   compute(inputs) {
     const xVal = inputs["x length"];
     const yVal = inputs["y length"];
-    return GlobalVariables.cad.rectangle(xVal, yVal, this.getContext());
+    return GlobalVariables.pool
+      .proxy()
+      .then((worker) => worker.rectangle(xVal, yVal, this.getContext()));
   }
 }
