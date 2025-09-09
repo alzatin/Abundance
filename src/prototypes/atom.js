@@ -151,7 +151,6 @@ export default class Atom extends ObservableEntity {
         this.inputs.forEach((ap) => {
           //Find the matching IO and set it to be the saved value
           if (ioValue.name == ap.name && ap.type == "input") {
-            console.log(ap);
             ap.value = ioValue.ioValue;
             if (
               "currentEquation" in ioValue &&
