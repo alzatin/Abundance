@@ -108,7 +108,6 @@ const generateGcode = (
       // Determine if project uses metric units
       const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
       const isMetric = projectUnits === "MM";
-      console.log("Project units detected as:", projectUnits);
 
       return eng.setTools([
         {
@@ -116,7 +115,7 @@ const generateGcode = (
           number: 1,
           type: "endmill",
           name: "endmill",
-          metric: false, //isMetric,
+          metric: isMetric,
           shaft_diam: toolSize,
           shaft_len: 1,
           flute_diam: toolSize,
@@ -224,7 +223,6 @@ const generateGcode = (
         projectUnits === "MM"
           ? "G21 ; set units to MM (required)"
           : "G20 ; set units to inches (required)";
-      console.log("Units command determined as:", unitsCommand);
 
       return eng.setDevice({
         mode: "CAM",
