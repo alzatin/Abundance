@@ -153,25 +153,8 @@ export default class Code extends Atom {
   }
 
   createInputParams(setInputChanged) {
-    let inputParams = {};
+    let inputParams = super.createInputParams(setInputChanged);
     /** Runs through active atom inputs and adds IO parameters to default param*/
-    this.inputs.map((input) => {
-      const checkConnector = () => {
-        return input.connectors.length > 0;
-      };
-      inputParams[this.uniqueID + input.name] = {
-        type: input.valueType ? input.valueType : "string",
-        value: input.value,
-        label: input.name,
-        disabled: checkConnector(),
-        step: 0.01,
-        onChange: (value) => {
-          if (input.value !== value) {
-            input.setValue(value);
-          }
-        },
-      };
-    });
 
     inputParams["Edit Code"] = {
       type: "button",
@@ -284,10 +267,8 @@ export default class Code extends Atom {
                 "input"
               );
             } else {
-              // Update type and defaultValue if changed
-              if (existingInput.valueType !== type) {
-                existingInput.valueType = type;
-              }
+              existingInput.valueType = type;
+              existingInput.defaultValue = defaultValue;
             }
           });
           // Remove any inputs not in the new array
@@ -325,6 +306,9 @@ export default class Code extends Atom {
                 defaultValue,
                 "input"
               );
+            } else {
+              existingInput.valueType = type;
+              existingInput.defaultValue = defaultValue;
             }
           });
           // Remove any inputs not in the new array
