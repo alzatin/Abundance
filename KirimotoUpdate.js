@@ -83,6 +83,12 @@ const generateGcode = (
       return eng.setMode("CAM");
     })
     .then((eng) => {
+      if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
+        eng.widget.scale(25.4, 25.4, 25.4); // Scale from mm to inches (1 inch = 25.4 mm)
+      }
+      return eng;
+    })
+    .then((eng) => {
       if (progressCallback) progressCallback(0.15); // 15% - Mode set to CAM
       const bounds = eng.widget.getBoundingBox();
       const x = bounds.max.x - bounds.min.x;
@@ -270,6 +276,7 @@ const generateGcode = (
     })
     .then((gcode) => {
       console.log("G-code generated successfully.");
+
       if (progressCallback) progressCallback(1.0); // 100% - Export complete
       gcodeCallback(gcode); // Only call the callback, don't download
     })
