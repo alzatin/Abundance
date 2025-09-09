@@ -104,14 +104,19 @@ const generateGcode = (
       //eng.moveTo(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
       return eng;
     })
-    .then((eng) =>
-      eng.setTools([
+    .then((eng) => {
+      // Determine if project uses metric units
+      const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
+      const isMetric = projectUnits === "MM";
+      console.log("Project units detected as:", projectUnits);
+
+      return eng.setTools([
         {
           id: 1000,
           number: 1,
           type: "endmill",
           name: "endmill",
-          metric: false,
+          metric: false, //isMetric,
           shaft_diam: toolSize,
           shaft_len: 1,
           flute_diam: toolSize,
@@ -119,8 +124,8 @@ const generateGcode = (
           taper_tip: 0,
           order: 5,
         },
-      ])
-    )
+      ]);
+    })
     .then((eng) => {
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
       const bounds = eng.widget.getBoundingBox();
@@ -219,6 +224,7 @@ const generateGcode = (
         projectUnits === "MM"
           ? "G21 ; set units to MM (required)"
           : "G20 ; set units to inches (required)";
+      console.log("Units command determined as:", unitsCommand);
 
       return eng.setDevice({
         mode: "CAM",
