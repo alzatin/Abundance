@@ -652,7 +652,7 @@ export default class Molecule extends Atom {
       let compileBomItems = [];
       if (result) {
         result.forEach(function (bomElement) {
-          if (bomElement.BOMitemName) {
+          if (bomElement?.BOMitemName) {
             if (!bomList[bomElement.BOMitemName]) {
               //If the list of items doesn't already have one of these
               bomList[bomElement.BOMitemName] = new BOMEntry(); //Create one
