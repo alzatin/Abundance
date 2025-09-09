@@ -83,9 +83,13 @@ const generateGcode = (
       return eng.setMode("CAM");
     })
     .then((eng) => {
+      if (progressCallback) progressCallback(0.2); // 20% - Stock set
       if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
         eng.widget.scale(25.4, 25.4, 25.4); // Scale from mm to inches (1 inch = 25.4 mm)
+        eng.moveTo(centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0
+        return eng;
       }
+      eng.moveTo(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
       return eng;
     })
     .then((eng) => {
@@ -104,11 +108,6 @@ const generateGcode = (
           z: z / 2 + CUT_THROUGH / 2, // correct center for full stock thickness
         },
       });
-    })
-    .then((eng) => {
-      if (progressCallback) progressCallback(0.2); // 20% - Stock set
-      //eng.moveTo(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
-      return eng;
     })
     .then((eng) => {
       // Determine if project uses metric units
