@@ -358,80 +358,94 @@ function RunNavigation({
     var owner = GlobalVariables.currentRepo.owner;
     var repo = GlobalVariables.currentRepo.repoName;
     // if authenticated and it is not your project, make a clone of the project and return to create mode
-    authorizedUserOcto
-      .request("GET /repos/{owner}/{repo}", {
-        owner: owner,
-        repo: repo,
-      })
-      .then((result) => {
-        authorizedUserOcto.rest.repos
-          .createFork({
-            owner: owner,
-            repo: repo,
-          })
-          .then(() => {
-            //push fork to aws
-            addRanking(owner, repo);
-            /*aws dynamo post*/
-            const apiUrl =
-              "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
-            let searchField = (
-              result.data.name +
-              " " +
-              GlobalVariables.currentUser
-            ).toLowerCase();
-            let forkedNodeBody = {
-              owner: GlobalVariables.currentUser,
-              ranking: result.data.stargazers_count,
-              description: result.data.description,
-              searchField: searchField,
-              repoName: result.data.name,
-              forks: 0,
-              topMoleculeID: GlobalVariables.topLevelMolecule.uniqueID,
-              topics: [],
-              readme:
-                "https://raw.githubusercontent.com/" +
-                GlobalVariables.currentUser +
-                "/" +
+    if (owner === GlobalVariables.currentUser) {
+      // Prevent forking your own project
+      setRedirectType(null);
+      console.warn("You cannot fork your own project.");
+      navigate(
+        `/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`
+      );
+      return;
+    } else {
+      authorizedUserOcto
+        .request("GET /repos/{owner}/{repo}", {
+          owner: owner,
+          repo: repo,
+        })
+        .then((result) => {
+          authorizedUserOcto.rest.repos
+            .createFork({
+              owner: owner,
+              repo: repo,
+            })
+            .then(() => {
+              //push fork to aws
+              addRanking(owner, repo);
+              /*aws dynamo post*/
+              const apiUrl =
+                "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
+              let searchField = (
                 result.data.name +
-                "/master/README.md?sanitize=true",
-              contentURL:
-                "https://raw.githubusercontent.com/" +
-                GlobalVariables.currentUser +
-                "/" +
-                result.data.name +
-                "/master/project.abundance?sanitize=true",
-              githubMoleculesUsed: [],
-              parentRepo: owner + "/" + repo,
-              svgURL:
-                "https://raw.githubusercontent.com/" +
-                GlobalVariables.currentUser +
-                "/" +
-                result.data.name +
-                "/master/project.svg?sanitize=true",
-              dateCreated: result.data.created_at,
-              html_url:
-                "https://github.com/" +
-                GlobalVariables.currentUser +
-                "/" +
-                result.data.name,
-            };
-            fetch(apiUrl, {
-              method: "POST",
-              body: JSON.stringify(forkedNodeBody),
-              headers: {
-                "Content-type": "application/json; charset=UTF-8",
-              },
-            }).then((response) => {
-              GlobalVariables.currentRepo = forkedNodeBody;
+                " " +
+                GlobalVariables.currentUser
+              ).toLowerCase();
+              let forkedNodeBody = {
+                owner: GlobalVariables.currentUser,
+                ranking: result.data.stargazers_count,
+                description: result.data.description,
+                searchField: searchField,
+                repoName: result.data.name,
+                forks: 0,
+                topMoleculeID: GlobalVariables.topLevelMolecule.uniqueID,
+                topics: [],
+                readme:
+                  "https://raw.githubusercontent.com/" +
+                  GlobalVariables.currentUser +
+                  "/" +
+                  result.data.name +
+                  "/master/README.md?sanitize=true",
+                contentURL:
+                  "https://raw.githubusercontent.com/" +
+                  GlobalVariables.currentUser +
+                  "/" +
+                  result.data.name +
+                  "/master/project.abundance?sanitize=true",
+                githubMoleculesUsed: [],
+                parentRepo: owner + "/" + repo,
+                svgURL:
+                  "https://raw.githubusercontent.com/" +
+                  GlobalVariables.currentUser +
+                  "/" +
+                  result.data.name +
+                  "/master/project.svg?sanitize=true",
+                dateCreated: result.data.created_at,
+                html_url:
+                  "https://github.com/" +
+                  GlobalVariables.currentUser +
+                  "/" +
+                  result.data.name,
+              };
+              fetch(apiUrl, {
+                method: "POST",
+                body: JSON.stringify(forkedNodeBody),
+                headers: {
+                  "Content-type": "application/json; charset=UTF-8",
+                },
+              }).then((response) => {
+                GlobalVariables.currentRepo = forkedNodeBody;
+                setRedirectType(null);
+                navigate(
+                  `/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`
+                ),
+                  { replace: true };
+              });
+            })
+            .catch((error) => {
+              console.error("Error during forking the repository:", error);
               setRedirectType(null);
-              navigate(
-                `/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`
-              ),
-                { replace: true };
             });
-          });
-      });
+        });
+    }
   };
 
   const loginHandler = (redirect) => {
