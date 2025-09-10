@@ -398,7 +398,7 @@ export default memo(function FlowCanvas({
         setExpandedMenu("params");
         setActiveAtom(activeAtom);
       }
-
+      //
       //Draw the selection box
       if (!clickHandledByMolecule && GlobalVariables.ctrlDown) {
         GlobalVariables.currentMolecule
