@@ -32,6 +32,7 @@ export default memo(function FlowCanvas({
   importNotification,
   errorNotification,
   setErrorNotification,
+  setExpandedMenu,
 }) {
   /** State for github molecule search input */
   const [searchingGitHub, setSearchingGitHub] = useState(false);
@@ -394,6 +395,7 @@ export default memo(function FlowCanvas({
 
       // Set the active atom after all atoms have been processed
       if (activeAtom) {
+        setExpandedMenu("params");
         setActiveAtom(activeAtom);
       }
 
@@ -419,6 +421,7 @@ export default memo(function FlowCanvas({
       if (!clickHandledByMolecule) {
         /* Background click - molecule is active atom */
         setActiveAtom(GlobalVariables.currentMolecule);
+        setExpandedMenu("params");
         GlobalVariables.currentMolecule.selected = true;
         GlobalVariables.currentMolecule.sendToRender();
       }

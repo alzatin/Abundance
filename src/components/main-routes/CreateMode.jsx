@@ -940,6 +940,7 @@ function CreateMode({
               importNotification,
               errorNotification,
               setErrorNotification,
+              setExpandedMenu,
             }}
           />
           <div className="parent flex-parent" id="lowerHalf">
