@@ -1,4 +1,3 @@
-import { Center } from "@react-three/drei";
 import { Engine } from "./engine.js";
 import GlobalVariables from "./src/js/globalvariables.js";
 
@@ -85,10 +84,10 @@ const generateGcode = (
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.15); // 15% - Mode set to CAM
-      const bounds = eng.widget.getBoundingBox();
-      const x = bounds.max.x - bounds.min.x;
-      const y = bounds.max.y - bounds.min.y;
-      const z = bounds.max.z - bounds.min.z;
+      //const bounds = eng.widget.getBoundingBox();
+      //const x = bounds.max.x - bounds.min.x;
+      //const y = bounds.max.y - bounds.min.y;
+      //const z = bounds.max.z - bounds.min.z;
       return eng.setStock({ x: 5, y: 5, z: 0 }); // stock is offset by 5mm in each direction for safety margin
     })
     .then((eng) => {
