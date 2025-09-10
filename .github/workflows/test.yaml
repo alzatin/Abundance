@@ -19,7 +19,7 @@ permissions:
 # Allow one concurrent deployment
 concurrency:
   group: "puppeteer-screenshot-tests"
-  cancel-in-progress: false
+  cancel-in-progress: false # Do not cancel in-progress tests if a new one is triggered
 
 jobs:
   cleanup:

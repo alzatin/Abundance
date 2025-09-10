@@ -17,8 +17,8 @@ permissions:
 
 # Allow one concurrent deployment
 concurrency:
-  group: "deploy-to-github-pages"
-  cancel-in-progress: true
+  group: "deploy-to-abundance-github-io {{ github.ref }}"
+  cancel-in-progress: true # Cancel any in-progress deploys if a new one is triggered
 
 jobs:
   # Single deploy job since we're just deploying
