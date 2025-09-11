@@ -147,8 +147,11 @@ function CreateMode({
     if (!document.getElementById("code-window").classList.contains("code-off"))
       return;
 
-    if (e.key == "Shift" && !GlobalVariables.ctrlDown) {
-      // Trigger GitSearch Panel when Shift is pressed
+    if (
+      (e.key === "Alt" || e.key === "AltGraph") &&
+      !GlobalVariables.ctrlDown
+    ) {
+      // Trigger GitSearch Panel when Option/Alt is pressed
       setExpandedMenu(
         expandedMenuRef.current === "git-search" ? "params" : "git-search"
       );
