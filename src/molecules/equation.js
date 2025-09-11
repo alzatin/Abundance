@@ -212,7 +212,6 @@ export default class Equation extends Atom {
     return new Promise((resolve, reject) => {
       // Use Atom's evaluateEquation method
       this.value = super.evaluateEquation(this.currentEquation);
-      console.log("Equation result:", this.value);
       resolve(this.value);
       this.rerenderInputs();
     });
