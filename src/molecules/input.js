@@ -73,6 +73,9 @@ export default class Input extends Atom {
 
     // Set values first to ensure this.name is correct before creating the parent input
     this.setValues(values);
+    
+    // Apply Y-offset to prevent overlapping with existing Input atoms
+    this.adjustYForCollision();
 
     //Add a new input to the current molecule
     if (typeof this.parent !== "undefined") {
@@ -91,6 +94,39 @@ export default class Input extends Atom {
       throw new Error(
         "constructed an input with undefined parent. IDK what to do here"
       );
+    }
+  }
+
+  /**
+   * Adjusts the Y coordinate to prevent collision with existing Input atoms
+   */
+  adjustYForCollision() {
+    if (!this.parent || !this.parent.nodesOnTheScreen) return;
+    
+    // Find all existing Input atoms in the parent molecule (excluding this one)
+    const existingInputs = this.parent.nodesOnTheScreen.filter(
+      atom => atom.atomType === 'Input' && atom !== this
+    );
+    
+    if (existingInputs.length === 0) return;
+    
+    // Define spacing and tolerance for collision detection
+    const atomSpacing = GlobalVariables.atomSize * 2; // Spacing between atoms
+    const tolerance = GlobalVariables.atomSize * 0.5; // Tolerance for "same position"
+    
+    // Check for collisions and adjust Y coordinate if needed
+    for (const existingInput of existingInputs) {
+      const yDiff = Math.abs(this.y - existingInput.y);
+      
+      // If too close (collision detected)
+      if (yDiff < tolerance) {
+        // Offset this atom downward from the existing atom
+        this.y = existingInput.y + atomSpacing;
+        
+        // Recursively check for more collisions with the new position
+        this.adjustYForCollision();
+        break; // Exit loop since we've adjusted and will recursively check again
+      }
     }
   }
 
