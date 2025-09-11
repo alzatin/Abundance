@@ -256,19 +256,21 @@ export default class Molecule extends Atom {
     let parent = GlobalVariables.currentRepo.parentRepo.split("/");
     let parentOwner = parent[0];
     let parentRepo = parent[1];
+    console.log(GlobalVariables.currentRepo);
     octokit
       .request("GET /repos/{owner}/{repo}", {
         owner: parentOwner,
         repo: parentRepo,
       })
       .then((response) => {
+        console.log("Fetched repository data:", response.data);
         octokit.rest.repos
           .getContent({
             owner: response.data.owner.login,
             repo: response.data.name,
             path: "project.abundance",
           })
-          .then((response) => {
+          .then(async (response) => {
             // Clear the nodesOnTheScreen array before deserialization to avoid doubling
             GlobalVariables.topLevelMolecule.nodesOnTheScreen.forEach(
               (atom) => {
@@ -276,17 +278,45 @@ export default class Molecule extends Atom {
               }
             );
             GlobalVariables.topLevelMolecule.nodesOnTheScreen = []; // <-- clear the array
+            let rawFileContent;
+            // Handle large files (>1MB) using download_url
+            if (!response.data.content || response.data.content.length === 0) {
+              const fileResponse = await fetch(response.data.download_url);
+              rawFileContent = await fileResponse.text();
+            } else {
+              // Handle small files using base64 content with UTF-8 encoding
+              rawFileContent = GlobalVariables.fromBinaryStr(
+                atob(response.data.content)
+              );
+            }
 
-            let rawFile = JSON.parse(
-              GlobalVariables.fromBinaryStr(atob(response.data.content))
-            );
-
+            console.log("Fetched project.abundance content:", rawFileContent);
+            let rawFile;
+            try {
+              rawFile = await this.asyncJsonParse(rawFileContent); // Use the async parser from previous answer
+            } catch (err) {
+              console.error("Failed to parse project.abundance:", err);
+              return;
+            }
+            // Only call deserialize after rawFile is ready
             if (rawFile.filetypeVersion == 1) {
-              GlobalVariables.topLevelMolecule.deserialize(rawFile);
+              await GlobalVariables.topLevelMolecule.deserialize(rawFile);
             }
             GlobalVariables.currentMolecule.selected = true;
           });
       });
+  }
+
+  asyncJsonParse(str) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        try {
+          resolve(JSON.parse(str));
+        } catch (e) {
+          reject(e);
+        }
+      }, 0); // Defer to next tick
+    });
   }
 
   /**
@@ -631,7 +661,7 @@ export default class Molecule extends Atom {
       let compileBomItems = [];
       if (result) {
         result.forEach(function (bomElement) {
-          if (bomElement.BOMitemName) {
+          if (bomElement?.BOMitemName) {
             if (!bomList[bomElement.BOMitemName]) {
               //If the list of items doesn't already have one of these
               bomList[bomElement.BOMitemName] = new BOMEntry(); //Create one
@@ -943,7 +973,7 @@ export default class Molecule extends Atom {
       },
       false
     );
-
+    console.log(json);
     this.setValues(json); //Grab the values of everything from the passed object
     this.setValues(values); //Over write those values with the passed ones where needed
 
@@ -1264,7 +1294,7 @@ export default class Molecule extends Atom {
             atom.atomType == "Molecule" ||
             atom.atomType == "GitHubMolecule"
           ) {
-            promise = atom.deserialize(newAtomObj, values, false);
+            atom = await atom.deserialize(newAtomObj, values, false);
           }
 
           //reassign the name of the Inputs to preserve linking

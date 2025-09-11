@@ -161,60 +161,6 @@ export default class Equation extends Atom {
     }
   }
 
-  /**
-   * Evaluate the equation
-   */
-  evaluateEquation() {
-    try {
-      // Substitute numbers into the string
-      var substitutedEquation = this.currentEquation;
-      this.name = this.currentEquation;
-
-      // Use AST-based variable extraction for consistency
-      const variables = this._extractVariablesFromEquation();
-
-      if (variables.length > 0) {
-        for (var variable of variables) {
-          // First, try to find in parent molecule's inputs
-          let value = null;
-          if (this.parentMolecule && this.parentMolecule.inputs) {
-            for (var j = 0; j < this.parentMolecule.inputs.length; j++) {
-              if (this.parentMolecule.inputs[j].name == variable) {
-                value = this.parentMolecule.inputs[j].value;
-                break;
-              }
-            }
-          }
-          // If not found, try to find in this atom's inputs
-          if (value === null) {
-            for (var i = 0; i < this.inputs.length; i++) {
-              if (this.inputs[i].name == variable) {
-                value = this.findIOValue(this.inputs[i].name);
-                break;
-              }
-            }
-          }
-          // If still not found, skip substitution (or set to 0)
-          if (value === null) value = 0;
-
-          // Use word boundaries in replacement to avoid partial matches
-          const variablePattern = new RegExp(`\\b${variable}\\b`, "g");
-          substitutedEquation = substitutedEquation.replace(
-            variablePattern,
-            value
-          );
-        }
-      }
-
-      // Evaluate the substituted equation
-      return GlobalVariables.limitedEvaluate(substitutedEquation);
-    } catch (error) {
-      console.error("Error evaluating equation:", error);
-      this.setError(error);
-      return NaN;
-    }
-  }
-
   rerenderInputs() {
     if (this.setInputChanged) {
       const representativeHash =
@@ -227,7 +173,8 @@ export default class Equation extends Atom {
   createInputParams(setInputChanged) {
     this.setInputChanged = setInputChanged;
     // Create input parameters for the atom
-    let inputParams = {};
+
+    let inputParams = super.createInputParams(setInputChanged);
 
     /* Make an input for the equation itself */
     inputParams[this.uniqueID + "currentequation"] = {
@@ -243,36 +190,13 @@ export default class Equation extends Atom {
       },
       order: -3,
     };
-    /** Runs through active atom inputs and adds IO parameters to default param*/
-    if (this.inputs) {
-      console.log(this.inputs);
-      this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
 
-        /* Makes inputs for Io's other than geometry */
-        if (input.valueType !== "geometry") {
-          inputParams[input.name] = {
-            value: input.getValue(),
-            type: "number",
-            disabled: checkConnector(),
-            step: 0.01,
-            onChange: (value) => {
-              input.setReady(value);
-              this.rerenderInputs();
-            },
-          };
-        }
-      });
-
-      inputParams[`${this.uniqueID}result`] = {
-        type: "number",
-        value: this.getState().value, // Possibly undefined if computation is in progress.
-        label: "Result",
-        disabled: true,
-      };
-    }
+    inputParams[`${this.uniqueID} result`] = {
+      type: "string",
+      value: this.getState().value, // Possibly undefined if computation is in progress.
+      label: "Result",
+      disabled: true,
+    };
 
     return inputParams;
   }
@@ -286,8 +210,10 @@ export default class Equation extends Atom {
 
   compute(_) {
     return new Promise((resolve, reject) => {
-      this.value = this.evaluateEquation();
+      // Use Atom's evaluateEquation method
+      this.value = super.evaluateEquation(this.currentEquation);
       resolve(this.value);
+      this.rerenderInputs();
     });
   }
 
@@ -307,9 +233,9 @@ export default class Equation extends Atom {
    * Set the current equation to be a new value.
    */
   setEquation(newEquation) {
+    console.log("Setting equation to:", newEquation);
     this.currentEquation = String(newEquation).trim(); //convert to string first, then remove leading and trailing whitespace
     this.addAndRemoveInputs();
-    this.rerenderInputs();
   }
 
   /**

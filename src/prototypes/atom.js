@@ -24,7 +24,7 @@ export default class Atom extends ObservableEntity {
     }
     switch (status) {
       case Status.DISABLED:
-        return "#CC00CC"; // light purple
+        return "#b3b2b3ff"; // light-Grey
       case Status.WAITING:
         return "#6bcfd6"; // light-blue
       case Status.PROCESSING:
@@ -848,9 +848,8 @@ export default class Atom extends ObservableEntity {
 
     // Handle empty or whitespace-only equations gracefully
     if (!substitutedEquation) {
-      throw new Error(
-        "Empty mathematical expression. Please enter a valid expression."
-      );
+      // If the equation is empty, treat it as zero
+      substitutedEquation = "0";
     }
 
     const variables = this.extractVariablesFromEquation(substitutedEquation);

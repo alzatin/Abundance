@@ -2,7 +2,6 @@ import React, { memo, useEffect, useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import Molecule from "../../molecules/molecule.js";
 import { createCMenu, cmenu } from "../../js/NewMenu.js";
-import GitSearch from "../secondary/GitSearch.jsx";
 import { useNavigate } from "react-router-dom";
 
 function onWindowResize() {
@@ -31,6 +30,9 @@ export default memo(function FlowCanvas({
   shortCuts,
   authorizedUserOcto,
   importNotification,
+  errorNotification,
+  setErrorNotification,
+  setExpandedMenu,
 }) {
   /** State for github molecule search input */
   const [searchingGitHub, setSearchingGitHub] = useState(false);
@@ -40,9 +42,6 @@ export default memo(function FlowCanvas({
   /** State for undo notification */
   const [undoNotification, setUndoNotification] = useState(null);
   const [isShortcut, setIsShortcutTriggered] = useState(false);
-
-  /** State for error notification */
-  const [errorNotification, setErrorNotification] = useState(null);
 
   const canvasRef = useRef(null);
   const circleMenu = useRef(null);
@@ -138,14 +137,6 @@ export default memo(function FlowCanvas({
   };
 
   const keyDown = (e) => {
-    //Prevents default behavior of the browser on canvas to allow for copy/paste/delete
-    // if(e.srcElement.tagName.toLowerCase() !== ("textarea")
-    //     && e.srcElement.tagName.toLowerCase() !== ("input")
-    //     &&(!e.srcElement.isContentEditable)
-    //     && ['c','v','Backspace'].includes(e.key)){
-    //     e.preventDefault()
-    // }
-
     if (e.key == "Backspace" || e.key == "Delete") {
       /* Save undo state before deletion */
       GlobalVariables.saveUndoState("DELETE", "Deleted selected atoms");
@@ -162,16 +153,10 @@ export default memo(function FlowCanvas({
           }
         );
       });
-    }
-
-    //Copy /paste listeners
-    if (e.key == "Control" || e.key == "Meta") {
-      GlobalVariables.ctrlDown = true;
-    }
-    if (e.key == "Shift" && !GlobalVariables.ctrlDown) {
-      // Trigger GitSearch when Shift is pressed
-      setSearchingGitHub(true);
-      setIsShortcutTriggered(true); // Set the shortcut flag
+      //every time a key is pressed
+      GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
+        molecule.keyPress(e.key);
+      });
     }
 
     if (GlobalVariables.ctrlDown && shortCuts.hasOwnProperty([e.key])) {
@@ -294,16 +279,9 @@ export default memo(function FlowCanvas({
         );
       }
     }
-    //every time a key is pressed
-    GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
-      molecule.keyPress(e.key);
-    });
   };
 
   const keyUp = (e) => {
-    if (e.key == "Control" || e.key == "Meta") {
-      GlobalVariables.ctrlDown = false;
-    }
     if (e.key == "Shift") {
       GlobalVariables.shiftDown = false;
     }
@@ -417,9 +395,10 @@ export default memo(function FlowCanvas({
 
       // Set the active atom after all atoms have been processed
       if (activeAtom) {
+        setExpandedMenu("params");
         setActiveAtom(activeAtom);
       }
-
+      //
       //Draw the selection box
       if (!clickHandledByMolecule && GlobalVariables.ctrlDown) {
         GlobalVariables.currentMolecule
@@ -442,6 +421,7 @@ export default memo(function FlowCanvas({
       if (!clickHandledByMolecule) {
         /* Background click - molecule is active atom */
         setActiveAtom(GlobalVariables.currentMolecule);
+        setExpandedMenu("params");
         GlobalVariables.currentMolecule.selected = true;
         GlobalVariables.currentMolecule.sendToRender();
       }
@@ -598,19 +578,6 @@ export default memo(function FlowCanvas({
       </div>
       <div>
         <div id="circle-menu1" className="cn-menu1" ref={circleMenu}></div>
-        <GitSearch
-          {...{
-            search,
-            setSearch,
-            searchingGitHub,
-            setSearchingGitHub,
-            isHovering,
-            setIsHovering,
-            isShortcut,
-            setIsShortcutTriggered,
-            setErrorNotification,
-          }}
-        />
       </div>
 
       {/* Undo notification */}

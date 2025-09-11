@@ -84,34 +84,34 @@ const generateGcode = (
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.15); // 15% - Mode set to CAM
-      const bounds = eng.widget.getBoundingBox();
-      const x = bounds.max.x - bounds.min.x;
-      const y = bounds.max.y - bounds.min.y;
-      const z = bounds.max.z - bounds.min.z;
-      return eng.setStock({
-        x: x + STOCK_MARGIN,
-        y: y + STOCK_MARGIN,
-        z: z + CUT_THROUGH, // stock thickness = part thickness + cut-through
-        center: {
-          x: x / 2,
-          y: y / 2,
-          z: z / 2, // correct center for full stock thickness
-        },
-      });
+      //const bounds = eng.widget.getBoundingBox();
+      //const x = bounds.max.x - bounds.min.x;
+      //const y = bounds.max.y - bounds.min.y;
+      //const z = bounds.max.z - bounds.min.z;
+      return eng.setStock({ x: 5, y: 5, z: 0 }); // camStockOffset is true so set offset by 5mm in each direction for safety margin
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.2); // 20% - Stock set
+      if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
+        eng.widget.scale(25.4, 25.4, 25.4); // Scale from mm to inches (1 inch = 25.4 mm)
+        eng.moveTo(centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0
+        return eng;
+      }
       eng.moveTo(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
       return eng;
     })
-    .then((eng) =>
-      eng.setTools([
+    .then((eng) => {
+      // Determine if project uses metric units
+      const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
+      const isMetric = projectUnits === "MM";
+
+      return eng.setTools([
         {
           id: 1000,
           number: 1,
           type: "endmill",
-          name: "end 1/4",
-          metric: false,
+          name: "endmill",
+          metric: isMetric,
           shaft_diam: toolSize,
           shaft_len: 1,
           flute_diam: toolSize,
@@ -119,42 +119,66 @@ const generateGcode = (
           taper_tip: 0,
           order: 5,
         },
-      ])
-    )
+      ]);
+    })
     .then((eng) => {
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
-      const zBottom = z + CUT_THROUGH; // ensure cut through stock bottom
-      // Add small epsilon to avoid floating point errors causing extra pass
-      const epsilon = 0.0001;
-      const validPasses = Math.max(1, Math.floor(Number(passes) || 1));
+      const zBottom = z; // ensure cut through stock bottom
 
-      const down = validPasses == 1 ? 1000 : Math.abs(zBottom) / validPasses;
+      const validPasses = passes;
+      const down = validPasses == 1 ? 1000 : zBottom / (validPasses - 1);
 
       return eng.setProcess({
         camEaseAngle: 10,
         camEaseDown: true,
         camZAnchor: "bottom",
         camDepthFirst: false,
-        camZThru: 0.01,
+        camZThru: 0,
         camZClearance: 3,
-        camZTop: 0, // top of stock
-        camZBottom: -zBottom, // temp hack to get around setTopZ bug
+        camZTop: 1, //top of stock
+        camStockOffset: true,
+        camZBottom: -1000, //-zBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
+        camOutlineSpeed: speed,
+        camRetractFeed: 300,
+        camSpindleSpeed: speed,
+        camFastFeed: 6000,
+        camFastFeedZ: 300,
         ops: [
           {
             type: "outline",
             tool: 1000,
-            spindle: speed,
+            spindle: 1000,
             step: 0.4,
             steps: 1,
             down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
-            rate: 635,
-            plunge: 51,
+            rate: speed,
+            plunge: 300,
             dogbones: false,
             omitvoid: false,
             omitthru: false,
+            outside: false,
+            inside: true,
+            wide: false,
+            top: false,
+            ov_topz: 0,
+            ov_botz: 0,
+            ov_conv: true,
+          },
+          {
+            type: "outline",
+            tool: 1000,
+            spindle: 1000,
+            step: 0.4,
+            steps: 1,
+            down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
+            rate: speed,
+            plunge: 300,
+            dogbones: false,
+            omitvoid: false,
+            omitthru: true,
             outside: false,
             inside: false,
             wide: false,
@@ -163,26 +187,6 @@ const generateGcode = (
             ov_botz: 0,
             ov_conv: true,
           },
-          /*{
-            type: "outline",
-            tool: 1000,
-            spindle: speed,
-            step: 0.4,
-            steps: 1,
-            down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
-            rate: 635,
-            plunge: 51,
-            dogbones: false,
-            omitvoid: false,
-            omitthru: true,
-            outside: true,
-            inside: false,
-            wide: false,
-            top: false,
-            ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: true,
-          },*
           /*{
             type: "rough",
             tool: 1000,
@@ -206,6 +210,13 @@ const generateGcode = (
       });
     })
     .then((eng) => {
+      // Determine G-code units command based on project units
+      const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
+      const unitsCommand =
+        projectUnits === "MM"
+          ? "G21 ; set units to MM (required)"
+          : "G20 ; set units to inches (required)";
+
       return eng.setDevice({
         mode: "CAM",
         internal: 0,
@@ -216,8 +227,10 @@ const generateGcode = (
         originCenter: false,
         spindleMax: 24000,
         gcodePre: [
-          "G21 ; set units to MM (required)",
+          unitsCommand,
           "G90 ; absolute position mode (required)",
+          "G0 F3000 ; set default rapid move feedrate",
+          "G1 F1000 ; set default cutting feedrate",
         ],
         gcodePost: ["M05 ; spindle off", "M30 ; program end"],
         gcodeDwell: ["G4 P{time} ; dwell for {time}ms"],
@@ -250,6 +263,7 @@ const generateGcode = (
     })
     .then((gcode) => {
       console.log("G-code generated successfully.");
+
       if (progressCallback) progressCallback(1.0); // 100% - Export complete
       gcodeCallback(gcode); // Only call the callback, don't download
     })

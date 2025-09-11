@@ -73,6 +73,9 @@ export default class Input extends Atom {
 
     // Set values first to ensure this.name is correct before creating the parent input
     this.setValues(values);
+    
+    // Apply Y-offset to prevent overlapping with existing Input atoms
+    this.adjustYForCollision();
 
     //Add a new input to the current molecule
     if (typeof this.parent !== "undefined") {
@@ -91,6 +94,39 @@ export default class Input extends Atom {
       throw new Error(
         "constructed an input with undefined parent. IDK what to do here"
       );
+    }
+  }
+
+  /**
+   * Adjusts the Y coordinate to prevent collision with existing Input atoms
+   */
+  adjustYForCollision() {
+    if (!this.parent || !this.parent.nodesOnTheScreen) return;
+    
+    // Find all existing Input atoms in the parent molecule (excluding this one)
+    const existingInputs = this.parent.nodesOnTheScreen.filter(
+      atom => atom.atomType === 'Input' && atom !== this
+    );
+    
+    if (existingInputs.length === 0) return;
+    
+    // Define spacing and tolerance for collision detection
+    const atomSpacing = GlobalVariables.atomSize * 2; // Spacing between atoms
+    const tolerance = GlobalVariables.atomSize * 0.5; // Tolerance for "same position"
+    
+    // Check for collisions and adjust Y coordinate if needed
+    for (const existingInput of existingInputs) {
+      const yDiff = Math.abs(this.y - existingInput.y);
+      
+      // If too close (collision detected)
+      if (yDiff < tolerance) {
+        // Offset this atom downward from the existing atom
+        this.y = existingInput.y + atomSpacing;
+        
+        // Recursively check for more collisions with the new position
+        this.adjustYForCollision();
+        break; // Exit loop since we've adjusted and will recursively check again
+      }
     }
   }
 
@@ -133,11 +169,19 @@ export default class Input extends Atom {
       return;
     }
 
+    // Store the previous value to detect changes
+    const previousValue = this.value;
+
     // This is called when the parent attachment point changes
     // We need to update the value of this input atom
     if (this.parentAP) {
       const parentState = this.parentAP.getState();
       this.setStatus(parentState.status, parentState.value);
+      
+      // Update our internal value if status is READY
+      if (parentState.status === Status.READY) {
+        this.value = parentState.value;
+      }
     } else {
       // This is a top-level input atom. Set to our value and mark as ready
       if (this.value) {
@@ -145,6 +189,50 @@ export default class Input extends Atom {
       } else {
         this.setWaiting();
       }
+    }
+
+    // Notify parent molecule of input value change if value actually changed
+    // and the status is READY (successful state change)
+    if (this.status === Status.READY && 
+        this.value !== previousValue && 
+        this.parent && 
+        typeof this.parent.propagateInputChange === 'function') {
+      this.parent.propagateInputChange(this.name);
+    }
+  }
+
+  /**
+   * Override setReady to trigger propagation when input value changes
+   */
+  setReady(value) {
+    const previousValue = this.value;
+    super.setReady(value);
+    
+    // Update internal value and trigger propagation if changed
+    this.value = value;
+    if (this.value !== previousValue && 
+        this.parent && 
+        typeof this.parent.propagateInputChange === 'function') {
+      this.parent.propagateInputChange(this.name);
+    }
+  }
+
+  /**
+   * Get a color based on the input type for visual differentiation
+   * @returns {string} Color hex code for the input type
+   */
+  getTypeBasedColor() {
+    switch (this.type) {
+      case "number":
+        return "#feed7bff"; // Light yellow - associated with numbers/data
+      case "string":
+        return "#f3a830ff"; // Bright orange - warm color for text
+      case "geometry":
+        return "#e27bfeff"; // Light purple - for complex 3D objects
+      case "array":
+        return "#b6f8b6ff"; // Light green - for collections/lists
+      default:
+        return Atom.DEFAULT_COLOR; // Fallback to default
     }
   }
 
@@ -199,9 +287,16 @@ export default class Input extends Atom {
       this.updateParentName();
     }
 
-    //Set colors
+    //Set colors - use type-based color when ready and not selected, otherwise use status-based color
     GlobalVariables.c.fillStyle = Atom.DEFAULT_COLOR;
-    this.color = Atom.statusAsColor(this.status, this.selected);
+
+    // Use type-based color when the input is ready and not selected to show type visually
+    if (this.status === Status.READY && !this.selected) {
+      this.color = this.getTypeBasedColor();
+    } else {
+      this.color = Atom.statusAsColor(this.status, this.selected);
+    }
+
     GlobalVariables.c.strokeStyle = this.selected
       ? Atom.DEFAULT_COLOR
       : Atom.SELECTED_COLOR;
