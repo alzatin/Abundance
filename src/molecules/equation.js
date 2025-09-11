@@ -2,7 +2,6 @@ import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
 import { parse } from "mathjs";
 import { Status } from "../prototypes/observableEntity.js";
-import on from "../js/circular-menu/src/on.js";
 
 /**
  * This class creates the Equation atom.
