@@ -84,24 +84,20 @@ const generateGcode = (
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.15); // 15% - Mode set to CAM
-      const bounds = eng.widget.getBoundingBox();
-      const x = bounds.max.x - bounds.min.x;
-      const y = bounds.max.y - bounds.min.y;
-      const z = bounds.max.z - bounds.min.z;
-      return eng.setStock({
-        x: x + STOCK_MARGIN,
-        y: y + STOCK_MARGIN,
-        z: z + CUT_THROUGH, // stock thickness = part thickness + cut-through
-        center: {
-          x: x / 2,
-          y: y / 2,
-          z: z / 2 + CUT_THROUGH / 2, // correct center for full stock thickness
-        },
-      });
+      //const bounds = eng.widget.getBoundingBox();
+      //const x = bounds.max.x - bounds.min.x;
+      //const y = bounds.max.y - bounds.min.y;
+      //const z = bounds.max.z - bounds.min.z;
+      return eng.setStock({ x: 5, y: 5, z: 0 }); // camStockOffset is true so set offset by 5mm in each direction for safety margin
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.2); // 20% - Stock set
-      //eng.moveTo(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
+      if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
+        eng.widget.scale(25.4, 25.4, 25.4); // Scale from mm to inches (1 inch = 25.4 mm)
+        eng.moveTo(centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0
+        return eng;
+      }
+      eng.moveTo(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
       return eng;
     })
     .then((eng) => {
@@ -129,14 +125,10 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
-      const zBottom = z + CUT_THROUGH; // ensure cut through stock bottom
+      const zBottom = z; // ensure cut through stock bottom
 
       const validPasses = passes;
-
-      const down = validPasses == 1 ? 1000 : zBottom / validPasses;
-      console.log("Down:", down);
-      console.log("Valid Passes:", validPasses);
-      console.log("Z Bottom:", zBottom);
+      const down = validPasses == 1 ? 1000 : zBottom / (validPasses - 1);
 
       return eng.setProcess({
         camEaseAngle: 10,
@@ -145,8 +137,9 @@ const generateGcode = (
         camDepthFirst: false,
         camZThru: 0,
         camZClearance: 3,
-        //camZTop: 0, // top of stock
-        camZBottom: -zBottom, // temp hack to get around setTopZ bug
+        camZTop: 1, //top of stock
+        camStockOffset: true,
+        camZBottom: -1000, //-zBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
         camOutlineSpeed: speed,
         camRetractFeed: 300,
@@ -270,6 +263,7 @@ const generateGcode = (
     })
     .then((gcode) => {
       console.log("G-code generated successfully.");
+
       if (progressCallback) progressCallback(1.0); // 100% - Export complete
       gcodeCallback(gcode); // Only call the callback, don't download
     })
