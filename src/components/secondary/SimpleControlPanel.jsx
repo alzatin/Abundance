@@ -273,6 +273,9 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   const [focusedListItem, setFocusedListItem] = useState({});
   const inputRefs = React.useRef([]);
 
+  // Local state for deferred input updates
+  const [localValues, setLocalValues] = React.useState({});
+
   // Debounce timer for input changes
   const debounceTimeout = React.useRef();
 
@@ -284,6 +287,26 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     }, 300); // 300ms delay
   };
 
+  // Handle immediate local updates for display
+  const handleLocalChange = (key, value) => {
+    setLocalValues(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Commit changes to actual control values
+  const commitChange = (key, value, config) => {
+    setControlValue(key, value);
+    setLocalValues(prev => {
+      const next = { ...prev };
+      delete next[key]; // Remove from local state once committed
+      return next;
+    });
+    
+    // Call the onChange callback if it exists
+    if (typeof config.onChange === "function") {
+      config.onChange(value, key);
+    }
+  };
+
   // Ensure initial values are set when controls prop changes
   React.useEffect(() => {
     Object.entries(controls).forEach(([key, config]) => {
@@ -292,6 +315,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
       }
     });
     setFocusedIndex(0); // Default focus to first control on controls change
+    setLocalValues({}); // Clear local values when controls change
   }, [controls]);
 
   // Only focus input on keyboard event, not on mount/controls change
@@ -452,20 +476,20 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                 const label = config.label;
                 const inputFullWidth = !label;
                 const handleChange = (value) => {
-                  setControlValue(key, value);
-                  // For debounced types, call debounced handler
-                  if (
-                    typeof config.onChange === "function" &&
-                    (config.type === "string" ||
-                      config.type === "number" ||
-                      config.type === "range")
-                  ) {
-                    handleDebouncedChange(value, key, config.onChange);
-                  } else if (typeof config.onChange === "function") {
-                    // For other types, call directly
-                    config.onChange(value, key);
+                  // For types that should be deferred, only update local state
+                  if (config.type === "string" || config.type === "number" || config.type === "range" || config.type === "point") {
+                    handleLocalChange(key, value);
+                  } else {
+                    // For other types (boolean, select, color, etc.), commit immediately
+                    setControlValue(key, value);
+                    if (typeof config.onChange === "function") {
+                      config.onChange(value, key);
+                    }
                   }
                 };
+
+                // Get the current value - use local value if editing, otherwise committed value
+                const currentValue = localValues.hasOwnProperty(key) ? localValues[key] : (controlValues[key] ?? config.value);
                 const isFocused = focusedIndex === idx && !config.disabled;
                 const isDisabled = config.disabled;
                 const commonProps = {
@@ -494,52 +518,69 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         >
                           {label}:
                         </span>
-                        {["X", "Y", "Z"].map((axis, axisIdx) => (
-                          <input
-                            key={axis}
-                            type="number"
-                            value={
-                              Array.isArray(controlValues[key])
-                                ? controlValues[key][axisIdx] ?? 0
-                                : 0
-                            }
-                            onChange={(e) => {
-                              if (!isDisabled) {
-                                const val = Number(e.target.value);
-                                const arr = Array.isArray(controlValues[key])
-                                  ? [...controlValues[key]]
-                                  : [0, 0, 0];
-                                arr[axisIdx] = val;
-                                handleChange(arr);
+                        {["X", "Y", "Z"].map((axis, axisIdx) => {
+                          const currentArrayValue = localValues.hasOwnProperty(key) 
+                            ? localValues[key] 
+                            : (Array.isArray(controlValues[key]) ? controlValues[key] : [0, 0, 0]);
+                          
+                          return (
+                            <input
+                              key={axis}
+                              type="number"
+                              value={currentArrayValue[axisIdx] ?? 0}
+                              onChange={(e) => {
+                                if (!isDisabled) {
+                                  const val = Number(e.target.value);
+                                  const arr = [...currentArrayValue];
+                                  arr[axisIdx] = val;
+                                  handleLocalChange(key, arr);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                if (!isDisabled) {
+                                  const val = Number(e.target.value);
+                                  const arr = [...currentArrayValue];
+                                  arr[axisIdx] = val;
+                                  commitChange(key, arr, config);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !isDisabled) {
+                                  const val = Number(e.target.value);
+                                  const arr = [...currentArrayValue];
+                                  arr[axisIdx] = val;
+                                  commitChange(key, arr, config);
+                                  e.preventDefault();
+                                }
+                              }}
+                              style={
+                                isDisabled
+                                  ? {
+                                      ...inputStyle,
+                                      ...inputDisabledStyle,
+                                      width: 50,
+                                      marginRight: 4,
+                                    }
+                                  : isFocused
+                                  ? {
+                                      ...inputStyle,
+                                      ...inputFocusedStyle,
+                                      width: 50,
+                                      marginRight: 4,
+                                    }
+                                  : { ...inputStyle, width: 50, marginRight: 4 }
                               }
-                            }}
-                            style={
-                              isDisabled
-                                ? {
-                                    ...inputStyle,
-                                    ...inputDisabledStyle,
-                                    width: 50,
-                                    marginRight: 4,
-                                  }
-                                : isFocused
-                                ? {
-                                    ...inputStyle,
-                                    ...inputFocusedStyle,
-                                    width: 50,
-                                    marginRight: 4,
-                                  }
-                                : { ...inputStyle, width: 50, marginRight: 4 }
-                            }
-                            ref={
-                              axisIdx === 0
-                                ? (el) => (inputRefs.current[idx] = el)
-                                : undefined
-                            }
-                            tabIndex={isDisabled ? -1 : 0}
-                            disabled={isDisabled}
-                            aria-label={axis}
-                          />
-                        ))}
+                              ref={
+                                axisIdx === 0
+                                  ? (el) => (inputRefs.current[idx] = el)
+                                  : undefined
+                              }
+                              tabIndex={isDisabled ? -1 : 0}
+                              disabled={isDisabled}
+                              aria-label={axis}
+                            />
+                          );
+                        })}
                       </div>
                     );
                   case "number":
@@ -750,11 +791,18 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         </span>
                         <input
                           type="number"
-                          value={controlValues[key] ?? 0}
+                          value={currentValue ?? 0}
                           min={config.min}
                           max={config.max}
                           step={config.step}
                           onChange={(e) => handleChange(Number(e.target.value))}
+                          onBlur={(e) => commitChange(key, Number(e.target.value), config)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              commitChange(key, Number(e.target.value), config);
+                              e.preventDefault();
+                            }
+                          }}
                           {...commonProps}
                         />
                       </div>
@@ -857,8 +905,15 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         </span>
                         {config.multiline ? (
                           <textarea
-                            value={controlValues[key] ?? ""}
+                            value={currentValue ?? ""}
                             onChange={(e) => handleChange(e.target.value)}
+                            onBlur={(e) => commitChange(key, e.target.value, config)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                commitChange(key, e.target.value, config);
+                                e.preventDefault();
+                              }
+                            }}
                             rows={config.rows || 3}
                             style={{
                               ...inputStyle,
@@ -874,9 +929,16 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         ) : (
                           <input
                             type="text"
-                            value={controlValues[key] ?? ""}
+                            value={currentValue ?? ""}
                             placeholder={config.placeholder}
                             onChange={(e) => handleChange(e.target.value)}
+                            onBlur={(e) => commitChange(key, e.target.value, config)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                commitChange(key, e.target.value, config);
+                                e.preventDefault();
+                              }
+                            }}
                             {...commonProps}
                           />
                         )}
