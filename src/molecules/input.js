@@ -133,11 +133,19 @@ export default class Input extends Atom {
       return;
     }
 
+    // Store the previous value to detect changes
+    const previousValue = this.value;
+
     // This is called when the parent attachment point changes
     // We need to update the value of this input atom
     if (this.parentAP) {
       const parentState = this.parentAP.getState();
       this.setStatus(parentState.status, parentState.value);
+      
+      // Update our internal value if status is READY
+      if (parentState.status === Status.READY) {
+        this.value = parentState.value;
+      }
     } else {
       // This is a top-level input atom. Set to our value and mark as ready
       if (this.value) {
@@ -145,6 +153,31 @@ export default class Input extends Atom {
       } else {
         this.setWaiting();
       }
+    }
+
+    // Notify parent molecule of input value change if value actually changed
+    // and the status is READY (successful state change)
+    if (this.status === Status.READY && 
+        this.value !== previousValue && 
+        this.parent && 
+        typeof this.parent.propagateInputChange === 'function') {
+      this.parent.propagateInputChange(this.name);
+    }
+  }
+
+  /**
+   * Override setReady to trigger propagation when input value changes
+   */
+  setReady(value) {
+    const previousValue = this.value;
+    super.setReady(value);
+    
+    // Update internal value and trigger propagation if changed
+    this.value = value;
+    if (this.value !== previousValue && 
+        this.parent && 
+        typeof this.parent.propagateInputChange === 'function') {
+      this.parent.propagateInputChange(this.name);
     }
   }
 
