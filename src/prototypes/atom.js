@@ -24,7 +24,7 @@ export default class Atom extends ObservableEntity {
     }
     switch (status) {
       case Status.DISABLED:
-        return "#CC00CC"; // light purple
+        return "#b3b2b3ff"; // light-Grey
       case Status.WAITING:
         return "#6bcfd6"; // light-blue
       case Status.PROCESSING:
