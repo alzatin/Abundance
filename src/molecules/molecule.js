@@ -1294,7 +1294,7 @@ export default class Molecule extends Atom {
             atom.atomType == "Molecule" ||
             atom.atomType == "GitHubMolecule"
           ) {
-            atom = await atom.deserialize(newAtomObj, values, false);
+            atom = await atom.deserialize(newAtomObj, values, unlock);
           }
 
           //reassign the name of the Inputs to preserve linking
