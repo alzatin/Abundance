@@ -837,6 +837,17 @@ export default class Atom extends ObservableEntity {
         }
       });
     }
+    if (GlobalVariables.isMobile() && this.parent) {
+      inputParams[this.uniqueID + "delete"] = {
+        type: "button",
+        value: "Delete",
+        label: "Delete Atom",
+        order: -1,
+        onClick: () => {
+          this.deleteNode(true, true, false);
+        },
+      };
+    }
     return inputParams;
   }
 
