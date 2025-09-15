@@ -56,6 +56,10 @@ export default class AddBOMTag extends Atom {
     this.addAllIOs([
       { name: "geometry", valueType: "geometry" },
       { name: "geometry", valueType: "geometry", type: "output" },
+      { name: "Item Name", valueType: "string", defaultValue: "New Item" },
+      { name: "Number Needed", valueType: "number", defaultValue: 1 },
+      { name: "Cost (USD)", valueType: "number", defaultValue: 0 },
+      { name: "Source Link", valueType: "string", defaultValue: "" },
     ]);
 
     this.setValues(values);
@@ -97,17 +101,61 @@ export default class AddBOMTag extends Atom {
 
   createInputParams() {
     let inputParams = {};
-    for (const key in this.BOMitem) {
-      inputParams[this.uniqueID + key] = {
-        type: "string",
-        value: this.BOMitem[key],
-        label: key,
-        disabled: false,
-        onChange: (value) => {
-          this.BOMitem[key] = value;
-          this.onUpstreamChange();
-        },
-      };
+
+    if (this.inputs) {
+      this.inputs.forEach((input) => {
+        if (input.name === "Item Name") {
+          inputParams[this.uniqueID + "BOMitemName"] = {
+            type: "string",
+            value: this.findIOValue("Item Name") || this.BOMitem.BOMitemName,
+            label: "Item Name",
+            order: 1,
+            onChange: (value) => {
+              this.BOMitem.BOMitemName = value;
+              this.onUpstreamChange();
+            },
+          };
+        } else if (input.name === "Number Needed") {
+          inputParams[this.uniqueID + "numberNeeded"] = {
+            type: "number",
+            value:
+              this.findIOValue("Number Needed") || this.BOMitem.numberNeeded,
+            label: "Number Needed",
+            step: 1,
+            min: 1,
+            order: 2,
+            onChange: (value) => {
+              this.BOMitem.numberNeeded = value;
+              console.log("Number Needed changed to:", value);
+              this.onUpstreamChange(); //Recompute to update the tag in the 3D view
+            },
+          };
+        } else if (input.name === "Cost (USD)") {
+          inputParams[this.uniqueID + "costUSD"] = {
+            type: "number",
+            value: this.findIOValue("Cost (USD)") || this.BOMitem.costUSD,
+            label: "Cost (USD)",
+            step: 0.01,
+            min: 0,
+            order: 3,
+            onChange: (value) => {
+              this.BOMitem.costUSD = value;
+              this.onUpstreamChange(); //Recompute to update the tag in the 3D view
+            },
+          };
+        } else if (input.name === "Source Link") {
+          inputParams[this.uniqueID + "source"] = {
+            type: "string",
+            value: this.findIOValue("Source Link") || this.BOMitem.source,
+            label: "Source Link",
+            order: 4,
+            onChange: (value) => {
+              this.BOMitem.source = value;
+              this.onUpstreamChange(); //Recompute to update the tag in the 3D view
+            },
+          };
+        }
+      });
     }
     return inputParams;
   }
