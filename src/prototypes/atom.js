@@ -837,14 +837,23 @@ export default class Atom extends ObservableEntity {
         }
       });
     }
-    if (GlobalVariables.isMobile() && this.parent) {
+    if (GlobalVariables.isMobile()) {
       inputParams[this.uniqueID + "delete"] = {
         type: "button",
-        value: "Delete",
-        label: "Delete Atom",
-        order: -1,
+        label: "Delete Selected",
         onClick: () => {
-          this.deleteNode(true, true, false);
+          const flowCanvas = document.getElementById("flow-canvas");
+          if (flowCanvas) {
+            flowCanvas.focus();
+            const event = new KeyboardEvent("keydown", {
+              bubbles: true,
+              cancelable: true,
+              key: "Delete",
+              code: "Delete",
+              keyCode: 46,
+            });
+            flowCanvas.dispatchEvent(event);
+          }
         },
       };
     }
