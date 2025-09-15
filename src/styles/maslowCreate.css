@@ -126,6 +126,7 @@ body {
   font-family: "Work Sans", sans-serif;
   background: var(--flowCanvas-background);
   overflow: hidden;
+  height: 100dvh;
 }
 
 .jscad-container {

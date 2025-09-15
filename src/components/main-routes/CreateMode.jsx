@@ -106,6 +106,41 @@ function CreateMode({
     z: "Undo", //saving this letter
   };
 
+  // Initialize state with undefined width/height so server and client renders match
+  // Learn more here: https://joshwcomeau.com/react/the-perils-of-rehydration/
+  const [windowSize, setWindowSize] = useState({
+    width: 0,
+    height: 0,
+  });
+  useEffect(() => {
+    // Handler to call on window resize
+    function handleResize() {
+      let height;
+      if (window.visualViewport) {
+        height = window.visualViewport.height;
+      } else if (GlobalVariables.isMobile()) {
+        height = window.screen.height;
+      } else {
+        height = window.innerHeight;
+      }
+      setWindowSize({
+        width: window.innerWidth,
+        height,
+      });
+    }
+    window.addEventListener("resize", handleResize);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", handleResize);
+    }
+    handleResize();
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", handleResize);
+      }
+    };
+  }, []); // Empty array ensures that effect is only run on mount
+
   /** Checks if activeAtom is topLevel to render goUp button */
   useEffect(() => {
     if (activeAtom && activeAtom.atomType == "Molecule") {
@@ -950,6 +985,7 @@ function CreateMode({
               errorNotification,
               setErrorNotification,
               setExpandedMenu,
+              windowSize,
             }}
           />
           <div className="parent flex-parent" id="lowerHalf">
@@ -968,6 +1004,7 @@ function CreateMode({
                 backgroundUsdzFile,
                 showBackgroundModel,
                 authorizedUserOcto,
+                windowSize,
               }}
             />
           </div>
