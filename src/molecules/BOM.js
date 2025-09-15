@@ -1,7 +1,6 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import { BOMEntry } from "../js/BOM.js";
-import { re } from "mathjs";
 
 /**
  * The addBOMTag molecule type adds a tag containing information about a bill of materials item to the input geometry. The input geometry is not modified in any other way

@@ -23,9 +23,6 @@ import "./styles/menuIcons.css";
 import "./styles/login.css";
 import "./styles/codemirror.css";
 
-import RenderProgressBar from "./components/secondary/RenderProgressBar.jsx";
-import { render } from "@testing-library/react";
-
 const queryClient = new QueryClient();
 /**
  * The octokit instance which allows authenticated interaction with GitHub.
