@@ -289,18 +289,18 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 
   // Handle immediate local updates for display
   const handleLocalChange = (key, value) => {
-    setLocalValues(prev => ({ ...prev, [key]: value }));
+    setLocalValues((prev) => ({ ...prev, [key]: value }));
   };
 
   // Commit changes to actual control values
   const commitChange = (key, value, config) => {
     setControlValue(key, value);
-    setLocalValues(prev => {
+    setLocalValues((prev) => {
       const next = { ...prev };
       delete next[key]; // Remove from local state once committed
       return next;
     });
-    
+
     // Call the onChange callback if it exists
     if (typeof config.onChange === "function") {
       config.onChange(value, key);
@@ -477,7 +477,12 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                 const inputFullWidth = !label;
                 const handleChange = (value) => {
                   // For types that should be deferred, only update local state
-                  if (config.type === "string" || config.type === "number" || config.type === "range" || config.type === "point") {
+                  if (
+                    config.type === "string" ||
+                    config.type === "number" ||
+                    config.type === "range" ||
+                    config.type === "point"
+                  ) {
                     handleLocalChange(key, value);
                   } else {
                     // For other types (boolean, select, color, etc.), commit immediately
@@ -489,7 +494,9 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                 };
 
                 // Get the current value - use local value if editing, otherwise committed value
-                const currentValue = localValues.hasOwnProperty(key) ? localValues[key] : (controlValues[key] ?? config.value);
+                const currentValue = localValues.hasOwnProperty(key)
+                  ? localValues[key]
+                  : controlValues[key] ?? config.value;
                 const isFocused = focusedIndex === idx && !config.disabled;
                 const isDisabled = config.disabled;
                 const commonProps = {
@@ -519,10 +526,14 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           {label}:
                         </span>
                         {["X", "Y", "Z"].map((axis, axisIdx) => {
-                          const currentArrayValue = localValues.hasOwnProperty(key) 
-                            ? localValues[key] 
-                            : (Array.isArray(controlValues[key]) ? controlValues[key] : [0, 0, 0]);
-                          
+                          const currentArrayValue = localValues.hasOwnProperty(
+                            key
+                          )
+                            ? localValues[key]
+                            : Array.isArray(controlValues[key])
+                            ? controlValues[key]
+                            : [0, 0, 0];
+
                           return (
                             <input
                               key={axis}
@@ -584,6 +595,38 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                       </div>
                     );
                   case "number":
+                    return (
+                      <div key={key} style={labelStyle}>
+                        <span
+                          style={{
+                            width: inputFullWidth ? 0 : 90,
+                            color: isDisabled
+                              ? inputDisabledStyle.color
+                              : undefined,
+                          }}
+                        >
+                          {label}
+                          {label ? ":" : ""}
+                        </span>
+                        <input
+                          type="number"
+                          value={currentValue ?? 0}
+                          onChange={(e) =>
+                            handleLocalChange(key, Number(e.target.value))
+                          }
+                          onBlur={(e) =>
+                            commitChange(key, Number(e.target.value), config)
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              commitChange(key, Number(e.target.value), config);
+                              e.preventDefault();
+                            }
+                          }}
+                          {...commonProps}
+                        />
+                      </div>
+                    );
                   case "list":
                     return (
                       <div
@@ -796,7 +839,9 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           max={config.max}
                           step={config.step}
                           onChange={(e) => handleChange(Number(e.target.value))}
-                          onBlur={(e) => commitChange(key, Number(e.target.value), config)}
+                          onBlur={(e) =>
+                            commitChange(key, Number(e.target.value), config)
+                          }
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
                               commitChange(key, Number(e.target.value), config);
@@ -907,7 +952,9 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           <textarea
                             value={currentValue ?? ""}
                             onChange={(e) => handleChange(e.target.value)}
-                            onBlur={(e) => commitChange(key, e.target.value, config)}
+                            onBlur={(e) =>
+                              commitChange(key, e.target.value, config)
+                            }
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && !e.shiftKey) {
                                 commitChange(key, e.target.value, config);
@@ -932,7 +979,9 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             value={currentValue ?? ""}
                             placeholder={config.placeholder}
                             onChange={(e) => handleChange(e.target.value)}
-                            onBlur={(e) => commitChange(key, e.target.value, config)}
+                            onBlur={(e) =>
+                              commitChange(key, e.target.value, config)
+                            }
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
                                 commitChange(key, e.target.value, config);
