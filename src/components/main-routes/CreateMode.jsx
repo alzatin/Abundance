@@ -18,7 +18,7 @@ import ParamsMenu from "../secondary/ParamsMenu.jsx";
 import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
 import GitSearchMenu from "../secondary/GitSearchMenu.jsx";
-
+import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
  * a user has been authorized access to a project.
@@ -68,6 +68,10 @@ function CreateMode({
   const [saveState, setSaveState] = useState(0);
   const [savePopUp, setSavePopUp] = useState(false);
   const [commitState, setCommitState] = useState(0);
+
+  /** State for render progress bar */
+  const [renderProgress, setRenderProgress] = useState(0);
+  const [renderBarVisible, setRenderBarVisible] = useState(true);
 
   /** State for top level molecule */
   const [currentMoleculeTop, setTop] = useState(false);
@@ -123,6 +127,36 @@ function CreateMode({
     };
   }, []);
 
+  useEffect(() => {
+    //setRenderProgress(0);
+    // Show the render progress bar when rendering starts
+    setRenderBarVisible(true);
+    let interval = setInterval(() => {
+      const molecule = GlobalVariables.topLevelMolecule;
+      if (molecule) {
+        const [ready, total] = molecule.getCompletionTuple();
+        // Update your UI with progress here
+        //console.log(`Molecule progress: ${ready} / ${total}`);
+        const progress = Math.floor((ready / total) * 100);
+        setRenderProgress(progress);
+        if (molecule.getState().status === "ready") {
+          clearInterval(interval);
+        }
+      }
+    }, 500); // Poll every 500ms
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (renderProgress >= 100) {
+      const timeout = setTimeout(() => {
+        setRenderBarVisible(false);
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [renderProgress]);
+
   const expandedMenuRef = useRef(expandedMenu);
   useEffect(() => {
     expandedMenuRef.current = expandedMenu;
@@ -163,7 +197,6 @@ function CreateMode({
         forwardKeyToPanel(e);
       }
     }
-
     /*
     // Example: Toggle shortcut display with Ctrl+/
     if ((e.ctrlKey || e.metaKey) && e.key === "/") {
@@ -807,6 +840,9 @@ function CreateMode({
               setErrorNotification: setErrorNotification,
             }}
           />
+          {renderBarVisible ? (
+            <RenderProgressBar progress={renderProgress} label="Rendering" />
+          ) : null}
           <div id="headerBar">
             <img
               className="thumnail-logo"
