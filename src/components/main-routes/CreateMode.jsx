@@ -18,7 +18,7 @@ import ParamsMenu from "../secondary/ParamsMenu.jsx";
 import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
 import GitSearchMenu from "../secondary/GitSearchMenu.jsx";
-
+import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
  * a user has been authorized access to a project.
@@ -43,6 +43,10 @@ function CreateMode({
   setWireMesh,
   outdatedMesh,
   setOutdatedMesh,
+  setRenderProgress,
+  renderProgress,
+  renderBarVisible,
+  setRenderBarVisible,
 }) {
   const navigate = useNavigate();
 
@@ -163,7 +167,6 @@ function CreateMode({
         forwardKeyToPanel(e);
       }
     }
-
     /*
     // Example: Toggle shortcut display with Ctrl+/
     if ((e.ctrlKey || e.metaKey) && e.key === "/") {
@@ -807,6 +810,9 @@ function CreateMode({
               setErrorNotification: setErrorNotification,
             }}
           />
+          {renderBarVisible ? (
+            <RenderProgressBar progress={renderProgress} label="Rendering" />
+          ) : null}
           <div id="headerBar">
             <img
               className="thumnail-logo"
