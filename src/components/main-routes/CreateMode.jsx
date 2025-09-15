@@ -43,6 +43,10 @@ function CreateMode({
   setWireMesh,
   outdatedMesh,
   setOutdatedMesh,
+  setRenderProgress,
+  renderProgress,
+  renderBarVisible,
+  setRenderBarVisible,
 }) {
   const navigate = useNavigate();
 
@@ -68,10 +72,6 @@ function CreateMode({
   const [saveState, setSaveState] = useState(0);
   const [savePopUp, setSavePopUp] = useState(false);
   const [commitState, setCommitState] = useState(0);
-
-  /** State for render progress bar */
-  const [renderProgress, setRenderProgress] = useState(0);
-  const [renderBarVisible, setRenderBarVisible] = useState(true);
 
   /** State for top level molecule */
   const [currentMoleculeTop, setTop] = useState(false);
@@ -126,36 +126,6 @@ function CreateMode({
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, []);
-
-  useEffect(() => {
-    //setRenderProgress(0);
-    // Show the render progress bar when rendering starts
-    setRenderBarVisible(true);
-    let interval = setInterval(() => {
-      const molecule = GlobalVariables.topLevelMolecule;
-      if (molecule) {
-        const [ready, total] = molecule.getCompletionTuple();
-        // Update your UI with progress here
-        //console.log(`Molecule progress: ${ready} / ${total}`);
-        const progress = Math.floor((ready / total) * 100);
-        setRenderProgress(progress);
-        if (molecule.getState().status === "ready") {
-          clearInterval(interval);
-        }
-      }
-    }, 500); // Poll every 500ms
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (renderProgress >= 100) {
-      const timeout = setTimeout(() => {
-        setRenderBarVisible(false);
-      }, 1000);
-      return () => clearTimeout(timeout);
-    }
-  }, [renderProgress]);
 
   const expandedMenuRef = useRef(expandedMenu);
   useEffect(() => {
