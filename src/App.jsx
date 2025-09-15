@@ -113,12 +113,6 @@ export default function ReplicadApp() {
       document.body.appendChild(invisibleDiv);
     }
   };
-  const loadingDotsNone = () => {
-    const loadingDots = document.querySelector(".loading");
-    if (loadingDots) {
-      loadingDots.style.display = "none";
-    }
-  };
 
   useEffect(() => {
     localStorage.setItem("shortcuts", shortCutsOn);
@@ -126,12 +120,6 @@ export default function ReplicadApp() {
 
   useEffect(() => {
     GlobalVariables.writeToDisplay = (id, resetView = false) => {
-      console.log(
-        "Write to display called with id:",
-        id,
-        "resetView:",
-        resetView
-      );
       setOutdatedMesh(true);
       if (resetView) {
         cad
@@ -141,7 +129,6 @@ export default function ReplicadApp() {
             setWireMesh(m);
             setOutdatedMesh(false);
             setRenderProgress(100);
-            loadingNone();
           })
           .catch((e) => {
             console.error("reset view not working" + e);
@@ -153,7 +140,6 @@ export default function ReplicadApp() {
           .then((m) => {
             setMesh(m);
             setOutdatedMesh(false);
-            loadingDotsNone();
           })
           .catch((e) => {
             console.error("Can't display Mesh " + e);
@@ -334,6 +320,10 @@ export default function ReplicadApp() {
                   setOutdatedMesh,
                   redirectType,
                   setRedirectType,
+                  renderProgress,
+                  setRenderProgress,
+                  renderBarVisible,
+                  setRenderBarVisible,
                 }}
               />
             }

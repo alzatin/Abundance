@@ -780,9 +780,23 @@
   align-items: center;
   position: absolute;
   right: 0.2%;
-  top: 40%;
+  top: 45%;
   border-radius: 5px;
   width: 200px;
+  z-index: 5;
+}
+.save-bar-run {
+  font-family: "Montserrat", sans-serif;
+  font-size: 10px;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  position: absolute;
+  right: 45%;
+  top: 45%;
+  border-radius: 5px;
+  width: 200px;
+  z-index: 5;
 }
 .progress {
   background-color: var(--saveBar-background);

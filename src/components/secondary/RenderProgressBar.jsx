@@ -3,10 +3,11 @@ import React from "react";
 export default function RenderProgressBar({
   progress,
   label = "Rendering...",
+  run,
 }) {
   console.log("RenderProgressBar progress:", progress);
   return (
-    <div className="save-bar">
+    <div className={!run ? "save-bar" : "save-bar-run"}>
       <div className="progress">
         <div
           className="progress-done"
