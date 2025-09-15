@@ -787,15 +787,15 @@
 }
 .save-bar-run {
   font-family: "Montserrat", sans-serif;
-  font-size: 10px;
-  padding: 5px;
+  font-size: 14px;
+  padding: 10px;
   display: flex;
   align-items: center;
   position: absolute;
-  right: 45%;
+  right: 35%;
   top: 45%;
   border-radius: 5px;
-  width: 200px;
+  width: 400px;
   z-index: 5;
 }
 .progress {
