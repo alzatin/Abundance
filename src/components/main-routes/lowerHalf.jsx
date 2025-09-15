@@ -112,20 +112,6 @@ export default memo(function LowerHalf({
             </div>
           )}
         </section>
-        <div className="container arrow-up">
-          <input type="checkbox" className="custom" />
-          <div className="dots"></div>
-        </div>
-        <div id="viewer_bar"></div>
-        <div className={`centered-text hidden`}>
-          <div className="loading">
-            <div className="dot"></div>
-            <div className="dot"></div>
-            <div className="dot"></div>
-            <div className="dot"></div>
-            <div className="dot"></div>
-          </div>
-        </div>
       </div>
       <div id="bottom_bar"></div>
     </>
