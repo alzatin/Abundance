@@ -17,7 +17,6 @@ export default memo(function FlowCanvas({
   windowSize,
 }) {
   /** State for github molecule search input */
-  const [searchingGitHub, setSearchingGitHub] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -252,7 +251,7 @@ export default memo(function FlowCanvas({
       }
       //Opens menu to search for github molecule
       else if (e.key == "g") {
-        setSearchingGitHub(true);
+        setExpandedMenu("git-search");
         setIsShortcutTriggered(true); // Set the shortcut flag
         GlobalVariables.ctrlDown = false;
       } else {
@@ -353,7 +352,7 @@ export default memo(function FlowCanvas({
       return;
     } else {
       cmenu.hide();
-      setSearchingGitHub(false);
+
       setIsShortcutTriggered(false);
       setIsHovering(false);
       setSearch("");
@@ -500,7 +499,7 @@ export default memo(function FlowCanvas({
   }, [draw]);
 
   useEffect(() => {
-    createCMenu(circleMenu, setSearchingGitHub);
+    createCMenu(circleMenu, setExpandedMenu);
   }, []);
 
   let parentLinkPath = [];
