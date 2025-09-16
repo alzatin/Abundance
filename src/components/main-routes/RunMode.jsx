@@ -97,8 +97,6 @@ function runMode() {
     GlobalVariables.isMobile() ? "none" : "params"
   );
 
-  console.log("renderBarVisible", renderBarVisible);
-
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;
     GlobalVariables.c = canvasRef.current.getContext("2d");
@@ -125,7 +123,6 @@ function runMode() {
       })
       .then((result) => {
         GlobalVariables.currentRepo = result.data;
-        console.log("GlobalVariables.currentRepo", GlobalVariables.currentRepo);
         /*temp variables while we change to aws*/
         GlobalVariables.currentRepo.repoName = GlobalVariables.currentRepo.name;
         GlobalVariables.currentRepo.owner =

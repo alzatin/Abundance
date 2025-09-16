@@ -572,7 +572,7 @@ export default class AttachmentPoint extends ObservableEntity {
       }
     } else {
       // this.type == "output"
-      console.log("setValue called on output..... no op");
+      //console.log("setValue called on output..... no op");
     }
   }
 
