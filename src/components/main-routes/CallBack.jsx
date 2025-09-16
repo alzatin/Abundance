@@ -69,6 +69,9 @@ const Callback = ({
         } else if (state.liking && state.currentRepo && authorizedUser) {
           navigate(`/run/${state.currentRepo}`);
           setRedirectType("like");
+        } else if (state.returnTo && authorizedUser) {
+          // Handle re-authentication return
+          navigate(state.returnTo);
         } else {
           navigate("/");
         }
