@@ -3,15 +3,17 @@ import { useEffect, useState, useMemo } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
+import { useAppState } from "../../contexts/index.js";
 
 export default function BomMenu({
-  activeAtom,
   id,
   contentCollapsed,
   setContentCollapsed,
   position,
   collapsedOffset,
+  closeMenu,
 }) {
+  const { activeAtom } = useAppState();
   const [inputChanged, setInputChanged] = useState("");
   let bomParams = {};
 
@@ -66,6 +68,7 @@ export default function BomMenu({
         collapsedOffset={collapsedOffset} // shifts expanded panel by 45px right, 45px down
         contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
+        closeMenu={closeMenu}
       />
     </div>
   );

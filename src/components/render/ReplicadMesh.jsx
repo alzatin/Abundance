@@ -7,12 +7,10 @@ import {
   syncLinesFromFaces,
 } from "replicad-threejs-helper";
 import { Wireframe } from "@react-three/drei";
+import { useRendering } from "../../contexts/index.js";
 
-export default React.memo(function ShapeMeshes({
-  mesh,
-  isSolid,
-  setOutdatedMesh,
-}) {
+export default React.memo(function ShapeMeshes({ isSolid }) {
+  const { mesh, setOutdatedMesh } = useRendering();
   const { invalidate } = useThree();
   //const body = useRef(new BufferGeometry());
   //const lines = useRef(new BufferGeometry());

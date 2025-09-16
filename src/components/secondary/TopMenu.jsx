@@ -4,35 +4,41 @@ import ShareDialog from "./ShareDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import SettingsPopUp from "./SettingsPopUp.jsx";
 import MobileSettingsPopUp from "./MobileSettingsPopUp.jsx";
+import { useAuth, useAppState, useRendering } from "../../contexts/index.js";
 
 function TopMenu({
-  authorizedUserOcto,
   savePopUp,
   setSavePopUp,
   saveProject,
-  setExportPopUp,
   saveState,
   setSaveState,
   currentMoleculeTop,
-  activeAtom,
-  setActiveAtom,
-  shortCutsOn,
-  setShortCuts,
-  gridParam,
-  axesParam,
-  wireParam,
-  solidParam,
-  setGrid,
-  setAxes,
-  setWire,
-  setSolid,
-  backgroundUsdzFile,
-  setBackgroundUsdzFile,
-  backgroundUsdzSha,
-  setBackgroundUsdzSha,
-  showBackgroundModel,
-  setShowBackgroundModel,
 }) {
+  const { authorizedUserOcto } = useAuth();
+  const { 
+    activeAtom, 
+    setActiveAtom, 
+    shortCutsOn, 
+    setShortCuts, 
+    setExportPopUp 
+  } = useAppState();
+  const {
+    gridParam,
+    axesParam,
+    wireParam,
+    solidParam,
+    setGrid,
+    setAxes,
+    setWire,
+    setSolid,
+    backgroundUsdzFile,
+    setBackgroundUsdzFile,
+    backgroundUsdzSha,
+    setBackgroundUsdzSha,
+    showBackgroundModel,
+    setShowBackgroundModel,
+  } = useRendering();
+
   let [shareDialog, setShareDialog] = useState(false);
   let [dialogContent, setDialog] = useState("");
   let [settingsPopUp, setSettingsPopUp] = useState(false);

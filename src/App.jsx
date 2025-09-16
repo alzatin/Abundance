@@ -17,12 +17,23 @@ import cadWorker from "./worker/worker.js?worker";
 import { QueryClient, QueryClientProvider } from "react-query";
 import Callback from "./components/main-routes/CallBack.jsx";
 
+// Import contexts
+import {
+  RenderingProvider,
+  AuthProvider,
+  AppStateProvider,
+  ProjectProvider,
+  useRendering,
+  useAuth,
+  useAppState,
+} from "./contexts/index.js";
+
 /*Import style scripts*/
 import "./styles/maslowCreate.css";
 import "./styles/menuIcons.css";
 import "./styles/login.css";
 import "./styles/codemirror.css";
-
+//
 
 const queryClient = new QueryClient();
 /**
@@ -31,19 +42,38 @@ const queryClient = new QueryClient();
  */
 
 const cad = wrap(new cadWorker());
-export default function ReplicadApp() {
+
+/**
+ * Inner app component that has access to all contexts
+ */
+function AppContent() {
+  const {
+    setMesh,
+    setWireMesh,
+    setOutdatedMesh,
+    renderProgress,
+    setRenderProgress,
+    setRenderBarVisible,
+  } = useRendering();
+
+  const {
+    setIsLoggedIn,
+    isAuthorized,
+    setIsAuthorized,
+    setAuthorizedUserOcto,
+  } = useAuth();
+
+  const { activeAtom, setActiveAtom, shortCutsOn, setRedirectType } =
+    useAppState();
+
   const [size, setSize] = useState(5);
-  const [mesh, setMesh] = useState({});
-  const [wireMesh, setWireMesh] = useState(null);
-  const [outdatedMesh, setOutdatedMesh] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     cad.createMesh(size).then((m) => {
       setMesh(m);
       setWireMesh(m);
     });
-  }, [size]);
+  }, [size, setMesh, setWireMesh]);
 
   useEffect(() => {
     const element = document.querySelector("html");
@@ -54,15 +84,38 @@ export default function ReplicadApp() {
     }
   }, []);
 
-  const [isloggedIn, setIsLoggedIn] = useState(false);
-  const [activeAtom, setActiveAtom] = useState(null);
-  const [exportPopUp, setExportPopUp] = useState(false);
-  const [redirectType, setRedirectType] = useState(null);
+  useEffect(() => {
+    setRenderProgress(0);
+    setRenderBarVisible(true);
+    let interval = setInterval(() => {
+      const molecule = GlobalVariables.topLevelMolecule;
+      if (molecule) {
+        const [ready, total] = molecule.getCompletionTuple();
+        // Update your UI with progress here
+        //console.log(`Molecule progress: ${ready} / ${total}`);
+        const progress = Math.floor((ready / total) * 100);
+        setRenderProgress(progress);
+        if (molecule.getState().status === "ready") {
+          clearInterval(interval);
+        }
+      }
+    }, 500); // Poll every 500ms
 
-  const [authorizedUserOcto, setAuthorizedUserOcto] = useState(null);
-  const [shortCutsOn, setShortCuts] = useState(
-    localStorage.getItem("shortcuts") === "true"
-  );
+    return () => clearInterval(interval);
+  }, [
+    GlobalVariables.topLevelMolecule,
+    setRenderProgress,
+    setRenderBarVisible,
+  ]);
+
+  useEffect(() => {
+    if (renderProgress >= 100) {
+      const timeout = setTimeout(() => {
+        setRenderBarVisible(false);
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [renderProgress, setRenderBarVisible]);
 
   /* Creates an element to check with Puppeteer if the molecule is fully loaded*/
   const createPuppeteerDiv = () => {
@@ -76,12 +129,6 @@ export default function ReplicadApp() {
       invisibleDiv.id = "molecule-fully-render-puppeteer";
       invisibleDiv.style.display = "none";
       document.body.appendChild(invisibleDiv);
-    }
-  };
-  const loadingDotsNone = () => {
-    const loadingDots = document.querySelector(".loading");
-    if (loadingDots) {
-      loadingDots.style.display = "none";
     }
   };
 
@@ -99,18 +146,18 @@ export default function ReplicadApp() {
             setMesh(m);
             setWireMesh(m);
             setOutdatedMesh(false);
-            loadingDotsNone();
+            setRenderProgress(100);
           })
           .catch((e) => {
             console.error("reset view not working" + e);
           });
       } else {
+        console.log("Generating mesh for id:", id);
         cad
           .generateDisplayMesh(id)
           .then((m) => {
             setMesh(m);
             setOutdatedMesh(false);
-            loadingDotsNone();
           })
           .catch((e) => {
             console.error("Can't display Mesh " + e);
@@ -155,7 +202,7 @@ export default function ReplicadApp() {
     };
 
     GlobalVariables.cad = cad;
-  }, [activeAtom]);
+  }, [activeAtom, setMesh, setWireMesh, setOutdatedMesh, setRenderProgress]);
 
   // Loads project
   const loadProject = function (project, authorizedUser) {
@@ -180,24 +227,25 @@ export default function ReplicadApp() {
       })
       .then(async (response) => {
         let rawFileContent;
-        
+
         // Handle large files (>1MB) using download_url
         if (!response.data.content || response.data.content.length === 0) {
           const fileResponse = await fetch(response.data.download_url);
           rawFileContent = await fileResponse.text();
         } else {
           // Handle small files using base64 content with UTF-8 encoding
-          rawFileContent = GlobalVariables.fromBinaryStr(atob(response.data.content));
+          rawFileContent = GlobalVariables.fromBinaryStr(
+            atob(response.data.content)
+          );
         }
-        
+
         let rawFile = JSON.parse(rawFileContent);
 
         if (rawFile.filetypeVersion == 1) {
           GlobalVariables.topLevelMolecule.deserialize(rawFile);
         } else {
-          GlobalVariables.topLevelMolecule.deserialize(
-            convertFromOldFormat(rawFile)
-          );
+          // For older file versions, try to deserialize directly for now
+          GlobalVariables.topLevelMolecule.deserialize(rawFile);
         }
         setActiveAtom(GlobalVariables.currentMolecule);
         GlobalVariables.currentMolecule.selected = true;
@@ -208,89 +256,53 @@ export default function ReplicadApp() {
       });
   };
 
-  /* Toggle button to switch between run and create modes  */
+  return (
+    <main>
+      <Routes>
+        <Route exact path="" element={<LoginMode />} />
+        <Route
+          path="/callback"
+          element={
+            <Callback
+              isAuthorized={isAuthorized}
+              setIsAuthorized={setIsAuthorized}
+              setIsLoggedIn={setIsLoggedIn}
+              setAuthorizedUserOcto={setAuthorizedUserOcto}
+              setRedirectType={setRedirectType}
+            />
+          }
+        />
+        <Route
+          path="/:owner/:repoName"
+          element={
+            <ProjectProvider cad={cad} loadProject={loadProject}>
+              <CreateMode />
+            </ProjectProvider>
+          }
+        />
+        <Route
+          path="/run/:owner/:repoName"
+          element={
+            <ProjectProvider cad={cad} loadProject={loadProject}>
+              <RunMode />
+            </ProjectProvider>
+          }
+        />
+      </Routes>
+    </main>
+  );
+}
 
+export default function ReplicadApp() {
   return (
     <QueryClientProvider client={queryClient}>
-      <main>
-        <Routes>
-          <Route
-            exact
-            path=""
-            element={
-              <LoginMode
-                {...{
-                  setIsLoggedIn,
-                  isloggedIn,
-                  authorizedUserOcto,
-                  setAuthorizedUserOcto,
-                  exportPopUp,
-                  setExportPopUp,
-                  isAuthorized,
-                }}
-              />
-            }
-          />
-          <Route
-            path="/callback"
-            element={
-              <Callback
-                isAuthorized={isAuthorized}
-                setIsAuthorized={setIsAuthorized}
-                setIsLoggedIn={setIsLoggedIn}
-                setAuthorizedUserOcto={setAuthorizedUserOcto}
-                setRedirectType={setRedirectType}
-              />
-            }
-          />
-          <Route
-            path="/:owner/:repoName"
-            element={
-              <CreateMode
-                {...{
-                  activeAtom,
-                  setActiveAtom,
-                  authorizedUserOcto,
-                  loadProject,
-                  exportPopUp,
-                  setExportPopUp,
-                  shortCutsOn,
-                  setShortCuts,
-                  mesh,
-                  setMesh,
-                  size,
-                  cad,
-                  wireMesh,
-                  setWireMesh,
-                  outdatedMesh,
-                  setOutdatedMesh,
-                }}
-              />
-            }
-          />
-          <Route
-            path="/run/:owner/:repoName"
-            element={
-              <RunMode
-                {...{
-                  isloggedIn,
-                  setActiveAtom,
-                  activeAtom: GlobalVariables.currentMolecule,
-                  authorizedUserOcto,
-                  loadProject,
-                  mesh,
-                  wireMesh,
-                  setWireMesh,
-                  outdatedMesh,
-                  setOutdatedMesh,
-                  redirectType,
-                  setRedirectType,
-                }}
-              />
-            }
-          />
-        </Routes>
-      </main>
+      <AuthProvider>
+        <AppStateProvider>
+          <RenderingProvider>
+            <AppContent />
+          </RenderingProvider>
+        </AppStateProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

@@ -7,8 +7,10 @@ import {
   syncLinesFromFaces,
 } from "replicad-threejs-helper";
 import { Wireframe } from "@react-three/drei";
+import { useRendering } from "../../contexts/index.js";
 
-export default React.memo(function ShapeMeshes({ mesh }) {
+export default React.memo(function ShapeMeshes() {
+  const { wireMesh: mesh } = useRendering();
   const { invalidate } = useThree();
 
   const [fullMesh, setFullMesh] = useState([]);

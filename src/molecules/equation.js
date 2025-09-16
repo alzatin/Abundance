@@ -233,7 +233,6 @@ export default class Equation extends Atom {
    * Set the current equation to be a new value.
    */
   setEquation(newEquation) {
-    console.log("Setting equation to:", newEquation);
     this.currentEquation = String(newEquation).trim(); //convert to string first, then remove leading and trailing whitespace
     this.addAndRemoveInputs();
   }
@@ -242,8 +241,6 @@ export default class Equation extends Atom {
    * Send the value of this atom to the 3D display. Used to display the number
    */
   sendToRender() {
-    //Send code to jotcad to render
-    //GlobalVariables.writeToDisplay(this.uniqueID);
-    console.log("equation");
+    // No rendering for this atom
   }
 }

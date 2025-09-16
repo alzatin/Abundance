@@ -13,11 +13,20 @@ import ParamsMenu from "../secondary/ParamsMenu.jsx";
 import ExportMenu from "../secondary/ExportMenu.jsx";
 import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
+import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 import {
   BrowserRouter as Router,
   useParams,
   useNavigate,
 } from "react-router-dom";
+
+// Import contexts
+import {
+  useAuth,
+  useAppState,
+  useRendering,
+  useProject,
+} from "../../contexts/index.js";
 
 function useWindowSize() {
   // Initialize state with undefined width/height so server and client renders match
@@ -45,26 +54,31 @@ function useWindowSize() {
   return windowSize;
 }
 
-function runMode({
-  setActiveAtom,
-  activeAtom,
-  authorizedUserOcto,
-  loadProject,
-  mesh,
-  wireMesh,
-  outdatedMesh,
-  setOutdatedMesh,
-  redirectType,
-  setRedirectType,
-}) {
+function runMode() {
+  // Get context values
+  const { isloggedIn, authorizedUserOcto } = useAuth();
+  const { activeAtom, redirectType, setRedirectType } = useAppState();
+  const {
+    mesh,
+    wireMesh,
+    outdatedMesh,
+    setOutdatedMesh,
+    renderProgress,
+    renderBarVisible,
+    gridParam,
+    setGrid,
+    axesParam,
+    setAxes,
+    wireParam,
+    setWire,
+    solidParam,
+    setSolid,
+  } = useRendering();
+  const { loadProject } = useProject();
+
   // canvas to hide
   const canvasRef = useRef(500);
-
-  const [gridParam, setGrid] = useState(true);
-  const [axesParam, setAxes] = useState(true);
   const [isItOwned, setOwned] = useState(false);
-  const [wireParam, setWire] = useState(true);
-  const [solidParam, setSolid] = useState(false);
 
   const windowSize = useWindowSize();
 
@@ -79,7 +93,9 @@ function runMode({
 
   /** State for menu content collapsing */
   // Which menu is expanded: "params", "render", "bom", or "none"
-  const [expandedMenu, setExpandedMenu] = useState("params");
+  const [expandedMenu, setExpandedMenu] = useState(
+    GlobalVariables.isMobile() ? "none" : "params"
+  );
 
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;
@@ -107,7 +123,6 @@ function runMode({
       })
       .then((result) => {
         GlobalVariables.currentRepo = result.data;
-        console.log("GlobalVariables.currentRepo", GlobalVariables.currentRepo);
         /*temp variables while we change to aws*/
         GlobalVariables.currentRepo.repoName = GlobalVariables.currentRepo.name;
         GlobalVariables.currentRepo.owner =
@@ -149,6 +164,8 @@ function runMode({
         id={"atom-run-params-panel"}
         contentCollapsed={expandedMenu !== "params"}
         setContentCollapsed={() => setExpandedMenu("params")}
+        closeMenu={() => setExpandedMenu("none")}
+        initialCollapsed={GlobalVariables.isMobile() ? true : false}
       />
       <ExportMenu
         activeAtom={activeAtom}
@@ -156,6 +173,7 @@ function runMode({
         id={"atom-run-export-panel"}
         contentCollapsed={expandedMenu !== "export"}
         setContentCollapsed={() => setExpandedMenu("export")}
+        closeMenu={() => setExpandedMenu("none")}
       />
       <RenderMenu
         {...{
@@ -170,6 +188,7 @@ function runMode({
           setSolid,
           contentCollapsed: expandedMenu !== "render",
           setContentCollapsed: () => setExpandedMenu("render"),
+          closeMenu: () => setExpandedMenu("none"),
           position: { top: 30, left: screenWidth - 365 },
         }}
         id={"atom-run-render-panel"}
@@ -180,10 +199,14 @@ function runMode({
           id: "atom-run-bom-panel",
           contentCollapsed: expandedMenu !== "bom",
           setContentCollapsed: () => setExpandedMenu("bom"),
+          closeMenu: () => setExpandedMenu("none"),
           position: { top: 120, left: screenWidth - 365 },
         }}
         collapsedOffset={[45, -90]}
       />
+      {renderBarVisible ? (
+        <RenderProgressBar progress={renderProgress} run={true} />
+      ) : null}
       <div id="headerBarRun">
         <img
           className="thumnail-logo"
@@ -192,15 +215,6 @@ function runMode({
           }
           alt="logo"
         />
-      </div>
-      <div className={`centered-text hidden`}>
-        <div className="loading">
-          <div className="dot"></div>
-          <div className="dot"></div>
-          <div className="dot"></div>
-          <div className="dot"></div>
-          <div className="dot"></div>
-        </div>
       </div>
       <canvas
         style={{ display: "none" }}

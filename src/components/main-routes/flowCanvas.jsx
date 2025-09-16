@@ -4,38 +4,17 @@ import Molecule from "../../molecules/molecule.js";
 import { createCMenu, cmenu } from "../../js/NewMenu.js";
 import { useNavigate } from "react-router-dom";
 
-function onWindowResize() {
-  const flowCanvas = document.getElementById("flow-canvas");
-  if (GlobalVariables.isMobile()) {
-    flowCanvas.width = window.screen.width;
-    flowCanvas.height = window.screen.height * 0.45;
-  } else {
-    flowCanvas.width = window.innerWidth;
-    flowCanvas.height = window.innerHeight * 0.45;
-  }
-}
-
-window.addEventListener(
-  "resize",
-  () => {
-    onWindowResize();
-  },
-  false
-);
-
 export default memo(function FlowCanvas({
-  activeAtom,
   loadProject,
   setActiveAtom,
   shortCuts,
   authorizedUserOcto,
   importNotification,
   errorNotification,
-  setErrorNotification,
   setExpandedMenu,
+  windowSize,
 }) {
   /** State for github molecule search input */
-  const [searchingGitHub, setSearchingGitHub] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -49,6 +28,7 @@ export default memo(function FlowCanvas({
   let lastTouchMove = null;
   let longPressTimer = useRef(null);
   let touchStartPos = useRef({ x: 0, y: 0 });
+  const canvasHeightScale = 0.45;
 
   // Double tap detection
   let lastTapTime = useRef(0);
@@ -89,6 +69,13 @@ export default memo(function FlowCanvas({
       atom.update();
     });
   }, []);
+
+  useEffect(() => {
+    if (canvasRef.current && windowSize) {
+      canvasRef.current.width = windowSize.width;
+      canvasRef.current.height = windowSize.height * canvasHeightScale;
+    }
+  }, [windowSize]);
 
   const draw = () => {
     GlobalVariables.c.clearRect(
@@ -262,7 +249,7 @@ export default memo(function FlowCanvas({
       }
       //Opens menu to search for github molecule
       else if (e.key == "g") {
-        setSearchingGitHub(true);
+        setExpandedMenu("git-search");
         setIsShortcutTriggered(true); // Set the shortcut flag
         GlobalVariables.ctrlDown = false;
       } else {
@@ -363,7 +350,7 @@ export default memo(function FlowCanvas({
       return;
     } else {
       cmenu.hide();
-      setSearchingGitHub(false);
+
       setIsShortcutTriggered(false);
       setIsHovering(false);
       setSearch("");
@@ -452,7 +439,7 @@ export default memo(function FlowCanvas({
       i--
     ) {
       const molecule = GlobalVariables.currentMolecule.nodesOnTheScreen[i];
-      const handled = molecule.doubleClick(event.clientX, event.clientY);
+      const handled = molecule?.doubleClick(event.clientX, event.clientY);
     }
   };
 
@@ -510,11 +497,7 @@ export default memo(function FlowCanvas({
   }, [draw]);
 
   useEffect(() => {
-    onWindowResize();
-  }, []);
-
-  useEffect(() => {
-    createCMenu(circleMenu, setSearchingGitHub);
+    createCMenu(circleMenu, setExpandedMenu);
   }, []);
 
   let parentLinkPath = [];
@@ -535,6 +518,10 @@ export default memo(function FlowCanvas({
         ref={canvasRef}
         id="flow-canvas"
         tabIndex={0}
+        style={{
+          width: windowSize?.width || 0,
+          height: (windowSize?.height || 0) * canvasHeightScale,
+        }}
         onMouseMove={mouseMove}
         onTouchMove={mouseMove}
         onTouchStart={onMouseDown}
@@ -597,9 +584,3 @@ export default memo(function FlowCanvas({
     </>
   );
 });
-
-{
-  /* i'd really like to make the tooltip for the circular menu happen with react here. Have not
-                found a way to grab anchor ID from this component yet. 
-    <div id="tool_tip_circular" className='tooltip'>hello</div>; */
-}

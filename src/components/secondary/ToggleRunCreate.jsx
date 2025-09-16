@@ -1,15 +1,14 @@
 import React, { useState } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import { Link } from "react-router-dom";
-import globalvariables from "../../js/globalvariables.js";
 
 function ToggleRunCreate({ run, isItOwned }) {
   const [runModeon, setRunMode] = useState(run);
-
+  const [showTooltip, setShowTooltip] = useState(false);
   const handleChange = () => {
     setRunMode(!runModeon);
   };
-  if (globalvariables.currentRepo) {
+  if (GlobalVariables.currentRepo) {
     if (!runModeon) {
       return (
         <>
@@ -27,23 +26,35 @@ function ToggleRunCreate({ run, isItOwned }) {
             onClick={handleChange}
             style={{ position: "absolute" }}
           >
-            <label title="Create/Run Mode" className="switch">
-              <button>
-                <p id="runMode_button">Run Mode</p>
+            <label className="switch runmode-tooltip-container">
+              <button
+                title="Switch to Run Mode"
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+              >
                 <svg
-                  width="12"
-                  height="8"
-                  viewBox="0 0 9 5"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 18 18"
                   xmlns="http://www.w3.org/2000/svg"
-                  className="leva-c-cHvNmv"
                   style={{
                     transform: "rotate(-90deg)",
                     alignSelf: "center",
-                    fill: "#c4a3d5",
+                    display: "block",
                   }}
                 >
-                  <path d="M3.8 4.4c.4.3 1 .3 1.4 0L8 1.7A1 1 0 007.4 0H1.6a1 1 0 00-.7 1.7l3 2.7z"></path>
+                  <polyline
+                    points="5,7 9,13 13,7"
+                    fill="none"
+                    stroke="#c4a3d5"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
+                {showTooltip && (
+                  <span className="runmode-tooltip">RUN MODE</span>
+                )}
               </button>
             </label>
           </Link>
@@ -57,25 +68,31 @@ function ToggleRunCreate({ run, isItOwned }) {
             to={
               isItOwned
                 ? `/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`
-                : `/`
+                : "/"
             }
             onClick={handleChange}
           >
             <label title="Create/Run Mode" className="switch_run">
               <button>
                 <svg
-                  width="12"
-                  height="8"
-                  viewBox="0 0 9 5"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 18 18"
                   xmlns="http://www.w3.org/2000/svg"
-                  className="leva-c-cHvNmv"
                   style={{
                     transform: "rotate(90deg)",
                     alignSelf: "center",
-                    fill: "#c4a3d5",
+                    display: "block",
                   }}
                 >
-                  <path d="M3.8 4.4c.4.3 1 .3 1.4 0L8 1.7A1 1 0 007.4 0H1.6a1 1 0 00-.7 1.7l3 2.7z"></path>
+                  <polyline
+                    points="5,7 9,13 13,7"
+                    fill="none"
+                    stroke="#c4a3d5"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
                 <p
                   style={{

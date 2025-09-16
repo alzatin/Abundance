@@ -18,7 +18,15 @@ import ParamsMenu from "../secondary/ParamsMenu.jsx";
 import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
 import GitSearchMenu from "../secondary/GitSearchMenu.jsx";
+import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 
+// Import contexts
+import {
+  useAuth,
+  useAppState,
+  useRendering,
+  useProject,
+} from "../../contexts/index.js";
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
  * a user has been authorized access to a project.
@@ -26,37 +34,33 @@ import GitSearchMenu from "../secondary/GitSearchMenu.jsx";
  * @prop {setstate} setRunMode - setState function for runMode
  * @prop {boolean} RunMode - Determines if Run mode is on or off
  */
-function CreateMode({
-  activeAtom,
-  setActiveAtom,
-  authorizedUserOcto,
-  loadProject,
-  exportPopUp,
-  setExportPopUp,
-  shortCutsOn,
-  setShortCuts,
-  mesh,
-  setMesh,
-  size,
-  cad,
-  wireMesh,
-  setWireMesh,
-  outdatedMesh,
-  setOutdatedMesh,
-}) {
+function CreateMode() {
+  // Get context values
+  const { authorizedUserOcto } = useAuth();
+  const {
+    activeAtom,
+    setActiveAtom,
+    shortCutsOn,
+    exportPopUp,
+    setExportPopUp,
+  } = useAppState();
+  const {
+    setMesh,
+    setWireMesh,
+    renderProgress,
+    renderBarVisible,
+    backgroundUsdzFile,
+    setBackgroundUsdzFile,
+    backgroundUsdzSha,
+    setBackgroundUsdzSha,
+    showBackgroundModel,
+    setShowBackgroundModel,
+    userUploadedFile,
+    setUserUploadedFile,
+  } = useRendering();
+  const { cad, loadProject } = useProject();
+
   const navigate = useNavigate();
-
-  /** State for grid and axes parameters */
-  const [gridParam, setGrid] = useState(true);
-  const [axesParam, setAxes] = useState(true);
-  const [wireParam, setWire] = useState(true);
-  const [solidParam, setSolid] = useState(false);
-
-  /** State for background 3D model */
-  const [backgroundUsdzFile, setBackgroundUsdzFile] = useState(null);
-  const [backgroundUsdzSha, setBackgroundUsdzSha] = useState(null);
-  const [showBackgroundModel, setShowBackgroundModel] = useState(false);
-  const [userUploadedFile, setUserUploadedFile] = useState(false); // Track if user uploaded a file
 
   /** State for import notifications */
   const [importNotification, setImportNotification] = useState(null);
@@ -67,7 +71,6 @@ function CreateMode({
   /** State for save progress bar */
   const [saveState, setSaveState] = useState(0);
   const [savePopUp, setSavePopUp] = useState(false);
-  const [commitState, setCommitState] = useState(0);
 
   /** State for top level molecule */
   const [currentMoleculeTop, setTop] = useState(false);
@@ -76,7 +79,9 @@ function CreateMode({
 
   /** State for menu content collapsing */
   // Which menu is expanded: "params", "render", "bom", or "none"
-  const [expandedMenu, setExpandedMenu] = useState("params");
+  const [expandedMenu, setExpandedMenu] = useState(
+    GlobalVariables.isMobile() ? "none" : "params"
+  );
 
   /**
    * Object containing letters and values used for keyboard shortcuts
@@ -101,6 +106,41 @@ function CreateMode({
     y: "Code", //is there a more natural code letter? can't seem to prevent command t new tab behavior
     z: "Undo", //saving this letter
   };
+
+  // Initialize state with undefined width/height so server and client renders match
+  // Learn more here: https://joshwcomeau.com/react/the-perils-of-rehydration/
+  const [windowSize, setWindowSize] = useState({
+    width: 0,
+    height: 0,
+  });
+  useEffect(() => {
+    // Handler to call on window resize
+    function handleResize() {
+      let height;
+      if (window.visualViewport) {
+        height = window.visualViewport.height;
+      } else if (GlobalVariables.isMobile()) {
+        height = window.screen.height;
+      } else {
+        height = window.innerHeight;
+      }
+      setWindowSize({
+        width: window.innerWidth,
+        height,
+      });
+    }
+    window.addEventListener("resize", handleResize);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", handleResize);
+    }
+    handleResize();
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", handleResize);
+      }
+    };
+  }, []); // Empty array ensures that effect is only run on mount
 
   /** Checks if activeAtom is topLevel to render goUp button */
   useEffect(() => {
@@ -163,7 +203,6 @@ function CreateMode({
         forwardKeyToPanel(e);
       }
     }
-
     /*
     // Example: Toggle shortcut display with Ctrl+/
     if ((e.ctrlKey || e.metaKey) && e.key === "/") {
@@ -756,40 +795,31 @@ function CreateMode({
       return (
         <>
           <ParamsMenu
-            activeAtom={activeAtom}
             position={{ top: screenHeight / 2 - 10, left: 55 }}
             id={"atom-create-params-panel"}
             contentCollapsed={expandedMenu !== "params"}
             setContentCollapsed={() => setExpandedMenu("params")}
             panelRef={panelRef}
+            closeMenu={() => setExpandedMenu("none")}
+            initialCollapsed={GlobalVariables.isMobile() ? true : false}
+            collapsedOffset={[0, 0]}
           />
           <RenderMenu
             {...{
-              activeAtom,
-              gridParam,
-              axesParam,
-              wireParam,
-              solidParam,
-              setGrid,
-              setAxes,
-              setWire,
-              setSolid,
-              backgroundUsdzFile,
-              showBackgroundModel,
-              setShowBackgroundModel,
               contentCollapsed: expandedMenu !== "render",
               setContentCollapsed: () => setExpandedMenu("render"),
               position: { top: screenHeight / 2 - 10, left: 10 },
               collapsedOffset: [45, 0],
+              closeMenu: () => setExpandedMenu("none"),
             }}
             id={"atom-create-render-panel"}
           />
           <BomMenu
             {...{
-              activeAtom,
               id: "atom-bom-panel",
               contentCollapsed: expandedMenu !== "bom",
               setContentCollapsed: () => setExpandedMenu("bom"),
+              closeMenu: () => setExpandedMenu("none"),
               position: { top: screenHeight / 2 + 35, left: 10 },
               collapsedOffset: [45, -45],
             }}
@@ -800,6 +830,7 @@ function CreateMode({
               id: "atom-git-search-panel",
               contentCollapsed: expandedMenu !== "git-search",
               setContentCollapsed: () => setExpandedMenu("git-search"),
+              closeMenu: () => setExpandedMenu("none"),
               setParamsMenuExpanded: () => setExpandedMenu("params"),
               position: { top: screenHeight / 2 + 80, left: 10 },
               collapsedOffset: [45, -90],
@@ -807,6 +838,9 @@ function CreateMode({
               setErrorNotification: setErrorNotification,
             }}
           />
+          {renderBarVisible ? (
+            <RenderProgressBar progress={renderProgress} label="Rendering" />
+          ) : null}
           <div id="headerBar">
             <img
               className="thumnail-logo"
@@ -862,30 +896,12 @@ function CreateMode({
           ) : null}
           <TopMenu
             {...{
-              authorizedUserOcto,
               savePopUp,
               setSavePopUp,
               saveProject,
-              setExportPopUp,
               saveState,
               setSaveState,
               currentMoleculeTop,
-              activeAtom,
-              setActiveAtom,
-              shortCutsOn,
-              setShortCuts,
-              gridParam,
-              axesParam,
-              wireParam,
-              solidParam,
-              setGrid,
-              setAxes,
-              setWire,
-              setSolid,
-              backgroundUsdzFile,
-              setBackgroundUsdzFile,
-              showBackgroundModel,
-              setShowBackgroundModel,
             }}
           />
 
@@ -944,26 +960,11 @@ function CreateMode({
               errorNotification,
               setErrorNotification,
               setExpandedMenu,
+              windowSize,
             }}
           />
           <div className="parent flex-parent" id="lowerHalf">
-            <LowerHalf
-              {...{
-                activeAtom,
-                gridParam,
-                axesParam,
-                wireParam,
-                solidParam,
-                setSaveState,
-                mesh,
-                wireMesh,
-                outdatedMesh,
-                setOutdatedMesh,
-                backgroundUsdzFile,
-                showBackgroundModel,
-                authorizedUserOcto,
-              }}
-            />
+            <LowerHalf windowSize={windowSize} />
           </div>
         </>
       );

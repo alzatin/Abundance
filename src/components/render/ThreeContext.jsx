@@ -9,31 +9,31 @@ import * as THREE from "three";
 import Controls from "./ThreeControls.jsx";
 import BackgroundModel from "./BackgroundModel.jsx";
 import globalvariables from "../../js/globalvariables.js";
+import { useRendering, useAuth } from "../../contexts/index.js";
 
 // We change the default orientation - threejs tends to use Y are the height,
 // while replicad uses Z. This is mostly a representation default.
 
 THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
 
-export default function ext({ children, ...props }) {
-  const dpr = Math.min(window.devicePixelRatio, 2);
+export default function ext({ children, cameraZoom, ...otherProps }) {
+  const { 
+    outdatedMesh, 
+    gridParam, 
+    axesParam, 
+    backgroundUsdzFile, 
+    showBackgroundModel 
+  } = useRendering();
+  const { authorizedUserOcto } = useAuth();
 
-  let cameraZoom = props.cameraZoom;
-  let backColor = props.outdatedMesh ? "#ababab" : "#f5f5f5";
+  const dpr = Math.min(window.devicePixelRatio, 2);
+  let backColor = outdatedMesh ? "#ababab" : "#f5f5f5";
 
   const cameraRef = useRef();
   const [gridScale, setGridScale] = useState(10 / cameraZoom);
 
   const [cellSection, setCellSection] = useState(100);
   const [axesScale, setAxesScale] = useState(0.3);
-
-  // Extract background model props
-  const {
-    backgroundUsdzFile,
-    showBackgroundModel,
-    authorizedUserOcto,
-    ...otherProps
-  } = props;
 
   useEffect(() => {
     if (gridScale < 10) {
@@ -80,7 +80,7 @@ export default function ext({ children, ...props }) {
           zoom={cameraZoom}
           position={[3000, 3000, 5000]}
         />
-        {props.gridParam ? (
+        {gridParam ? (
           <Grid
             position={[0, 0, 0]}
             cellSize={cellSection}
@@ -94,9 +94,9 @@ export default function ext({ children, ...props }) {
             sectionSize={cellSection * 10}
           />
         ) : null}
-        <Controls axesParam={props.axesParam} enableDamping={false}></Controls>
+        <Controls axesParam={axesParam} enableDamping={false}></Controls>
 
-        {!props.outdatedMesh ? (
+        {!outdatedMesh ? (
           <ambientLight intensity={0.9} />
         ) : (
           <ambientLight intensity={0.4} />
