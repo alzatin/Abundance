@@ -75,7 +75,7 @@ const getPanelStyle = (minWidth) => ({
   borderRadius: 8,
   minWidth,
   padding: 0,
-  zIndex: 1000,
+  zIndex: 10,
   fontFamily: "JetBrains Mono, monospace",
   color: "var(--panel-foreground)",
   userSelect: "none",

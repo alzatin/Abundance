@@ -72,6 +72,13 @@ function CreateMode() {
   const [saveState, setSaveState] = useState(0);
   const [savePopUp, setSavePopUp] = useState(false);
 
+  const [settingsPopUp, setSettingsPopUp] = useState(false);
+  // Ref to always have latest settingsPopUp value in event handlers
+  const settingsPopUpRef = useRef(settingsPopUp);
+  useEffect(() => {
+    settingsPopUpRef.current = settingsPopUp;
+  }, [settingsPopUp]);
+
   /** State for top level molecule */
   const [currentMoleculeTop, setTop] = useState(false);
 
@@ -186,7 +193,8 @@ function CreateMode() {
     // Prevent forwarding if code atom is active, we don't want to interfere with code editing
     if (!document.getElementById("code-window").classList.contains("code-off"))
       return;
-
+    // Use ref to always get latest value
+    if (settingsPopUpRef.current) return; // Do not trigger shortcuts if settings popup is open
     if (
       (e.key === "Alt" || e.key === "AltGraph") &&
       !GlobalVariables.ctrlDown
@@ -902,6 +910,8 @@ function CreateMode() {
               saveState,
               setSaveState,
               currentMoleculeTop,
+              settingsPopUp,
+              setSettingsPopUp,
             }}
           />
 
