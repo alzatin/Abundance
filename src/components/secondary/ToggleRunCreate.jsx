@@ -8,7 +8,6 @@ function ToggleRunCreate({ run, isItOwned }) {
   const handleChange = () => {
     setRunMode(!runModeon);
   };
-  console.log(GlobalVariables.isMobile());
   if (GlobalVariables.currentRepo) {
     if (!runModeon) {
       return (
