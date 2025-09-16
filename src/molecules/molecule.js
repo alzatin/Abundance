@@ -994,10 +994,12 @@ export default class Molecule extends Atom {
         GlobalVariables.totalAtomCount = GlobalVariables.numberOfAtomsToLoad;
       }
 
-      //Place the connectors
+      //Place the connectors, skipping null/undefined
       if (json.allConnectors) {
         json.allConnectors.forEach((connector) => {
-          this.placeConnector(connector);
+          if (connector) {
+            this.placeConnector(connector);
+          }
         });
       }
       const outputAtom = this.getOutputAtom();
@@ -1394,6 +1396,10 @@ export default class Molecule extends Atom {
    * @param {object} connectorObj - An object representation of the connector specifying its inputs and outputs.
    */
   placeConnector(connectorObj) {
+    if (!connectorObj) {
+      console.warn("placeConnector called with null or undefined connectorObj");
+      return;
+    }
     var outputAttachmentPoint = false;
     var inputAttachmentPoint = false;
 
@@ -1416,14 +1422,22 @@ export default class Molecule extends Atom {
 
     if (outputAttachmentPoint && inputAttachmentPoint) {
       //If we have found the output and input
-      
+
       // Check if there are existing connections to the input and if they should be replaced
       if (inputAttachmentPoint.connectors.length > 0) {
         // Check type compatibility before replacement
-        if (AttachmentPoint.areTypesCompatible(outputAttachmentPoint, inputAttachmentPoint)) {
+        if (
+          AttachmentPoint.areTypesCompatible(
+            outputAttachmentPoint,
+            inputAttachmentPoint
+          )
+        ) {
           // Save undo state before replacing connection during project loading
-          GlobalVariables.saveUndoState("MODIFY", `Connection replacement during load: ${outputAttachmentPoint.parentMolecule.name} → ${inputAttachmentPoint.parentMolecule.name}.${inputAttachmentPoint.name}`);
-          
+          GlobalVariables.saveUndoState(
+            "MODIFY",
+            `Connection replacement during load: ${outputAttachmentPoint.parentMolecule.name} → ${inputAttachmentPoint.parentMolecule.name}.${inputAttachmentPoint.name}`
+          );
+
           // Remove existing connections
           const connectorsToRemove = [...inputAttachmentPoint.connectors];
           connectorsToRemove.forEach((existingConnector) => {
@@ -1434,7 +1448,7 @@ export default class Molecule extends Atom {
           return;
         }
       }
-      
+
       new Connector({
         atomType: "Connector",
         attachmentPoint1: outputAttachmentPoint,
