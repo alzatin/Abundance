@@ -1,5 +1,6 @@
 import Atom from "../prototypes/atom.js";
 import Connector from "../prototypes/connector.js";
+import AttachmentPoint from "../prototypes/attachmentpoint.js";
 import GlobalVariables from "../js/globalvariables.js";
 
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
@@ -1415,6 +1416,25 @@ export default class Molecule extends Atom {
 
     if (outputAttachmentPoint && inputAttachmentPoint) {
       //If we have found the output and input
+      
+      // Check if there are existing connections to the input and if they should be replaced
+      if (inputAttachmentPoint.connectors.length > 0) {
+        // Check type compatibility before replacement
+        if (AttachmentPoint.areTypesCompatible(outputAttachmentPoint, inputAttachmentPoint)) {
+          // Save undo state before replacing connection during project loading
+          GlobalVariables.saveUndoState("MODIFY", `Connection replacement during load: ${outputAttachmentPoint.parentMolecule.name} → ${inputAttachmentPoint.parentMolecule.name}.${inputAttachmentPoint.name}`);
+          
+          // Remove existing connections
+          const connectorsToRemove = [...inputAttachmentPoint.connectors];
+          connectorsToRemove.forEach((existingConnector) => {
+            existingConnector.deleteSelf(true); // silent deletion
+          });
+        } else {
+          console.warn("Cannot place connector: incompatible types");
+          return;
+        }
+      }
+      
       new Connector({
         atomType: "Connector",
         attachmentPoint1: outputAttachmentPoint,
