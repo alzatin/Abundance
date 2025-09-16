@@ -242,8 +242,6 @@ export default class Equation extends Atom {
    * Send the value of this atom to the 3D display. Used to display the number
    */
   sendToRender() {
-    //Send code to jotcad to render
-    //GlobalVariables.writeToDisplay(this.uniqueID);
-    console.log("equation");
+    // No rendering for this atom
   }
 }
