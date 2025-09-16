@@ -4,10 +4,8 @@ import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
 import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
-import on from "../../js/circular-menu/src/on.js";
 
 export default function GitSearchMenu({
-  activeAtom,
   id,
   contentCollapsed,
   setContentCollapsed,

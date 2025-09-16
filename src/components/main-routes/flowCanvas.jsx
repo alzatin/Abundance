@@ -5,14 +5,12 @@ import { createCMenu, cmenu } from "../../js/NewMenu.js";
 import { useNavigate } from "react-router-dom";
 
 export default memo(function FlowCanvas({
-  activeAtom,
   loadProject,
   setActiveAtom,
   shortCuts,
   authorizedUserOcto,
   importNotification,
   errorNotification,
-  setErrorNotification,
   setExpandedMenu,
   windowSize,
 }) {
@@ -586,9 +584,3 @@ export default memo(function FlowCanvas({
     </>
   );
 });
-
-{
-  /* i'd really like to make the tooltip for the circular menu happen with react here. Have not
-                found a way to grab anchor ID from this component yet. 
-    <div id="tool_tip_circular" className='tooltip'>hello</div>; */
-}
