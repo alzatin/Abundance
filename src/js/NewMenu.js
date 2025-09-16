@@ -7,7 +7,7 @@ import GlobalVariables from "./globalvariables.js";
 var ele = null; //document.querySelector('#circle-menu1')
 var cmenu;
 
-const createCMenu = (targetElement) => {
+const createCMenu = (targetElement, setExpandedMenu) => {
   ele = targetElement;
   // /**
   //      * Runs to create submenus from Global Variables atomCategories. Populates menu objects
@@ -28,10 +28,7 @@ const createCMenu = (targetElement) => {
 
         subMenu.click = function menuClick(e, title) {
           if (title.icon === "GitHubMolecule") {
-            const containerX = parseInt(cmenu._container.style.left, 10);
-            const containerY = parseInt(cmenu._container.style.top, 10);
-            GlobalVariables.lastClick = [containerX, containerY];
-
+            setExpandedMenu("git-search");
             if (e.type === "touchend") {
               //need to prevent mousedown from running to keep gitsearch open
               cmenu.hide();
