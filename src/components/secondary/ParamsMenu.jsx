@@ -11,6 +11,7 @@ export default function ParamsMenu({
   contentCollapsed,
   setContentCollapsed,
   panelRef,
+  closeMenu,
 }) {
   const { activeAtom } = useAppState();
   const unusedDefault = {
@@ -115,6 +116,7 @@ export default function ParamsMenu({
         contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
         ref={panelRef}
+        closeMenu={closeMenu}
       />
       {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
         Add Custom Control

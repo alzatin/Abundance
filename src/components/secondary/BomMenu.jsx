@@ -11,6 +11,7 @@ export default function BomMenu({
   setContentCollapsed,
   position,
   collapsedOffset,
+  closeMenu,
 }) {
   const { activeAtom } = useAppState();
   const [inputChanged, setInputChanged] = useState("");
@@ -67,6 +68,7 @@ export default function BomMenu({
         collapsedOffset={collapsedOffset} // shifts expanded panel by 45px right, 45px down
         contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
+        closeMenu={closeMenu}
       />
     </div>
   );

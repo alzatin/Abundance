@@ -165,6 +165,7 @@ function runMode() {
         id={"atom-run-params-panel"}
         contentCollapsed={expandedMenu !== "params"}
         setContentCollapsed={() => setExpandedMenu("params")}
+        closeMenu={() => setExpandedMenu("none")}
       />
       <ExportMenu
         activeAtom={activeAtom}
@@ -172,6 +173,7 @@ function runMode() {
         id={"atom-run-export-panel"}
         contentCollapsed={expandedMenu !== "export"}
         setContentCollapsed={() => setExpandedMenu("export")}
+        closeMenu={() => setExpandedMenu("none")}
       />
       <RenderMenu
         {...{
@@ -186,6 +188,7 @@ function runMode() {
           setSolid,
           contentCollapsed: expandedMenu !== "render",
           setContentCollapsed: () => setExpandedMenu("render"),
+          closeMenu: () => setExpandedMenu("none"),
           position: { top: 30, left: screenWidth - 365 },
         }}
         id={"atom-run-render-panel"}
@@ -196,6 +199,7 @@ function runMode() {
           id: "atom-run-bom-panel",
           contentCollapsed: expandedMenu !== "bom",
           setContentCollapsed: () => setExpandedMenu("bom"),
+          closeMenu: () => setExpandedMenu("none"),
           position: { top: 120, left: screenWidth - 365 },
         }}
         collapsedOffset={[45, -90]}

@@ -9,6 +9,7 @@ export default function RenderMenu({
   contentCollapsed,
   collapsedOffset,
   setContentCollapsed,
+  closeMenu,
 }) {
   const {
     gridParam,
@@ -96,6 +97,7 @@ export default function RenderMenu({
         minWidth={280}
         contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
+        closeMenu={closeMenu}
       />
     </div>
   );

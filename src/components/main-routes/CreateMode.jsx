@@ -798,6 +798,7 @@ function CreateMode() {
             contentCollapsed={expandedMenu !== "params"}
             setContentCollapsed={() => setExpandedMenu("params")}
             panelRef={panelRef}
+            closeMenu={() => setExpandedMenu("none")}
           />
           <RenderMenu
             {...{
@@ -805,6 +806,7 @@ function CreateMode() {
               setContentCollapsed: () => setExpandedMenu("render"),
               position: { top: screenHeight / 2 - 10, left: 10 },
               collapsedOffset: [45, 0],
+              closeMenu: () => setExpandedMenu("none"),
             }}
             id={"atom-create-render-panel"}
           />
@@ -813,6 +815,7 @@ function CreateMode() {
               id: "atom-bom-panel",
               contentCollapsed: expandedMenu !== "bom",
               setContentCollapsed: () => setExpandedMenu("bom"),
+              closeMenu: () => setExpandedMenu("none"),
               position: { top: screenHeight / 2 + 35, left: 10 },
               collapsedOffset: [45, -45],
             }}
@@ -823,6 +826,7 @@ function CreateMode() {
               id: "atom-git-search-panel",
               contentCollapsed: expandedMenu !== "git-search",
               setContentCollapsed: () => setExpandedMenu("git-search"),
+              closeMenu: () => setExpandedMenu("none"),
               setParamsMenuExpanded: () => setExpandedMenu("params"),
               position: { top: screenHeight / 2 + 80, left: 10 },
               collapsedOffset: [45, -90],
