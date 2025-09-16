@@ -468,7 +468,9 @@ export default class AttachmentPoint extends ObservableEntity {
           otherAP.deleteConnector(connector, silent);
         }
         this.connectors = [];
-        this.setDefault();
+        if (!silent) {
+          this.setDefault();
+        }
       } else if (this.connectors.length > 1) {
         throw new Error("Multiple connectors attached to a single Input AP");
       }

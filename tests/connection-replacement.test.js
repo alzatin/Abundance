@@ -261,4 +261,128 @@ describe("Connection Replacement with Type Compatibility", () => {
       expect(inputAP.wasConnectionMade(100, 100)).toBe(false);
     });
   });
+
+  describe("Silent deletion behavior for undo functionality", () => {
+    it("should not reset attachment point values when using silent deletion", () => {
+      // Mock AttachmentPoint with deleteConnector method that respects silent flag
+      class MockAttachmentPointWithSilent extends MockAttachmentPoint {
+        constructor(valueType) {
+          super(valueType);
+          this.connectors = [];
+          this.setDefaultCalled = false;
+        }
+
+        setDefault() {
+          this.setDefaultCalled = true;
+        }
+
+        deleteConnector(connector, silent = false) {
+          // Remove the connector
+          const index = this.connectors.indexOf(connector);
+          if (index > -1) {
+            this.connectors.splice(index, 1);
+          }
+          
+          // Only call setDefault if not silent (this is the fix)
+          if (!silent) {
+            this.setDefault();
+          }
+        }
+
+        attach(connector) {
+          this.connectors.push(connector);
+        }
+      }
+
+      const inputAP = new MockAttachmentPointWithSilent("geometry");
+      const mockConnector = { id: "test-connector" };
+      
+      // Simulate having a connection
+      inputAP.attach(mockConnector);
+      expect(inputAP.connectors.length).toBe(1);
+      
+      // Test silent deletion (for connection replacement)
+      inputAP.deleteConnector(mockConnector, true);
+      expect(inputAP.connectors.length).toBe(0);
+      expect(inputAP.setDefaultCalled).toBe(false); // Should NOT reset to default
+      
+      // Reset for next test
+      inputAP.attach(mockConnector);
+      inputAP.setDefaultCalled = false;
+      
+      // Test normal deletion (for regular deletion)
+      inputAP.deleteConnector(mockConnector, false);
+      expect(inputAP.connectors.length).toBe(0);
+      expect(inputAP.setDefaultCalled).toBe(true); // SHOULD reset to default
+    });
+
+    it("should demonstrate the undo issue scenario and fix", () => {
+      // This test demonstrates the exact scenario reported by @alzatin
+      // When connection replacement happens and undo is triggered,
+      // atoms should not become Status.DISABLED
+      
+      class MockAttachmentPointForUndo extends MockAttachmentPoint {
+        constructor(valueType) {
+          super(valueType);
+          this.connectors = [];
+          this.status = "READY";
+          this.value = "some-geometry-value";
+        }
+
+        setDefault() {
+          // Simulate what happens when setDefault is called:
+          // For geometry inputs, defaultValue is null
+          this.setValue(null);
+        }
+
+        setValue(newValue) {
+          if (newValue === null || newValue === undefined) {
+            this.status = "WAITING"; // This becomes the problem!
+            this.value = null;
+          } else {
+            this.status = "READY";
+            this.value = newValue;
+          }
+        }
+
+        deleteConnector(connector, silent = false) {
+          const index = this.connectors.indexOf(connector);
+          if (index > -1) {
+            this.connectors.splice(index, 1);
+          }
+          
+          // The fix: respect the silent parameter
+          if (!silent) {
+            this.setDefault();
+          }
+        }
+
+        attach(connector) {
+          this.connectors.push(connector);
+        }
+      }
+
+      const geometryInput = new MockAttachmentPointForUndo("geometry");
+      const mockConnector = { id: "existing-connector" };
+      
+      // Setup: Connected geometry input with READY status
+      geometryInput.attach(mockConnector);
+      geometryInput.status = "READY";
+      geometryInput.value = "some-geometry-value";
+      
+      // Before the fix: silent deletion would still call setDefault
+      // This would cause the status to become WAITING (disabled)
+      
+      // After the fix: silent deletion preserves the current state
+      geometryInput.deleteConnector(mockConnector, true);
+      expect(geometryInput.status).toBe("READY"); // Should remain READY
+      expect(geometryInput.value).toBe("some-geometry-value"); // Should remain unchanged
+      
+      // Verify normal deletion still works as expected
+      geometryInput.attach(mockConnector);
+      geometryInput.deleteConnector(mockConnector, false);
+      expect(geometryInput.status).toBe("WAITING"); // Should reset to default
+      expect(geometryInput.value).toBe(null); // Should reset to null
+    });
+  });
 });
