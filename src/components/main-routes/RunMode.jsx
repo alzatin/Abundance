@@ -20,6 +20,14 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+// Import contexts
+import {
+  useAuth,
+  useAppState,
+  useRendering,
+  useProject,
+} from "../../contexts/index.js";
+
 function useWindowSize() {
   // Initialize state with undefined width/height so server and client renders match
   // Learn more here: https://joshwcomeau.com/react/the-perils-of-rehydration/
@@ -46,30 +54,31 @@ function useWindowSize() {
   return windowSize;
 }
 
-function runMode({
-  setActiveAtom,
-  activeAtom,
-  authorizedUserOcto,
-  loadProject,
-  mesh,
-  wireMesh,
-  outdatedMesh,
-  setOutdatedMesh,
-  redirectType,
-  setRedirectType,
-  renderProgress,
-  setRenderProgress,
-  renderBarVisible,
-  setRenderBarVisible,
-}) {
+function runMode() {
+  // Get context values
+  const { isloggedIn, authorizedUserOcto } = useAuth();
+  const { activeAtom, redirectType, setRedirectType } = useAppState();
+  const {
+    mesh,
+    wireMesh,
+    outdatedMesh,
+    setOutdatedMesh,
+    renderProgress,
+    renderBarVisible,
+    gridParam,
+    setGrid,
+    axesParam,
+    setAxes,
+    wireParam,
+    setWire,
+    solidParam,
+    setSolid,
+  } = useRendering();
+  const { loadProject } = useProject();
+
   // canvas to hide
   const canvasRef = useRef(500);
-
-  const [gridParam, setGrid] = useState(true);
-  const [axesParam, setAxes] = useState(true);
   const [isItOwned, setOwned] = useState(false);
-  const [wireParam, setWire] = useState(true);
-  const [solidParam, setSolid] = useState(false);
 
   const windowSize = useWindowSize();
 

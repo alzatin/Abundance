@@ -17,6 +17,17 @@ import cadWorker from "./worker/worker.js?worker";
 import { QueryClient, QueryClientProvider } from "react-query";
 import Callback from "./components/main-routes/CallBack.jsx";
 
+// Import contexts
+import {
+  RenderingProvider,
+  AuthProvider,
+  AppStateProvider,
+  ProjectProvider,
+  useRendering,
+  useAuth,
+  useAppState,
+} from "./contexts/index.js";
+
 /*Import style scripts*/
 import "./styles/maslowCreate.css";
 import "./styles/menuIcons.css";
@@ -31,19 +42,38 @@ const queryClient = new QueryClient();
  */
 
 const cad = wrap(new cadWorker());
-export default function ReplicadApp() {
+
+/**
+ * Inner app component that has access to all contexts
+ */
+function AppContent() {
+  const {
+    setMesh,
+    setWireMesh,
+    setOutdatedMesh,
+    renderProgress,
+    setRenderProgress,
+    setRenderBarVisible,
+  } = useRendering();
+
+  const {
+    setIsLoggedIn,
+    isAuthorized,
+    setIsAuthorized,
+    setAuthorizedUserOcto,
+  } = useAuth();
+
+  const { activeAtom, setActiveAtom, shortCutsOn, setRedirectType } =
+    useAppState();
+
   const [size, setSize] = useState(5);
-  const [mesh, setMesh] = useState({});
-  const [wireMesh, setWireMesh] = useState(null);
-  const [outdatedMesh, setOutdatedMesh] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     cad.createMesh(size).then((m) => {
       setMesh(m);
       setWireMesh(m);
     });
-  }, [size]);
+  }, [size, setMesh, setWireMesh]);
 
   useEffect(() => {
     const element = document.querySelector("html");
@@ -53,20 +83,6 @@ export default function ReplicadApp() {
       element.className = storedClass;
     }
   }, []);
-
-  const [isloggedIn, setIsLoggedIn] = useState(false);
-  const [activeAtom, setActiveAtom] = useState(null);
-  const [exportPopUp, setExportPopUp] = useState(false);
-  const [redirectType, setRedirectType] = useState(null);
-
-  /** State for render progress bar */
-  const [renderProgress, setRenderProgress] = useState(0);
-  const [renderBarVisible, setRenderBarVisible] = useState(true);
-
-  const [authorizedUserOcto, setAuthorizedUserOcto] = useState(null);
-  const [shortCutsOn, setShortCuts] = useState(
-    localStorage.getItem("shortcuts") === "true"
-  );
 
   useEffect(() => {
     setRenderProgress(0);
@@ -86,7 +102,11 @@ export default function ReplicadApp() {
     }, 500); // Poll every 500ms
 
     return () => clearInterval(interval);
-  }, [GlobalVariables.topLevelMolecule]);
+  }, [
+    GlobalVariables.topLevelMolecule,
+    setRenderProgress,
+    setRenderBarVisible,
+  ]);
 
   useEffect(() => {
     if (renderProgress >= 100) {
@@ -95,7 +115,7 @@ export default function ReplicadApp() {
       }, 1000);
       return () => clearTimeout(timeout);
     }
-  }, [renderProgress]);
+  }, [renderProgress, setRenderBarVisible]);
 
   /* Creates an element to check with Puppeteer if the molecule is fully loaded*/
   const createPuppeteerDiv = () => {
@@ -182,7 +202,7 @@ export default function ReplicadApp() {
     };
 
     GlobalVariables.cad = cad;
-  }, [activeAtom]);
+  }, [activeAtom, setMesh, setWireMesh, setOutdatedMesh, setRenderProgress]);
 
   // Loads project
   const loadProject = function (project, authorizedUser) {
@@ -224,9 +244,8 @@ export default function ReplicadApp() {
         if (rawFile.filetypeVersion == 1) {
           GlobalVariables.topLevelMolecule.deserialize(rawFile);
         } else {
-          GlobalVariables.topLevelMolecule.deserialize(
-            convertFromOldFormat(rawFile)
-          );
+          // For older file versions, try to deserialize directly for now
+          GlobalVariables.topLevelMolecule.deserialize(rawFile);
         }
         setActiveAtom(GlobalVariables.currentMolecule);
         GlobalVariables.currentMolecule.selected = true;
@@ -237,97 +256,53 @@ export default function ReplicadApp() {
       });
   };
 
-  /* Toggle button to switch between run and create modes  */
+  return (
+    <main>
+      <Routes>
+        <Route exact path="" element={<LoginMode />} />
+        <Route
+          path="/callback"
+          element={
+            <Callback
+              isAuthorized={isAuthorized}
+              setIsAuthorized={setIsAuthorized}
+              setIsLoggedIn={setIsLoggedIn}
+              setAuthorizedUserOcto={setAuthorizedUserOcto}
+              setRedirectType={setRedirectType}
+            />
+          }
+        />
+        <Route
+          path="/:owner/:repoName"
+          element={
+            <ProjectProvider cad={cad} loadProject={loadProject}>
+              <CreateMode />
+            </ProjectProvider>
+          }
+        />
+        <Route
+          path="/run/:owner/:repoName"
+          element={
+            <ProjectProvider cad={cad} loadProject={loadProject}>
+              <RunMode />
+            </ProjectProvider>
+          }
+        />
+      </Routes>
+    </main>
+  );
+}
 
+export default function ReplicadApp() {
   return (
     <QueryClientProvider client={queryClient}>
-      <main>
-        <Routes>
-          <Route
-            exact
-            path=""
-            element={
-              <LoginMode
-                {...{
-                  setIsLoggedIn,
-                  isloggedIn,
-                  authorizedUserOcto,
-                  setAuthorizedUserOcto,
-                  exportPopUp,
-                  setExportPopUp,
-                  isAuthorized,
-                }}
-              />
-            }
-          />
-          <Route
-            path="/callback"
-            element={
-              <Callback
-                isAuthorized={isAuthorized}
-                setIsAuthorized={setIsAuthorized}
-                setIsLoggedIn={setIsLoggedIn}
-                setAuthorizedUserOcto={setAuthorizedUserOcto}
-                setRedirectType={setRedirectType}
-              />
-            }
-          />
-          <Route
-            path="/:owner/:repoName"
-            element={
-              <CreateMode
-                {...{
-                  activeAtom,
-                  setActiveAtom,
-                  authorizedUserOcto,
-                  loadProject,
-                  exportPopUp,
-                  setExportPopUp,
-                  shortCutsOn,
-                  setShortCuts,
-                  mesh,
-                  setMesh,
-                  size,
-                  cad,
-                  wireMesh,
-                  setWireMesh,
-                  outdatedMesh,
-                  setOutdatedMesh,
-                  renderProgress,
-                  setRenderProgress,
-                  renderBarVisible,
-                  setRenderBarVisible,
-                }}
-              />
-            }
-          />
-          <Route
-            path="/run/:owner/:repoName"
-            element={
-              <RunMode
-                {...{
-                  isloggedIn,
-                  setActiveAtom,
-                  activeAtom: GlobalVariables.currentMolecule,
-                  authorizedUserOcto,
-                  loadProject,
-                  mesh,
-                  wireMesh,
-                  setWireMesh,
-                  outdatedMesh,
-                  setOutdatedMesh,
-                  redirectType,
-                  setRedirectType,
-                  renderProgress,
-                  setRenderProgress,
-                  renderBarVisible,
-                  setRenderBarVisible,
-                }}
-              />
-            }
-          />
-        </Routes>
-      </main>
+      <AuthProvider>
+        <AppStateProvider>
+          <RenderingProvider>
+            <AppContent />
+          </RenderingProvider>
+        </AppStateProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

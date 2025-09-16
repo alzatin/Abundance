@@ -3,15 +3,16 @@ import { useEffect, useState, useMemo } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
+import { useAppState } from "../../contexts/index.js";
 
 export default function BomMenu({
-  activeAtom,
   id,
   contentCollapsed,
   setContentCollapsed,
   position,
   collapsedOffset,
 }) {
+  const { activeAtom } = useAppState();
   const [inputChanged, setInputChanged] = useState("");
   let bomParams = {};
 
