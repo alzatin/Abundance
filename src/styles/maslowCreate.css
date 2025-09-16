@@ -647,7 +647,7 @@ Sidebar navigation
 
 /* Custom tooltip for run mode button */
 .runmode-tooltip-container {
-  position: relative;
+  position: fixed;
 }
 .runmode-tooltip {
   position: absolute;
