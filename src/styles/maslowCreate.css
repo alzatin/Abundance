@@ -832,6 +832,7 @@ Sidebar navigation
     pointer-events: auto;
     background-color: var(--abundance-color-hightlightOffWhite);
     border: 3px solid var(--abundance-color-darkGrey);
+    z-index: 1000;
   }
 
   .nav-text {
