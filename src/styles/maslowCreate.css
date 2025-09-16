@@ -597,21 +597,31 @@ Sidebar navigation
 .switch {
   position: fixed;
   width: 45px;
-  top: 39%;
-  right: 15%;
+  top: 49%;
+  right: 1vw;
   z-index: 2;
 }
 
 .switch button {
-  width: 100px;
-  background-color: var(--abundance-color-background);
-  border-radius: 5px;
+  width: 38px;
+  height: 38px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: var(--abundance-color-background);
+  border: 1px solid #272a31;
+  box-shadow: 0 4px 16px rgba(20, 24, 31, 0.16);
   font-family: "JetBrains Mono", monospace;
-  font-weight: 550;
-  font-size: 13px;
-  letter-spacing: 1px;
   color: var(--abundance-color-mainPurple);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 /* The switch - the box around the slider */
@@ -619,8 +629,8 @@ Sidebar navigation
   position: fixed;
   width: 45px;
   height: 23px;
-  top: 1vh;
-  left: 20px;
+  top: 3vh;
+  right: 10vh;
   z-index: 2;
 }
 
@@ -633,6 +643,27 @@ Sidebar navigation
   font-weight: 550;
   font-size: 15px;
   letter-spacing: 1px;
+}
+
+/* Custom tooltip for run mode button */
+.runmode-tooltip-container {
+  position: fixed;
+}
+.runmode-tooltip {
+  position: absolute;
+  left: -110px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  color: #c4a3d5;
+  opacity: 0.35;
+  font-size: 15px;
+  font-family: "JetBrains Mono", monospace;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+  letter-spacing: 1px;
+  transition: opacity 0.2s;
 }
 
 /* Run Navigation Mobile */
@@ -907,7 +938,7 @@ Sidebar navigation
     position: fixed;
     width: 45px;
     top: 48%;
-    right: 5px;
+    right: 1vw;
     z-index: 2;
     font-size: 11px;
   }
@@ -948,17 +979,17 @@ Sidebar navigation
   .run-navigation {
     position: absolute;
     width: 60px;
-    left: 100px;
+    left: 5vh;
     top: 20%;
     z-index: 3;
   }
-  .run-navigation-button {
+  .run-navigation button {
     border: 2px solid var(--run-navigation-button-hover);
     border-radius: 50%;
     background-color: var(--run-navigation-button);
     width: 60px;
     height: 60px;
-    margin-bottom: 50px;
+    margin-bottom: 40px;
   }
   .run-navigation-button svg {
     scale: 0.7;
@@ -972,9 +1003,11 @@ Sidebar navigation
   /* The switch - the box around the slider */
   .switch_run {
     top: 20px;
+    left: 5vh;
   }
+
   .switch {
-    right: 70px;
+    right: 1vw;
   }
 
   .thumnail-logo {
@@ -1049,7 +1082,7 @@ Sidebar navigation
   .run-navigation {
     position: absolute;
     width: 60px;
-    left: 100px;
+    left: 5vh;
     top: 20%;
     z-index: 3;
   }
@@ -1059,7 +1092,7 @@ Sidebar navigation
     background-color: var(--run-navigation-button);
     width: 60px;
     height: 60px;
-    margin-bottom: 50px;
+    margin-bottom: 40px;
   }
   .run-navigation-button svg {
     scale: 0.7;
@@ -1072,9 +1105,10 @@ Sidebar navigation
   /* The switch - the box around the slider */
   .switch_run {
     top: 20px;
+    left: 5vh;
   }
   .switch {
-    right: 70px;
+    right: 1vw;
   }
   .thumnail-logo {
     width: 25px;

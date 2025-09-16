@@ -16,6 +16,7 @@ export default function GitSearchMenu({
   collapsedOffset,
   gitRef,
   setErrorNotification,
+  closeMenu,
 }) {
   const [inputChanged, setInputChanged] = useState("");
   const [inputValue, setInputValue] = useState("");
@@ -298,6 +299,7 @@ export default function GitSearchMenu({
           contentCollapsed={contentCollapsed}
           setContentCollapsed={setContentCollapsed}
           ref={gitRef}
+          closeMenu={closeMenu}
         />
       </div>
       {isHovering ? (

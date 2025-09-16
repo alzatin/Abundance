@@ -247,6 +247,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     collapsedOffset = [0, 0], // new prop: [x, y] offset for expanded panel
     contentCollapsed,
     setContentCollapsed,
+    closeMenu,
   },
   ref
 ) {
@@ -442,11 +443,16 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                 onClick={() => {
                   if (contentCollapsed) {
                     // Make this the active panel
+                    console.log(
+                      "uncollapsing and making this the active panel"
+                    );
                     setContentCollapsed();
                     if (initialCollapsed) setCollapsed(false);
                   } else if (initialCollapsed) {
                     // Allow collapsing to icon only for panels that start collapsed
                     setCollapsed(true);
+                  } else {
+                    closeMenu();
                   }
                 }}
                 title={

@@ -79,7 +79,9 @@ function CreateMode() {
 
   /** State for menu content collapsing */
   // Which menu is expanded: "params", "render", "bom", or "none"
-  const [expandedMenu, setExpandedMenu] = useState("params");
+  const [expandedMenu, setExpandedMenu] = useState(
+    GlobalVariables.isMobile() ? "none" : "params"
+  );
 
   /**
    * Object containing letters and values used for keyboard shortcuts
@@ -798,6 +800,9 @@ function CreateMode() {
             contentCollapsed={expandedMenu !== "params"}
             setContentCollapsed={() => setExpandedMenu("params")}
             panelRef={panelRef}
+            closeMenu={() => setExpandedMenu("none")}
+            initialCollapsed={GlobalVariables.isMobile() ? true : false}
+            collapsedOffset={[0, 0]}
           />
           <RenderMenu
             {...{
@@ -805,6 +810,7 @@ function CreateMode() {
               setContentCollapsed: () => setExpandedMenu("render"),
               position: { top: screenHeight / 2 - 10, left: 10 },
               collapsedOffset: [45, 0],
+              closeMenu: () => setExpandedMenu("none"),
             }}
             id={"atom-create-render-panel"}
           />
@@ -813,6 +819,7 @@ function CreateMode() {
               id: "atom-bom-panel",
               contentCollapsed: expandedMenu !== "bom",
               setContentCollapsed: () => setExpandedMenu("bom"),
+              closeMenu: () => setExpandedMenu("none"),
               position: { top: screenHeight / 2 + 35, left: 10 },
               collapsedOffset: [45, -45],
             }}
@@ -823,6 +830,7 @@ function CreateMode() {
               id: "atom-git-search-panel",
               contentCollapsed: expandedMenu !== "git-search",
               setContentCollapsed: () => setExpandedMenu("git-search"),
+              closeMenu: () => setExpandedMenu("none"),
               setParamsMenuExpanded: () => setExpandedMenu("params"),
               position: { top: screenHeight / 2 + 80, left: 10 },
               collapsedOffset: [45, -90],

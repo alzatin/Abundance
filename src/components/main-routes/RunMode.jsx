@@ -93,7 +93,9 @@ function runMode() {
 
   /** State for menu content collapsing */
   // Which menu is expanded: "params", "render", "bom", or "none"
-  const [expandedMenu, setExpandedMenu] = useState("params");
+  const [expandedMenu, setExpandedMenu] = useState(
+    GlobalVariables.isMobile() ? "none" : "params"
+  );
 
   console.log("renderBarVisible", renderBarVisible);
 
@@ -165,6 +167,8 @@ function runMode() {
         id={"atom-run-params-panel"}
         contentCollapsed={expandedMenu !== "params"}
         setContentCollapsed={() => setExpandedMenu("params")}
+        closeMenu={() => setExpandedMenu("none")}
+        initialCollapsed={GlobalVariables.isMobile() ? true : false}
       />
       <ExportMenu
         activeAtom={activeAtom}
@@ -172,6 +176,7 @@ function runMode() {
         id={"atom-run-export-panel"}
         contentCollapsed={expandedMenu !== "export"}
         setContentCollapsed={() => setExpandedMenu("export")}
+        closeMenu={() => setExpandedMenu("none")}
       />
       <RenderMenu
         {...{
@@ -186,6 +191,7 @@ function runMode() {
           setSolid,
           contentCollapsed: expandedMenu !== "render",
           setContentCollapsed: () => setExpandedMenu("render"),
+          closeMenu: () => setExpandedMenu("none"),
           position: { top: 30, left: screenWidth - 365 },
         }}
         id={"atom-run-render-panel"}
@@ -196,6 +202,7 @@ function runMode() {
           id: "atom-run-bom-panel",
           contentCollapsed: expandedMenu !== "bom",
           setContentCollapsed: () => setExpandedMenu("bom"),
+          closeMenu: () => setExpandedMenu("none"),
           position: { top: 120, left: screenWidth - 365 },
         }}
         collapsedOffset={[45, -90]}
