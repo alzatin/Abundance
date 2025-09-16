@@ -198,19 +198,23 @@ body {
   color: var(--panel-foreground, #e0e5ef);
   user-select: none;
   transition: box-shadow 0.2s;
-  overflow: hidden;
+  overflow-y: auto;
   width: 70%;
-  height: 70%;
+  height: 90%;
 }
 
 .settings-panel-tabs {
   display: flex;
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--abundance-color-mainPurple);
   background: var(--panel-background, var(--abundance-color-background));
   margin-bottom: 0;
   padding-left: 12px;
   padding-right: 12px;
   gap: 2px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
 }
 
 .settings-panel-tab {
@@ -243,6 +247,15 @@ body {
   min-height: 180px;
   max-height: 420px;
   overflow-y: auto;
+}
+
+@media only screen and (max-width: 600px) {
+  .settings-panel-content,
+  .settings-popup-mobile-content {
+    max-height: calc(100dvh - 100px);
+    overflow-y: auto;
+    min-height: 0;
+  }
 }
 .settings-panel-footer {
   padding: 14px 24px;

@@ -122,7 +122,7 @@ const SettingsPopUp = ({
 
   return (
     <div className="settingsDiv">
-      <div className="settings-panel" id="settingsPopUp">
+      <div className="settings-panel " id="settingsPopUp">
         <a
           onClick={() => {
             setSettingsPopUp(false);

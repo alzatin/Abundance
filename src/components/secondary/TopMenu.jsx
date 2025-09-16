@@ -3,7 +3,6 @@ import GlobalVariables from "../../js/globalvariables.js";
 import ShareDialog from "./ShareDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import SettingsPopUp from "./SettingsPopUp.jsx";
-import MobileSettingsPopUp from "./MobileSettingsPopUp.jsx";
 import { useAuth, useAppState, useRendering } from "../../contexts/index.js";
 
 function TopMenu({
@@ -274,46 +273,28 @@ function TopMenu({
         <SaveBar {...{ saveState, savePopUp, setSavePopUp }} />
       ) : null}
       {settingsPopUp ? (
-        GlobalVariables.isMobile() == true ? (
-          <MobileSettingsPopUp
-            {...{
-              setSettingsPopUp,
-              shortCutsOn,
-              setShortCuts,
-              gridParam,
-              axesParam,
-              wireParam,
-              solidParam,
-              setGrid,
-              setAxes,
-              setWire,
-              setSolid,
-            }}
-          />
-        ) : (
-          <SettingsPopUp
-            {...{
-              setSettingsPopUp,
-              shortCutsOn,
-              setShortCuts,
-              gridParam,
-              axesParam,
-              wireParam,
-              solidParam,
-              setGrid,
-              setAxes,
-              setWire,
-              setSolid,
-              backgroundUsdzFile,
-              setBackgroundUsdzFile,
-              backgroundUsdzSha,
-              setBackgroundUsdzSha,
-              showBackgroundModel,
-              setShowBackgroundModel,
-              authorizedUserOcto,
-            }}
-          />
-        )
+        <SettingsPopUp
+          {...{
+            setSettingsPopUp,
+            shortCutsOn,
+            setShortCuts,
+            gridParam,
+            axesParam,
+            wireParam,
+            solidParam,
+            setGrid,
+            setAxes,
+            setWire,
+            setSolid,
+            backgroundUsdzFile,
+            setBackgroundUsdzFile,
+            backgroundUsdzSha,
+            setBackgroundUsdzSha,
+            showBackgroundModel,
+            setShowBackgroundModel,
+            authorizedUserOcto,
+          }}
+        />
       ) : null}
       {shareDialog ? (
         <ShareDialog
