@@ -3,23 +3,10 @@ import ThreeContext from "../render/ThreeContext.jsx";
 import ReplicadMesh from "../render/ReplicadMesh.jsx";
 import WireframeMesh from "../render/WireframeMesh.jsx";
 import globalvariables from "../../js/globalvariables.js";
-import { useRendering, useAuth, useAppState } from "../../contexts/index.js";
+import { useRendering } from "../../contexts/index.js";
 
 export default memo(function LowerHalf({ windowSize }) {
-  const {
-    mesh,
-    wireMesh,
-    outdatedMesh,
-    setOutdatedMesh,
-    gridParam,
-    axesParam,
-    wireParam,
-    solidParam,
-    backgroundUsdzFile,
-    showBackgroundModel,
-  } = useRendering();
-  const { authorizedUserOcto } = useAuth();
-  const { activeAtom } = useAppState();
+  const { mesh, wireMesh, wireParam, solidParam } = useRendering();
 
   const [cameraZoom, setCameraZoom] = useState(1);
 

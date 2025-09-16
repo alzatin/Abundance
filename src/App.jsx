@@ -47,38 +47,24 @@ const cad = wrap(new cadWorker());
  * Inner app component that has access to all contexts
  */
 function AppContent() {
-  const { 
-    mesh, 
-    setMesh, 
-    wireMesh, 
-    setWireMesh, 
-    outdatedMesh, 
+  const {
+    setMesh,
+    setWireMesh,
     setOutdatedMesh,
     renderProgress,
     setRenderProgress,
-    renderBarVisible,
-    setRenderBarVisible 
+    setRenderBarVisible,
   } = useRendering();
-  
-  const { 
-    isloggedIn,
+
+  const {
     setIsLoggedIn,
     isAuthorized,
     setIsAuthorized,
-    authorizedUserOcto,
-    setAuthorizedUserOcto 
+    setAuthorizedUserOcto,
   } = useAuth();
-  
-  const { 
-    activeAtom, 
-    setActiveAtom,
-    shortCutsOn,
-    setShortCuts,
-    exportPopUp,
-    setExportPopUp,
-    redirectType,
-    setRedirectType 
-  } = useAppState();
+
+  const { activeAtom, setActiveAtom, shortCutsOn, setRedirectType } =
+    useAppState();
 
   const [size, setSize] = useState(5);
 
@@ -116,7 +102,11 @@ function AppContent() {
     }, 500); // Poll every 500ms
 
     return () => clearInterval(interval);
-  }, [GlobalVariables.topLevelMolecule, setRenderProgress, setRenderBarVisible]);
+  }, [
+    GlobalVariables.topLevelMolecule,
+    setRenderProgress,
+    setRenderBarVisible,
+  ]);
 
   useEffect(() => {
     if (renderProgress >= 100) {
@@ -269,11 +259,7 @@ function AppContent() {
   return (
     <main>
       <Routes>
-        <Route
-          exact
-          path=""
-          element={<LoginMode />}
-        />
+        <Route exact path="" element={<LoginMode />} />
         <Route
           path="/callback"
           element={

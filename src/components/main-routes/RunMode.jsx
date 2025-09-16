@@ -57,21 +57,14 @@ function useWindowSize() {
 function runMode() {
   // Get context values
   const { isloggedIn, authorizedUserOcto } = useAuth();
-  const { 
-    activeAtom, 
-    setActiveAtom, 
-    redirectType, 
-    setRedirectType 
-  } = useAppState();
+  const { activeAtom, redirectType, setRedirectType } = useAppState();
   const {
     mesh,
     wireMesh,
     outdatedMesh,
     setOutdatedMesh,
     renderProgress,
-    setRenderProgress,
     renderBarVisible,
-    setRenderBarVisible,
     gridParam,
     setGrid,
     axesParam,

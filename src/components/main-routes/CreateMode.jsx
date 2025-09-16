@@ -37,33 +37,18 @@ import {
 function CreateMode() {
   // Get context values
   const { authorizedUserOcto } = useAuth();
-  const { 
-    activeAtom, 
-    setActiveAtom, 
-    shortCutsOn, 
-    setShortCuts, 
-    exportPopUp, 
-    setExportPopUp 
+  const {
+    activeAtom,
+    setActiveAtom,
+    shortCutsOn,
+    exportPopUp,
+    setExportPopUp,
   } = useAppState();
   const {
-    mesh,
     setMesh,
-    wireMesh,
     setWireMesh,
-    outdatedMesh,
-    setOutdatedMesh,
     renderProgress,
-    setRenderProgress,
     renderBarVisible,
-    setRenderBarVisible,
-    gridParam,
-    setGrid,
-    axesParam,
-    setAxes,
-    wireParam,
-    setWire,
-    solidParam,
-    setSolid,
     backgroundUsdzFile,
     setBackgroundUsdzFile,
     backgroundUsdzSha,
@@ -73,7 +58,7 @@ function CreateMode() {
     userUploadedFile,
     setUserUploadedFile,
   } = useRendering();
-  const { size, cad, loadProject } = useProject();
+  const { cad, loadProject } = useProject();
 
   const navigate = useNavigate();
 
@@ -86,7 +71,6 @@ function CreateMode() {
   /** State for save progress bar */
   const [saveState, setSaveState] = useState(0);
   const [savePopUp, setSavePopUp] = useState(false);
-  const [commitState, setCommitState] = useState(0);
 
   /** State for top level molecule */
   const [currentMoleculeTop, setTop] = useState(false);
