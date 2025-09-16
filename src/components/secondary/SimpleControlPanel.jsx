@@ -503,7 +503,9 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                   ref: (el) => (inputRefs.current[idx] = el),
                   tabIndex: isDisabled ? -1 : 0,
                   onFocus: isDisabled ? undefined : () => setFocusedIndex(idx),
-                  onBlur: () => {},
+                  onBlur: () => {
+                    commitChange(key, currentValue, config);
+                  },
                   style: isDisabled
                     ? { ...inputStyle, ...inputDisabledStyle }
                     : isFocused
