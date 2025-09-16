@@ -93,7 +93,9 @@ function runMode() {
 
   /** State for menu content collapsing */
   // Which menu is expanded: "params", "render", "bom", or "none"
-  const [expandedMenu, setExpandedMenu] = useState("params");
+  const [expandedMenu, setExpandedMenu] = useState(
+    GlobalVariables.isMobile() ? "none" : "params"
+  );
 
   console.log("renderBarVisible", renderBarVisible);
 
@@ -166,6 +168,7 @@ function runMode() {
         contentCollapsed={expandedMenu !== "params"}
         setContentCollapsed={() => setExpandedMenu("params")}
         closeMenu={() => setExpandedMenu("none")}
+        initialCollapsed={GlobalVariables.isMobile() ? true : false}
       />
       <ExportMenu
         activeAtom={activeAtom}

@@ -619,8 +619,8 @@ Sidebar navigation
   position: fixed;
   width: 45px;
   height: 23px;
-  top: 1vh;
-  left: 20px;
+  top: 3vh;
+  right: 10vh;
   z-index: 2;
 }
 
@@ -972,7 +972,9 @@ Sidebar navigation
   /* The switch - the box around the slider */
   .switch_run {
     top: 20px;
+    left: 5vh;
   }
+
   .switch {
     right: 70px;
   }
@@ -1072,6 +1074,7 @@ Sidebar navigation
   /* The switch - the box around the slider */
   .switch_run {
     top: 20px;
+    left: 5vh;
   }
   .switch {
     right: 70px;
