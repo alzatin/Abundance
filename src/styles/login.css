@@ -438,6 +438,35 @@
 }
 
 .closeButton {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  min-width: 2em;
+  min-height: 2em;
+  height: 2em;
+  width: 2em;
+  background: none;
+  border: none;
+  margin: 5px;
+  padding: 0;
+  color: var(--settingsPopup-text);
+  font-size: 1em;
+  font-weight: 400;
+  line-height: 2em;
+  cursor: pointer;
+  transition: color 0.2s;
+  display: inline-block;
+  text-align: center;
+  vertical-align: middle;
+  outline: none;
+}
+.closeButton:hover,
+.closeButton:focus {
+  color: var(--abundance-color-brightPurple);
+  background: none;
+}
+
+.longButton {
   float: right;
   height: 1.5em;
   background-color: var(--settingsPopup-closeButton);
@@ -450,27 +479,6 @@
   -webkit-transition: all 0.3 ease;
   transition: all 0.3 ease;
   cursor: pointer;
-}
-
-.closeButton2 {
-  position: absolute;
-  top: 5px;
-  right: 15px;
-  padding: auto;
-  border: none;
-  width: 20px;
-  height: 20px;
-  background-color: var(--settingsPopup-closeButton);
-  font: 1em sans-serif;
-  cursor: pointer;
-  border-color: var(--settingsPopup-text);
-  border-radius: 50%;
-  color: var(--settingsPopup-text);
-  -webkit-transition: all 0.3 ease;
-  transition: all 0.3 ease;
-  cursor: pointer;
-  text-align: center;
-  vertical-align: middle;
 }
 
 .container {
