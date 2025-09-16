@@ -30,12 +30,6 @@ const SettingsPopUp = ({
   setWire,
   setSolid,
   backgroundUsdzFile,
-  setBackgroundUsdzFile,
-  backgroundUsdzSha,
-  setBackgroundUsdzSha,
-  showBackgroundModel,
-  setShowBackgroundModel,
-  authorizedUserOcto,
 }) => {
   let repoTopics = [];
   if (Globalvariables.currentRepo.topics.length > 0) {
@@ -397,7 +391,9 @@ const SettingsPopUp = ({
                   <button
                     type="button"
                     onClick={() => {
-                      document.getElementById("backgroundUsdzDeleteInput").click();
+                      document
+                        .getElementById("backgroundUsdzDeleteInput")
+                        .click();
                     }}
                     style={{
                       padding: "8px 16px",
@@ -412,9 +408,14 @@ const SettingsPopUp = ({
                   </button>
                 )}
               </div>
-              <Typography 
-                variant="caption" 
-                style={{ color: "#666", fontSize: "12px", display: "block", marginBottom: "10px" }}
+              <Typography
+                variant="caption"
+                style={{
+                  color: "#666",
+                  fontSize: "12px",
+                  display: "block",
+                  marginBottom: "10px",
+                }}
               >
                 Supported formats: GLB, GLTF. Max file size: 25MB
               </Typography>
