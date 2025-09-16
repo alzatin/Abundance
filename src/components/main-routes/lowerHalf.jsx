@@ -3,22 +3,24 @@ import ThreeContext from "../render/ThreeContext.jsx";
 import ReplicadMesh from "../render/ReplicadMesh.jsx";
 import WireframeMesh from "../render/WireframeMesh.jsx";
 import globalvariables from "../../js/globalvariables.js";
+import { useRendering, useAuth, useAppState } from "../../contexts/index.js";
 
-export default memo(function LowerHalf({
-  activeAtom,
-  gridParam,
-  axesParam,
-  wireParam,
-  solidParam,
-  mesh,
-  wireMesh,
-  outdatedMesh,
-  setOutdatedMesh,
-  backgroundUsdzFile,
-  showBackgroundModel,
-  authorizedUserOcto,
-  windowSize,
-}) {
+export default memo(function LowerHalf({ windowSize }) {
+  const {
+    mesh,
+    wireMesh,
+    outdatedMesh,
+    setOutdatedMesh,
+    gridParam,
+    axesParam,
+    wireParam,
+    solidParam,
+    backgroundUsdzFile,
+    showBackgroundModel,
+  } = useRendering();
+  const { authorizedUserOcto } = useAuth();
+  const { activeAtom } = useAppState();
+
   const [cameraZoom, setCameraZoom] = useState(1);
 
   useEffect(() => {
@@ -53,18 +55,10 @@ export default memo(function LowerHalf({
             <ThreeContext
               {...{
                 cameraZoom,
-                gridParam,
-                axesParam,
-                outdatedMesh,
-                backgroundUsdzFile,
-                showBackgroundModel,
-                authorizedUserOcto,
               }}
             >
-              {wireParam ? <WireframeMesh mesh={wireMesh} /> : null}
-              <ReplicadMesh
-                {...{ mesh, isSolid: solidParam, setOutdatedMesh }}
-              />
+              {wireParam ? <WireframeMesh /> : null}
+              <ReplicadMesh isSolid={solidParam} />
             </ThreeContext>
           ) : (
             <div

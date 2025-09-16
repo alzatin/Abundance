@@ -19,6 +19,14 @@ import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
 import GitSearchMenu from "../secondary/GitSearchMenu.jsx";
 import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
+
+// Import contexts
+import {
+  useAuth,
+  useAppState,
+  useRendering,
+  useProject,
+} from "../../contexts/index.js";
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
  * a user has been authorized access to a project.
@@ -26,41 +34,48 @@ import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
  * @prop {setstate} setRunMode - setState function for runMode
  * @prop {boolean} RunMode - Determines if Run mode is on or off
  */
-function CreateMode({
-  activeAtom,
-  setActiveAtom,
-  authorizedUserOcto,
-  loadProject,
-  exportPopUp,
-  setExportPopUp,
-  shortCutsOn,
-  setShortCuts,
-  mesh,
-  setMesh,
-  size,
-  cad,
-  wireMesh,
-  setWireMesh,
-  outdatedMesh,
-  setOutdatedMesh,
-  setRenderProgress,
-  renderProgress,
-  renderBarVisible,
-  setRenderBarVisible,
-}) {
+function CreateMode() {
+  // Get context values
+  const { authorizedUserOcto } = useAuth();
+  const { 
+    activeAtom, 
+    setActiveAtom, 
+    shortCutsOn, 
+    setShortCuts, 
+    exportPopUp, 
+    setExportPopUp 
+  } = useAppState();
+  const {
+    mesh,
+    setMesh,
+    wireMesh,
+    setWireMesh,
+    outdatedMesh,
+    setOutdatedMesh,
+    renderProgress,
+    setRenderProgress,
+    renderBarVisible,
+    setRenderBarVisible,
+    gridParam,
+    setGrid,
+    axesParam,
+    setAxes,
+    wireParam,
+    setWire,
+    solidParam,
+    setSolid,
+    backgroundUsdzFile,
+    setBackgroundUsdzFile,
+    backgroundUsdzSha,
+    setBackgroundUsdzSha,
+    showBackgroundModel,
+    setShowBackgroundModel,
+    userUploadedFile,
+    setUserUploadedFile,
+  } = useRendering();
+  const { size, cad, loadProject } = useProject();
+
   const navigate = useNavigate();
-
-  /** State for grid and axes parameters */
-  const [gridParam, setGrid] = useState(true);
-  const [axesParam, setAxes] = useState(true);
-  const [wireParam, setWire] = useState(true);
-  const [solidParam, setSolid] = useState(false);
-
-  /** State for background 3D model */
-  const [backgroundUsdzFile, setBackgroundUsdzFile] = useState(null);
-  const [backgroundUsdzSha, setBackgroundUsdzSha] = useState(null);
-  const [showBackgroundModel, setShowBackgroundModel] = useState(false);
-  const [userUploadedFile, setUserUploadedFile] = useState(false); // Track if user uploaded a file
 
   /** State for import notifications */
   const [importNotification, setImportNotification] = useState(null);
@@ -794,7 +809,6 @@ function CreateMode({
       return (
         <>
           <ParamsMenu
-            activeAtom={activeAtom}
             position={{ top: screenHeight / 2 - 10, left: 55 }}
             id={"atom-create-params-panel"}
             contentCollapsed={expandedMenu !== "params"}
@@ -803,18 +817,6 @@ function CreateMode({
           />
           <RenderMenu
             {...{
-              activeAtom,
-              gridParam,
-              axesParam,
-              wireParam,
-              solidParam,
-              setGrid,
-              setAxes,
-              setWire,
-              setSolid,
-              backgroundUsdzFile,
-              showBackgroundModel,
-              setShowBackgroundModel,
               contentCollapsed: expandedMenu !== "render",
               setContentCollapsed: () => setExpandedMenu("render"),
               position: { top: screenHeight / 2 - 10, left: 10 },
@@ -824,7 +826,6 @@ function CreateMode({
           />
           <BomMenu
             {...{
-              activeAtom,
               id: "atom-bom-panel",
               contentCollapsed: expandedMenu !== "bom",
               setContentCollapsed: () => setExpandedMenu("bom"),
@@ -903,30 +904,12 @@ function CreateMode({
           ) : null}
           <TopMenu
             {...{
-              authorizedUserOcto,
               savePopUp,
               setSavePopUp,
               saveProject,
-              setExportPopUp,
               saveState,
               setSaveState,
               currentMoleculeTop,
-              activeAtom,
-              setActiveAtom,
-              shortCutsOn,
-              setShortCuts,
-              gridParam,
-              axesParam,
-              wireParam,
-              solidParam,
-              setGrid,
-              setAxes,
-              setWire,
-              setSolid,
-              backgroundUsdzFile,
-              setBackgroundUsdzFile,
-              showBackgroundModel,
-              setShowBackgroundModel,
             }}
           />
 
@@ -989,24 +972,7 @@ function CreateMode({
             }}
           />
           <div className="parent flex-parent" id="lowerHalf">
-            <LowerHalf
-              {...{
-                activeAtom,
-                gridParam,
-                axesParam,
-                wireParam,
-                solidParam,
-                setSaveState,
-                mesh,
-                wireMesh,
-                outdatedMesh,
-                setOutdatedMesh,
-                backgroundUsdzFile,
-                showBackgroundModel,
-                authorizedUserOcto,
-                windowSize,
-              }}
-            />
+            <LowerHalf windowSize={windowSize} />
           </div>
         </>
       );

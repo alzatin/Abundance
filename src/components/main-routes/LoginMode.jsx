@@ -8,6 +8,7 @@ import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
+import { useAuth, useAppState } from "../../contexts/index.js";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -1008,14 +1009,10 @@ const ShowProjects = ({
   );
 };
 
-function LoginMode({
-  exportPopUp,
-  setExportPopUp,
-  setIsLoggedIn,
-  authorizedUserOcto,
-  setAuthorizedUserOcto,
-  isAuthorized,
-}) {
+function LoginMode() {
+  const { isloggedIn, setIsLoggedIn, isAuthorized, authorizedUserOcto, setAuthorizedUserOcto } = useAuth();
+  const { exportPopUp, setExportPopUp } = useAppState();
+  
   const pageDict = { 0: null };
 
   const [noUserBrowsing, setNoUserBrowsing] = useState(false);

@@ -1,26 +1,28 @@
 import { useState } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
+import { useRendering } from "../../contexts/index.js";
 
 export default function RenderMenu({
-  activeAtom,
-  gridParam,
-  axesParam,
-  wireParam,
-  solidParam,
-  setGrid,
-  setAxes,
-  setWire,
-  setSolid,
-  backgroundUsdzFile,
-  showBackgroundModel,
-  setShowBackgroundModel,
   position,
   id,
   contentCollapsed,
   collapsedOffset,
   setContentCollapsed,
 }) {
+  const {
+    gridParam,
+    axesParam,
+    wireParam,
+    solidParam,
+    setGrid,
+    setAxes,
+    setWire,
+    setSolid,
+    backgroundUsdzFile,
+    showBackgroundModel,
+    setShowBackgroundModel,
+  } = useRendering();
   const [inputChanged, setInputChanged] = useState("");
 
   /** Creates Leva panel with grid settings */
