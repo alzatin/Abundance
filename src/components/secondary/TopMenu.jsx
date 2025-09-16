@@ -13,14 +13,16 @@ function TopMenu({
   saveState,
   setSaveState,
   currentMoleculeTop,
+  settingsPopUp,
+  setSettingsPopUp,
 }) {
   const { authorizedUserOcto } = useAuth();
-  const { 
-    activeAtom, 
-    setActiveAtom, 
-    shortCutsOn, 
-    setShortCuts, 
-    setExportPopUp 
+  const {
+    activeAtom,
+    setActiveAtom,
+    shortCutsOn,
+    setShortCuts,
+    setExportPopUp,
   } = useAppState();
   const {
     gridParam,
@@ -41,7 +43,6 @@ function TopMenu({
 
   let [shareDialog, setShareDialog] = useState(false);
   let [dialogContent, setDialog] = useState("");
-  let [settingsPopUp, setSettingsPopUp] = useState(false);
 
   const navigate = useNavigate();
   // objects for navigation items in the top menu

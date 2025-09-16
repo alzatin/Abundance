@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import Globalvariables from "../../js/globalvariables.js";
 import CreatableSelect from "react-select/creatable";
 import topics from "../../js/maslowTopics.js";
-import { use } from "react";
 
 const SettingsPopUp = ({
   setSettingsPopUp,
@@ -24,7 +23,8 @@ const SettingsPopUp = ({
       repoTopics.push({ value: topic, label: topic });
     });
   }
-  const projectTopicRef = useRef(repoTopics);
+  // Controlled state for CreatableSelect
+  const [selectedTopics, setSelectedTopics] = useState(repoTopics);
   const projectDescriptionRef = useRef(Globalvariables.currentRepo.description);
   const dateString = Globalvariables.currentRepo.dateCreated;
   const dateCreated = new Date(dateString);
@@ -32,11 +32,8 @@ const SettingsPopUp = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSettingsPopUp(false);
-    const projectTopicArray = projectTopicRef.current.getValue();
-    const projectTopic = [];
-    projectTopicArray.forEach((topic) => {
-      projectTopic.push(topic[`value`]);
-    });
+    // Use controlled topics state
+    const projectTopic = selectedTopics.map((topic) => topic.value);
     Globalvariables.currentRepo.description =
       projectDescriptionRef.current.value;
     setState({
@@ -56,7 +53,7 @@ const SettingsPopUp = ({
   ];
   function CustomTabPanel({ children, value, index }) {
     return value === index ? (
-      <div style={{ padding: 16 }}>{children}</div>
+      <div className="settings-panel-content">{children}</div>
     ) : null;
   }
   const handleChange = (newValue) => {
@@ -87,7 +84,6 @@ const SettingsPopUp = ({
       Globalvariables.currentRepo.description = event.target.value;
     }
     if (event.target.name === "fontSize") {
-      console.log(event.target.value);
       Globalvariables.canvasFont = `${event.target.value}px Work Sans Bold`;
       localStorage.setItem(
         "canvasFont",
@@ -126,7 +122,7 @@ const SettingsPopUp = ({
 
   return (
     <div className="settingsDiv">
-      <div className="form animate fadeInUp one " id="settingsPopUp">
+      <div className="settings-panel" id="settingsPopUp">
         <a
           onClick={() => {
             setSettingsPopUp(false);
@@ -136,41 +132,20 @@ const SettingsPopUp = ({
           {"\u00D7"}
         </a>
         <form
-          className="settings-form project-info"
           onSubmit={(e) => {
             handleSubmit(e);
           }}
         >
           {/* Custom Tabs */}
-          <div
-            style={{
-              display: "flex",
-              borderBottom: "1px solid #ccc",
-              marginBottom: 8,
-            }}
-          >
+          <div className="settings-panel-tabs">
             {tabLabels.map((label, idx) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => handleChange(idx)}
-                style={{
-                  background: value === idx ? "#e0e5ef" : "#f7f7fa",
-                  color: value === idx ? "#7a3eb1" : "#444",
-                  border: "none",
-                  borderBottom:
-                    value === idx
-                      ? "2px solid #7a3eb1"
-                      : "2px solid transparent",
-                  fontWeight: 600,
-                  fontSize: 15,
-                  padding: "10px 18px",
-                  cursor: "pointer",
-                  outline: "none",
-                  borderRadius: "8px 8px 0 0",
-                  marginRight: 2,
-                  transition: "background 0.2s, color 0.2s",
-                }}
+                className={`settings-panel-tab${
+                  value === idx ? " active" : ""
+                }`}
               >
                 {label}
               </button>
@@ -180,13 +155,13 @@ const SettingsPopUp = ({
           <CustomTabPanel value={value} index={0}>
             <div id="project-info">
               <div id="project-info-name">
-                <label>Project Name</label>
+                <label className="info-label-highlight">Project Name</label>
                 <p title="To change the Project Name go to your Github repository">
                   {Globalvariables.currentRepo.repoName}
                 </p>
               </div>
               <div id="project-info-date">
-                <label>Date Created</label>
+                <label className="info-label-highlight">Date Created</label>
                 <p>{dateCreated.toDateString()}</p>
               </div>
             </div>
@@ -214,98 +189,122 @@ const SettingsPopUp = ({
                 Display light/dark
               </label>
               <div style={{ borderTop: "1px solid #eee", margin: "10px 0" }} />
-              <label
-                className="settings-labels"
-                style={{ margin: "10px 0 4px 0" }}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  margin: "10px 0 4px 0",
+                }}
               >
-                Font Size
-              </label>
-              <input
-                type="range"
-                min={8}
-                max={30}
-                value={state.fontSize}
-                onChange={handleValueChange}
-                name="fontSize"
-                className="settings-sliders"
-                style={{ width: 180 }}
-              />
-              <span style={{ fontSize: 13, color: "#888", marginLeft: 6 }}>
-                {state.fontSize}px
-              </span>
-              <label
-                className="settings-labels"
-                style={{ margin: "10px 0 4px 0" }}
+                <label className="settings-labels" style={{ minWidth: 80 }}>
+                  Font Size
+                </label>
+                <input
+                  type="range"
+                  min={8}
+                  max={30}
+                  value={state.fontSize}
+                  onChange={handleValueChange}
+                  name="fontSize"
+                  className="settings-sliders"
+                  style={{ width: 140 }}
+                />
+                <span style={{ fontSize: 13, color: "#888", marginLeft: 6 }}>
+                  {state.fontSize}px
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  margin: "10px 0 4px 0",
+                }}
               >
-                Atom Size
-              </label>
-              <input
-                type="range"
-                min={10}
-                max={60}
-                value={state.atomSize}
-                onChange={handleValueChange}
-                name="atomSize"
-                className="settings-sliders"
-                style={{ width: 180 }}
-              />
-              <span style={{ fontSize: 13, color: "#888", marginLeft: 6 }}>
-                {state.atomSize}
-              </span>
+                <label className="settings-labels" style={{ minWidth: 80 }}>
+                  Atom Size
+                </label>
+                <input
+                  type="range"
+                  min={10}
+                  max={60}
+                  value={state.atomSize}
+                  onChange={handleValueChange}
+                  name="atomSize"
+                  className="settings-sliders"
+                  style={{ width: 140 }}
+                />
+                <span style={{ fontSize: 13, color: "#888", marginLeft: 6 }}>
+                  {state.atomSize}
+                </span>
+              </div>
             </div>
           </CustomTabPanel>
           <CustomTabPanel value={value} index={2}>
-            <label style={{ marginBottom: "8px", fontWeight: 500 }}>
-              Project Description
-            </label>
-            <input
-              id="project-description"
-              defaultValue={Globalvariables.currentRepo.description}
-              ref={projectDescriptionRef}
-              name="projectDescription"
-              style={{
-                width: "100%",
-                marginBottom: 12,
-                padding: 6,
-                borderRadius: 4,
-                border: "1px solid #ccc",
-              }}
-            />
-            <label htmlFor="Project Topics" style={{ fontWeight: 500 }}>
-              Project Tags
-            </label>
-            <CreatableSelect
-              defaultValue={repoTopics}
-              isMulti
-              name="Project Topics"
-              options={topics}
-              className="basic-multi-select"
-              classNamePrefix="select"
-              ref={projectTopicRef}
-            />
-            <label
-              htmlFor="measure-units"
-              style={{ marginTop: 12, fontWeight: 500 }}
-            >
-              Project Units
-            </label>
-            <select
-              id="measure-units"
-              name="measure-units"
-              value={Globalvariables.topLevelMolecule.unitsKey}
-              onChange={handleSelectChange}
-              style={{
-                width: 120,
-                marginLeft: 8,
-                padding: 4,
-                borderRadius: 4,
-                border: "1px solid #ccc",
-              }}
-            >
-              <option value="MM">MM</option>
-              <option value="Inches">Inches</option>
-              <option value="Unitless">Unitless</option>
-            </select>
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label
+                  style={{ fontWeight: 500, marginBottom: 2 }}
+                  htmlFor="project-description"
+                >
+                  Project Description
+                </label>
+                <textarea
+                  id="project-description"
+                  defaultValue={Globalvariables.currentRepo.description}
+                  ref={projectDescriptionRef}
+                  name="projectDescription"
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    marginBottom: 0,
+                    padding: 6,
+                    borderRadius: 4,
+                    border: "1px solid #ccc",
+                    fontFamily: "inherit",
+                    fontSize: 15,
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label
+                  htmlFor="Project Topics"
+                  style={{ fontWeight: 500, marginBottom: 2 }}
+                >
+                  Project Tags
+                </label>
+                <CreatableSelect
+                  value={selectedTopics}
+                  onChange={setSelectedTopics}
+                  isMulti
+                  name="Project Topics"
+                  options={topics}
+                  className="basic-multi-select"
+                  classNamePrefix="select"
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label
+                  htmlFor="measure-units"
+                  style={{ fontWeight: 500, marginBottom: 2 }}
+                >
+                  Project Units
+                </label>
+                <select
+                  id="measure-units"
+                  name="measure-units"
+                  value={Globalvariables.topLevelMolecule.unitsKey}
+                  onChange={handleSelectChange}
+                  className="basic-multi-select custom-select"
+                >
+                  <option value="MM">MM</option>
+                  <option value="Inches">Inches</option>
+                  <option value="Unitless">Unitless</option>
+                </select>
+              </div>
+            </div>
           </CustomTabPanel>
           <CustomTabPanel value={value} index={3}>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -407,13 +406,11 @@ const SettingsPopUp = ({
               </span>
             </div>
           </CustomTabPanel>
-          <button
-            className="submit-button"
-            type="submit"
-            style={{ marginTop: 18 }}
-          >
-            Save Changes
-          </button>
+          <div className="settings-panel-button-row">
+            <button className="settings-panel-button" type="submit">
+              Save Changes
+            </button>
+          </div>
         </form>
       </div>
     </div>
