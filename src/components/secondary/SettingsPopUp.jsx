@@ -3,19 +3,6 @@ import Globalvariables from "../../js/globalvariables.js";
 import CreatableSelect from "react-select/creatable";
 import topics from "../../js/maslowTopics.js";
 import { use } from "react";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
-import Box from "@mui/material/Box";
-import Switch from "@mui/material/Switch";
-import FormGroup from "@mui/material/FormGroup";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
-import Select from "@mui/material/Select";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Slider from "@mui/material/Slider";
-import { Typography } from "@mui/material";
-import Divider from "@mui/material/Divider";
 
 const SettingsPopUp = ({
   setSettingsPopUp,
@@ -60,28 +47,19 @@ const SettingsPopUp = ({
   };
   const [value, setValue] = React.useState(0);
 
-  function a11yProps(index) {
-    return {
-      id: `simple-tab-${index}`,
-      "aria-controls": `simple-tabpanel-${index}`,
-    };
+  // Custom Tabs implementation
+  const tabLabels = [
+    "INFO",
+    "CANVAS SETTINGS",
+    "PROJECT SETTINGS",
+    "RENDER PREFERENCES",
+  ];
+  function CustomTabPanel({ children, value, index }) {
+    return value === index ? (
+      <div style={{ padding: 16 }}>{children}</div>
+    ) : null;
   }
-  function CustomTabPanel(props) {
-    const { children, value, index, ...other } = props;
-
-    return (
-      <div
-        role="tabpanel"
-        hidden={value !== index}
-        id={`simple-tabpanel-${index}`}
-        aria-labelledby={`simple-tab-${index}`}
-        {...other}
-      >
-        {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-      </div>
-    );
-  }
-  const handleChange = (event, newValue) => {
+  const handleChange = (newValue) => {
     setValue(newValue);
   };
 
@@ -157,32 +135,52 @@ const SettingsPopUp = ({
         >
           {"\u00D7"}
         </a>
-        <h2 style={{ margin: "0 0 15px 0" }}> Project Preferences</h2>
         <form
           className="settings-form project-info"
           onSubmit={(e) => {
             handleSubmit(e);
           }}
         >
-          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-            <Tabs
-              value={value}
-              onChange={handleChange}
-              aria-label="setting-tabs"
-              textColor="inherit"
-              indicatorColor="#767676"
-            >
-              <Tab label="Project Information" {...a11yProps(0)} />
-              <Tab label="Canvas Settings" {...a11yProps(1)} />
-              <Tab label="Project Settings" {...a11yProps(2)} />
-              <Tab label="Render Settings" {...a11yProps(3)} />
-            </Tabs>
-          </Box>
+          {/* Custom Tabs */}
+          <div
+            style={{
+              display: "flex",
+              borderBottom: "1px solid #ccc",
+              marginBottom: 8,
+            }}
+          >
+            {tabLabels.map((label, idx) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => handleChange(idx)}
+                style={{
+                  background: value === idx ? "#e0e5ef" : "#f7f7fa",
+                  color: value === idx ? "#7a3eb1" : "#444",
+                  border: "none",
+                  borderBottom:
+                    value === idx
+                      ? "2px solid #7a3eb1"
+                      : "2px solid transparent",
+                  fontWeight: 600,
+                  fontSize: 15,
+                  padding: "10px 18px",
+                  cursor: "pointer",
+                  outline: "none",
+                  borderRadius: "8px 8px 0 0",
+                  marginRight: 2,
+                  transition: "background 0.2s, color 0.2s",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {/* Tab Panels */}
           <CustomTabPanel value={value} index={0}>
             <div id="project-info">
               <div id="project-info-name">
                 <label>Project Name</label>
-
                 <p title="To change the Project Name go to your Github repository">
                   {Globalvariables.currentRepo.repoName}
                 </p>
@@ -194,94 +192,88 @@ const SettingsPopUp = ({
             </div>
           </CustomTabPanel>
           <CustomTabPanel value={value} index={1}>
-            <FormGroup>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={state.shortcut}
-                    onChange={handleCheckChange}
-                    name="shortcut"
-                    color="secondary"
-                  />
-                }
-                label="Shortcut Helper Show/Hide"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={state.displaytheme}
-                    onChange={handleCheckChange}
-                    name="displaytheme"
-                    color="secondary"
-                  />
-                }
-                label="Display light/dark"
-              />
-              <Divider flexItem />
-              <Typography
-                id="input-slider"
-                style={{ margin: "10px" }}
-                gutterBottom
-                class="settings-labels"
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={state.shortcut}
+                  onChange={handleCheckChange}
+                  name="shortcut"
+                  style={{ marginRight: 8 }}
+                />
+                Shortcut Helper Show/Hide
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={state.displaytheme}
+                  onChange={handleCheckChange}
+                  name="displaytheme"
+                  style={{ marginRight: 8 }}
+                />
+                Display light/dark
+              </label>
+              <div style={{ borderTop: "1px solid #eee", margin: "10px 0" }} />
+              <label
+                className="settings-labels"
+                style={{ margin: "10px 0 4px 0" }}
               >
                 Font Size
-              </Typography>
-              <Slider
-                aria-label="fontSize"
+              </label>
+              <input
+                type="range"
+                min={8}
+                max={30}
                 value={state.fontSize}
                 onChange={handleValueChange}
                 name="fontSize"
-                min={8}
-                max={30}
-                color="white"
                 className="settings-sliders"
+                style={{ width: 180 }}
               />
-              <Typography
-                id="input-slider"
-                class="settings-labels"
-                gutterBottom
-                color="white"
+              <span style={{ fontSize: 13, color: "#888", marginLeft: 6 }}>
+                {state.fontSize}px
+              </span>
+              <label
+                className="settings-labels"
+                style={{ margin: "10px 0 4px 0" }}
               >
                 Atom Size
-              </Typography>
-
-              <Slider
-                aria-label="atomSize"
+              </label>
+              <input
+                type="range"
+                min={10}
+                max={60}
                 value={state.atomSize}
                 onChange={handleValueChange}
                 name="atomSize"
                 className="settings-sliders"
-                min={10}
-                max={60}
-                color="white"
-                defaultValue={Globalvariables.atomSize * 1000}
+                style={{ width: 180 }}
               />
-            </FormGroup>
+              <span style={{ fontSize: 13, color: "#888", marginLeft: 6 }}>
+                {state.atomSize}
+              </span>
+            </div>
           </CustomTabPanel>
           <CustomTabPanel value={value} index={2}>
-            {" "}
-            <InputLabel
-              id="measure-units-label"
-              style={{ marginBottom: "15px" }}
-            >
+            <label style={{ marginBottom: "8px", fontWeight: 500 }}>
               Project Description
-            </InputLabel>
+            </label>
             <input
               id="project-description"
               defaultValue={Globalvariables.currentRepo.description}
               ref={projectDescriptionRef}
               name="projectDescription"
+              style={{
+                width: "100%",
+                marginBottom: 12,
+                padding: 6,
+                borderRadius: 4,
+                border: "1px solid #ccc",
+              }}
             />
-            {/* <TextField
-              fullWidth
-              label="Project Description and Tags"
-              id="project-description"
-              multiline
-              rows={4}
-              value={state.projectDescription}
-              ref={projectDescriptionRef}
-            />*/}
-            <label htmlFor="Project Topics">Project Tags</label>
+            <label htmlFor="Project Topics" style={{ fontWeight: 500 }}>
+              Project Tags
+            </label>
             <CreatableSelect
               defaultValue={repoTopics}
               isMulti
@@ -291,84 +283,79 @@ const SettingsPopUp = ({
               classNamePrefix="select"
               ref={projectTopicRef}
             />
-            <FormControl fullWidth>
-              <InputLabel id="measure-units-label">Project Units</InputLabel>
-              <Select
-                labelId="measure-units-label"
-                id="measure-units"
-                value={Globalvariables.topLevelMolecule.unitsKey}
-                label="Project Units"
-                onChange={handleSelectChange}
-                color="white"
-              >
-                <MenuItem value={"MM"}>MM</MenuItem>
-                <MenuItem value={"Inches"}>Inches</MenuItem>
-                <MenuItem value={"Unitless"}>Unitless</MenuItem>
-              </Select>
-            </FormControl>
+            <label
+              htmlFor="measure-units"
+              style={{ marginTop: 12, fontWeight: 500 }}
+            >
+              Project Units
+            </label>
+            <select
+              id="measure-units"
+              name="measure-units"
+              value={Globalvariables.topLevelMolecule.unitsKey}
+              onChange={handleSelectChange}
+              style={{
+                width: 120,
+                marginLeft: 8,
+                padding: 4,
+                borderRadius: 4,
+                border: "1px solid #ccc",
+              }}
+            >
+              <option value="MM">MM</option>
+              <option value="Inches">Inches</option>
+              <option value="Unitless">Unitless</option>
+            </select>
           </CustomTabPanel>
           <CustomTabPanel value={value} index={3}>
-            <FormGroup>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={gridParam}
-                    onChange={(event) => {
-                      setGrid(event.target.checked);
-                    }}
-                    name="grid"
-                    color="secondary"
-                  />
-                }
-                label="Grid"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={axesParam}
-                    onChange={(event) => {
-                      setAxes(event.target.checked);
-                    }}
-                    name="axes"
-                    color="secondary"
-                  />
-                }
-                label="Axes"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={wireParam}
-                    onChange={(event) => {
-                      setWire(event.target.checked);
-                    }}
-                    name="wire"
-                    color="secondary"
-                  />
-                }
-                label="Output Wire"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={solidParam}
-                    onChange={(event) => {
-                      setSolid(event.target.checked);
-                    }}
-                    name="wireframe"
-                    color="secondary"
-                  />
-                }
-                label="Wireframe"
-              />
-              <Divider flexItem style={{ margin: "10px 0" }} />
-              <Typography
-                style={{ margin: "10px 0" }}
-                gutterBottom
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={gridParam}
+                  onChange={(event) => setGrid(event.target.checked)}
+                  name="grid"
+                  style={{ marginRight: 8 }}
+                />
+                Grid
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={axesParam}
+                  onChange={(event) => setAxes(event.target.checked)}
+                  name="axes"
+                  style={{ marginRight: 8 }}
+                />
+                Axes
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={wireParam}
+                  onChange={(event) => setWire(event.target.checked)}
+                  name="wire"
+                  style={{ marginRight: 8 }}
+                />
+                Output Wire
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={solidParam}
+                  onChange={(event) => setSolid(event.target.checked)}
+                  name="wireframe"
+                  style={{ marginRight: 8 }}
+                />
+                Wireframe
+              </label>
+              <div style={{ borderTop: "1px solid #eee", margin: "10px 0" }} />
+              <label
                 className="settings-labels"
+                style={{ margin: "10px 0 4px 0" }}
               >
                 Background Model
-              </Typography>
+              </label>
               <div style={{ marginBottom: "10px" }}>
                 <button
                   type="button"
@@ -408,8 +395,7 @@ const SettingsPopUp = ({
                   </button>
                 )}
               </div>
-              <Typography
-                variant="caption"
+              <span
                 style={{
                   color: "#666",
                   fontSize: "12px",
@@ -418,11 +404,14 @@ const SettingsPopUp = ({
                 }}
               >
                 Supported formats: GLB, GLTF. Max file size: 25MB
-              </Typography>
-            </FormGroup>
+              </span>
+            </div>
           </CustomTabPanel>
-
-          <button className="submit-button" type="submit">
+          <button
+            className="submit-button"
+            type="submit"
+            style={{ marginTop: 18 }}
+          >
             Save Changes
           </button>
         </form>
