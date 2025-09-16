@@ -441,7 +441,7 @@ export default memo(function FlowCanvas({
       i--
     ) {
       const molecule = GlobalVariables.currentMolecule.nodesOnTheScreen[i];
-      const handled = molecule.doubleClick(event.clientX, event.clientY);
+      const handled = molecule?.doubleClick(event.clientX, event.clientY);
     }
   };
 
