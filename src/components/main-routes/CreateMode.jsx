@@ -79,7 +79,9 @@ function CreateMode() {
 
   /** State for menu content collapsing */
   // Which menu is expanded: "params", "render", "bom", or "none"
-  const [expandedMenu, setExpandedMenu] = useState("params");
+  const [expandedMenu, setExpandedMenu] = useState(
+    GlobalVariables.isMobile() ? "none" : "params"
+  );
 
   /**
    * Object containing letters and values used for keyboard shortcuts
@@ -799,6 +801,8 @@ function CreateMode() {
             setContentCollapsed={() => setExpandedMenu("params")}
             panelRef={panelRef}
             closeMenu={() => setExpandedMenu("none")}
+            initialCollapsed={GlobalVariables.isMobile() ? true : false}
+            collapsedOffset={[0, 0]}
           />
           <RenderMenu
             {...{
