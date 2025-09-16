@@ -34,8 +34,8 @@ export default React.memo(function ShapeMeshes({ isSolid }) {
       const thisBody = body;
       const thisLines = lines;
       const thisColor = m.color;
-      // If the color is keep out make it transparent
-      if (thisColor == "#D9544D") {
+      // If the color is keep out or glass make it transparent
+      if (thisColor == "#D9544D" || thisColor == "#E6F3FF") {
         meshArray.push({
           body: thisBody,
           lines: thisLines,
@@ -95,13 +95,25 @@ export default React.memo(function ShapeMeshes({ isSolid }) {
             {!isSolid ? (
               <mesh geometry={m.body} key={"mesh" + m.color}>
                 {/*the offsets are here to avoid z fighting between the mesh and the lines*/}
-                {m.color != "#D9544D" ? (
+                {m.color != "#D9544D" && m.color != "#E6F3FF" ? (
                   <meshMatcapMaterial
                     color={m.color}
                     key={"material" + m.color}
                     polygonOffset
                     polygonOffsetFactor={2.0}
                     polygonOffsetUnits={1.0}
+                  />
+                ) : m.color == "#E6F3FF" ? (
+                  <meshPhysicalMaterial
+                    color={m.color}
+                    transparent={true}
+                    opacity={0.3}
+                    transmission={0.8}
+                    roughness={0}
+                    metalness={0}
+                    clearcoat={1}
+                    clearcoatRoughness={0}
+                    ior={1.5}
                   />
                 ) : (
                   <meshBasicMaterial
