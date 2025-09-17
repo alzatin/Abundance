@@ -190,13 +190,11 @@ export default class Connector {
                     }
                   } else {
                     // Only allow replacement if there are no available geometry input APs
-                    const multiInputTypes = [
-                      "Assembly",
-                      "Molecule",
-                      "Fusion, Difference",
-                    ];
+                    const geometryInputs = atom.inputs.filter(
+                      (ap) => ap.valueType === "geometry"
+                    );
                     const supportsMultiGeometryInputs =
-                      atom && multiInputTypes.includes(atom.atomType);
+                      geometryInputs.length > 1;
                     let hasAvailableGeometryInput = false;
                     if (
                       supportsMultiGeometryInputs &&
