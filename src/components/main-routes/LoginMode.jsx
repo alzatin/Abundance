@@ -352,6 +352,7 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
         key={node.topMoleculeID + node.owner}
         id={node.repoName}
         onClick={() => {
+          console.log(node);
           GlobalVariables.currentRepo = node;
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node)}
@@ -1010,9 +1011,15 @@ const ShowProjects = ({
 };
 
 function LoginMode() {
-  const { isloggedIn, setIsLoggedIn, isAuthorized, authorizedUserOcto, setAuthorizedUserOcto } = useAuth();
+  const {
+    isloggedIn,
+    setIsLoggedIn,
+    isAuthorized,
+    authorizedUserOcto,
+    setAuthorizedUserOcto,
+  } = useAuth();
   const { exportPopUp, setExportPopUp } = useAppState();
-  
+
   const pageDict = { 0: null };
 
   const [noUserBrowsing, setNoUserBrowsing] = useState(false);
