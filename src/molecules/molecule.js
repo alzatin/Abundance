@@ -843,6 +843,16 @@ export default class Molecule extends Atom {
     }
   }
 
+  propagateChange() {
+    if (this == GlobalVariables.currentMolecule) {
+      // This is the output of the currently focused molecule
+      // don't dispatch changes upstream because those entities aren't
+      // shown.
+      return;
+    }
+    super.propagateChange();
+  }
+
   changeUnits(newUnitsIndex) {
     this.unitsIndex = newUnitsIndex;
   }
@@ -856,14 +866,10 @@ export default class Molecule extends Atom {
       GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
         atom.selected = false;
       });
-      //Push any changes up to the next level if there are any changes waiting in the output
-      if (GlobalVariables.currentMolecule.awaitingPropagationFlag == true) {
-        GlobalVariables.currentMolecule.basicThreadValueProcessing();
-        GlobalVariables.currentMolecule.awaitingPropagationFlag = false;
-      }
 
       GlobalVariables.currentMolecule = GlobalVariables.currentMolecule.parent; //set parent this to be the currently displayed molecule
       GlobalVariables.currentMolecule.enableAllChildren();
+      super.propagateChange();
     }
   }
 
