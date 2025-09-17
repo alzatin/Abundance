@@ -1085,7 +1085,7 @@ function LoginMode() {
             to={`/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`}
           >
             <button
-              className="closeButton"
+              className="longButton"
               onClick={() => {
                 setExportPopUp(false);
               }}
@@ -1097,7 +1097,7 @@ function LoginMode() {
         ) : null}
         {isAuthorized ? (
           <button
-            className="closeButton"
+            className="longButton"
             onClick={() => {
               logoutHandler();
             }}
@@ -1134,7 +1134,7 @@ function LoginMode() {
               <div className="menu-button"></div>
             </label>
             <button
-              className="closeButtonmobile"
+              className="longButton"
               onClick={() => {
                 logoutHandler();
               }}

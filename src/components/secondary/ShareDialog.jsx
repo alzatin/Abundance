@@ -105,7 +105,7 @@ function ShareDialog({
           </div>
         ) : null}
 
-        <a className="closeButton2" onClick={() => setShareDialog(false)}>
+        <a className="closeButton" onClick={() => setShareDialog(false)}>
           {"\u00D7"}
         </a>
       </dialog>
