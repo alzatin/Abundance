@@ -869,7 +869,12 @@ export default class Molecule extends Atom {
 
       GlobalVariables.currentMolecule = GlobalVariables.currentMolecule.parent; //set parent this to be the currently displayed molecule
       GlobalVariables.currentMolecule.enableAllChildren();
-      super.propagateChange();
+
+      // Force propagation upstream since intermediate changes have been
+      // withheld
+      const value = this.value;
+      this.setWaiting();
+      this.setReady(value);
     }
   }
 
