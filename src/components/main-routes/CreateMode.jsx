@@ -322,7 +322,6 @@ function CreateMode() {
     if (currentProjectRep) {
       localStorage.setItem("pendingProjectSave", currentProjectRep);
     }
-    console.log("currentProjectRep", currentProjectRep);
     const client_id =
       window.origin.includes("localhost") || window.origin.includes("abundance")
         ? import.meta.env.VITE_GH_OAUTH_CLIENT_ID
