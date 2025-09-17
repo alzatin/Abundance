@@ -286,14 +286,17 @@ function CreateMode() {
   /**
    * Handles authentication errors by redirecting to re-authentication
    */
-  const handleAuthenticationError = (error, saveType) => {
+  const handleAuthenticationError = (error, saveType, currentProjectRep) => {
     console.error("Authentication error during save:", error);
-    
+
     // Show user-friendly error message
     setErrorNotification(
-      `Save failed due to expired login. Please log in again to continue saving.`
+      `Save failed due to expired login. Support for this issue coming soon.`
     );
-    setTimeout(() => setErrorNotification(null), 5000);
+    setTimeout(() => {
+      setErrorNotification(null);
+      initiateReAuthentication(currentProjectRep);
+    }, 2000);
 
     // If this was a user-initiated save, keep the save popup visible
     // so they can retry after re-authentication
@@ -307,18 +310,28 @@ function CreateMode() {
 
   /**
    * Initiates re-authentication flow
+   * @param {string} currentProjectRep - current json representation of project for save
    */
-  const initiateReAuthentication = () => {
+  const initiateReAuthentication = (currentProjectRep) => {
     const params = new URLSearchParams(window.location.search);
     let scope = "public_repo";
     if (params.has("private")) {
       scope = "repo";
     }
-
+    // Save the current project representation to local storage for recovery after re-authentication
+    if (currentProjectRep) {
+      localStorage.setItem("pendingProjectSave", currentProjectRep);
+    }
+    console.log("currentProjectRep", currentProjectRep);
     const client_id =
       window.origin.includes("localhost") || window.origin.includes("abundance")
         ? import.meta.env.VITE_GH_OAUTH_CLIENT_ID
         : import.meta.env.VITE_GH_OAUTH_CLIENT_ID_MOB;
+
+    const repo = {
+      owner: GlobalVariables.currentUser,
+      repo: GlobalVariables.currentRepo.repoName,
+    };
 
     // Create a CSRF token and store it locally
     const csrfToken = window.crypto
@@ -329,13 +342,15 @@ function CreateMode() {
     // Include current repo in the state parameter to return here
     const state = JSON.stringify({
       csrfToken: csrfToken,
-      forking: false,
+      currentRepo: repo,
       returnTo: `/${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`,
     });
 
     // Redirect to GitHub for re-authentication
-    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${window.origin}/callback&state=${state}&scope=${scope}`;
-    window.location.assign(link);
+    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
+      window.origin
+    }/callback&state=${encodeURIComponent(state)}&scope=${scope}`;
+    //window.location.assign(link); // don't try to authenticate right now
   };
 
   /**
@@ -461,28 +476,31 @@ function CreateMode() {
     try {
       setState(35);
       if (!base) {
-        const repoResponse = await octokit.request("GET /repos/{owner}/{repo}", {
-          owner: owner,
-          repo: repo,
-        });
-        
+        const repoResponse = await octokit.request(
+          "GET /repos/{owner}/{repo}",
+          {
+            owner: owner,
+            repo: repo,
+          }
+        );
+
         let htmlURL = repoResponse.data.html_url;
         const privateRepo = repoResponse.data.private;
         setState(40);
 
         base = repoResponse.data.default_branch;
-        
+
         const commitsResponse = await octokit.rest.repos.listCommits({
           owner,
           repo,
           sha: base,
           per_page: 1,
         });
-        
+
         setState(50);
         let latestCommitSha = commitsResponse.data[0].sha;
         const treeSha = commitsResponse.data[0].commit.tree.sha;
-        
+
         const treeResponse = await octokit.rest.git.createTree({
           owner,
           repo,
@@ -503,7 +521,7 @@ function CreateMode() {
             }
           }),
         });
-        
+
         setState(60);
         const newTreeSha = treeResponse.data.sha;
 
@@ -514,7 +532,7 @@ function CreateMode() {
           tree: newTreeSha,
           parents: [latestCommitSha],
         });
-        
+
         setState(70);
         latestCommitSha = commitResponse.data.sha;
 
@@ -525,13 +543,13 @@ function CreateMode() {
           ref: "heads/" + base,
           force: true,
         });
-        
+
         setState(80);
-        
+
         const githubMoleculeUsedList = await searchGithubMolecules(
           GlobalVariables.topLevelMolecule
         );
-        
+
         /*aws dynamo update-item lambda, also updates dateModified on aws side*/
         const apiUpdateUrl =
           "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
@@ -565,13 +583,13 @@ function CreateMode() {
             "Content-type": "application/json; charset=UTF-8",
           },
         });
-        
+
         console.warn("Project saved on git and aws updated");
         setState(100);
       }
     } catch (error) {
       console.error("Error during commit creation:", error);
-      
+
       // Check if this is an authentication error
       if (error.status === 401 || error.message.includes("Bad credentials")) {
         handleAuthenticationError(error, saveType);
@@ -583,7 +601,7 @@ function CreateMode() {
         setTimeout(() => setErrorNotification(null), 5000);
         setState(0); // Reset save progress
       }
-      
+
       throw error; // Re-throw to let calling function handle it
     }
   };
@@ -778,18 +796,6 @@ function CreateMode() {
    */
   const saveProject = async (setState, typeSave) => {
     try {
-      // First validate the GitHub token
-      if (authorizedUserOcto) {
-        const isTokenValid = await validateGitHubToken(authorizedUserOcto);
-        if (!isTokenValid) {
-          handleAuthenticationError(
-            new Error("GitHub token has expired"),
-            typeSave
-          );
-          return;
-        }
-      }
-
       //We only want to save if something has actually changed since the last save
       var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
 
@@ -798,6 +804,19 @@ function CreateMode() {
         JSON.stringify(jsonRepOfProject) == JSON.stringify(lastSaveData.current)
       ) {
         return;
+      }
+
+      // First validate the GitHub token
+      if (authorizedUserOcto) {
+        const isTokenValid = await validateGitHubToken(authorizedUserOcto);
+        if (!isTokenValid) {
+          handleAuthenticationError(
+            new Error("GitHub token has expired"),
+            typeSave,
+            JSON.stringify(jsonRepOfProject)
+          );
+          return;
+        }
       }
 
       lastSaveData.current = jsonRepOfProject; //Save the data so we can compare it next time
@@ -886,7 +905,7 @@ function CreateMode() {
       );
     } catch (error) {
       console.error("Error during project save:", error);
-      
+
       // The createCommit function already handles authentication errors,
       // so we only need to handle other types of errors here
       if (!error.message.includes("Bad credentials") && error.status !== 401) {
@@ -895,14 +914,16 @@ function CreateMode() {
         );
         setTimeout(() => setErrorNotification(null), 5000);
       }
-      
+
       setState(0); // Reset save progress
     }
   };
   const screenHeight = window.innerHeight;
-
   if (authorizedUserOcto) {
-    if (GlobalVariables.currentRepo.owner === GlobalVariables.currentUser) {
+    if (
+      GlobalVariables.currentRepo &&
+      GlobalVariables.currentRepo.owner === GlobalVariables.currentUser
+    ) {
       return (
         <>
           <ParamsMenu
@@ -1082,9 +1103,8 @@ function CreateMode() {
         </>
       );
     } else {
-      navigate(
-        `/run/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`
-      );
+      // Fallback: navigate to run mode if repo is still missing
+      navigate(`/run/${owner && repoName ? `${owner}/${repoName}` : ""}`);
     }
   } else {
     /** get repository from github by the id in the url */
