@@ -1010,9 +1010,15 @@ const ShowProjects = ({
 };
 
 function LoginMode() {
-  const { isloggedIn, setIsLoggedIn, isAuthorized, authorizedUserOcto, setAuthorizedUserOcto } = useAuth();
+  const {
+    isloggedIn,
+    setIsLoggedIn,
+    isAuthorized,
+    authorizedUserOcto,
+    setAuthorizedUserOcto,
+  } = useAuth();
   const { exportPopUp, setExportPopUp } = useAppState();
-  
+
   const pageDict = { 0: null };
 
   const [noUserBrowsing, setNoUserBrowsing] = useState(false);
@@ -1078,7 +1084,7 @@ function LoginMode() {
             to={`/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`}
           >
             <button
-              className="closeButton"
+              className="longButton"
               onClick={() => {
                 setExportPopUp(false);
               }}
@@ -1090,7 +1096,7 @@ function LoginMode() {
         ) : null}
         {isAuthorized ? (
           <button
-            className="closeButton"
+            className="longButton"
             onClick={() => {
               logoutHandler();
             }}
@@ -1127,7 +1133,7 @@ function LoginMode() {
               <div className="menu-button"></div>
             </label>
             <button
-              className="closeButtonmobile"
+              className="longButton"
               onClick={() => {
                 logoutHandler();
               }}

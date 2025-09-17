@@ -116,7 +116,10 @@ export default class Connector {
         molecule.inputs.forEach((input) => {
           const attachmentPoint = input;
           //For each of their attachment points
-          if (attachmentPoint.wasConnectionMade(x, y, this.attachmentPoint1) && !attachmentMade) {
+          if (
+            attachmentPoint.wasConnectionMade(x, y, this.attachmentPoint1) &&
+            !attachmentMade
+          ) {
             /** Prevent it from connecting to itself  */
             if (
               this.attachmentPoint1.parentMolecule !==
@@ -125,15 +128,18 @@ export default class Connector {
               // If there are existing connections, remove them first
               if (attachmentPoint.connectors.length > 0) {
                 // Save undo state before replacing connection
-                GlobalVariables.saveUndoState("MODIFY", `Connection replacement: ${this.attachmentPoint1.parentMolecule.name} → ${attachmentPoint.parentMolecule.name}.${attachmentPoint.name}`);
-                
+                GlobalVariables.saveUndoState(
+                  "MODIFY",
+                  `Connection replacement: ${this.attachmentPoint1.parentMolecule.name} → ${attachmentPoint.parentMolecule.name}.${attachmentPoint.name}`
+                );
+
                 // Make a copy of the connectors array to avoid modification during iteration
                 const connectorsToRemove = [...attachmentPoint.connectors];
                 connectorsToRemove.forEach((existingConnector) => {
                   existingConnector.deleteSelf(true); // silent deletion to avoid value reset
                 });
               }
-              
+
               //Check to make sure we haven't already attached somewhere else
               attachmentMade = true;
               this.attachmentPoint2 = attachmentPoint;
@@ -168,8 +174,14 @@ export default class Connector {
                 if (input.type === "input") {
                   // Check if this input is available or can be replaced
                   if (input.connectors.length === 0) {
+                    console.log("Input has no existing connections", input);
                     // Available input - check compatibility
-                    if (AttachmentPoint.areTypesCompatible(this.attachmentPoint1, input)) {
+                    if (
+                      AttachmentPoint.areTypesCompatible(
+                        this.attachmentPoint1,
+                        input
+                      )
+                    ) {
                       attachmentMade = true;
                       this.attachmentPoint2 = input;
                       input.attach(this);
@@ -177,17 +189,43 @@ export default class Connector {
                       break; // Stop after finding the first compatible input
                     }
                   } else {
-                    // Input has existing connections - check if we can replace them
-                    if (AttachmentPoint.areTypesCompatible(this.attachmentPoint1, input)) {
+                    // Only allow replacement if there are no available geometry input APs
+                    const geometryInputs = atom.inputs.filter(
+                      (ap) => ap.valueType === "geometry"
+                    );
+                    const supportsMultiGeometryInputs =
+                      geometryInputs.length > 1;
+                    let hasAvailableGeometryInput = false;
+                    if (
+                      supportsMultiGeometryInputs &&
+                      input.valueType === "geometry"
+                    ) {
+                      hasAvailableGeometryInput = atom.inputs.some(
+                        (ap) =>
+                          ap.valueType === "geometry" &&
+                          ap.connectors.length === 0
+                      );
+                    }
+                    if (
+                      (!supportsMultiGeometryInputs ||
+                        !hasAvailableGeometryInput) &&
+                      AttachmentPoint.areTypesCompatible(
+                        this.attachmentPoint1,
+                        input
+                      )
+                    ) {
                       // Save undo state before replacing connection
-                      GlobalVariables.saveUndoState("MODIFY", `Connection replacement: ${this.attachmentPoint1.parentMolecule.name} → ${atom.name}.${input.name}`);
-                      
+                      GlobalVariables.saveUndoState(
+                        "MODIFY",
+                        `Connection replacement: ${this.attachmentPoint1.parentMolecule.name} → ${atom.name}.${input.name}`
+                      );
+
                       // Remove existing connections
                       const connectorsToRemove = [...input.connectors];
                       connectorsToRemove.forEach((existingConnector) => {
                         existingConnector.deleteSelf(true); // silent deletion
                       });
-                      
+
                       attachmentMade = true;
                       this.attachmentPoint2 = input;
                       input.attach(this);

@@ -465,13 +465,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
               >
                 <CaretDownIcon size={14} collapsed={contentCollapsed} />
               </button>
-              {/*<button
-                style={closeButtonStyle}
-                onClick={() => setHidden(true)}
-                title="Close panel"
-              >
-                <XIcon size={14} />
-              </button>*/}
             </div>
           </div>
           {/* Controls */}
