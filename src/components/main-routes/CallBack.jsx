@@ -1,27 +1,30 @@
 import React, { useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import GlobalVariables from "../../js/globalvariables.js";
 
-const Callback = ({
-  isAuthorized,
-  setIsAuthorized,
-  setIsLoggedIn,
-  setAuthorizedUserOcto,
-  setRedirectType,
-}) => {
+import { useAuth } from "../../contexts/AuthContext";
+
+const Callback = ({ setRedirectType }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const {
+    isAuthorized,
+    setIsAuthorized,
+    setIsLoggedIn,
+    authorizedUserOcto,
+    setAuthorizedUserOcto,
+  } = useAuth();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("code")) {
       setIsAuthorized(true);
     }
-    const serverEndpoint = window.origin.includes("abundance") || window.origin.includes("localhost")
-      ? import.meta.env.VITE_AUTHO_SERVER_ENDPOINT
-      : import.meta.env.VITE_AUTHO_SERVER_ENDPOINT_MOB;
+    const serverEndpoint =
+      window.origin.includes("abundance") || window.origin.includes("localhost")
+        ? import.meta.env.VITE_AUTHO_SERVER_ENDPOINT
+        : import.meta.env.VITE_AUTHO_SERVER_ENDPOINT_MOB;
     const serverUrl = import.meta.env.VITE_AUTHO_SERVER_URL;
 
     const callSecureApi = async () => {
@@ -58,20 +61,43 @@ const Callback = ({
     };
 
     // Call the function to fetch the access token
-    callSecureApi().then((authorizedUser) => {
+    callSecureApi().then((authorizedUserOcto) => {
       try {
         const stateParam = params.get("state");
         const state = stateParam ? JSON.parse(stateParam) : {};
-        console.log("state", state);
-        if (state.forking && state.currentRepo && authorizedUser) {
+        console.log(state);
+        if (state.forking && state.currentRepo && authorizedUserOcto) {
           navigate(`/run/${state.currentRepo}`);
           setRedirectType("fork");
-        } else if (state.liking && state.currentRepo && authorizedUser) {
+        } else if (state.liking && state.currentRepo && authorizedUserOcto) {
           navigate(`/run/${state.currentRepo}`);
           setRedirectType("like");
-        } else if (state.returnTo && authorizedUser) {
-          // Handle re-authentication return
-          navigate(state.returnTo);
+        } else if (state.returnTo && authorizedUserOcto) {
+          console.log(state);
+          // Try to fetch the repo and set it, then re-render
+          const owner = state.currentRepo.owner;
+          const repoName = state.currentRepo.repo;
+          console.log(owner, repoName);
+          authorizedUserOcto
+            .request("GET /repos/{owner}/{repo}", {
+              owner: owner,
+              repo: repoName,
+            })
+            .then((result) => {
+              console.log("Fetched repo:", result.data);
+              GlobalVariables.currentRepoName = result.data.name;
+              GlobalVariables.currentRepo = result.data;
+              navigate(state.returnTo);
+              // After setting, force a rerender by updating state (if needed)
+            })
+            .catch((err) => {
+              console.error(
+                "Failed to fetch repo from params in CreateMode:",
+                err
+              );
+              // If fetch fails, fallback to run mode
+              navigate(`/run/${owner}/${repoName}`);
+            });
         } else {
           navigate("/");
         }
