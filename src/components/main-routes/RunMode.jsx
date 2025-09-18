@@ -56,7 +56,7 @@ function useWindowSize() {
 
 function runMode() {
   // Get context values
-  const { isloggedIn, authorizedUserOcto, loginHandler } = useAuth();
+  const { isloggedIn, authorizedUserOcto, authRedirectHandler } = useAuth();
   const { activeAtom, redirectType, setRedirectType } = useAppState();
   const {
     mesh,
@@ -231,7 +231,7 @@ function runMode() {
             activeAtom,
             redirectType,
             setRedirectType,
-            loginHandler,
+            authRedirectHandler,
           }}
         />
       ) : null}

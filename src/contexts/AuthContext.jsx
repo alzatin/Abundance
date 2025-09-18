@@ -13,29 +13,37 @@ export function AuthProvider({ children }) {
   const [authorizedUserOcto, setAuthorizedUserOcto] = useState(null);
 
   /**
-   * Initiates re-authentication flow
-   * @param {string} currentProjectRep - current json representation of project for save
+   * Unified handler for login and re-authentication.
+   * @param {Object} options
+   *   - redirectType: "fork" | "like" | undefined
+   *   - currentProjectRep: string (optional, for re-auth)
+   *   - returnTo: string (optional, for re-auth)
    */
-  const initiateReAuthentication = (currentProjectRep) => {
-    console.log("Initiating re-authentication...");
-    const params = new URLSearchParams(window.location.search);
-    let scope = "public_repo";
-    if (params.has("private")) {
-      scope = "repo";
+  const authRedirectHandler = ({
+    redirectType,
+    currentProjectRep,
+    returnTo,
+  } = {}) => {
+    let forking = false;
+    let liking = false;
+    if (redirectType) {
+      if (redirectType === "fork") forking = true;
+      if (redirectType === "like") liking = true;
     }
-    // Save the current project representation to local storage for recovery after re-authentication
+
+    // Save project if provided (for re-auth)
     if (currentProjectRep) {
       localStorage.setItem("pendingProjectSave", currentProjectRep);
     }
+
+    const params = new URLSearchParams(window.location.search);
+    let scope = "public_repo";
+    if (params.has("private")) scope = "repo";
+
     const client_id =
       window.origin.includes("localhost") || window.origin.includes("abundance")
         ? import.meta.env.VITE_GH_OAUTH_CLIENT_ID
         : import.meta.env.VITE_GH_OAUTH_CLIENT_ID_MOB;
-
-    const repo = {
-      owner: GlobalVariables.currentUser,
-      repo: GlobalVariables.currentRepo.repoName,
-    };
 
     // Create a CSRF token and store it locally
     const csrfToken = window.crypto
@@ -43,65 +51,34 @@ export function AuthProvider({ children }) {
       .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
     localStorage.setItem("latestCSRFToken", csrfToken);
 
-    // Include current repo in the state parameter to return here
-    const state = JSON.stringify({
-      csrfToken: csrfToken,
-      currentRepo: repo,
-      returnTo: `/${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`,
-    });
-
-    // Redirect to GitHub for re-authentication
-    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
-      window.origin
-    }/callback&state=${encodeURIComponent(state)}&scope=${scope}`;
-    window.location.assign(link); // don't try to authenticate right now
-  };
-
-  const loginHandler = (redirectType) => {
-    let forking = false;
-    let liking = false;
-    if (redirectType) {
-      if (redirectType === "fork") {
-        forking = true;
-      }
-      if (redirectType === "like") {
-        liking = true;
-      }
-    }
-
-    const params = new URLSearchParams(location.search);
-    let scope = "public_repo";
-    if (params.has("private")) {
-      scope = "repo";
-    }
-
-    // the client id from github
-
-    const client_id =
-      window.origin.includes("localhost") || window.origin.includes("abundance")
-        ? import.meta.env.VITE_GH_OAUTH_CLIENT_ID
-        : import.meta.env.VITE_GH_OAUTH_CLIENT_ID_MOB;
-
-    // create a CSRF token and store it locally
-    const csrfToken = window.crypto
-      .getRandomValues(new Uint8Array(16))
-      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
-    localStorage.setItem("latestCSRFToken", csrfToken);
-    let repo = null;
+    // Repo for state param: use string for login, object for reauth
+    let repoState = null;
     if (GlobalVariables.currentRepo) {
-      repo =
-        GlobalVariables.currentRepo.owner +
-        "/" +
-        GlobalVariables.currentRepo.repoName;
+      if (currentProjectRep || returnTo) {
+        // Re-auth: use object
+        repoState = {
+          owner: GlobalVariables.currentRepo.owner,
+          repo: GlobalVariables.currentRepo.repoName,
+        };
+      } else {
+        // Login: use string
+        repoState =
+          GlobalVariables.currentRepo.owner +
+          "/" +
+          GlobalVariables.currentRepo.repoName;
+      }
     }
-    // include currentRepo in the state parameter
-    const state = JSON.stringify({
+
+    // Build state param
+    const stateObj = {
       csrfToken: csrfToken,
-      currentRepo: repo,
-      forking: forking,
-      liking: liking,
-    });
-    // redirect the user to github
+      currentRepo: repoState,
+    };
+    if (forking) stateObj.forking = true;
+    if (liking) stateObj.liking = true;
+    if (returnTo) stateObj.returnTo = returnTo;
+
+    const state = JSON.stringify(stateObj);
     const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
       window.origin
     }/callback&state=${encodeURIComponent(state)}&scope=${scope}`;
@@ -115,8 +92,7 @@ export function AuthProvider({ children }) {
     setIsAuthorized,
     authorizedUserOcto,
     setAuthorizedUserOcto,
-    initiateReAuthentication,
-    loginHandler,
+    authRedirectHandler,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -37,7 +37,7 @@ import { Global } from "@emotion/react";
  */
 function CreateMode() {
   // Get context values
-  const { authorizedUserOcto, initiateReAuthentication } = useAuth();
+  const { authorizedUserOcto, authRedirectHandler } = useAuth();
   const {
     activeAtom,
     setActiveAtom,
@@ -297,7 +297,7 @@ function CreateMode() {
     );
     setTimeout(() => {
       setErrorNotification(null);
-      initiateReAuthentication(currentProjectRep);
+      authRedirectHandler("reauth", currentProjectRep);
     }, 2000);
   };
 

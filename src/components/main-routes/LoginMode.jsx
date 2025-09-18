@@ -15,9 +15,7 @@ import { useAuth, useAppState } from "../../contexts/index.js";
  *
  */
 const InitialLog = ({ setNoUserBrowsing }) => {
-  const location = useLocation();
-
-  const { loginHandler } = useAuth();
+  const { authRedirectHandler } = useAuth();
 
   return (
     <div className="login-page">
@@ -51,7 +49,7 @@ const InitialLog = ({ setNoUserBrowsing }) => {
               id="loginButton"
               style={{ height: "40px" }}
               className="submit-btn"
-              onClick={() => loginHandler()}
+              onClick={() => authRedirectHandler()}
             >
               Login With GitHub
             </button>

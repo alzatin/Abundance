@@ -134,7 +134,7 @@ function RunNavigation({
   activeAtom,
   redirectType,
   setRedirectType,
-  loginHandler,
+  authRedirectHandler,
 }) {
   let [shareDialog, setShareDialog] = useState(false);
   let starred = false;
@@ -473,7 +473,7 @@ function RunNavigation({
           onClick={() => {
             authorizedUserOcto
               ? forkProject(authorizedUserOcto)
-              : loginHandler("fork");
+              : authRedirectHandler("fork");
           }}
         >
           {forkSvg}
@@ -487,7 +487,7 @@ function RunNavigation({
               ? likeProject(authorizedUserOcto)
               : authorizedUserOcto && starred
               ? unlikeProject(authorizedUserOcto)
-              : loginHandler("like");
+              : authRedirectHandler("like");
           }}
         >
           {starSvg}

@@ -61,7 +61,7 @@ function AppContent() {
     isAuthorized,
     setIsAuthorized,
     setAuthorizedUserOcto,
-    initiateReAuthentication,
+    authRedirectHandler,
   } = useAuth();
 
   const { activeAtom, setActiveAtom, shortCutsOn, setRedirectType } =
@@ -262,7 +262,7 @@ function AppContent() {
         ) {
           alert("Session expired or bad credentials. Please re-authenticate.");
           // Redirect to /callback or trigger your OAuth flow here
-          initiateReAuthentication();
+          authRedirectHandler("reauth");
           return;
         }
         alert("Can't load/find project " + e);
