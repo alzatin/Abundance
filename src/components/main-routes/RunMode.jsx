@@ -125,10 +125,6 @@ function runMode() {
               GlobalVariables.currentMolecule =
                 GlobalVariables.topLevelMolecule;
               loadProject(GlobalVariables.currentAWSnode);
-              GlobalVariables.writeToDisplay(
-                GlobalVariables.currentAWSnode.topMoleculeID,
-                true
-              );
             }
           }
         })

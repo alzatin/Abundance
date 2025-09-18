@@ -505,13 +505,13 @@ function CreateMode() {
         /*aws dynamo update-item lambda, also updates dateModified on aws side*/
         const apiUpdateUrl =
           "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
-        let topicString = GlobalVariables.currentRepo.topics.join(" ");
+        let topicString = GlobalVariables.currentAWSnode.topics.join(" ");
         let searchField = (
           repo +
           " " +
           owner +
           " " +
-          GlobalVariables.currentRepo.description +
+          GlobalVariables.currentAWSnode.description +
           " " +
           topicString
         ).toLowerCase();
@@ -1058,6 +1058,7 @@ function CreateMode() {
       );
     } else {
       // Fallback: navigate to run mode if repo is still missing
+      console.log("No repository found, redirecting to run mode");
       navigate(`/run/${owner && repoName ? `${owner}/${repoName}` : ""}`);
     }
   } else {

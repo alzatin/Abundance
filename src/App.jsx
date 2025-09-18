@@ -138,6 +138,12 @@ function AppContent() {
 
   useEffect(() => {
     GlobalVariables.writeToDisplay = (id, resetView = false) => {
+      console.log(
+        "writeToDisplay called with id:",
+        id,
+        "resetView:",
+        resetView
+      );
       setOutdatedMesh(true);
       if (resetView) {
         cad
@@ -261,8 +267,15 @@ function AppContent() {
           // For older file versions, try to deserialize directly for now
           GlobalVariables.topLevelMolecule.deserialize(rawFile);
         }
-        setActiveAtom(GlobalVariables.currentMolecule);
+        GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
+      })
+      .then(() => {
+        console.log("Setting active atom to current molecule");
         GlobalVariables.currentMolecule.selected = true;
+        setActiveAtom(GlobalVariables.currentMolecule);
+        GlobalVariables.writeToDisplay(
+          GlobalVariables.currentMolecule.uniqueID
+        );
       })
       .catch((e) => {
         // If error is about bad credentials, trigger re-authentication
