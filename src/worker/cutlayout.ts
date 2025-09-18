@@ -1,17 +1,53 @@
-import { PolygonPacker, PlacementWrapper } from "polygon-packer";
-import { Plane, Solid, Wire } from "replicad";
-import * as util from "./util.js";
-import { proxy } from "comlink"; // TODO: this should ideally be moved to worker somehow
+import { proxy } from "comlink";
+import { PlacementWrapper, PolygonPacker } from "polygon-packer";
+import type { DisplayCallback } from "polygon-packer/src/types";
+import { Face, Shape3D } from "replicad";
+import { ReplicadObject } from "./geometryProvider";
+import type { AbundanceLeaf, AbundanceObject } from "./util";
+import * as util from "./util";
 
-function layout(
-  assembly,
-  progressCallback,
-  warningCallback,
-  placementsCallback,
-  layoutConfig,
-  previousPlacements = null
-) {
-  var [rotatedAssembly, shapesForLayout] = rotateForLayout(
+type SimpleXY = { x: number; y: number };
+
+type LayoutConfig = {
+  width: number;
+  height: number;
+  partPadding: number;
+  units?: string;
+};
+
+type Placement = {
+  id: number | string;
+  rotate: number;
+  translate: SimpleXY;
+};
+
+type ShapeForLayout = {
+  id: number | string;
+  shape: any; // Replace 'any' with the actual face type if available
+};
+
+type OrientationCandidate = {
+  face: Face;
+  offset: number;
+  geom: ReplicadObject;
+  faceIndex: number;
+  thickness: number;
+};
+
+const rotateMemoCache = new Map<
+  string,
+  [AbundanceObject, ShapeForLayout[], string]
+>();
+
+async function layout(
+  assembly: AbundanceObject,
+  progressCallback: (progress: number, cancelCallback: () => void) => void,
+  warningCallback: (msg: string) => void,
+  placementsCallback: (placements: Placement[][]) => void,
+  layoutConfig: LayoutConfig,
+  previousPlacements: Placement[][] | undefined = undefined
+): Promise<[AbundanceObject, Placement[][]]> {
+  var [rotatedAssembly, shapesForLayout] = await rotateForLayout(
     assembly,
     layoutConfig,
     warningCallback
@@ -24,9 +60,9 @@ function layout(
     layoutConfig,
     previousPlacements
   );
-  return positionsPromise.then((positions) => {
+  return positionsPromise.then(async (positions) => {
     //This does the actual layout of the parts.
-    const layedOutAssembly = applyLayout(
+    const layedOutAssembly = await applyLayout(
       rotatedAssembly,
       positions,
       layoutConfig
@@ -36,7 +72,7 @@ function layout(
       // This should not happen anymore since we provide default placements,
       // but keep this as a safety check
       console.warn("Unexpected: received empty positions array");
-      return [rotatedAssembly, [], rotatedAssembly];
+      return [rotatedAssembly, []];
     } else {
       let unplacedParts = shapesForLayout.length - positions.flat().length;
       if (unplacedParts > 0) {
@@ -49,7 +85,7 @@ function layout(
       }
     }
 
-    return [layedOutAssembly, positions, rotatedAssembly];
+    return [layedOutAssembly, positions];
   });
 }
 
@@ -57,27 +93,33 @@ function layout(
  * Lay the input geometry flat and apply the transformations to display it
  * Returns both the result and the rotatedAssembly for caching purposes
  */
-function displayLayout(assembly, positions, warningCallback, layoutConfig) {
-  const [rotatedAssembly, shapesForLayout] = rotateForLayout(
+async function displayLayout(
+  assembly: AbundanceObject,
+  positions: Placement[][],
+  warningCallback: (msg: string) => void,
+  layoutConfig: LayoutConfig
+): Promise<AbundanceObject> {
+  const [rotatedAssembly, shapesForLayout] = await rotateForLayout(
     assembly,
     layoutConfig,
     warningCallback
   );
-
-  const result = applyLayout(rotatedAssembly, positions, layoutConfig);
-  
-  return [result, rotatedAssembly];
+  const result = await applyLayout(rotatedAssembly, positions, layoutConfig);
+  return result;
 }
 
 /**
  * Apply the transformations to display already-rotated geometry.
- * This function is used when we already have a pre-rotated assembly 
+ * This function is used when we already have a pre-rotated assembly
  * to avoid calling rotateForLayout again for performance.
  */
-function displayLayoutWithRotatedAssembly(rotatedAssembly, positions, warningCallback, layoutConfig) {
-  const result = applyLayout(rotatedAssembly, positions, layoutConfig);
-  
-  return result;
+async function displayLayoutWithRotatedAssembly(
+  rotatedAssembly: AbundanceObject,
+  positions: Placement[][],
+  warningCallback: (msg: string) => void,
+  layoutConfig: LayoutConfig
+): Promise<AbundanceObject> {
+  return applyLayout(rotatedAssembly, positions, layoutConfig);
 }
 
 /**
@@ -92,24 +134,34 @@ function displayLayoutWithRotatedAssembly(rotatedAssembly, positions, warningCal
  *    c) face must be within the (inferred) thickness of the material
  *    d) face should have minimal number of interior voids and have the largest bounding box
  */
-function rotateForLayout(assembly, layoutConfig, warningCallback) {
+async function rotateForLayout(
+  assembly: AbundanceObject,
+  layoutConfig: LayoutConfig,
+  warningCallback: (msg: string) => void
+): Promise<[AbundanceObject, ShapeForLayout[]]> {
+  const cacheID = JSON.stringify([assembly, layoutConfig]);
+  const cached = rotateMemoCache.get(cacheID);
+  if (cached) {
+    let [rotatedAssembly, shapesForLayout, warning] = cached;
+    if (warning) {
+      warningCallback(warning);
+    }
+    console.log("rotateForLayout cache hit for: " + cacheID);
+    return Promise.resolve([rotatedAssembly, shapesForLayout]);
+  }
+  console.log("rotateForLayout cache miss for: " + cacheID);
+  // Cache miss
+  rotateMemoCache.clear();
+  // Compute rotated positions for this layout.
   var THICKNESS_TOLLERANCE = 0.001;
 
-  function equalThickness(a, b) {
+  function equalThickness(a: number, b: number) {
     return Math.abs(a - b) < THICKNESS_TOLLERANCE;
   }
 
-  // Get geometry and remove any empty leafs.
-  let geometryToLayout = util.actOnLeafs(assembly, (leaf) => {
-    if (leaf.geometry.length > 0 && leaf.geometry[0].faces.length > 0) {
-      return leaf;
-    } else {
-      return undefined;
-    }
-  });
-
   let localId = 0;
-  let shapesForLayout = [];
+  let shapesForLayout: ShapeForLayout[] = [];
+  const layoutWarnList: string[] = [];
 
   // Algo overview:
   // collect all prospective orientations for all parts
@@ -118,49 +170,59 @@ function rotateForLayout(assembly, layoutConfig, warningCallback) {
   //    estimated material thickness, or just take thinnest orientation.
 
   // get candidates as {leaf_id: "abc", [candidate 1, candidate 2 etc]}
-  const all_candidates = {};
-  const intermediate = util.actOnLeafs(geometryToLayout, (leaf) => {
-    // For each face, consider it as the underside of the shape on the CNC bed.
-    // In order to be considered, a face must be...
-    //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
-    //  2) there must be no parts of the shape which protrude "below" this face
-    const candidates = [];
-    let faceIndex = 0;
-    leaf.geometry[0].faces.forEach((face) => {
-      let prospectiveGoem = moveFaceToCuttingPlane(leaf.geometry[0], face);
-      let offset = 0;
-      if (
-        prospectiveGoem.boundingBox.bounds[0][2] <
-        -1 * THICKNESS_TOLLERANCE
-      ) {
-        // this face causes protrusions below the XY plane, move the prospective geometry so that
-        // all points are above the XY plane. Record this movement, since it's a red flag for
-        // this candidate.
-        offset = -1 * prospectiveGoem.boundingBox.bounds[0][2];
-        prospectiveGoem = prospectiveGoem.translate(0, 0, offset);
+  const all_candidates: { [leaf_id: string]: OrientationCandidate[] } = {};
+  const intermediate = await util.actOnLeafs(
+    assembly,
+    async (leaf: AbundanceLeaf) => {
+      let geom = await util.geometryProvider!.get(leaf.geometry);
+      if (!("faces" in geom)) {
+        // geom is a 2D object.
+        return leaf;
+        // TODO: add a warning here
+      } else if (geom.faces.length == 0) {
+        // unexpectedly no faces on this geometry. TODO: add a warning here.
+        return leaf;
       }
-      candidates.push({
-        face: face,
-        offset: offset,
-        geom: prospectiveGoem,
-        faceIndex: faceIndex,
-        thickness: prospectiveGoem.boundingBox.depth,
-      });
-      faceIndex++;
-    });
+      geom = geom as Shape3D; // Safe to cast b/c we checked for faces above.
 
-    all_candidates[localId] = candidates;
-    const newLeaf = {
-      geometry: leaf.geometry,
-      id: localId,
-      tags: leaf.tags,
-      color: leaf.color,
-      plane: leaf.plane,
-      bom: leaf.bom,
-    };
-    localId++;
-    return newLeaf;
-  });
+      // For each face, consider it as the underside of the shape on the CNC bed.
+      // In order to be considered, a face must be...
+      //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
+      //  2) there must be no parts of the shape which protrude "below" this face
+      const candidates: OrientationCandidate[] = [];
+      let faceIndex = 0;
+      geom.faces.forEach((face) => {
+        let prospectiveGoem = moveFaceToCuttingPlane(geom, face);
+        let offset = 0;
+        if (
+          prospectiveGoem.boundingBox.bounds[0][2] <
+          -1 * THICKNESS_TOLLERANCE
+        ) {
+          // this face causes protrusions below the XY plane, move the prospective geometry so that
+          // all points are above the XY plane. Record this movement, since it's a red flag for
+          // this candidate.
+          offset = -1 * prospectiveGoem.boundingBox.bounds[0][2];
+          prospectiveGoem = prospectiveGoem.translate(0, 0, offset);
+        }
+        candidates.push({
+          face: face,
+          offset: offset,
+          geom: prospectiveGoem,
+          faceIndex: faceIndex,
+          thickness: prospectiveGoem.boundingBox.depth,
+        });
+        faceIndex++;
+      });
+
+      all_candidates[localId] = candidates;
+      const newLeaf = {
+        ...leaf,
+        id: localId,
+      };
+      localId++;
+      return newLeaf;
+    }
+  );
 
   // Heuristic here is... for each part get it's minimum thickness. If the largest of these is
   // <= 1" then it's credibly the size of stock being used, so set that as our material
@@ -180,15 +242,15 @@ function rotateForLayout(assembly, layoutConfig, warningCallback) {
     }
   }
 
-  const layoutWarnList = [];
-
-  const rotatedAssembly = util.actOnLeafs(intermediate, (leaf) => {
-    let candidates = all_candidates[leaf.id];
+  const rotatedAssembly = await util.actOnLeafs(intermediate, async (leaf) => {
+    // @ts-ignore - we just added ID but it's not officially part of the type signature
+    const leafID: string = leaf.id;
+    let candidates = all_candidates[leafID];
     if (candidates == undefined || candidates.length == 0) {
       // This should be impossible.
-      throw new Error("Failed to filter unplacable part. id: " + leaf.id);
+      throw new Error("Failed to filter unplacable part. id: " + leafID);
     }
-    let selected;
+    let selected: OrientationCandidate;
     if (candidates.length == 1) {
       selected = candidates[0];
     } else {
@@ -259,7 +321,7 @@ function rotateForLayout(assembly, layoutConfig, warningCallback) {
       selected.face.geomType != "PLANE" ||
       selected.offset > THICKNESS_TOLLERANCE
     ) {
-      layoutWarnList.push(leaf.id);
+      layoutWarnList.push(leafID);
     }
     //move so center of bounding box is at (0, 0, 0)
     const boundingBoxCenter = selected.geom.boundingBox.center;
@@ -268,85 +330,96 @@ function rotateForLayout(assembly, layoutConfig, warningCallback) {
       .translate(-1 * boundingBoxCenter[0], -1 * boundingBoxCenter[1], 0);
 
     let newLeaf = {
-      geometry: [newGeom],
-      id: leaf.id,
+      ...leaf,
+      geometry: await util.geometryProvider!.addSingularToCache(newGeom),
+      id: leafID,
       referencePoint: selected.face.center,
-      tags: leaf.tags,
-      color: leaf.color,
-      plane: leaf.plane,
-      bom: leaf.bom,
     };
     // Retrieve face from the re-positioned shape so that we get the shape of the face after
     // it's been moved to the xy cutting plane. Otherwise we can get weird skewed projections
     // of the face shape.
     shapesForLayout.push({
-      id: leaf.id,
-      shape: newLeaf.geometry[0].faces[selected.faceIndex],
+      id: leafID,
+      //@ts-ignore - TODO: make a 3DReplicadObject type so we can access faces
+      shape: newGeom.faces[selected.faceIndex],
     });
 
     return newLeaf;
   });
 
   // If we have a warning, pass it to the callback
+  let warningString = "";
   if (layoutWarnList.length > 0 && warningCallback) {
-    warningCallback(
-      `Part(s) ${layoutWarnList.join(
-        ", "
-      )} have no orientation suitable for layout.`
-    );
+    warningString = `Part(s) ${layoutWarnList.join(
+      ", "
+    )} have no orientation suitable for layout.`;
+    warningCallback(warningString);
   }
 
+  rotateMemoCache.set(cacheID, [
+    rotatedAssembly,
+    shapesForLayout,
+    warningString,
+  ]);
   return [rotatedAssembly, shapesForLayout];
 }
 
 /**
  * Apply the transformations to the geometry to apply the layout
  */
-function applyLayout(rotatedAssembly, positions, layoutConfig) {
-  const result = util.actOnLeafs(rotatedAssembly, (leaf) => {
-    let transform, index;
-    for (var i = 0; i < positions.length; i++) {
-      let candidates = positions[i].filter(
-        (transform) => transform.id == leaf.id
-      );
-      if (candidates.length == 1) {
-        transform = candidates[0];
-        index = i;
-        break;
-      } else if (candidates.length > 1) {
-        console.warn("Found more than one transformation for same id");
+async function applyLayout(
+  rotatedAssembly: AbundanceObject,
+  positions: Placement[][],
+  layoutConfig: LayoutConfig
+): Promise<AbundanceObject> {
+  const result = util.actOnLeafs(
+    rotatedAssembly,
+    async (leaf: AbundanceLeaf) => {
+      let transform, index;
+      // @ts-ignore TODO: some fancy subtyping to define an id-ed AbundanceLeaf variant
+      const leafID = leaf.id;
+      for (var i = 0; i < positions.length; i++) {
+        let candidates = positions[i].filter(
+          (transform) => transform.id == leafID
+        );
+        if (candidates.length == 1) {
+          transform = candidates[0];
+          index = i;
+          break;
+        } else if (candidates.length > 1) {
+          console.warn("Found more than one transformation for same id");
+        }
       }
-    }
-    if (transform == undefined) {
-      console.log("didn't find transform for id: " + leaf.id);
-      return undefined;
-    }
-    // apply rotation first. All rotations are around (0, 0, 0)
-    // Additionally, shift by sheet-index * sheet height so that multiple
-    // sheet layouts are spaced out from one another.
-    let newGeom = leaf.geometry[0]
-      .clone()
-      .rotate(
-        transform.rotate,
-        new util.replicad.Vector([0, 0, 0]),
-        new util.replicad.Vector([0, 0, 1])
-      )
-      .translate(
+      if (transform == undefined) {
+        console.log("didn't find transform for id: " + leafID);
+        return leaf;
+      }
+      // apply rotation first. All rotations are around (0, 0, 0)
+      // Additionally, shift by sheet-index * sheet height so that multiple
+      // sheet layouts are spaced out from one another.
+      // use cache for these operations since rotation+movement pairs often
+      // recur between layouts.
+      let newGeom = await util.geometryProvider!.rotate(
+        leaf.geometry,
+        0,
+        0,
+        transform.rotate
+      );
+      newGeom = await util.geometryProvider!.move(
+        newGeom,
         transform.translate.x,
         transform.translate.y + i * layoutConfig.height,
         0
       );
 
-    return {
-      geometry: [newGeom],
-      tags: leaf.tags,
-      color: leaf.color,
-      plane: leaf.plane,
-      bom: leaf.bom,
-      id: leaf.id,
-    };
-  });
-  
+      return {
+        ...leaf,
+        geometry: newGeom,
+        referencePoint: undefined,
+      };
+    }
+  );
+
   return result;
 }
 
@@ -356,7 +429,7 @@ function applyLayout(rotatedAssembly, positions, layoutConfig) {
  * @returns {Float64Array} Float64Array containing points as [x1, y1, x2, y2, ...] with the polygon closed
  * @throws {Error} Throws an error if any points contain NaN values
  */
-function asFloat64(shape) {
+function asFloat64(shape: SimpleXY[]): Float64Array {
   const points = new Float64Array(shape.length * 2 + 2);
   let i = 0;
   shape.forEach((point) => {
@@ -382,7 +455,9 @@ function asFloat64(shape) {
  * @param {Array} shapesForLayout - Array of shapes to create default placements for
  * @returns {Array} Default placements with all parts at origin
  */
-function createDefaultPlacements(shapesForLayout) {
+function createDefaultPlacements(
+  shapesForLayout: ShapeForLayout[]
+): Placement[][] {
   const defaultSheet = shapesForLayout.map((shape) => ({
     id: shape.id,
     rotate: 0,
@@ -395,13 +470,12 @@ function createDefaultPlacements(shapesForLayout) {
  * Use the packing engine, this is potentially time consuming step.
  */
 function computePositions(
-  shapesForLayout,
-  progressCallback,
-  placementsCallback,
-  layoutConfig,
-  previousPlacements = null
-) {
-
+  shapesForLayout: ShapeForLayout[],
+  progressCallback: (progress: number, cancel: () => void) => void,
+  placementsCallback: (placements: Placement[][]) => void,
+  layoutConfig: LayoutConfig,
+  previousPlacements: Placement[][] | undefined = undefined
+): Promise<Placement[][]> {
   const tolerance = 0.2;
   const runtimeMs = 120000;
   const config = {
@@ -437,7 +511,7 @@ function computePositions(
   const packer = new PolygonPacker();
 
   let progressCallbackCounter = 0;
-  const callbackFunction = (num) => {
+  const callbackFunction = (num: any) => {
     // Forward to the UI thread along with a cancelation handle.
     // Expect a call every 0.1 seconds for this method.
     // Unclear what the num argument is supposed to represent
@@ -445,7 +519,7 @@ function computePositions(
     progressCallback(
       0.1 + 0.9 * ((progressCallbackCounter * 100) / runtimeMs),
       proxy(() => {
-        packer.stop(false);
+        packer.stop(true);
       })
     );
   };
@@ -453,8 +527,8 @@ function computePositions(
   const result = new Promise((resolve, reject) => {
     // See https://github.com/yuriilychak/SVGnest/blob/6ed19cf44cb458b11d7ae4abf1868a513c53420a/packages/polygon-packer/src/types.ts#L31
     let callbackCounter = 0;
-    let bestPlacement = null;
-    const displayCallback = (
+    let bestPlacement: Placement[][] | undefined = undefined;
+    const displayCallback: DisplayCallback = (
       placementsData,
       placementPercentage,
       placedParts,
@@ -485,12 +559,14 @@ function computePositions(
 
       setTimeout(() => {
         console.log("Timeout reached. Stopping packer.");
-        if (bestPlacement != null) {
+        if (bestPlacement != undefined) {
           packer.stop(true);
-          resolve(bestPlacement);
+          resolve(bestPlacement as Placement[][]);
         } else {
           packer.stop(true);
-          console.log("No placement found within time limit, using default placement at origin.");
+          console.log(
+            "No placement found within time limit, using default placement at origin."
+          );
           const defaultPlacements = createDefaultPlacements(shapesForLayout);
           resolve(defaultPlacements);
         }
@@ -503,7 +579,8 @@ function computePositions(
       resolve(defaultPlacements);
     }
   });
-  return result;
+  // TODO: I'm not sure why this cast is required.
+  return result as Promise<Placement[][]>;
 }
 
 /**
@@ -514,7 +591,11 @@ function computePositions(
  *  Each transform follows the structure: {id: "part_id", rotate: degrees, translate: {x: x, y: y}}
  */
 
-function translatePlacements(placement, placedParts, partCount) {
+function translatePlacements(
+  placement: any,
+  placedParts: number,
+  partCount: number
+): Placement[][] {
   const placements = new PlacementWrapper(
     placement.placementsData,
     placement.angleSplit
@@ -553,13 +634,18 @@ function translatePlacements(placement, placedParts, partCount) {
  * @returns {Array} Array of {x, y} points in proper winding order
  * @throws {Error} Throws an error if geometry has inconsistent edge continuations
  */
-function preparePoints(mesh, tolerance) {
+function preparePoints(mesh: any, tolerance: number): SimpleXY[] {
   // Unfortunately the "edges" of this mesh aren't always in sequential order. Here we re-sort them so we can
   // provide them in a winding order, ie, starting at one point and winding around the perimeter of the shape.
 
   // create structure for lookup of line segments by start point or end point
-  let edgeStarts = [];
-  mesh.edgeGroups.forEach((edge) => {
+  let edgeStarts: {
+    startPoint: SimpleXY;
+    start: number;
+    len: number;
+    edgeId: number;
+  }[] = [];
+  mesh.edgeGroups.forEach((edge: any) => {
     edgeStarts.push({
       startPoint: {
         x: mesh.lines[edge.start * 3],
@@ -578,13 +664,13 @@ function preparePoints(mesh, tolerance) {
     });
   });
 
-  const almostEqual = (p1, p2, t = tolerance) => {
+  const almostEqual = (p1: SimpleXY, p2: SimpleXY, t = tolerance) => {
     const x = Math.abs(p1.x - p2.x) < t;
     const y = Math.abs(p1.y - p2.y) < t;
     return x && y;
   };
 
-  const result = [];
+  const result: SimpleXY[] = [];
   let currentEdge = edgeStarts[0];
   while (edgeStarts.length > 0) {
     // add currentEdge to result. Remember, it could be reverse direction if we matched
@@ -656,7 +742,7 @@ function preparePoints(mesh, tolerance) {
  * @param {Object} face - The face to align with the cutting plane
  * @returns {Object} The transformed geometry with the face aligned to the XY cutting plane
  */
-function moveFaceToCuttingPlane(geom, face) {
+function moveFaceToCuttingPlane(geom: Shape3D, face: Face): Shape3D {
   // There's a broken edge case in the clipper lib which gets triggered if one of the perimeter lines is
   // co-incident with the X or Y axis. Here use the center of the face to ensure the origin isn't aligned with
   // any perimeter edge of this face.
@@ -707,8 +793,17 @@ function moveFaceToCuttingPlane(geom, face) {
  * @param {Object} bounds - The bounds object containing uMin, uMax, vMin, vMax properties
  * @returns {number} The approximate area calculated from the bounds
  */
-function areaApprox(bounds) {
+function areaApprox(bounds: {
+  uMin: number;
+  uMax: number;
+  vMin: number;
+  vMax: number;
+}): number {
   return (bounds.uMax - bounds.uMin) * (bounds.vMax - bounds.vMin);
 }
 
-export { layout, displayLayout, displayLayoutWithRotatedAssembly, createDefaultPlacements };
+export {
+  createDefaultPlacements, displayLayout,
+  displayLayoutWithRotatedAssembly, layout, LayoutConfig,
+  Placement
+};
