@@ -297,7 +297,11 @@ function CreateMode() {
     );
     setTimeout(() => {
       setErrorNotification(null);
-      authRedirectHandler({ redirectType: "reauth", currentProjectRep });
+      authRedirectHandler({
+        redirectType: "reauth",
+        currentProjectRep,
+        returnTo: `/${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`,
+      });
     }, 2000);
   };
 
