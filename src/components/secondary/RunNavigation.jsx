@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import ShareDialog from "./ShareDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import GlobalVariables from "../../js/globalvariables.js";
+import { re } from "mathjs";
 
 //navigation svg icons - turn into key pairs later
 let shareSvg = (
@@ -134,6 +135,7 @@ function RunNavigation({
   activeAtom,
   redirectType,
   setRedirectType,
+  authRedirectHandler,
 }) {
   let [shareDialog, setShareDialog] = useState(false);
   let starred = false;
@@ -448,43 +450,6 @@ function RunNavigation({
     }
   };
 
-  const loginHandler = (redirect) => {
-    let forking = false;
-    let liking = false;
-    if (redirect === "fork") {
-      forking = true;
-    }
-    if (redirect === "like") {
-      liking = true;
-    }
-
-    // the client id from github
-    const client_id = import.meta.env.VITE_GH_OAUTH_CLIENT_ID;
-
-    // create a CSRF token and store it locally
-    const csrfToken = window.crypto
-      .getRandomValues(new Uint8Array(16))
-      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
-    localStorage.setItem("latestCSRFToken", csrfToken);
-    const repo =
-      GlobalVariables.currentRepo.owner +
-      "/" +
-      GlobalVariables.currentRepo.repoName;
-    // include currentRepo in the state parameter
-    const state = JSON.stringify({
-      csrfToken: csrfToken,
-      currentRepo: repo,
-      forking: forking,
-      liking: liking,
-    });
-
-    // redirect the user to github
-    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
-      import.meta.env.VITE_REDIRECT_URI
-    }callback&state=${encodeURIComponent(state)}`;
-    window.location.assign(link);
-  };
-
   return (
     <>
       {shareDialog ? (
@@ -509,7 +474,7 @@ function RunNavigation({
           onClick={() => {
             authorizedUserOcto
               ? forkProject(authorizedUserOcto)
-              : loginHandler("fork");
+              : authRedirectHandler({ redirectType: "fork" });
           }}
         >
           {forkSvg}
@@ -523,7 +488,7 @@ function RunNavigation({
               ? likeProject(authorizedUserOcto)
               : authorizedUserOcto && starred
               ? unlikeProject(authorizedUserOcto)
-              : loginHandler("like");
+              : authRedirectHandler({ redirectType: "like" });
           }}
         >
           {starSvg}

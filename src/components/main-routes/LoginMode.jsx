@@ -15,37 +15,7 @@ import { useAuth, useAppState } from "../../contexts/index.js";
  *
  */
 const InitialLog = ({ setNoUserBrowsing }) => {
-  const location = useLocation();
-
-  const loginHandler = () => {
-    const params = new URLSearchParams(location.search);
-    let scope = "public_repo";
-    if (params.has("private")) {
-      scope = "repo";
-    }
-
-    // the client id from github
-
-    const client_id =
-      window.origin.includes("localhost") || window.origin.includes("abundance")
-        ? import.meta.env.VITE_GH_OAUTH_CLIENT_ID
-        : import.meta.env.VITE_GH_OAUTH_CLIENT_ID_MOB;
-
-    // create a CSRF token and store it locally
-    const csrfToken = window.crypto
-      .getRandomValues(new Uint8Array(16))
-      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
-    localStorage.setItem("latestCSRFToken", csrfToken);
-
-    // include currentRepo in the state parameter
-    const state = JSON.stringify({
-      csrfToken: csrfToken,
-      forking: false,
-    });
-    // redirect the user to github
-    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${window.origin}/callback&state=${state}&scope=${scope}`;
-    window.location.assign(link);
-  };
+  const { authRedirectHandler } = useAuth();
 
   return (
     <div className="login-page">
@@ -79,7 +49,7 @@ const InitialLog = ({ setNoUserBrowsing }) => {
               id="loginButton"
               style={{ height: "40px" }}
               className="submit-btn"
-              onClick={() => loginHandler()}
+              onClick={() => authRedirectHandler()}
             >
               Login With GitHub
             </button>

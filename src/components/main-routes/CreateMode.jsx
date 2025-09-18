@@ -37,7 +37,7 @@ import { Global } from "@emotion/react";
  */
 function CreateMode() {
   // Get context values
-  const { authorizedUserOcto } = useAuth();
+  const { authorizedUserOcto, authRedirectHandler } = useAuth();
   const {
     activeAtom,
     setActiveAtom,
@@ -297,52 +297,8 @@ function CreateMode() {
     );
     setTimeout(() => {
       setErrorNotification(null);
-      initiateReAuthentication(currentProjectRep);
+      authRedirectHandler({ redirectType: "reauth", currentProjectRep });
     }, 2000);
-  };
-
-  /**
-   * Initiates re-authentication flow
-   * @param {string} currentProjectRep - current json representation of project for save
-   */
-  const initiateReAuthentication = (currentProjectRep) => {
-    const params = new URLSearchParams(window.location.search);
-    let scope = "public_repo";
-    if (params.has("private")) {
-      scope = "repo";
-    }
-    // Save the current project representation to local storage for recovery after re-authentication
-    if (currentProjectRep) {
-      localStorage.setItem("pendingProjectSave", currentProjectRep);
-    }
-    const client_id =
-      window.origin.includes("localhost") || window.origin.includes("abundance")
-        ? import.meta.env.VITE_GH_OAUTH_CLIENT_ID
-        : import.meta.env.VITE_GH_OAUTH_CLIENT_ID_MOB;
-
-    const repo = {
-      owner: GlobalVariables.currentUser,
-      repo: GlobalVariables.currentRepo.repoName,
-    };
-
-    // Create a CSRF token and store it locally
-    const csrfToken = window.crypto
-      .getRandomValues(new Uint8Array(16))
-      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
-    localStorage.setItem("latestCSRFToken", csrfToken);
-
-    // Include current repo in the state parameter to return here
-    const state = JSON.stringify({
-      csrfToken: csrfToken,
-      currentRepo: repo,
-      returnTo: `/${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`,
-    });
-
-    // Redirect to GitHub for re-authentication
-    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
-      window.origin
-    }/callback&state=${encodeURIComponent(state)}&scope=${scope}`;
-    window.location.assign(link); // don't try to authenticate right now
   };
 
   /**
