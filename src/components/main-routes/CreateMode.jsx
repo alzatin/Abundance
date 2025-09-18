@@ -422,11 +422,11 @@ function CreateMode() {
   const createCommit = async function (
     octokit,
     { owner, repo, base, changes },
-    setState,
+    setSaveProgress,
     saveType = "Auto Save"
   ) {
     try {
-      setState(35);
+      setSaveProgress(35);
       if (!base) {
         const repoResponse = await octokit.request(
           "GET /repos/{owner}/{repo}",
@@ -438,7 +438,7 @@ function CreateMode() {
 
         let htmlURL = repoResponse.data.html_url;
         const privateRepo = repoResponse.data.private;
-        setState(40);
+        setSaveProgress(40);
 
         base = repoResponse.data.default_branch;
 
@@ -449,7 +449,7 @@ function CreateMode() {
           per_page: 1,
         });
 
-        setState(50);
+        setSaveProgress(50);
         let latestCommitSha = commitsResponse.data[0].sha;
         const treeSha = commitsResponse.data[0].commit.tree.sha;
 
@@ -474,7 +474,7 @@ function CreateMode() {
           }),
         });
 
-        setState(60);
+        setSaveProgress(60);
         const newTreeSha = treeResponse.data.sha;
 
         const commitResponse = await octokit.rest.git.createCommit({
@@ -485,7 +485,7 @@ function CreateMode() {
           parents: [latestCommitSha],
         });
 
-        setState(70);
+        setSaveProgress(70);
         latestCommitSha = commitResponse.data.sha;
 
         await octokit.rest.git.updateRef({
@@ -496,7 +496,7 @@ function CreateMode() {
           force: true,
         });
 
-        setState(80);
+        setSaveProgress(80);
 
         const githubMoleculeUsedList = await searchGithubMolecules(
           GlobalVariables.topLevelMolecule
@@ -537,7 +537,7 @@ function CreateMode() {
         });
 
         console.warn("Project saved on git and aws updated");
-        setState(100);
+        setSaveProgress(100);
       }
     } catch (error) {
       console.error("Error during commit creation:", error);
@@ -746,7 +746,7 @@ function CreateMode() {
   /**
    * Saves project by making a commit to the Github repository.
    */
-  const saveProject = async (setState, typeSave) => {
+  const saveProject = async (setSaveProgress, typeSave) => {
     try {
       //We only want to save if something has actually changed since the last save
       var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
@@ -773,7 +773,7 @@ function CreateMode() {
 
       lastSaveData.current = jsonRepOfProject; //Save the data so we can compare it next time
 
-      setState(5); //Set the state to 5% to show the progress bar
+      setSaveProgress(5); //Set the state to 5% to show the progress bar
 
       let finalSVG;
       // Only generate thumbnail for user-triggered saves, not auto saves
@@ -785,7 +785,7 @@ function CreateMode() {
           });
       }
 
-      setState(10);
+      setSaveProgress(10);
       var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
       jsonRepOfProject.filetypeVersion = 1;
       const projectContent = JSON.stringify(jsonRepOfProject, null, 4);
@@ -801,7 +801,7 @@ function CreateMode() {
         GlobalVariables.currentRepoName +
         "\n\n![](/project.svg)\n\n";
 
-      setState(20);
+      setSaveProgress(20);
 
       let readMeRequestResult =
         await GlobalVariables.topLevelMolecule.requestReadme();
@@ -840,7 +840,7 @@ function CreateMode() {
       // If no thumbnail was generated, don't include project.svg in the commit
       // This preserves the existing thumbnail in the repository
 
-      setState(30);
+      setSaveProgress(30);
 
       await createCommit(
         authorizedUserOcto,
@@ -852,7 +852,7 @@ function CreateMode() {
             commit: typeSave ? typeSave : "Auto Save",
           },
         },
-        setState,
+        setSaveProgress,
         typeSave
       );
     } catch (error) {
@@ -867,7 +867,7 @@ function CreateMode() {
         setTimeout(() => setErrorNotification(null), 5000);
       }
 
-      setState(0); // Reset save progress
+      setSaveProgress(0); // Reset save progress
     }
   };
   const screenHeight = window.innerHeight;
