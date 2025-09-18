@@ -99,7 +99,6 @@ function runMode() {
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;
     GlobalVariables.c = canvasRef.current.getContext("2d");
-    console.log("Current Repo:", GlobalVariables.currentRepo);
     // Fetch project data from AWS before loading the project
     if (
       !GlobalVariables.currentRepo ||
