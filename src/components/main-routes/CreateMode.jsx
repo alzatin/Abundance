@@ -349,7 +349,7 @@ function CreateMode() {
     const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
       window.origin
     }/callback&state=${encodeURIComponent(state)}&scope=${scope}`;
-    //window.location.assign(link); // don't try to authenticate right now
+    window.location.assign(link); // don't try to authenticate right now
   };
 
   /**

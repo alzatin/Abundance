@@ -61,24 +61,24 @@ const Callback = ({ setRedirectType }) => {
     };
 
     // Call the function to fetch the access token
-    callSecureApi().then((authorizedUserOcto) => {
+    callSecureApi().then((authorizedUser) => {
       try {
         const stateParam = params.get("state");
         const state = stateParam ? JSON.parse(stateParam) : {};
         console.log(state);
-        if (state.forking && state.currentRepo && authorizedUserOcto) {
+        if (state.forking && state.currentRepo && authorizedUser) {
           navigate(`/run/${state.currentRepo}`);
           setRedirectType("fork");
-        } else if (state.liking && state.currentRepo && authorizedUserOcto) {
+        } else if (state.liking && state.currentRepo && authorizedUser) {
           navigate(`/run/${state.currentRepo}`);
           setRedirectType("like");
-        } else if (state.returnTo && authorizedUserOcto) {
+        } else if (state.returnTo && authorizedUser) {
           console.log(state);
           // Try to fetch the repo and set it, then re-render
           const owner = state.currentRepo.owner;
           const repoName = state.currentRepo.repo;
           console.log(owner, repoName);
-          authorizedUserOcto
+          authorizedUser
             .request("GET /repos/{owner}/{repo}", {
               owner: owner,
               repo: repoName,
@@ -87,6 +87,11 @@ const Callback = ({ setRedirectType }) => {
               console.log("Fetched repo:", result.data);
               GlobalVariables.currentRepoName = result.data.name;
               GlobalVariables.currentRepo = result.data;
+              // this is getting replaced because of the diff between the aws node and the github api (see RunMode.jsx)
+              GlobalVariables.currentRepo.owner =
+                GlobalVariables.currentRepo.owner.login;
+              GlobalVariables.currentRepo.repoName =
+                GlobalVariables.currentRepo.name;
               navigate(state.returnTo);
               // After setting, force a rerender by updating state (if needed)
             })

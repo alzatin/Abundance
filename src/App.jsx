@@ -206,6 +206,8 @@ function AppContent() {
 
   // Loads project
   const loadProject = function (project, authorizedUser) {
+    console.log("Loading project:", project);
+    console.log("Authorized user:", authorizedUser);
     GlobalVariables.recentMoleculeRepresentation = [];
     GlobalVariables.undoOperationHistory = [];
     GlobalVariables.loadedRepo = project;
