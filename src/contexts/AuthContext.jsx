@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
   /**
    * Unified handler for login and re-authentication.
    * @param {Object} options
-   *   - redirectType: "fork" | "like" | undefined
+   *   - redirectType: "fork" | "like" | "reauth" | undefined
    *   - currentProjectRep: string (optional, for re-auth)
    *   - returnTo: string (optional, for re-auth)
    */
