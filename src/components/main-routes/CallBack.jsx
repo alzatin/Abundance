@@ -1,27 +1,30 @@
 import React, { useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import GlobalVariables from "../../js/globalvariables.js";
 
-const Callback = ({
-  isAuthorized,
-  setIsAuthorized,
-  setIsLoggedIn,
-  setAuthorizedUserOcto,
-  setRedirectType,
-}) => {
+import { useAuth } from "../../contexts/AuthContext";
+
+const Callback = ({ setRedirectType }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const {
+    isAuthorized,
+    setIsAuthorized,
+    setIsLoggedIn,
+    authorizedUserOcto,
+    setAuthorizedUserOcto,
+  } = useAuth();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("code")) {
       setIsAuthorized(true);
     }
-    const serverEndpoint = window.origin.includes("abundance") || window.origin.includes("localhost")
-      ? import.meta.env.VITE_AUTHO_SERVER_ENDPOINT
-      : import.meta.env.VITE_AUTHO_SERVER_ENDPOINT_MOB;
+    const serverEndpoint =
+      window.origin.includes("abundance") || window.origin.includes("localhost")
+        ? import.meta.env.VITE_AUTHO_SERVER_ENDPOINT
+        : import.meta.env.VITE_AUTHO_SERVER_ENDPOINT_MOB;
     const serverUrl = import.meta.env.VITE_AUTHO_SERVER_URL;
 
     const callSecureApi = async () => {
@@ -62,13 +65,45 @@ const Callback = ({
       try {
         const stateParam = params.get("state");
         const state = stateParam ? JSON.parse(stateParam) : {};
-        console.log("state", state);
+        console.log(state);
         if (state.forking && state.currentRepo && authorizedUser) {
           navigate(`/run/${state.currentRepo}`);
           setRedirectType("fork");
         } else if (state.liking && state.currentRepo && authorizedUser) {
           navigate(`/run/${state.currentRepo}`);
           setRedirectType("like");
+        } else if (state.returnTo && authorizedUser) {
+          console.log(state);
+          setRedirectType("return");
+          // Try to fetch the repo and set it, then re-render
+          const owner = state.currentRepo.owner;
+          const repoName = state.currentRepo.repo;
+          console.log(owner, repoName);
+          authorizedUser
+            .request("GET /repos/{owner}/{repo}", {
+              owner: owner,
+              repo: repoName,
+            })
+            .then((result) => {
+              console.log("Fetched repo:", result.data);
+              GlobalVariables.currentRepoName = result.data.name;
+              GlobalVariables.currentRepo = result.data;
+              // this is getting replaced because of the diff between the aws node and the github api (see RunMode.jsx)
+              GlobalVariables.currentRepo.owner =
+                GlobalVariables.currentRepo.owner.login;
+              GlobalVariables.currentRepo.repoName =
+                GlobalVariables.currentRepo.name;
+              navigate(state.returnTo);
+              // After setting, force a rerender by updating state (if needed)
+            })
+            .catch((err) => {
+              console.error(
+                "Failed to fetch repo from params in CreateMode:",
+                err
+              );
+              // If fetch fails, fallback to run mode
+              navigate(`/run/${owner}/${repoName}`);
+            });
         } else {
           navigate("/");
         }

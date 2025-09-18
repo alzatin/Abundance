@@ -352,6 +352,7 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
         key={node.topMoleculeID + node.owner}
         id={node.repoName}
         onClick={() => {
+          console.log(node);
           GlobalVariables.currentRepo = node;
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node)}

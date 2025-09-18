@@ -594,6 +594,14 @@ export default class Molecule extends Atom {
     GlobalVariables.connectorsSelected = [];
   }
 
+  deleteAllAtoms() {
+    // Remove all atoms from the molecule
+    if (Array.isArray(this.nodesOnTheScreen)) {
+      this.nodesOnTheScreen.length = 0;
+    }
+    // Optionally, clear any other related state or references here
+  }
+
   /**
    * Performs undo operation with improved reliability and operation type awareness
    */

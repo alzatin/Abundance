@@ -13,6 +13,10 @@ export default memo(function FlowCanvas({
   errorNotification,
   setExpandedMenu,
   windowSize,
+  redirectType,
+  saveProject,
+  setSaveState,
+  setSavePopUp,
 }) {
   /** State for github molecule search input */
   const [isHovering, setIsHovering] = useState(false);
@@ -59,11 +63,37 @@ export default memo(function FlowCanvas({
       });
       GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
 
-      loadProject(GlobalVariables.currentRepo, authorizedUserOcto).catch(
-        (error) => {
-          navigate("/");
+      /*if you've been redirected after reauthentication*/
+      if (redirectType === "return" && authorizedUserOcto) {
+        // If there's a pending project save in local storage, load it
+        const pendingProject = localStorage.getItem("pendingProjectSave");
+        if (pendingProject) {
+          // Only deserialize after all atoms have been deleted
+          let rawFile = JSON.parse(pendingProject);
+          if (rawFile.filetypeVersion == 1) {
+            GlobalVariables.topLevelMolecule.deserialize(rawFile);
+          } else {
+            // For older file versions, try to deserialize directly for now
+            GlobalVariables.topLevelMolecule.deserialize(rawFile);
+          }
+          setActiveAtom(GlobalVariables.currentMolecule);
+          GlobalVariables.currentMolecule.selected = true;
+          //trigger a save to clear the pending project
+          setSavePopUp(true);
+          saveProject(setSaveState, "auto-save after reauthentication").then(
+            () => {
+              localStorage.removeItem("pendingProjectSave");
+              setSavePopUp(false);
+            }
+          );
         }
-      );
+      } else {
+        loadProject(GlobalVariables.currentRepo, authorizedUserOcto).catch(
+          (error) => {
+            navigate("/");
+          }
+        );
+      }
     }
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
       atom.update();

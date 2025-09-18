@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, use } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
@@ -27,6 +27,7 @@ import {
   useRendering,
   useProject,
 } from "../../contexts/index.js";
+import { Global } from "@emotion/react";
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
  * a user has been authorized access to a project.
@@ -43,6 +44,7 @@ function CreateMode() {
     shortCutsOn,
     exportPopUp,
     setExportPopUp,
+    redirectType,
   } = useAppState();
   const {
     setMesh,
@@ -271,6 +273,79 @@ function CreateMode() {
   }, []);
 
   /**
+   * Validates if the current GitHub token is still valid
+   */
+  const validateGitHubToken = async (octokit) => {
+    try {
+      await octokit.request("GET /user");
+      return true;
+    } catch (error) {
+      console.warn("GitHub token validation failed:", error.message);
+      return false;
+    }
+  };
+
+  /**
+   * Handles authentication errors by redirecting to re-authentication
+   */
+  const handleAuthenticationError = (error, saveType, currentProjectRep) => {
+    console.error("Authentication error during save:", error);
+
+    // Show user-friendly error message
+    setErrorNotification(
+      `Save failed due to expired login. You will be redirected to re-authenticate.`
+    );
+    setTimeout(() => {
+      setErrorNotification(null);
+      initiateReAuthentication(currentProjectRep);
+    }, 2000);
+  };
+
+  /**
+   * Initiates re-authentication flow
+   * @param {string} currentProjectRep - current json representation of project for save
+   */
+  const initiateReAuthentication = (currentProjectRep) => {
+    const params = new URLSearchParams(window.location.search);
+    let scope = "public_repo";
+    if (params.has("private")) {
+      scope = "repo";
+    }
+    // Save the current project representation to local storage for recovery after re-authentication
+    if (currentProjectRep) {
+      localStorage.setItem("pendingProjectSave", currentProjectRep);
+    }
+    const client_id =
+      window.origin.includes("localhost") || window.origin.includes("abundance")
+        ? import.meta.env.VITE_GH_OAUTH_CLIENT_ID
+        : import.meta.env.VITE_GH_OAUTH_CLIENT_ID_MOB;
+
+    const repo = {
+      owner: GlobalVariables.currentUser,
+      repo: GlobalVariables.currentRepo.repoName,
+    };
+
+    // Create a CSRF token and store it locally
+    const csrfToken = window.crypto
+      .getRandomValues(new Uint8Array(16))
+      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
+    localStorage.setItem("latestCSRFToken", csrfToken);
+
+    // Include current repo in the state parameter to return here
+    const state = JSON.stringify({
+      csrfToken: csrfToken,
+      currentRepo: repo,
+      returnTo: `/${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`,
+    });
+
+    // Redirect to GitHub for re-authentication
+    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
+      window.origin
+    }/callback&state=${encodeURIComponent(state)}&scope=${scope}`;
+    window.location.assign(link); // don't try to authenticate right now
+  };
+
+  /**
    * Scan repository for background 3D model files when project loads
    */
   const scanForBackgroundModels = async () => {
@@ -387,129 +462,139 @@ function CreateMode() {
   const createCommit = async function (
     octokit,
     { owner, repo, base, changes },
-    setState
+    setState,
+    saveType = "Auto Save"
   ) {
-    setState(35);
-    if (!base) {
-      octokit
-        .request("GET /repos/{owner}/{repo}", {
-          owner: owner,
-          repo: repo,
-        })
-        .then((response) => {
-          let htmlURL = response.data.html_url;
-          const privateRepo = response.data.private;
-          setState(40);
+    try {
+      setState(35);
+      if (!base) {
+        const repoResponse = await octokit.request(
+          "GET /repos/{owner}/{repo}",
+          {
+            owner: owner,
+            repo: repo,
+          }
+        );
 
-          base = response.data.default_branch;
-          octokit.rest.repos
-            .listCommits({
-              owner,
-              repo,
-              sha: base,
-              per_page: 1,
-            })
-            .then((response) => {
-              setState(50);
-              let latestCommitSha = response.data[0].sha;
-              const treeSha = response.data[0].commit.tree.sha;
-              octokit.rest.git
-                .createTree({
-                  owner,
-                  repo,
-                  base_tree: treeSha,
-                  tree: Object.keys(changes.files).map((path) => {
-                    if (changes.files[path] != null) {
-                      return {
-                        path,
-                        mode: "100644",
-                        content: changes.files[path],
-                      };
-                    } else {
-                      return {
-                        path,
-                        mode: "100644",
-                        sha: null,
-                      };
-                    }
-                  }),
-                })
-                .then((response) => {
-                  setState(60);
-                  const newTreeSha = response.data.sha;
+        let htmlURL = repoResponse.data.html_url;
+        const privateRepo = repoResponse.data.private;
+        setState(40);
 
-                  octokit.rest.git
-                    .createCommit({
-                      owner,
-                      repo,
-                      message: changes.commit,
-                      tree: newTreeSha,
-                      parents: [latestCommitSha],
-                    })
-                    .then((response) => {
-                      setState(70);
-                      latestCommitSha = response.data.sha;
+        base = repoResponse.data.default_branch;
 
-                      octokit.rest.git
-                        .updateRef({
-                          owner,
-                          repo,
-                          sha: latestCommitSha,
-                          ref: "heads/" + base,
-                          force: true,
-                        })
-                        .then((response) => {
-                          setState(80);
-                          searchGithubMolecules(
-                            GlobalVariables.topLevelMolecule
-                          ).then((githubMoleculeUsedList) => {
-                            /*aws dynamo update-item lambda, also updates dateModified on aws side*/
-                            const apiUpdateUrl =
-                              "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
-                            let topicString =
-                              GlobalVariables.currentRepo.topics.join(" ");
-                            let searchField = (
-                              repo +
-                              " " +
-                              owner +
-                              " " +
-                              GlobalVariables.currentRepo.description +
-                              " " +
-                              topicString
-                            ).toLowerCase();
-
-                            fetch(apiUpdateUrl, {
-                              method: "POST",
-                              body: JSON.stringify({
-                                owner: owner,
-                                repoName: repo,
-                                attributeUpdates: {
-                                  ranking: 0,
-                                  privateRepo: privateRepo,
-                                  html_url: htmlURL,
-                                  searchField: searchField,
-                                  githubMoleculesUsed: githubMoleculeUsedList,
-                                  description:
-                                    GlobalVariables.currentRepo.description,
-                                  topics: GlobalVariables.currentRepo.topics,
-                                },
-                              }),
-                              headers: {
-                                "Content-type":
-                                  "application/json; charset=UTF-8",
-                              },
-                            }).then((response) => {
-                              console.warn(
-                                "Project saved on git and aws updated"
-                              );
-                              setState(100);
-                            });
-                          });
-                        });
-                    });
-                });
-            });
+        const commitsResponse = await octokit.rest.repos.listCommits({
+          owner,
+          repo,
+          sha: base,
+          per_page: 1,
         });
+
+        setState(50);
+        let latestCommitSha = commitsResponse.data[0].sha;
+        const treeSha = commitsResponse.data[0].commit.tree.sha;
+
+        const treeResponse = await octokit.rest.git.createTree({
+          owner,
+          repo,
+          base_tree: treeSha,
+          tree: Object.keys(changes.files).map((path) => {
+            if (changes.files[path] != null) {
+              return {
+                path,
+                mode: "100644",
+                content: changes.files[path],
+              };
+            } else {
+              return {
+                path,
+                mode: "100644",
+                sha: null,
+              };
+            }
+          }),
+        });
+
+        setState(60);
+        const newTreeSha = treeResponse.data.sha;
+
+        const commitResponse = await octokit.rest.git.createCommit({
+          owner,
+          repo,
+          message: changes.commit,
+          tree: newTreeSha,
+          parents: [latestCommitSha],
+        });
+
+        setState(70);
+        latestCommitSha = commitResponse.data.sha;
+
+        await octokit.rest.git.updateRef({
+          owner,
+          repo,
+          sha: latestCommitSha,
+          ref: "heads/" + base,
+          force: true,
+        });
+
+        setState(80);
+
+        const githubMoleculeUsedList = await searchGithubMolecules(
+          GlobalVariables.topLevelMolecule
+        );
+
+        /*aws dynamo update-item lambda, also updates dateModified on aws side*/
+        const apiUpdateUrl =
+          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
+        let topicString = GlobalVariables.currentRepo.topics.join(" ");
+        let searchField = (
+          repo +
+          " " +
+          owner +
+          " " +
+          GlobalVariables.currentRepo.description +
+          " " +
+          topicString
+        ).toLowerCase();
+
+        await fetch(apiUpdateUrl, {
+          method: "POST",
+          body: JSON.stringify({
+            owner: owner,
+            repoName: repo,
+            attributeUpdates: {
+              ranking: 0,
+              privateRepo: privateRepo,
+              html_url: htmlURL,
+              searchField: searchField,
+              githubMoleculesUsed: githubMoleculeUsedList,
+              description: GlobalVariables.currentRepo.description,
+              topics: GlobalVariables.currentRepo.topics,
+            },
+          }),
+          headers: {
+            "Content-type": "application/json; charset=UTF-8",
+          },
+        });
+
+        console.warn("Project saved on git and aws updated");
+        setState(100);
+      }
+    } catch (error) {
+      console.error("Error during commit creation:", error);
+
+      // Check if this is an authentication error
+      if (error.status === 401 || error.message.includes("Bad credentials")) {
+        handleAuthenticationError(error, saveType);
+      } else {
+        // Handle other errors
+        setErrorNotification(
+          `Save failed: ${error.message || "Unknown error occurred"}`
+        );
+        setTimeout(() => setErrorNotification(null), 5000);
+        setState(0); // Reset save progress
+      }
+
+      throw error; // Re-throw to let calling function handle it
     }
   };
 
@@ -702,104 +787,135 @@ function CreateMode() {
    * Saves project by making a commit to the Github repository.
    */
   const saveProject = async (setState, typeSave) => {
-    //We only want to save if something has actually changed since the last save
-    var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
+    try {
+      //We only want to save if something has actually changed since the last save
+      var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
 
-    //Don't save again if nothing has changed
-    if (
-      JSON.stringify(jsonRepOfProject) == JSON.stringify(lastSaveData.current)
-    ) {
-      return;
-    }
+      //Don't save again if nothing has changed
+      if (
+        JSON.stringify(jsonRepOfProject) == JSON.stringify(lastSaveData.current)
+      ) {
+        return;
+      }
 
-    lastSaveData.current = jsonRepOfProject; //Save the data so we can compare it next time
-
-    setState(5); //Set the state to 5% to show the progress bar
-
-    let finalSVG;
-    // Only generate thumbnail for user-triggered saves, not auto saves
-    if (typeSave !== "Auto Save") {
-      finalSVG = await GlobalVariables.topLevelMolecule
-        .generateProjectThumbnail()
-        .catch((error) => {
-          console.error("Error generating final project thumbnail: ", error);
-        });
-    }
-
-    setState(10);
-    var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
-    jsonRepOfProject.filetypeVersion = 1;
-    const projectContent = JSON.stringify(jsonRepOfProject, null, 4);
-    // format and compile the BOM
-    let bomContent = GlobalVariables.topLevelMolecule.formatBom();
-    var readmeHeader =
-      "###### Note: Do not edit this file directly, it is automatically generated from the CAD model";
-
-    var readmeContent =
-      readmeHeader +
-      "\n\n" +
-      "# " +
-      GlobalVariables.currentRepoName +
-      "\n\n![](/project.svg)\n\n";
-
-    setState(20);
-
-    let readMeRequestResult =
-      await GlobalVariables.topLevelMolecule.requestReadme();
-
-    let readMeTextArray = " ";
-
-    readMeRequestResult.forEach((item) => {
-      readMeTextArray = readMeTextArray.concat(item["readMeText"]) + "\n\n";
-    });
-    readmeContent = readmeContent + "\n\n" + readMeTextArray + "\n\n";
-
-    /** File object to commit */
-    let filesObject = {
-      "BillOfMaterials.md": bomContent,
-      "README.md": readmeContent,
-      "project.abundance": projectContent,
-    };
-
-    /* add any new SVGs to the project change files*/
-    const readmeSVGs = readMeRequestResult;
-    let backupProjectSVG;
-    if (readmeSVGs) {
-      readmeSVGs.forEach((item) => {
-        if (item.svg != null) {
-          filesObject["readme" + item.uniqueID + ".svg"] = item.svg;
-          backupProjectSVG = item.svg;
+      // First validate the GitHub token
+      if (authorizedUserOcto) {
+        const isTokenValid = await validateGitHubToken(authorizedUserOcto);
+        if (!isTokenValid) {
+          handleAuthenticationError(
+            new Error("GitHub token has expired"),
+            typeSave,
+            JSON.stringify(jsonRepOfProject)
+          );
+          return;
         }
+      }
+
+      lastSaveData.current = jsonRepOfProject; //Save the data so we can compare it next time
+
+      setState(5); //Set the state to 5% to show the progress bar
+
+      let finalSVG;
+      // Only generate thumbnail for user-triggered saves, not auto saves
+      if (typeSave !== "Auto Save") {
+        finalSVG = await GlobalVariables.topLevelMolecule
+          .generateProjectThumbnail()
+          .catch((error) => {
+            console.error("Error generating final project thumbnail: ", error);
+          });
+      }
+
+      setState(10);
+      var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
+      jsonRepOfProject.filetypeVersion = 1;
+      const projectContent = JSON.stringify(jsonRepOfProject, null, 4);
+      // format and compile the BOM
+      let bomContent = GlobalVariables.topLevelMolecule.formatBom();
+      var readmeHeader =
+        "###### Note: Do not edit this file directly, it is automatically generated from the CAD model";
+
+      var readmeContent =
+        readmeHeader +
+        "\n\n" +
+        "# " +
+        GlobalVariables.currentRepoName +
+        "\n\n![](/project.svg)\n\n";
+
+      setState(20);
+
+      let readMeRequestResult =
+        await GlobalVariables.topLevelMolecule.requestReadme();
+
+      let readMeTextArray = " ";
+
+      readMeRequestResult.forEach((item) => {
+        readMeTextArray = readMeTextArray.concat(item["readMeText"]) + "\n\n";
       });
-    }
+      readmeContent = readmeContent + "\n\n" + readMeTextArray + "\n\n";
 
-    // Only update project thumbnail if a new one has been generated successfully
-    const thumbnailToUse = finalSVG || backupProjectSVG;
-    if (thumbnailToUse) {
-      filesObject["project.svg"] = thumbnailToUse;
-    }
-    // If no thumbnail was generated, don't include project.svg in the commit
-    // This preserves the existing thumbnail in the repository
+      /** File object to commit */
+      let filesObject = {
+        "BillOfMaterials.md": bomContent,
+        "README.md": readmeContent,
+        "project.abundance": projectContent,
+      };
 
-    setState(30);
+      /* add any new SVGs to the project change files*/
+      const readmeSVGs = readMeRequestResult;
+      let backupProjectSVG;
+      if (readmeSVGs) {
+        readmeSVGs.forEach((item) => {
+          if (item.svg != null) {
+            filesObject["readme" + item.uniqueID + ".svg"] = item.svg;
+            backupProjectSVG = item.svg;
+          }
+        });
+      }
 
-    createCommit(
-      authorizedUserOcto,
-      {
-        owner: GlobalVariables.currentUser,
-        repo: GlobalVariables.currentRepo.repoName,
-        changes: {
-          files: filesObject,
-          commit: typeSave ? typeSave : "Auto Save",
+      // Only update project thumbnail if a new one has been generated successfully
+      const thumbnailToUse = finalSVG || backupProjectSVG;
+      if (thumbnailToUse) {
+        filesObject["project.svg"] = thumbnailToUse;
+      }
+      // If no thumbnail was generated, don't include project.svg in the commit
+      // This preserves the existing thumbnail in the repository
+
+      setState(30);
+
+      await createCommit(
+        authorizedUserOcto,
+        {
+          owner: GlobalVariables.currentUser,
+          repo: GlobalVariables.currentRepo.repoName,
+          changes: {
+            files: filesObject,
+            commit: typeSave ? typeSave : "Auto Save",
+          },
         },
-      },
-      setState
-    );
+        setState,
+        typeSave
+      );
+    } catch (error) {
+      console.error("Error during project save:", error);
+
+      // The createCommit function already handles authentication errors,
+      // so we only need to handle other types of errors here
+      if (!error.message.includes("Bad credentials") && error.status !== 401) {
+        setErrorNotification(
+          `Save failed: ${error.message || "Unknown error occurred"}`
+        );
+        setTimeout(() => setErrorNotification(null), 5000);
+      }
+
+      setState(0); // Reset save progress
+    }
   };
   const screenHeight = window.innerHeight;
-
   if (authorizedUserOcto) {
-    if (GlobalVariables.currentRepo.owner === GlobalVariables.currentUser) {
+    if (
+      GlobalVariables.currentRepo &&
+      GlobalVariables.currentRepo.owner === GlobalVariables.currentUser
+    ) {
       return (
         <>
           <ParamsMenu
@@ -971,6 +1087,8 @@ function CreateMode() {
               setErrorNotification,
               setExpandedMenu,
               windowSize,
+              redirectType,
+              saveProject,
             }}
           />
           <div className="parent flex-parent" id="lowerHalf">
@@ -979,9 +1097,8 @@ function CreateMode() {
         </>
       );
     } else {
-      navigate(
-        `/run/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`
-      );
+      // Fallback: navigate to run mode if repo is still missing
+      navigate(`/run/${owner && repoName ? `${owner}/${repoName}` : ""}`);
     }
   } else {
     /** get repository from github by the id in the url */
