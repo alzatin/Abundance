@@ -121,17 +121,23 @@ function TopMenu({
        */
       id: "Pull Request",
       buttonFunc: () => {
-        console.log(GlobalVariables.currentRepo);
-        window.open(
-          "https://github.com/" +
-            GlobalVariables.currentRepo.full_name +
-            "/compare/" +
-            GlobalVariables.currentRepo.default_branch +
-            "..." +
-            GlobalVariables.currentRepo.owner.login +
-            ":" +
-            GlobalVariables.currentRepo.default_branch
-        );
+        // If the project has a parent, open PR against the parent repo's default branch
+        const repo = GlobalVariables.currentRepo;
+        const parent = repo.parent;
+        let baseRepo, baseBranch, headUser, headBranch;
+        if (parent) {
+          baseRepo = parent.full_name;
+          baseBranch = parent.default_branch;
+          headUser = repo.owner.login;
+          headBranch = repo.default_branch;
+        } else {
+          baseRepo = repo.full_name;
+          baseBranch = repo.default_branch;
+          headUser = repo.owner.login;
+          headBranch = repo.default_branch;
+        }
+        const prUrl = `https://github.com/${baseRepo}/compare/${baseBranch}...${headUser}:${headBranch}`;
+        window.open(prUrl);
       },
     },
     {

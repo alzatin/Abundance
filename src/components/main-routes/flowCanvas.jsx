@@ -47,11 +47,11 @@ export default memo(function FlowCanvas({
     /** Only run loadproject() if the project is different from what is already loaded  */
     if (
       !GlobalVariables.loadedRepo ||
-      GlobalVariables.currentRepo.repoName !==
+      GlobalVariables.currentAWSnode.repoName !==
         GlobalVariables.loadedRepo.repoName
     ) {
       GlobalVariables.writeToDisplay(
-        GlobalVariables.currentRepo.topMoleculeID,
+        GlobalVariables.currentAWSnode.topMoleculeID,
         true
       );
       //Load a blank project
@@ -88,7 +88,7 @@ export default memo(function FlowCanvas({
           );
         }
       } else {
-        loadProject(GlobalVariables.currentRepo, authorizedUserOcto).catch(
+        loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto).catch(
           (error) => {
             navigate("/");
           }

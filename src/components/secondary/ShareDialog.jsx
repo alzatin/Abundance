@@ -14,8 +14,8 @@ function ShareDialog({
     fetch(apiUpdateUrl, {
       method: "POST",
       body: JSON.stringify({
-        owner: GlobalVariables.currentRepo.owner,
-        repoName: GlobalVariables.currentRepo.repoName,
+        owner: GlobalVariables.currentRepo.owner.login,
+        repoName: GlobalVariables.currentRepo.name,
         attributeUpdates: { ranking: 1 },
       }),
       headers: {
@@ -76,15 +76,15 @@ function ShareDialog({
               href={
                 window.location.origin +
                 "/run/" +
-                GlobalVariables.currentRepo.owner +
+                GlobalVariables.currentRepo.owner.login +
                 "/" +
-                GlobalVariables.currentRepo.repoName
+                GlobalVariables.currentRepo.name
               }
               target="_blank"
             >
               {window.location.origin}/Abundance/run/
-              {GlobalVariables.currentRepo.owner}/
-              {GlobalVariables.currentRepo.repoName}
+              {GlobalVariables.currentRepo.owner.login}/
+              {GlobalVariables.currentRepo.name}
             </a>
           </div>
         ) : dialogContent == "export" ? (

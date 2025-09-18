@@ -551,7 +551,7 @@ function CreateMode() {
           `Save failed: ${error.message || "Unknown error occurred"}`
         );
         setTimeout(() => setErrorNotification(null), 5000);
-        setState(0); // Reset save progress
+        setSaveProgress(0); // Reset save progress
       }
 
       throw error; // Re-throw to let calling function handle it
@@ -846,7 +846,7 @@ function CreateMode() {
         authorizedUserOcto,
         {
           owner: GlobalVariables.currentUser,
-          repo: GlobalVariables.currentRepo.repoName,
+          repo: GlobalVariables.currentAWSnode.repoName,
           changes: {
             files: filesObject,
             commit: typeSave ? typeSave : "Auto Save",
@@ -873,8 +873,8 @@ function CreateMode() {
   const screenHeight = window.innerHeight;
   if (authorizedUserOcto) {
     if (
-      GlobalVariables.currentRepo &&
-      GlobalVariables.currentRepo.owner === GlobalVariables.currentUser
+      GlobalVariables.currentAWSnode &&
+      GlobalVariables.currentAWSnode.owner === GlobalVariables.currentUser
     ) {
       return (
         <>

@@ -322,7 +322,8 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
         key={node.topMoleculeID + node.owner}
         id={node.repoName}
         onClick={() => {
-          GlobalVariables.currentRepo = node;
+          GlobalVariables.currentAWSnode = node;
+          //GlobalVariables.currentRepo = node;
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node)}
       >
@@ -384,7 +385,8 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
         key={node.node.id}
         id={node.node.id}
         onClick={() => {
-          GlobalVariables.currentRepo = node.node;
+          GlobalVariables.currentAWSnode = node.node;
+          //GlobalVariables.currentRepo = node.node;
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node.node)} // <-- add right-click handler for list mode
       >

@@ -195,6 +195,11 @@ class GlobalVariables {
      */
     this.loadedRepo;
     /**
+     * A reference to the AWS node that is used to make calls to the backend.
+     * @type {object}
+     */
+    this.currentAWSnode;
+    /**
      * A reference to the top level molecule of the project.
      * @type {object}
      */

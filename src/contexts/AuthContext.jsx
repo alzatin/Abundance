@@ -26,7 +26,6 @@ export function AuthProvider({ children }) {
   } = {}) => {
     let forking = false;
     let liking = false;
-    console.log(currentProjectRep);
     if (redirectType) {
       if (redirectType === "fork") forking = true;
       if (redirectType === "like") liking = true;
@@ -58,15 +57,15 @@ export function AuthProvider({ children }) {
       if (currentProjectRep || returnTo) {
         // Re-auth: use object
         repoState = {
-          owner: GlobalVariables.currentRepo.owner,
-          repo: GlobalVariables.currentRepo.repoName,
+          owner: GlobalVariables.currentRepo.owner.login,
+          repo: GlobalVariables.currentRepo.name,
         };
       } else {
         // Login: use string
         repoState =
-          GlobalVariables.currentRepo.owner +
+          GlobalVariables.currentRepo.owner.login +
           "/" +
-          GlobalVariables.currentRepo.repoName;
+          GlobalVariables.currentRepo.name;
       }
     }
 

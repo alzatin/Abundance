@@ -82,7 +82,6 @@ function runMode() {
 
   const windowSize = useWindowSize();
 
-  const navigate = useNavigate();
   const { owner, repoName } = useParams();
 
   const [cameraZoom, setCameraZoom] = useState(1);
@@ -102,19 +101,23 @@ function runMode() {
     GlobalVariables.c = canvasRef.current.getContext("2d");
 
     /** Only run loadproject() if the project is different from what is already loaded and clear screen */
-    if (GlobalVariables.currentRepo) {
+    if (GlobalVariables.currentAWSnode) {
+      console.log("Current repo already set");
+      console.log(GlobalVariables.currentRepo);
+      console.log(GlobalVariables.loadedRepo);
+      console.log(GlobalVariables.currentAWSnode);
       if (
         !GlobalVariables.loadedRepo ||
-        GlobalVariables.currentRepo.repoName !==
+        GlobalVariables.currentAWSnode.repoName !==
           GlobalVariables.loadedRepo.repoName
       ) {
         GlobalVariables.writeToDisplay(
-          GlobalVariables.currentRepo.topMoleculeID,
+          GlobalVariables.currentAWSnode.topMoleculeID,
           true
         );
       }
     }
-
+    //make an aws call to get the project data before loading the project?
     var octokit = new Octokit();
     octokit
       .request("GET /repos/{owner}/{repo}", {
@@ -123,16 +126,10 @@ function runMode() {
       })
       .then((result) => {
         GlobalVariables.currentRepo = result.data;
-        /*temp variables while we change to aws*/
-        GlobalVariables.currentRepo.repoName = GlobalVariables.currentRepo.name;
-        GlobalVariables.currentRepo.owner =
-          GlobalVariables.currentRepo.owner.login;
-        //make an aws call to get the project data before loading the project?
         /** Only run loadproject() if the project is different from what is already loaded  */
         if (
           !GlobalVariables.loadedRepo ||
-          GlobalVariables.currentRepo.repoName !==
-            GlobalVariables.loadedRepo.repoName
+          GlobalVariables.currentRepo.name !== GlobalVariables.loadedRepo.name
         ) {
           //Load a blank project
           GlobalVariables.topLevelMolecule = new Molecule({
@@ -142,13 +139,13 @@ function runMode() {
             atomType: "Molecule",
           });
           GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
-          loadProject(GlobalVariables.currentRepo);
+          loadProject(GlobalVariables.currentAWSnode);
         }
       });
 
     if (
       GlobalVariables.currentRepo &&
-      GlobalVariables.currentRepo.owner == GlobalVariables.currentUser
+      GlobalVariables.currentRepo.owner.login == GlobalVariables.currentUser
     ) {
       setOwned(true);
     }
@@ -237,8 +234,8 @@ function runMode() {
       ) : null}
       {GlobalVariables.currentRepo ? (
         <div className="info_run_div">
-          <p>{"Project Name: " + GlobalVariables.currentRepo.repoName}</p>
-          <p>{"Repo Owner: " + GlobalVariables.currentRepo.owner}</p>
+          <p>{"Project Name: " + GlobalVariables.currentRepo.name}</p>
+          <p>{"Repo Owner: " + GlobalVariables.currentRepo.owner.login}</p>
         </div>
       ) : null}
       <div className="runContainer">

@@ -9,6 +9,9 @@ function ToggleRunCreate({ run, isItOwned }) {
     setRunMode(!runModeon);
   };
   if (GlobalVariables.currentRepo) {
+    console.log("Current repo in ToggleRunCreate:");
+    console.log(GlobalVariables.currentRepo);
+    console.log(GlobalVariables.currentAWSnode);
     if (!runModeon) {
       return (
         <>
@@ -20,7 +23,7 @@ function ToggleRunCreate({ run, isItOwned }) {
             }
             to={
               GlobalVariables.currentRepo
-                ? `/run/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`
+                ? `/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`
                 : "/run"
             }
             onClick={handleChange}
