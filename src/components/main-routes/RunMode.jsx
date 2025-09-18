@@ -56,7 +56,7 @@ function useWindowSize() {
 
 function runMode() {
   // Get context values
-  const { isloggedIn, authorizedUserOcto } = useAuth();
+  const { isloggedIn, authorizedUserOcto, loginHandler } = useAuth();
   const { activeAtom, redirectType, setRedirectType } = useAppState();
   const {
     mesh,
@@ -226,7 +226,13 @@ function runMode() {
 
       {GlobalVariables.currentRepo ? (
         <RunNavigation
-          {...{ authorizedUserOcto, activeAtom, redirectType, setRedirectType }}
+          {...{
+            authorizedUserOcto,
+            activeAtom,
+            redirectType,
+            setRedirectType,
+            loginHandler,
+          }}
         />
       ) : null}
       {GlobalVariables.currentRepo ? (

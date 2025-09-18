@@ -61,6 +61,7 @@ function AppContent() {
     isAuthorized,
     setIsAuthorized,
     setAuthorizedUserOcto,
+    initiateReAuthentication,
   } = useAuth();
 
   const { activeAtom, setActiveAtom, shortCutsOn, setRedirectType } =
@@ -253,6 +254,17 @@ function AppContent() {
         GlobalVariables.currentMolecule.selected = true;
       })
       .catch((e) => {
+        // If error is about bad credentials, trigger re-authentication
+        if (
+          e?.status === 401 ||
+          (typeof e?.message === "string" &&
+            e.message.toLowerCase().includes("bad credentials"))
+        ) {
+          alert("Session expired or bad credentials. Please re-authenticate.");
+          // Redirect to /callback or trigger your OAuth flow here
+          initiateReAuthentication();
+          return;
+        }
         alert("Can't load/find project " + e);
         throw new Error("Can't load/find project " + e);
       });
