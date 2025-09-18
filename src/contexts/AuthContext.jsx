@@ -26,6 +26,7 @@ export function AuthProvider({ children }) {
   } = {}) => {
     let forking = false;
     let liking = false;
+    console.log(currentProjectRep);
     if (redirectType) {
       if (redirectType === "fork") forking = true;
       if (redirectType === "like") liking = true;

@@ -33,8 +33,6 @@ import "./styles/maslowCreate.css";
 import "./styles/menuIcons.css";
 import "./styles/login.css";
 import "./styles/codemirror.css";
-import { red } from "@mui/material/colors";
-//
 
 const queryClient = new QueryClient();
 /**
@@ -261,9 +259,14 @@ function AppContent() {
           (typeof e?.message === "string" &&
             e.message.toLowerCase().includes("bad credentials"))
         ) {
-          alert("Session expired or bad credentials. Please re-authenticate.");
+          // alert("Session expired or bad credentials. Please re-authenticate.");
+          //
           // Redirect to /callback or trigger your OAuth flow here
-          authRedirectHandler({ redirectType: "reauth" });
+          authRedirectHandler({
+            redirectType: "reauth",
+            currentProjectRep: undefined,
+            returnTo: `/`,
+          });
           return;
         }
         alert("Can't load/find project " + e);
