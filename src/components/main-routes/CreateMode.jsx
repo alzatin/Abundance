@@ -293,7 +293,7 @@ function CreateMode() {
 
     // Show user-friendly error message
     setErrorNotification(
-      `Save failed due to expired login. Support for this issue coming soon.`
+      `Save failed due to expired login. You will be redirected to re-authenticate.`
     );
     setTimeout(() => {
       setErrorNotification(null);
