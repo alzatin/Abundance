@@ -211,11 +211,8 @@ function AppContent() {
    * @returns
    */
   const loadProject = function (project, authorizedUser) {
-    console.log("Loading project:", project);
-    console.log("Authorized user:", authorizedUser);
     GlobalVariables.recentMoleculeRepresentation = [];
     GlobalVariables.undoOperationHistory = [];
-    GlobalVariables.currentRepoName = project.repoName;
     GlobalVariables.totalAtomCount = 0;
     GlobalVariables.numberOfAtomsToLoad = 0;
     GlobalVariables.startTime = new Date().getTime();
@@ -226,7 +223,6 @@ function AppContent() {
       var octokit = new Octokit();
     }
     // Sets the current repo information from node data
-    console.log("Setting current repo from node data:", project);
     octokit
       .request("GET /repos/{owner}/{repo}", {
         owner: project.owner,
@@ -235,6 +231,7 @@ function AppContent() {
       .then(async (response) => {
         GlobalVariables.loadedRepo = response.data;
         GlobalVariables.currentRepo = response.data;
+        GlobalVariables.currentRepoName = project.repoName;
       });
 
     return octokit
@@ -257,7 +254,6 @@ function AppContent() {
         }
 
         let rawFile = JSON.parse(rawFileContent);
-        console.log("Raw file content:", rawFile);
 
         if (rawFile.filetypeVersion == 1) {
           GlobalVariables.topLevelMolecule.deserialize(rawFile);

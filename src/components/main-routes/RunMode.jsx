@@ -99,50 +99,43 @@ function runMode() {
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;
     GlobalVariables.c = canvasRef.current.getContext("2d");
-
-    /** Only run loadproject() if the project is different from what is already loaded and clear screen */
-    if (GlobalVariables.currentAWSnode) {
-      console.log("Current repo already set");
-      console.log(GlobalVariables.currentRepo);
-      console.log(GlobalVariables.loadedRepo);
-      console.log(GlobalVariables.currentAWSnode);
-      if (
-        !GlobalVariables.loadedRepo ||
-        GlobalVariables.currentAWSnode.repoName !==
-          GlobalVariables.loadedRepo.repoName
-      ) {
-        GlobalVariables.writeToDisplay(
-          GlobalVariables.currentAWSnode.topMoleculeID,
-          true
-        );
-      }
+    console.log("Current Repo:", GlobalVariables.currentRepo);
+    // Fetch project data from AWS before loading the project
+    if (!GlobalVariables.currentRepo) {
+      fetch(
+        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.item) {
+            GlobalVariables.currentAWSnode = data.item;
+            /** Only run loadproject() if the project is different from what is already loaded and clear screen */
+            if (
+              !GlobalVariables.loadedRepo ||
+              GlobalVariables.currentAWSnode.repoName !==
+                GlobalVariables.loadedRepo.repoName
+            ) {
+              //Load a blank project
+              GlobalVariables.topLevelMolecule = new Molecule({
+                x: 0,
+                y: 0,
+                topLevel: true,
+                atomType: "Molecule",
+              });
+              GlobalVariables.currentMolecule =
+                GlobalVariables.topLevelMolecule;
+              loadProject(GlobalVariables.currentAWSnode);
+              GlobalVariables.writeToDisplay(
+                GlobalVariables.currentAWSnode.topMoleculeID,
+                true
+              );
+            }
+          }
+        })
+        .catch((e) => {
+          console.error("Error fetching AWS project data:", e);
+        });
     }
-    //make an aws call to get the project data before loading the project?
-    var octokit = new Octokit();
-    octokit
-      .request("GET /repos/{owner}/{repo}", {
-        owner: owner,
-        repo: repoName,
-      })
-      .then((result) => {
-        GlobalVariables.currentRepo = result.data;
-        /** Only run loadproject() if the project is different from what is already loaded  */
-        if (
-          !GlobalVariables.loadedRepo ||
-          GlobalVariables.currentRepo.name !== GlobalVariables.loadedRepo.name
-        ) {
-          //Load a blank project
-          GlobalVariables.topLevelMolecule = new Molecule({
-            x: 0,
-            y: 0,
-            topLevel: true,
-            atomType: "Molecule",
-          });
-          GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
-          loadProject(GlobalVariables.currentAWSnode);
-        }
-      });
-
     if (
       GlobalVariables.currentRepo &&
       GlobalVariables.currentRepo.owner.login == GlobalVariables.currentUser
