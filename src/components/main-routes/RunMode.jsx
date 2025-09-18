@@ -101,7 +101,10 @@ function runMode() {
     GlobalVariables.c = canvasRef.current.getContext("2d");
     console.log("Current Repo:", GlobalVariables.currentRepo);
     // Fetch project data from AWS before loading the project
-    if (!GlobalVariables.currentRepo) {
+    if (
+      !GlobalVariables.currentRepo ||
+      GlobalVariables.currentRepo.name !== repoName
+    ) {
       fetch(
         `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
       )
