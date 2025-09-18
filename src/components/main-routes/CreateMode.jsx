@@ -297,7 +297,7 @@ function CreateMode() {
     );
     setTimeout(() => {
       setErrorNotification(null);
-      authRedirectHandler("reauth", currentProjectRep);
+      authRedirectHandler({ redirectType: "reauth", currentProjectRep });
     }, 2000);
   };
 

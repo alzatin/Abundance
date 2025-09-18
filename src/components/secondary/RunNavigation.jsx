@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import ShareDialog from "./ShareDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import GlobalVariables from "../../js/globalvariables.js";
+import { re } from "mathjs";
 
 //navigation svg icons - turn into key pairs later
 let shareSvg = (
@@ -473,7 +474,7 @@ function RunNavigation({
           onClick={() => {
             authorizedUserOcto
               ? forkProject(authorizedUserOcto)
-              : authRedirectHandler("fork");
+              : authRedirectHandler({ redirectType: "fork" });
           }}
         >
           {forkSvg}
@@ -487,7 +488,7 @@ function RunNavigation({
               ? likeProject(authorizedUserOcto)
               : authorizedUserOcto && starred
               ? unlikeProject(authorizedUserOcto)
-              : authRedirectHandler("like");
+              : authRedirectHandler({ redirectType: "like" });
           }}
         >
           {starSvg}
