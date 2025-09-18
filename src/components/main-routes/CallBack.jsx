@@ -74,6 +74,7 @@ const Callback = ({ setRedirectType }) => {
           setRedirectType("like");
         } else if (state.returnTo && authorizedUser) {
           console.log(state);
+          setRedirectType("return");
           // Try to fetch the repo and set it, then re-render
           const owner = state.currentRepo.owner;
           const repoName = state.currentRepo.repo;

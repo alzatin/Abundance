@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, use } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import { Octokit } from "https://esm.sh/octokit@2.0.19";
 import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
@@ -27,6 +27,7 @@ import {
   useRendering,
   useProject,
 } from "../../contexts/index.js";
+import { Global } from "@emotion/react";
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
  * a user has been authorized access to a project.
@@ -43,6 +44,7 @@ function CreateMode() {
     shortCutsOn,
     exportPopUp,
     setExportPopUp,
+    redirectType,
   } = useAppState();
   const {
     setMesh,
@@ -297,15 +299,6 @@ function CreateMode() {
       setErrorNotification(null);
       initiateReAuthentication(currentProjectRep);
     }, 2000);
-
-    // If this was a user-initiated save, keep the save popup visible
-    // so they can retry after re-authentication
-    if (saveType === "User Save") {
-      setSavePopUp(true);
-    }
-
-    // Reset save state
-    setSaveState(0);
   };
 
   /**
@@ -1094,6 +1087,8 @@ function CreateMode() {
               setErrorNotification,
               setExpandedMenu,
               windowSize,
+              redirectType,
+              saveProject,
             }}
           />
           <div className="parent flex-parent" id="lowerHalf">
