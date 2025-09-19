@@ -678,7 +678,6 @@ export default class Atom extends ObservableEntity {
       y: this.y - offset.y,
       uniqueID: this.uniqueID,
       ioValues: ioValues,
-      description: this.description,
     };
     return object;
   }
