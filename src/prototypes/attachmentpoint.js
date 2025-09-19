@@ -301,6 +301,14 @@ export default class AttachmentPoint extends ObservableEntity {
     this.isTargeted = false;
     // Also restore this.x and this.x to be on the perimiter of parent module
     // since those values are used when rendering connectors.
+    this.updatePerimeterPosition();
+  }
+
+  /**
+   * Updates the attachment point position to be on the perimeter of the parent molecule
+   * without affecting visibility state. Used during connector loading to ensure correct positioning.
+   */
+  updatePerimeterPosition() {
     this.y = this.parentMolecule.y;
     if (this.type == "input") {
       this.x = this.parentMolecule.x - this.parentMolecule.radius;

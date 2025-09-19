@@ -1503,11 +1503,21 @@ export default class Molecule extends Atom {
         }
       }
 
-      new Connector({
+      // Ensure attachment points have correct positions before creating connector during project loading
+      outputAttachmentPoint.updatePerimeterPosition();
+      inputAttachmentPoint.updatePerimeterPosition();
+
+      const connector = new Connector({
         atomType: "Connector",
         attachmentPoint1: outputAttachmentPoint,
         attachmentPoint2: inputAttachmentPoint,
       });
+
+      // Update connector coordinates to use the correct attachment point positions
+      connector.startX = outputAttachmentPoint.x;
+      connector.startY = outputAttachmentPoint.y;
+      connector.endX = inputAttachmentPoint.x;
+      connector.endY = inputAttachmentPoint.y;
     } else {
       console.warn("Unable to place connector");
     }

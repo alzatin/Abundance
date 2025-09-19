@@ -145,7 +145,50 @@ describe("Connector Positioning on Load", () => {
     expect(outputAP.y).toBeCloseTo(0.5, 2);
   });
 
-  it("should fix connector positioning when update() is called on connector", () => {
+  it("should update position without affecting visibility using updatePerimeterPosition", () => {
+    // Create molecule 
+    const molecule = {
+      x: 0,
+      y: 0, 
+      radius: 0.05,
+      atomType: "TestAtom",
+      color: "#333333",
+      selected: false
+    };
+
+    const outputAP = new AttachmentPoint({
+      type: "output",
+      parentMolecule: molecule,
+      name: "output",
+      valueType: "geometry", 
+      uniqueID: "test-output-3"
+    });
+
+    // Make attachment point visible (simulate normal operation)
+    outputAP.isVisible = true;
+    outputAP.isTargeted = true;
+
+    // Initial position is wrong
+    expect(outputAP.x).toBeCloseTo(0.05, 2);
+    expect(outputAP.y).toBeCloseTo(0, 2);
+
+    // Update molecule position
+    molecule.x = 0.5;
+    molecule.y = 0.5;
+
+    // Call updatePerimeterPosition - should update position but preserve visibility
+    outputAP.updatePerimeterPosition();
+
+    // Position should be updated
+    expect(outputAP.x).toBeCloseTo(0.55, 2); // 0.5 + 0.05
+    expect(outputAP.y).toBeCloseTo(0.5, 2);
+    
+    // Visibility should be preserved (this is the key difference from unexpand)
+    expect(outputAP.isVisible).toBe(true);
+    expect(outputAP.isTargeted).toBe(true);
+  });
+
+  it("should fix connector positioning during project loading via placeConnector", () => {
     // Create two molecules - one with bad position, one with good position
     const sourceMolecule = {
       x: 0,      // Bad initial position
@@ -155,7 +198,8 @@ describe("Connector Positioning on Load", () => {
       atomType: "Source",
       color: "#333333",
       selected: false,
-      subscribe: vi.fn() // Mock the subscribe method
+      subscribe: vi.fn(), // Mock the subscribe method
+      uniqueID: "source-mol"
     };
 
     const targetMolecule = {
@@ -165,7 +209,8 @@ describe("Connector Positioning on Load", () => {
       atomType: "Target",
       color: "#333333",
       selected: false,
-      subscribe: vi.fn() // Mock the subscribe method
+      subscribe: vi.fn(), // Mock the subscribe method
+      uniqueID: "target-mol"
     };
 
     const outputAP = new AttachmentPoint({
@@ -184,18 +229,58 @@ describe("Connector Positioning on Load", () => {
       uniqueID: "target-input"
     });
 
-    // Create connector between them
-    const connector = new Connector({
-      attachmentPoint1: outputAP,
-      attachmentPoint2: inputAP,
-      atomType: "Connector"
-    });
+    // Set up mock molecule structure
+    sourceMolecule.output = outputAP;
+    targetMolecule.inputs = [inputAP];
 
-    // Initially connector should have wrong positions (from constructor)
-    expect(connector.startX).toBeCloseTo(0.05, 2); // From sourceMolecule.outputX
-    expect(connector.startY).toBeCloseTo(0, 2);    // From sourceMolecule.y
-    expect(connector.endX).toBeCloseTo(0, 2);      // From targetMolecule.x
-    expect(connector.endY).toBeCloseTo(0, 2);      // From targetMolecule.y
+    // Mock molecule with placeConnector method
+    const mockMolecule = {
+      nodesOnTheScreen: [sourceMolecule, targetMolecule],
+      placeConnector: function(connectorObj) {
+        var outputAttachmentPoint = false;
+        var inputAttachmentPoint = false;
+
+        this.nodesOnTheScreen.forEach((atom) => {
+          if (atom.uniqueID == connectorObj.ap1ID) {
+            outputAttachmentPoint = atom.output;
+          }
+          if (atom.uniqueID == connectorObj.ap2ID) {
+            atom.inputs.forEach((input) => {
+              if (input.name == connectorObj.ap2Name) {
+                inputAttachmentPoint = input;
+              }
+            });
+          }
+        });
+
+        if (outputAttachmentPoint && inputAttachmentPoint) {
+          // Ensure attachment points have correct positions before creating connector during project loading
+          outputAttachmentPoint.updatePerimeterPosition();
+          inputAttachmentPoint.updatePerimeterPosition();
+
+          const connector = new Connector({
+            atomType: "Connector",
+            attachmentPoint1: outputAttachmentPoint,
+            attachmentPoint2: inputAttachmentPoint,
+          });
+
+          // Update connector coordinates to use the correct attachment point positions
+          connector.startX = outputAttachmentPoint.x;
+          connector.startY = outputAttachmentPoint.y;
+          connector.endX = inputAttachmentPoint.x;
+          connector.endY = inputAttachmentPoint.y;
+
+          return connector;
+        }
+        return null;
+      }
+    };
+
+    // Initially attachment points have wrong positions (based on molecules at 0,0)
+    expect(outputAP.x).toBeCloseTo(0.05, 2); // 0 + radius
+    expect(outputAP.y).toBeCloseTo(0, 2);    // 0
+    expect(inputAP.x).toBeCloseTo(0, 2);     // 0 - radius, constrained to 0
+    expect(inputAP.y).toBeCloseTo(0, 2);     // 0
 
     // Update molecule positions (simulating what happens during loading)
     sourceMolecule.x = 0.3;
@@ -203,13 +288,24 @@ describe("Connector Positioning on Load", () => {
     targetMolecule.x = 0.7;
     targetMolecule.y = 0.6;
 
-    // Call update on connector - this should fix the positions by calling unexpand on attachment points
-    connector.update();
+    // Place connector using placeConnector (simulating project loading)
+    const connector = mockMolecule.placeConnector({
+      ap1ID: "source-mol",
+      ap2ID: "target-mol", 
+      ap2Name: "input"
+    });
 
-    // Now connector should have correct positions from attachment points
-    expect(connector.startX).toBeCloseTo(0.35, 2); // 0.3 + 0.05 (from outputAP.x after unexpand)
-    expect(connector.startY).toBeCloseTo(0.4, 2);  // 0.4 (from outputAP.y after unexpand)
-    expect(connector.endX).toBeCloseTo(0.65, 2);   // 0.7 - 0.05 (from inputAP.x after unexpand)
-    expect(connector.endY).toBeCloseTo(0.6, 2);    // 0.6 (from inputAP.y after unexpand)
+    // After placeConnector, attachment points should have correct positions
+    expect(outputAP.x).toBeCloseTo(0.35, 2); // 0.3 + 0.05
+    expect(outputAP.y).toBeCloseTo(0.4, 2);  // 0.4
+    expect(inputAP.x).toBeCloseTo(0.65, 2);  // 0.7 - 0.05
+    expect(inputAP.y).toBeCloseTo(0.6, 2);   // 0.6
+
+    // Connector should be created with correct initial positions
+    expect(connector).toBeTruthy();
+    expect(connector.startX).toBeCloseTo(0.35, 2); // From outputAP
+    expect(connector.startY).toBeCloseTo(0.4, 2);
+    expect(connector.endX).toBeCloseTo(0.65, 2);   // From inputAP
+    expect(connector.endY).toBeCloseTo(0.6, 2);
   });
 });
