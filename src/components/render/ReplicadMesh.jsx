@@ -107,8 +107,8 @@ export default React.memo(function ShapeMeshes({ isSolid }) {
                   <meshPhysicalMaterial
                     color={m.color}
                     transparent={true}
-                    opacity={0.3}
-                    transmission={0.8}
+                    opacity={0.5}
+                    transmission={0.6}
                     roughness={0}
                     metalness={0}
                     clearcoat={1}
