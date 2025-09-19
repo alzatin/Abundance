@@ -64,6 +64,15 @@ describe("tags.js", () => {
 
       expect(result.color).toBe(blueColor);
     });
+
+    it("should handle glass material without special tags", () => {
+      const glassColor = "#E6F3FF";
+      const result = color(geometry, glassColor);
+
+      expect(result.color).toBe(glassColor);
+      expect(result.tags).not.toContain("keepout");
+      expect(result.tags).not.toContain("glass");
+    });
   });
 
   describe("BOM operations", () => {
