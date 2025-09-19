@@ -527,8 +527,8 @@ function CreateMode() {
               html_url: htmlURL,
               searchField: searchField,
               githubMoleculesUsed: githubMoleculeUsedList,
-              description: GlobalVariables.currentRepo.description,
-              topics: GlobalVariables.currentRepo.topics,
+              description: GlobalVariables.currentAWSnode.description,
+              topics: GlobalVariables.currentAWSnode.topics,
             },
           }),
           headers: {

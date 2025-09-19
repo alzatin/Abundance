@@ -50,6 +50,7 @@ export default memo(function FlowCanvas({
       GlobalVariables.currentAWSnode.repoName !==
         GlobalVariables.loadedRepo.repoName
     ) {
+      console.log("Creating new top level molecule in flow canvas...");
       GlobalVariables.writeToDisplay(
         GlobalVariables.currentAWSnode.topMoleculeID,
         true
@@ -88,11 +89,7 @@ export default memo(function FlowCanvas({
           );
         }
       } else {
-        loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto).catch(
-          (error) => {
-            navigate("/");
-          }
-        );
+        loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto);
       }
     }
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {

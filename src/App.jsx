@@ -146,6 +146,7 @@ function AppContent() {
       );
       setOutdatedMesh(true);
       if (resetView) {
+        console.log("Resetting view for id:", id);
         cad
           .resetView()
           .then((m) => {
@@ -235,6 +236,7 @@ function AppContent() {
         repo: project.repoName,
       })
       .then(async (response) => {
+        console.log("Setting currentRepo");
         GlobalVariables.loadedRepo = response.data;
         GlobalVariables.currentRepo = response.data;
         GlobalVariables.currentRepoName = project.repoName;
@@ -268,14 +270,8 @@ function AppContent() {
           GlobalVariables.topLevelMolecule.deserialize(rawFile);
         }
         GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
-      })
-      .then(() => {
-        console.log("Setting active atom to current molecule");
         GlobalVariables.currentMolecule.selected = true;
         setActiveAtom(GlobalVariables.currentMolecule);
-        GlobalVariables.writeToDisplay(
-          GlobalVariables.currentMolecule.uniqueID
-        );
       })
       .catch((e) => {
         // If error is about bad credentials, trigger re-authentication
