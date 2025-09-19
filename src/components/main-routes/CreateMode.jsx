@@ -1058,15 +1058,14 @@ function CreateMode() {
       );
     } else {
       // Fallback: navigate to run mode if repo is still missing
+      const { owner, repoName } = useParams();
       console.log("No repository found, redirecting to run mode");
-      navigate(`/run/${owner && repoName ? `${owner}/${repoName}` : ""}`);
+      navigate(`/run/${owner}/${repoName}`);
     }
   } else {
-    console.log(GlobalVariables.currentAWSnode);
     /** get repository from github by the id in the url */
     console.warn("You are not logged in");
     const { owner, repoName } = useParams();
-    console.log(owner, repoName);
     //try reauthenticating
     authRedirectHandler({
       redirectType: "reauth",

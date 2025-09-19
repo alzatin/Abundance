@@ -148,8 +148,6 @@ function runMode() {
   const screenHeight = window.innerHeight;
   const screenWidth = window.innerWidth;
 
-  console.log(activeAtom);
-
   return (
     <>
       <ParamsMenu

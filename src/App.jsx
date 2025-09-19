@@ -248,7 +248,6 @@ function AppContent() {
       })
       .then(async (response) => {
         let rawFileContent;
-        console.log("loading:", response);
         // Handle large files (>1MB) using download_url
         if (!response.data.content || response.data.content.length === 0) {
           const fileResponse = await fetch(response.data.download_url);
