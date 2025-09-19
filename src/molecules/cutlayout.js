@@ -155,6 +155,14 @@ export default class CutLayout extends Atom {
     }
   }
 
+  deleteNode(backgroundClickAfter = true, deletePath = true, silent = false) {
+    if (this.cancelationHandle) {
+      this.cancelationHandle();
+      this.cancelationHandle = undefined;
+    }
+    return super.deleteNode(backgroundClickAfter, deletePath, silent);
+  }
+
   handleNewPlacements(placements, isFinalPlacement = false) {
     this.placements = placements;
     this.displayLayout(isFinalPlacement);
@@ -275,8 +283,10 @@ export default class CutLayout extends Atom {
           this.uniqueID,
           inputID,
           proxy((progress, cancelationHandle) => {
-            this.progress = progress;
-            this.cancelationHandle = cancelationHandle;
+            if (this.getState().status == Status.PROCESSING) {
+              this.progress = progress;
+              this.cancelationHandle = cancelationHandle;
+            }
           }),
           proxy((message) => {
             this.setWarning(message);
@@ -306,6 +316,19 @@ export default class CutLayout extends Atom {
     }
   }
 
+  haltAndDisplay() {
+    if (this.cancelationHandle) {
+      this.cancelationHandle();
+      this.cancelationHandle = undefined;
+    }
+    this.progress = 1.0;
+    if (this.placements != undefined) {
+      this.displayLayout(true);
+    } else {
+      this.setWaiting();
+    }
+  }
+
   createInputParams(setInputChanged) {
     this.setInputChanged = setInputChanged;
     const placements = this.getPlacements();
@@ -314,9 +337,17 @@ export default class CutLayout extends Atom {
 
     inputParams["Compute Layout"] = {
       type: "button",
-      label: "Compute Layout",
+      label:
+        this.getState().status == Status.PROCESSING
+          ? "Halt Layout"
+          : "Compute Layout",
       onClick: () => {
-        this.updateValueButton();
+        if (this.getState().status == Status.PROCESSING) {
+          this.haltAndDisplay();
+        } else {
+          this.updateValueButton();
+        }
+        setInputChanged();
       },
     };
 
