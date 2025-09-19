@@ -201,7 +201,7 @@ export default class Molecule extends Atom {
         },
       };
     }
-    if (GlobalVariables.currentRepo.parentRepo != null && this.topLevel) {
+    if (GlobalVariables.currentAWSnode.parentRepo != null && this.topLevel) {
       inputParams["Reload from Github"] = {
         type: "button",
         label: "Reload from Github",
@@ -254,10 +254,9 @@ export default class Molecule extends Atom {
 
   async reloadFork() {
     const octokit = new Octokit();
-    let parent = GlobalVariables.currentRepo.parentRepo.split("/");
+    let parent = GlobalVariables.currentAWSnode.parentRepo.split("/");
     let parentOwner = parent[0];
     let parentRepo = parent[1];
-    console.log(GlobalVariables.currentRepo);
     octokit
       .request("GET /repos/{owner}/{repo}", {
         owner: parentOwner,
@@ -291,7 +290,6 @@ export default class Molecule extends Atom {
               );
             }
 
-            console.log("Fetched project.abundance content:", rawFileContent);
             let rawFile;
             try {
               rawFile = await this.asyncJsonParse(rawFileContent); // Use the async parser from previous answer

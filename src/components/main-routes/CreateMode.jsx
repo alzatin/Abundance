@@ -298,7 +298,7 @@ function CreateMode() {
     setTimeout(() => {
       setErrorNotification(null);
       authRedirectHandler({
-        redirectType: "reauth",
+        authType: "save",
         currentProjectRep,
         returnTo: `/${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`,
       });
@@ -505,13 +505,13 @@ function CreateMode() {
         /*aws dynamo update-item lambda, also updates dateModified on aws side*/
         const apiUpdateUrl =
           "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
-        let topicString = GlobalVariables.currentRepo.topics.join(" ");
+        let topicString = GlobalVariables.currentAWSnode.topics.join(" ");
         let searchField = (
           repo +
           " " +
           owner +
           " " +
-          GlobalVariables.currentRepo.description +
+          GlobalVariables.currentAWSnode.description +
           " " +
           topicString
         ).toLowerCase();
@@ -527,8 +527,8 @@ function CreateMode() {
               html_url: htmlURL,
               searchField: searchField,
               githubMoleculesUsed: githubMoleculeUsedList,
-              description: GlobalVariables.currentRepo.description,
-              topics: GlobalVariables.currentRepo.topics,
+              description: GlobalVariables.currentAWSnode.description,
+              topics: GlobalVariables.currentAWSnode.topics,
             },
           }),
           headers: {
@@ -551,7 +551,7 @@ function CreateMode() {
           `Save failed: ${error.message || "Unknown error occurred"}`
         );
         setTimeout(() => setErrorNotification(null), 5000);
-        setState(0); // Reset save progress
+        setSaveProgress(0); // Reset save progress
       }
 
       throw error; // Re-throw to let calling function handle it
@@ -846,7 +846,7 @@ function CreateMode() {
         authorizedUserOcto,
         {
           owner: GlobalVariables.currentUser,
-          repo: GlobalVariables.currentRepo.repoName,
+          repo: GlobalVariables.currentAWSnode.repoName,
           changes: {
             files: filesObject,
             commit: typeSave ? typeSave : "Auto Save",
@@ -873,8 +873,8 @@ function CreateMode() {
   const screenHeight = window.innerHeight;
   if (authorizedUserOcto) {
     if (
-      GlobalVariables.currentRepo &&
-      GlobalVariables.currentRepo.owner === GlobalVariables.currentUser
+      GlobalVariables.currentAWSnode &&
+      GlobalVariables.currentAWSnode.owner === GlobalVariables.currentUser
     ) {
       return (
         <>
@@ -1058,25 +1058,19 @@ function CreateMode() {
       );
     } else {
       // Fallback: navigate to run mode if repo is still missing
-      navigate(`/run/${owner && repoName ? `${owner}/${repoName}` : ""}`);
+      const { owner, repoName } = useParams();
+      console.log("No repository found, redirecting to run mode");
+      navigate(`/run/${owner}/${repoName}`);
     }
   } else {
     /** get repository from github by the id in the url */
     console.warn("You are not logged in");
     const { owner, repoName } = useParams();
-    var octokit = new Octokit();
-    octokit
-      .request("GET /repos/{owner}/{repo}", {
-        owner: owner,
-        repo: repoName,
-      })
-      .then((result) => {
-        GlobalVariables.currentRepoName = result.data.name;
-        GlobalVariables.currentRepo = result.data;
-        navigate(
-          `/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepoName}`
-        );
-      });
+    //try reauthenticating
+    authRedirectHandler({
+      redirectType: "reauth",
+      returnTo: `/${owner && repoName ? `${owner}/${repoName}` : ""}`,
+    });
   }
 }
 

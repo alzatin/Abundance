@@ -20,18 +20,10 @@ export function AuthProvider({ children }) {
    *   - returnTo: string (optional, for re-auth)
    */
   const authRedirectHandler = ({
-    redirectType,
+    authType,
     currentProjectRep,
     returnTo,
   } = {}) => {
-    let forking = false;
-    let liking = false;
-    console.log(currentProjectRep);
-    if (redirectType) {
-      if (redirectType === "fork") forking = true;
-      if (redirectType === "like") liking = true;
-    }
-
     // Save project if provided (for re-auth)
     if (currentProjectRep) {
       localStorage.setItem("pendingProjectSave", currentProjectRep);
@@ -55,28 +47,18 @@ export function AuthProvider({ children }) {
     // Repo for state param: use string for login, object for reauth
     let repoState = null;
     if (GlobalVariables.currentRepo) {
-      if (currentProjectRep || returnTo) {
-        // Re-auth: use object
-        repoState = {
-          owner: GlobalVariables.currentRepo.owner,
-          repo: GlobalVariables.currentRepo.repoName,
-        };
-      } else {
-        // Login: use string
-        repoState =
-          GlobalVariables.currentRepo.owner +
-          "/" +
-          GlobalVariables.currentRepo.repoName;
-      }
+      repoState = {
+        owner: GlobalVariables.currentRepo.owner.login,
+        repo: GlobalVariables.currentRepo.name,
+      };
     }
 
     // Build state param
     const stateObj = {
+      authType: authType,
       csrfToken: csrfToken,
       currentRepo: repoState,
     };
-    if (forking) stateObj.forking = true;
-    if (liking) stateObj.liking = true;
     if (returnTo) stateObj.returnTo = returnTo;
 
     const state = JSON.stringify(stateObj);

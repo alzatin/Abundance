@@ -138,8 +138,15 @@ function AppContent() {
 
   useEffect(() => {
     GlobalVariables.writeToDisplay = (id, resetView = false) => {
+      console.log(
+        "writeToDisplay called with id:",
+        id,
+        "resetView:",
+        resetView
+      );
       setOutdatedMesh(true);
       if (resetView) {
+        console.log("Resetting view for id:", id);
         cad
           .resetView()
           .then((m) => {
@@ -204,15 +211,15 @@ function AppContent() {
     GlobalVariables.cad = cad;
   }, [activeAtom, setMesh, setWireMesh, setOutdatedMesh, setRenderProgress]);
 
-  // Loads project
+  /**
+   * Load a project from the repository
+   * @param {*} project   The project to load as an AWS node
+   * @param {*} authorizedUser The authorized user for the request
+   * @returns
+   */
   const loadProject = function (project, authorizedUser) {
-    console.log("Loading project:", project);
-    console.log("Authorized user:", authorizedUser);
     GlobalVariables.recentMoleculeRepresentation = [];
     GlobalVariables.undoOperationHistory = [];
-    GlobalVariables.loadedRepo = project;
-    GlobalVariables.currentRepoName = project.repoName;
-    GlobalVariables.currentRepo = project;
     GlobalVariables.totalAtomCount = 0;
     GlobalVariables.numberOfAtomsToLoad = 0;
     GlobalVariables.startTime = new Date().getTime();
@@ -222,6 +229,18 @@ function AppContent() {
     } else {
       var octokit = new Octokit();
     }
+    // Sets the current repo information from node data
+    octokit
+      .request("GET /repos/{owner}/{repo}", {
+        owner: project.owner,
+        repo: project.repoName,
+      })
+      .then(async (response) => {
+        GlobalVariables.loadedRepo = response.data;
+        GlobalVariables.currentRepo = response.data;
+        GlobalVariables.currentRepoName = project.repoName;
+      });
+
     return octokit
       .request("GET /repos/{owner}/{repo}/contents/project.abundance", {
         owner: project.owner,
@@ -229,7 +248,6 @@ function AppContent() {
       })
       .then(async (response) => {
         let rawFileContent;
-
         // Handle large files (>1MB) using download_url
         if (!response.data.content || response.data.content.length === 0) {
           const fileResponse = await fetch(response.data.download_url);
@@ -249,8 +267,10 @@ function AppContent() {
           // For older file versions, try to deserialize directly for now
           GlobalVariables.topLevelMolecule.deserialize(rawFile);
         }
-        setActiveAtom(GlobalVariables.currentMolecule);
+        GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
         GlobalVariables.currentMolecule.selected = true;
+
+        setActiveAtom(GlobalVariables.currentMolecule);
       })
       .catch((e) => {
         // If error is about bad credentials, trigger re-authentication
@@ -263,7 +283,7 @@ function AppContent() {
           //
           // Redirect to /callback or trigger your OAuth flow here
           authRedirectHandler({
-            redirectType: "reauth",
+            authType: "reauth",
             currentProjectRep: undefined,
             returnTo: `/`,
           });

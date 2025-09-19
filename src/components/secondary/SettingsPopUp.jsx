@@ -18,15 +18,17 @@ const SettingsPopUp = ({
   backgroundUsdzFile,
 }) => {
   let repoTopics = [];
-  if (Globalvariables.currentRepo.topics.length > 0) {
-    Globalvariables.currentRepo.topics.forEach((topic) => {
+  if (Globalvariables.currentAWSnode.topics.length > 0) {
+    Globalvariables.currentAWSnode.topics.forEach((topic) => {
       repoTopics.push({ value: topic, label: topic });
     });
   }
   // Controlled state for CreatableSelect
   const [selectedTopics, setSelectedTopics] = useState(repoTopics);
-  const projectDescriptionRef = useRef(Globalvariables.currentRepo.description);
-  const dateString = Globalvariables.currentRepo.dateCreated;
+  const projectDescriptionRef = useRef(
+    Globalvariables.currentAWSnode.description
+  );
+  const dateString = Globalvariables.currentAWSnode.dateCreated;
   const dateCreated = new Date(dateString);
 
   const handleSubmit = async (e) => {
@@ -34,13 +36,13 @@ const SettingsPopUp = ({
     setSettingsPopUp(false);
     // Use controlled topics state
     const projectTopic = selectedTopics.map((topic) => topic.value);
-    Globalvariables.currentRepo.description =
+    Globalvariables.currentAWSnode.description =
       projectDescriptionRef.current.value;
     setState({
       ...state,
       projectDescription: projectDescriptionRef.current.value,
     });
-    Globalvariables.currentRepo.topics = projectTopic;
+    Globalvariables.currentAWSnode.topics = projectTopic;
   };
   const [value, setValue] = React.useState(0);
 
@@ -68,7 +70,7 @@ const SettingsPopUp = ({
       10
     ),
     atomSize: Globalvariables.atomSize * 1000,
-    projectDescription: Globalvariables.currentRepo.description,
+    projectDescription: Globalvariables.currentAWSnode.description,
   });
 
   const handleValueChange = (event) => {
@@ -157,7 +159,7 @@ const SettingsPopUp = ({
               <div id="project-info-name">
                 <label className="info-label-highlight">Project Name</label>
                 <p title="To change the Project Name go to your Github repository">
-                  {Globalvariables.currentRepo.repoName}
+                  {Globalvariables.currentAWSnode.repoName}
                 </p>
               </div>
               <div id="project-info-date">
@@ -252,7 +254,7 @@ const SettingsPopUp = ({
                 </label>
                 <textarea
                   id="project-description"
-                  defaultValue={Globalvariables.currentRepo.description}
+                  defaultValue={Globalvariables.currentAWSnode.description}
                   ref={projectDescriptionRef}
                   name="projectDescription"
                   rows={3}

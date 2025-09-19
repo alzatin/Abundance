@@ -47,11 +47,11 @@ export default memo(function FlowCanvas({
     /** Only run loadproject() if the project is different from what is already loaded  */
     if (
       !GlobalVariables.loadedRepo ||
-      GlobalVariables.currentRepo.repoName !==
+      GlobalVariables.currentAWSnode.repoName !==
         GlobalVariables.loadedRepo.repoName
     ) {
       GlobalVariables.writeToDisplay(
-        GlobalVariables.currentRepo.topMoleculeID,
+        GlobalVariables.currentAWSnode.topMoleculeID,
         true
       );
       //Load a blank project
@@ -64,7 +64,8 @@ export default memo(function FlowCanvas({
       GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
 
       /*if you've been redirected after reauthentication*/
-      if (redirectType === "return" && authorizedUserOcto) {
+      if (redirectType === "save" && authorizedUserOcto) {
+        console.log("Loading pending project after reauthentication...");
         // If there's a pending project save in local storage, load it
         const pendingProject = localStorage.getItem("pendingProjectSave");
         if (pendingProject) {
@@ -78,6 +79,7 @@ export default memo(function FlowCanvas({
           }
           setActiveAtom(GlobalVariables.currentMolecule);
           GlobalVariables.currentMolecule.selected = true;
+          GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
           //trigger a save to clear the pending project
           setSavePopUp(true);
           saveProject(setSaveState, "auto-save after reauthentication").then(
@@ -88,11 +90,7 @@ export default memo(function FlowCanvas({
           );
         }
       } else {
-        loadProject(GlobalVariables.currentRepo, authorizedUserOcto).catch(
-          (error) => {
-            navigate("/");
-          }
-        );
+        loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto);
       }
     }
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {

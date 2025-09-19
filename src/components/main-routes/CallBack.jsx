@@ -66,41 +66,40 @@ const Callback = ({ setRedirectType }) => {
         const stateParam = params.get("state");
         const state = stateParam ? JSON.parse(stateParam) : {};
         console.log(state);
-        if (state.forking && state.currentRepo && authorizedUser) {
+        setRedirectType(state.authType);
+        if (state.authType === "fork" || state.authType === "like") {
           navigate(`/run/${state.currentRepo}`);
-          setRedirectType("fork");
-        } else if (state.liking && state.currentRepo && authorizedUser) {
-          navigate(`/run/${state.currentRepo}`);
-          setRedirectType("like");
         } else if (state.returnTo && authorizedUser) {
-          console.log(state);
-          setRedirectType("reauth");
-          // Try to fetch the repo and set it, then re-render
-          const owner = state.currentRepo.owner;
-          const repoName = state.currentRepo.repo;
-          console.log(owner, repoName);
-          authorizedUser
-            .request("GET /repos/{owner}/{repo}", {
-              owner: owner,
-              repo: repoName,
+          let owner, repoName;
+          if (state.authType === "reauth" && state.currentRepo) {
+            owner = state.currentRepo.owner;
+            repoName = state.currentRepo.repo;
+          } else if (state.authType === "reauth" && !state.currentRepo) {
+            // Handle re-authentication without a current repo
+            navigate("/");
+            return;
+          } else {
+            // Match /run/owner/repoName or /owner/repoName
+            const match = state.returnTo.match(
+              /(?:\/run)?\/(\w[\w-]*)\/(\w[\w-]*)/
+            );
+            if (match) {
+              owner = match[1];
+              repoName = match[2];
+            }
+          }
+          fetch(
+            `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
+          )
+            .then((res) => res.json())
+            .then((data) => {
+              if (data && data.item) {
+                GlobalVariables.currentAWSnode = data.item;
+                navigate(state.returnTo);
+              }
             })
-            .then((result) => {
-              console.log("Fetched repo:", result.data);
-              GlobalVariables.currentRepoName = result.data.name;
-              GlobalVariables.currentRepo = result.data;
-              // this is getting replaced because of the diff between the aws node and the github api (see RunMode.jsx)
-              GlobalVariables.currentRepo.owner =
-                GlobalVariables.currentRepo.owner.login;
-              GlobalVariables.currentRepo.repoName =
-                GlobalVariables.currentRepo.name;
-              navigate(state.returnTo);
-              // After setting, force a rerender by updating state (if needed)
-            })
-            .catch((err) => {
-              console.error(
-                "Failed to fetch repo from params in CreateMode:",
-                err
-              );
+            .catch((e) => {
+              console.error("Error fetching AWS project data:", e);
               // If fetch fails, fallback to run mode
               navigate(`/run/${owner}/${repoName}`);
             });

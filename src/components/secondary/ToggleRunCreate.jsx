@@ -20,7 +20,7 @@ function ToggleRunCreate({ run, isItOwned }) {
             }
             to={
               GlobalVariables.currentRepo
-                ? `/run/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`
+                ? `/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`
                 : "/run"
             }
             onClick={handleChange}
@@ -67,7 +67,7 @@ function ToggleRunCreate({ run, isItOwned }) {
             key={GlobalVariables.currentRepo.id}
             to={
               isItOwned
-                ? `/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`
+                ? `/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`
                 : "/"
             }
             onClick={handleChange}
