@@ -1148,6 +1148,21 @@ export default class Molecule extends Atom {
   remapIDs(json) {
     let idPairs = {};
 
+    // Helper function to recursively process nested atoms
+    const processNestedAtoms = (obj) => {
+      if (obj.allAtoms) {
+        obj.allAtoms.forEach((atom) => {
+          let oldID = atom.uniqueID;
+          let newID = GlobalVariables.generateUniqueID();
+          idPairs[oldID] = newID;
+          atom.uniqueID = newID;
+          
+          // Recursively process any nested atoms (e.g., within GitHubMolecules)
+          processNestedAtoms(atom);
+        });
+      }
+    };
+
     // Always ensure the main atom/molecule gets a new ID if it doesn't already have one assigned
     if (json.uniqueID && !json.uniqueID.toString().startsWith("temp-new-")) {
       let oldMainID = json.uniqueID;
@@ -1156,18 +1171,13 @@ export default class Molecule extends Atom {
       json.uniqueID = newMainID;
     }
 
-    // Handle nested atoms if they exist
-    if (json.allAtoms) {
-      json.allAtoms.forEach((atom) => {
-        let oldID = atom.uniqueID;
-        let newID = GlobalVariables.generateUniqueID();
-        idPairs[oldID] = newID;
-        atom.uniqueID = newID;
-      });
+    // Process all nested atoms recursively
+    processNestedAtoms(json);
 
-      // Handle connectors if they exist
-      if (json.allConnectors) {
-        json.allConnectors.forEach((connector) => {
+    // Helper function to recursively process connectors
+    const processConnectors = (obj) => {
+      if (obj.allConnectors) {
+        obj.allConnectors.forEach((connector) => {
           if (connector.ap1ID && idPairs[connector.ap1ID]) {
             connector.ap1ID = idPairs[connector.ap1ID];
           }
@@ -1180,7 +1190,15 @@ export default class Molecule extends Atom {
           }
         });
       }
-    }
+      
+      // Process connectors in nested atoms recursively
+      if (obj.allAtoms) {
+        obj.allAtoms.forEach(atom => processConnectors(atom));
+      }
+    };
+
+    // Handle all connectors recursively
+    processConnectors(json);
 
     return json;
   }
