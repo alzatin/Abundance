@@ -298,7 +298,7 @@ function CreateMode() {
     setTimeout(() => {
       setErrorNotification(null);
       authRedirectHandler({
-        redirectType: "reauth",
+        authType: "save",
         currentProjectRep,
         returnTo: `/${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`,
       });

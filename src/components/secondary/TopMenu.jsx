@@ -103,7 +103,8 @@ function TopMenu({
       buttonFunc: () => {
         // Re-authentication logic - redirect to GitHub OAuth
         authRedirectHandler({
-          redirectType: "reauth",
+          authType: "reauth",
+          currentRepo: GlobalVariables.currentRepo,
           returnTo: `/${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`,
         });
       },

@@ -474,7 +474,7 @@ function RunNavigation({
           onClick={() => {
             authorizedUserOcto
               ? forkProject(authorizedUserOcto)
-              : authRedirectHandler({ redirectType: "fork" });
+              : authRedirectHandler({ authType: "fork" });
           }}
         >
           {forkSvg}
@@ -488,7 +488,7 @@ function RunNavigation({
               ? likeProject(authorizedUserOcto)
               : authorizedUserOcto && starred
               ? unlikeProject(authorizedUserOcto)
-              : authRedirectHandler({ redirectType: "like" });
+              : authRedirectHandler({ authType: "like" });
           }}
         >
           {starSvg}

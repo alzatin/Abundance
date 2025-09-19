@@ -66,18 +66,18 @@ const Callback = ({ setRedirectType }) => {
         const stateParam = params.get("state");
         const state = stateParam ? JSON.parse(stateParam) : {};
         console.log(state);
-        if (state.forking && state.currentRepo && authorizedUser) {
+        setRedirectType(state.authType);
+        if (state.authType === "fork" || state.authType === "like") {
           navigate(`/run/${state.currentRepo}`);
-          setRedirectType("fork");
-        } else if (state.liking && state.currentRepo && authorizedUser) {
-          navigate(`/run/${state.currentRepo}`);
-          setRedirectType("like");
         } else if (state.returnTo && authorizedUser) {
           let owner, repoName;
-          if (state.currentRepo) {
-            setRedirectType("return");
+          if (state.authType === "reauth" && state.currentRepo) {
             owner = state.currentRepo.owner;
             repoName = state.currentRepo.repo;
+          } else if (state.authType === "reauth" && !state.currentRepo) {
+            // Handle re-authentication without a current repo
+            navigate("/");
+            return;
           } else {
             // Match /run/owner/repoName or /owner/repoName
             const match = state.returnTo.match(
@@ -88,7 +88,6 @@ const Callback = ({ setRedirectType }) => {
               repoName = match[2];
             }
           }
-
           fetch(
             `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
           )
