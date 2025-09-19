@@ -73,10 +73,21 @@ const Callback = ({ setRedirectType }) => {
           navigate(`/run/${state.currentRepo}`);
           setRedirectType("like");
         } else if (state.returnTo && authorizedUser) {
-          setRedirectType("return");
-          // Try to fetch the repo and set it, then re-render
-          const owner = state.currentRepo.owner;
-          const repoName = state.currentRepo.repo;
+          let owner, repoName;
+          if (state.currentRepo) {
+            setRedirectType("return");
+            owner = state.currentRepo.owner;
+            repoName = state.currentRepo.repo;
+          } else {
+            // Match /run/owner/repoName or /owner/repoName
+            const match = state.returnTo.match(
+              /(?:\/run)?\/(\w[\w-]*)\/(\w[\w-]*)/
+            );
+            if (match) {
+              owner = match[1];
+              repoName = match[2];
+            }
+          }
 
           fetch(
             `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`

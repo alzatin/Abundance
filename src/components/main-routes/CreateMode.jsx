@@ -1062,22 +1062,16 @@ function CreateMode() {
       navigate(`/run/${owner && repoName ? `${owner}/${repoName}` : ""}`);
     }
   } else {
+    console.log(GlobalVariables.currentAWSnode);
     /** get repository from github by the id in the url */
     console.warn("You are not logged in");
     const { owner, repoName } = useParams();
-    var octokit = new Octokit();
-    octokit
-      .request("GET /repos/{owner}/{repo}", {
-        owner: owner,
-        repo: repoName,
-      })
-      .then((result) => {
-        GlobalVariables.currentRepoName = result.data.name;
-        GlobalVariables.currentRepo = result.data;
-        navigate(
-          `/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepoName}`
-        );
-      });
+    console.log(owner, repoName);
+    //try reauthenticating
+    authRedirectHandler({
+      redirectType: "reauth",
+      returnTo: `/${owner && repoName ? `${owner}/${repoName}` : ""}`,
+    });
   }
 }
 

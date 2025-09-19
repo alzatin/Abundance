@@ -99,47 +99,56 @@ function runMode() {
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;
     GlobalVariables.c = canvasRef.current.getContext("2d");
-    // Fetch project data from AWS before loading the project
-    if (
-      !GlobalVariables.currentRepo ||
-      GlobalVariables.currentRepo.name !== repoName
-    ) {
-      console.log("Fetching AWS project data in run mode...");
-      fetch(
-        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
-      )
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && data.item) {
-            GlobalVariables.currentAWSnode = data.item;
-
-            //Load a blank project
-            GlobalVariables.topLevelMolecule = new Molecule({
-              x: 0,
-              y: 0,
-              topLevel: true,
-              atomType: "Molecule",
-            });
-            GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
-            GlobalVariables.currentMolecule.selected = true;
-            loadProject(GlobalVariables.currentAWSnode);
-          }
-        })
-        .catch((e) => {
-          console.error("Error fetching AWS project data:", e);
-        });
+    /** Only run loadproject() if the project is different from what is already loaded and clear screen */
+    if (GlobalVariables.currentAWSnode) {
+      if (
+        !GlobalVariables.loadedRepo ||
+        GlobalVariables.currentAWSnode.repoName !==
+          GlobalVariables.loadedRepo.repoName
+      ) {
+        GlobalVariables.writeToDisplay(
+          GlobalVariables.currentAWSnode.topMoleculeID,
+          true
+        );
+      }
     }
+
+    fetch(
+      `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.item) {
+          GlobalVariables.currentAWSnode = data.item;
+
+          //Load a blank project
+          GlobalVariables.topLevelMolecule = new Molecule({
+            x: 0,
+            y: 0,
+            topLevel: true,
+            atomType: "Molecule",
+          });
+          GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
+          GlobalVariables.currentMolecule.selected = true;
+          loadProject(GlobalVariables.currentAWSnode);
+        }
+      })
+      .catch((e) => {
+        console.error("Error fetching AWS project data:", e);
+      });
+
     if (
       GlobalVariables.currentRepo &&
       GlobalVariables.currentRepo.owner.login == GlobalVariables.currentUser
     ) {
       console.log("Setting ownership state in run mode...");
-
       setOwned(true);
     }
   }, []);
   const screenHeight = window.innerHeight;
   const screenWidth = window.innerWidth;
+
+  console.log(activeAtom);
 
   return (
     <>

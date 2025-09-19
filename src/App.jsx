@@ -236,7 +236,6 @@ function AppContent() {
         repo: project.repoName,
       })
       .then(async (response) => {
-        console.log("Setting currentRepo");
         GlobalVariables.loadedRepo = response.data;
         GlobalVariables.currentRepo = response.data;
         GlobalVariables.currentRepoName = project.repoName;
@@ -271,6 +270,7 @@ function AppContent() {
         }
         GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
         GlobalVariables.currentMolecule.selected = true;
+
         setActiveAtom(GlobalVariables.currentMolecule);
       })
       .catch((e) => {
