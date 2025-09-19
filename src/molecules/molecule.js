@@ -854,6 +854,7 @@ export default class Molecule extends Atom {
       // This is the output of the currently focused molecule
       // don't dispatch changes upstream because those entities aren't
       // shown.
+      this.selfSubscriber();
       return;
     }
     super.propagateChange();
@@ -1156,7 +1157,7 @@ export default class Molecule extends Atom {
           let newID = GlobalVariables.generateUniqueID();
           idPairs[oldID] = newID;
           atom.uniqueID = newID;
-          
+
           // Recursively process any nested atoms (e.g., within GitHubMolecules)
           processNestedAtoms(atom);
         });
@@ -1190,10 +1191,10 @@ export default class Molecule extends Atom {
           }
         });
       }
-      
+
       // Process connectors in nested atoms recursively
       if (obj.allAtoms) {
-        obj.allAtoms.forEach(atom => processConnectors(atom));
+        obj.allAtoms.forEach((atom) => processConnectors(atom));
       }
     };
 
