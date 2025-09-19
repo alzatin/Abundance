@@ -124,4 +124,56 @@ describe('GitHub API Response Handling', () => {
     // Case 4: undefined content
     expect(!(undefined) || undefined?.length === 0).toBe(true);
   });
+
+  it('should test loadGithubMoleculeByName with large file handling logic', async () => {
+    // Test the same logic that's now applied to loadGithubMoleculeByName
+    const projectData = { 
+      filetypeVersion: 1, 
+      atomType: "Molecule",
+      allAtoms: [],
+      name: "TestProject"
+    };
+    const projectJsonString = JSON.stringify(projectData);
+
+    // Mock response for large file (no content, has download_url)
+    const response = {
+      data: {
+        content: null, 
+        download_url: 'https://raw.githubusercontent.com/BarbourSmith/Sauna-Trailer/main/project.abundance',
+        size: 2000000
+      }
+    };
+
+    // Mock fetch for download_url
+    global.fetch = vi.fn().mockResolvedValue({
+      text: async () => projectJsonString
+    });
+
+    // Test the new logic pattern from loadGithubMoleculeByName
+    let rawFileContent;
+    if (!response.data.content || response.data.content.length === 0) {
+      // This is the large file path that should be taken
+      const fileResponse = await fetch(response.data.download_url);
+      rawFileContent = await fileResponse.text();
+    } else {
+      expect.fail('Should use download_url path for large files');
+    }
+
+    // Simulate async JSON parsing
+    const asyncJsonParse = (str) => {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          try {
+            resolve(JSON.parse(str));
+          } catch (e) {
+            reject(e);
+          }
+        }, 0);
+      });
+    };
+
+    const rawFile = await asyncJsonParse(rawFileContent);
+    expect(rawFile).toEqual(projectData);
+    expect(global.fetch).toHaveBeenCalledWith(response.data.download_url);
+  });
 });

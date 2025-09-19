@@ -1076,10 +1076,26 @@ export default class Molecule extends Atom {
           owner: gitObj.owner,
           repo: gitObj.repoName,
         })
-        .then((response) => {
-          let rawFile = JSON.parse(
-            GlobalVariables.fromBinaryStr(atob(response.data.content))
-          );
+        .then(async (response) => {
+          let rawFileContent;
+          // Handle large files (>1MB) using download_url
+          if (!response.data.content || response.data.content.length === 0) {
+            const fileResponse = await fetch(response.data.download_url);
+            rawFileContent = await fileResponse.text();
+          } else {
+            // Handle small files using base64 content with UTF-8 encoding
+            rawFileContent = GlobalVariables.fromBinaryStr(
+              atob(response.data.content)
+            );
+          }
+
+          let rawFile;
+          try {
+            rawFile = await this.asyncJsonParse(rawFileContent);
+          } catch (err) {
+            console.error("Failed to parse project.abundance:", err);
+            return;
+          }
           let rawFileWithNewIds = this.remapIDs(rawFile);
           rawFileWithNewIds.atomType = "GitHubMolecule";
 
