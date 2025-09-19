@@ -380,10 +380,13 @@ export default class Connector {
    * Computes the connectors position and draw it to the screen.
    */
   update() {
+    // Ensure attachment points have correct positions based on current molecule positions
+    this.attachmentPoint1.unexpand();
     this.startX = this.attachmentPoint1.x;
     this.startY = this.attachmentPoint1.y;
     if (this.attachmentPoint2) {
       //check to see if the attachment point is defined
+      this.attachmentPoint2.unexpand();
       this.endX = this.attachmentPoint2.x;
       this.endY = this.attachmentPoint2.y;
     }
