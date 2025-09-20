@@ -96,7 +96,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
       ? "byStars"
       : projectToShow == "all"
       ? "byDateModified"
-      : projectToShow == "recents"
+      : projectToShow == "owned"
       ? "byDateModified"
       : "byName";
 
@@ -589,20 +589,6 @@ const ShowProjects = ({
       { signal }
     ).then((res) => res.json());
   };
-  const fetchRecents = async ({ signal }) => {
-    return fetch(
-      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/queryRecentProjects?" +
-        "attribute=searchField" +
-        "&query=" +
-        debouncedSearchTerm +
-        "&yearShow=" +
-        yearShow +
-        "&user=" +
-        user +
-        lastKeyQuery,
-      { signal }
-    ).then((res) => res.json());
-  };
   const fetchLikedRepos = async ({ signal }) => {
     return fetch(
       "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE?user=" +
@@ -640,15 +626,6 @@ const ShowProjects = ({
   });
 
   const {
-    data: recentRepos,
-    isLoading: isLoadingRecents,
-    isError: isErrorRecents,
-  } = useQuery({
-    queryKey: ["recentRepos", debouncedSearchTerm],
-    queryFn: fetchRecents,
-  });
-
-  const {
     data: likedRepos,
     isLoading: isLoadingLiked,
     isError: isErrorLiked,
@@ -658,7 +635,7 @@ const ShowProjects = ({
   });
 
   useEffect(() => {
-    setProjectsToShow(user ? "recents" : "featured");
+    setProjectsToShow(user ? "owned" : "featured");
   }, [GlobalVariables.currentUser]);
 
   const forkProject = async function (authorizedUserOcto, owner, repo) {
@@ -760,17 +737,6 @@ const ShowProjects = ({
         }}
       >
         <p>My Projects</p>
-      </div>
-      <div
-        className={
-          "login-nav-item" +
-          (projectToShow == "recents" ? " login-nav-item-clicked" : "")
-        }
-        onClick={() => {
-          setProjectsToShow("recents");
-        }}
-      >
-        <p> Recent Projects</p>
       </div>
       <div
         className={
@@ -907,12 +873,6 @@ const ShowProjects = ({
       data: likedRepos,
       loading: isLoadingLiked,
       error: isErrorLiked,
-    },
-    recents: {
-      label: "Recent Projects",
-      data: recentRepos,
-      loading: isLoadingRecents,
-      error: isErrorRecents,
     },
   };
 
@@ -1130,17 +1090,6 @@ function LoginMode() {
                 }}
               >
                 <p>My Projects</p>
-              </div>
-              <div
-                className={
-                  "login-nav-item" +
-                  (projectToShow == "recents" ? " login-nav-item-clicked" : "")
-                }
-                onClick={() => {
-                  setProjectsToShow("recents");
-                }}
-              >
-                <p> Recent Projects</p>
               </div>
               <div
                 className={
