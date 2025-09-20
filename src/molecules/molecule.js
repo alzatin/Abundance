@@ -1503,6 +1503,21 @@ export default class Molecule extends Atom {
         }
       }
 
+      // Ensure attachment points have correct positions during project loading
+      // Update output attachment point position
+      outputAttachmentPoint.y = outputAttachmentPoint.parentMolecule.y;
+      if (outputAttachmentPoint.parentMolecule.atomType == "Input") {
+        outputAttachmentPoint.x = GlobalVariables.atomSize * 3.5;
+      } else {
+        outputAttachmentPoint.x = outputAttachmentPoint.parentMolecule.x + outputAttachmentPoint.parentMolecule.radius;
+      }
+      [outputAttachmentPoint.x, outputAttachmentPoint.y] = GlobalVariables.constrainToCanvasBorders(outputAttachmentPoint.x, outputAttachmentPoint.y);
+      
+      // Update input attachment point position  
+      inputAttachmentPoint.y = inputAttachmentPoint.parentMolecule.y;
+      inputAttachmentPoint.x = inputAttachmentPoint.parentMolecule.x - inputAttachmentPoint.parentMolecule.radius;
+      [inputAttachmentPoint.x, inputAttachmentPoint.y] = GlobalVariables.constrainToCanvasBorders(inputAttachmentPoint.x, inputAttachmentPoint.y);
+
       new Connector({
         atomType: "Connector",
         attachmentPoint1: outputAttachmentPoint,
