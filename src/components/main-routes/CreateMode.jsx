@@ -951,7 +951,7 @@ function CreateMode() {
                 {" "}
                 {GlobalVariables.currentRepo ? (
                   <Link
-                    to={`/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`}
+                    to={`/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`}
                   >
                     <button className="closeButton">
                       <img></img>

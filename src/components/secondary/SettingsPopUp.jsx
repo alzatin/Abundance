@@ -83,7 +83,7 @@ const SettingsPopUp = ({
       localStorage.setItem("atomSize", event.target.value / 1000);
     }
     if (event.target.name === "projectDescription") {
-      Globalvariables.currentRepo.description = event.target.value;
+      Globalvariables.currentAWSnode.description = event.target.value;
     }
     if (event.target.name === "fontSize") {
       Globalvariables.canvasFont = `${event.target.value}px Work Sans Bold`;

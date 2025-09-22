@@ -138,10 +138,10 @@ function runMode() {
       });
 
     if (
-      GlobalVariables.currentRepo &&
-      GlobalVariables.currentRepo.owner.login == GlobalVariables.currentUser
+      GlobalVariables.currentAWSnode &&
+      GlobalVariables.currentAWSnode.owner == GlobalVariables.currentUser
     ) {
-      console.log("Setting ownership state in run mode...");
+      console.log("You own this project");
       setOwned(true);
     }
   }, []);

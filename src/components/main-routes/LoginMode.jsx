@@ -280,6 +280,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
 };
 
 const ProjectDiv = ({ nodes, browseType, orderType }) => {
+  console.log("Rendering ProjectDiv with nodes:", nodes);
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
@@ -323,7 +324,6 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
         id={node.repoName}
         onClick={() => {
           GlobalVariables.currentAWSnode = node;
-          //GlobalVariables.currentRepo = node;
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node)}
       >
@@ -386,7 +386,6 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
         id={node.node.id}
         onClick={() => {
           GlobalVariables.currentAWSnode = node.node;
-          //GlobalVariables.currentRepo = node.node;
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node.node)} // <-- add right-click handler for list mode
       >
@@ -587,7 +586,11 @@ const ShowProjects = ({
     return fetch(
       "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/queryFeaturedProjects",
       { signal }
-    ).then((res) => res.json());
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        return data;
+      });
   };
   const fetchLikedRepos = async ({ signal }) => {
     return fetch(
@@ -595,7 +598,11 @@ const ShowProjects = ({
         user +
         "&liked=true",
       { signal }
-    ).then((res) => res.json());
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        return data;
+      });
   };
 
   const {
@@ -1011,7 +1018,7 @@ function LoginMode() {
         GlobalVariables.currentRepo.owner == GlobalVariables.currentUser &&
         isAuthorized ? (
           <Link
-            to={`/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`}
+            to={`/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`}
           >
             <button
               className="longButton"

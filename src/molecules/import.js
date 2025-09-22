@@ -263,16 +263,16 @@ export default class Import extends Atom {
     this.fileName = file.name;
     this.sha = sha;
     if (
-      !GlobalVariables.currentRepo?.owner ||
+      !GlobalVariables.currentAWSnode?.owner ||
       !GlobalVariables.currentRepoName
     ) {
       console.warn("Repository information not available");
       return;
     }
-    this.repoOwner = GlobalVariables.currentRepo.owner;
+    this.repoOwner = GlobalVariables.currentAWSnode.owner;
     this.repoName = GlobalVariables.currentRepoName;
 
-    this.repoOwner = GlobalVariables.currentRepo.owner;
+    this.repoOwner = GlobalVariables.currentAWSnode.owner;
     this.repoName = GlobalVariables.currentRepoName;
     this.loadAndPropagate();
   }
