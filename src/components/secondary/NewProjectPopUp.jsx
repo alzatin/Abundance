@@ -159,7 +159,7 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
             "Content-type": "application/json; charset=UTF-8",
           },
         }).then((response) => {
-          GlobalVariables.currentRepo = newProjectBody;
+          GlobalVariables.currentAWSnode = newProjectBody;
         });
 
         /* add to user table */
@@ -269,7 +269,7 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
                                       .then(() => {
                                         setExportPopUp(false);
                                         navigate(
-                                          `/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`
+                                          `/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`
                                         );
                                       });
                                   });
