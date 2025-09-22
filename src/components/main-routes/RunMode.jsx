@@ -86,9 +86,47 @@ function runMode() {
 
   const [cameraZoom, setCameraZoom] = useState(1);
 
+  /* Creates an element to check with Puppeteer if the molecule is fully loaded*/
+  const createPuppeteerDiv = () => {
+    // Check if the div already exists
+    const existingDiv = document.getElementById(
+      "molecule-fully-render-puppeteer"
+    );
+    if (!existingDiv) {
+      // If it doesn't exist, create it
+      const invisibleDiv = document.createElement("div");
+      invisibleDiv.id = "molecule-fully-render-puppeteer";
+      invisibleDiv.style.display = "none";
+      document.body.appendChild(invisibleDiv);
+      console.log("Puppeteer element created for run mode");
+    }
+  };
+
   useEffect(() => {
     setCameraZoom(mesh[0] ? mesh[0].cameraZoom : 1);
   }, [mesh]);
+
+  // Create Puppeteer element when render is complete
+  useEffect(() => {
+    if (renderProgress >= 100 && !renderBarVisible) {
+      // Wait a bit to ensure everything is settled
+      const timer = setTimeout(() => {
+        createPuppeteerDiv();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [renderProgress, renderBarVisible]);
+
+  // Fallback: Create Puppeteer element after project loads and mesh is available
+  useEffect(() => {
+    if (wireMesh && mesh) {
+      // Wait for the project to settle, then create the element
+      const timer = setTimeout(() => {
+        createPuppeteerDiv();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [wireMesh, mesh]);
 
   /** State for menu content collapsing */
   // Which menu is expanded: "params", "render", "bom", or "none"

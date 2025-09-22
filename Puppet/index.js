@@ -170,7 +170,7 @@ async function loadPuppeteerAndExec(browser, date) {
       await page.waitForFunction(
         (selector) => !!document.querySelector(selector),
         { timeout: 120000 }, // Increase timeout to 2 minutes
-        selector
+        "#molecule-fully-render-puppeteer"
       );
 
       // Wait a bit for the page to load
