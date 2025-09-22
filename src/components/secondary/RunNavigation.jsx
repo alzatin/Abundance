@@ -146,8 +146,8 @@ function RunNavigation({
   useEffect(() => {
     // check if the current user has starred the project
     if (authorizedUserOcto) {
-      var owner = GlobalVariables.currentRepo.owner;
-      var repoName = GlobalVariables.currentRepo.repoName;
+      var owner = GlobalVariables.currentAWSnode.owner;
+      var repoName = GlobalVariables.currentAWSnode.repoName;
 
       const fetchUserData = async () => {
         /*get liked repos from user table*/
@@ -196,8 +196,8 @@ function RunNavigation({
    * Like a project on github by unique ID.
    */
   const likeProject = function () {
-    var owner = GlobalVariables.currentRepo.owner;
-    var repoName = GlobalVariables.currentRepo.repoName;
+    var owner = GlobalVariables.currentAWSnode.owner;
+    var repoName = GlobalVariables.currentAWSnode.repoName;
     //disable button before api call so user can't click multiple times
     starred = true;
     document.getElementById("Star-button").disabled = true;
@@ -222,14 +222,14 @@ function RunNavigation({
       const apiUpdateUserUrl =
         "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE";
       let searchField = (
-        GlobalVariables.currentRepo.name +
+        GlobalVariables.currentAWSnode.name +
         " " +
-        GlobalVariables.currentRepo.owner
+        GlobalVariables.currentAWSnode.owner
       ).toLowerCase();
       let likedNodeBody = {
-        owner: GlobalVariables.currentRepo.owner,
+        owner: GlobalVariables.currentAWSnode.owner,
         ranking: GlobalVariables.currentRepo.stargazers_count,
-        description: GlobalVariables.currentRepo.description,
+        description: GlobalVariables.currentAWSnode.description,
         searchField: searchField,
         repoName: GlobalVariables.currentRepo.name,
         forks: 0,
@@ -300,8 +300,8 @@ function RunNavigation({
     }*/
   };
   const unlikeProject = function () {
-    var owner = GlobalVariables.currentRepo.owner;
-    var repoName = GlobalVariables.currentRepo.repoName;
+    var owner = GlobalVariables.currentAWSnode.owner;
+    var repoName = GlobalVariables.currentAWSnode.repoName;
     //disable button before api call so user can't click multiple times
     starred = false;
     document.getElementById("Star-button").disabled = true;
@@ -357,15 +357,15 @@ function RunNavigation({
 
   /** forkProject takes care of making the octokit request for the authenticated user to make a copy of a not owned repo */
   const forkProject = async function (authorizedUserOcto) {
-    var owner = GlobalVariables.currentRepo.owner;
-    var repo = GlobalVariables.currentRepo.repoName;
+    var owner = GlobalVariables.currentAWSnode.owner;
+    var repo = GlobalVariables.currentAWSnode.repoName;
     // if authenticated and it is not your project, make a clone of the project and return to create mode
     if (owner === GlobalVariables.currentUser) {
       // Prevent forking your own project
       setRedirectType(null);
       console.warn("You cannot fork your own project.");
       navigate(
-        `/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`
+        `/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`
       );
       return;
     } else {
@@ -434,10 +434,10 @@ function RunNavigation({
                   "Content-type": "application/json; charset=UTF-8",
                 },
               }).then((response) => {
-                GlobalVariables.currentRepo = forkedNodeBody;
+                GlobalVariables.currentAWSnode = forkedNodeBody;
                 setRedirectType(null);
                 navigate(
-                  `/${GlobalVariables.currentRepo.owner}/${GlobalVariables.currentRepo.repoName}`
+                  `/${GlobalVariables.currentUser}/${GlobalVariables.currentAWSnode.repoName}`
                 ),
                   { replace: true };
               });
