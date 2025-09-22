@@ -364,7 +364,6 @@ function RunNavigation({
     // if authenticated and it is not your project, make a clone of the project and return to create mode
     if (owner === GlobalVariables.currentUser) {
       // Prevent forking your own project
-      setRedirectType(null);
       console.warn("You cannot fork your own project.");
       navigate(
         `/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`
@@ -476,7 +475,13 @@ function RunNavigation({
           onClick={() => {
             authorizedUserOcto
               ? forkProject(authorizedUserOcto)
-              : authRedirectHandler({ authType: "fork" });
+              : authRedirectHandler({
+                  authType: "fork",
+                  currentRepo: {
+                    owner: GlobalVariables.currentAWSnode.owner,
+                    repo: GlobalVariables.currentAWSnode.repoName,
+                  },
+                });
           }}
         >
           {forkSvg}
@@ -490,7 +495,13 @@ function RunNavigation({
               ? likeProject(authorizedUserOcto)
               : authorizedUserOcto && starred
               ? unlikeProject(authorizedUserOcto)
-              : authRedirectHandler({ authType: "like" });
+              : authRedirectHandler({
+                  authType: "like",
+                  currentRepo: {
+                    owner: GlobalVariables.currentAWSnode.owner,
+                    repo: GlobalVariables.currentAWSnode.repoName,
+                  },
+                });
           }}
         >
           {starSvg}
