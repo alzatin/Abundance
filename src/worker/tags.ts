@@ -36,7 +36,7 @@ function color(geom: AbundanceObject, color: string): AbundanceObject {
 /**
  * Return new assembly with BOM attached.
  */
-function bom(geom: AbundanceObject, BOM: string): AbundanceObject {
+function bom(geom: AbundanceObject, BOM: any): AbundanceObject {
   return {
     ...geom,
     bom: [...(geom.bom || []), BOM],
@@ -46,13 +46,27 @@ function bom(geom: AbundanceObject, BOM: string): AbundanceObject {
 /**
  * Gets bom list for the given assembly
  */
-function extractBomList(assembly: AbundanceObject): string[] {
-  const bomList: string[] = [];
-  walkAssembly(assembly, (leaf: AbundanceObject) => {
-    if (leaf.bom !== undefined) {
-      bomList.push(...leaf.bom);
+function extractBomList(assembly: AbundanceObject): any[] {
+  const bomList: any[] = [];
+  
+  // Only collect BOM items from leaf nodes to avoid double counting
+  function collectFromLeaves(node: AbundanceObject) {
+    if (isLeaf(node)) {
+      // This is a leaf node, collect its BOM items
+      if (node.bom !== undefined) {
+        bomList.push(...node.bom);
+      }
+    } else {
+      // This is a branch node, recurse to its children without collecting its BOM items
+      if (node.geometry && Array.isArray(node.geometry)) {
+        (node.geometry as AbundanceObject[]).forEach((child) => {
+          collectFromLeaves(child);
+        });
+      }
     }
-  });
+  }
+  
+  collectFromLeaves(assembly);
   return bomList;
 }
 
