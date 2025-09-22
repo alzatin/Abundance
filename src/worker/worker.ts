@@ -458,7 +458,7 @@ function color(
  * @param {Object} BOM - The BOM entry to add to the geometry
  * @returns {Promise<boolean>} A promise that resolves to true when the BOM addition is completed successfully
  */
-function bom(targetID: string, inputID: string, BOM: string): Promise<string> {
+function bom(targetID: string, inputID: string, BOM: any): Promise<string> {
   return started.then(() => {
     library[targetID] = tags.bom(getOrThrow(inputID), BOM);
     return targetID;
@@ -526,7 +526,7 @@ function molecule(targetID: string, inputID: string): Promise<string> {
  * @param {string} inputID - The library ID of the geometry to extract BOM from
  * @returns {Array|boolean} The BOM array if it exists, or false if BOM is undefined
  */
-function extractBomList(inputID: string): string[] | false {
+function extractBomList(inputID: string): any[] | false {
   return tags.extractBomList(getOrThrow(inputID));
 }
 
