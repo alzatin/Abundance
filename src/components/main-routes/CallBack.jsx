@@ -68,7 +68,6 @@ const Callback = ({ setRedirectType }) => {
         console.log(state);
         setRedirectType(state.authType);
         if (state.authType === "fork" || state.authType === "like") {
-          console.log("navigating to run mode from fork/like");
           navigate(`/run/${state.currentRepo.owner}/${state.currentRepo.repo}`);
         } else if (state.returnTo && authorizedUser) {
           let owner, repoName;
