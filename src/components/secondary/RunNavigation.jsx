@@ -435,7 +435,6 @@ function RunNavigation({
                   "Content-type": "application/json; charset=UTF-8",
                 },
               }).then((response) => {
-                console.log("forked and added to db");
                 GlobalVariables.currentAWSnode = forkedNodeBody;
                 setRedirectType(null);
                 navigate(
