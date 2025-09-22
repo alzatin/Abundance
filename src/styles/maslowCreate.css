@@ -874,10 +874,39 @@ Sidebar navigation
   color: var(--dialog-text);
   background-color: var(--dialog-background);
   width: 80%;
+  max-width: calc(100vw - 40px);
   border: 1px solid var(rgb(129, 127, 127));
   border-radius: 2px;
   top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 4;
+  box-sizing: border-box;
+  padding-right: 50px;
+  overflow: hidden;
+}
+.share-dialog > div {
+  overflow: hidden;
+}
+.share-dialog a[href] {
+  word-break: break-all;
+  max-width: 100%;
+  display: block;
+}
+.share-dialog .closeButton {
+  z-index: 5;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: var(--dialog-background);
+  border: 1px solid var(--dialog-text);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 .share-dialog button {
   margin: 10px;
