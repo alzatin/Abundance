@@ -177,7 +177,9 @@ function RunNavigation({
           starred = false;
         }
       });
-      if (GlobalVariables.currentRepo.owner === GlobalVariables.currentUser) {
+      if (
+        GlobalVariables.currentAWSnode.owner === GlobalVariables.currentUser
+      ) {
         document.getElementById("Fork-button").style.display = "none";
       }
     }

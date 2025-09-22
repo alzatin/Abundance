@@ -324,7 +324,6 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
         id={node.repoName}
         onClick={() => {
           GlobalVariables.currentAWSnode = node;
-          //GlobalVariables.currentRepo = node;
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node)}
       >
@@ -387,7 +386,6 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
         id={node.node.id}
         onClick={() => {
           GlobalVariables.currentAWSnode = node.node;
-          //GlobalVariables.currentRepo = node.node;
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node.node)} // <-- add right-click handler for list mode
       >
@@ -603,7 +601,6 @@ const ShowProjects = ({
     )
       .then((res) => res.json())
       .then((data) => {
-        console.log("Fetched liked repos:", data);
         return data;
       });
   };
