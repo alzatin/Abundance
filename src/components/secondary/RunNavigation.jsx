@@ -176,6 +176,16 @@ function RunNavigation({
             "var(--abundance-color-hightlightOffWhite)";
           starred = false;
         }
+
+        // now handle the redirect action that was requested
+        if (redirectType === "fork") {
+          forkProject(authorizedUserOcto);
+        }
+        if (redirectType === "like") {
+          !starred
+            ? likeProject(authorizedUserOcto)
+            : unlikeProject(authorizedUserOcto);
+        }
       });
       if (
         GlobalVariables.currentAWSnode.owner === GlobalVariables.currentUser
@@ -183,16 +193,7 @@ function RunNavigation({
         document.getElementById("Fork-button").style.display = "none";
       }
     }
-  });
-
-  useEffect(() => {
-    if (redirectType === "fork") {
-      forkProject(authorizedUserOcto);
-    }
-    if (redirectType === "like") {
-      likeProject();
-    }
-  }, []);
+  }, [authorizedUserOcto]);
 
   /**
    * Like a project on github by unique ID.
@@ -224,7 +225,7 @@ function RunNavigation({
       const apiUpdateUserUrl =
         "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE";
       let searchField = (
-        GlobalVariables.currentAWSnode.name +
+        GlobalVariables.currentAWSnode.repoName +
         " " +
         GlobalVariables.currentAWSnode.owner
       ).toLowerCase();
@@ -233,7 +234,7 @@ function RunNavigation({
         ranking: GlobalVariables.currentRepo.stargazers_count,
         description: GlobalVariables.currentAWSnode.description,
         searchField: searchField,
-        repoName: GlobalVariables.currentRepo.name,
+        repoName: GlobalVariables.currentAWSnode.repoName,
         forks: 0,
         topMoleculeID: GlobalVariables.topLevelMolecule.uniqueID,
         topics: [],
@@ -241,7 +242,7 @@ function RunNavigation({
           "https://raw.githubusercontent.com/" +
           GlobalVariables.currentUser +
           "/" +
-          GlobalVariables.currentRepo.name +
+          GlobalVariables.currentAWSnode.repoName +
           "/master/README.md?sanitize=true",
         contentURL:
           "https://raw.githubusercontent.com/" +
