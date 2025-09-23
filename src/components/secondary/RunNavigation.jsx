@@ -176,6 +176,16 @@ function RunNavigation({
             "var(--abundance-color-hightlightOffWhite)";
           starred = false;
         }
+
+        // now handle the redirect action that was requested
+        if (redirectType === "fork") {
+          forkProject(authorizedUserOcto);
+        }
+        if (redirectType === "like") {
+          !starred
+            ? likeProject(authorizedUserOcto)
+            : unlikeProject(authorizedUserOcto);
+        }
       });
       if (
         GlobalVariables.currentAWSnode.owner === GlobalVariables.currentUser
@@ -183,16 +193,7 @@ function RunNavigation({
         document.getElementById("Fork-button").style.display = "none";
       }
     }
-  });
-
-  useEffect(() => {
-    if (redirectType === "fork") {
-      forkProject(authorizedUserOcto);
-    }
-    if (redirectType === "like") {
-      likeProject();
-    }
-  }, []);
+  }, [authorizedUserOcto]);
 
   /**
    * Like a project on github by unique ID.
