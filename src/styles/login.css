@@ -693,7 +693,7 @@
   border: 1px solid var(--loginPopup-border);
 }
 .featured-project-div:hover {
-  border: 1px solid rgba(200, 122, 248, 0.546);
+  border: 1px solid rgba(192, 105, 247, 0.546);
 }
 .basic-multi-select {
   margin: 15px 0px 15px 0px;
