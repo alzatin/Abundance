@@ -856,6 +856,11 @@ Sidebar navigation
   border: 2px solid var(--run-navigation-button);
   background-color: var(--run-navigation-button-hover);
 }
+.starred {
+  background-color: gold;
+  fill: gold;
+  stroke: gold;
+}
 
 .thumnail-logo-run {
   position: absolute;
@@ -1177,7 +1182,6 @@ Sidebar navigation
   .run-navigation button {
     border: 2px solid var(--run-navigation-button-hover);
     border-radius: 50%;
-    background-color: var(--run-navigation-button);
     width: 60px;
     height: 60px;
     margin-bottom: 40px;
@@ -1234,11 +1238,6 @@ Sidebar navigation
     -moz-user-select: none; /* Old versions of Firefox */
     -ms-user-select: none; /* Internet Explorer/Edge */
     user-select: none; /* Non-prefixed version */
-  }
-
-  .nav-img,
-  .menu-nav img {
-    padding: 10px;
   }
   .menu-nav.show-menu {
     width: 100%;
@@ -1445,4 +1444,20 @@ Sidebar navigation
   max-width: 300px;
   word-wrap: break-word;
   animation: undoSlideIn 0.3s ease-out;
+}
+
+.run-navigation-tooltip {
+  position: absolute;
+  top: 30%;
+  left: 110%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0);
+  color: var(--abundance-color-lightPurple);
+  opacity: 0.8;
+  padding: 6px 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  font-size: 0.95em;
+  border: none;
+  box-shadow: none;
 }
