@@ -94,7 +94,7 @@ export default class Constant extends Atom {
 
   createInputParams() {
     let inputParams = {};
-    inputParams["constant number"] = {
+    inputParams[this.uniqueID + "name"] = {
       type: "string",
       value: this.name,
       label: "Constant Name",
@@ -103,17 +103,26 @@ export default class Constant extends Atom {
         this.name = value;
       },
     };
-    // Create the input for the constant value
-    inputParams[this.uniqueID + this.name] = {
-      type: "number",
-      value: this.value,
+    inputParams[this.uniqueID + "val"] = {
+      type: "string", //forcing string type to evaluate as equation
+      value: this.currentEquation ? this.currentEquation : this.value,
       label: this.name,
       disabled: false,
-      step: 0.01,
       onChange: (value) => {
-        if (this.value !== value) {
-          // Update to a new value with READY status
-          this.setReady(value);
+        let currentEquation = String(value).trim();
+        this.currentEquation = currentEquation;
+        try {
+          const result = this.evaluateEquation(currentEquation);
+
+          if (Number.isFinite(result)) {
+            if (result !== this.value) {
+              this.setReady(result);
+            }
+          }
+        } catch (err) {
+          console.log("setting value to NaN");
+          this.setReady(NaN);
+          this.alertingErrorHandler()(err);
         }
       },
     };
