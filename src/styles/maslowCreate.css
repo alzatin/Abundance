@@ -59,8 +59,8 @@
   --run-navigation-button: var(--abundance-color-hightlightOffWhite);
   --run-navigation-button-hover: var(--abundance-color-transparentHighlight);
 
-  --dialog-background: var(--abundance-color-hightlightOffWhite);
-  --dialog-text: var(--abundance-color-darkGrey);
+  --dialog-background: var(--abundance-color-background);
+  --dialog-text: var(--abundance-color-hightlightOffWhite);
   --dialog-border: var(--abundance-color-brightPurple);
 
   --run-project-info: var(--abundance-color-lightPurple);
@@ -873,15 +873,14 @@ Sidebar navigation
 /* Share Dialog Mobile */
 
 .share-dialog {
-  font-family: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace";
-  font-size: 12px;
+  font-size: 16px;
   position: fixed;
-  color: var(--dialog-text);
+  color: var(--abundance-color-mainPurple);
   background-color: var(--dialog-background);
   width: 80%;
   max-width: calc(100vw - 40px);
   border: 1px solid var(rgb(129, 127, 127));
-  border-radius: 2px;
+  border-radius: 10px;
   top: 30%;
   left: 50%;
   transform: translateX(-50%);
@@ -897,17 +896,19 @@ Sidebar navigation
   word-break: break-all;
   max-width: 100%;
   display: block;
+  color: var(--dialog-text);
+
+  text-decoration: underline;
 }
 .share-dialog .closeButton {
   z-index: 5;
   position: absolute;
-  right: 10px;
-  top: 10px;
+  right: 5px;
+  top: 5px;
   background: var(--dialog-background);
-  border: 1px solid var(--dialog-text);
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
