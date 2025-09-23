@@ -11,7 +11,7 @@ def lambda_handler(event: any, context: any):
 
     # Get the current date and time
     now = datetime.datetime.now()
-    year = now.year
+    years = [now.year, now.year - 1, now.year - 2]
 
     # Helper class to convert a DynamoDB item to JSON.
     class DecimalEncoder(json.JSONEncoder):
@@ -42,29 +42,26 @@ def lambda_handler(event: any, context: any):
     item_array = []
 
     try:
+        for y in years:
+            query_args = {
+                'IndexName': 'yyyy-ranking-index',
+                'KeyConditionExpression': Key('yyyy').eq(y),
+                'ScanIndexForward': False,
+                'FilterExpression': ~(Attr('privateRepo').eq(True)),
+                'Limit': 30
+            }
+            response = table.query(**query_args)
+            item_array.extend(response.get('Items', []))
 
-        query_args = {
-            'IndexName': 'yyyy-ranking-index',
-            'KeyConditionExpression': Key('yyyy').eq(year),
-            'ScanIndexForward': False,
-            'Limit': 10,
-            'FilterExpression': ~(Attr('privateRepo').eq(True))
-        }
+        # Sort all items by 'ranking' descending and take top 20
+        def get_ranking(item):
+            # fallback to 0 if ranking is missing
+            return float(item.get('ranking', 0))
 
-        scan_args = {
-            'IndexName': 'yyyy-ranking-index',
-            'KeyConditionExpression': Key('yyyy').eq(year),
-            'ScanIndexForward': False,
-            'Limit': 10,
-            'FilterExpression': ~(Attr('privateRepo').eq(True))
-        }
-
-        # response = table.scan(**scan_args)
-        response = table.query(**query_args)
-        item_array.extend(response.get('Items', []))
-        print(item_array)
-
-        return build_response(200, {'repos': item_array})
-    except:
-        print('Error')
-        return build_response(400, e.response['Error']['Message'])
+        item_array_sorted = sorted(item_array, key=get_ranking, reverse=True)
+        top_items = item_array_sorted[:15]
+        print(top_items)
+        return build_response(200, {'repos': top_items})
+    except Exception as e:
+        print('Error:', e)
+        return build_response(400, str(e))
