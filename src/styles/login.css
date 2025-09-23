@@ -679,10 +679,22 @@
 #featured-div {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
-  padding: 0 10px;
+  justify-content: space-evenly;
+  padding: 0 5px;
 }
-
+.featured-project-div {
+  width: 50%;
+  display: flex;
+  margin: 5px;
+  background-color: var(--loginPopup-projectColor);
+  height: 80px;
+  padding: 15px;
+  font-size: 13px;
+  border: 1px solid var(--loginPopup-border);
+}
+.featured-project-div:hover {
+  border: 1px solid rgba(192, 105, 247, 0.546);
+}
 .basic-multi-select {
   margin: 15px 0px 15px 0px;
   height: 100%;

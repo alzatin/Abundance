@@ -362,8 +362,8 @@ function CreateMode() {
   useEffect(() => {
     if (
       authorizedUserOcto &&
-      GlobalVariables.currentAWSnode.owner &&
-      GlobalVariables.currentAWSnode.repoName
+      GlobalVariables.currentAWSnode?.owner &&
+      GlobalVariables.currentAWSnode?.repoName
     ) {
       scanForBackgroundModels();
     }

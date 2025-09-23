@@ -218,54 +218,10 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
         {projectToShow == "featured" &&
         highestRankingNode &&
         highestRankingToolNode ? (
-          <div id="featured-div">
-            <div
-              id="left-featured-div"
-              style={{ width: "50%", display: "flex" }}
-              className="project"
-            >
-              <div>
-                <h3 className="project_name">Featured Project: </h3>
-                <p className="project_name">{highestRankingNode.repoName}</p>
-                <p className="project_name">{highestRankingNode.owner}</p>
-              </div>
-              <img
-                className="project_image"
-                src={highestRankingNode.svgURL}
-                onError={({ currentTarget }) => {
-                  currentTarget.onerror = null; // prevents looping
-                  currentTarget.src =
-                    import.meta.env.VITE_APP_PATH_FOR_PICS +
-                    "/imgs/defaultThumbnail.svg";
-                }}
-                alt={highestRankingNode.repoName}
-              ></img>
-            </div>
-            <div
-              id="right-featured-div"
-              style={{ width: "50%", display: "flex" }}
-              className="project"
-            >
-              <div>
-                <h3 className="project_name">Featured Tool</h3>
-                <p className="project_name">
-                  {highestRankingToolNode.repoName}
-                </p>
-                <p className="project_name">{highestRankingToolNode.owner}</p>
-              </div>
-              <img
-                className="project_image"
-                src={highestRankingToolNode.svgURL}
-                onError={({ currentTarget }) => {
-                  currentTarget.onerror = null; // prevents looping
-                  currentTarget.src =
-                    import.meta.env.VITE_APP_PATH_FOR_PICS +
-                    "/imgs/defaultThumbnail.svg";
-                }}
-                alt={highestRankingToolNode.repoName}
-              ></img>
-            </div>
-          </div>
+          <FeaturedHighlight
+            highestRankingNode={highestRankingNode}
+            highestRankingToolNode={highestRankingToolNode}
+          />
         ) : null}
         {nodes.length > 0 ? (
           <ProjectDiv
@@ -278,6 +234,71 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
     </>
   );
 };
+
+const FeaturedHighlight = ({ highestRankingNode, highestRankingToolNode }) => (
+  <div id="featured-div">
+    <Link
+      onClick={() => {
+        GlobalVariables.currentAWSnode = highestRankingNode;
+      }}
+      id="left-featured-div"
+      className="featured-project-div"
+      key={highestRankingNode.owner + highestRankingNode.repoName}
+      to={
+        highestRankingNode.owner == globalvariables.currentUser
+          ? `/${highestRankingNode.owner}/${highestRankingNode.repoName}`
+          : `/run/${highestRankingNode.owner}/${highestRankingNode.repoName}`
+      }
+    >
+      <div style={{ flexBasis: "60%" }}>
+        <p className="project_name">{highestRankingNode.repoName}</p>
+        <p className="project_name">By {highestRankingNode.owner}</p>
+      </div>
+      <img
+        style={{ flexBasis: "10%" }}
+        className="project_image"
+        src={highestRankingNode.svgURL}
+        onError={({ currentTarget }) => {
+          currentTarget.onerror = null; // prevents looping
+          currentTarget.src =
+            import.meta.env.VITE_APP_PATH_FOR_PICS +
+            "/imgs/defaultThumbnail.svg";
+        }}
+        alt={highestRankingNode.repoName}
+      ></img>
+    </Link>
+
+    <Link
+      id="right-featured-div"
+      onClick={() => {
+        GlobalVariables.currentAWSnode = highestRankingToolNode;
+      }}
+      className="featured-project-div"
+      key={highestRankingToolNode?.owner + highestRankingToolNode?.repoName}
+      to={
+        highestRankingToolNode?.owner == globalvariables.currentUser
+          ? `/${highestRankingToolNode?.owner}/${highestRankingToolNode?.repoName}`
+          : `/run/${highestRankingToolNode?.owner}/${highestRankingToolNode?.repoName}`
+      }
+    >
+      <div style={{ flexBasis: "60%" }}>
+        <p className="project_name">{highestRankingToolNode?.repoName}</p>
+        <p className="project_name">By {highestRankingToolNode?.owner}</p>
+      </div>
+      <img
+        className="project_image"
+        src={highestRankingToolNode?.svgURL}
+        onError={({ currentTarget }) => {
+          currentTarget.onerror = null; // prevents looping
+          currentTarget.src =
+            import.meta.env.VITE_APP_PATH_FOR_PICS +
+            "/imgs/defaultThumbnail.svg";
+        }}
+        alt={highestRankingToolNode.repoName}
+      ></img>
+    </Link>
+  </div>
+);
 
 const ProjectDiv = ({ nodes, browseType, orderType }) => {
   const [contextMenu, setContextMenu] = useState({
@@ -311,6 +332,7 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
   };
 
   const ThumbItem = ({ node }) => {
+    console.log(node);
     return (
       <div
         className="project"
@@ -369,6 +391,33 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
               <p> {"\u{1F528} "} </p>
             ) : null}
           </div>
+          {node.parentRepo ? (
+            <div style={{ alignSelf: "center" }}>
+              <svg
+                fill="#000000"
+                width="14"
+                height="14"
+                viewBox="0 0 33.627 33.628"
+                style={{ verticalAlign: "middle" }}
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g>
+                  <path
+                    d="M27.131,8.383c0-2.092-1.701-3.794-3.794-3.794s-3.793,1.702-3.793,3.794c0,0.99,0.39,1.885,1.013,2.561
+      c-0.474,2.004-1.639,2.393-4.167,3.029c-1.279,0.322-2.753,0.7-4.099,1.501V7.003c1.072-0.671,1.793-1.854,1.793-3.209
+      C14.084,1.702,12.382,0,10.292,0C8.199,0,6.497,1.702,6.497,3.794c0,1.356,0.722,2.539,1.795,3.21v19.62
+      c-1.073,0.671-1.795,1.854-1.795,3.21c0,2.092,1.702,3.794,3.795,3.794c2.092,0,3.793-1.702,3.793-3.794
+      c0-1.355-0.722-2.539-1.793-3.209v-3.846c0.496-3.768,2.321-4.232,5.075-4.926c2.527-0.637,5.955-1.513,7.048-5.852
+      C25.981,11.535,27.131,10.099,27.131,8.383z M10.292,2.002c0.988,0,1.793,0.805,1.793,1.794c0,0.989-0.806,1.793-1.793,1.793
+      c-0.989,0-1.795-0.805-1.795-1.793C8.498,2.806,9.302,2.002,10.292,2.002z M10.292,31.627c-0.989,0-1.795-0.807-1.795-1.794
+      c0-0.989,0.806-1.793,1.795-1.793c0.988,0,1.793,0.806,1.793,1.793C12.085,30.824,11.28,31.627,10.292,31.627z M23.337,10.177
+      c-0.989,0-1.793-0.805-1.793-1.793c0-0.989,0.806-1.794,1.793-1.794c0.988,0,1.794,0.805,1.794,1.794
+      C25.131,9.373,24.327,10.177,23.337,10.177z"
+                  />
+                </g>
+              </svg>
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -893,35 +942,37 @@ const ShowProjects = ({
           <div className="home-section">{showDict[projectToShow]["label"]}</div>
           <hr width="100%" color="#D3D3D3" />
 
-          <div className="search-bar-div">
-            {PageComponent}
-            <input
-              type="text"
-              key="project-search-bar"
-              placeholder={search}
-              value={search}
-              onChange={(e) => {
-                handleSearchChange(e);
-              }}
-              className="menu_search searchButton"
-              id="project_search"
-            />
-            <button className="list_thumb_button">
-              <img
-                src={
-                  import.meta.env.VITE_APP_PATH_FOR_PICS +
-                  "/imgs/search_icon.svg"
-                }
-                alt="search"
-                style={{
-                  width: "20px",
-                  color: "white",
-                  marginRight: "5px",
-                  opacity: "0.5",
+          {projectToShow !== "featured" ? (
+            <div className="search-bar-div">
+              {PageComponent}
+              <input
+                type="text"
+                key="project-search-bar"
+                placeholder={search}
+                value={search}
+                onChange={(e) => {
+                  handleSearchChange(e);
                 }}
+                className="menu_search searchButton"
+                id="project_search"
               />
-            </button>
-          </div>
+              <button className="list_thumb_button">
+                <img
+                  src={
+                    import.meta.env.VITE_APP_PATH_FOR_PICS +
+                    "/imgs/search_icon.svg"
+                  }
+                  alt="search"
+                  style={{
+                    width: "20px",
+                    color: "white",
+                    marginRight: "5px",
+                    opacity: "0.5",
+                  }}
+                />
+              </button>
+            </div>
+          ) : null}
           {showDict[projectToShow]["loading"] ? (
             <p> Searching for projects ... </p>
           ) : null}
