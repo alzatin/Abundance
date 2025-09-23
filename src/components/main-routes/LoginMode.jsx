@@ -218,54 +218,10 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
         {projectToShow == "featured" &&
         highestRankingNode &&
         highestRankingToolNode ? (
-          <div id="featured-div">
-            <div
-              id="left-featured-div"
-              style={{ width: "50%", display: "flex" }}
-              className="project"
-            >
-              <div>
-                <h3 className="project_name">Featured Project: </h3>
-                <p className="project_name">{highestRankingNode.repoName}</p>
-                <p className="project_name">{highestRankingNode.owner}</p>
-              </div>
-              <img
-                className="project_image"
-                src={highestRankingNode.svgURL}
-                onError={({ currentTarget }) => {
-                  currentTarget.onerror = null; // prevents looping
-                  currentTarget.src =
-                    import.meta.env.VITE_APP_PATH_FOR_PICS +
-                    "/imgs/defaultThumbnail.svg";
-                }}
-                alt={highestRankingNode.repoName}
-              ></img>
-            </div>
-            <div
-              id="right-featured-div"
-              style={{ width: "50%", display: "flex" }}
-              className="project"
-            >
-              <div>
-                <h3 className="project_name">Featured Tool</h3>
-                <p className="project_name">
-                  {highestRankingToolNode.repoName}
-                </p>
-                <p className="project_name">{highestRankingToolNode.owner}</p>
-              </div>
-              <img
-                className="project_image"
-                src={highestRankingToolNode.svgURL}
-                onError={({ currentTarget }) => {
-                  currentTarget.onerror = null; // prevents looping
-                  currentTarget.src =
-                    import.meta.env.VITE_APP_PATH_FOR_PICS +
-                    "/imgs/defaultThumbnail.svg";
-                }}
-                alt={highestRankingToolNode.repoName}
-              ></img>
-            </div>
-          </div>
+          <FeaturedHighlight
+            highestRankingNode={highestRankingNode}
+            highestRankingToolNode={highestRankingToolNode}
+          />
         ) : null}
         {nodes.length > 0 ? (
           <ProjectDiv
@@ -278,6 +234,71 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
     </>
   );
 };
+
+const FeaturedHighlight = ({ highestRankingNode, highestRankingToolNode }) => (
+  <div id="featured-div">
+    <Link
+      onClick={() => {
+        GlobalVariables.currentAWSnode = highestRankingNode;
+      }}
+      id="left-featured-div"
+      className="featured-project-div"
+      key={highestRankingNode.owner + highestRankingNode.repoName}
+      to={
+        highestRankingNode.owner == globalvariables.currentUser
+          ? `/${highestRankingNode.owner}/${highestRankingNode.repoName}`
+          : `/run/${highestRankingNode.owner}/${highestRankingNode.repoName}`
+      }
+    >
+      <div style={{ flexBasis: "60%" }}>
+        <p className="project_name">{highestRankingNode.repoName}</p>
+        <p className="project_name">By {highestRankingNode.owner}</p>
+      </div>
+      <img
+        style={{ flexBasis: "10%" }}
+        className="project_image"
+        src={highestRankingNode.svgURL}
+        onError={({ currentTarget }) => {
+          currentTarget.onerror = null; // prevents looping
+          currentTarget.src =
+            import.meta.env.VITE_APP_PATH_FOR_PICS +
+            "/imgs/defaultThumbnail.svg";
+        }}
+        alt={highestRankingNode.repoName}
+      ></img>
+    </Link>
+
+    <Link
+      id="right-featured-div"
+      onClick={() => {
+        GlobalVariables.currentAWSnode = highestRankingToolNode;
+      }}
+      className="featured-project-div"
+      key={highestRankingToolNode?.owner + highestRankingToolNode?.repoName}
+      to={
+        highestRankingToolNode?.owner == globalvariables.currentUser
+          ? `/${highestRankingToolNode?.owner}/${highestRankingToolNode?.repoName}`
+          : `/run/${highestRankingToolNode?.owner}/${highestRankingToolNode?.repoName}`
+      }
+    >
+      <div style={{ flexBasis: "60%" }}>
+        <p className="project_name">{highestRankingToolNode?.repoName}</p>
+        <p className="project_name">By {highestRankingToolNode?.owner}</p>
+      </div>
+      <img
+        className="project_image"
+        src={highestRankingToolNode?.svgURL}
+        onError={({ currentTarget }) => {
+          currentTarget.onerror = null; // prevents looping
+          currentTarget.src =
+            import.meta.env.VITE_APP_PATH_FOR_PICS +
+            "/imgs/defaultThumbnail.svg";
+        }}
+        alt={highestRankingToolNode.repoName}
+      ></img>
+    </Link>
+  </div>
+);
 
 const ProjectDiv = ({ nodes, browseType, orderType }) => {
   const [contextMenu, setContextMenu] = useState({

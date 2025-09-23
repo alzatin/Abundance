@@ -682,7 +682,16 @@
   justify-content: space-between;
   padding: 0 10px;
 }
-
+.featured-project-div {
+  width: 50%;
+  display: flex;
+  margin: 5px;
+  background-color: var(--loginPopup-projectColor);
+  height: 125px;
+  padding: 15px;
+  font-size: 13px;
+  border: 2px solid var(--loginPopup-border);
+}
 .basic-multi-select {
   margin: 15px 0px 15px 0px;
   height: 100%;
