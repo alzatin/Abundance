@@ -914,35 +914,37 @@ const ShowProjects = ({
           <div className="home-section">{showDict[projectToShow]["label"]}</div>
           <hr width="100%" color="#D3D3D3" />
 
-          <div className="search-bar-div">
-            {PageComponent}
-            <input
-              type="text"
-              key="project-search-bar"
-              placeholder={search}
-              value={search}
-              onChange={(e) => {
-                handleSearchChange(e);
-              }}
-              className="menu_search searchButton"
-              id="project_search"
-            />
-            <button className="list_thumb_button">
-              <img
-                src={
-                  import.meta.env.VITE_APP_PATH_FOR_PICS +
-                  "/imgs/search_icon.svg"
-                }
-                alt="search"
-                style={{
-                  width: "20px",
-                  color: "white",
-                  marginRight: "5px",
-                  opacity: "0.5",
+          {projectToShow !== "featured" ? (
+            <div className="search-bar-div">
+              {PageComponent}
+              <input
+                type="text"
+                key="project-search-bar"
+                placeholder={search}
+                value={search}
+                onChange={(e) => {
+                  handleSearchChange(e);
                 }}
+                className="menu_search searchButton"
+                id="project_search"
               />
-            </button>
-          </div>
+              <button className="list_thumb_button">
+                <img
+                  src={
+                    import.meta.env.VITE_APP_PATH_FOR_PICS +
+                    "/imgs/search_icon.svg"
+                  }
+                  alt="search"
+                  style={{
+                    width: "20px",
+                    color: "white",
+                    marginRight: "5px",
+                    opacity: "0.5",
+                  }}
+                />
+              </button>
+            </div>
+          ) : null}
           {showDict[projectToShow]["loading"] ? (
             <p> Searching for projects ... </p>
           ) : null}
