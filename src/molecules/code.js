@@ -288,7 +288,7 @@ export default class Code extends Atom {
         let arrStr = firstMatch[1];
         arrStr = arrStr.replace(/\n/g, ""); // Remove newlines
         arrStr = arrStr.replace(/\r/g, ""); // Remove carriage returns
-        arrStr = arrStr.replace(/,\s*]/, "]"); // Remove trailing comma before closing bracket
+        arrStr = arrStr.replace(/,\s*$/, ""); // Remove trailing comma at end
         arrStr = arrStr.replace(/(\w+)\s*:/g, '"$1":');
         arrStr = arrStr.replace(/'/g, '"');
         try {
