@@ -71,7 +71,7 @@ async function getBounds(
       maxY = -Infinity,
       maxZ = -Infinity;
 
-    actOnLeafs(geometry, async (leaf: AbundanceLeaf) => {
+    await actOnLeafs(geometry, async (leaf: AbundanceLeaf) => {
       const replicadbox = (await geometryProvider!.get(leaf.geometry))
         .boundingBox;
       let bbox = replicadbox.bounds;
@@ -85,6 +85,10 @@ async function getBounds(
         bbox = replicadbox.bounds;
         minZ = Math.min(minZ, bbox[0][2]);
         maxZ = Math.max(maxZ, bbox[1][2]);
+      } else {
+        // For 2D geometries, set Z bounds to 0 (assuming they lie on the XY plane)
+        minZ = Math.min(minZ, 0);
+        maxZ = Math.max(maxZ, 0);
       }
       return leaf;
     });
