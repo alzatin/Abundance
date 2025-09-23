@@ -59,8 +59,8 @@
   --run-navigation-button: var(--abundance-color-hightlightOffWhite);
   --run-navigation-button-hover: var(--abundance-color-transparentHighlight);
 
-  --dialog-background: var(--abundance-color-hightlightOffWhite);
-  --dialog-text: var(--abundance-color-darkGrey);
+  --dialog-background: var(--abundance-color-background);
+  --dialog-text: var(--abundance-color-hightlightOffWhite);
   --dialog-border: var(--abundance-color-brightPurple);
 
   --run-project-info: var(--abundance-color-lightPurple);
@@ -856,6 +856,9 @@ Sidebar navigation
   border: 2px solid var(--run-navigation-button);
   background-color: var(--run-navigation-button-hover);
 }
+.starred {
+  background-color: gold;
+}
 
 .thumnail-logo-run {
   position: absolute;
@@ -868,15 +871,14 @@ Sidebar navigation
 /* Share Dialog Mobile */
 
 .share-dialog {
-  font-family: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace";
-  font-size: 12px;
+  font-size: 16px;
   position: fixed;
-  color: var(--dialog-text);
+  color: var(--abundance-color-mainPurple);
   background-color: var(--dialog-background);
   width: 80%;
   max-width: calc(100vw - 40px);
   border: 1px solid var(rgb(129, 127, 127));
-  border-radius: 2px;
+  border-radius: 10px;
   top: 30%;
   left: 50%;
   transform: translateX(-50%);
@@ -892,17 +894,19 @@ Sidebar navigation
   word-break: break-all;
   max-width: 100%;
   display: block;
+  color: var(--dialog-text);
+
+  text-decoration: underline;
 }
 .share-dialog .closeButton {
   z-index: 5;
   position: absolute;
-  right: 10px;
-  top: 10px;
+  right: 5px;
+  top: 5px;
   background: var(--dialog-background);
-  border: 1px solid var(--dialog-text);
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1177,7 +1181,6 @@ Sidebar navigation
   .run-navigation button {
     border: 2px solid var(--run-navigation-button-hover);
     border-radius: 50%;
-    background-color: var(--run-navigation-button);
     width: 60px;
     height: 60px;
     margin-bottom: 40px;
@@ -1234,11 +1237,6 @@ Sidebar navigation
     -moz-user-select: none; /* Old versions of Firefox */
     -ms-user-select: none; /* Internet Explorer/Edge */
     user-select: none; /* Non-prefixed version */
-  }
-
-  .nav-img,
-  .menu-nav img {
-    padding: 10px;
   }
   .menu-nav.show-menu {
     width: 100%;
@@ -1445,4 +1443,20 @@ Sidebar navigation
   max-width: 300px;
   word-wrap: break-word;
   animation: undoSlideIn 0.3s ease-out;
+}
+
+.run-navigation-tooltip {
+  position: absolute;
+  top: 30%;
+  left: 110%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0);
+  color: var(--abundance-color-lightPurple);
+  opacity: 0.8;
+  padding: 6px 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  font-size: 0.95em;
+  border: none;
+  box-shadow: none;
 }

@@ -61,18 +61,64 @@ function ShareDialog({
       .catch("Error creating export geometry");
   };
 
+  // SVG for copy icon
+
+  const CopyIcon = (
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 20 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ cursor: "pointer", marginLeft: 8, verticalAlign: "middle" }}
+    >
+      <rect
+        x="5"
+        y="7"
+        width="9"
+        height="9"
+        rx="2"
+        stroke="#f7eff9ff"
+        strokeWidth="1.5"
+      />
+      <rect
+        x="7"
+        y="4"
+        width="9"
+        height="9"
+        rx="2"
+        stroke="#f7eff9ff"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareUrl);
+  };
+  const shareUrl =
+    window.location.origin +
+    "/run/" +
+    GlobalVariables.currentRepo.owner.login +
+    "/" +
+    GlobalVariables.currentRepo.name;
+
   return (
     <>
       <dialog
         open={shareDialog}
-        style={{ display: "flex" }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+        }}
         className="share-dialog"
       >
         {dialogContent == "share" ? (
-          <div style={{ display: "flex", margin: "10px" }}>
-            <p>Share this project:</p>
+          <div
+            style={{ display: "flex", margin: "10px", alignItems: "center" }}
+          >
+            <p style={{ margin: "0", flexBasis: "30%" }}>Share this project:</p>
             <a
-              style={{ margin: "16px" }}
+              style={{ margin: "16px", flexBasis: "50%" }}
               href={
                 window.location.origin +
                 "/run/" +
@@ -82,14 +128,21 @@ function ShareDialog({
               }
               target="_blank"
             >
-              {window.location.origin}/Abundance/run/
-              {GlobalVariables.currentRepo.owner.login}/
-              {GlobalVariables.currentRepo.name}
+              {shareUrl}
             </a>
+            <span title="Copy to clipboard" onClick={handleCopy}>
+              {CopyIcon}
+            </span>
           </div>
         ) : dialogContent == "export" ? (
-          <div style={{ display: "flex", margin: "10px" }}>
-            <p>Export as:</p>
+          <div
+            style={{
+              display: "flex",
+              margin: "10px",
+              alignItems: "center",
+            }}
+          >
+            <p style={{ margin: "0", flexBasis: "40%" }}>Export as:</p>
             <button autoFocus onClick={() => handleExport("STL")}>
               {" "}
               STL

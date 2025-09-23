@@ -138,9 +138,26 @@ function RunNavigation({
   authRedirectHandler,
 }) {
   let [shareDialog, setShareDialog] = useState(false);
-  let starred = false;
+
+  let [starredState, setStarred] = useState(false);
   let [dialogContent, setDialog] = useState("");
 
+  // Tooltip state for each button
+  const [showTooltip, setShowTooltip] = useState({});
+
+  // Tooltip messages for each button
+  const tooltipMessages = {
+    Share: "Share this project",
+    Fork: "Fork this project",
+    Star: starredState ? "Unlike this project" : "Like this project",
+    Export: "Export this project",
+    Bill: "View Bill of Materials",
+  };
+
+  // Helper to show/hide tooltip for a button
+  const handleTooltip = (btn, show) => {
+    setShowTooltip((prev) => ({ ...prev, [btn]: show }));
+  };
   var navigate = useNavigate();
 
   useEffect(() => {
@@ -149,40 +166,19 @@ function RunNavigation({
       var owner = GlobalVariables.currentAWSnode.owner;
       var repoName = GlobalVariables.currentAWSnode.repoName;
 
-      const fetchUserData = async () => {
-        /*get liked repos from user table*/
-        const queryUserApiUrl =
-          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE?user=" +
-          GlobalVariables.currentUser +
-          "&liked=true";
-
-        let awsUser = await fetch(queryUserApiUrl);
-        let awsUserJson = await awsUser.json();
-
-        return awsUserJson;
-      };
-
       fetchUserData().then((awsUserJson) => {
         const isLiked = awsUserJson.repos.some(
           (project) => project.owner === owner && project.repoName === repoName
         );
         if (isLiked) {
-          starred = true;
-          document.getElementById("Star-button").style.backgroundColor = "gray";
-
-          //should disable instead of just graying out
-        } else {
-          document.getElementById("Star-button").style.backgroundColor =
-            "var(--abundance-color-hightlightOffWhite)";
-          starred = false;
+          setStarred(true);
         }
-
         // now handle the redirect action that was requested
         if (redirectType === "fork") {
           forkProject(authorizedUserOcto);
         }
         if (redirectType === "like") {
-          !starred
+          !starredState
             ? likeProject(authorizedUserOcto)
             : unlikeProject(authorizedUserOcto);
         }
@@ -195,6 +191,20 @@ function RunNavigation({
     }
   }, [authorizedUserOcto]);
 
+  /* Helper function to fetch user data including liked projects from AWS API */
+  const fetchUserData = async () => {
+    /*get liked repos from user table*/
+    const queryUserApiUrl =
+      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE?user=" +
+      GlobalVariables.currentUser +
+      "&liked=true";
+
+    let awsUser = await fetch(queryUserApiUrl);
+    let awsUserJson = await awsUser.json();
+
+    return awsUserJson;
+  };
+
   /**
    * Like a project on github by unique ID.
    */
@@ -202,9 +212,8 @@ function RunNavigation({
     var owner = GlobalVariables.currentAWSnode.owner;
     var repoName = GlobalVariables.currentAWSnode.repoName;
     //disable button before api call so user can't click multiple times
-    starred = true;
+    setStarred(true);
     document.getElementById("Star-button").disabled = true;
-    document.getElementById("Star-button").style.backgroundColor = "gray";
     /*aws dynamo update-item lambda */
 
     // this adds a ranking point to the project but i think we should implement a timed function to add ranking points once we decide what the system will be
@@ -277,38 +286,13 @@ function RunNavigation({
         setRedirectType(null);
       });
     });
-
-    /*if (!starred) {
-      authorizedUserOcto.rest.activity
-        .starRepoForAuthenticatedUser({
-          owner: owner,
-          repo: repoName,
-        })
-        .then(() => {
-          setStarred(true);
-          document.getElementById("Star-button").style.backgroundColor = "gray";
-        });
-    } else {
-      authorizedUserOcto.rest.activity
-        .unstarRepoForAuthenticatedUser({
-          owner: owner,
-          repo: repoName,
-        })
-        .then(() => {
-          document.getElementById("Star-button").style.backgroundColor =
-            "white";
-          setStarred(false);
-          console.log("unstarred");
-        });
-    }*/
   };
   const unlikeProject = function () {
     var owner = GlobalVariables.currentAWSnode.owner;
     var repoName = GlobalVariables.currentAWSnode.repoName;
     //disable button before api call so user can't click multiple times
-    starred = false;
+    setStarred(false);
     document.getElementById("Star-button").disabled = true;
-    //document.getElementById("Star-button").style.backgroundColor = "white";
 
     /*add item to your liked projects on aws*/
     const apiUpdateUserUrl =
@@ -327,11 +311,7 @@ function RunNavigation({
       },
     }).then((response) => {
       console.log("unliked");
-      //reenable button after api call so user can unlike
       document.getElementById("Star-button").disabled = false;
-
-      document.getElementById("Star-button").style.backgroundColor =
-        "var(--abundance-color-hightlightOffWhite)";
     });
   };
 
@@ -460,75 +440,126 @@ function RunNavigation({
         />
       ) : null}
       <div className="run-navigation">
-        <button
-          onClick={() => {
-            setDialog("share");
-            setShareDialog(true);
-          }}
-          className=" run-navigation-button"
-          id="Share-button"
-        >
-          {shareSvg}
-        </button>
-        <button
-          className=" run-navigation-button"
-          id="Fork-button"
-          onClick={() => {
-            authorizedUserOcto
-              ? forkProject(authorizedUserOcto)
-              : authRedirectHandler({
-                  authType: "fork",
-                  currentRepo: {
-                    owner: GlobalVariables.currentAWSnode.owner,
-                    repo: GlobalVariables.currentAWSnode.repoName,
-                  },
-                });
-          }}
-        >
-          {forkSvg}
-        </button>
+        {/* Share Button */}
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <button
+            onClick={() => {
+              setDialog("share");
+              setShareDialog(true);
+            }}
+            className=" run-navigation-button"
+            id="Share-button"
+            onMouseEnter={() => handleTooltip("Share", true)}
+            onMouseLeave={() => handleTooltip("Share", false)}
+          >
+            {shareSvg}
+          </button>
+          {showTooltip["Share"] && (
+            <div className="run-navigation-tooltip">
+              {tooltipMessages.Share}
+            </div>
+          )}
+        </div>
 
-        <button
-          className=" run-navigation-button"
-          id="Star-button"
-          onClick={() => {
-            authorizedUserOcto && !starred
-              ? likeProject(authorizedUserOcto)
-              : authorizedUserOcto && starred
-              ? unlikeProject(authorizedUserOcto)
-              : authRedirectHandler({
-                  authType: "like",
-                  currentRepo: {
-                    owner: GlobalVariables.currentAWSnode.owner,
-                    repo: GlobalVariables.currentAWSnode.repoName,
-                  },
-                });
-          }}
-        >
-          {starSvg}
-        </button>
-        <button
-          onClick={() => {
-            setDialog("export");
-            setShareDialog(true);
-          }}
-          className=" run-navigation-button"
-          id="Export-button"
-        >
-          {exportSvg}
-        </button>
-        <button
-          className=" run-navigation-button"
-          id="Bill-button"
-          onClick={() => {
-            var url =
-              GlobalVariables.currentRepo.html_url +
-              "/blob/master/BillOfMaterials.md";
-            window.open(url);
-          }}
-        >
-          {billSvg}
-        </button>
+        {/* Fork Button */}
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <button
+            className=" run-navigation-button"
+            id="Fork-button"
+            onClick={() => {
+              authorizedUserOcto
+                ? forkProject(authorizedUserOcto)
+                : authRedirectHandler({
+                    authType: "fork",
+                    currentRepo: {
+                      owner: GlobalVariables.currentAWSnode.owner,
+                      repo: GlobalVariables.currentAWSnode.repoName,
+                    },
+                  });
+            }}
+            onMouseEnter={() => handleTooltip("Fork", true)}
+            onMouseLeave={() => handleTooltip("Fork", false)}
+          >
+            {forkSvg}
+          </button>
+          {showTooltip["Fork"] && (
+            <div className="run-navigation-tooltip">{tooltipMessages.Fork}</div>
+          )}
+        </div>
+
+        {/* Star Button */}
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <button
+            className={
+              starredState
+                ? "starred run-navigation-button"
+                : "run-navigation-button"
+            }
+            id="Star-button"
+            onClick={() => {
+              authorizedUserOcto && !starredState
+                ? likeProject(authorizedUserOcto)
+                : authorizedUserOcto && starredState
+                ? unlikeProject(authorizedUserOcto)
+                : authRedirectHandler({
+                    authType: "like",
+                    currentRepo: {
+                      owner: GlobalVariables.currentAWSnode.owner,
+                      repo: GlobalVariables.currentAWSnode.repoName,
+                    },
+                  });
+            }}
+            onMouseEnter={() => handleTooltip("Star", true)}
+            onMouseLeave={() => handleTooltip("Star", false)}
+          >
+            {starSvg}
+          </button>
+          {showTooltip["Star"] && (
+            <div className="run-navigation-tooltip">{tooltipMessages.Star}</div>
+          )}
+        </div>
+
+        {/* Export Button */}
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <button
+            onClick={() => {
+              setDialog("export");
+              setShareDialog(true);
+            }}
+            className=" run-navigation-button"
+            id="Export-button"
+            onMouseEnter={() => handleTooltip("Export", true)}
+            onMouseLeave={() => handleTooltip("Export", false)}
+          >
+            {exportSvg}
+          </button>
+          {showTooltip["Export"] && (
+            <div className="run-navigation-tooltip">
+              {tooltipMessages.Export}
+            </div>
+          )}
+        </div>
+
+        {/* Bill Button */}
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <button
+            className=" run-navigation-button"
+            id="Bill-button"
+            onClick={() => {
+              var url =
+                GlobalVariables.currentRepo.html_url +
+                "/blob/master/BillOfMaterials.md";
+              window.open(url);
+            }}
+            onMouseEnter={() => handleTooltip("Bill", true)}
+            onMouseLeave={() => handleTooltip("Bill", false)}
+          >
+            {billSvg}
+          </button>
+          {showTooltip["Bill"] && (
+            <div className="run-navigation-tooltip">{tooltipMessages.Bill}</div>
+          )}
+        </div>
       </div>
     </>
   );
