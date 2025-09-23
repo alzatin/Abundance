@@ -105,7 +105,7 @@ function TopMenu({
         authRedirectHandler({
           authType: "reauth",
           currentRepo: GlobalVariables.currentRepo,
-          returnTo: `/${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`,
+          returnTo: `/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`,
         });
       },
     },

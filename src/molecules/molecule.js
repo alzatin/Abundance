@@ -769,7 +769,8 @@ export default class Molecule extends Atom {
           label: "Download List of Materials",
           onClick: () => {
             var fileName =
-              GlobalVariables.currentRepoName + "- Bill-of-Materials.txt";
+              GlobalVariables.currentAWSnode.repoName +
+              "- Bill-of-Materials.txt";
             var fileContent = this.formatBom();
             var myFile = new Blob([fileContent], { type: "text/plain" });
 

@@ -300,7 +300,7 @@ function CreateMode() {
       authRedirectHandler({
         authType: "save",
         currentProjectRep,
-        returnTo: `/${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`,
+        returnTo: `/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`,
       });
     }, 2000);
   };
@@ -313,14 +313,17 @@ function CreateMode() {
       return;
     }
 
-    if (!GlobalVariables.currentUser || !GlobalVariables.currentRepoName) {
+    if (
+      !GlobalVariables.currentAWSnode.owner ||
+      !GlobalVariables.currentAWSnode.repoName
+    ) {
       return;
     }
 
     try {
       const files = await authorizedUserOcto.rest.repos.getContent({
-        owner: GlobalVariables.currentUser,
-        repo: GlobalVariables.currentRepoName,
+        owner: GlobalVariables.currentAWSnode.owner,
+        repo: GlobalVariables.currentAWSnode.repoName,
         path: "",
       });
 
@@ -359,15 +362,12 @@ function CreateMode() {
   useEffect(() => {
     if (
       authorizedUserOcto &&
-      GlobalVariables.currentUser &&
-      GlobalVariables.currentRepoName
+      GlobalVariables.currentAWSnode.owner &&
+      GlobalVariables.currentAWSnode.repoName
     ) {
       scanForBackgroundModels();
     }
-  }, [
-    authorizedUserOcto,
-    `${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`,
-  ]);
+  }, [authorizedUserOcto, GlobalVariables.currentAWSnode]);
 
   // Reset background model state when project changes to ensure clean state
   useEffect(() => {
@@ -375,7 +375,7 @@ function CreateMode() {
     setBackgroundUsdzSha(null);
     setShowBackgroundModel(false);
     setUserUploadedFile(false);
-  }, [`${GlobalVariables.currentUser}/${GlobalVariables.currentRepoName}`]);
+  }, [GlobalVariables.currentAWSnode]);
 
   function searchGithubMolecules(molecule) {
     return new Promise((resolve, reject) => {
@@ -567,8 +567,8 @@ function CreateMode() {
       (async () => {
         try {
           const existingFiles = await authorizedUserOcto.rest.repos.getContent({
-            owner: GlobalVariables.currentUser,
-            repo: GlobalVariables.currentRepoName,
+            owner: GlobalVariables.currentAWSnode.owner,
+            repo: GlobalVariables.currentAWSnode.repoName,
             path: "",
           });
 
@@ -593,8 +593,8 @@ function CreateMode() {
           }
           const result = await Promise.race([
             authorizedUserOcto.rest.repos.createOrUpdateFileContents({
-              owner: GlobalVariables.currentUser,
-              repo: GlobalVariables.currentRepoName,
+              owner: GlobalVariables.currentAWSnode.owner,
+              repo: GlobalVariables.currentAWSnode.repoName,
               path: uniqueFileName,
               message: "Import File",
               content: base64result,
@@ -642,8 +642,8 @@ function CreateMode() {
 
     try {
       await authorizedUserOcto.rest.repos.deleteFile({
-        owner: GlobalVariables.currentUser,
-        repo: GlobalVariables.currentRepoName,
+        owner: GlobalVariables.currentAWSnode.owner,
+        repo: GlobalVariables.currentAWSnode.repoName,
         path: fileName,
         message: "Deleted node",
         sha: fileSha,
@@ -685,8 +685,8 @@ function CreateMode() {
 
       const result =
         await authorizedUserOcto.rest.repos.createOrUpdateFileContents({
-          owner: GlobalVariables.currentUser,
-          repo: GlobalVariables.currentRepoName,
+          owner: GlobalVariables.currentAWSnode.owner,
+          repo: GlobalVariables.currentAWSnode.repoName,
           path: backgroundFileName,
           message: "Upload background 3D model",
           content: base64result,
@@ -721,8 +721,8 @@ function CreateMode() {
 
     try {
       await authorizedUserOcto.rest.repos.deleteFile({
-        owner: GlobalVariables.currentUser,
-        repo: GlobalVariables.currentRepoName,
+        owner: GlobalVariables.currentAWSnode.owner,
+        repo: GlobalVariables.currentAWSnode.repoName,
         path: backgroundUsdzFile,
         message: "Deleted background 3D model",
         sha: backgroundUsdzSha,
@@ -798,7 +798,7 @@ function CreateMode() {
         readmeHeader +
         "\n\n" +
         "# " +
-        GlobalVariables.currentRepoName +
+        GlobalVariables.currentAWSnode.repoName +
         "\n\n![](/project.svg)\n\n";
 
       setSaveProgress(20);
