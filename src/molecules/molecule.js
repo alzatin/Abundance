@@ -182,7 +182,9 @@ export default class Molecule extends Atom {
 
     inputParams["molecule name" + this.uniqueID] = {
       type: "string",
-      value: this.topLevel ? GlobalVariables.currentRepoName : this.name,
+      value: this.topLevel
+        ? GlobalVariables.currentAWSnode.repoName
+        : this.name,
       label: "Molecule Name",
       disabled: this.topLevel || this.atomType === "GitHubMolecule",
       onChange: (value) => {
@@ -1037,6 +1039,7 @@ export default class Molecule extends Atom {
         this.enableAllChildren(); // For the currently rendered moleucle, also
         // enable all children visible on the screen
       }
+
       return this;
     });
   }
@@ -1509,14 +1512,26 @@ export default class Molecule extends Atom {
       if (outputAttachmentPoint.parentMolecule.atomType == "Input") {
         outputAttachmentPoint.x = GlobalVariables.atomSize * 3.5;
       } else {
-        outputAttachmentPoint.x = outputAttachmentPoint.parentMolecule.x + outputAttachmentPoint.parentMolecule.radius;
+        outputAttachmentPoint.x =
+          outputAttachmentPoint.parentMolecule.x +
+          outputAttachmentPoint.parentMolecule.radius;
       }
-      [outputAttachmentPoint.x, outputAttachmentPoint.y] = GlobalVariables.constrainToCanvasBorders(outputAttachmentPoint.x, outputAttachmentPoint.y);
-      
-      // Update input attachment point position  
+      [outputAttachmentPoint.x, outputAttachmentPoint.y] =
+        GlobalVariables.constrainToCanvasBorders(
+          outputAttachmentPoint.x,
+          outputAttachmentPoint.y
+        );
+
+      // Update input attachment point position
       inputAttachmentPoint.y = inputAttachmentPoint.parentMolecule.y;
-      inputAttachmentPoint.x = inputAttachmentPoint.parentMolecule.x - inputAttachmentPoint.parentMolecule.radius;
-      [inputAttachmentPoint.x, inputAttachmentPoint.y] = GlobalVariables.constrainToCanvasBorders(inputAttachmentPoint.x, inputAttachmentPoint.y);
+      inputAttachmentPoint.x =
+        inputAttachmentPoint.parentMolecule.x -
+        inputAttachmentPoint.parentMolecule.radius;
+      [inputAttachmentPoint.x, inputAttachmentPoint.y] =
+        GlobalVariables.constrainToCanvasBorders(
+          inputAttachmentPoint.x,
+          inputAttachmentPoint.y
+        );
 
       new Connector({
         atomType: "Connector",
