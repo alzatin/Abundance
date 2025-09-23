@@ -280,7 +280,6 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
 };
 
 const ProjectDiv = ({ nodes, browseType, orderType }) => {
-  console.log("Rendering ProjectDiv with nodes:", nodes);
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
