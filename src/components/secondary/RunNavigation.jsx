@@ -149,9 +149,7 @@ function RunNavigation({
   const tooltipMessages = {
     Share: "Share this project",
     Fork: "Fork this project",
-    Star: starredState
-      ? "You've already liked this project"
-      : "Like this project",
+    Star: starredState ? "Unlike this project" : "Like this project",
     Export: "Export this project",
     Bill: "View Bill of Materials",
   };
@@ -174,11 +172,7 @@ function RunNavigation({
         );
         if (isLiked) {
           setStarred(true);
-          //should disable instead of just graying out
-        } else {
-          setStarred(false);
         }
-
         // now handle the redirect action that was requested
         if (redirectType === "fork") {
           forkProject(authorizedUserOcto);
