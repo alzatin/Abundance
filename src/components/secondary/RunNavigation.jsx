@@ -490,7 +490,11 @@ function RunNavigation({
         {/* Star Button */}
         <div style={{ position: "relative", display: "inline-block" }}>
           <button
-            className={starredState ? "starred" : "run-navigation-button"}
+            className={
+              starredState
+                ? "starred run-navigation-button"
+                : "run-navigation-button"
+            }
             id="Star-button"
             onClick={() => {
               authorizedUserOcto && !starredState
