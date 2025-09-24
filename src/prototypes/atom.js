@@ -920,6 +920,78 @@ export default class Atom extends ObservableEntity {
       substitutedEquation = "0";
     }
 
+    // Check if equation contains string literals (quoted text)
+    const hasStringLiterals = /["']/.test(substitutedEquation);
+    
+    if (hasStringLiterals) {
+      // Handle as string concatenation
+      return this.evaluateStringExpression(substitutedEquation);
+    } else {
+      // Handle as mathematical expression (existing behavior)
+      return this.evaluateMathExpression(substitutedEquation);
+    }
+  }
+
+  /**
+   * Evaluate string concatenation expressions
+   */
+  evaluateStringExpression(equation) {
+    // Parse string concatenation expression
+    const parts = [];
+    let current = '';
+    let inQuotes = false;
+    let quoteChar = '';
+    
+    for (let i = 0; i < equation.length; i++) {
+      const char = equation[i];
+      
+      if ((char === '"' || char === "'") && !inQuotes) {
+        inQuotes = true;
+        quoteChar = char;
+        current += char; // Keep the quote
+      } else if (char === quoteChar && inQuotes) {
+        inQuotes = false;
+        current += char; // Keep the quote
+        quoteChar = '';
+      } else if (char === '+' && !inQuotes) {
+        if (current.trim()) {
+          parts.push(current.trim());
+        }
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    if (current.trim()) {
+      parts.push(current.trim());
+    }
+    
+    // Evaluate each part and concatenate
+    let result = '';
+    for (const part of parts) {
+      if (part.startsWith('"') && part.endsWith('"')) {
+        // String literal with double quotes - remove quotes and keep content
+        result += part.slice(1, -1);
+      } else if (part.startsWith("'") && part.endsWith("'")) {
+        // String literal with single quotes - remove quotes and keep content
+        result += part.slice(1, -1);
+      } else {
+        // Variable or number - resolve its value
+        const trimmed = part.trim();
+        if (trimmed) {
+          const value = this.resolveVariable(trimmed);
+          result += String(value);
+        }
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Evaluate mathematical expressions (existing logic extracted)
+   */
+  evaluateMathExpression(substitutedEquation) {
     const variables = this.extractVariablesFromEquation(substitutedEquation);
     const unresolved = [];
     const resolvedValues = {};
@@ -995,6 +1067,49 @@ export default class Atom extends ObservableEntity {
         throw new Error(msg);
       }
     }
+  }
+
+  /**
+   * Resolve a variable name to its value
+   */
+  resolveVariable(variableName) {
+    const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
+    
+    if (BUILTIN_CONSTS.has(variableName)) {
+      return variableName; // Let it be handled as constant
+    }
+    
+    // Check if it's a number
+    const num = Number(variableName);
+    if (!isNaN(num) && isFinite(num)) {
+      return num;
+    }
+    
+    // Try parent inputs first
+    const parentInputs =
+      (this.parent && this.parent.inputs) ||
+      (this.parentMolecule && this.parentMolecule.inputs) ||
+      [];
+    for (let j = 0; j < parentInputs.length; j++) {
+      if (parentInputs[j].name === variableName) {
+        const value =
+          typeof parentInputs[j].getValue === "function"
+            ? parentInputs[j].getValue()
+            : parentInputs[j].value;
+        return value !== null && value !== undefined ? value : variableName;
+      }
+    }
+    
+    // Then this atom's inputs
+    for (let i = 0; i < this.inputs.length; i++) {
+      if (this.inputs[i].name === variableName) {
+        const value = this.findIOValue(this.inputs[i].name);
+        return value !== null && value !== undefined ? value : variableName;
+      }
+    }
+    
+    // If variable not found, return the variable name itself
+    return variableName;
   }
 
   /**
