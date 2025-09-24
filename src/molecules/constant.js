@@ -112,6 +112,8 @@ export default class Constant extends Atom {
         let currentEquation = String(value).trim();
         this.currentEquation = currentEquation;
         try {
+          // Ensure inputs exist for variables in the equation before evaluating
+          this.ensureInputsForEquation(currentEquation);
           const result = this.evaluateEquation(currentEquation);
 
           if (Number.isFinite(result)) {
