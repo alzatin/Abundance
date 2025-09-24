@@ -209,51 +209,28 @@ function RunNavigation({
    * Like a project on github by unique ID.
    */
   const likeProject = function () {
-    var owner = GlobalVariables.currentAWSnode.owner;
-    var repoName = GlobalVariables.currentAWSnode.repoName;
     //disable button before api call so user can't click multiple times
     setStarred(true);
     document.getElementById("Star-button").disabled = true;
-    /*aws dynamo update-item lambda */
+    /*add item to your usertable liked-projects on aws*/
+    const apiUpdateUserUrl =
+      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE";
 
-    // this adds a ranking point to the project but i think we should implement a timed function to add ranking points once we decide what the system will be
-    const apiUpdateUrl =
-      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
-    fetch(apiUpdateUrl, {
+    fetch(apiUpdateUserUrl, {
       method: "POST",
       body: JSON.stringify({
-        owner: owner,
-        repoName: repoName,
-        attributeUpdates: { ranking: 1 },
+        user: GlobalVariables.currentUser,
+        attributeUpdates: { likedProjects: [GlobalVariables.currentAWSnode] },
+        updateType: "SET",
       }),
       headers: {
         "Content-type": "application/json; charset=UTF-8",
       },
     }).then((response) => {
-      /*add item to your liked projects on aws*/
-      const apiUpdateUserUrl =
-        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE";
-      let searchField = (
-        GlobalVariables.currentAWSnode.repoName +
-        " " +
-        GlobalVariables.currentAWSnode.owner
-      ).toLowerCase();
-      fetch(apiUpdateUserUrl, {
-        method: "POST",
-        body: JSON.stringify({
-          user: GlobalVariables.currentUser,
-          attributeUpdates: { likedProjects: [GlobalVariables.currentAWSnode] },
-          updateType: "SET",
-        }),
-        headers: {
-          "Content-type": "application/json; charset=UTF-8",
-        },
-      }).then((response) => {
-        //reenable button after api call so user can unlike
-        console.log("added to liked projects");
-        document.getElementById("Star-button").disabled = false;
-        setRedirectType(null);
-      });
+      //reenable button after api call so user can unlike
+      console.log("added to liked projects");
+      document.getElementById("Star-button").disabled = false;
+      setRedirectType(null);
     });
   };
   const unlikeProject = function () {
@@ -263,7 +240,7 @@ function RunNavigation({
     setStarred(false);
     document.getElementById("Star-button").disabled = true;
 
-    /*add item to your liked projects on aws*/
+    /*remove item from your liked projects on aws*/
     const apiUpdateUserUrl =
       "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE";
     fetch(apiUpdateUserUrl, {
@@ -282,29 +259,6 @@ function RunNavigation({
       console.log("unliked");
       document.getElementById("Star-button").disabled = false;
     });
-  };
-
-  /* Makes a POST request to the API to update the ranking of the current molecule */
-  const addRanking = (owner, repo) => {
-    const apiUpdateUrl =
-      "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
-    fetch(apiUpdateUrl, {
-      method: "POST",
-      body: JSON.stringify({
-        owner: owner,
-        repoName: repo.repoName,
-        attributeUpdates: { ranking: 1 },
-      }),
-      headers: {
-        "Content-type": "application/json; charset=UTF-8",
-      },
-    })
-      .then((response) => {
-        console.log(response);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
   };
 
   /** forkProject takes care of making the octokit request for the authenticated user to make a copy of a not owned repo */
@@ -332,8 +286,6 @@ function RunNavigation({
               repo: repo,
             })
             .then(() => {
-              //push fork to aws
-              addRanking(owner, repo);
               /*aws dynamo post*/
               const apiUrl =
                 "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
