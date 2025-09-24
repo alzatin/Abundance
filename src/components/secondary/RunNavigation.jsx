@@ -238,42 +238,11 @@ function RunNavigation({
         " " +
         GlobalVariables.currentAWSnode.owner
       ).toLowerCase();
-      let likedNodeBody = {
-        owner: GlobalVariables.currentAWSnode.owner,
-        ranking: GlobalVariables.currentRepo.stargazers_count,
-        description: GlobalVariables.currentAWSnode.description,
-        searchField: searchField,
-        repoName: GlobalVariables.currentAWSnode.repoName,
-        forks: 0,
-        topMoleculeID: GlobalVariables.topLevelMolecule.uniqueID,
-        topics: [],
-        readme:
-          "https://raw.githubusercontent.com/" +
-          GlobalVariables.currentAWSnode.owner +
-          "/" +
-          GlobalVariables.currentAWSnode.repoName +
-          "/master/README.md?sanitize=true",
-        contentURL:
-          "https://raw.githubusercontent.com/" +
-          GlobalVariables.currentAWSnode.owner +
-          "/" +
-          GlobalVariables.currentAWSnode.repoName +
-          "/master/project.abundance?sanitize=true",
-        githubMoleculesUsed: [],
-        svgURL:
-          "https://raw.githubusercontent.com/" +
-          GlobalVariables.currentAWSnode.owner +
-          "/" +
-          GlobalVariables.currentAWSnode.repoName +
-          "/master/project.svg?sanitize=true",
-        dateCreated: GlobalVariables.currentRepo.created_at,
-        html_url: GlobalVariables.currentRepo.html_url,
-      };
       fetch(apiUpdateUserUrl, {
         method: "POST",
         body: JSON.stringify({
           user: GlobalVariables.currentUser,
-          attributeUpdates: { likedProjects: [likedNodeBody] },
+          attributeUpdates: { likedProjects: [GlobalVariables.currentAWSnode] },
           updateType: "SET",
         }),
         headers: {
