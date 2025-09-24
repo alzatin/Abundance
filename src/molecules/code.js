@@ -33,7 +33,7 @@ export default class Code extends Atom {
      * @type {string}
      */
     this.code = `
-      Inputs = [
+      const Inputs = [
        {inputName: "shape", type: "geometry", defaultValue: null},
       {inputName: "dist", type: "number", defaultValue: 5},
         {inputName: "height", type: "number", defaultValue: 10}
@@ -95,7 +95,7 @@ export default class Code extends Atom {
 
       /**
       To Use the Code Atom, enter your inputs to the input list as an object array:
-      Inputs = [
+      const Inputs = [
         {inputName: "shape", type: "geometry", defaultValue: null},
         {inputName: "dist", type: "number", defaultValue: 5},
         {inputName: "height", type: "number", defaultValue: 10}
@@ -106,7 +106,7 @@ export default class Code extends Atom {
       Return a replicad object that includes geometry, color, tags and plane.
 
       Example Code Atom:
-        Inputs = [
+         const Inputs = [
           {inputName: "shape", type: "geometry", defaultValue: null},
           {inputName: "x", type: "number", defaultValue: 5}
         ]
