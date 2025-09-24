@@ -14,7 +14,7 @@ export default class Equation extends Atom {
   constructor(values) {
     super(values);
 
-    this.addIO("result", "number", 0, "output");
+    this.addIO("result", "any", 0, "output");
 
     /**
      * This atom's name
@@ -109,7 +109,9 @@ export default class Equation extends Atom {
       // Remove duplicates
       variables = [...new Set(variables)];
     } catch (e) {
-      variables = [];
+      // Fallback for string expressions that mathjs can't parse
+      variables = this.currentEquation.match(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g) || [];
+      variables = [...new Set(variables)];
     }
     return variables;
   }
