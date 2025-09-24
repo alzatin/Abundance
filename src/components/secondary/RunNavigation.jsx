@@ -249,22 +249,22 @@ function RunNavigation({
         topics: [],
         readme:
           "https://raw.githubusercontent.com/" +
-          GlobalVariables.currentUser +
+          GlobalVariables.currentAWSnode.owner +
           "/" +
           GlobalVariables.currentAWSnode.repoName +
           "/master/README.md?sanitize=true",
         contentURL:
           "https://raw.githubusercontent.com/" +
-          GlobalVariables.currentUser +
+          GlobalVariables.currentAWSnode.owner +
           "/" +
-          GlobalVariables.currentRepo.name +
+          GlobalVariables.currentAWSnode.repoName +
           "/master/project.abundance?sanitize=true",
         githubMoleculesUsed: [],
         svgURL:
           "https://raw.githubusercontent.com/" +
-          GlobalVariables.currentUser +
+          GlobalVariables.currentAWSnode.owner +
           "/" +
-          GlobalVariables.currentRepo.name +
+          GlobalVariables.currentAWSnode.repoName +
           "/master/project.svg?sanitize=true",
         dateCreated: GlobalVariables.currentRepo.created_at,
         html_url: GlobalVariables.currentRepo.html_url,
