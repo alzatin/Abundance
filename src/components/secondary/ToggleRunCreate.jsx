@@ -2,10 +2,14 @@ import React, { useState } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import { Link } from "react-router-dom";
 
-function ToggleRunCreate({ run, isItOwned }) {
+function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
   const [runModeon, setRunMode] = useState(run);
   const [showTooltip, setShowTooltip] = useState(false);
   const handleChange = () => {
+    // set ActiveAtom to toplevel when switching modes
+    if (setActiveAtom) {
+      setActiveAtom(GlobalVariables.topLevelMolecule);
+    }
     setRunMode(!runModeon);
   };
   if (GlobalVariables.currentRepo) {

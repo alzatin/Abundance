@@ -965,7 +965,7 @@ function CreateMode() {
               />
             </div>
           ) : null}
-          <ToggleRunCreate run={false} />
+          <ToggleRunCreate run={false} setActiveAtom={setActiveAtom} />
           {shortCutsOn ? (
             <div id="shortcutDiv" className="noselect">
               <li style={{ fontSize: "14px" }}>(CTRL +)</li>

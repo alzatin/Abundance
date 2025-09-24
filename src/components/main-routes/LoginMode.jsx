@@ -332,7 +332,6 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
   };
 
   const ThumbItem = ({ node }) => {
-    console.log(node);
     return (
       <div
         className="project"
