@@ -172,20 +172,20 @@ function AppContent() {
           });
         /*Set wireMesh*/
         //Exception: Don't display the mesh if the thing we are displaying is already the output
-        if (GlobalVariables.currentMolecule.uniqueID != id) {
+        if (GlobalVariables.currentMolecule.value != id) {
           cad
-            .generateDisplayMesh(GlobalVariables.currentMolecule.uniqueID)
+            .generateDisplayMesh(GlobalVariables.currentMolecule.value)
             .then((w) => {
               setWireMesh(w);
               // Only create Puppeteer div when displaying the top-level molecule's output
-              if (id === GlobalVariables.topLevelMolecule?.uniqueID) {
+              if (id === GlobalVariables.topLevelMolecule?.value) {
                 createPuppeteerDiv();
               }
             })
             .catch((e) => {
               console.error("Can't compute Wireframe/No output " + e);
               // Create div even on error for top-level molecule to prevent hanging
-              if (id === GlobalVariables.topLevelMolecule?.uniqueID) {
+              if (id === GlobalVariables.topLevelMolecule?.value) {
                 createPuppeteerDiv();
               }
             });
