@@ -2,6 +2,7 @@ import { parse } from "mathjs";
 import GlobalVariables from "../js/globalvariables.js";
 import AttachmentPoint from "./attachmentpoint";
 import { ObservableEntity, Status } from "./observableEntity.js";
+import { getPredictedAtoms } from "../js/atomPrediction.js";
 
 // Make this an enum once we're using typescript
 const AlertType = Object.freeze({
@@ -787,6 +788,38 @@ export default class Atom extends ObservableEntity {
     }
   }
 
+  /**  */
+  createPredictedParams() {
+    let predictedParams = {};
+    predictedParams[this.uniqueID + "spacer"] = {
+      type: "spacer",
+      height: 12,
+    };
+    let predictedAtoms = getPredictedAtoms(this.atomType);
+    // Create a buttongroup for all predicted atoms
+    predictedParams[this.uniqueID + "predictedGroup"] = {
+      type: "buttongroup",
+      buttons: predictedAtoms.map((atom) => ({
+        label: `Add ${atom}`,
+        lowOpacity: true,
+        onClick: () => {
+          GlobalVariables.currentMolecule.placeAtom(
+            {
+              x: this.x + 0.1,
+              y: this.y,
+              parent: GlobalVariables.currentMolecule,
+              atomType: atom,
+              uniqueID: GlobalVariables.generateUniqueID(),
+            },
+            true
+          );
+        },
+      })),
+    };
+
+    return predictedParams;
+  }
+
   createInputParams() {
     let inputParams = {};
 
@@ -860,6 +893,7 @@ export default class Atom extends ObservableEntity {
         },
       };
     }
+
     return inputParams;
   }
 
@@ -875,23 +909,25 @@ export default class Atom extends ObservableEntity {
       (this.parent && this.parent.inputs) ||
       (this.parentMolecule && this.parentMolecule.inputs) ||
       [];
-    
+
     // Get parent input names to avoid duplicating them
-    const parentInputNames = parentInputs.map(input => input.name);
-    
+    const parentInputNames = parentInputs.map((input) => input.name);
+
     const inputsToAdd = [];
-    
+
     for (const variable of variables) {
       if (BUILTIN_CONSTS.has(variable)) {
         continue; // Skip built-in constants
       }
-      
+
       // Check if variable already exists as an input on this atom
-      const existsAsInput = this.inputs.some(input => input.name === variable);
-      
+      const existsAsInput = this.inputs.some(
+        (input) => input.name === variable
+      );
+
       // Check if variable exists as a parent input
       const existsAsParentInput = parentInputNames.includes(variable);
-      
+
       // Only add input if variable doesn't exist anywhere
       if (!existsAsInput && !existsAsParentInput) {
         inputsToAdd.push({
@@ -901,7 +937,7 @@ export default class Atom extends ObservableEntity {
         });
       }
     }
-    
+
     // Add all needed inputs at once to avoid multiple subscription updates
     if (inputsToAdd.length > 0) {
       this.addAllIOs(inputsToAdd);
@@ -922,7 +958,7 @@ export default class Atom extends ObservableEntity {
 
     // Check if equation contains string literals (quoted text)
     const hasStringLiterals = /["']/.test(substitutedEquation);
-    
+
     if (hasStringLiterals) {
       // Handle as string concatenation
       return this.evaluateStringExpression(substitutedEquation);
@@ -938,13 +974,13 @@ export default class Atom extends ObservableEntity {
   evaluateStringExpression(equation) {
     // Parse string concatenation expression
     const parts = [];
-    let current = '';
+    let current = "";
     let inQuotes = false;
-    let quoteChar = '';
-    
+    let quoteChar = "";
+
     for (let i = 0; i < equation.length; i++) {
       const char = equation[i];
-      
+
       if ((char === '"' || char === "'") && !inQuotes) {
         inQuotes = true;
         quoteChar = char;
@@ -952,12 +988,12 @@ export default class Atom extends ObservableEntity {
       } else if (char === quoteChar && inQuotes) {
         inQuotes = false;
         current += char; // Keep the quote
-        quoteChar = '';
-      } else if (char === '+' && !inQuotes) {
+        quoteChar = "";
+      } else if (char === "+" && !inQuotes) {
         if (current.trim()) {
           parts.push(current.trim());
         }
-        current = '';
+        current = "";
       } else {
         current += char;
       }
@@ -965,9 +1001,9 @@ export default class Atom extends ObservableEntity {
     if (current.trim()) {
       parts.push(current.trim());
     }
-    
+
     // Evaluate each part and concatenate
-    let result = '';
+    let result = "";
     for (const part of parts) {
       if (part.startsWith('"') && part.endsWith('"')) {
         // String literal with double quotes - remove quotes and keep content
@@ -984,7 +1020,7 @@ export default class Atom extends ObservableEntity {
         }
       }
     }
-    
+
     return result;
   }
 
@@ -1074,17 +1110,17 @@ export default class Atom extends ObservableEntity {
    */
   resolveVariable(variableName) {
     const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
-    
+
     if (BUILTIN_CONSTS.has(variableName)) {
       return variableName; // Let it be handled as constant
     }
-    
+
     // Check if it's a number
     const num = Number(variableName);
     if (!isNaN(num) && isFinite(num)) {
       return num;
     }
-    
+
     // Try parent inputs first
     const parentInputs =
       (this.parent && this.parent.inputs) ||
@@ -1099,7 +1135,7 @@ export default class Atom extends ObservableEntity {
         return value !== null && value !== undefined ? value : variableName;
       }
     }
-    
+
     // Then this atom's inputs
     for (let i = 0; i < this.inputs.length; i++) {
       if (this.inputs[i].name === variableName) {
@@ -1107,7 +1143,7 @@ export default class Atom extends ObservableEntity {
         return value !== null && value !== undefined ? value : variableName;
       }
     }
-    
+
     // If variable not found, return the variable name itself
     return variableName;
   }
