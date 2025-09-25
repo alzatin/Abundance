@@ -146,8 +146,15 @@ export default function GitSearchMenu({
     // Combine local atoms with GitHub results
     const combinedResults = [...localAtoms];
     if (data?.repos) {
+      // Sort GitHub repos by ranking (descending, higher is better)
+      const sortedRepos = [...data.repos].sort((a, b) => {
+        // If ranking is missing, treat as 0
+        const rankA = typeof a.ranking === "number" ? a.ranking : 0;
+        const rankB = typeof b.ranking === "number" ? b.ranking : 0;
+        return rankB - rankA;
+      });
       combinedResults.push(
-        ...data.repos.map((repo) => ({ ...repo, isLocal: false }))
+        ...sortedRepos.map((repo) => ({ ...repo, isLocal: false }))
       );
     }
     if (combinedResults.length === 0) {
