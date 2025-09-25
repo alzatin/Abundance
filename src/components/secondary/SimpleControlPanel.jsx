@@ -1174,14 +1174,14 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                 cursor: isDisabled ? "not-allowed" : "pointer",
                                 fontWeight: 600,
                                 background: "#3e7aff",
-                                color: "#fff",
+                                color: "#c4c4c4ff",
                                 border: "none",
                                 padding: "6px 16px",
                                 borderRadius: 4,
                                 ...inputStyle,
                                 ...(isDisabled ? inputDisabledStyle : {}),
                                 ...(btn.ghostStyle
-                                  ? { background: "#757576ff" }
+                                  ? { background: "#d3d3d3ff" }
                                   : {}),
                               }}
                               onClick={() => {
