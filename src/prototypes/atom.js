@@ -791,6 +791,9 @@ export default class Atom extends ObservableEntity {
 
   /**  */
   createPredictedParams() {
+    if (this.atomType == "Molecule") {
+      return {};
+    }
     let predictedParams = {};
     predictedParams[this.uniqueID + "spacer"] = {
       type: "spacer",
