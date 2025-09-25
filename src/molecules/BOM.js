@@ -89,11 +89,11 @@ export default class AddBOMTag extends Atom {
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#484848";
     GlobalVariables.c.font = `${pixelsRadius / 1.5}px Work Sans Bold`;
-    GlobalVariables.c.fillText(
-      String.fromCharCode(0x0024, 0x0024, 0x0024),
-      pixelsX - pixelsRadius / 2,
-      pixelsY + this.height / 3
-    );
+    const text = String.fromCharCode(0x0024, 0x0024, 0x0024);
+    const textWidth = GlobalVariables.c.measureText(text).width;
+    const textX = pixelsX - textWidth / 2;
+    const textY = pixelsY + this.height / 3;
+    GlobalVariables.c.fillText(text, textX, textY);
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
   }

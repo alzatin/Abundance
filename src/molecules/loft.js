@@ -63,12 +63,19 @@ export default class Loft extends Atom {
   draw() {
     super.draw(); //Super call to draw the rest
 
+    // Center in pixel space
+    const centerX = GlobalVariables.widthToPixels(this.x);
+    const centerY = GlobalVariables.heightToPixels(this.y);
+    const circleOffset = GlobalVariables.widthToPixels(this.radius / 4);
+    const circleRadius = GlobalVariables.widthToPixels(this.radius / 2.5);
+
+    // Right circle
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#949294";
     GlobalVariables.c.arc(
-      GlobalVariables.widthToPixels(this.x + this.radius / 4),
-      GlobalVariables.heightToPixels(this.y),
-      GlobalVariables.widthToPixels(this.radius / 2.5),
+      centerX + circleOffset,
+      centerY,
+      circleRadius,
       0,
       Math.PI * 2,
       false
@@ -76,12 +83,13 @@ export default class Loft extends Atom {
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
 
+    // Left circle
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#949294";
     GlobalVariables.c.arc(
-      GlobalVariables.widthToPixels(this.x - this.radius / 4),
-      GlobalVariables.heightToPixels(this.y),
-      GlobalVariables.widthToPixels(this.radius / 2.5),
+      centerX - circleOffset,
+      centerY,
+      circleRadius,
       0,
       Math.PI * 2,
       false
@@ -89,14 +97,14 @@ export default class Loft extends Atom {
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
 
+    // Rectangle centered between the two circles
+    const rectSize = GlobalVariables.widthToPixels(this.radius / 2);
+    const rectX = centerX - rectSize / 2;
+    const rectY = centerY - rectSize / 2;
+
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#949294";
-    GlobalVariables.c.rect(
-      GlobalVariables.widthToPixels(this.x - this.radius / 4),
-      GlobalVariables.heightToPixels(this.y - this.radius),
-      GlobalVariables.widthToPixels(this.radius / 2),
-      GlobalVariables.widthToPixels(this.radius / 2)
-    );
+    GlobalVariables.c.rect(rectX, rectY, rectSize, rectSize);
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
   }

@@ -53,12 +53,19 @@ export default class shrinkWrap extends Atom {
   draw() {
     super.draw(); //Super call to draw the rest
 
+    // Center in pixel space
+    const centerX = GlobalVariables.widthToPixels(this.x);
+    const centerY = GlobalVariables.heightToPixels(this.y);
+    const circleOffset = GlobalVariables.widthToPixels(this.radius / 4);
+    const circleRadius = GlobalVariables.widthToPixels(this.radius / 2.5);
+
+    // Right circle
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#949294";
     GlobalVariables.c.arc(
-      GlobalVariables.widthToPixels(this.x + this.radius / 4),
-      GlobalVariables.heightToPixels(this.y),
-      GlobalVariables.widthToPixels(this.radius / 2.5),
+      centerX + circleOffset,
+      centerY,
+      circleRadius,
       0,
       Math.PI * 2,
       false
@@ -66,26 +73,16 @@ export default class shrinkWrap extends Atom {
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
 
+    // Left circle
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#949294";
     GlobalVariables.c.arc(
-      GlobalVariables.widthToPixels(this.x - this.radius / 4),
-      GlobalVariables.heightToPixels(this.y),
-      GlobalVariables.widthToPixels(this.radius / 2.5),
+      centerX - circleOffset,
+      centerY,
+      circleRadius,
       0,
       Math.PI * 2,
       false
-    );
-    GlobalVariables.c.fill();
-    GlobalVariables.c.closePath();
-
-    GlobalVariables.c.beginPath();
-    GlobalVariables.c.fillStyle = "#949294";
-    GlobalVariables.c.rect(
-      GlobalVariables.widthToPixels(this.x - this.radius / 4),
-      GlobalVariables.heightToPixels(this.y - this.radius),
-      GlobalVariables.widthToPixels(this.radius / 2),
-      GlobalVariables.widthToPixels(this.radius / 2)
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
@@ -103,9 +100,7 @@ export default class shrinkWrap extends Atom {
       .map((io) => inputs[io.name])
       .filter(Boolean);
 
-    return GlobalVariables.cad.shrinkWrapSketches(
-      nonnullInputIds
-    );
+    return GlobalVariables.cad.shrinkWrapSketches(nonnullInputIds);
   }
 
   /**

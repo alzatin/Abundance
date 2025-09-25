@@ -82,12 +82,10 @@ export default class Constant extends Atom {
     GlobalVariables.c.fillStyle = "#484848";
     GlobalVariables.c.font = `${pixelsRadius}px Work Sans Bold`;
     const text = String.fromCharCode(0x039b);
-    const textHeight = pixelsRadius / 1.5;
     const textWidth = GlobalVariables.c.measureText(text).width;
     const textX = pixelsX - textWidth / 2;
-    const textY = pixelsY + this.height / 2 - textHeight / 2;
+    const textY = pixelsY + pixelsRadius / 2;
     GlobalVariables.c.fillText(text, textX, textY);
-
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
   }

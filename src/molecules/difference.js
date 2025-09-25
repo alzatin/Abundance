@@ -43,12 +43,17 @@ export default class Difference extends Atom {
   draw() {
     super.draw(); //Super call to draw the rest
 
+    // Draw filled circle at the atom's center
+    const centerX = GlobalVariables.widthToPixels(this.x);
+    const centerY = GlobalVariables.heightToPixels(this.y);
+    const circleRadius = GlobalVariables.widthToPixels(this.radius / 3);
+
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#949294";
     GlobalVariables.c.arc(
-      GlobalVariables.widthToPixels(this.x),
-      GlobalVariables.heightToPixels(this.y),
-      GlobalVariables.widthToPixels(this.radius / 3),
+      centerX,
+      centerY,
+      circleRadius,
       0,
       Math.PI * 2,
       false
@@ -57,15 +62,15 @@ export default class Difference extends Atom {
     GlobalVariables.c.stroke();
     GlobalVariables.c.closePath();
 
+    // Draw rectangle centered on the circle
+    const rectSize = GlobalVariables.widthToPixels(this.radius); // width and height in px
+    const rectX = centerX - rectSize / 2;
+    const rectY = centerY - rectSize / 2;
+
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#949294";
-    GlobalVariables.c.rect(
-      GlobalVariables.widthToPixels(this.x - this.radius / 2),
-      GlobalVariables.heightToPixels(this.y - this.radius * 2),
-      GlobalVariables.widthToPixels(this.radius),
-      GlobalVariables.widthToPixels(this.radius)
-    );
-    //GlobalVariables.c.fill()
+    GlobalVariables.c.rect(rectX, rectY, rectSize, rectSize);
+    //GlobalVariables.c.fill();
     GlobalVariables.c.stroke();
     GlobalVariables.c.closePath();
   }

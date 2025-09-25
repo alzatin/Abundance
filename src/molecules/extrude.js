@@ -42,29 +42,36 @@ export default class Extrude extends Atom {
   draw() {
     super.draw(); //Super call to draw the rest
 
+    // Draw the bottom rectangle (extrusion indicator), centered horizontally below the atom center
+    const centerX = GlobalVariables.widthToPixels(this.x);
+    const centerY = GlobalVariables.heightToPixels(this.y);
+    const rectWidth = GlobalVariables.widthToPixels(this.radius);
+    const rectHeight = GlobalVariables.widthToPixels(this.radius / 3);
+    const mainRectHeight = GlobalVariables.widthToPixels(this.radius / 2);
+
+    // Bottom rectangle (extrusion indicator)
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#949294";
-    // Draw the bottom rectangle (extrusion indicator)
     GlobalVariables.c.rect(
-      GlobalVariables.widthToPixels(this.x - this.radius / 2),
-      GlobalVariables.heightToPixels(this.y + this.radius / 4),
-      GlobalVariables.widthToPixels(this.radius),
-      GlobalVariables.widthToPixels(this.radius / 3)
+      centerX - rectWidth / 2,
+      centerY + mainRectHeight / 2,
+      rectWidth,
+      rectHeight
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.stroke();
     GlobalVariables.c.closePath();
 
+    // Main rectangle centered on the atom
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#949294";
-    // Draw the main rectangle centered within the atom circle
     GlobalVariables.c.rect(
-      GlobalVariables.widthToPixels(this.x - this.radius / 2),
-      GlobalVariables.heightToPixels(this.y - this.radius / 4),
-      GlobalVariables.widthToPixels(this.radius),
-      GlobalVariables.widthToPixels(this.radius / 2)
+      centerX - rectWidth / 2,
+      centerY - mainRectHeight / 2,
+      rectWidth,
+      mainRectHeight
     );
-    //GlobalVariables.c.fill()
+    //GlobalVariables.c.fill();
     GlobalVariables.c.stroke();
     GlobalVariables.c.closePath();
   }
