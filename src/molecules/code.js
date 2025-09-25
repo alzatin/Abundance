@@ -64,6 +64,7 @@ export default class Code extends Atom {
       //Wrap the raw replicad geometry in our assembly format
       let shape2 = {
           geometry: [createdShape],
+          dimension: "3D",
           tags: ["createdShape"],
           color: '#A3CE5B',
           plane: newPlane,
