@@ -50,15 +50,17 @@ export default function ParamsMenu({
   const [inputChanged, setInputChanged] = useState("");
 
   let inputParams = {};
+  let predictedParams = {};
 
   if (activeAtom) {
     inputParams = activeAtom.createInputParams(setInputChanged);
     //inputParams = unusedDefault;
+    predictedParams = activeAtom.createPredictedParams();
   }
 
   const inputParamsConfig = useMemo(() => {
-    return { ...inputParams };
-  }, [inputParams]);
+    return { ...inputParams, ...predictedParams };
+  }, [inputParams, predictedParams]);
 
   const [
     values,

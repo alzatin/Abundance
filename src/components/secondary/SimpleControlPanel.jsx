@@ -513,6 +513,30 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                   disabled: isDisabled,
                 };
                 switch (config.type) {
+                  case "spacer":
+                    return (
+                      <div
+                        key={key}
+                        style={{
+                          width: "100%",
+                          minHeight: 1,
+                          margin: "12px 0",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "stretch",
+                        }}
+                      >
+                        <hr
+                          style={{
+                            border: 0,
+                            borderTop: "1px solid var(--panel-separator)",
+                            margin: 0,
+                            width: "100%",
+                          }}
+                        />
+                        <div style={{ height: config.height || 12 }} />
+                      </div>
+                    );
                   case "point":
                     return (
                       <div key={key} style={labelStyle}>
@@ -627,6 +651,17 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           {...commonProps}
                         />
                       </div>
+                    );
+                  case "spacer":
+                    return (
+                      <div
+                        key={key}
+                        style={{
+                          height: config.height || 12,
+                          width: "100%",
+                          minHeight: 1,
+                        }}
+                      />
                     );
                   case "list":
                     return (
@@ -1071,8 +1106,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                     return (
                       <div key={key} style={labelStyle}>
                         <button
-                          style={
-                            isDisabled
+                          style={{
+                            ...(isDisabled
                               ? {
                                   ...inputStyle,
                                   ...inputDisabledStyle,
@@ -1091,7 +1126,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   fontWeight: 600,
                                   background: "#3e7aff",
                                   color: "#fff",
-                                  border: "none",
                                   padding: "6px 16px",
                                 }
                               : {
@@ -1102,7 +1136,15 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   color: "#fff",
                                   border: "none",
                                   padding: "6px 16px",
-                                }
+                                }),
+                            ...(config.lowOpacity ? { opacity: 0.5 } : {}),
+                          }}
+                          title={
+                            label ||
+                            (typeof config.label === "string"
+                              ? config.label
+                              : undefined) ||
+                            "Button"
                           }
                           onClick={() => {
                             if (typeof config.onClick === "function") {
@@ -1117,8 +1159,52 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           onBlur={() => {}}
                           disabled={isDisabled}
                         >
-                          {label || "Button"}
+                          {config.icon ? config.icon : label || "Button"}
                         </button>
+                      </div>
+                    );
+                  case "buttongroup":
+                    return (
+                      <div key={key} style={labelStyle}>
+                        {config.buttons.map((btn, i) => (
+                          <button
+                            key={btn.key || i}
+                            style={{
+                              cursor: isDisabled ? "not-allowed" : "pointer",
+                              fontWeight: 600,
+                              background: "#3e7aff",
+                              color: "#c4c4c4ff",
+                              border: "none",
+                              padding: "6px 16px",
+                              borderRadius: 4,
+                              ...inputStyle,
+                              ...(isDisabled ? inputDisabledStyle : {}),
+                              ...(btn.ghostStyle
+                                ? { background: "#d3d3d3ff" }
+                                : {}),
+                              ...(btn.lowOpacity ? { opacity: 0.5 } : {}),
+                            }}
+                            title={
+                              btn.label ||
+                              (typeof btn.label === "string"
+                                ? btn.label
+                                : undefined) ||
+                              "Button"
+                            }
+                            onClick={() => {
+                              if (
+                                !isDisabled &&
+                                typeof btn.onClick === "function"
+                              ) {
+                                btn.onClick(btn.key || i);
+                              }
+                            }}
+                            disabled={isDisabled}
+                            tabIndex={isDisabled ? -1 : 0}
+                          >
+                            {btn.icon ? btn.icon : btn.label || "Button"}
+                          </button>
+                        ))}
                       </div>
                     );
                   default:
