@@ -1126,7 +1126,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   fontWeight: 600,
                                   background: "#3e7aff",
                                   color: "#fff",
-                                  // Do NOT override border here so inputFocusedStyle border shows
                                   padding: "6px 16px",
                                 }
                               : {
@@ -1138,10 +1137,15 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   border: "none",
                                   padding: "6px 16px",
                                 }),
-                            ...(config.ghostStyle
-                              ? { background: "#575758ff" }
-                              : {}),
+                            ...(config.lowOpacity ? { opacity: 0.5 } : {}),
                           }}
+                          title={
+                            label ||
+                            (typeof config.label === "string"
+                              ? config.label
+                              : undefined) ||
+                            "Button"
+                          }
                           onClick={() => {
                             if (typeof config.onClick === "function") {
                               config.onClick(key);
@@ -1155,49 +1159,52 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           onBlur={() => {}}
                           disabled={isDisabled}
                         >
-                          {label || "Button"}
+                          {config.icon ? config.icon : label || "Button"}
                         </button>
                       </div>
                     );
                   case "buttongroup":
-                    // config.buttons: array of { label, icon, onClick, ... }
                     return (
-                      <div
-                        key={key}
-                        style={{ display: "flex", gap: 8, margin: "8px 0" }}
-                      >
-                        {Array.isArray(config.buttons) &&
-                          config.buttons.map((btn, i) => (
-                            <button
-                              key={btn.key || i}
-                              style={{
-                                cursor: isDisabled ? "not-allowed" : "pointer",
-                                fontWeight: 600,
-                                background: "#3e7aff",
-                                color: "#c4c4c4ff",
-                                border: "none",
-                                padding: "6px 16px",
-                                borderRadius: 4,
-                                ...inputStyle,
-                                ...(isDisabled ? inputDisabledStyle : {}),
-                                ...(btn.ghostStyle
-                                  ? { background: "#d3d3d3ff" }
-                                  : {}),
-                              }}
-                              onClick={() => {
-                                if (
-                                  !isDisabled &&
-                                  typeof btn.onClick === "function"
-                                ) {
-                                  btn.onClick(btn.key || i);
-                                }
-                              }}
-                              disabled={isDisabled}
-                              tabIndex={isDisabled ? -1 : 0}
-                            >
-                              {btn.icon ? btn.icon : btn.label || "Button"}
-                            </button>
-                          ))}
+                      <div key={key} style={labelStyle}>
+                        {config.buttons.map((btn, i) => (
+                          <button
+                            key={btn.key || i}
+                            style={{
+                              cursor: isDisabled ? "not-allowed" : "pointer",
+                              fontWeight: 600,
+                              background: "#3e7aff",
+                              color: "#c4c4c4ff",
+                              border: "none",
+                              padding: "6px 16px",
+                              borderRadius: 4,
+                              ...inputStyle,
+                              ...(isDisabled ? inputDisabledStyle : {}),
+                              ...(btn.ghostStyle
+                                ? { background: "#d3d3d3ff" }
+                                : {}),
+                              ...(btn.lowOpacity ? { opacity: 0.5 } : {}),
+                            }}
+                            title={
+                              btn.label ||
+                              (typeof btn.label === "string"
+                                ? btn.label
+                                : undefined) ||
+                              "Button"
+                            }
+                            onClick={() => {
+                              if (
+                                !isDisabled &&
+                                typeof btn.onClick === "function"
+                              ) {
+                                btn.onClick(btn.key || i);
+                              }
+                            }}
+                            disabled={isDisabled}
+                            tabIndex={isDisabled ? -1 : 0}
+                          >
+                            {btn.icon ? btn.icon : btn.label || "Button"}
+                          </button>
+                        ))}
                       </div>
                     );
                   default:

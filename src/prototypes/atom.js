@@ -807,10 +807,6 @@ export default class Atom extends ObservableEntity {
             GlobalVariables.availableTypes,
             atom.toLowerCase()
           );
-
-        console.log(GlobalVariables.availableTypes);
-        console.log("Atom:", atom);
-        console.log("Has icon:", hasIcon);
         return {
           icon: hasIcon
             ? React.createElement("span", {
@@ -823,11 +819,11 @@ export default class Atom extends ObservableEntity {
                   backgroundSize: "contain",
                   backgroundRepeat: "no-repeat",
                 },
-                title: atom,
+                //title: atom,
               })
             : undefined,
           ghostStyle: true,
-          label: hasIcon ? undefined : `Add ${atom}`,
+          label: hasIcon ? `Add ${atom}` : `Add ${atom}`,
           onClick: () => {
             GlobalVariables.currentMolecule.placeAtom(
               {
