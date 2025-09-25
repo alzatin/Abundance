@@ -130,20 +130,18 @@ export default class Gcode extends Atom {
   draw() {
     super.draw(); //Super call to draw the rest
 
-    const xInPixels = GlobalVariables.widthToPixels(this.x);
-    const yInPixels = GlobalVariables.heightToPixels(this.y);
+    const centerX = GlobalVariables.widthToPixels(this.x);
+    const centerY = GlobalVariables.heightToPixels(this.y);
     const radiusInPixels = GlobalVariables.widthToPixels(this.radius);
 
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#484848";
-    GlobalVariables.c.font = `${GlobalVariables.widthToPixels(
-      this.radius
-    )}px Work Sans Bold`;
-    GlobalVariables.c.fillText(
-      "G",
-      GlobalVariables.widthToPixels(this.x - this.radius / 3),
-      GlobalVariables.heightToPixels(this.y) + this.height / 3
-    );
+    GlobalVariables.c.font = `${radiusInPixels}px Work Sans Bold`;
+    const text = "G";
+    const textWidth = GlobalVariables.c.measureText(text).width;
+    const textX = centerX - textWidth / 2;
+    const textY = centerY + radiusInPixels / 2.8; // visually center the G
+    GlobalVariables.c.fillText(text, textX, textY);
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
 
@@ -151,10 +149,10 @@ export default class Gcode extends Atom {
     if (this.progress < 1.0) {
       GlobalVariables.c.beginPath();
       GlobalVariables.c.fillStyle = this.centerColor;
-      GlobalVariables.c.moveTo(xInPixels, yInPixels);
+      GlobalVariables.c.moveTo(centerX, centerY);
       GlobalVariables.c.arc(
-        xInPixels,
-        yInPixels,
+        centerX,
+        centerY,
         radiusInPixels / 1.5,
         0,
         this.progress * Math.PI * 2,
