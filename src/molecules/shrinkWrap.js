@@ -53,12 +53,13 @@ export default class shrinkWrap extends Atom {
   draw() {
     super.draw(); //Super call to draw the rest
 
-    // Draw two circles, left and right, centered horizontally on the atom
+    // Center in pixel space
     const centerX = GlobalVariables.widthToPixels(this.x);
     const centerY = GlobalVariables.heightToPixels(this.y);
     const circleOffset = GlobalVariables.widthToPixels(this.radius / 4);
     const circleRadius = GlobalVariables.widthToPixels(this.radius / 2.5);
 
+    // Right circle
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#949294";
     GlobalVariables.c.arc(
@@ -72,6 +73,7 @@ export default class shrinkWrap extends Atom {
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
 
+    // Left circle
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#949294";
     GlobalVariables.c.arc(
@@ -82,17 +84,6 @@ export default class shrinkWrap extends Atom {
       Math.PI * 2,
       false
     );
-    GlobalVariables.c.fill();
-    GlobalVariables.c.closePath();
-
-    // Draw rectangle centered between the two circles
-    const rectSize = GlobalVariables.widthToPixels(this.radius / 2);
-    const rectX = centerX - rectSize / 2;
-    const rectY = centerY - rectSize / 2;
-
-    GlobalVariables.c.beginPath();
-    GlobalVariables.c.fillStyle = "#949294";
-    GlobalVariables.c.rect(rectX, rectY, rectSize, rectSize);
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
   }
