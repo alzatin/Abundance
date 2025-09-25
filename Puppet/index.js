@@ -11,11 +11,16 @@ const projectUser = "moatmaslow";
 const currentDate = new Date().toISOString().split("T")[0];
 
 // Function to create an error screenshot with a message
-async function createErrorScreenshot(filePath, title, errorMessage, isWarning = false) {
+async function createErrorScreenshot(
+  filePath,
+  title,
+  errorMessage,
+  isWarning = false
+) {
   try {
     // Use different colors for warnings vs errors
-    const backgroundColor = isWarning ? '#ff9800' : '#f44336'; // Orange for warnings, red for errors
-    
+    const backgroundColor = isWarning ? "#ff9800" : "#f44336"; // Orange for warnings, red for errors
+
     // Create a simple HTML content to display the error
     const errorHtml = `
       <!DOCTYPE html>
@@ -80,10 +85,12 @@ async function createErrorScreenshot(filePath, title, errorMessage, isWarning = 
 
     // Clean up temporary file
     fs.unlinkSync(tempErrorFile);
-    
+
     console.log(`Error screenshot created: ${filePath}`);
   } catch (screenshotError) {
-    console.error(`Failed to create error screenshot: ${screenshotError.message}`);
+    console.error(
+      `Failed to create error screenshot: ${screenshotError.message}`
+    );
   }
 }
 
@@ -109,7 +116,7 @@ async function createErrorScreenshot(filePath, title, errorMessage, isWarning = 
     }
   }
   console.log("All projects processed!");
-  
+
   // Exit with error code if there were any failures
   if (hasErrors) {
     console.error("Some tests failed - check error screenshots");
@@ -143,7 +150,7 @@ async function loadPuppeteerAndExec(browser, date) {
       );
       // Wait a few seconds after the selector is found before taking the screenshot
       await new Promise((resolve) => setTimeout(resolve, 10000));
-      
+
       await page.screenshot({
         path: `Puppet/images/${projectName}-Test.png`,
       });
@@ -152,8 +159,11 @@ async function loadPuppeteerAndExec(browser, date) {
       console.error(`Error testing ${projectName}: ${testError.message}`);
       hasErrors = true;
       // Create an error screenshot to replace any outdated ones
-      await createErrorScreenshot(`Puppet/images/${projectName}-Test.png`, 
-        `${projectName} Test Failed`, testError.message);
+      await createErrorScreenshot(
+        `Puppet/images/${projectName}-Test.png`,
+        `${projectName} Test Failed`,
+        testError.message
+      );
     }
 
     // Try deployed version - skip if not available
@@ -174,7 +184,7 @@ async function loadPuppeteerAndExec(browser, date) {
       );
 
       // Wait a bit for the page to load
-      await new Promise((resolve) => setTimeout(resolve, 10000));
+      await new Promise((resolve) => setTimeout(resolve, 20000));
 
       await page.screenshot({
         path: `Puppet/images/${projectName}-Deployed.png`,
@@ -187,15 +197,20 @@ async function loadPuppeteerAndExec(browser, date) {
         `Deployed version not available for ${projectName}: ${deployedError.message}`
       );
       // Create an informational screenshot for deployed version (not counted as error)
-      await createErrorScreenshot(`Puppet/images/${projectName}-Deployed.png`, 
-        `${projectName} Deployed Unavailable`, "Deployed version could not be reached", true);
+      await createErrorScreenshot(
+        `Puppet/images/${projectName}-Deployed.png`,
+        `${projectName} Deployed Unavailable`,
+        "Deployed version could not be reached",
+        true
+      );
     }
   }
 
   // Navigate to main.html
   try {
-    await page.goto(`file:${path.join(__dirname, "main.html")}`, 
-      { timeout: 30000 });
+    await page.goto(`file:${path.join(__dirname, "main.html")}`, {
+      timeout: 30000,
+    });
 
     // Wait a bit for the page to load
     await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -207,9 +222,12 @@ async function loadPuppeteerAndExec(browser, date) {
   } catch (mainError) {
     console.error("Error taking main.html screenshot:", mainError.message);
     hasErrors = true;
-    await createErrorScreenshot(`Puppet/images/main.png`, 
-      "Main Page Failed", mainError.message);
+    await createErrorScreenshot(
+      `Puppet/images/main.png`,
+      "Main Page Failed",
+      mainError.message
+    );
   }
-  
+
   return hasErrors;
 }
