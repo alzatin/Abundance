@@ -9,7 +9,7 @@ const ATOM_PREDICTIONS = {
   Readme: ["Tag", "Add-BOM-Tag", "Tag"],
   "Add-BOM-Tag": ["Tag", "Readme", "Tag"],
   Color: ["Assembly", "Move", "Export"],
-  Tag: ["ExtractTag", "Readme", "Tag"],
+  Tag: ["Assembly", "Fusion", "Move"],
   ExtractTag: ["Tag", "Readme", "Tag"],
   CutLayout: ["Export", "Gcode", "Tag"],
   RegularPolygon: ["Extrude", "Move", "Tag"],
