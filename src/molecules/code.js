@@ -40,78 +40,79 @@ export default class Code extends Atom {
       ]
       //This defines the molecules inputs and creates variables with the same names which can be referenced in the code
 
-      //Takes the address and gets the shape from the library
+      //Gets the shape from the library - no need to clone or access geometry directly
       let importedShape = library[shape]
 
-      //This makes a new copy of the shape and moves it in the X direction
-      let movedShape = importedShape.geometry[0].clone().translate([dist,0,0])
+      //Use the built-in Move function to move the shape in the X direction
+      let movedShape = await Move(importedShape, dist, 0, 0)
+
+      //Use the built-in Rotate function to rotate the shape
+      let rotatedShape = await Rotate(importedShape, 0, 45, 0)
+
+      //Use the built-in Scale function to make the shape smaller
+      let scaledShape = await Scale(importedShape, 0.8)
 
       //Console.log works for debugging to better see what is happening under the hood
-      console.log("Shape:")
-      console.log(importedShape);
+      console.log("Original shape bounds:", GetBounds(importedShape))
+      console.log("Moved shape bounds:", GetBounds(movedShape))
 
-      //Shapes stored in the library have tags, a color, a plane, and a bill of materials like this. We don't modify them here
-      let shape1 = {
-        geometry: [movedShape],
-        tags: importedShape.tags,
-        color: importedShape.color,
-        plane: importedShape.plane,
-        bom: importedShape.bom
-      }
-
-      //We could at this point return shape1 as a complete shape and it will be automatically written to the library for us
-      //return shape1
-
-      //We can also create a new shape from scratch
-      let createdRectangle = replicad.drawRectangle(5,7)
-      //This is the plane we are going to put our new shape on
-      const newPlane = new replicad.Plane().pivot(0, 'Y');
-      //And we extrude the shape to make it 3D
+      //Create a new shape from scratch using replicad
+      let createdRectangle = replicad.drawRectangle(5, 7)
+      const newPlane = new replicad.Plane().pivot(0, 'Y')
       let createdShape = createdRectangle.sketchOnPlane(newPlane).extrude(height)
 
-      //For our new geometry we need to define the tags, color, plane, etc
+      //Wrap the raw replicad geometry in our assembly format
       let shape2 = {
           geometry: [createdShape],
-          tags: ["aTag"],
+          dimension: "3D",
+          tags: ["createdShape"],
           color: '#A3CE5B',
           plane: newPlane,
           bom: []
       }
 
-      //Then we can return our created shape in just the same way
-      //return shape2
+      //Use the built-in Fillet function to round the edges
+      let filletedShape = await Fillet(shape2, 0.5)
 
-      //If we want to return both shapes at once, we can create an assembly with them
-      let anAssembly = {
-        geometry: [shape1, shape2],
-        tags: ["aNewTag"],
-        color: '#A3CF5B',
-        plane: newPlane,
-        bom: []
-      }
+      //Use the built-in Chamfer function to bevel the edges  
+      let chamferedShape = await Chamfer(movedShape, 0.3)
 
-      //And we can return that in the same way
-      return anAssembly
+      //Use the built-in Assembly function to combine multiple shapes
+      let finalAssembly = await Assembly([rotatedShape, scaledShape, filletedShape, chamferedShape])
+
+      //You can also create boolean operations using Intersect
+      //let intersection = await Intersect(movedShape, rotatedShape)
+
+      return finalAssembly
 
       /**
+      Built-in Functions Available:
+      - Move(geometry, x, y, z) - Move a shape in 3D space
+      - Rotate(geometry, x, y, z) - Rotate a shape around X, Y, Z axes (degrees)
+      - Scale(geometry, factor) - Scale a shape by a factor
+      - Assembly([shapes]) - Combine multiple shapes into an assembly
+      - Intersect(shape1, shape2) - Boolean intersection of two shapes
+      - GetBounds(geometry) - Get the bounding box of a shape
+      - Fillet(geometry, radius) - Round edges with specified radius
+      - Chamfer(geometry, size) - Bevel edges with specified size
+
       To Use the Code Atom, enter your inputs to the input list as an object array:
       const Inputs = [
         {inputName: "shape", type: "geometry", defaultValue: null},
         {inputName: "dist", type: "number", defaultValue: 5},
         {inputName: "height", type: "number", defaultValue: 10}
       ]
-      If your input is connected to another atom with a replicad geometry you can access its geometry by looking up its ID in your library. a.e library[Input1].geometry[0]
-      Use any replicad available methods to modify your geometry. Learn more about all of the available methods at
-      https://replicad.xyz/docs/introapp/UserGuide.html
-      Return a replicad object that includes geometry, color, tags and plane.
 
-      Example Code Atom:
+      Access imported geometry using library[inputName] - the built-in functions handle 
+      the complexity of accessing geometry arrays and maintaining metadata automatically.
+
+      Simple Example - Move a shape:
          const Inputs = [
           {inputName: "shape", type: "geometry", defaultValue: null},
           {inputName: "x", type: "number", defaultValue: 5}
         ]
-        let finalShape = library[shape].geometry[0].clone().translate([x,0,0])
-        return {geometry: finalShape, color: library[shape].color, plane: library[shape].plane, tags: library[shape].tags }
+        let movedShape = await Move(library[shape], x, 0, 0)
+        return movedShape
       */
       `;
 
