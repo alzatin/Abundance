@@ -6,15 +6,16 @@ export default function RenderProgressBar({
   return (
     <div className={!run ? "save-bar" : "save-bar-run"}>
       <div className="progress">
+        <p className="save-bar-label">
+          {progress < 100 ? `${label} ${progress}%` : "Render Complete!"}
+        </p>
         <div
           className="progress-done"
           style={{
             width: `${progress}%`,
             opacity: 1,
           }}
-        >
-          {progress < 100 ? `${label} ${progress}%` : "Render Complete!"}
-        </div>
+        ></div>
       </div>
     </div>
   );

@@ -90,6 +90,7 @@ function AppContent() {
     let interval = setInterval(() => {
       const molecule = GlobalVariables.topLevelMolecule;
       if (molecule) {
+        console.log("Molecule state:", molecule.getState().status);
         const [ready, total] = molecule.getCompletionTuple();
         // Update your UI with progress here
         //console.log(`Molecule progress: ${ready} / ${total}`);
@@ -153,7 +154,6 @@ function AppContent() {
             setMesh(m);
             setWireMesh(m);
             setOutdatedMesh(false);
-            setRenderProgress(100);
           })
           .catch((e) => {
             console.error("reset view not working" + e);
