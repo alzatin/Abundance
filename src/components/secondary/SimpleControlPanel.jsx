@@ -1138,8 +1138,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   border: "none",
                                   padding: "6px 16px",
                                 }),
-                            ...(config.lowOpacity
-                              ? { opacity: 0.5, background: "#68696bff" }
+                            ...(config.ghostStyle
+                              ? { background: "#575758ff" }
                               : {}),
                           }}
                           onClick={() => {
@@ -1171,9 +1171,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             <button
                               key={btn.key || i}
                               style={{
-                                ...inputStyle,
-                                ...(isDisabled ? inputDisabledStyle : {}),
-                                ...(btn.lowOpacity ? { opacity: 0.5 } : {}),
                                 cursor: isDisabled ? "not-allowed" : "pointer",
                                 fontWeight: 600,
                                 background: "#3e7aff",
@@ -1181,6 +1178,11 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                 border: "none",
                                 padding: "6px 16px",
                                 borderRadius: 4,
+                                ...inputStyle,
+                                ...(isDisabled ? inputDisabledStyle : {}),
+                                ...(btn.ghostStyle
+                                  ? { background: "#757576ff" }
+                                  : {}),
                               }}
                               onClick={() => {
                                 if (

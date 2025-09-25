@@ -3,6 +3,7 @@ import GlobalVariables from "../js/globalvariables.js";
 import AttachmentPoint from "./attachmentpoint";
 import { ObservableEntity, Status } from "./observableEntity.js";
 import { getPredictedAtoms } from "../js/atomPrediction.js";
+import React from "react";
 
 // Make this an enum once we're using typescript
 const AlertType = Object.freeze({
@@ -799,22 +800,48 @@ export default class Atom extends ObservableEntity {
     // Create a buttongroup for all predicted atoms
     predictedParams[this.uniqueID + "predictedGroup"] = {
       type: "buttongroup",
-      buttons: predictedAtoms.map((atom) => ({
-        label: `Add ${atom}`,
-        lowOpacity: true,
-        onClick: () => {
-          GlobalVariables.currentMolecule.placeAtom(
-            {
-              x: this.x + 0.1,
-              y: this.y,
-              parent: GlobalVariables.currentMolecule,
-              atomType: atom,
-              uniqueID: GlobalVariables.generateUniqueID(),
-            },
-            true
+      buttons: predictedAtoms.map((atom) => {
+        const hasIcon =
+          GlobalVariables.availableTypes &&
+          Object.prototype.hasOwnProperty.call(
+            GlobalVariables.availableTypes,
+            atom.toLowerCase()
           );
-        },
-      })),
+
+        console.log(GlobalVariables.availableTypes);
+        console.log("Atom:", atom);
+        console.log("Has icon:", hasIcon);
+        return {
+          icon: hasIcon
+            ? React.createElement("span", {
+                className: atom,
+                style: {
+                  display: "inline-block",
+                  width: 24,
+                  height: 24,
+                  verticalAlign: "middle",
+                  backgroundSize: "contain",
+                  backgroundRepeat: "no-repeat",
+                },
+                title: atom,
+              })
+            : undefined,
+          ghostStyle: true,
+          label: hasIcon ? undefined : `Add ${atom}`,
+          onClick: () => {
+            GlobalVariables.currentMolecule.placeAtom(
+              {
+                x: this.x + 0.1,
+                y: this.y,
+                parent: GlobalVariables.currentMolecule,
+                atomType: atom,
+                uniqueID: GlobalVariables.generateUniqueID(),
+              },
+              true
+            );
+          },
+        };
+      }),
     };
 
     return predictedParams;
