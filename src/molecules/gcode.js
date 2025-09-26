@@ -184,45 +184,21 @@ export default class Gcode extends Atom {
     // Initialize progress tracking
     this.progress = 0.0;
     this.processing = true;
-    this.setProcessing();
 
     try {
       // Get the current input ID
-      let inputID = this.findIOValue("geometry");
+      let inputGeometry = this.findIOValue("geometry");
 
       // Check if the input is an assembly
-      const isAssembly = await this._checkIfAssembly(inputID);
+      const isAssembly = await this._checkIfAssembly(inputGeometry);
 
       if (isAssembly) {
         // For assemblies, extract parts and generate G-code sequentially
-        const parts = await this._extractPartsFromAssembly(inputID);
+        const parts = await this._extractPartsFromAssembly(inputGeometry);
         const sortedParts = await this._sortParts(parts);
-        const resultID = await this._generateSequentialGcode(sortedParts);
-        this.setReady(resultID);
+        const resultWire = await this._generateSequentialGcode(sortedParts);
       } else {
-        // For single parts, use the original method
-        const gcodeCallback = this._createGcodeCallback();
-        const progressCallback = (progress) => {
-          this.progress = progress;
-          // Force a redraw to show progress update
-          //this.sendToRender();
-        };
-        // Find the selected tool object by name
-        const selectedToolName = this.findIOValue("Tool");
-        const selectedToolObj =
-          this.tools.find((tool) => tool.name === selectedToolName) ||
-          this.tools[0];
-        window.generateGcode(
-          this.stlURL,
-          this.center,
-          this.findIOValue("Tool Size"),
-          this.findIOValue("Passes"),
-          this.findIOValue("Speed"),
-          this.findIOValue("Cut Through"),
-          gcodeCallback,
-          progressCallback,
-          selectedToolObj
-        );
+        const resultWire = await this._generateSequentialGcode([inputGeometry]);
       }
     } catch (err) {
       console.error("Error generating G-code:", err);
@@ -327,9 +303,7 @@ export default class Gcode extends Atom {
    * @returns {Promise<Array>} Array of part IDs
    */
   async _extractPartsFromAssembly(assemblyID) {
-    return new Promise((resolve, reject) => {
-      GlobalVariables.cad.extractParts(assemblyID).then(resolve).catch(reject);
-    });
+    return GlobalVariables.cad.extractParts(assemblyID);
   }
 
   /**
@@ -388,6 +362,7 @@ export default class Gcode extends Atom {
    * @param {Array} sortedPartIDs - Array of part IDs sorted left to right
    */
   async _generateSequentialGcode(sortedPartIDs) {
+    this.setProcessing();
     const allGcode = [];
     this.progress = 0.0;
 
@@ -439,11 +414,15 @@ export default class Gcode extends Atom {
     // Concatenate all G-code
     this.gcodeString = this._concatenateGcode(allGcode);
     this.gcodeGenerated = true;
-    this.progress = 1.0;
 
-    // Generate visualization for the final G-code and store in library under
-    // this.uniqueID
-    return GlobalVariables.cad.visualizeGcode(this.gcodeString);
+    // Generate visualization for the final G-code and returns as
+    // an AbundanceObject.
+    const gcodeWire = await GlobalVariables.cad.visualizeGcode(
+      this.gcodeString
+    );
+    this.setReady(gcodeWire);
+    this.progress = 1.0;
+    return gcodeWire;
   }
 
   /**
