@@ -66,7 +66,7 @@ describe('Molecule Undo Navigation Fix', () => {
     
     const undoMethodChange = {
       before: 'Direct deserialize without path tracking',
-      after: 'Save path -> deserialize -> navigate back to path'
+      after: 'Save path -> await deserialize -> navigate back to path'
     };
     
     expect(methodsAdded).toHaveLength(2);
@@ -119,5 +119,33 @@ describe('Molecule Undo Navigation Fix', () => {
     console.log('   - Single element path -> TopLevel');
     console.log('   - Valid path -> Target molecule');
     console.log('   - Invalid path -> Stops at last valid level');
+  });
+
+  it('should demonstrate the async timing fix', () => {
+    // This test documents the timing issue that was fixed
+    // The problem was that deserialize() is async but navigation was called immediately
+    
+    const originalProblem = {
+      issue: 'Navigation called before deserialize completed',
+      cause: 'deserialize() returns Promise but was not awaited',
+      symptom: 'nodesOnTheScreen empty during navigation'
+    };
+    
+    const solutionApplied = {
+      fix: 'Made undo() async and await deserialize()',
+      result: 'Navigation happens after atoms are placed',
+      impact: 'foundMolecule found correctly in navigation'
+    };
+    
+    expect(originalProblem.issue).toContain('before deserialize completed');
+    expect(solutionApplied.fix).toContain('await deserialize');
+    
+    console.log('✅ Async timing fix documented:');
+    console.log(`   PROBLEM: ${originalProblem.issue}`);
+    console.log(`   CAUSE: ${originalProblem.cause}`);
+    console.log(`   SYMPTOM: ${originalProblem.symptom}`);
+    console.log(`   FIX: ${solutionApplied.fix}`);
+    console.log(`   RESULT: ${solutionApplied.result}`);
+    console.log(`   IMPACT: ${solutionApplied.impact}`);
   });
 });

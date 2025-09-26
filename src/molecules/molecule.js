@@ -605,7 +605,7 @@ export default class Molecule extends Atom {
   /**
    * Performs undo operation with improved reliability and operation type awareness
    */
-  undo() {
+  async undo() {
     // Check if there are any undo states available
     if (GlobalVariables.recentMoleculeRepresentation.length === 0) {
       console.log("No undo history available");
@@ -644,13 +644,12 @@ export default class Molecule extends Atom {
 
       // Restore the previous state if it's a valid format
       if (rawFile && rawFile.fileTypeVersion == 1) {
-        GlobalVariables.topLevelMolecule.deserialize(rawFile);
+        await GlobalVariables.topLevelMolecule.deserialize(rawFile);
+        // Navigate back to the molecule where the user was working before undo
+        this.navigateToMoleculePath(currentMoleculePath);
       } else {
         console.warn("Invalid file format for undo operation");
       }
-
-      // Navigate back to the molecule where the user was working before undo
-      this.navigateToMoleculePath(currentMoleculePath);
 
       // Ensure current molecule is selected
       if (GlobalVariables.currentMolecule) {
