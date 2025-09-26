@@ -1131,10 +1131,34 @@ function LoginMode() {
               <div
                 className="login-nav-item"
                 onClick={() => {
+                  // Load a new project with default values
+                  // Example default project values
+                  const defaultProject = {
+                    owner: "alzatin",
+                    repoName: "my-first-project",
+                  };
+                  // If you have a loadProject function available, call it here
+                  if (typeof loadProject === "function") {
+                    loadProject(defaultProject, authorizedUserOcto);
+                  } else {
+                    // fallback: navigate to the default project route
+                    if (typeof navigate === "function") {
+                      navigate(
+                        `/${defaultProject.owner}/${defaultProject.repoName}`
+                      );
+                    }
+                  }
+                }}
+              >
+                <p>Getting started</p>
+              </div>
+              <div
+                className="login-nav-item"
+                onClick={() => {
                   setExportPopUp(true);
                 }}
               >
-                <p>New project</p>
+                <p>New project2</p>
               </div>
               <div
                 className={
