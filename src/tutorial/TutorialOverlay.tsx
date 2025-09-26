@@ -1,5 +1,6 @@
 import React from "react";
 import { useTutorial } from "./TutorialManager";
+import { createPortal } from "react-dom";
 
 export const TutorialOverlay: React.FC = () => {
   const { currentStep, isActive, next, complete } = useTutorial();
@@ -29,7 +30,10 @@ export const TutorialOverlay: React.FC = () => {
       })()
     : {};
 
-  return (
+  // Ensure overlay-root exists (should always be true if you added it to index.html)
+  const portalRoot = document.getElementById("overlay-root");
+  if (!portalRoot) return null;
+  const overlayContent = (
     <div>
       {/* Fullscreen overlay */}
       <div
@@ -80,4 +84,5 @@ export const TutorialOverlay: React.FC = () => {
       </div>
     </div>
   );
+  return createPortal(overlayContent, portalRoot);
 };
