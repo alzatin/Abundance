@@ -19,6 +19,8 @@ import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
 import GitSearchMenu from "../secondary/GitSearchMenu.jsx";
 import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
+import { useTutorial } from "../../tutorial/TutorialManager";
+import { TutorialOverlay } from "../../tutorial/TutorialOverlay";
 
 // Import contexts
 import {
@@ -27,7 +29,6 @@ import {
   useRendering,
   useProject,
 } from "../../contexts/index.js";
-import { Global } from "@emotion/react";
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
  * a user has been authorized access to a project.
@@ -60,6 +61,7 @@ function CreateMode() {
     userUploadedFile,
     setUserUploadedFile,
   } = useRendering();
+
   const { cad, loadProject } = useProject();
 
   const navigate = useNavigate();
@@ -870,6 +872,8 @@ function CreateMode() {
       setSaveProgress(0); // Reset save progress
     }
   };
+
+  const { start, isActive } = useTutorial();
   const screenHeight = window.innerHeight;
   if (authorizedUserOcto) {
     if (
@@ -878,6 +882,7 @@ function CreateMode() {
     ) {
       return (
         <>
+          {isActive ? <TutorialOverlay /> : null}
           <ParamsMenu
             position={{ top: screenHeight / 2 - 10, left: 55 }}
             id={"atom-create-params-panel"}

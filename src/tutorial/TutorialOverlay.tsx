@@ -5,7 +5,7 @@ export const TutorialOverlay: React.FC = () => {
   const { currentStep, isActive, next, complete } = useTutorial();
 
   if (!isActive || !currentStep) return null;
-
+  console.log("Current Step:", currentStep);
   // Highlight logic (you may want to use a library like react-portal or react-spotlight for better visuals)
   const highlightStyle: React.CSSProperties = currentStep.target
     ? (() => {

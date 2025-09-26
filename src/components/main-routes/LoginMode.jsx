@@ -9,6 +9,7 @@ import useDebounce from "../../hooks/useDebounce.js";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { useAuth, useAppState } from "../../contexts/index.js";
+import { useTutorial } from "../../tutorial/TutorialManager";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -771,6 +772,30 @@ const ShowProjects = ({
     setPageNumber(0);
   };
 
+  const navigate = useNavigate();
+  const { start, isActive } = useTutorial();
+
+  const fetchFirst = () => {
+    const owner = "alzatin";
+    const repoName = "My-First-Project";
+    fetch(
+      `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.item) {
+          console.log("Fetched AWS project data:", data.item);
+          GlobalVariables.currentAWSnode = data.item;
+          navigate(`${owner}/${repoName}`);
+          start();
+        }
+      })
+      .catch((e) => {
+        console.error("Error fetching AWS project data:", e);
+        // If fetch fails, fallback to run mode
+        navigate(`/run/${owner}/${repoName}`);
+      });
+  };
   const UserNavDiv = (
     <div className="left-login-div">
       <div
@@ -780,6 +805,9 @@ const ShowProjects = ({
         }}
       >
         <p>New project</p>
+      </div>
+      <div className="login-nav-item" onClick={() => fetchFirst()}>
+        <p>Getting started</p>
       </div>
       <div
         className={
@@ -1004,6 +1032,7 @@ function LoginMode() {
     setAuthorizedUserOcto,
   } = useAuth();
   const { exportPopUp, setExportPopUp } = useAppState();
+  const navigate = useNavigate();
 
   const pageDict = { 0: null };
 
@@ -1131,34 +1160,10 @@ function LoginMode() {
               <div
                 className="login-nav-item"
                 onClick={() => {
-                  // Load a new project with default values
-                  // Example default project values
-                  const defaultProject = {
-                    owner: "alzatin",
-                    repoName: "my-first-project",
-                  };
-                  // If you have a loadProject function available, call it here
-                  if (typeof loadProject === "function") {
-                    loadProject(defaultProject, authorizedUserOcto);
-                  } else {
-                    // fallback: navigate to the default project route
-                    if (typeof navigate === "function") {
-                      navigate(
-                        `/${defaultProject.owner}/${defaultProject.repoName}`
-                      );
-                    }
-                  }
-                }}
-              >
-                <p>Getting started</p>
-              </div>
-              <div
-                className="login-nav-item"
-                onClick={() => {
                   setExportPopUp(true);
                 }}
               >
-                <p>New project2</p>
+                <p>New project</p>
               </div>
               <div
                 className={
