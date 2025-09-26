@@ -151,7 +151,7 @@ export default memo(function FlowCanvas({
     });
   };
 
-  const keyDown = (e) => {
+  const keyDown = async (e) => {
     if (e.key == "Backspace" || e.key == "Delete") {
       /* Save undo state before deletion */
       GlobalVariables.saveUndoState("DELETE", "Deleted selected atoms");
@@ -189,7 +189,7 @@ export default memo(function FlowCanvas({
         const hadUndoHistory =
           GlobalVariables.recentMoleculeRepresentation.length > 0;
 
-        GlobalVariables.currentMolecule.undo();
+        await GlobalVariables.currentMolecule.undo();
 
         // Show notification based on what was undone
         if (hadUndoHistory && operationInfo) {

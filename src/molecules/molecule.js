@@ -605,7 +605,7 @@ export default class Molecule extends Atom {
   /**
    * Performs undo operation with improved reliability and operation type awareness
    */
-  undo() {
+  async undo() {
     // Check if there are any undo states available
     if (GlobalVariables.recentMoleculeRepresentation.length === 0) {
       console.log("No undo history available");
@@ -613,6 +613,9 @@ export default class Molecule extends Atom {
     }
 
     try {
+      // Save the current molecule path so we can navigate back to it after undo
+      const currentMoleculePath = this.getMoleculePath();
+      
       // Get the last saved state and operation info
       let rawFile = JSON.parse(
         GlobalVariables.recentMoleculeRepresentation.pop()
@@ -641,7 +644,9 @@ export default class Molecule extends Atom {
 
       // Restore the previous state if it's a valid format
       if (rawFile && rawFile.fileTypeVersion == 1) {
-        GlobalVariables.topLevelMolecule.deserialize(rawFile);
+        await GlobalVariables.topLevelMolecule.deserialize(rawFile);
+        // Navigate back to the molecule where the user was working before undo
+        this.navigateToMoleculePath(currentMoleculePath);
       } else {
         console.warn("Invalid file format for undo operation");
       }
@@ -1562,5 +1567,67 @@ export default class Molecule extends Atom {
     //Send code to JSxCAD to render
     //console.log(this);
     GlobalVariables.writeToDisplay(this.value);
+  }
+
+  /**
+   * Get the path from the top-level molecule to the current molecule
+   * @returns {string[]} Array of molecule names representing the path
+   */
+  getMoleculePath() {
+    const path = [];
+    let currentMolecule = GlobalVariables.currentMolecule;
+    
+    // Build path from current molecule back to top level
+    while (currentMolecule && !currentMolecule.topLevel) {
+      path.unshift(currentMolecule.name);
+      currentMolecule = currentMolecule.parent;
+    }
+    
+    // Add the top level molecule name if it exists
+    if (currentMolecule && currentMolecule.topLevel) {
+      path.unshift(currentMolecule.name);
+    }
+    
+    return path;
+  }
+
+  /**
+   * Navigate to a specific molecule path
+   * @param {string[]} moleculePath - Array of molecule names representing the path
+   */
+  navigateToMoleculePath(moleculePath) {
+    // Start from the top level molecule
+    GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
+    
+    // If the path is empty or only contains the top level, we're done
+    if (moleculePath.length <= 1) {
+      GlobalVariables.currentMolecule.enableAllChildren();
+      return;
+    }
+    
+    // Navigate through the path (skip the first element which is the top level)
+    for (let i = 1; i < moleculePath.length; i++) {
+      const targetMoleculeName = moleculePath[i];
+      let foundMolecule = null;
+      
+      // Look for a molecule with the target name in the current molecule's nodes
+      if (GlobalVariables.currentMolecule.nodesOnTheScreen) {
+        foundMolecule = GlobalVariables.currentMolecule.nodesOnTheScreen.find(
+          (atom) => 
+            (atom.atomType === "Molecule" || atom.atomType === "GitHubMolecule") && 
+            atom.name === targetMoleculeName
+        );
+      }
+      
+      if (foundMolecule) {
+        // Navigate into this molecule
+        GlobalVariables.currentMolecule = foundMolecule;
+        GlobalVariables.currentMolecule.enableAllChildren();
+      } else {
+        // If we can't find a molecule in the path, stop at the current level
+        console.warn(`Cannot find molecule "${targetMoleculeName}" in path, stopping navigation at current level`);
+        break;
+      }
+    }
   }
 }
