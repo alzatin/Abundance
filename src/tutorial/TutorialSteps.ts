@@ -19,7 +19,7 @@ export const gettingStartedSteps: TutorialStep[] = [
     id: "top-level",
     message: "You are at the top level of your current project.",
     overlay: "full",
-    action: "click",
+    action: "none",
   },
   {
     id: "canvas-intro",

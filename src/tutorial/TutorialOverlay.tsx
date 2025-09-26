@@ -6,56 +6,145 @@ export const TutorialOverlay: React.FC = () => {
   const { currentStep, isActive, next, complete } = useTutorial();
 
   if (!isActive || !currentStep) return null;
-  console.log("Current Step:", currentStep);
-  // Highlight logic (you may want to use a library like react-portal or react-spotlight for better visuals)
-  const highlightStyle: React.CSSProperties = currentStep.target
-    ? (() => {
-        const el = document.querySelector(currentStep.target);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          return {
-            position: "fixed",
-            top: rect.top - 8,
-            left: rect.left - 8,
-            width: rect.width + 16,
-            height: rect.height + 16,
-            border: "3px solid #2ec4b6",
-            borderRadius: 8,
-            boxSizing: "border-box",
-            pointerEvents: "none",
-            zIndex: 10001,
-          };
-        }
-        return {};
-      })()
-    : {};
+  // Calculate highlight rectangle and overlay positions
+  let highlightRect = null;
+  if (currentStep.target) {
+    const el = document.querySelector(currentStep.target);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      highlightRect = {
+        top: rect.top + 5,
+        left: rect.left + 8,
+        width: rect.width - 16,
+        height: rect.height - 16,
+        borderRadius: 10,
+      };
+    }
+  }
 
   // Ensure overlay-root exists (should always be true if you added it to index.html)
   const portalRoot = document.getElementById("overlay-root");
   if (!portalRoot) return null;
   const overlayContent = (
     <div>
-      {/* Fullscreen overlay */}
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          background: "rgba(0,0,0,0.5)",
-          zIndex: 10000,
-          pointerEvents: currentStep.action === "none" ? "auto" : "none",
-        }}
-        // For steps that want the user to click anywhere to proceed
-        onClick={
-          currentStep.action === "click" && !currentStep.target
-            ? next
-            : undefined
-        }
-      />
-      {/* Highlight rectangle */}
-      {currentStep.target && <div style={highlightStyle} />}
+      {/* Four overlay divs to create a window effect */}
+      {highlightRect ? (
+        <>
+          {/* Top overlay */}
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: highlightRect.top,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 10000,
+              pointerEvents: currentStep.action === "none" ? "auto" : "none",
+            }}
+            onClick={
+              currentStep.action === "click" && !currentStep.target
+                ? next
+                : undefined
+            }
+          />
+          {/* Left overlay */}
+          <div
+            style={{
+              position: "fixed",
+              top: highlightRect.top,
+              left: 0,
+              width: highlightRect.left,
+              height: highlightRect.height,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 10000,
+              pointerEvents: currentStep.action === "none" ? "auto" : "none",
+            }}
+            onClick={
+              currentStep.action === "click" && !currentStep.target
+                ? next
+                : undefined
+            }
+          />
+          {/* Right overlay */}
+          <div
+            style={{
+              position: "fixed",
+              top: highlightRect.top,
+              left: highlightRect.left + highlightRect.width,
+              width: `calc(100vw - ${
+                highlightRect.left + highlightRect.width
+              }px)`,
+              height: highlightRect.height,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 10000,
+              pointerEvents: currentStep.action === "none" ? "auto" : "none",
+            }}
+            onClick={
+              currentStep.action === "click" && !currentStep.target
+                ? next
+                : undefined
+            }
+          />
+          {/* Bottom overlay */}
+          <div
+            style={{
+              position: "fixed",
+              top: highlightRect.top + highlightRect.height,
+              left: 0,
+              width: "100vw",
+              height: `calc(100vh - ${
+                highlightRect.top + highlightRect.height
+              }px)`,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 10000,
+              pointerEvents: currentStep.action === "none" ? "auto" : "none",
+            }}
+            onClick={
+              currentStep.action === "click" && !currentStep.target
+                ? next
+                : undefined
+            }
+          />
+          {/* Highlight border */}
+          <div
+            style={{
+              position: "fixed",
+              top: highlightRect.top,
+              left: highlightRect.left,
+              width: highlightRect.width,
+              height: highlightRect.height,
+              border: `2px solid #d368cdff`,
+              borderRadius: highlightRect.borderRadius,
+              boxSizing: "border-box",
+              pointerEvents: "none",
+              zIndex: 10001,
+              boxShadow:
+                "0 0 0 4px rgba(232, 156, 240, 0.5), 0 0 0 8px rgba(223, 169, 228, 0.15)",
+              background: "transparent",
+            }}
+          />
+        </>
+      ) : (
+        // Fallback: full overlay if no highlight
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 10000,
+            pointerEvents: currentStep.action === "none" ? "auto" : "none",
+          }}
+          onClick={
+            currentStep.action === "click" && !currentStep.target
+              ? next
+              : undefined
+          }
+        />
+      )}
       {/* Message */}
       <div
         style={{
