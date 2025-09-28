@@ -60,7 +60,7 @@ export default class Color extends Atom {
       Tan: "#F5D3B6",
       "Mauve ": "#DBADA9",
       Grey: "#BABABA",
-      Black: "#3C3C3C",
+      Black: "#5A5A5A",
       White: "#FFFCF7",
       Glass: "#E6F3FF",
       "Keep Out": "#D9544D",

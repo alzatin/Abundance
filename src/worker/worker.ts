@@ -89,7 +89,7 @@ function visExport(
         ? "#91C8D5"
         : fileType == "STEP"
         ? "#ACAFDD"
-        : "#3C3C3C";
+        : "#5A5A5A";
     let finalGeometry = fusedGeometry;
     if (fileType == "SVG") {
       /** Fuses input geometry, draws a top view projection*/
@@ -431,7 +431,7 @@ let colorOptions = {
   Tan: "#F5D3B6",
   "Mauve ": "#DBADA9",
   Grey: "#BABABA",
-  Black: "#3C3C3C",
+  Black: "#5A5A5A",
   White: "#FFFCF7",
   "Keep Out": "#E0E0E0",
 };
