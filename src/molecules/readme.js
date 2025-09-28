@@ -91,9 +91,7 @@ export default class Readme extends Atom {
   }
 
   createInputParams() {
-    let inputParams = {};
-
-    super.createInputParams();
+    let inputParams = super.createInputParams();
 
     inputParams[this.name + this.uniqueID] = {
       type: "string",
