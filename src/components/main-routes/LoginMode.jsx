@@ -775,7 +775,7 @@ const ShowProjects = ({
   const navigate = useNavigate();
   const { start, isActive } = useTutorial();
 
-  const fetchFirst = () => {
+  const fetchFirst = (tutorial) => {
     const owner = "alzatin";
     const repoName = "tutorial-default";
     fetch(
@@ -806,7 +806,12 @@ const ShowProjects = ({
       >
         <p>New project</p>
       </div>
-      <div className="login-nav-item" onClick={() => fetchFirst()}>
+      <div
+        className="login-nav-item"
+        onClick={() => setProjectsToShow("tutorials")}
+      >
+        {" "}
+        {/**fetchFirst()*/}
         <p>Getting started</p>
       </div>
       <div
@@ -956,6 +961,10 @@ const ShowProjects = ({
       loading: isLoadingLiked,
       error: isErrorLiked,
     },
+    tutorials: {
+      label: "Available Tutorials",
+      tutorials: ["Intro", "Assemblies", "Github Molecules"],
+    },
   };
 
   return (
@@ -1005,6 +1014,21 @@ const ShowProjects = ({
           ) : null}
           {showDict[projectToShow]["error"] ? (
             <p> There was an error: please try again </p>
+          ) : null}
+          {showDict[projectToShow]["tutorials"] ? (
+            <div className="tutorials-list">
+              {showDict[projectToShow]["tutorials"].map((tutorial, index) => (
+                <div
+                  key={index}
+                  className="login-nav-item"
+                  onClick={() => fetchFirst(tutorial)}
+                >
+                  {" "}
+                  {/**fetchFirst()*/}
+                  <p>{tutorial}</p>
+                </div>
+              ))}
+            </div>
           ) : null}
           {showDict[projectToShow]["data"] ? (
             <AddProject
