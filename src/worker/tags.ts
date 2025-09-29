@@ -35,12 +35,65 @@ function color(geom: AbundanceObject, color: string): AbundanceObject {
 
 /**
  * Return new assembly with BOM attached.
+ * If applied to an assembly, the BOM will be applied to the first leaf in the assembly.
  */
 function bom(geom: AbundanceObject, BOM: any): AbundanceObject {
-  return {
-    ...geom,
-    bom: [...(geom.bom || []), BOM],
-  };
+  if (isLeaf(geom)) {
+    // Apply BOM directly to leaf
+    return {
+      ...geom,
+      bom: [...(geom.bom || []), BOM],
+    };
+  } else {
+    // This is an assembly - find the first leaf and apply BOM to it
+    function findFirstLeaf(node: AbundanceObject): AbundanceObject | null {
+      if (isLeaf(node)) {
+        return node;
+      } else if (Array.isArray(node.geometry) && node.geometry.length > 0) {
+        for (const child of node.geometry) {
+          const firstLeaf = findFirstLeaf(child);
+          if (firstLeaf) {
+            return firstLeaf;
+          }
+        }
+      }
+      return null;
+    }
+
+    function applyBomToFirstLeaf(node: AbundanceObject): AbundanceObject {
+      if (isLeaf(node)) {
+        // This is the first leaf we encounter - apply the BOM
+        return {
+          ...node,
+          bom: [...(node.bom || []), BOM],
+        };
+      } else if (Array.isArray(node.geometry) && node.geometry.length > 0) {
+        // This is an assembly - recursively process children
+        let bomApplied = false;
+        const newGeometry = (node.geometry as AbundanceObject[]).map((child) => {
+          if (!bomApplied) {
+            const result = applyBomToFirstLeaf(child);
+            if (result !== child) {
+              bomApplied = true;
+            }
+            return result;
+          } else {
+            return child;
+          }
+        });
+
+        return {
+          ...node,
+          geometry: newGeometry,
+        };
+      } else {
+        // Empty assembly - just return unchanged
+        return node;
+      }
+    }
+
+    return applyBomToFirstLeaf(geom);
+  }
 }
 
 /**
