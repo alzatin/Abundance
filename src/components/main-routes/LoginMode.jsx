@@ -777,7 +777,7 @@ const ShowProjects = ({
 
   const fetchFirst = () => {
     const owner = "alzatin";
-    const repoName = "My-First-Project";
+    const repoName = "tutorial-default";
     fetch(
       `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
     )

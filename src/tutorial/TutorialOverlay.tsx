@@ -1,23 +1,56 @@
 import React from "react";
 import { useTutorial } from "./TutorialManager";
 import { createPortal } from "react-dom";
-
+import { Global } from "@emotion/react";
+import GlobalVariables from "../js/globalvariables";
 export const TutorialOverlay: React.FC = () => {
-  const { currentStep, isActive, next, complete } = useTutorial();
+  const { currentStep, isActive, next, back, complete } = useTutorial();
+
+  let abundanceSVG = (
+    <svg
+      width="64"
+      height="64"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle cx="12" cy="12" r="10" stroke="#d368cdff" strokeWidth="2" />
+      <circle cx="12" cy="12" r="6" fill="#d368cdff" />
+      <circle cx="12" cy="12" r="2" fill="#fff" />
+    </svg>
+  );
 
   if (!isActive || !currentStep) return null;
   // Calculate highlight rectangle and overlay positions
+  const [lastClick, setLastClick] = React.useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  // Support offset from step (e.g. {top, left, width, height})
   let highlightRect = null;
-  if (currentStep.target) {
+
+  const offset = currentStep.offset || {};
+  if (currentStep.target === "userClick" && GlobalVariables.lastClick) {
+    // Create a 100x100px rect centered on the click
+    const size = 100;
+    highlightRect = {
+      top: GlobalVariables.lastClick.y - size / 2 + (offset.top || 0),
+      left: GlobalVariables.lastClick.x - size / 2 + (offset.left || 0),
+      width: offset.width || size,
+      height: offset.height || size,
+      borderRadius: 8,
+    };
+  } else if (currentStep.target) {
     const el = document.querySelector(currentStep.target);
     if (el) {
       const rect = el.getBoundingClientRect();
       highlightRect = {
-        top: rect.top + 5,
-        left: rect.left + 8,
-        width: rect.width - 16,
-        height: rect.height - 16,
-        borderRadius: 10,
+        top: rect.top + (offset.top || 0),
+        left: rect.left + (offset.left || 0),
+        width: rect.width + (offset.width || 0),
+        height: rect.height + (offset.height || 0),
+        borderRadius: 8,
       };
     }
   }
@@ -25,6 +58,7 @@ export const TutorialOverlay: React.FC = () => {
   // Ensure overlay-root exists (should always be true if you added it to index.html)
   const portalRoot = document.getElementById("overlay-root");
   if (!portalRoot) return null;
+
   const overlayContent = (
     <div>
       {/* Four overlay divs to create a window effect */}
@@ -42,11 +76,7 @@ export const TutorialOverlay: React.FC = () => {
               zIndex: 10000,
               pointerEvents: currentStep.action === "none" ? "auto" : "none",
             }}
-            onClick={
-              currentStep.action === "click" && !currentStep.target
-                ? next
-                : undefined
-            }
+            onClick={currentStep.action === "click" ? next : undefined}
           />
           {/* Left overlay */}
           <div
@@ -120,7 +150,7 @@ export const TutorialOverlay: React.FC = () => {
               pointerEvents: "none",
               zIndex: 10001,
               boxShadow:
-                "0 0 0 4px rgba(232, 156, 240, 0.5), 0 0 0 8px rgba(223, 169, 228, 0.15)",
+                "0 0 0 4px rgba(232, 156, 240, 0.5), 0 0 0 8px rgba(0, 0, 0, 0.15)",
               background: "transparent",
             }}
           />
@@ -149,26 +179,132 @@ export const TutorialOverlay: React.FC = () => {
       <div
         style={{
           position: "fixed",
-          bottom: 40,
-          left: "50%",
-          transform: "translateX(-50%)",
           background: "#fff",
+          height: currentStep.messagePosition?.height ?? "auto",
           borderRadius: 12,
           padding: "2rem 2.5rem",
           boxShadow: "0 6px 24px rgba(0,0,0,0.15)",
           zIndex: 10002,
           maxWidth: 420,
           textAlign: "center",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          // Position relative to highlight rect if overlay is highlight
+          ...(currentStep.overlay === "highlight" && highlightRect
+            ? {
+                top:
+                  highlightRect.top +
+                  highlightRect.height +
+                  16 +
+                  (currentStep.messagePosition?.top ?? 0),
+                left:
+                  highlightRect.left + (currentStep.messagePosition?.left ?? 0),
+                transform: undefined,
+              }
+            : {}),
+          // Center for full overlay
+          ...(currentStep.overlay === "full"
+            ? {
+                top: `calc(50% + ${currentStep.messagePosition?.top ?? 0}px)`,
+                left: `calc(50% + ${currentStep.messagePosition?.left ?? 0}px)`,
+                transform: "translate(-50%, -50%)",
+              }
+            : {}),
         }}
       >
-        <div style={{ marginBottom: 16 }}>{currentStep.message}</div>
-        {["none", "scroll"].includes(currentStep.action) && (
-          <button onClick={next} style={{ marginRight: 8 }}>
-            Next
-          </button>
+        {/* Tooltip arrow */}
+        {currentStep.messageArrow && (
+          <div
+            style={{
+              position: "absolute",
+              ...(currentStep.messageArrow === "top" && {
+                top: -16,
+                left: "50%",
+                transform: "translateX(-50%)",
+                borderLeft: "8px solid transparent",
+                borderRight: "8px solid transparent",
+                borderBottom: "16px solid #fff",
+              }),
+              ...(currentStep.messageArrow === "bottom" && {
+                bottom: -16,
+                left: "50%",
+                transform: "translateX(-50%)",
+                borderLeft: "8px solid transparent",
+                borderRight: "8px solid transparent",
+                borderTop: "16px solid #fff",
+              }),
+              ...(currentStep.messageArrow === "left" && {
+                left: -16,
+                top: "50%",
+                transform: "translateY(-50%)",
+                borderTop: "8px solid transparent",
+                borderBottom: "8px solid transparent",
+                borderRight: "16px solid #fff",
+              }),
+              ...(currentStep.messageArrow === "right" && {
+                right: -16,
+                top: "50%",
+                transform: "translateY(-50%)",
+                borderTop: "8px solid transparent",
+                borderBottom: "8px solid transparent",
+                borderLeft: "16px solid #fff",
+              }),
+              width: 0,
+              height: 0,
+              zIndex: 10003,
+            }}
+          />
         )}
-        <button onClick={complete} style={{ background: "#eee" }}>
-          Exit Tutorial
+        {/* Left arrow button for back */}
+        <button
+          onClick={back}
+          style={{
+            background: "none",
+            border: "none",
+            fontSize: "2rem",
+            cursor: "pointer",
+            marginRight: 12,
+            color: "#888",
+            padding: 0,
+            lineHeight: 1,
+          }}
+          aria-label="Previous step"
+        >
+          &#8592;
+        </button>
+        <div style={{ flex: 1, marginRight: currentStep.svgDiagram ? 24 : 0 }}>
+          <div style={{ marginBottom: 16 }}>{currentStep.message}</div>
+
+          <button onClick={complete} style={{ background: "#eee" }}>
+            Exit Tutorial
+          </button>
+        </div>
+        {currentStep.svgDiagram && (
+          <div style={{ flex: "0 0 auto", marginLeft: 8 }}>
+            <img
+              src={`/diagrams/${currentStep.svgDiagram}`}
+              alt="Tutorial diagram"
+              style={{ width: 50, height: 50, marginBottom: 16 }}
+            />
+          </div>
+        )}
+
+        <button
+          onClick={next}
+          style={{
+            background: "none",
+            border: "none",
+            fontSize: "2rem",
+            cursor: "pointer",
+            marginLeft: 12,
+            color: "#888",
+            padding: 0,
+            lineHeight: 1,
+          }}
+          aria-label="Next step"
+        >
+          &#8594;
         </button>
       </div>
     </div>

@@ -562,6 +562,7 @@ export default memo(function FlowCanvas({
         onKeyDown={keyDown}
       ></canvas>
       <div
+        id="molecule-path-link-div"
         style={{
           position: "absolute",
           display: "inline",

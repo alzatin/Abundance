@@ -9,6 +9,7 @@ import { gettingStartedSteps, TutorialStep } from "./TutorialSteps";
 interface TutorialContextType {
   start: () => void;
   next: () => void;
+  back: () => void;
   currentStep: TutorialStep | null;
   isActive: boolean;
   complete: () => void;
@@ -42,13 +43,17 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
     isActive && stepIdx >= 0 ? gettingStartedSteps[stepIdx] : null;
 
   const next = useCallback(() => {
-    console.log("Advancing from step:", stepIdx);
     if (stepIdx < gettingStartedSteps.length - 1) {
       setStepIdx((idx) => idx + 1);
     } else {
       setIsActive(false);
       setStepIdx(-1);
       localStorage.setItem("tutorialComplete", "1");
+    }
+  }, [stepIdx]);
+  const back = useCallback(() => {
+    if (stepIdx > 0) {
+      setStepIdx((idx) => idx - 1);
     }
   }, [stepIdx]);
 
@@ -94,6 +99,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         start,
         next,
+        back,
         currentStep,
         isActive,
         complete,

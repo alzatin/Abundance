@@ -32,6 +32,7 @@ function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
           >
             <label className="switch runmode-tooltip-container">
               <button
+                id="run-mode-btn"
                 title="Switch to Run Mode"
                 onMouseEnter={() => setShowTooltip(true)}
                 onMouseLeave={() => setShowTooltip(false)}
