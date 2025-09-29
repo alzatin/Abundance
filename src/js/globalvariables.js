@@ -318,6 +318,7 @@ class GlobalVariables {
      */
     this.limitedEvaluate = math.evaluate;
     this.lastClick;
+
     math.import(
       {
         import: function () {

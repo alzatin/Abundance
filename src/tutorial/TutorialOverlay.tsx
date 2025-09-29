@@ -41,6 +41,16 @@ export const TutorialOverlay: React.FC = () => {
       height: offset.height || size,
       borderRadius: 8,
     };
+  } else if (currentStep.target === "customHighlight1") {
+    //custom output atom highlight
+    const size = 100;
+    highlightRect = {
+      top: window.innerHeight / 7,
+      left: window.innerWidth - 100,
+      width: offset.width || size,
+      height: offset.height || size,
+      borderRadius: 8,
+    };
   } else if (currentStep.target) {
     const el = document.querySelector(currentStep.target);
     if (el) {
@@ -262,16 +272,35 @@ export const TutorialOverlay: React.FC = () => {
           style={{
             background: "none",
             border: "none",
-            fontSize: "2rem",
             cursor: "pointer",
             marginRight: 12,
-            color: "#888",
             padding: 0,
             lineHeight: 1,
+            display: "flex",
+            alignItems: "center",
           }}
           aria-label="Previous step"
         >
-          &#8592;
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 18 18"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+              transform: "rotate(90deg)",
+              alignSelf: "center",
+              display: "block",
+            }}
+          >
+            <polyline
+              points="5,7 9,13 13,7"
+              fill="none"
+              stroke="#c4a3d5"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
         <div style={{ flex: 1, marginRight: currentStep.svgDiagram ? 24 : 0 }}>
           <div style={{ marginBottom: 16 }}>{currentStep.message}</div>
@@ -295,16 +324,35 @@ export const TutorialOverlay: React.FC = () => {
           style={{
             background: "none",
             border: "none",
-            fontSize: "2rem",
             cursor: "pointer",
             marginLeft: 12,
-            color: "#888",
             padding: 0,
             lineHeight: 1,
+            display: "flex",
+            alignItems: "center",
           }}
           aria-label="Next step"
         >
-          &#8594;
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 18 18"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+              transform: "rotate(-90deg)",
+              alignSelf: "center",
+              display: "block",
+            }}
+          >
+            <polyline
+              points="5,7 9,13 13,7"
+              fill="none"
+              stroke="#c4a3d5"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { ImgHTMLAttributes } from "react";
 export interface TutorialStep {
   id: string;
   message: string;
-  messageArrow?: "top" | "bottom" | "left" | "right";
+  messageArrow?: "top" | "bottom" | "left" | "right"; // describes an offset
   messagePosition?: {
     bottom?: number;
     top?: number;
@@ -67,64 +67,87 @@ export const gettingStartedSteps: TutorialStep[] = [
     action: "click",
   },
   {
-    id: "atom-io",
-    message:
-      "Most atoms have inputs and outputs. The circle atom has a diameter input and a geometry output. Hover over the atom to see its inputs and outputs.",
-    target: "#flow-canvas",
-    overlay: "highlight",
-    action: "click",
-  },
-
-  {
     id: "circle-params",
     message:
       "When your atom is selected, you'll see info about it in the parameter panel. Change the value of your circle's diameter.",
 
-    messageArrow: "bottom",
+    messagePosition: { top: -200, left: 320 },
+    messageArrow: "left",
     target: "#atom-create-params-panel",
     overlay: "highlight",
-    action: "none",
+    action: "valueChange",
   },
   {
     id: "lower-render",
     message:
       "If your atom is selected, you'll see a preview of it here in the lower render view.",
     messageArrow: "bottom",
+    messagePosition: { top: -620, left: 200 },
     target: "#threeCanvas",
     overlay: "highlight",
     action: "none",
   },
   {
-    id: "extrude-menu",
+    id: "atom-io",
     message:
-      "Open the menu again, go to the Actions Submenu, and click extrude. Then connect the circle's output to extrude's geometry input by clicking on the circle's output and dragging a connector to the Extrude's geometry input.",
+      "Most atoms have inputs and outputs. The circle atom has a diameter input and a geometry output. Hover over the atom to see its inputs and outputs. You can drag them and connect them to other atoms.",
     target: "#flow-canvas",
-    overlay: "highlight",
 
-    offset: { top: 10, left: 10, width: -20, height: -10 },
-    action: "custom",
-    advanceOn: "connectedExtrude",
-  },
-  {
-    id: "see-extrude",
-    message: "You should see the extruded circle on the bottom of your screen.",
-    target: "#lower-canvas",
-    overlay: "highlight",
-    action: "none",
-  },
-  {
-    id: "about-output",
-    message:
-      "Every project has an output. This output is the result of your project. Connect the geometry output of one to your atoms to the Output Atom.Clicking the canvas background will render whatever is connected to your output.",
-    target: "#output-atom",
+    messagePosition: { left: 200 },
     overlay: "highlight",
     action: "click",
   },
   {
+    id: "extrude-menu",
+    message:
+      "Open the menu again, go to the Actions Submenu, and place an Extrude atom, then connect the Circle's output to Extrude's geometry input by clicking on the circle's output and dragging a connector to the Extrude's geometry input.",
+    target: "#flow-canvas",
+    overlay: "highlight",
+    action: "click",
+  },
+  {
+    id: "connect-2-atoms",
+    message:
+      "Now connect the Circle's output to Extrude's geometry input by clicking on the circle's output and dragging a connector to the Extrude's geometry input.",
+    target: "#flow-canvas",
+    overlay: "highlight",
+    action: "click",
+  },
+  {
+    id: "see-extrude",
+    message:
+      "Select your atom to see the extruded circle on the bottom of your screen",
+    target: "#flow-canvas",
+    overlay: "highlight",
+    action: "click",
+  },
+  {
+    id: "click-background",
+    message: "Click on the canvas background to continue.",
+    target: "#flow-canvas",
+    overlay: "highlight",
+    action: "click",
+  },
+
+  {
+    id: "about-output",
+    message:
+      "Every project has an output atom. This output is where you connect your finished design. Connect the geometry output of one of your atoms to the Output Atom. Clicking the canvas background will render whatever is connected to your output.",
+    target: "customHighlight1",
+    overlay: "highlight",
+    action: "click",
+    messagePosition: { left: -420, top: 30 },
+    messageArrow: "top",
+  },
+
+  {
     id: "run-mode",
-    message: "To see how others see it, go to run mode.",
+    message:
+      "To see how others see it your project or to share it with others, go to run mode.",
     target: "#run-mode-btn",
     overlay: "highlight",
+    messagePosition: { top: -100, left: -550 },
+    messageArrow: "right",
     action: "click",
   },
   {
