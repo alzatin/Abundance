@@ -60,7 +60,7 @@ export default class Color extends Atom {
       Tan: "#F5D3B6",
       "Mauve ": "#DBADA9",
       Grey: "#BABABA",
-      Black: "#3C3C3C",
+      Black: "#5A5A5A",
       White: "#FFFCF7",
       Glass: "#E6F3FF",
       "Keep Out": "#D9544D",
@@ -141,6 +141,31 @@ export default class Color extends Atom {
         }
       });
     }
+
+    // Add mobile delete button for touchscreen devices
+    const flowCanvas = document.getElementById("flow-canvas");
+    if (
+      GlobalVariables.isMobile() &&
+      flowCanvas &&
+      flowCanvas.style.display !== "none" //in runMode don't show delete button
+    ) {
+      inputParams[this.uniqueID + "delete"] = {
+        type: "button",
+        label: "Delete Selected",
+        onClick: () => {
+          flowCanvas.focus();
+          const event = new KeyboardEvent("keydown", {
+            bubbles: true,
+            cancelable: true,
+            key: "Delete",
+            code: "Delete",
+            keyCode: 46,
+          });
+          flowCanvas.dispatchEvent(event);
+        },
+      };
+    }
+
     return inputParams;
   }
 
