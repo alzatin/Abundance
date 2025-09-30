@@ -3,6 +3,7 @@ import { PlacementWrapper, PolygonPacker } from "polygon-packer";
 import type { DisplayCallback } from "polygon-packer/src/types";
 import { Face, Shape3D } from "replicad";
 import { ReplicadObject } from "./geometryProvider";
+import { extractKeepOut } from "./tags";
 import type { AbundanceLeaf, AbundanceObject } from "./util";
 import * as util from "./util";
 
@@ -139,7 +140,15 @@ async function rotateForLayout(
   layoutConfig: LayoutConfig,
   warningCallback: (msg: string) => void
 ): Promise<[AbundanceObject, ShapeForLayout[]]> {
-  const cacheID = JSON.stringify([assembly, layoutConfig]);
+  // Filter out keepout geometry before any processing
+  const filteredAssembly = extractKeepOut(assembly);
+  if (!filteredAssembly) {
+    throw new Error(
+      "No geometry to layout after keepout geometry is excluded"
+    );
+  }
+  
+  const cacheID = JSON.stringify([filteredAssembly, layoutConfig]);
   const cached = rotateMemoCache.get(cacheID);
   if (cached) {
     let [rotatedAssembly, shapesForLayout, warning] = cached;
@@ -172,7 +181,7 @@ async function rotateForLayout(
   // get candidates as {leaf_id: "abc", [candidate 1, candidate 2 etc]}
   const all_candidates: { [leaf_id: string]: OrientationCandidate[] } = {};
   const intermediate = await util.actOnLeafs(
-    assembly,
+    filteredAssembly,
     async (leaf: AbundanceLeaf) => {
       let geom = await util.geometryProvider!.get(leaf.geometry);
       if (!("faces" in geom)) {
