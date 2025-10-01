@@ -668,8 +668,11 @@ export default class Atom extends ObservableEntity {
         var saveIO = {
           name: ap.name,
           ioValue: ap.getValue(),
-          currentEquation: ap.currentEquation || null,
         };
+        // Only include currentEquation if it exists
+        if (ap.currentEquation) {
+          saveIO.currentEquation = ap.currentEquation;
+        }
         ioValues.push(saveIO);
       }
     });

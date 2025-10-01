@@ -969,10 +969,19 @@ export default class Molecule extends Atom {
     thisAsObject.topLevel = this.topLevel;
     thisAsObject.allAtoms = allAtoms;
     thisAsObject.allConnectors = allConnectors;
-    thisAsObject.parentRepo = this.parentRepo;
-    thisAsObject.unitsKey = this.unitsKey;
+    // Only include parentRepo if it exists
+    if (this.parentRepo) {
+      thisAsObject.parentRepo = this.parentRepo;
+    }
+    // Only include unitsKey if it exists
+    if (this.unitsKey) {
+      thisAsObject.unitsKey = this.unitsKey;
+    }
     thisAsObject.fileTypeVersion = 1;
-    thisAsObject.compiledBom = this.compiledBom;
+    // Only include compiledBom if it exists
+    if (this.compiledBom) {
+      thisAsObject.compiledBom = this.compiledBom;
+    }
 
     return thisAsObject;
   }

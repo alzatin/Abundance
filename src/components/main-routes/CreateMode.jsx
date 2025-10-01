@@ -788,7 +788,7 @@ function CreateMode() {
       setSaveProgress(10);
       var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
       jsonRepOfProject.filetypeVersion = 1;
-      const projectContent = JSON.stringify(jsonRepOfProject, null, 4);
+      const projectContent = JSON.stringify(jsonRepOfProject);
       // format and compile the BOM
       let bomContent = GlobalVariables.topLevelMolecule.formatBom();
       var readmeHeader =
