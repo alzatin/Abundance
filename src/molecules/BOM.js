@@ -111,6 +111,11 @@ export default class AddBOMTag extends Atom {
             order: 1,
             onChange: (value) => {
               this.BOMitem.BOMitemName = value;
+              // Also update the attachment point value so findIOValue returns the correct value
+              const itemNameInput = this.inputs.find(input => input.name === "Item Name");
+              if (itemNameInput) {
+                itemNameInput.setValue(value);
+              }
               this.onUpstreamChange();
             },
           };
