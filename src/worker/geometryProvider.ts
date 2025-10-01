@@ -385,8 +385,9 @@ class GeometryProvider {
   }
 
   private _makeId(type: string, ...args: any[]): string {
-    const key = JSON.stringify([type, ...args]);
-    return this.HASHED_KEYS ? sha256(key) : key;
+    let key = JSON.stringify(args);
+    key = this.HASHED_KEYS ? sha256(key) : key;
+    return type + "-" + key;
   }
 }
 
