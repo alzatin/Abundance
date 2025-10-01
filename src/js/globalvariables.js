@@ -493,9 +493,7 @@ class GlobalVariables {
     }
 
     const topLevelMoleculeCopy = JSON.stringify(
-      this.topLevelMolecule.serialize(),
-      null,
-      4
+      this.topLevelMolecule.serialize()
     );
 
     this.recentMoleculeRepresentation.push(topLevelMoleculeCopy);
