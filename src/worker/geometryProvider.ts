@@ -2,6 +2,7 @@ import * as replicad from "replicad";
 import shrinkWrap from "replicad-shrink-wrap";
 import { asReplicadPlane, SimplePlane, flattenAssembly } from "./util";
 import type { AbundanceObject } from "./util";
+import { sha256 } from "js-sha256";
 
 type ReplicadObject = replicad.Shape3D | replicad.Drawing | replicad.Wire;
 
@@ -18,6 +19,7 @@ class GeometryProvider {
   private cache = new Map<string, ReplicadObject>();
   private cacheHitMetrics: Record<string, [number, number]>;
   private nextId: number;
+  private readonly HASHED_KEYS: boolean = true;
 
   constructor() {
     this.cacheHitMetrics = {};
@@ -382,12 +384,9 @@ class GeometryProvider {
     return id;
   }
 
-  private _makeId(type: string, ...args: any[]) {
-    args = args.map((arg) => {
-      return typeof arg === "string" ? arg : JSON.stringify(arg);
-    });
-    const key = [type, ...args].flat(Infinity).join("-");
-    return key;
+  private _makeId(type: string, ...args: any[]): string {
+    const key = JSON.stringify([type, ...args]);
+    return this.HASHED_KEYS ? sha256(key) : key;
   }
 }
 
