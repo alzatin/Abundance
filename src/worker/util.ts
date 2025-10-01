@@ -108,7 +108,7 @@ function isAbundanceObject(obj: any): obj is AbundanceObject {
 }
 
 function isLeaf(obj: AbundanceObject): obj is AbundanceLeaf {
-  return obj !== undefined && !isAbundanceObject(obj.geometry[0]);
+  return obj !== undefined && !Array.isArray(obj.geometry);
 }
 
 function actOnLeafsSync(
