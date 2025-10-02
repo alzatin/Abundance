@@ -5,7 +5,7 @@ import React, {
   useCallback,
   useEffect,
 } from "react";
-import { gettingStartedSteps, TutorialStep } from "./TutorialSteps";
+import { tutorials, TutorialStep } from "./TutorialSteps";
 interface TutorialContextType {
   start: () => void;
   next: () => void;
@@ -29,21 +29,28 @@ export function useTutorial() {
 export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const [tutorialKey, setTutorialKey] =
+    useState<keyof typeof tutorials>("gettingStarted");
   const [stepIdx, setStepIdx] = useState<number>(-1);
   const [isActive, setIsActive] = useState(false);
 
   const [customEvent, setCustomEvent] = useState<string | null>(null);
 
-  const start = useCallback(() => {
-    setStepIdx(0);
-    setIsActive(true);
-  }, []);
+  const start = useCallback(
+    (key: keyof typeof tutorials = "gettingStarted") => {
+      setTutorialKey(key);
+      setStepIdx(0);
+      setIsActive(true);
+    },
+    []
+  );
 
-  const currentStep =
-    isActive && stepIdx >= 0 ? gettingStartedSteps[stepIdx] : null;
+  const steps = tutorials[tutorialKey];
+  const currentStep = isActive && stepIdx >= 0 ? steps[stepIdx] : null;
 
   const next = useCallback(() => {
-    if (stepIdx < gettingStartedSteps.length - 1) {
+    console.log("Next step");
+    if (stepIdx < steps.length - 1) {
       setStepIdx((idx) => idx + 1);
     } else {
       setIsActive(false);

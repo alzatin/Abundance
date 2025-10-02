@@ -787,7 +787,8 @@ const ShowProjects = ({
           console.log("Fetched AWS project data:", data.item);
           GlobalVariables.currentAWSnode = data.item;
           navigate(`${owner}/${repoName}`);
-          start();
+          console.log("Starting tutorial:", tutorial);
+          start(tutorial.value);
         }
       })
       .catch((e) => {
@@ -963,7 +964,18 @@ const ShowProjects = ({
     },
     tutorials: {
       label: "Available Tutorials",
-      tutorials: ["Intro", "Assemblies", "Github Molecules"],
+      tutorials: [
+        { label: "Abundance Basics", value: "gettingStarted" },
+        {
+          label: "Input Atoms",
+          value: "inputsSteps",
+        },
+        {
+          label: "Molecules and GitHub Molecules",
+          value: "moleculesAndGithubMolecules",
+        },
+        //{ label: "Assemblies and Fusions", value: "assembliesAndFusions" },
+      ],
     },
   };
 
@@ -1025,7 +1037,7 @@ const ShowProjects = ({
                 >
                   {" "}
                   {/**fetchFirst()*/}
-                  <p>{tutorial}</p>
+                  <p>{tutorial.label}</p>
                 </div>
               ))}
             </div>

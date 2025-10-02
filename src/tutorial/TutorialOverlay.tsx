@@ -51,6 +51,16 @@ export const TutorialOverlay: React.FC = () => {
       height: offset.height || size,
       borderRadius: 8,
     };
+  } else if (currentStep.target === "customHighlight2") {
+    //custom input atom
+    const size = 300;
+    highlightRect = {
+      top: 10,
+      left: 0,
+      width: window.innerHeight / 2,
+      height: offset.height || size,
+      borderRadius: 8,
+    };
   } else if (currentStep.target) {
     const el = document.querySelector(currentStep.target);
     if (el) {
@@ -100,11 +110,7 @@ export const TutorialOverlay: React.FC = () => {
               zIndex: 10000,
               pointerEvents: currentStep.action === "none" ? "auto" : "none",
             }}
-            onClick={
-              currentStep.action === "click" && !currentStep.target
-                ? next
-                : undefined
-            }
+            onClick={currentStep.action === "click" ? next : undefined}
           />
           {/* Right overlay */}
           <div
@@ -120,11 +126,7 @@ export const TutorialOverlay: React.FC = () => {
               zIndex: 10000,
               pointerEvents: currentStep.action === "none" ? "auto" : "none",
             }}
-            onClick={
-              currentStep.action === "click" && !currentStep.target
-                ? next
-                : undefined
-            }
+            onClick={currentStep.action === "click" ? next : undefined}
           />
           {/* Bottom overlay */}
           <div
@@ -140,11 +142,7 @@ export const TutorialOverlay: React.FC = () => {
               zIndex: 10000,
               pointerEvents: currentStep.action === "none" ? "auto" : "none",
             }}
-            onClick={
-              currentStep.action === "click" && !currentStep.target
-                ? next
-                : undefined
-            }
+            onClick={currentStep.action === "click" ? next : undefined}
           />
           {/* Highlight border */}
           <div
@@ -178,22 +176,20 @@ export const TutorialOverlay: React.FC = () => {
             zIndex: 10000,
             pointerEvents: currentStep.action === "none" ? "auto" : "none",
           }}
-          onClick={
-            currentStep.action === "click" && !currentStep.target
-              ? next
-              : undefined
-          }
+          onClick={currentStep.action === "click" ? next : undefined}
         />
       )}
       {/* Message */}
       <div
         style={{
+          boxShadow:
+            "0 0 0 10px var(--abundance-color-mainPurple) inset" /* Creates a 10px red inner border */,
           position: "fixed",
           background: "#fff",
           height: currentStep.messagePosition?.height ?? "auto",
           borderRadius: 12,
-          padding: "2rem 2.5rem",
-          boxShadow: "0 6px 24px rgba(0,0,0,0.15)",
+          padding: "2rem 1.5rem",
+
           zIndex: 10002,
           maxWidth: 420,
           textAlign: "center",
@@ -209,8 +205,10 @@ export const TutorialOverlay: React.FC = () => {
                   16 +
                   (currentStep.messagePosition?.top ?? 0),
                 left:
-                  highlightRect.left + (currentStep.messagePosition?.left ?? 0),
-                transform: undefined,
+                  highlightRect.left +
+                  highlightRect.width / 2 +
+                  (currentStep.messagePosition?.left ?? 0),
+                transform: "translateX(-50%)",
               }
             : {}),
           // Center for full overlay
@@ -234,7 +232,7 @@ export const TutorialOverlay: React.FC = () => {
                 transform: "translateX(-50%)",
                 borderLeft: "8px solid transparent",
                 borderRight: "8px solid transparent",
-                borderBottom: "16px solid #fff",
+                borderBottom: "16px solid var(--abundance-color-mainPurple)",
               }),
               ...(currentStep.messageArrow === "bottom" && {
                 bottom: -16,
@@ -242,7 +240,7 @@ export const TutorialOverlay: React.FC = () => {
                 transform: "translateX(-50%)",
                 borderLeft: "8px solid transparent",
                 borderRight: "8px solid transparent",
-                borderTop: "16px solid #fff",
+                borderTop: "16px solid var(--abundance-color-mainPurple)",
               }),
               ...(currentStep.messageArrow === "left" && {
                 left: -16,
@@ -250,7 +248,7 @@ export const TutorialOverlay: React.FC = () => {
                 transform: "translateY(-50%)",
                 borderTop: "8px solid transparent",
                 borderBottom: "8px solid transparent",
-                borderRight: "16px solid #fff",
+                borderRight: "16px solid var(--abundance-color-mainPurple)",
               }),
               ...(currentStep.messageArrow === "right" && {
                 right: -16,
@@ -258,7 +256,7 @@ export const TutorialOverlay: React.FC = () => {
                 transform: "translateY(-50%)",
                 borderTop: "8px solid transparent",
                 borderBottom: "8px solid transparent",
-                borderLeft: "16px solid #fff",
+                borderLeft: "16px solid var(--abundance-color-mainPurple)",
               }),
               width: 0,
               height: 0,
@@ -305,7 +303,11 @@ export const TutorialOverlay: React.FC = () => {
         <div style={{ flex: 1, marginRight: currentStep.svgDiagram ? 24 : 0 }}>
           <div style={{ marginBottom: 16 }}>{currentStep.message}</div>
 
-          <button onClick={complete} style={{ background: "#eee" }}>
+          <button
+            onClick={complete}
+            className="exit-tutorial-button"
+            style={{ background: "#eee" }}
+          >
             Exit Tutorial
           </button>
         </div>
@@ -325,7 +327,7 @@ export const TutorialOverlay: React.FC = () => {
             background: "none",
             border: "none",
             cursor: "pointer",
-            marginLeft: 12,
+            marginLeft: 5,
             padding: 0,
             lineHeight: 1,
             display: "flex",

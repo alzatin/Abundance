@@ -78,7 +78,7 @@ function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
             onClick={handleChange}
           >
             <label title="Create/Run Mode" className="switch_run">
-              <button>
+              <button id="create-mode-btn">
                 <svg
                   width="18"
                   height="18"

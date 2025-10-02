@@ -27,6 +27,8 @@ import {
   useRendering,
   useProject,
 } from "../../contexts/index.js";
+import { useTutorial } from "../../tutorial/TutorialManager";
+import { TutorialOverlay } from "../../tutorial/TutorialOverlay";
 
 function useWindowSize() {
   // Initialize state with undefined width/height so server and client renders match
@@ -75,6 +77,8 @@ function runMode() {
     setSolid,
   } = useRendering();
   const { loadProject } = useProject();
+
+  const { start, isActive } = useTutorial();
 
   // canvas to hide
   const canvasRef = useRef(500);
@@ -252,6 +256,7 @@ function runMode() {
         id="flow-canvas"
         tabIndex={0}
       ></canvas>
+      {isActive ? <TutorialOverlay /> : null}
       <ToggleRunCreate {...{ run: true, isItOwned }} />
 
       {GlobalVariables.currentRepo ? (
