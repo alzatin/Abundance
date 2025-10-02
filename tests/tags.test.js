@@ -1,5 +1,5 @@
 // Direct unit tests for tags.js
-import { tag, color, bom, extractAllTags, extractBomList } from "../src/worker/tags.js";
+import { tag, color, bom, extractAllTags, extractBomList } from "../src/worker/tags.ts";
 
 describe("tags.js", () => {
   let geometry;
@@ -7,8 +7,8 @@ describe("tags.js", () => {
   beforeEach(() => {
     geometry = {
       id: "geom1",
-      // Fake geometry ok since tags don't perform any geometry operations
-      geometry: [{ type: "circle", radius: 10 }],
+      // Use string geometry to indicate this is a leaf
+      geometry: "fake_circle_geometry",
       tags: [],
       color: null,
       bom: [],
@@ -22,7 +22,6 @@ describe("tags.js", () => {
 
       expect(result.tags).toContain("important");
       expect(result.tags).toContain("red");
-      expect(result.geometry).toHaveLength(1);
     });
 
     it("should add single tag to geometry", () => {
@@ -47,7 +46,6 @@ describe("tags.js", () => {
       const result = color(geometry, colorValue);
 
       expect(result.color).toBe(colorValue);
-      expect(result.geometry).toHaveLength(1);
     });
 
     it("should automatically add keepout tag for specific color", () => {
@@ -86,7 +84,6 @@ describe("tags.js", () => {
       const result = bom(geometry, bomEntry);
 
       expect(result.bom).toContain(bomEntry);
-      expect(result.geometry).toHaveLength(1);
     });
 
     it("should handle multiple BOM entries", () => {
@@ -124,14 +121,14 @@ describe("tags.js", () => {
       expect(Array.isArray(extractedBom)).toBe(true);
     });
 
-    it("should return false for geometry with undefined BOM", () => {
+    it("should return empty array for geometry with undefined BOM", () => {
       const geometryWithoutBom = {
         ...geometry,
         bom: undefined,
       };
       const extractedBom = extractBomList(geometryWithoutBom);
       
-      expect(extractedBom).toBe(false);
+      expect(extractedBom).toEqual([]);
     });
 
     it("should extract BOM from simple assembly", () => {

@@ -10,7 +10,7 @@ export class BOMEntry {
      * The name of the item.
      * @type {string}
      */
-    this.BOMitemName = "name";
+    this.BOMitemName = "New Item";
     /**
      * The number of this item needed.
      * @type {number}
