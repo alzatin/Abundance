@@ -1003,11 +1003,11 @@ const ShowProjects = ({
       tutorials: [
         { label: "Abundance Basics", value: "gettingStarted" },
         {
-          label: "Input Atoms",
+          label: "Input Atoms (Coming Soon)",
           value: "inputsSteps",
         },
         {
-          label: "Molecules and GitHub Molecules",
+          label: "Molecules and GitHub Molecules (Coming Soon)",
           value: "moleculesAndGithubMolecules",
         },
         //{ label: "Assemblies and Fusions", value: "assembliesAndFusions" },

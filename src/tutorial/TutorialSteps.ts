@@ -93,6 +93,7 @@ const gettingStartedSteps: TutorialStep[] = [
     target: "#flow-canvas",
     overlay: "highlight",
     action: "click",
+    messageArrow: "top",
   },
   {
     id: "connect-2-atoms",
@@ -101,12 +102,14 @@ const gettingStartedSteps: TutorialStep[] = [
     target: "#flow-canvas",
     overlay: "highlight",
     action: "click",
+    messageArrow: "top",
   },
   {
     id: "see-extrude",
     message:
       "Select your atom to see the extruded circle on the bottom of your screen",
     target: "#flow-canvas",
+    messageArrow: "top",
     overlay: "highlight",
     action: "click",
   },
@@ -127,7 +130,7 @@ const gettingStartedSteps: TutorialStep[] = [
     target: "customHighlight1",
     overlay: "highlight",
     action: "click",
-    messagePosition: { left: -300, top: 30 },
+    messagePosition: { left: -250, top: -150 },
     messageArrow: "right",
   },
   {
@@ -135,6 +138,7 @@ const gettingStartedSteps: TutorialStep[] = [
     message:
       "Connect the geometry output of one of your atoms to the Output Atom. ",
     target: "#flow-canvas",
+    messageArrow: "top",
     overlay: "highlight",
     action: "click",
   },
@@ -144,6 +148,7 @@ const gettingStartedSteps: TutorialStep[] = [
       "Now that you have something connected to your output, clicking the canvas background will render whatever is connected to it.",
     target: "#flow-canvas",
     overlay: "highlight",
+    messageArrow: "top",
     action: "click",
   },
   {
@@ -151,6 +156,8 @@ const gettingStartedSteps: TutorialStep[] = [
     message:
       "Whatever is connected to the output atom will appear in the background render view.",
     target: "#threeCanvas",
+    messageArrow: "bottom",
+    messagePosition: { top: -680, left: -90 },
     overlay: "highlight",
     action: "click",
   },
@@ -168,7 +175,7 @@ const gettingStartedSteps: TutorialStep[] = [
   {
     id: "run-layout",
     message:
-      "In Run Mode you can only see the output of your design. The inputs of your top level molecule will appear on the right and will be editable. If you want to learn more about inputs, check out our Inputs tutorial.",
+      "In Run Mode you can only see the output of your design. The Inputs of your top level molecule will appear on the right and will be editable. If you want to learn more about inputs and molecules, check out our other tutorials.",
     target: "#threeCanvas",
     messagePosition: { top: -680, left: -90 },
     offset: { top: 10, left: 10, width: -20, height: -20 },
@@ -190,7 +197,7 @@ const gettingStartedSteps: TutorialStep[] = [
     message:
       "That's the end of the tutorial. Check out our other tutorials to learn more or get started with your design!",
     overlay: "full",
-    action: "click",
+    action: "none",
   },
 ];
 
@@ -311,9 +318,23 @@ const inputsEquationsValuesSteps: TutorialStep[] = [
     svgDiagram: "abundance_Svg.svg",
   },
   {
+    id: "Molecules",
+    message:
+      "Your project is a molecule that like an atom can have different inputs and an output. The inputs of a molecule are defined by the creator of the molecule.",
+    overlay: "full",
+    action: "click",
+  },
+  {
+    id: "Inputs",
+    message:
+      "Inputs are special atoms on a project that let you provide values or data from outside. They act like adjustable knobs or fields—when you change an input, the molecule updates how it behaves or what it produces. Inputs make molecules reusable and customizable in different projects.",
+    overlay: "full",
+    action: "click",
+  },
+  {
     id: "inputs-1",
     message:
-      "As an atom has inputs and outputs, so can a molecule. Molecule inputs are defined by the creator of the molecule. Open the right click menu and in the inputs submenu, place an Input atom.",
+      "Open the right click menu and in the inputs submenu, place an Input atom.",
     overlay: "highlight",
     action: "click",
     target: "#flow-canvas",
@@ -322,37 +343,37 @@ const inputsEquationsValuesSteps: TutorialStep[] = [
   {
     id: "inputs-2",
     message:
-      "All the inputs for your molecule will appear on the left of the screen. Click on the background to continue.",
+      "All the inputs for your molecule will appear on the left of the screen. Click next to continue.",
     overlay: "highlight",
     action: "click",
     target: "customHighlight2",
-    messagePosition: { top: -100, left: 500 },
+    messagePosition: { top: -250, left: 350 },
     messageArrow: "left",
   },
   {
     id: "inputs-4",
     message:
-      "If your molecule is active, you will see all its inputs listed here. You can change the values of these inputs here. Select an input to continue.",
+      "If your molecule is active, you will see all its inputs listed here. You can change the values of these inputs like you change the values of other atoms. Select an input to continue.",
     overlay: "highlight",
     action: "click",
     target: "#atom-create-params-panel",
-    messagePosition: { top: -100, left: 0 },
-    messageArrow: "top",
+    messagePosition: { top: -150, left: 400 },
+    messageArrow: "left",
   },
   {
     id: "inputs-5",
     message:
       "When an input is selected, you can change its name and type here.",
     overlay: "highlight",
-    action: "click",
+    action: "valueChange",
     target: "#atom-create-params-panel",
-    messagePosition: { top: -100, left: 0 },
-    messageArrow: "top",
+    messagePosition: { top: -150, left: 400 },
+    messageArrow: "left",
   },
   {
     id: "inputs-6",
     message:
-      "You can drag a connectors output to the input of an atom that expects the same type of value. Try connecting the output of your input atom to the diameter input of a circle atom.",
+      "You can drag a connector from the Input's output to the input of an atom that expects the same type of value. Try connecting the output of your input atom to the diameter input of a circle atom.",
     overlay: "highlight",
     action: "click",
     target: "#flow-canvas",
@@ -368,6 +389,13 @@ const inputsEquationsValuesSteps: TutorialStep[] = [
     target: "#flow-canvas",
     messagePosition: { top: -100, left: 0 },
     messageArrow: "top",
+  },
+  {
+    id: "Finish",
+    message:
+      "That's the end of the tutorial. Check out our other tutorials to learn more or get started with your design!",
+    overlay: "full",
+    action: "none",
   },
 ];
 
