@@ -108,7 +108,7 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
 
         jsonRepOfProject.filetypeVersion = 1;
         const projectContent = window.btoa(
-          GlobalVariables.toBinaryStr(JSON.stringify(jsonRepOfProject))
+          GlobalVariables.toBinaryStr(JSON.stringify(jsonRepOfProject, null, 2))
         );
         let topicString = topics.join(" ");
 
