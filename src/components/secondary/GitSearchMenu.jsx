@@ -89,7 +89,9 @@ export default function GitSearchMenu({
             : window.innerWidth * 0.75
         ),
         y: GlobalVariables.pixelsToHeight(
-          tClick ? GlobalVariables.lastClick[1] : window.innerHeight * 0.37
+          GlobalVariables.lastClick
+            ? GlobalVariables.lastClick[1]
+            : window.innerHeight * 0.37
         ),
         parent: GlobalVariables.currentMolecule,
         atomType: atomType,
