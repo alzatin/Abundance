@@ -299,7 +299,15 @@ function AppContent() {
   return (
     <main>
       <Routes>
-        <Route exact path="" element={<LoginMode />} />
+        <Route
+          exact
+          path=""
+          element={
+            <ProjectProvider cad={cad} loadProject={loadProject}>
+              <LoginMode />
+            </ProjectProvider>
+          }
+        />
         <Route
           path="/callback"
           element={

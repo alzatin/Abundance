@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { useAuth, useAppState } from "../../contexts/index.js";
 import { useTutorial } from "../../tutorial/TutorialManager";
+import { useProject } from "../../contexts/index.js";
+import { licenses } from "../../js/licenseOptions.js";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -774,29 +776,57 @@ const ShowProjects = ({
 
   const navigate = useNavigate();
   const { start, isActive } = useTutorial();
+  const { createProject } = useProject();
 
-  const fetchFirst = (tutorial) => {
-    const owner = "alzatin";
-    const repoName = "tutorial-default";
-    fetch(
-      `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.item) {
-          console.log("Fetched AWS project data:", data.item);
-          GlobalVariables.currentAWSnode = data.item;
-          navigate(`${owner}/${repoName}`);
-          console.log("Starting tutorial:", tutorial);
-          start(tutorial.value);
-        }
-      })
-      .catch((e) => {
-        console.error("Error fetching AWS project data:", e);
-        // If fetch fails, fallback to run mode
-        navigate(`/run/${owner}/${repoName}`);
-      });
+  const [loadingTutorialBar, setLoadingTutorialBar] = useState(0);
+
+  async function fetchFirstOrCreateAndStartTutorial(tutorial) {
+    // Try to fetch the user's tutorial-default project
+    let project = await fetchProject(
+      GlobalVariables.currentUser,
+      "tutorial-default2"
+    );
+    if (!project) {
+      // If not found, create it
+      project = await createProject(
+        authorizedUserOcto,
+        [
+          "tutorial-default11",
+          ["Tutorial"],
+          "A project to get you started with Abundance",
+          licenses[0],
+          "MM",
+        ],
+        null, // No loaded molecule
+        false, // not exporting
+        setLoadingTutorialBar
+      );
+      console.log("Created tutorial project:", project);
+    }
+    if (project) {
+      navigate(`${GlobalVariables.currentUser}/tutorial-default`);
+      // Start the tutorial (pass project if needed)
+      start(tutorial.value);
+    }
+  }
+
+  const fetchProject = async (owner, repoName) => {
+    try {
+      const response = await fetch(
+        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
+      );
+      const data = await response.json();
+      if (data && data.item) {
+        console.log("Fetched AWS project data:", data.item);
+        GlobalVariables.currentAWSnode = data.item;
+        return data.item;
+      }
+    } catch (error) {
+      console.error("Error fetching project:", error);
+      return null;
+    }
   };
+
   const UserNavDiv = (
     <div className="left-login-div">
       <div
@@ -1033,7 +1063,7 @@ const ShowProjects = ({
                 <div
                   key={index}
                   className="login-nav-item"
-                  onClick={() => fetchFirst(tutorial)}
+                  onClick={() => fetchFirstOrCreateAndStartTutorial(tutorial)}
                 >
                   {" "}
                   {/**fetchFirst()*/}
