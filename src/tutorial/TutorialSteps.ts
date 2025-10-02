@@ -146,11 +146,19 @@ const gettingStartedSteps: TutorialStep[] = [
     overlay: "highlight",
     action: "click",
   },
+  {
+    id: "background-render",
+    message:
+      "Whatever is connected to the output atom will appear in the background render view.",
+    target: "#threeCanvas",
+    overlay: "highlight",
+    action: "click",
+  },
 
   {
     id: "run-mode",
     message:
-      "To see how others see it your project or to share it with others, go to run mode.",
+      "To see how others see your project, or to share it with others, go to run mode.",
     target: "#run-mode-btn",
     overlay: "highlight",
     messagePosition: { top: -100, left: -300 },
@@ -160,7 +168,7 @@ const gettingStartedSteps: TutorialStep[] = [
   {
     id: "run-layout",
     message:
-      "Here you can only see the output of your design. The inputs of your top level molecule will appear on the right and will be editable. If you want to learn more about inputs, check out our Inputs tutorial.",
+      "In Run Mode you can only see the output of your design. The inputs of your top level molecule will appear on the right and will be editable. If you want to learn more about inputs, check out our Inputs tutorial.",
     target: "#threeCanvas",
     messagePosition: { top: -680, left: -90 },
     offset: { top: 10, left: 10, width: -20, height: -20 },
@@ -170,7 +178,7 @@ const gettingStartedSteps: TutorialStep[] = [
   },
   {
     id: "back-to-create",
-    message: "Go back to create mode any time to edit your design.",
+    message: "Go back to Create-Mode any time to edit your design.",
     target: "#create-mode-btn",
     messagePosition: { top: -80, left: 330 },
     messageArrow: "left",

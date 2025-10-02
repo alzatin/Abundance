@@ -12,6 +12,7 @@ import { useAuth, useAppState } from "../../contexts/index.js";
 import { useTutorial } from "../../tutorial/TutorialManager";
 import { useProject } from "../../contexts/index.js";
 import { licenses } from "../../js/licenseOptions.js";
+import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -779,19 +780,22 @@ const ShowProjects = ({
   const { createProject } = useProject();
 
   const [loadingTutorialBar, setLoadingTutorialBar] = useState(0);
+  const [loadingTutorial, setLoadingTutorial] = useState(false);
 
   async function fetchFirstOrCreateAndStartTutorial(tutorial) {
+    setLoadingTutorial(true);
+    setLoadingTutorialBar(5);
     // Try to fetch the user's tutorial-default project
     let project = await fetchProject(
       GlobalVariables.currentUser,
-      "tutorial-default2"
+      "tutorial-default"
     );
     if (!project) {
       // If not found, create it
       project = await createProject(
         authorizedUserOcto,
         [
-          "tutorial-default11",
+          "tutorial-default",
           ["Tutorial"],
           "A project to get you started with Abundance",
           licenses[0],
@@ -801,12 +805,13 @@ const ShowProjects = ({
         false, // not exporting
         setLoadingTutorialBar
       );
-      console.log("Created tutorial project:", project);
     }
     if (project) {
       navigate(`${GlobalVariables.currentUser}/tutorial-default`);
       // Start the tutorial (pass project if needed)
       start(tutorial.value);
+      setLoadingTutorialBar(100);
+      setLoadingTutorial(false);
     }
   }
 
@@ -815,6 +820,7 @@ const ShowProjects = ({
       const response = await fetch(
         `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
       );
+      setLoadingTutorialBar(10);
       const data = await response.json();
       if (data && data.item) {
         console.log("Fetched AWS project data:", data.item);
@@ -1071,6 +1077,13 @@ const ShowProjects = ({
                 </div>
               ))}
             </div>
+          ) : null}
+          {loadingTutorial ? (
+            <RenderProgressBar
+              progress={loadingTutorialBar}
+              run={true}
+              label={"Loading tutorial"}
+            />
           ) : null}
           {showDict[projectToShow]["data"] ? (
             <AddProject
