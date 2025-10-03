@@ -90,92 +90,12 @@ export const TutorialOverlay: React.FC = () => {
   const portalRoot = document.getElementById("overlay-root");
   if (!portalRoot) return null;
 
+  // Fallback: only if no highlightRect and overlay !== 'full'
+  const showFallback = !highlightRect && currentStep.overlay !== "full";
+
   const overlayContent = (
     <div>
-      {/* Four overlay divs to create a window effect */}
-      {highlightRect ? (
-        <>
-          {/* Top overlay */}
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: highlightRect.top,
-              background: "rgba(0,0,0,0.5)",
-              zIndex: 10000,
-              pointerEvents: currentStep.action === "none" ? "auto" : "none",
-            }}
-            onClick={currentStep.action === "click" ? next : undefined}
-          />
-          {/* Left overlay */}
-          <div
-            style={{
-              position: "fixed",
-              top: highlightRect.top,
-              left: 0,
-              width: highlightRect.left,
-              height: highlightRect.height,
-              background: "rgba(0,0,0,0.5)",
-              zIndex: 10000,
-              pointerEvents: currentStep.action === "none" ? "auto" : "none",
-            }}
-            onClick={currentStep.action === "click" ? next : undefined}
-          />
-          {/* Right overlay */}
-          <div
-            style={{
-              position: "fixed",
-              top: highlightRect.top,
-              left: highlightRect.left + highlightRect.width,
-              width: `calc(100vw - ${
-                highlightRect.left + highlightRect.width
-              }px)`,
-              height: highlightRect.height,
-              background: "rgba(0,0,0,0.5)",
-              zIndex: 10000,
-              pointerEvents: currentStep.action === "none" ? "auto" : "none",
-            }}
-            onClick={currentStep.action === "click" ? next : undefined}
-          />
-          {/* Bottom overlay */}
-          <div
-            style={{
-              position: "fixed",
-              top: highlightRect.top + highlightRect.height,
-              left: 0,
-              width: "100vw",
-              height: `calc(100vh - ${
-                highlightRect.top + highlightRect.height
-              }px)`,
-              background: "rgba(0,0,0,0.5)",
-              zIndex: 10000,
-              pointerEvents: currentStep.action === "none" ? "auto" : "none",
-            }}
-            onClick={currentStep.action === "click" ? next : undefined}
-          />
-          {/* Highlight border */}
-          <div
-            style={{
-              position: "fixed",
-              top: highlightRect.top,
-              left: highlightRect.left,
-              width: highlightRect.width,
-              height: highlightRect.height,
-              border: `2px solid #d368cdff`,
-              borderRadius: highlightRect.borderRadius,
-              boxSizing: "border-box",
-              pointerEvents: "none",
-              zIndex: 10001,
-              boxShadow:
-                "0 0 0 4px rgba(232, 156, 240, 0.5), 0 0 0 8px rgba(0, 0, 0, 0.15)",
-              background: "transparent",
-            }}
-          />
-        </>
-      ) : (
-        // Fallback: full overlay if no highlight
+      {showFallback ? (
         <div
           style={{
             position: "fixed",
@@ -185,10 +105,182 @@ export const TutorialOverlay: React.FC = () => {
             height: "100vh",
             background: "rgba(0,0,0,0.5)",
             zIndex: 10000,
-            pointerEvents: currentStep.action === "none" ? "auto" : "none",
+            pointerEvents: "auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
-          onClick={currentStep.action === "click" ? next : undefined}
-        />
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              boxShadow:
+                "0 0 0 10px var(--abundance-color-mainPurple) inset, 0 2px 16px rgba(0,0,0,0.15)",
+              padding: "2rem 2.5rem",
+              textAlign: "center",
+              zIndex: 10002,
+              minWidth: 320,
+              maxWidth: 420,
+              position: "relative",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 16,
+            }}
+          >
+            <div style={{ fontWeight: 600, fontSize: 20, marginBottom: 12 }}>
+              Oops! Something went wrong.
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              The tutorial step could not be displayed.
+              <br />
+              You can go back to the previous step or exit the tutorial.
+            </div>
+            <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+              {/* Back arrow */}
+              <button
+                onClick={back}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                  lineHeight: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  fontSize: 24,
+                }}
+                aria-label="Previous step"
+              >
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 18 18"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ transform: "rotate(90deg)" }}
+                >
+                  <polyline
+                    points="5,7 9,13 13,7"
+                    fill="none"
+                    stroke="#c4a3d5"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              {/* Exit (X) button */}
+              <button
+                onClick={complete}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 28,
+                  color: "#d368cdff",
+                  fontWeight: 700,
+                  marginLeft: 8,
+                }}
+                aria-label="Exit tutorial"
+                title="Exit tutorial"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Four overlay divs to create a window effect */}
+          {highlightRect && (
+            <>
+              {/* Top overlay */}
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100vw",
+                  height: highlightRect.top,
+                  background: "rgba(0,0,0,0.5)",
+                  zIndex: 10000,
+                  pointerEvents:
+                    currentStep.action === "none" ? "auto" : "none",
+                }}
+                onClick={currentStep.action === "click" ? next : undefined}
+              />
+              {/* Left overlay */}
+              <div
+                style={{
+                  position: "fixed",
+                  top: highlightRect.top,
+                  left: 0,
+                  width: highlightRect.left,
+                  height: highlightRect.height,
+                  background: "rgba(0,0,0,0.5)",
+                  zIndex: 10000,
+                  pointerEvents:
+                    currentStep.action === "none" ? "auto" : "none",
+                }}
+                onClick={currentStep.action === "click" ? next : undefined}
+              />
+              {/* Right overlay */}
+              <div
+                style={{
+                  position: "fixed",
+                  top: highlightRect.top,
+                  left: highlightRect.left + highlightRect.width,
+                  width: `calc(100vw - ${
+                    highlightRect.left + highlightRect.width
+                  }px)`,
+                  height: highlightRect.height,
+                  background: "rgba(0,0,0,0.5)",
+                  zIndex: 10000,
+                  pointerEvents:
+                    currentStep.action === "none" ? "auto" : "none",
+                }}
+                onClick={currentStep.action === "click" ? next : undefined}
+              />
+              {/* Bottom overlay */}
+              <div
+                style={{
+                  position: "fixed",
+                  top: highlightRect.top + highlightRect.height,
+                  left: 0,
+                  width: "100vw",
+                  height: `calc(100vh - ${
+                    highlightRect.top + highlightRect.height
+                  }px)`,
+                  background: "rgba(0,0,0,0.5)",
+                  zIndex: 10000,
+                  pointerEvents:
+                    currentStep.action === "none" ? "auto" : "none",
+                }}
+                onClick={currentStep.action === "click" ? next : undefined}
+              />
+              {/* Highlight border */}
+              <div
+                style={{
+                  position: "fixed",
+                  top: highlightRect.top,
+                  left: highlightRect.left,
+                  width: highlightRect.width,
+                  height: highlightRect.height,
+                  border: `2px solid #d368cdff`,
+                  borderRadius: highlightRect.borderRadius,
+                  boxSizing: "border-box",
+                  pointerEvents: "none",
+                  zIndex: 10001,
+                  boxShadow:
+                    "0 0 0 4px rgba(232, 156, 240, 0.5), 0 0 0 8px rgba(0, 0, 0, 0.15)",
+                  background: "transparent",
+                }}
+              />
+            </>
+          )}
+          {/* ...existing message block code... */}
+        </>
       )}
       {/* Message */}
       <div
