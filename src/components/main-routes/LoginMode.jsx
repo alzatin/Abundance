@@ -9,6 +9,10 @@ import useDebounce from "../../hooks/useDebounce.js";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { useAuth, useAppState } from "../../contexts/index.js";
+import { useTutorial } from "../../tutorial/TutorialManager";
+import { useProject } from "../../contexts/index.js";
+import { licenses } from "../../js/licenseOptions.js";
+import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -771,6 +775,64 @@ const ShowProjects = ({
     setPageNumber(0);
   };
 
+  const navigate = useNavigate();
+  const { start, isActive } = useTutorial();
+  const { createProject } = useProject();
+
+  const [loadingTutorialBar, setLoadingTutorialBar] = useState(0);
+  const [loadingTutorial, setLoadingTutorial] = useState(false);
+
+  async function fetchFirstOrCreateAndStartTutorial(tutorial) {
+    setLoadingTutorial(true);
+    setLoadingTutorialBar(5);
+    // Try to fetch the user's tutorial-default project
+    let project = await fetchProject(
+      GlobalVariables.currentUser,
+      "tutorial-default"
+    );
+    if (!project) {
+      // If not found, create it
+      project = await createProject(
+        authorizedUserOcto,
+        [
+          "tutorial-default",
+          ["Tutorial"],
+          "A project to get you started with Abundance",
+          licenses[0],
+          "MM",
+        ],
+        null, // No loaded molecule
+        false, // not exporting
+        setLoadingTutorialBar
+      );
+    }
+    if (project) {
+      navigate(`${GlobalVariables.currentUser}/tutorial-default`);
+      // Start the tutorial (pass project if needed)
+      start(tutorial.value);
+      setLoadingTutorialBar(100);
+      setLoadingTutorial(false);
+    }
+  }
+
+  const fetchProject = async (owner, repoName) => {
+    try {
+      const response = await fetch(
+        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
+      );
+      setLoadingTutorialBar(10);
+      const data = await response.json();
+      if (data && data.item) {
+        console.log("Fetched AWS project data:", data.item);
+        GlobalVariables.currentAWSnode = data.item;
+        return data.item;
+      }
+    } catch (error) {
+      console.error("Error fetching project:", error);
+      return null;
+    }
+  };
+
   const UserNavDiv = (
     <div className="left-login-div">
       <div
@@ -780,6 +842,14 @@ const ShowProjects = ({
         }}
       >
         <p>New project</p>
+      </div>
+      <div
+        className="login-nav-item"
+        onClick={() => setProjectsToShow("tutorials")}
+      >
+        {" "}
+        {/**fetchFirst()*/}
+        <p>Getting started</p>
       </div>
       <div
         className={
@@ -928,6 +998,21 @@ const ShowProjects = ({
       loading: isLoadingLiked,
       error: isErrorLiked,
     },
+    tutorials: {
+      label: "Available Tutorials",
+      tutorials: [
+        { label: "Abundance Basics", value: "gettingStarted" },
+        {
+          label: "Input Atoms (Coming Soon)",
+          value: "inputsSteps",
+        },
+        {
+          label: "Molecules and GitHub Molecules (Coming Soon)",
+          value: "moleculesAndGithubMolecules",
+        },
+        //{ label: "Assemblies and Fusions", value: "assembliesAndFusions" },
+      ],
+    },
   };
 
   return (
@@ -978,6 +1063,28 @@ const ShowProjects = ({
           {showDict[projectToShow]["error"] ? (
             <p> There was an error: please try again </p>
           ) : null}
+          {showDict[projectToShow]["tutorials"] ? (
+            <div className="tutorials-list">
+              {showDict[projectToShow]["tutorials"].map((tutorial, index) => (
+                <div
+                  key={index}
+                  className="login-nav-item"
+                  onClick={() => fetchFirstOrCreateAndStartTutorial(tutorial)}
+                >
+                  {" "}
+                  {/**fetchFirst()*/}
+                  <p>{tutorial.label}</p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {loadingTutorial ? (
+            <RenderProgressBar
+              progress={loadingTutorialBar}
+              run={true}
+              label={"Loading tutorial"}
+            />
+          ) : null}
           {showDict[projectToShow]["data"] ? (
             <AddProject
               {...{
@@ -1004,6 +1111,7 @@ function LoginMode() {
     setAuthorizedUserOcto,
   } = useAuth();
   const { exportPopUp, setExportPopUp } = useAppState();
+  const navigate = useNavigate();
 
   const pageDict = { 0: null };
 

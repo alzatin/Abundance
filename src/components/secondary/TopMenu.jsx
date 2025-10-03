@@ -169,6 +169,7 @@ function TopMenu({
     return (
       <>
         <button
+          id="go-up-button"
           className="nav-bar go-up-button menu-nav-button"
           onClick={() => {
             GlobalVariables.currentMolecule.goToParentMolecule();

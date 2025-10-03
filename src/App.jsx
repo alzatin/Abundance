@@ -28,6 +28,9 @@ import {
   useAppState,
 } from "./contexts/index.js";
 
+import { TutorialOverlay } from "./tutorial/TutorialOverlay";
+import { TutorialProvider } from "./tutorial/TutorialManager";
+
 /*Import style scripts*/
 import "./styles/maslowCreate.css";
 import "./styles/menuIcons.css";
@@ -296,7 +299,15 @@ function AppContent() {
   return (
     <main>
       <Routes>
-        <Route exact path="" element={<LoginMode />} />
+        <Route
+          exact
+          path=""
+          element={
+            <ProjectProvider cad={cad} loadProject={loadProject}>
+              <LoginMode />
+            </ProjectProvider>
+          }
+        />
         <Route
           path="/callback"
           element={
@@ -335,9 +346,11 @@ export default function ReplicadApp() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AppStateProvider>
-          <RenderingProvider>
-            <AppContent />
-          </RenderingProvider>
+          <TutorialProvider>
+            <RenderingProvider>
+              <AppContent />
+            </RenderingProvider>
+          </TutorialProvider>
         </AppStateProvider>
       </AuthProvider>
     </QueryClientProvider>

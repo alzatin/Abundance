@@ -32,6 +32,7 @@ function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
           >
             <label className="switch runmode-tooltip-container">
               <button
+                id="run-mode-btn"
                 title="Switch to Run Mode"
                 onMouseEnter={() => setShowTooltip(true)}
                 onMouseLeave={() => setShowTooltip(false)}
@@ -77,7 +78,7 @@ function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
             onClick={handleChange}
           >
             <label title="Create/Run Mode" className="switch_run">
-              <button>
+              <button id="create-mode-btn">
                 <svg
                   width="18"
                   height="18"
