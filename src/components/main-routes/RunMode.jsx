@@ -78,7 +78,7 @@ function runMode() {
   } = useRendering();
   const { loadProject } = useProject();
 
-  const { start, isActive } = useTutorial();
+  const { next, isActive } = useTutorial();
 
   // canvas to hide
   const canvasRef = useRef(500);

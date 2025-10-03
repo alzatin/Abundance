@@ -3,6 +3,8 @@ import { useTutorial } from "./TutorialManager";
 import { createPortal } from "react-dom";
 import { Global } from "@emotion/react";
 import GlobalVariables from "../js/globalvariables";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 export const TutorialOverlay: React.FC = () => {
   const { currentStep, isActive, next, back, complete } = useTutorial();
 
@@ -59,6 +61,15 @@ export const TutorialOverlay: React.FC = () => {
       left: 0,
       width: window.innerHeight / 2,
       height: offset.height || size,
+      borderRadius: 8,
+    };
+  } else if (currentStep.target === "customHighlight3") {
+    //custom run mode canvas
+    highlightRect = {
+      top: 0,
+      left: 0,
+      width: window.innerWidth,
+      height: window.innerHeight,
       borderRadius: 8,
     };
   } else if (currentStep.target) {
@@ -301,7 +312,11 @@ export const TutorialOverlay: React.FC = () => {
           </svg>
         </button>
         <div style={{ flex: 1, marginRight: currentStep.svgDiagram ? 24 : 0 }}>
-          <div style={{ marginBottom: 16 }}>{currentStep.message}</div>
+          <div style={{ marginBottom: 16 }}>
+            <ReactMarkdown rehypePlugins={[rehypeRaw]}>
+              {currentStep.message}
+            </ReactMarkdown>
+          </div>
 
           <button
             onClick={complete}

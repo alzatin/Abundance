@@ -31,15 +31,16 @@ const gettingStartedSteps: TutorialStep[] = [
   {
     id: "welcome",
     message:
-      "Welcome to Abundance! This is the main Abundance interface called Create mode.",
+      'Welcome to Abundance! <br />This is the main Abundance interface called <span style="color:#d368cd"> **Create Mode**</span>',
     overlay: "full",
     action: "click",
+
     svgDiagram: "abundance_Svg.svg",
   },
   {
     id: "place-atom",
     message:
-      "This is the canvas and where you will begin your design. Right click on the canvas to open the atom menu. Feel free to explore the submenu options and when you are ready, navigate to the Shapes submenu and click on circle.",
+      "This is the **Canvas** and where you will begin your design. **Right-click** on the canvas to open the atom menu. Feel free to explore the submenu options and when you are ready, navigate to the Shapes submenu and click on **Circle**.",
     target: "#flow-canvas",
     messageArrow: "top",
     offset: { top: 10, left: 10, width: -20, height: -10 },
@@ -49,7 +50,7 @@ const gettingStartedSteps: TutorialStep[] = [
   {
     id: "select-atom",
     message:
-      "This is your first atom! Atoms are the building blocks of your design. You can move your atom by clicking and dragging it on the canvas.",
+      'This is your first atom! <span style="color:#d368cd"> Atoms are the building blocks of your design. </span> You can move your atom by clicking and dragging it on the canvas.',
     messageArrow: "top",
     target: "#flow-canvas",
     offset: { top: 10, left: 10, width: -20, height: -10 },
@@ -59,9 +60,9 @@ const gettingStartedSteps: TutorialStep[] = [
   {
     id: "circle-params",
     message:
-      "When your atom is selected, you'll see info about it in the parameter panel. Change the value of your circle's diameter.",
+      "When your atom is selected, you'll see info about it in the parameter panel. Try changing the value of your circle's diameter. Make sure to press Enter to confirm the change.",
 
-    messagePosition: { top: -200, left: 320 },
+    messagePosition: { top: -220, left: 400 },
     messageArrow: "left",
     target: "#atom-create-params-panel",
     overlay: "highlight",
@@ -80,7 +81,7 @@ const gettingStartedSteps: TutorialStep[] = [
   {
     id: "atom-io",
     message:
-      "Most atoms have inputs and outputs. The circle atom has a diameter input and a geometry output. Hover over the atom to see its inputs and outputs. You can drag the output and connect it to other atoms.",
+      'Most atoms have multiple <span style="color:#d368cd"> Inputs </span> and one <span style="color:#d368cd"> Output </span>. The circle atom has a diameter input and a geometry output. **Hover over the atom** to see its inputs and outputs. You can drag the output to spawn a connector that can connect to other atoms.',
     target: "#flow-canvas",
     overlay: "highlight",
     action: "click",
@@ -126,7 +127,7 @@ const gettingStartedSteps: TutorialStep[] = [
   {
     id: "about-output",
     message:
-      "Every project has an output atom. This output is where you connect your finished design. Click next to continue.",
+      'Every project has an <span style="color:#d368cd"> **Output atom**</span>. This output is where you connect your finished design. Click next to continue.',
     target: "customHighlight1",
     overlay: "highlight",
     action: "click",
@@ -136,7 +137,7 @@ const gettingStartedSteps: TutorialStep[] = [
   {
     id: "connect-output",
     message:
-      "Connect the geometry output of one of your atoms to the Output Atom. ",
+      "Connect the **geometry output** of one of your atoms to the Output Atom. ",
     target: "#flow-canvas",
     messageArrow: "top",
     overlay: "highlight",
@@ -154,7 +155,7 @@ const gettingStartedSteps: TutorialStep[] = [
   {
     id: "background-render",
     message:
-      "Whatever is connected to the output atom will appear in the background render view.",
+      "Whatever is connected to the output atom will appear in the render view. You should also see your project's name and Inputs in the parameter panel.",
     target: "#threeCanvas",
     messageArrow: "bottom",
     messagePosition: { top: -680, left: -90 },
@@ -172,13 +173,23 @@ const gettingStartedSteps: TutorialStep[] = [
     messageArrow: "right",
     action: "click",
   },
+
+  {
+    id: "run-layout",
+    target: "customHighlight3",
+    message:
+      "This is Run Mode. Anyone with the link can access this view to see the output of your design. You can see other user's projects in their Run Mode version as well as like them, share them or fork them.",
+    overlay: "highlight",
+    action: "click",
+    messagePosition: { top: -480, left: 0 },
+    svgDiagram: "abundance_Svg.svg",
+  },
   {
     id: "run-layout",
     message:
-      "In Run Mode you can only see the output of your design. The Inputs of your top level molecule will appear on the right and will be editable. If you want to learn more about inputs and molecules, check out our other tutorials.",
+      "The Inputs of your top-level molecule will appear on the right and will be editable. If you want to learn more about inputs and molecules, check out our other tutorials.",
     target: "#threeCanvas",
-    messagePosition: { top: -680, left: -90 },
-    offset: { top: 10, left: 10, width: -20, height: -20 },
+    messagePosition: { top: -680, left: -70 },
     messageArrow: "right",
     overlay: "highlight",
     action: "click",
