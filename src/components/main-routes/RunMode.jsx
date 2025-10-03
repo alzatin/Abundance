@@ -146,38 +146,38 @@ function runMode() {
       if (
         !GlobalVariables.loadedRepo ||
         GlobalVariables.currentAWSnode.repoName !==
-          GlobalVariables.loadedRepo.repoName
+          GlobalVariables.loadedRepo.name
       ) {
         GlobalVariables.writeToDisplay(
           GlobalVariables.currentAWSnode.topMoleculeID,
           true
         );
       }
+    } else {
+      fetch(
+        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.item) {
+            GlobalVariables.currentAWSnode = data.item;
+
+            //Load a blank project
+            GlobalVariables.topLevelMolecule = new Molecule({
+              x: 0,
+              y: 0,
+              topLevel: true,
+              atomType: "Molecule",
+            });
+            GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
+            GlobalVariables.currentMolecule.selected = true;
+            loadProject(GlobalVariables.currentAWSnode);
+          }
+        })
+        .catch((e) => {
+          console.error("Error fetching AWS project data:", e);
+        });
     }
-
-    fetch(
-      `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.item) {
-          GlobalVariables.currentAWSnode = data.item;
-
-          //Load a blank project
-          GlobalVariables.topLevelMolecule = new Molecule({
-            x: 0,
-            y: 0,
-            topLevel: true,
-            atomType: "Molecule",
-          });
-          GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
-          GlobalVariables.currentMolecule.selected = true;
-          loadProject(GlobalVariables.currentAWSnode);
-        }
-      })
-      .catch((e) => {
-        console.error("Error fetching AWS project data:", e);
-      });
 
     if (
       GlobalVariables.currentAWSnode &&
