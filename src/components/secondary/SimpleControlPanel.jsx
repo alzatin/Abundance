@@ -272,6 +272,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   const controlKeys = Object.keys(controls);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [focusedListItem, setFocusedListItem] = useState({});
+  const [focusedAxis, setFocusedAxis] = useState({});
   const inputRefs = React.useRef([]);
 
   // Local state for deferred input updates
@@ -325,10 +326,22 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   // Focus the current control when focusedIndex changes and shouldFocus is true
   React.useEffect(() => {
     if (shouldFocus && inputRefs.current[focusedIndex]) {
-      inputRefs.current[focusedIndex].focus();
-      setShouldFocus(false); // Reset after focusing
+      const key = controlKeys[focusedIndex];
+      const config = controls[key];
+      if (
+        config &&
+        config.type === "point" &&
+        Array.isArray(inputRefs.current[focusedIndex])
+      ) {
+        if (typeof focusedAxis[key] === "number") {
+          inputRefs.current[focusedIndex][focusedAxis[key]]?.focus();
+        }
+      } else if (inputRefs.current[focusedIndex]?.focus) {
+        inputRefs.current[focusedIndex].focus();
+      }
+      setShouldFocus(false);
     }
-  }, [focusedIndex, controlKeys.length, shouldFocus]);
+  }, [focusedIndex, controlKeys.length, shouldFocus, focusedAxis]);
 
   // Listen for keyboard events on the panel to trigger focus
   const handlePanelKeyDown = (e) => {
@@ -572,13 +585,17 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   handleLocalChange(key, arr);
                                 }
                               }}
-                              onBlur={(e) => {
-                                if (!isDisabled) {
-                                  const val = Number(e.target.value);
-                                  const arr = [...currentArrayValue];
-                                  arr[axisIdx] = val;
-                                  commitChange(key, arr, config);
-                                }
+                              onBlur={() => {
+                                setFocusedAxis((fa) => ({
+                                  ...fa,
+                                  [key]: undefined,
+                                }));
+                              }}
+                              onFocus={() => {
+                                setFocusedAxis((fa) => ({
+                                  ...fa,
+                                  [key]: axisIdx, // Set to the axis you clicked
+                                }));
                               }}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter" && !isDisabled) {
@@ -589,6 +606,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   e.preventDefault();
                                 }
                               }}
+                              {...commonProps}
                               style={
                                 isDisabled
                                   ? {
@@ -597,7 +615,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                       width: 50,
                                       marginRight: 4,
                                     }
-                                  : isFocused
+                                  : focusedAxis[key] === axisIdx && isFocused
                                   ? {
                                       ...inputStyle,
                                       ...inputFocusedStyle,
@@ -606,11 +624,11 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                     }
                                   : { ...inputStyle, width: 50, marginRight: 4 }
                               }
-                              ref={
-                                axisIdx === 0
-                                  ? (el) => (inputRefs.current[idx] = el)
-                                  : undefined
-                              }
+                              ref={(el) => {
+                                if (!inputRefs.current[idx])
+                                  inputRefs.current[idx] = [];
+                                inputRefs.current[idx][axisIdx] = el;
+                              }}
                               tabIndex={isDisabled ? -1 : 0}
                               disabled={isDisabled}
                               aria-label={axis}
