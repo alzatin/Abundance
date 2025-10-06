@@ -333,14 +333,15 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
         config.type === "point" &&
         Array.isArray(inputRefs.current[focusedIndex])
       ) {
-        // Always focus X (index 0) for point controls
-        inputRefs.current[focusedIndex][0]?.focus();
+        if (typeof focusedAxis[key] === "number") {
+          inputRefs.current[focusedIndex][focusedAxis[key]]?.focus();
+        }
       } else if (inputRefs.current[focusedIndex]?.focus) {
         inputRefs.current[focusedIndex].focus();
       }
       setShouldFocus(false);
     }
-  }, [focusedIndex, controlKeys.length, shouldFocus]);
+  }, [focusedIndex, controlKeys.length, shouldFocus, focusedAxis]);
 
   // Listen for keyboard events on the panel to trigger focus
   const handlePanelKeyDown = (e) => {
@@ -591,92 +592,12 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                 }));
                               }}
                               onFocus={() => {
-                                setFocusedAxis({
-                                  ...focusedAxis,
-                                  [controlKey]: 0,
-                                });
+                                setFocusedAxis((fa) => ({
+                                  ...fa,
+                                  [key]: axisIdx, // Set to the axis you clicked
+                                }));
                               }}
                               onKeyDown={(e) => {
-                                if (e.key === "ArrowRight" && axisIdx < 2) {
-                                  inputRefs.current[idx][axisIdx + 1]?.focus();
-                                  setFocusedAxis((fa) => ({
-                                    ...fa,
-                                    [key]: axisIdx + 1,
-                                  }));
-                                  e.preventDefault();
-                                } else if (
-                                  e.key === "ArrowLeft" &&
-                                  axisIdx > 0
-                                ) {
-                                  inputRefs.current[idx][axisIdx - 1]?.focus();
-                                  setFocusedAxis((fa) => ({
-                                    ...fa,
-                                    [key]: axisIdx - 1,
-                                  }));
-                                  e.preventDefault();
-                                } else if (e.key === "ArrowUp") {
-                                  // Move to previous control (focus X axis if it's a point)
-                                  let prev = idx - 1;
-                                  while (
-                                    prev >= 0 &&
-                                    controls[controlKeys[prev]]?.disabled
-                                  ) {
-                                    prev--;
-                                  }
-                                  if (prev >= 0) {
-                                    setFocusedIndex(prev);
-                                    const prevKey = controlKeys[prev];
-                                    const prevConfig = controls[prevKey];
-                                    if (
-                                      prevConfig &&
-                                      prevConfig.type === "point"
-                                    ) {
-                                      setFocusedAxis((fa) => ({
-                                        ...fa,
-                                        [prevKey]: 0,
-                                      }));
-                                      setTimeout(() => {
-                                        inputRefs.current[prev]?.[0]?.focus();
-                                      }, 0);
-                                    } else {
-                                      setTimeout(() => {
-                                        inputRefs.current[prev]?.focus();
-                                      }, 0);
-                                    }
-                                  }
-                                  e.preventDefault();
-                                } else if (e.key === "ArrowDown") {
-                                  // Move to next control (focus X axis if it's a point)
-                                  let next = idx + 1;
-                                  while (
-                                    next < controlKeys.length &&
-                                    controls[controlKeys[next]]?.disabled
-                                  ) {
-                                    next++;
-                                  }
-                                  if (next < controlKeys.length) {
-                                    setFocusedIndex(next);
-                                    const nextKey = controlKeys[next];
-                                    const nextConfig = controls[nextKey];
-                                    if (
-                                      nextConfig &&
-                                      nextConfig.type === "point"
-                                    ) {
-                                      setFocusedAxis((fa) => ({
-                                        ...fa,
-                                        [nextKey]: 0,
-                                      }));
-                                      setTimeout(() => {
-                                        inputRefs.current[next]?.[0]?.focus();
-                                      }, 0);
-                                    } else {
-                                      setTimeout(() => {
-                                        inputRefs.current[next]?.focus();
-                                      }, 0);
-                                    }
-                                  }
-                                  e.preventDefault();
-                                }
                                 if (e.key === "Enter" && !isDisabled) {
                                   const val = Number(e.target.value);
                                   const arr = [...currentArrayValue];
@@ -700,10 +621,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                       ...inputFocusedStyle,
                                       width: 50,
                                       marginRight: 4,
-                                      // Hide spinners for Chrome, Safari, Edge, Opera
-                                      appearance: "textfield",
-                                      MozAppearance: "textfield",
-                                      WebkitAppearance: "none",
                                     }
                                   : { ...inputStyle, width: 50, marginRight: 4 }
                               }
