@@ -1,10 +1,6 @@
 import React, { Suspense, useRef, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import {
-  Wireframe,
-  Grid,
-  OrthographicCamera,
-} from "@react-three/drei";
+import { Wireframe, Grid, OrthographicCamera } from "@react-three/drei";
 import * as THREE from "three";
 import Controls from "./ThreeControls.jsx";
 import BackgroundModel from "./BackgroundModel.jsx";
@@ -17,12 +13,12 @@ import { useRendering, useAuth } from "../../contexts/index.js";
 THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
 
 export default function ext({ children, cameraZoom, ...otherProps }) {
-  const { 
-    outdatedMesh, 
-    gridParam, 
-    axesParam, 
-    backgroundUsdzFile, 
-    showBackgroundModel 
+  const {
+    outdatedMesh,
+    gridParam,
+    axesParam,
+    backgroundUsdzFile,
+    showBackgroundModel,
   } = useRendering();
   const { authorizedUserOcto } = useAuth();
 
@@ -87,8 +83,9 @@ export default function ext({ children, cameraZoom, ...otherProps }) {
             args={[10000, 10000]}
             cellColor={"#726482"}
             fadeFrom={0}
-            lineColor={"#BFA301"}
-            sectionColor={"#BFA301"}
+            lineColor={"#3b3a39"}
+            sectionColor={"#3b3a39"}
+            sectionThickness={0.5}
             fadeDistance={9000}
             rotation={[Math.PI / 2, 0, 0]}
             sectionSize={cellSection * 10}
@@ -101,16 +98,16 @@ export default function ext({ children, cameraZoom, ...otherProps }) {
         ) : (
           <ambientLight intensity={0.4} />
         )}
-        
+
         {/* Background USDZ model - rendered behind CAD models */}
         {backgroundUsdzFile && showBackgroundModel ? (
-          <BackgroundModel 
+          <BackgroundModel
             fileName={backgroundUsdzFile}
             showModel={showBackgroundModel}
             authorizedUserOcto={authorizedUserOcto}
           />
         ) : null}
-        
+
         {children}
       </Canvas>
     </Suspense>
