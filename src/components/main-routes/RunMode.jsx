@@ -141,19 +141,19 @@ function runMode() {
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;
     GlobalVariables.c = canvasRef.current.getContext("2d");
+
     /** Only run loadproject() if the project is different from what is already loaded and clear screen */
-    if (GlobalVariables.currentAWSnode) {
-      if (
-        !GlobalVariables.loadedRepo ||
-        GlobalVariables.currentAWSnode.repoName !==
-          GlobalVariables.loadedRepo.name
-      ) {
-        GlobalVariables.writeToDisplay(
-          GlobalVariables.currentAWSnode.topMoleculeID,
-          true
-        );
-      }
+    if (
+      GlobalVariables.currentAWSnode?.repoName ==
+      GlobalVariables.loadedRepo?.name
+    ) {
+      console.log("Same project, loading from memory");
+      GlobalVariables.writeToDisplay(
+        GlobalVariables.currentAWSnode.topMoleculeID,
+        true
+      );
     } else {
+      console.log("Project Changed, fetching from URL params");
       fetch(
         `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
       )
@@ -270,10 +270,10 @@ function runMode() {
           }}
         />
       ) : null}
-      {GlobalVariables.currentRepo ? (
+      {GlobalVariables.currentAWSnode ? (
         <div className="info_run_div">
-          <p>{"Project Name: " + GlobalVariables.currentRepo.name}</p>
-          <p>{"Repo Owner: " + GlobalVariables.currentRepo.owner.login}</p>
+          <p>{"Project Name: " + GlobalVariables.currentAWSnode.repoName}</p>
+          <p>{"Repo Owner: " + GlobalVariables.currentAWSnode.owner}</p>
         </div>
       ) : null}
       <div className="runContainer">
