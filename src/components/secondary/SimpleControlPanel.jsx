@@ -514,7 +514,12 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                 const commonProps = {
                   ref: (el) => (inputRefs.current[idx] = el),
                   tabIndex: isDisabled ? -1 : 0,
-                  onFocus: isDisabled ? undefined : () => setFocusedIndex(idx),
+                  onFocus: isDisabled
+                    ? undefined
+                    : (e) => {
+                        setFocusedIndex(idx);
+                        e.target.select(); // Select all text when focused
+                      },
                   onBlur: () => {
                     commitChange(key, currentValue, config);
                   },

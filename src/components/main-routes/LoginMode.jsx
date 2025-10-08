@@ -1172,7 +1172,8 @@ function LoginMode() {
       <div>
         {" "}
         {GlobalVariables.currentRepo &&
-        GlobalVariables.currentRepo.owner == GlobalVariables.currentUser &&
+        GlobalVariables.currentRepo.owner.login ==
+          GlobalVariables.currentUser &&
         isAuthorized ? (
           <Link
             to={`/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`}
