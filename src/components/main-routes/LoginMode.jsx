@@ -1160,6 +1160,8 @@ function LoginMode() {
   } else {
     popUpContent = <InitialLog {...{ setNoUserBrowsing }} />;
   }
+  console.log(GlobalVariables.currentAWSnode);
+  console.log(GlobalVariables.currentRepo);
   return (
     <div
       className="login-popup"
@@ -1172,7 +1174,8 @@ function LoginMode() {
       <div>
         {" "}
         {GlobalVariables.currentRepo &&
-        GlobalVariables.currentRepo.owner == GlobalVariables.currentUser &&
+        GlobalVariables.currentRepo.owner.login ==
+          GlobalVariables.currentUser &&
         isAuthorized ? (
           <Link
             to={`/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`}

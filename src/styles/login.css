@@ -465,19 +465,13 @@
   color: var(--abundance-color-brightPurple);
   background: none;
 }
-
 .longButton {
   float: right;
-  height: 1.5em;
+  height: 2em;
   background-color: var(--settingsPopup-closeButton);
-  font: 0.75em sans-serif;
   margin: 5px;
-  border-color: white;
-  border-radius: 30px;
-  padding: 0 15px 0 15px;
+  border-radius: 5px;
   color: var(--settingsPopup-text);
-  -webkit-transition: all 0.3 ease;
-  transition: all 0.3 ease;
   cursor: pointer;
 }
 
