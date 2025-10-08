@@ -1160,8 +1160,6 @@ function LoginMode() {
   } else {
     popUpContent = <InitialLog {...{ setNoUserBrowsing }} />;
   }
-  console.log(GlobalVariables.currentAWSnode);
-  console.log(GlobalVariables.currentRepo);
   return (
     <div
       className="login-popup"
