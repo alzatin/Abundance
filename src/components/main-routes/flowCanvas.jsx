@@ -51,7 +51,7 @@ export default memo(function FlowCanvas({
         GlobalVariables.loadedRepo.repoName
     ) {
       GlobalVariables.writeToDisplay(
-        GlobalVariables.currentAWSnode.topMoleculeID,
+        GlobalVariables.currentAWSnode.topMoleculeID, // should not be an id unless reseting view
         true
       );
       //Load a blank project
