@@ -749,7 +749,6 @@ export default class Molecule extends Atom {
       "|" +
       " " +
       "|";
-    bomContent = bomContent + "\n\n 3xCOG MSRP: $" + (3 * totalCost).toFixed(2);
     return bomContent;
   }
 
