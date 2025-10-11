@@ -47,7 +47,7 @@ export default class Export extends Atom {
 
     this.addAllIOs([
       { name: "geometry", valueType: "geometry" },
-      { name: "File Type", valueType: "string", defaultValue: "SVG" },
+      { name: "File Type", valueType: "string", defaultValue: "STL" },
       {
         name: "Resolution (dpi)",
         valueType: "number",
