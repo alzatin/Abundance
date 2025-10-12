@@ -196,4 +196,22 @@ describe("Attachment Point Expansion for Multiple Inputs", () => {
       }
     }
   });
+
+  it("should demonstrate the scaling behavior for different input counts", () => {
+    // Test the scaling formula for various input counts
+    const testCases = [
+      { inputs: 1, expectedDist: 2 },      // <= 5 inputs: use default
+      { inputs: 3, expectedDist: 2 },      // <= 5 inputs: use default
+      { inputs: 5, expectedDist: 2 },      // exactly 5: use default
+      { inputs: 6, expectedDist: 2.3 },    // 6 inputs: 2 + (6-5)*0.3 = 2.3
+      { inputs: 7, expectedDist: 2.6 },    // 7 inputs: 2 + (7-5)*0.3 = 2.6
+      { inputs: 10, expectedDist: 3.5 },   // 10 inputs: 2 + (10-5)*0.3 = 3.5
+      { inputs: 15, expectedDist: 5.0 },   // 15 inputs: 2 + (15-5)*0.3 = 5.0
+    ];
+
+    testCases.forEach(({ inputs, expectedDist }) => {
+      const result = AttachmentPoint.getDistFromParent(inputs);
+      expect(result).toBeCloseTo(expectedDist, 2);
+    });
+  });
 });
