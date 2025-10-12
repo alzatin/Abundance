@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 /**
  * Test for GitSearchMenu loading indicator
@@ -7,10 +7,11 @@ import { describe, it, expect } from 'vitest';
  * to address the issue where users don't know that a search is ongoing.
  */
 describe('GitSearchMenu Loading Indicator', () => {
+  let getGitListItems;
   
-  it('should show loading indicator when isLoading is true', () => {
+  beforeEach(() => {
     // Simulate the getGitListItems function behavior when loading
-    const getGitListItems = (isLoading, isError, debouncedSearchTerm, localAtoms = [], data = null) => {
+    getGitListItems = (isLoading, isError, debouncedSearchTerm, localAtoms = [], data = null) => {
       if (isLoading || isError) {
         const items = [...localAtoms];
         
@@ -38,6 +39,9 @@ describe('GitSearchMenu Loading Indicator', () => {
       }
       return combinedResults;
     };
+  });
+  
+  it('should show loading indicator when isLoading is true', () => {
     
     // Test loading state with search term
     const loadingItems = getGitListItems(true, false, 'test', [], null);
@@ -48,28 +52,6 @@ describe('GitSearchMenu Loading Indicator', () => {
   });
   
   it('should NOT show loading indicator when search term is empty', () => {
-    const getGitListItems = (isLoading, isError, debouncedSearchTerm, localAtoms = [], data = null) => {
-      if (isLoading || isError) {
-        const items = [...localAtoms];
-        
-        if (isLoading && debouncedSearchTerm) {
-          items.push({
-            id: "loading-indicator",
-            isLoading: true,
-            message: "Searching GitHub molecules...",
-          });
-        } else if (isError && debouncedSearchTerm) {
-          items.push({
-            id: "error-indicator",
-            isError: true,
-            message: "Error loading GitHub results",
-          });
-        }
-        
-        return items;
-      }
-      return [];
-    };
     
     // Test loading state with empty search term
     const loadingItems = getGitListItems(true, false, '', [], null);
@@ -77,28 +59,6 @@ describe('GitSearchMenu Loading Indicator', () => {
   });
   
   it('should show error indicator when isError is true', () => {
-    const getGitListItems = (isLoading, isError, debouncedSearchTerm, localAtoms = [], data = null) => {
-      if (isLoading || isError) {
-        const items = [...localAtoms];
-        
-        if (isLoading && debouncedSearchTerm) {
-          items.push({
-            id: "loading-indicator",
-            isLoading: true,
-            message: "Searching GitHub molecules...",
-          });
-        } else if (isError && debouncedSearchTerm) {
-          items.push({
-            id: "error-indicator",
-            isError: true,
-            message: "Error loading GitHub results",
-          });
-        }
-        
-        return items;
-      }
-      return [];
-    };
     
     // Test error state with search term
     const errorItems = getGitListItems(false, true, 'test', [], null);
@@ -109,22 +69,6 @@ describe('GitSearchMenu Loading Indicator', () => {
   });
   
   it('should combine local atoms with loading indicator', () => {
-    const getGitListItems = (isLoading, isError, debouncedSearchTerm, localAtoms = [], data = null) => {
-      if (isLoading || isError) {
-        const items = [...localAtoms];
-        
-        if (isLoading && debouncedSearchTerm) {
-          items.push({
-            id: "loading-indicator",
-            isLoading: true,
-            message: "Searching GitHub molecules...",
-          });
-        }
-        
-        return items;
-      }
-      return [];
-    };
     
     const localAtoms = [
       { id: 'local-1', atomType: 'Circle', isLocal: true },
@@ -158,28 +102,6 @@ describe('GitSearchMenu Loading Indicator', () => {
   });
   
   it('should return results when data is available and not loading', () => {
-    const getGitListItems = (isLoading, isError, debouncedSearchTerm, localAtoms = [], data = null) => {
-      if (isLoading || isError) {
-        const items = [...localAtoms];
-        
-        if (isLoading && debouncedSearchTerm) {
-          items.push({
-            id: "loading-indicator",
-            isLoading: true,
-            message: "Searching GitHub molecules...",
-          });
-        }
-        
-        return items;
-      }
-      
-      // Normal case with data
-      const combinedResults = [...localAtoms];
-      if (data?.repos) {
-        combinedResults.push(...data.repos.map((repo) => ({ ...repo, isLocal: false })));
-      }
-      return combinedResults;
-    };
     
     const mockData = {
       repos: [
