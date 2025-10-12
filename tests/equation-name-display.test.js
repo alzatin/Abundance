@@ -45,15 +45,15 @@ describe("Equation atom name display - Issue Fix Validation", () => {
   it("should update name when equation changes multiple times", () => {
     const equation = new MockEquation({});
     
-    // First change
+    // Change to multiplication expression
     equation.setEquation("x * y");
     expect(equation.name).toBe("x * y");
     
-    // Second change
+    // Change to division expression
     equation.setEquation("(a + b) / 2");
     expect(equation.name).toBe("(a + b) / 2");
     
-    // Third change
+    // Change to square root expression
     equation.setEquation("sqrt(x^2 + y^2)");
     expect(equation.name).toBe("sqrt(x^2 + y^2)");
   });
