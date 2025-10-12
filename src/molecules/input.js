@@ -100,11 +100,16 @@ export default class Input extends Atom {
   /**
    * Positions Input atoms in a vertical stack on the left side of the canvas.
    * First input spawns at top left, subsequent inputs spawn below existing ones.
+   * 
+   * Note: The x position is also set in draw() to ensure Inputs remain locked
+   * to the left side even if a user attempts to move them. Setting it here
+   * ensures correct initial positioning during construction.
    */
   adjustYForCollision() {
     if (!this.parent || !this.parent.nodesOnTheScreen) return;
     
     // Always position Input atoms on the left side of the canvas
+    // This is also enforced in draw() to prevent horizontal movement
     this.x = GlobalVariables.atomSize * 1.65;
     
     // Find all existing Input atoms in the parent molecule (excluding this one)
