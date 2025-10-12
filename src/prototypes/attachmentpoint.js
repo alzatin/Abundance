@@ -29,6 +29,16 @@ export default class AttachmentPoint extends ObservableEntity {
     return AttachmentPoint.DIST_FROM_PARENT + (inputCount - 5) * 0.3;
   }
 
+  /**
+   * Gets the count of input attachment points for this attachment point's parent molecule.
+   * @returns {number} The number of input attachment points
+   */
+  getInputCount() {
+    return this.parentMolecule.inputs.filter(
+      (ap) => ap.type === "input"
+    ).length;
+  }
+
   // Constant dictates how much larger an AP becomes when it's activated for selection, ie, when clicking
   // or unclicking will engage the AP.
   static get TARGET_SCALEUP() {
@@ -279,9 +289,7 @@ export default class AttachmentPoint extends ObservableEntity {
    */
   mouseMove(x, y) {
     // Calculate input count for dynamic expansion radius
-    const inputCount = this.parentMolecule.inputs.filter(
-      (ap) => ap.type === "input"
-    ).length;
+    const inputCount = this.getInputCount();
     const distFromParent = AttachmentPoint.getDistFromParent(inputCount);
     
     let activationBoundary = distFromParent * this.parentMolecule.radius;
@@ -427,9 +435,7 @@ export default class AttachmentPoint extends ObservableEntity {
       let targetRadius = apRadiusInPixels * 2;
       // check if this creates overlapping target areas in the case where there's multiple inputs.
       // If so reduce the targetting radius.
-      const inputCount = this.parentMolecule.inputs.filter(
-        (ap) => ap.type == "input"
-      ).length;
+      const inputCount = this.getInputCount();
 
       const distFromParent = AttachmentPoint.getDistFromParent(inputCount);
       let hoverRadius = GlobalVariables.widthToPixels(
