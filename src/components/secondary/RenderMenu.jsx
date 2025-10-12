@@ -23,6 +23,8 @@ export default function RenderMenu({
     backgroundUsdzFile,
     showBackgroundModel,
     setShowBackgroundModel,
+    showTopLevelWireframe,
+    setShowTopLevelWireframe,
   } = useRendering();
   const [inputChanged, setInputChanged] = useState("");
 
@@ -71,6 +73,14 @@ export default function RenderMenu({
         }
       },
     },
+    topLevelWireframe: {
+      value: showTopLevelWireframe,
+      label: "Top Level Wireframe",
+      type: "boolean",
+      onChange: (value) => {
+        setShowTopLevelWireframe(value);
+      },
+    },
   };
 
   const [
@@ -81,6 +91,7 @@ export default function RenderMenu({
     inputChanged,
     backgroundUsdzFile,
     showBackgroundModel,
+    showTopLevelWireframe,
   ]);
 
   const screenHeight = window.innerHeight;

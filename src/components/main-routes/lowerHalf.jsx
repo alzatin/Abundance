@@ -2,6 +2,7 @@ import React, { memo, useEffect, useRef, useState } from "react";
 import ThreeContext from "../render/ThreeContext.jsx";
 import ReplicadMesh from "../render/ReplicadMesh.jsx";
 import WireframeMesh from "../render/WireframeMesh.jsx";
+import TopLevelWireframeMesh from "../render/TopLevelWireframeMesh.jsx";
 import globalvariables from "../../js/globalvariables.js";
 import { useRendering } from "../../contexts/index.js";
 
@@ -45,6 +46,7 @@ export default memo(function LowerHalf({ windowSize }) {
               }}
             >
               {wireParam ? <WireframeMesh /> : null}
+              <TopLevelWireframeMesh />
               <ReplicadMesh isSolid={solidParam} />
             </ThreeContext>
           ) : (
