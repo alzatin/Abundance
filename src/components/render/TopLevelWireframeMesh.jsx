@@ -16,14 +16,14 @@ export default React.memo(function TopLevelWireframeMesh() {
   const [fullMesh, setFullMesh] = useState([]);
 
   useLayoutEffect(() => {
-    if (!mesh || !showTopLevelWireframe) {
+    if (!mesh || mesh.length === 0 || !showTopLevelWireframe) {
       setFullMesh([]);
       invalidate();
       return;
     }
 
     let meshArray = [];
-    mesh.map((m) => {
+    mesh.forEach((m) => {
       const body = new BufferGeometry();
       const lines = new BufferGeometry();
       // We use the three helpers to synchronise the buffer geometry with the
