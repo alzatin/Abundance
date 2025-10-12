@@ -312,6 +312,9 @@ function TopMenu({
             showBackgroundModel,
             setShowBackgroundModel,
             authorizedUserOcto,
+            saveProject,
+            setSaveState,
+            setSavePopUp,
           }}
         />
       ) : null}
