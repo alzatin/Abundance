@@ -98,35 +98,34 @@ export default class Input extends Atom {
   }
 
   /**
-   * Adjusts the Y coordinate to prevent collision with existing Input atoms
+   * Positions Input atoms in a vertical stack on the left side of the canvas.
+   * First input spawns at top left, subsequent inputs spawn below existing ones.
    */
   adjustYForCollision() {
     if (!this.parent || !this.parent.nodesOnTheScreen) return;
+    
+    // Always position Input atoms on the left side of the canvas
+    this.x = GlobalVariables.atomSize * 1.65;
     
     // Find all existing Input atoms in the parent molecule (excluding this one)
     const existingInputs = this.parent.nodesOnTheScreen.filter(
       atom => atom.atomType === 'Input' && atom !== this
     );
     
-    if (existingInputs.length === 0) return;
+    // Define spacing between atoms
+    const atomSpacing = GlobalVariables.atomSize * 2;
     
-    // Define spacing and tolerance for collision detection
-    const atomSpacing = GlobalVariables.atomSize * 2; // Spacing between atoms
-    const tolerance = GlobalVariables.atomSize * 0.5; // Tolerance for "same position"
-    
-    // Check for collisions and adjust Y coordinate if needed
-    for (const existingInput of existingInputs) {
-      const yDiff = Math.abs(this.y - existingInput.y);
+    if (existingInputs.length === 0) {
+      // This is the first Input atom - position it at the top left
+      this.y = GlobalVariables.atomSize * 2;
+    } else {
+      // Find the Input with the lowest (highest y value) position
+      const lowestInput = existingInputs.reduce((lowest, current) => {
+        return current.y > lowest.y ? current : lowest;
+      });
       
-      // If too close (collision detected)
-      if (yDiff < tolerance) {
-        // Offset this atom downward from the existing atom
-        this.y = existingInput.y + atomSpacing;
-        
-        // Recursively check for more collisions with the new position
-        this.adjustYForCollision();
-        break; // Exit loop since we've adjusted and will recursively check again
-      }
+      // Position this Input below the lowest existing Input
+      this.y = lowestInput.y + atomSpacing;
     }
   }
 
