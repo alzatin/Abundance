@@ -35,7 +35,7 @@ export default class AttachmentPoint extends ObservableEntity {
    */
   getInputCount() {
     return this.parentMolecule.inputs.filter(
-      (ap) => ap.type === "input"
+      (ap) => ap.type == "input"
     ).length;
   }
 
