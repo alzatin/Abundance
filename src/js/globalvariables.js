@@ -445,9 +445,10 @@ class GlobalVariables {
 
   /**
    * A function which reads the value of a unique ID and passes to display
-   * @param {string} The unique ID to read from
+   * @param {string} The value of the molecule to display
+   * @param {boolean} resetView - Whether to reset the view to fit the molecule
    */
-  writeToDisplay(id, resetView = false) {
+  writeToDisplay(moleculeValue, resetView = false) {
     // Placeholder function - implementation is set in App.jsx
   }
 

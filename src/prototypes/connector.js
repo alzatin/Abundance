@@ -167,77 +167,8 @@ export default class Connector {
           if (dist <= radiusInPixels && !attachmentMade) {
             // Ensure we're not trying to connect to the same atom
             if (this.attachmentPoint1.parentMolecule !== atom) {
-              // Find the first compatible input attachment point
-              for (let i = 0; i < atom.inputs.length; i++) {
-                const input = atom.inputs[i];
-                // Check if this input is compatible with our output
-                if (input.type === "input") {
-                  // Check if this input is available or can be replaced
-                  if (input.connectors.length === 0) {
-                    console.log("Input has no existing connections", input);
-                    // Available input - check compatibility
-                    if (
-                      AttachmentPoint.areTypesCompatible(
-                        this.attachmentPoint1,
-                        input
-                      )
-                    ) {
-                      attachmentMade = true;
-                      this.attachmentPoint2 = input;
-                      input.attach(this);
-                      //  this.propogate();
-                      break; // Stop after finding the first compatible input
-                    }
-                  } else {
-                    // Only allow replacement if there are no available geometry input APs
-                    const geometryInputs = atom.inputs.filter(
-                      (ap) => ap.valueType === "geometry"
-                    );
-                    const supportsMultiGeometryInputs =
-                      geometryInputs.length > 1;
-                    let hasAvailableGeometryInput = false;
-                    if (
-                      supportsMultiGeometryInputs &&
-                      input.valueType === "geometry"
-                    ) {
-                      hasAvailableGeometryInput = atom.inputs.some(
-                        (ap) =>
-                          ap.valueType === "geometry" &&
-                          ap.connectors.length === 0
-                      );
-                    }
-                    if (
-                      (!supportsMultiGeometryInputs ||
-                        !hasAvailableGeometryInput) &&
-                      AttachmentPoint.areTypesCompatible(
-                        this.attachmentPoint1,
-                        input
-                      )
-                    ) {
-                      // Save undo state before replacing connection
-                      GlobalVariables.saveUndoState(
-                        "MODIFY",
-                        `Connection replacement: ${this.attachmentPoint1.parentMolecule.name} → ${atom.name}.${input.name}`
-                      );
-
-                      // Remove existing connections
-                      const connectorsToRemove = [...input.connectors];
-                      connectorsToRemove.forEach((existingConnector) => {
-                        existingConnector.deleteSelf(true); // silent deletion
-                      });
-
-                      attachmentMade = true;
-                      this.attachmentPoint2 = input;
-                      input.attach(this);
-                      //  this.propogate();
-                      break; // Stop after making the replacement
-                    }
-                  }
-                }
-              }
-
               // If no available input was found and this is a molecule, create a new input
-              if (!attachmentMade && atom.atomType === "Molecule") {
+              if (atom.atomType === "Molecule") {
                 // Determine the name for the new input
                 let inputName = "input";
 
@@ -294,6 +225,75 @@ export default class Connector {
                   this.attachmentPoint2 = newInputAP;
                   newInputAP.attach(this);
                   //   this.propogate();
+                }
+              } else {
+                // Find the first compatible input attachment point
+                for (let i = 0; i < atom.inputs.length; i++) {
+                  const input = atom.inputs[i];
+                  // Check if this input is compatible with our output
+                  if (input.type === "input") {
+                    // Check if this input is available or can be replaced
+                    if (input.connectors.length === 0) {
+                      console.log("Input has no existing connections", input);
+                      // Available input - check compatibility
+                      if (
+                        AttachmentPoint.areTypesCompatible(
+                          this.attachmentPoint1,
+                          input
+                        )
+                      ) {
+                        attachmentMade = true;
+                        this.attachmentPoint2 = input;
+                        input.attach(this);
+                        //  this.propogate();
+                        break; // Stop after finding the first compatible input
+                      }
+                    } else {
+                      // Only allow replacement if there are no available geometry input APs
+                      const geometryInputs = atom.inputs.filter(
+                        (ap) => ap.valueType === "geometry"
+                      );
+                      const supportsMultiGeometryInputs =
+                        geometryInputs.length > 1;
+                      let hasAvailableGeometryInput = false;
+                      if (
+                        supportsMultiGeometryInputs &&
+                        input.valueType === "geometry"
+                      ) {
+                        hasAvailableGeometryInput = atom.inputs.some(
+                          (ap) =>
+                            ap.valueType === "geometry" &&
+                            ap.connectors.length === 0
+                        );
+                      }
+                      if (
+                        (!supportsMultiGeometryInputs ||
+                          !hasAvailableGeometryInput) &&
+                        AttachmentPoint.areTypesCompatible(
+                          this.attachmentPoint1,
+                          input
+                        )
+                      ) {
+                        // Save undo state before replacing connection
+                        GlobalVariables.saveUndoState(
+                          "MODIFY",
+                          `Connection replacement: ${this.attachmentPoint1.parentMolecule.name} → ${atom.name}.${input.name}`
+                        );
+
+                        // Remove existing connections
+                        const connectorsToRemove = [...input.connectors];
+                        connectorsToRemove.forEach((existingConnector) => {
+                          existingConnector.deleteSelf(true); // silent deletion
+                        });
+
+                        attachmentMade = true;
+                        this.attachmentPoint2 = input;
+                        input.attach(this);
+                        //  this.propogate();
+                        break; // Stop after making the replacement
+                      }
+                    }
+                  }
                 }
               }
             }

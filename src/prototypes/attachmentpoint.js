@@ -14,6 +14,31 @@ export default class AttachmentPoint extends ObservableEntity {
     return 2;
   }
 
+  /**
+   * Computes the distance from parent molecule for attachment point expansion
+   * based on the number of input attachment points. For molecules with more than
+   * 5 inputs, the distance is increased to ensure all attachment points are accessible.
+   * @param {number} inputCount - The number of input attachment points
+   * @returns {number} The distance multiplier from parent molecule
+   */
+  static getDistFromParent(inputCount) {
+    if (inputCount <= 5) {
+      return AttachmentPoint.DIST_FROM_PARENT;
+    }
+    // Increase radius by 0.3 for each additional input beyond 5
+    return AttachmentPoint.DIST_FROM_PARENT + (inputCount - 5) * 0.3;
+  }
+
+  /**
+   * Gets the count of input attachment points for this attachment point's parent molecule.
+   * @returns {number} The number of input attachment points
+   */
+  getInputCount() {
+    return this.parentMolecule.inputs.filter(
+      (ap) => ap.type == "input"
+    ).length;
+  }
+
   // Constant dictates how much larger an AP becomes when it's activated for selection, ie, when clicking
   // or unclicking will engage the AP.
   static get TARGET_SCALEUP() {
@@ -263,8 +288,11 @@ export default class AttachmentPoint extends ObservableEntity {
    * @param {number} y - The y coordinate of the click
    */
   mouseMove(x, y) {
-    let activationBoundary =
-      AttachmentPoint.DIST_FROM_PARENT * this.parentMolecule.radius;
+    // Calculate input count for dynamic expansion radius
+    const inputCount = this.getInputCount();
+    const distFromParent = AttachmentPoint.getDistFromParent(inputCount);
+    
+    let activationBoundary = distFromParent * this.parentMolecule.radius;
 
     let parentXInPixels = GlobalVariables.widthToPixels(this.parentMolecule.x);
     let parentYInPixels = GlobalVariables.heightToPixels(this.parentMolecule.y);
@@ -407,12 +435,11 @@ export default class AttachmentPoint extends ObservableEntity {
       let targetRadius = apRadiusInPixels * 2;
       // check if this creates overlapping target areas in the case where there's multiple inputs.
       // If so reduce the targetting radius.
-      const inputCount = this.parentMolecule.inputs.filter(
-        (ap) => ap.type == "input"
-      ).length;
+      const inputCount = this.getInputCount();
 
+      const distFromParent = AttachmentPoint.getDistFromParent(inputCount);
       let hoverRadius = GlobalVariables.widthToPixels(
-        AttachmentPoint.DIST_FROM_PARENT * this.parentMolecule.radius -
+        distFromParent * this.parentMolecule.radius -
           this.scaledRadius * AttachmentPoint.TARGET_SCALEUP
       );
 

@@ -52,6 +52,7 @@ export default class Equation extends Atom {
     this.setValues(values);
     this.addAndRemoveInputs();
     this.setValues(values); //Set values again to load input values which were saved
+    this.name = this.currentEquation; // Set name to match the current equation for display
   }
 
   /**
@@ -236,6 +237,7 @@ export default class Equation extends Atom {
    */
   setEquation(newEquation) {
     this.currentEquation = String(newEquation).trim(); //convert to string first, then remove leading and trailing whitespace
+    this.name = this.currentEquation; // Update the displayed name to match the current equation
     this.addAndRemoveInputs();
   }
 

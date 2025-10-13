@@ -59,7 +59,8 @@ function useWindowSize() {
 function runMode() {
   // Get context values
   const { isloggedIn, authorizedUserOcto, authRedirectHandler } = useAuth();
-  const { activeAtom, redirectType, setRedirectType } = useAppState();
+  const { activeAtom, redirectType, setRedirectType, setActiveAtom } =
+    useAppState();
   const {
     mesh,
     wireMesh,
@@ -144,16 +145,15 @@ function runMode() {
 
     /** Only run loadproject() if the project is different from what is already loaded and clear screen */
     if (
-      GlobalVariables.currentAWSnode?.repoName ==
-      GlobalVariables.loadedRepo?.name
+      GlobalVariables.currentAWSnode &&
+      GlobalVariables.currentAWSnode.repoName ==
+        GlobalVariables.loadedRepo?.name
     ) {
       console.log("Same project, loading from memory");
-      GlobalVariables.writeToDisplay(
-        GlobalVariables.currentAWSnode.topMoleculeID,
-        true
-      );
+      GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
+      GlobalVariables.currentMolecule.selected = true;
+      setActiveAtom(GlobalVariables.currentMolecule);
     } else {
-      console.log("Project Changed, fetching from URL params");
       fetch(
         `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
       )

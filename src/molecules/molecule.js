@@ -687,7 +687,10 @@ export default class Molecule extends Atom {
             }
             bomList[bomElement.BOMitemName].numberNeeded +=
               bomElement.numberNeeded;
-            bomList[bomElement.BOMitemName].costUSD += bomElement.costUSD;
+            // Round to nearest penny to avoid floating-point precision errors
+            bomList[bomElement.BOMitemName].costUSD = Math.round(
+              (bomList[bomElement.BOMitemName].costUSD + bomElement.costUSD) * 100
+            ) / 100;
           }
         });
 
@@ -732,12 +735,14 @@ export default class Molecule extends Atom {
           "|" +
           item.numberNeeded +
           "|$" +
-          item.costUSD +
+          item.costUSD.toFixed(2) +
           "|" +
           convertLinks(item.source) +
           "|";
       });
     }
+    // Round total cost to nearest penny
+    totalCost = Math.round(totalCost * 100) / 100;
     bomContent =
       bomContent +
       "\n|" +
@@ -745,11 +750,10 @@ export default class Molecule extends Atom {
       "|" +
       totalParts +
       "|$" +
-      totalCost +
+      totalCost.toFixed(2) +
       "|" +
       " " +
       "|";
-    bomContent = bomContent + "\n\n 3xCOG MSRP: $" + (3 * totalCost).toFixed(2);
     return bomContent;
   }
 
