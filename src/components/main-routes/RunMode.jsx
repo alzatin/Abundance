@@ -59,7 +59,8 @@ function useWindowSize() {
 function runMode() {
   // Get context values
   const { isloggedIn, authorizedUserOcto, authRedirectHandler } = useAuth();
-  const { activeAtom, redirectType, setRedirectType } = useAppState();
+  const { activeAtom, redirectType, setRedirectType, setActiveAtom } =
+    useAppState();
   const {
     mesh,
     wireMesh,
@@ -148,10 +149,10 @@ function runMode() {
       GlobalVariables.currentAWSnode.repoName ==
         GlobalVariables.loadedRepo?.name
     ) {
-      GlobalVariables.writeToDisplay(
-        GlobalVariables.currentAWSnode.topMoleculeID,
-        true
-      );
+      console.log("Same project, loading from memory");
+      GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
+      GlobalVariables.currentMolecule.selected = true;
+      setActiveAtom(GlobalVariables.currentMolecule);
     } else {
       fetch(
         `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`

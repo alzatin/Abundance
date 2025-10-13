@@ -141,16 +141,10 @@ function AppContent() {
   }, [shortCutsOn]);
 
   useEffect(() => {
-    GlobalVariables.writeToDisplay = (id, resetView = false) => {
-      console.log(
-        "writeToDisplay called with id:",
-        id,
-        "resetView:",
-        resetView
-      );
+    GlobalVariables.writeToDisplay = (moleculeValue, resetView = false) => {
       setOutdatedMesh(true);
       if (resetView) {
-        console.log("Resetting view for id:", id);
+        console.log("Resetting view for value:", moleculeValue);
         cad
           .resetView()
           .then((m) => {
@@ -162,9 +156,9 @@ function AppContent() {
             console.error("reset view not working" + e);
           });
       } else {
-        console.log("Generating mesh for id:", id);
+        console.log("Generating mesh for value:", moleculeValue);
         cad
-          .generateDisplayMesh(id)
+          .generateDisplayMesh(moleculeValue)
           .then((m) => {
             setMesh(m);
             setOutdatedMesh(false);
@@ -175,7 +169,7 @@ function AppContent() {
           });
         /*Set wireMesh*/
         //Exception: Don't display the mesh if the thing we are displaying is already the output
-        if (GlobalVariables.currentMolecule.value != id) {
+        if (GlobalVariables.currentMolecule.value != moleculeValue) {
           cad
             .generateDisplayMesh(GlobalVariables.currentMolecule.value)
             .then((w) => {
