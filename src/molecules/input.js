@@ -325,7 +325,16 @@ export default class Input extends Atom {
      * @type {number}
      */
     this.height = radiusInPixels;
-    this.width = radiusInPixels * 2.5;
+    
+    // Calculate width based on text length with min and max constraints
+    // Set font first to measure text accurately
+    GlobalVariables.c.font = GlobalVariables.canvasFont;
+    const textWidth = GlobalVariables.c.measureText(this.name).width;
+    const padding = 15; // Left padding (5) + right padding (10) to give some breathing room
+    const minWidth = radiusInPixels * 2.5; // Minimum width based on original design
+    const maxWidth = radiusInPixels * 6; // Maximum width to prevent overly wide atoms
+    this.width = Math.max(minWidth, Math.min(maxWidth, textWidth + padding));
+    
     //Check if the name has been updated
     if (this.name != this.oldName) {
       this.updateParentName();
@@ -357,14 +366,16 @@ export default class Input extends Atom {
     GlobalVariables.c.fillStyle = Atom.DEFAULT_COLOR;
     GlobalVariables.c.closePath();
     GlobalVariables.c.stroke();
-    GlobalVariables.c.font = GlobalVariables.fontSize;
+    GlobalVariables.c.font = GlobalVariables.canvasFont;
     GlobalVariables.c.textAlign = "start";
     GlobalVariables.c.fillStyle = "black";
     GlobalVariables.c.width = 20;
     GlobalVariables.c.textOverflow = "ellipsis";
 
+    // Use the actual width minus padding for text overflow calculation
+    const maxTextWidth = this.width - 10; // Leave 5px on each side
     GlobalVariables.c.fillText(
-      this.fittingString(GlobalVariables.c, this.name, 50),
+      this.fittingString(GlobalVariables.c, this.name, maxTextWidth),
       5,
       yInPixels + 3
     );
