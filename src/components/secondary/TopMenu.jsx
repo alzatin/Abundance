@@ -1,9 +1,11 @@
 import React, { memo, useEffect, useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import ShareDialog from "./ShareDialog.jsx";
+import DuplicateProjectDialog from "./DuplicateProjectDialog.jsx";
+import DuplicateCompleteDialog from "./DuplicateCompleteDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import SettingsPopUp from "./SettingsPopUp.jsx";
-import { useAuth, useAppState, useRendering } from "../../contexts/index.js";
+import { useAuth, useAppState, useRendering, useProject } from "../../contexts/index.js";
 
 function TopMenu({
   savePopUp,
@@ -39,11 +41,64 @@ function TopMenu({
     showBackgroundModel,
     setShowBackgroundModel,
   } = useRendering();
+  const { duplicateProject, loadProject } = useProject();
 
   let [shareDialog, setShareDialog] = useState(false);
   let [dialogContent, setDialog] = useState("");
+  let [duplicateProgress, setDuplicateProgress] = useState(0);
+  let [duplicatingProject, setDuplicatingProject] = useState(false);
+  let [duplicateDialog, setDuplicateDialog] = useState(false);
+  let [duplicateCompleteDialog, setDuplicateCompleteDialog] = useState(false);
+  let [duplicatedProjectInfo, setDuplicatedProjectInfo] = useState(null);
 
   const navigate = useNavigate();
+
+  /**
+   * Handle the duplicate project action - show dialog first
+   */
+  const handleDuplicateProject = () => {
+    if (!authorizedUserOcto) {
+      window.alert("You must be authenticated to duplicate a project.");
+      return;
+    }
+
+    // Generate default name
+    const currentRepo = GlobalVariables.currentRepo;
+    if (!currentRepo) {
+      window.alert("No active project to duplicate.");
+      return;
+    }
+
+    // Show the dialog to get the name
+    setDuplicateDialog(true);
+  };
+
+  /**
+   * Execute the actual duplication with the user-provided name
+   */
+  const executeDuplication = async (customName) => {
+    setDuplicateDialog(false);
+    setDuplicatingProject(true);
+    setDuplicateProgress(0);
+
+    const newProject = await duplicateProject(
+      authorizedUserOcto,
+      setDuplicateProgress,
+      customName
+    );
+
+    if (newProject) {
+      // Show completion dialog
+      setTimeout(() => {
+        setDuplicatingProject(false);
+        setDuplicatedProjectInfo(newProject);
+        setDuplicateCompleteDialog(true);
+      }, 500);
+    } else {
+      setDuplicatingProject(false);
+    }
+  };
+
   // objects for navigation items in the top menu
   const navItems = [
     {
@@ -97,6 +152,10 @@ function TopMenu({
         setSavePopUp(true);
         saveProject(setSaveState, "User Save");
       },
+    },
+    {
+      id: "Duplicate Project",
+      buttonFunc: handleDuplicateProject,
     },
     {
       id: "Re-authenticate",
@@ -212,6 +271,24 @@ function TopMenu({
     );
   };
 
+  const DuplicateBar = ({ duplicateProgress, duplicatingProject }) => {
+    return (
+      <>
+        <div className="save-bar">
+          <div className="progress">
+            <div
+              className="progress-done"
+              data-done="70"
+              style={{ width: duplicateProgress + "%", opacity: "1" }}
+            >
+              {duplicateProgress !== 100 ? duplicateProgress + "%" : "Project Duplicated!"}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
+
   /*{nav bar toggle component}*/
   const Navbar = ({ currentMoleculeTop }) => {
     const [navbarOpen, setNavbarOpen] = useState(false);
@@ -291,6 +368,9 @@ function TopMenu({
       {savePopUp ? (
         <SaveBar {...{ saveState, savePopUp, setSavePopUp }} />
       ) : null}
+      {duplicatingProject ? (
+        <DuplicateBar {...{ duplicateProgress, duplicatingProject }} />
+      ) : null}
       {settingsPopUp ? (
         <SettingsPopUp
           {...{
@@ -321,6 +401,23 @@ function TopMenu({
       {shareDialog ? (
         <ShareDialog
           {...{ shareDialog, setShareDialog, dialogContent, activeAtom }}
+        />
+      ) : null}
+      {duplicateDialog ? (
+        <DuplicateProjectDialog
+          isOpen={duplicateDialog}
+          onClose={() => setDuplicateDialog(false)}
+          onConfirm={executeDuplication}
+          defaultName={GlobalVariables.currentRepo?.name + "-copy"}
+        />
+      ) : null}
+      {duplicateCompleteDialog && duplicatedProjectInfo ? (
+        <DuplicateCompleteDialog
+          isOpen={duplicateCompleteDialog}
+          onClose={() => setDuplicateCompleteDialog(false)}
+          newProjectName={duplicatedProjectInfo.repoName}
+          newProjectOwner={duplicatedProjectInfo.owner}
+          newProjectRepoName={duplicatedProjectInfo.repoName}
         />
       ) : null}
       {currentMoleculeTop ? <TopLevel /> : null}
