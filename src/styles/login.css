@@ -362,6 +362,33 @@
 .new-project-form input {
   width: 100%;
 }
+
+.validation-errors {
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px 0;
+  color: #856404;
+}
+
+.validation-errors strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #856404;
+}
+
+.validation-errors ul {
+  margin: 5px 0 0 20px;
+  padding: 0;
+  list-style-type: disc;
+}
+
+.validation-errors li {
+  margin: 3px 0;
+  font-size: 13px;
+}
+
 #project-info div {
   display: flex;
   flex-direction: row;

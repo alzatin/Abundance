@@ -60,6 +60,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
     // Create the repo
     let result;
+    let errors = [];
     try {
       result = await authorizedUserOcto.request("POST /user/repos", {
         name: name,
@@ -77,6 +78,13 @@ export function ProjectProvider({ children, cad, loadProject }) {
     setNewProjectBar(10);
     let currentRepoName = result.data.name;
     let currentUser = GlobalVariables.currentUser;
+    
+    // Check if the repo name was changed by GitHub
+    if (currentRepoName !== name) {
+      errors.push(
+        `Project name was changed from "${name}" to "${currentRepoName}" to comply with GitHub requirements.`
+      );
+    }
 
     var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
     jsonRepOfProject.filetypeVersion = 1;
@@ -213,11 +221,26 @@ export function ProjectProvider({ children, cad, loadProject }) {
     });
     setNewProjectBar(90);
 
-    await authorizedUserOcto.rest.repos.replaceAllTopics({
-      owner: currentUser,
-      repo: currentRepoName,
-      names: topics,
-    });
+    // Set topics with error handling
+    try {
+      await authorizedUserOcto.rest.repos.replaceAllTopics({
+        owner: currentUser,
+        repo: currentRepoName,
+        names: topics,
+      });
+    } catch (err) {
+      console.error("Error setting topics:", err);
+      errors.push(
+        "Some project tags could not be added. GitHub requires tags to be lowercase, contain only letters, numbers, and hyphens, and be 50 characters or less."
+      );
+    }
+
+    // Display any errors or warnings to the user
+    if (errors.length > 0) {
+      window.alert(
+        "Project created successfully!\n\nNote:\n" + errors.join("\n")
+      );
+    }
 
     // All done, return the AWS node
     console.log("Project created");
