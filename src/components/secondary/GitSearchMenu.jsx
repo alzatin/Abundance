@@ -302,6 +302,49 @@ export default function GitSearchMenu({
   };
 
   /**
+   * Get the icon path for a local atom based on its type
+   * @param {string} atomType - The type of the atom (e.g., "Circle", "Rectangle")
+   * @returns {string} Path to the icon image
+   */
+  function getLocalAtomIconPath(atomType) {
+    // Map atom types to their corresponding image files
+    const iconMap = {
+      Circle: "/imgs/circle.png",
+      Rectangle: "/imgs/rectangle.png",
+      RegularPolygon: "/imgs/RegularPolygon.png",
+      Text: "/imgs/text.png",
+      Assembly: "/imgs/Assembly.png",
+      Fusion: "/imgs/fusion.png",
+      Intersection: "/imgs/intersection.png",
+      Difference: "/imgs/difference.png",
+      ShrinkWrap: "/imgs/shrinkwrap.png",
+      Loft: "/imgs/loft.png",
+      Extrude: "/imgs/extrude.png",
+      Move: "/imgs/move.png",
+      Rotate: "/imgs/Rotate.png",
+      Constant: "/imgs/Constant.png",
+      Equation: "/imgs/Equation.png",
+      Input: "/imgs/Input.png",
+      Code: "/imgs/code.png",
+      Gcode: "/imgs/gcode.png",
+      Molecule: "/imgs/molecule.png",
+      GitHubMolecule: "/imgs/githubmolecule.png",
+      Import: "/imgs/Import_menu.svg",
+      Export: "/imgs/Export_menu.svg",
+      Tag: "/imgs/tag.png",
+      "Add-BOM-Tag": "/imgs/Bom.png",
+      Readme: "/imgs/readme.png",
+      Color: "/imgs/Color.png",
+      ExtractTag: "/imgs/extracttag.png",
+      CutLayout: "/imgs/cutlayout.png",
+      GeneticAlgorithm: "/imgs/genetic.svg",
+    };
+    
+    // Return the icon path or a default thumbnail
+    return iconMap[atomType] || "/imgs/defaultThumbnail.svg";
+  }
+
+  /**
    * Filters local atoms based on search term
    * @param {string} searchTerm - The search term to filter by
    * @returns {Array} Array of matching local atoms
@@ -323,6 +366,7 @@ export default function GitSearchMenu({
           atomType: atom.atomType,
           atomCategory: atom.atomCategory || "General",
           isLocal: true,
+          iconPath: getLocalAtomIconPath(atom.atomType),
         });
       }
     }
@@ -397,7 +441,14 @@ export default function GitSearchMenu({
           }}
         >
           <div className="GitInfoLeft">
-            <img src={panelItem.svgURL}></img>
+            <img 
+              src={panelItem.isLocal ? panelItem.iconPath : panelItem.svgURL}
+              onError={({ currentTarget }) => {
+                currentTarget.onerror = null; // prevents looping
+                currentTarget.src = "/imgs/defaultThumbnail.svg";
+              }}
+              alt={panelItem.isLocal ? panelItem.atomType : panelItem.repoName}
+            />
             <div style={{ display: "flex", alignItems: "center" }}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
