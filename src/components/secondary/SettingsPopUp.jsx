@@ -16,6 +16,9 @@ const SettingsPopUp = ({
   setWire,
   setSolid,
   backgroundUsdzFile,
+  saveProject,
+  setSaveState,
+  setSavePopUp,
 }) => {
   let repoTopics = [];
   if (Globalvariables.currentAWSnode.topics.length > 0) {
@@ -43,6 +46,12 @@ const SettingsPopUp = ({
       projectDescription: projectDescriptionRef.current.value,
     });
     Globalvariables.currentAWSnode.topics = projectTopic;
+    
+    // Trigger a save to persist the description and topics changes
+    // Use forceSave=true to bypass the "no changes" check since description/topics
+    // are not part of the molecule serialization
+    setSavePopUp(true);
+    saveProject(setSaveState, "Settings Save", true);
   };
   const [value, setValue] = React.useState(0);
 

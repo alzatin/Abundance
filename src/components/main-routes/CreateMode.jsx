@@ -747,14 +747,18 @@ function CreateMode() {
 
   /**
    * Saves project by making a commit to the Github repository.
+   * @param {Function} setSaveProgress - Function to update save progress
+   * @param {string} typeSave - Type of save operation
+   * @param {boolean} forceSave - If true, bypasses the "no changes" check
    */
-  const saveProject = async (setSaveProgress, typeSave) => {
+  const saveProject = async (setSaveProgress, typeSave, forceSave = false) => {
     try {
       //We only want to save if something has actually changed since the last save
       var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
 
-      //Don't save again if nothing has changed
+      //Don't save again if nothing has changed (unless forceSave is true)
       if (
+        !forceSave &&
         JSON.stringify(jsonRepOfProject) == JSON.stringify(lastSaveData.current)
       ) {
         return;
