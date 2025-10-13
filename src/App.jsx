@@ -307,7 +307,7 @@ function AppContent() {
           });
           return;
         }
-        alert("Can't load/find project " + e);
+        alert("Can't load/find project: " + (e.message || e));
         // Navigate back to projects page after error
         navigate("/");
         throw new Error("Can't load/find project " + e);

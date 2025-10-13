@@ -178,7 +178,7 @@ function runMode() {
         })
         .catch((e) => {
           console.error("Error fetching AWS project data:", e);
-          alert("Can't load/find project " + e);
+          alert("Can't load/find project: " + (e.message || e));
           navigate("/");
         });
     }
