@@ -355,7 +355,10 @@ export default class AttachmentPoint extends ObservableEntity {
 
     if (this.type == "output") {
       if (this.parentMolecule.atomType == "Input") {
-        return [GlobalVariables.atomSize * 4, this.parentMolecule.y];
+        // Position output at the right edge of the Input atom, accounting for dynamic width
+        const inputWidthInPixels = this.parentMolecule.width || GlobalVariables.widthToPixels(GlobalVariables.atomSize * 3.25);
+        const inputWidthFractional = GlobalVariables.pixelsToWidth(inputWidthInPixels);
+        return [this.parentMolecule.x + inputWidthFractional, this.parentMolecule.y];
       } else {
         // Outputs are always singular and always positioned partially overlapped by the right-most
         // pole of the parent molecule.
