@@ -124,30 +124,34 @@ export default class Input extends Atom {
     // Default spacing and starting position
     const defaultSpacing = GlobalVariables.atomSize * 5;
     const defaultStartY = GlobalVariables.atomSize * 10;
-    
+
     // Calculate available canvas height (in fractional units, where 1.0 = full height)
     // Reserve some space at the bottom for safety
     const maxY = 0.95;
-    
+
     // Calculate the height required with default spacing
     const requiredHeight = defaultStartY + (totalInputs - 1) * defaultSpacing;
-    
+
     // Adjust spacing if inputs would exceed canvas height
     let atomSpacing = defaultSpacing;
     let startY = defaultStartY;
-    
+
     if (requiredHeight > maxY) {
       // Calculate the maximum spacing that will fit all inputs
       const availableHeight = maxY - defaultStartY;
-      atomSpacing = totalInputs > 1 ? availableHeight / (totalInputs - 1) : defaultSpacing;
-      
+      atomSpacing =
+        totalInputs > 1 ? availableHeight / (totalInputs - 1) : defaultSpacing;
+
       // Ensure minimum spacing for usability (at least 1.5x atomSize)
       const minSpacing = GlobalVariables.atomSize * 1.5;
       if (atomSpacing < minSpacing) {
         atomSpacing = minSpacing;
         // Adjust start position to fit more inputs by starting higher
         const adjustedRequiredHeight = (totalInputs - 1) * atomSpacing;
-        startY = Math.max(GlobalVariables.atomSize * 2, maxY - adjustedRequiredHeight);
+        startY = Math.max(
+          GlobalVariables.atomSize * 2,
+          maxY - adjustedRequiredHeight
+        );
       }
     }
 
@@ -162,7 +166,7 @@ export default class Input extends Atom {
 
       // Position this Input below the lowest existing Input
       this.y = lowestInput.y + atomSpacing;
-      
+
       // Ensure we don't exceed the canvas height
       if (this.y > maxY) {
         this.y = maxY;
@@ -324,8 +328,20 @@ export default class Input extends Atom {
      * Relates height to radius
      * @type {number}
      */
-    this.height = radiusInPixels;
-    this.width = radiusInPixels * 2.5;
+    // Reduce height to be just enough for text with padding
+    // Extract font size from canvasFont (e.g., "12px Work Sans Bold" -> 12)
+    const fontSize = parseInt(GlobalVariables.canvasFont) || 12;
+    this.height = fontSize + 14; // Font size + padding (7px top + 7px bottom)
+
+    // Calculate width based on text length with min and max constraints
+    // Set font first to measure text accurately
+    GlobalVariables.c.font = GlobalVariables.canvasFont;
+    const textWidth = GlobalVariables.c.measureText(this.name).width;
+    const padding = 15; // Left padding (5) + right padding (10) to give some breathing room
+    const minWidth = radiusInPixels * 2.5; // Minimum width based on original design
+    const maxWidth = radiusInPixels * 3; // Maximum width to prevent overly wide atoms
+    this.width = Math.max(minWidth, Math.min(maxWidth, textWidth + padding));
+
     //Check if the name has been updated
     if (this.name != this.oldName) {
       this.updateParentName();
@@ -357,14 +373,16 @@ export default class Input extends Atom {
     GlobalVariables.c.fillStyle = Atom.DEFAULT_COLOR;
     GlobalVariables.c.closePath();
     GlobalVariables.c.stroke();
-    GlobalVariables.c.font = GlobalVariables.fontSize;
+    GlobalVariables.c.font = GlobalVariables.canvasFont;
     GlobalVariables.c.textAlign = "start";
     GlobalVariables.c.fillStyle = "black";
     GlobalVariables.c.width = 20;
     GlobalVariables.c.textOverflow = "ellipsis";
 
+    // Use the actual width minus padding for text overflow calculation
+    const maxTextWidth = this.width - 10; // Leave 5px on each side
     GlobalVariables.c.fillText(
-      this.fittingString(GlobalVariables.c, this.name, 50),
+      this.fittingString(GlobalVariables.c, this.name, maxTextWidth),
       5,
       yInPixels + 3
     );

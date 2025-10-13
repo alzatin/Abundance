@@ -34,9 +34,7 @@ export default class AttachmentPoint extends ObservableEntity {
    * @returns {number} The number of input attachment points
    */
   getInputCount() {
-    return this.parentMolecule.inputs.filter(
-      (ap) => ap.type == "input"
-    ).length;
+    return this.parentMolecule.inputs.filter((ap) => ap.type == "input").length;
   }
 
   // Constant dictates how much larger an AP becomes when it's activated for selection, ie, when clicking
@@ -291,7 +289,7 @@ export default class AttachmentPoint extends ObservableEntity {
     // Calculate input count for dynamic expansion radius
     const inputCount = this.getInputCount();
     const distFromParent = AttachmentPoint.getDistFromParent(inputCount);
-    
+
     let activationBoundary = distFromParent * this.parentMolecule.radius;
 
     let parentXInPixels = GlobalVariables.widthToPixels(this.parentMolecule.x);
@@ -355,7 +353,17 @@ export default class AttachmentPoint extends ObservableEntity {
 
     if (this.type == "output") {
       if (this.parentMolecule.atomType == "Input") {
-        return [GlobalVariables.atomSize * 4, this.parentMolecule.y];
+        // Position output at the right edge of the Input atom, accounting for dynamic width
+        const inputWidthInPixels =
+          this.parentMolecule.width ||
+          GlobalVariables.widthToPixels(GlobalVariables.atomSize * 3.25);
+        const inputWidthFractional = GlobalVariables.pixelsToWidth(
+          inputWidthInPixels * 0.75
+        );
+        return [
+          this.parentMolecule.x + inputWidthFractional,
+          this.parentMolecule.y,
+        ];
       } else {
         // Outputs are always singular and always positioned partially overlapped by the right-most
         // pole of the parent molecule.
@@ -522,12 +530,12 @@ export default class AttachmentPoint extends ObservableEntity {
     if (!outputAP.valueType || !inputAP.valueType) {
       return true;
     }
-    
+
     // Same types are always compatible
     if (outputAP.valueType === inputAP.valueType) {
       return true;
     }
-    
+
     // Special compatibility rules:
     // - geometry can connect to geometry
     // - number can connect to number
@@ -547,17 +555,17 @@ export default class AttachmentPoint extends ObservableEntity {
     if (!this.isCloseEnoughToTarget(x, y)) {
       return false;
     }
-    
+
     // If no existing connections, allow the connection
     if (this.connectors.length === 0) {
       return true;
     }
-    
+
     // If there are existing connections and no output AP provided, don't allow replacement
     if (!outputAP) {
       return false;
     }
-    
+
     // Check if the new connection type is compatible with this input
     return AttachmentPoint.areTypesCompatible(outputAP, this);
   }
