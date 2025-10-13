@@ -200,6 +200,7 @@ export default class Code extends Atom {
     this.code = code;
 
     this.parseInputs();
+    this._subscribeToInputs();
     this.onUpstreamChange();
     this.sendToRender();
   }
