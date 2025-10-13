@@ -105,10 +105,49 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
   const [newProjectBar, setNewProjectBar] = useState(0);
   const { createProject } = useProject();
 
+  /* Validate project name field */
+  const validateNameField = () => {
+    const projectName = projectRef.current.value.replace(/\//g, "");
+    const nameErrors = validateProjectName(projectName);
+    if (nameErrors.length > 0) {
+      setValidationErrors(nameErrors);
+    } else {
+      setValidationErrors([]);
+    }
+  };
+
+  /* Validate topic field */
+  const validateTopicField = () => {
+    const projectTopicArray = projectTopicRef.current.getValue();
+    const projectTopic = [];
+    projectTopicArray.forEach((topic) => {
+      projectTopic.push(topic[`value`]);
+    });
+    const topicValidation = validateTopics(projectTopic);
+    if (topicValidation.errors.length > 0) {
+      setValidationErrors(topicValidation.errors);
+    } else {
+      setValidationErrors([]);
+    }
+  };
+
+  /* Handle key press in form fields */
+  const handleKeyDown = (e, fieldType) => {
+    if (e.key === "Enter") {
+      e.preventDefault(); // Prevent form submission on Enter
+      
+      // Validate the specific field
+      if (fieldType === "name") {
+        validateNameField();
+      } else if (fieldType === "topic") {
+        validateTopicField();
+      }
+    }
+  };
+
   /* Handles form submission for create new/ export project form */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setValidationErrors([]);
     
     const projectName = projectRef.current.value.replace(/\//g, "");
     const projectTopicArray = projectTopicRef.current.getValue();
@@ -131,18 +170,16 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
     
     if (allErrors.length > 0) {
       setValidationErrors(allErrors);
-      // Show alert with all validation errors
-      const confirmed = window.confirm(
-        "The following issues were found with your input:\n\n" +
-        allErrors.join("\n") +
-        "\n\nDo you want to continue anyway? GitHub may modify your inputs to meet its requirements."
+      // Block submission and show error dialog
+      window.alert(
+        "Please fix the following issues before submitting:\n\n" +
+        allErrors.join("\n")
       );
-      
-      if (!confirmed) {
-        return;
-      }
+      return; // Do not proceed with submission
     }
     
+    // Clear any previous validation errors
+    setValidationErrors([]);
     setPending(true);
 
     if (GlobalVariables.currentMolecule) {
@@ -215,6 +252,7 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
               placeholder="Project Name"
               ref={projectRef}
               required
+              onKeyDown={(e) => handleKeyDown(e, "name")}
             />
             <label htmlFor="license-options">License</label>
             <select id="license-options" ref={projectLicenseRef}>
@@ -252,6 +290,7 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
               className="basic-multi-select"
               classNamePrefix="select"
               ref={projectTopicRef}
+              onKeyDown={(e) => handleKeyDown(e, "topic")}
             />
             <button className="submit-button" disabled={pending} type="submit">
               {pending ? newProjectBar + "%" : "Submit/Export to Github"}
