@@ -6,7 +6,7 @@ const ATOM_PREDICTIONS = {
   Fusion: ["Move", "Assembly", "Tag"],
   Loft: ["Extrude", "Move", "Tag"],
   ShrinkWrap: ["Move", "Fusion", "Tag"],
-  Readme: ["Tag", "Add-BOM-Tag", "Tag"],
+  Readme: [],
   "Add-BOM-Tag": ["Tag", "Readme", "Tag"],
   Color: ["Assembly", "Move", "Export"],
   Tag: ["Assembly", "Fusion", "Move"],
