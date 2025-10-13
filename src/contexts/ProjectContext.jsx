@@ -248,12 +248,224 @@ export function ProjectProvider({ children, cad, loadProject }) {
     return GlobalVariables.currentAWSnode;
   };
 
+  /**
+   * Duplicate the current project by creating a new repository with "-copy" suffix
+   * @param {object} authorizedUserOcto - Authenticated Octokit instance
+   * @param {function} setDuplicateProjectBar - Progress bar callback
+   * @returns {object} The new project AWS node or null on error
+   */
+  const duplicateProject = async (authorizedUserOcto, setDuplicateProjectBar) => {
+    try {
+      const currentRepo = GlobalVariables.currentRepo;
+      const currentUser = GlobalVariables.currentUser;
+      
+      if (!currentRepo || !currentUser) {
+        window.alert("Cannot duplicate project: No active project or user not authenticated.");
+        return null;
+      }
+
+      // Generate new project name with "-copy" suffix
+      let newRepoName = currentRepo.name + "-copy";
+      
+      // Check if name already exists and increment if needed
+      let nameExists = true;
+      let counter = 1;
+      while (nameExists) {
+        try {
+          await authorizedUserOcto.request("GET /repos/{owner}/{repo}", {
+            owner: currentUser,
+            repo: newRepoName,
+          });
+          // If we get here, repo exists, so try with a counter
+          newRepoName = currentRepo.name + "-copy-" + counter;
+          counter++;
+        } catch (err) {
+          // 404 means repo doesn't exist, so we can use this name
+          if (err.status === 404) {
+            nameExists = false;
+          } else {
+            throw err;
+          }
+        }
+      }
+
+      setDuplicateProjectBar(5);
+
+      // Create the new repository
+      let newRepo;
+      try {
+        newRepo = await authorizedUserOcto.request("POST /user/repos", {
+          name: newRepoName,
+          description: currentRepo.description || "",
+          headers: {
+            "X-GitHub-Api-Version": "2022-11-28",
+          },
+        });
+      } catch (err) {
+        window.alert(
+          "Error creating duplicate project. Please try again."
+        );
+        return null;
+      }
+
+      setDuplicateProjectBar(10);
+
+      // Get all files from the current repository
+      const filesToCopy = [
+        "project.abundance",
+        "BillOfMaterials.md",
+        "README.md",
+        "project.svg",
+        ".gitattributes",
+        "data.json",
+        "LICENSE.txt",
+      ];
+
+      let copiedFiles = 0;
+      const totalFiles = filesToCopy.length;
+
+      // Copy each file from the original repo to the new repo
+      for (const filePath of filesToCopy) {
+        try {
+          // Get file content from current repo
+          const fileResponse = await authorizedUserOcto.request(
+            "GET /repos/{owner}/{repo}/contents/{path}",
+            {
+              owner: currentRepo.owner.login,
+              repo: currentRepo.name,
+              path: filePath,
+            }
+          );
+
+          let fileContent;
+          if (!fileResponse.data.content || fileResponse.data.content.length === 0) {
+            // Handle large files using download_url
+            const contentResponse = await fetch(fileResponse.data.download_url);
+            const rawContent = await contentResponse.text();
+            fileContent = window.btoa(GlobalVariables.toBinaryStr(rawContent));
+          } else {
+            // Use the base64 content directly
+            fileContent = fileResponse.data.content.replace(/\n/g, '');
+          }
+
+          // Create file in new repo
+          await authorizedUserOcto.rest.repos.createOrUpdateFileContents({
+            owner: currentUser,
+            repo: newRepo.data.name,
+            path: filePath,
+            message: `Copy ${filePath} from ${currentRepo.name}`,
+            content: fileContent,
+          });
+
+          copiedFiles++;
+          const progress = 10 + Math.floor((copiedFiles / totalFiles) * 70);
+          setDuplicateProjectBar(progress);
+        } catch (err) {
+          console.error(`Error copying file ${filePath}:`, err);
+          // Continue with other files even if one fails
+        }
+      }
+
+      setDuplicateProjectBar(85);
+
+      // Copy topics if they exist
+      if (currentRepo.topics && currentRepo.topics.length > 0) {
+        try {
+          await authorizedUserOcto.rest.repos.replaceAllTopics({
+            owner: currentUser,
+            repo: newRepo.data.name,
+            names: currentRepo.topics,
+          });
+        } catch (err) {
+          console.error("Error copying topics:", err);
+        }
+      }
+
+      setDuplicateProjectBar(95);
+
+      // Create AWS node for the new project
+      const newProjectBody = {
+        owner: currentUser,
+        description: newRepo.data.description || "",
+        ranking: 0,
+        searchField: (
+          newRepo.data.name +
+          " " +
+          currentUser +
+          " " +
+          (newRepo.data.description || "")
+        ).toLowerCase(),
+        repoName: newRepo.data.name,
+        forks: 0,
+        topMoleculeID: GlobalVariables.topLevelMolecule?.uniqueID || "",
+        topics: currentRepo.topics || [],
+        html_url: newRepo.data.html_url,
+        parentRepo: null,
+        readme:
+          "https://raw.githubusercontent.com/" +
+          newRepo.data.full_name +
+          "/master/README.md?sanitize=true",
+        contentURL:
+          "https://raw.githubusercontent.com/" +
+          newRepo.data.full_name +
+          "/master/project.abundance?sanitize=true",
+        githubMoleculesUsed: [],
+        svgURL:
+          "https://raw.githubusercontent.com/" +
+          newRepo.data.full_name +
+          "/master/project.svg?sanitize=true",
+        dateCreated: newRepo.data.created_at,
+      };
+
+      // Post new project to AWS database
+      const apiUrl =
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
+      await fetch(apiUrl, {
+        method: "POST",
+        body: JSON.stringify(newProjectBody),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      });
+
+      // Update user table
+      const apiUpdateUserUrl =
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE";
+      await fetch(apiUpdateUserUrl, {
+        method: "POST",
+        body: JSON.stringify({
+          user: currentUser,
+          attributeUpdates: { numProjectsOwned: 1 },
+          updateType: "SET",
+        }),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      });
+
+      setDuplicateProjectBar(100);
+
+      window.alert(
+        `Project duplicated successfully!\n\nNew project: ${newRepo.data.name}\n\nYou will now be redirected to the new project.`
+      );
+
+      return newProjectBody;
+    } catch (err) {
+      console.error("Error duplicating project:", err);
+      window.alert(
+        "An error occurred while duplicating the project. Please try again."
+      );
+      return null;
+    }
+  };
+
   const value = {
     size,
     setSize,
     cad,
     loadProject,
     createProject,
+    duplicateProject,
   };
   return (
     <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>

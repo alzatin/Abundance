@@ -3,7 +3,7 @@ import GlobalVariables from "../../js/globalvariables.js";
 import ShareDialog from "./ShareDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import SettingsPopUp from "./SettingsPopUp.jsx";
-import { useAuth, useAppState, useRendering } from "../../contexts/index.js";
+import { useAuth, useAppState, useRendering, useProject } from "../../contexts/index.js";
 
 function TopMenu({
   savePopUp,
@@ -39,11 +39,45 @@ function TopMenu({
     showBackgroundModel,
     setShowBackgroundModel,
   } = useRendering();
+  const { duplicateProject, loadProject } = useProject();
 
   let [shareDialog, setShareDialog] = useState(false);
   let [dialogContent, setDialog] = useState("");
+  let [duplicateProgress, setDuplicateProgress] = useState(0);
+  let [duplicatingProject, setDuplicatingProject] = useState(false);
 
   const navigate = useNavigate();
+
+  /**
+   * Handle the duplicate project action
+   */
+  const handleDuplicateProject = async () => {
+    if (!authorizedUserOcto) {
+      window.alert("You must be authenticated to duplicate a project.");
+      return;
+    }
+
+    setDuplicatingProject(true);
+    setDuplicateProgress(0);
+
+    const newProject = await duplicateProject(
+      authorizedUserOcto,
+      setDuplicateProgress
+    );
+
+    if (newProject) {
+      // Navigate to the new project
+      setTimeout(() => {
+        setDuplicatingProject(false);
+        navigate(`/${newProject.owner}/${newProject.repoName}`);
+        // Reload the page to load the new project
+        window.location.reload();
+      }, 1000);
+    } else {
+      setDuplicatingProject(false);
+    }
+  };
+
   // objects for navigation items in the top menu
   const navItems = [
     {
@@ -97,6 +131,10 @@ function TopMenu({
         setSavePopUp(true);
         saveProject(setSaveState, "User Save");
       },
+    },
+    {
+      id: "Duplicate Project",
+      buttonFunc: handleDuplicateProject,
     },
     {
       id: "Re-authenticate",
@@ -212,6 +250,24 @@ function TopMenu({
     );
   };
 
+  const DuplicateBar = ({ duplicateProgress, duplicatingProject }) => {
+    return (
+      <>
+        <div className="save-bar">
+          <div className="progress">
+            <div
+              className="progress-done"
+              data-done="70"
+              style={{ width: duplicateProgress + "%", opacity: "1" }}
+            >
+              {duplicateProgress !== 100 ? duplicateProgress + "%" : "Project Duplicated!"}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
+
   /*{nav bar toggle component}*/
   const Navbar = ({ currentMoleculeTop }) => {
     const [navbarOpen, setNavbarOpen] = useState(false);
@@ -290,6 +346,9 @@ function TopMenu({
     <>
       {savePopUp ? (
         <SaveBar {...{ saveState, savePopUp, setSavePopUp }} />
+      ) : null}
+      {duplicatingProject ? (
+        <DuplicateBar {...{ duplicateProgress, duplicatingProject }} />
       ) : null}
       {settingsPopUp ? (
         <SettingsPopUp
