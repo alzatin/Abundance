@@ -120,7 +120,7 @@ export default function GitSearchMenu({
     if (isLoading || isError) {
       // Show local atoms even while loading GitHub results
       const items = [...localAtoms];
-      
+
       // Add loading or error indicator
       if (isLoading && debouncedSearchTerm) {
         items.push({
@@ -144,7 +144,7 @@ export default function GitSearchMenu({
           order: 1,
           itemRenderer: (item, idx) => {
             const isSelected = selectedIndex === idx;
-            
+
             // Render loading indicator
             if (item.isLoading) {
               return (
@@ -157,7 +157,7 @@ export default function GitSearchMenu({
                 </div>
               );
             }
-            
+
             // Render error indicator
             if (item.isError) {
               return (
@@ -170,7 +170,7 @@ export default function GitSearchMenu({
                 </div>
               );
             }
-            
+
             // Render local atom
             return (
               <div
@@ -202,16 +202,23 @@ export default function GitSearchMenu({
         ...sortedRepos.map((repo) => ({ ...repo, isLocal: false }))
       );
     }
-    
+
     // Show "no results found" message if search completed with no results
-    if (combinedResults.length === 0 && debouncedSearchTerm && !isLoading && !isError) {
+    if (
+      combinedResults.length === 0 &&
+      debouncedSearchTerm &&
+      !isLoading &&
+      !isError
+    ) {
       return {
         type: "list",
-        value: [{
-          id: "no-results-indicator",
-          isNoResults: true,
-          message: "No projects found",
-        }],
+        value: [
+          {
+            id: "no-results-indicator",
+            isNoResults: true,
+            message: "No projects found",
+          },
+        ],
         order: 1,
         itemRenderer: (item, idx) => {
           return (
@@ -226,7 +233,7 @@ export default function GitSearchMenu({
         },
       };
     }
-    
+
     if (combinedResults.length === 0) {
       return {};
     }
@@ -262,6 +269,11 @@ export default function GitSearchMenu({
               key={item.id}
               className={`local-atom ${isSelected ? "selected" : ""}`}
               title={`Local Atom - ${item.atomCategory}`}
+              style={{
+                borderLeft: "3px solid var(--abundance-color-brightPurple)",
+                backgroundColor: "rgba(124, 77, 255, 0.1)",
+                paddingLeft: "5px",
+              }}
             >
               {item.atomType}{" "}
               <span className="atom-category">({item.atomCategory})</span>
@@ -287,12 +299,12 @@ export default function GitSearchMenu({
 
   const handleItemClick = (e, item) => {
     e?.stopPropagation(); // Prevent event propagation
-    
+
     // Don't handle clicks on loading, error, or no results indicators
     if (item.isLoading || item.isError || item.isNoResults) {
       return;
     }
-    
+
     setIsHovering(false);
     if (item.isLocal) {
       placeLocalAtom(e, item.atomType);
