@@ -100,6 +100,7 @@ export default class Input extends Atom {
   /**
    * Positions Input atoms in a vertical stack on the left side of the canvas.
    * First input spawns at top left, subsequent inputs spawn below existing ones.
+   * Dynamically adjusts spacing to ensure all inputs fit within the canvas height.
    *
    * Note: The x position is also set in draw() to ensure Inputs remain locked
    * to the left side even if a user attempts to move them. Setting it here
@@ -117,12 +118,42 @@ export default class Input extends Atom {
       (atom) => atom.atomType === "Input" && atom !== this
     );
 
-    // Define spacing between atoms
-    const atomSpacing = GlobalVariables.atomSize * 5;
+    // Calculate total number of inputs including this one
+    const totalInputs = existingInputs.length + 1;
+
+    // Default spacing and starting position
+    const defaultSpacing = GlobalVariables.atomSize * 5;
+    const defaultStartY = GlobalVariables.atomSize * 10;
+    
+    // Calculate available canvas height (in fractional units, where 1.0 = full height)
+    // Reserve some space at the bottom for safety
+    const maxY = 0.95;
+    
+    // Calculate the height required with default spacing
+    const requiredHeight = defaultStartY + (totalInputs - 1) * defaultSpacing;
+    
+    // Adjust spacing if inputs would exceed canvas height
+    let atomSpacing = defaultSpacing;
+    let startY = defaultStartY;
+    
+    if (requiredHeight > maxY) {
+      // Calculate the maximum spacing that will fit all inputs
+      const availableHeight = maxY - defaultStartY;
+      atomSpacing = totalInputs > 1 ? availableHeight / (totalInputs - 1) : defaultSpacing;
+      
+      // Ensure minimum spacing for usability (at least 1.5x atomSize)
+      const minSpacing = GlobalVariables.atomSize * 1.5;
+      if (atomSpacing < minSpacing) {
+        atomSpacing = minSpacing;
+        // Adjust start position to fit more inputs by starting higher
+        const adjustedRequiredHeight = (totalInputs - 1) * atomSpacing;
+        startY = Math.max(GlobalVariables.atomSize * 2, maxY - adjustedRequiredHeight);
+      }
+    }
 
     if (existingInputs.length === 0) {
       // This is the first Input atom - position it at the top left
-      this.y = GlobalVariables.atomSize * 10; // Start a bit lower than the very top
+      this.y = startY;
     } else {
       // Find the Input with the lowest (highest y value) position
       const lowestInput = existingInputs.reduce((lowest, current) => {
@@ -131,6 +162,11 @@ export default class Input extends Atom {
 
       // Position this Input below the lowest existing Input
       this.y = lowestInput.y + atomSpacing;
+      
+      // Ensure we don't exceed the canvas height
+      if (this.y > maxY) {
+        this.y = maxY;
+      }
     }
   }
 
