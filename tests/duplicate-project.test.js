@@ -59,7 +59,7 @@ describe("Duplicate Project", () => {
   });
 
   it("should generate correct name with -copy suffix", async () => {
-    // Mock the request to check if repo exists (404 = doesn't exist)
+    // Mock the request to check if repo exists and create repo
     mockOctokit.request.mockImplementation((url, params) => {
       if (url === "GET /repos/{owner}/{repo}" && params.repo === "test-project-copy") {
         return Promise.reject({ status: 404 });
@@ -71,25 +71,6 @@ describe("Duplicate Project", () => {
             description: params.description,
             full_name: `testuser/${params.name}`,
             html_url: `https://github.com/testuser/${params.name}`,
-            created_at: "2024-01-01T00:00:00Z",
-          },
-        });
-      }
-      return Promise.reject(new Error("Unexpected request"));
-    });
-
-    // Mock file fetching
-    mockOctokit.request.mockImplementation((url, params) => {
-      if (url === "GET /repos/{owner}/{repo}") {
-        return Promise.reject({ status: 404 });
-      }
-      if (url === "POST /user/repos") {
-        return Promise.resolve({
-          data: {
-            name: "test-project-copy",
-            description: "Test project description",
-            full_name: "testuser/test-project-copy",
-            html_url: "https://github.com/testuser/test-project-copy",
             created_at: "2024-01-01T00:00:00Z",
           },
         });
