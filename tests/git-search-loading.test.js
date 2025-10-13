@@ -37,6 +37,16 @@ describe('GitSearchMenu Loading Indicator', () => {
       if (data?.repos) {
         combinedResults.push(...data.repos.map((repo) => ({ ...repo, isLocal: false })));
       }
+      
+      // Show "no results found" message if search completed with no results
+      if (combinedResults.length === 0 && debouncedSearchTerm && !isLoading && !isError) {
+        return [{
+          id: "no-results-indicator",
+          isNoResults: true,
+          message: "No projects found",
+        }];
+      }
+      
       return combinedResults;
     };
   });
@@ -85,8 +95,8 @@ describe('GitSearchMenu Loading Indicator', () => {
   
   it('should prevent clicking on loading indicator', () => {
     const handleItemClick = (item) => {
-      // Don't handle clicks on loading or error indicators
-      if (item.isLoading || item.isError) {
+      // Don't handle clicks on loading, error, or no results indicators
+      if (item.isLoading || item.isError || item.isNoResults) {
         return false;
       }
       return true;
@@ -94,11 +104,48 @@ describe('GitSearchMenu Loading Indicator', () => {
     
     const loadingItem = { id: 'loading-indicator', isLoading: true };
     const errorItem = { id: 'error-indicator', isError: true };
+    const noResultsItem = { id: 'no-results-indicator', isNoResults: true };
     const normalItem = { id: 'normal-item', repoName: 'test-repo' };
     
     expect(handleItemClick(loadingItem)).toBe(false);
     expect(handleItemClick(errorItem)).toBe(false);
+    expect(handleItemClick(noResultsItem)).toBe(false);
     expect(handleItemClick(normalItem)).toBe(true);
+  });
+  
+  it('should show "no results found" when search completes with no results', () => {
+    // Test with no local atoms and no GitHub results
+    const items = getGitListItems(false, false, 'nonexistent-search-term', [], null);
+    expect(items).toHaveLength(1);
+    expect(items[0].isNoResults).toBe(true);
+    expect(items[0].message).toBe("No projects found");
+    expect(items[0].id).toBe("no-results-indicator");
+  });
+  
+  it('should show "no results found" when GitHub returns empty repos array', () => {
+    // Test with empty repos array
+    const emptyData = { repos: [] };
+    const items = getGitListItems(false, false, 'test', [], emptyData);
+    expect(items).toHaveLength(1);
+    expect(items[0].isNoResults).toBe(true);
+    expect(items[0].message).toBe("No projects found");
+  });
+  
+  it('should NOT show "no results found" when search term is empty', () => {
+    // No results indicator should not appear for empty search
+    const items = getGitListItems(false, false, '', [], null);
+    expect(items).toHaveLength(0);
+  });
+  
+  it('should NOT show "no results found" when there are local atoms', () => {
+    // No results indicator should not appear if local atoms match
+    const localAtoms = [
+      { id: 'local-1', atomType: 'Circle', isLocal: true },
+    ];
+    const items = getGitListItems(false, false, 'circle', localAtoms, null);
+    expect(items).toHaveLength(1);
+    expect(items[0].isNoResults).toBeUndefined();
+    expect(items[0].atomType).toBe('Circle');
   });
   
   it('should return results when data is available and not loading', () => {

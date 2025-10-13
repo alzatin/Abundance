@@ -202,6 +202,31 @@ export default function GitSearchMenu({
         ...sortedRepos.map((repo) => ({ ...repo, isLocal: false }))
       );
     }
+    
+    // Show "no results found" message if search completed with no results
+    if (combinedResults.length === 0 && debouncedSearchTerm && !isLoading && !isError) {
+      return {
+        type: "list",
+        value: [{
+          id: "no-results-indicator",
+          isNoResults: true,
+          message: "No projects found",
+        }],
+        order: 1,
+        itemRenderer: (item, idx) => {
+          return (
+            <div
+              key={item.id}
+              className="loading-item"
+              title="No GitHub molecules found for this search"
+            >
+              {item.message}
+            </div>
+          );
+        },
+      };
+    }
+    
     if (combinedResults.length === 0) {
       return {};
     }
@@ -215,8 +240,8 @@ export default function GitSearchMenu({
         handleItemClick(null, item);
       },
       onItemMouseOver: (item) => {
-        // Don't show info panel for loading or error indicators
-        if (!item.isLoading && !item.isError) {
+        // Don't show info panel for loading, error, or no results indicators
+        if (!item.isLoading && !item.isError && !item.isNoResults) {
           handleMouseOver(item);
         }
       },
@@ -263,8 +288,8 @@ export default function GitSearchMenu({
   const handleItemClick = (e, item) => {
     e?.stopPropagation(); // Prevent event propagation
     
-    // Don't handle clicks on loading or error indicators
-    if (item.isLoading || item.isError) {
+    // Don't handle clicks on loading, error, or no results indicators
+    if (item.isLoading || item.isError || item.isNoResults) {
       return;
     }
     
