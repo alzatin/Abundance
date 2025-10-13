@@ -56,6 +56,7 @@ function AppContent() {
     renderProgress,
     setRenderProgress,
     setRenderBarVisible,
+    setTopLevelWireMesh,
   } = useRendering();
 
   const {
@@ -202,11 +203,29 @@ function AppContent() {
               createPuppeteerDiv();
             });
         }
+
+        // Generate top-level molecule wireframe if we're inside a nested molecule
+        if (
+          GlobalVariables.topLevelMolecule &&
+          GlobalVariables.currentMolecule !== GlobalVariables.topLevelMolecule
+        ) {
+          cad
+            .generateDisplayMesh(GlobalVariables.topLevelMolecule.value)
+            .then((topMesh) => {
+              setTopLevelWireMesh(topMesh);
+            })
+            .catch((e) => {
+              console.error("Can't compute top-level wireframe: " + e);
+            });
+        } else {
+          // Clear top-level wireframe when at top level
+          setTopLevelWireMesh(null);
+        }
       }
     };
 
     GlobalVariables.cad = cad;
-  }, [activeAtom, setMesh, setWireMesh, setOutdatedMesh, setRenderProgress]);
+  }, [activeAtom, setMesh, setWireMesh, setOutdatedMesh, setRenderProgress, setTopLevelWireMesh]);
 
   /**
    * Load a project from the repository

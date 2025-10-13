@@ -28,6 +28,10 @@ export function RenderingProvider({ children }) {
   const [showBackgroundModel, setShowBackgroundModel] = useState(false);
   const [userUploadedFile, setUserUploadedFile] = useState(false);
 
+  // Top-level molecule wireframe state
+  const [showTopLevelWireframe, setShowTopLevelWireframe] = useState(false);
+  const [topLevelWireMesh, setTopLevelWireMesh] = useState(null);
+
   const value = {
     // Mesh state
     mesh,
@@ -62,6 +66,12 @@ export function RenderingProvider({ children }) {
     setShowBackgroundModel,
     userUploadedFile,
     setUserUploadedFile,
+
+    // Top-level molecule wireframe
+    showTopLevelWireframe,
+    setShowTopLevelWireframe,
+    topLevelWireMesh,
+    setTopLevelWireMesh,
   };
 
   return (
