@@ -79,6 +79,8 @@ function runMode() {
   } = useRendering();
   const { loadProject } = useProject();
 
+  const navigate = useNavigate();
+
   const { next, isActive } = useTutorial();
 
   // canvas to hide
@@ -176,6 +178,8 @@ function runMode() {
         })
         .catch((e) => {
           console.error("Error fetching AWS project data:", e);
+          alert("Can't load/find project " + e);
+          navigate("/");
         });
     }
 
