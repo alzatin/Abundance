@@ -331,7 +331,7 @@ export default class Input extends Atom {
     // Reduce height to be just enough for text with padding
     // Extract font size from canvasFont (e.g., "12px Work Sans Bold" -> 12)
     const fontSize = parseInt(GlobalVariables.canvasFont) || 12;
-    this.height = fontSize + 8; // Font size + padding (4px top + 4px bottom)
+    this.height = fontSize + 14; // Font size + padding (7px top + 7px bottom)
 
     // Calculate width based on text length with min and max constraints
     // Set font first to measure text accurately
