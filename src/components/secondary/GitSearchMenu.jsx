@@ -119,14 +119,59 @@ export default function GitSearchMenu({
 
     if (isLoading || isError) {
       // Show local atoms even while loading GitHub results
-      if (localAtoms.length > 0) {
+      const items = [...localAtoms];
+      
+      // Add loading or error indicator
+      if (isLoading && debouncedSearchTerm) {
+        items.push({
+          id: "loading-indicator",
+          isLoading: true,
+          message: "Searching GitHub molecules...",
+        });
+      } else if (isError && debouncedSearchTerm) {
+        items.push({
+          id: "error-indicator",
+          isError: true,
+          message: "Error loading GitHub results",
+        });
+      }
+
+      if (items.length > 0) {
         return {
           type: "list",
-          value: [...localAtoms],
-          label: "Local Results",
+          value: items,
+          label: localAtoms.length > 0 ? "Local Results" : "",
           order: 1,
           itemRenderer: (item, idx) => {
             const isSelected = selectedIndex === idx;
+            
+            // Render loading indicator
+            if (item.isLoading) {
+              return (
+                <div
+                  key={item.id}
+                  className="loading-item"
+                  title="Searching for GitHub molecules"
+                >
+                  {item.message}
+                </div>
+              );
+            }
+            
+            // Render error indicator
+            if (item.isError) {
+              return (
+                <div
+                  key={item.id}
+                  className="error-item"
+                  title="Failed to load GitHub results"
+                >
+                  {item.message}
+                </div>
+              );
+            }
+            
+            // Render local atom
             return (
               <div
                 key={item.id}
@@ -157,6 +202,31 @@ export default function GitSearchMenu({
         ...sortedRepos.map((repo) => ({ ...repo, isLocal: false }))
       );
     }
+    
+    // Show "no results found" message if search completed with no results
+    if (combinedResults.length === 0 && debouncedSearchTerm && !isLoading && !isError) {
+      return {
+        type: "list",
+        value: [{
+          id: "no-results-indicator",
+          isNoResults: true,
+          message: "No projects found",
+        }],
+        order: 1,
+        itemRenderer: (item, idx) => {
+          return (
+            <div
+              key={item.id}
+              className="loading-item"
+              title="No GitHub molecules found for this search"
+            >
+              {item.message}
+            </div>
+          );
+        },
+      };
+    }
+    
     if (combinedResults.length === 0) {
       return {};
     }
@@ -170,7 +240,10 @@ export default function GitSearchMenu({
         handleItemClick(null, item);
       },
       onItemMouseOver: (item) => {
-        handleMouseOver(item);
+        // Don't show info panel for loading, error, or no results indicators
+        if (!item.isLoading && !item.isError && !item.isNoResults) {
+          handleMouseOver(item);
+        }
       },
       onItemMouseOut: () => {
         handleMouseOut();
@@ -214,6 +287,12 @@ export default function GitSearchMenu({
 
   const handleItemClick = (e, item) => {
     e?.stopPropagation(); // Prevent event propagation
+    
+    // Don't handle clicks on loading, error, or no results indicators
+    if (item.isLoading || item.isError || item.isNoResults) {
+      return;
+    }
+    
     setIsHovering(false);
     if (item.isLocal) {
       placeLocalAtom(e, item.atomType);
