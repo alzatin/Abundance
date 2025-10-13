@@ -5,6 +5,7 @@ import {
   // BrowserRouter as Router,
   Routes,
   Route,
+  useNavigate,
 } from "react-router-dom";
 
 import { wrap } from "comlink";
@@ -69,6 +70,8 @@ function AppContent() {
 
   const { activeAtom, setActiveAtom, shortCutsOn, setRedirectType } =
     useAppState();
+
+  const navigate = useNavigate();
 
   const [size, setSize] = useState(5);
 
@@ -305,6 +308,8 @@ function AppContent() {
           return;
         }
         alert("Can't load/find project " + e);
+        // Navigate back to projects page after error
+        navigate("/");
         throw new Error("Can't load/find project " + e);
       });
   };
