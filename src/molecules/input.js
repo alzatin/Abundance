@@ -73,7 +73,7 @@ export default class Input extends Atom {
 
     // Set values first to ensure this.name is correct before creating the parent input
     this.setValues(values);
-    
+
     // Apply Y-offset to prevent overlapping with existing Input atoms
     this.adjustYForCollision();
 
@@ -100,35 +100,35 @@ export default class Input extends Atom {
   /**
    * Positions Input atoms in a vertical stack on the left side of the canvas.
    * First input spawns at top left, subsequent inputs spawn below existing ones.
-   * 
+   *
    * Note: The x position is also set in draw() to ensure Inputs remain locked
    * to the left side even if a user attempts to move them. Setting it here
    * ensures correct initial positioning during construction.
    */
   adjustYForCollision() {
     if (!this.parent || !this.parent.nodesOnTheScreen) return;
-    
+
     // Always position Input atoms on the left side of the canvas
     // This is also enforced in draw() to prevent horizontal movement
     this.x = GlobalVariables.atomSize * 1.65;
-    
+
     // Find all existing Input atoms in the parent molecule (excluding this one)
     const existingInputs = this.parent.nodesOnTheScreen.filter(
-      atom => atom.atomType === 'Input' && atom !== this
+      (atom) => atom.atomType === "Input" && atom !== this
     );
-    
+
     // Define spacing between atoms
-    const atomSpacing = GlobalVariables.atomSize * 2;
-    
+    const atomSpacing = GlobalVariables.atomSize * 5;
+
     if (existingInputs.length === 0) {
       // This is the first Input atom - position it at the top left
-      this.y = GlobalVariables.atomSize * 2;
+      this.y = GlobalVariables.atomSize * 10; // Start a bit lower than the very top
     } else {
       // Find the Input with the lowest (highest y value) position
       const lowestInput = existingInputs.reduce((lowest, current) => {
         return current.y > lowest.y ? current : lowest;
       });
-      
+
       // Position this Input below the lowest existing Input
       this.y = lowestInput.y + atomSpacing;
     }
@@ -181,7 +181,7 @@ export default class Input extends Atom {
     if (this.parentAP) {
       const parentState = this.parentAP.getState();
       this.setStatus(parentState.status, parentState.value);
-      
+
       // Update our internal value if status is READY
       if (parentState.status === Status.READY) {
         this.value = parentState.value;
@@ -197,10 +197,12 @@ export default class Input extends Atom {
 
     // Notify parent molecule of input value change if value actually changed
     // and the status is READY (successful state change)
-    if (this.status === Status.READY && 
-        this.value !== previousValue && 
-        this.parent && 
-        typeof this.parent.propagateInputChange === 'function') {
+    if (
+      this.status === Status.READY &&
+      this.value !== previousValue &&
+      this.parent &&
+      typeof this.parent.propagateInputChange === "function"
+    ) {
       this.parent.propagateInputChange(this.name);
     }
   }
@@ -211,12 +213,14 @@ export default class Input extends Atom {
   setReady(value) {
     const previousValue = this.value;
     super.setReady(value);
-    
+
     // Update internal value and trigger propagation if changed
     this.value = value;
-    if (this.value !== previousValue && 
-        this.parent && 
-        typeof this.parent.propagateInputChange === 'function') {
+    if (
+      this.value !== previousValue &&
+      this.parent &&
+      typeof this.parent.propagateInputChange === "function"
+    ) {
       this.parent.propagateInputChange(this.name);
     }
   }
