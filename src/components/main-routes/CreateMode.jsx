@@ -83,6 +83,12 @@ function CreateMode() {
     settingsPopUpRef.current = settingsPopUp;
   }, [settingsPopUp]);
 
+  // Ref to always have latest exportPopUp value in event handlers
+  const exportPopUpRef = useRef(exportPopUp);
+  useEffect(() => {
+    exportPopUpRef.current = exportPopUp;
+  }, [exportPopUp]);
+
   /** State for top level molecule */
   const [currentMoleculeTop, setTop] = useState(false);
 
@@ -199,6 +205,7 @@ function CreateMode() {
       return;
     // Use ref to always get latest value
     if (settingsPopUpRef.current) return; // Do not trigger shortcuts if settings popup is open
+    if (exportPopUpRef.current) return; // Do not trigger shortcuts if export popup is open
     if (
       (e.key === "Alt" || e.key === "AltGraph") &&
       !GlobalVariables.ctrlDown
