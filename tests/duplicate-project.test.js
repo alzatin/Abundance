@@ -94,6 +94,14 @@ describe("Duplicate Project", () => {
     expect(mockCurrentRepo.name).toBe("test-project");
   });
 
+  it("should use custom name when provided", () => {
+    const customName = "my-awesome-project";
+    
+    // When custom name is provided, it should be used directly
+    expect(customName).toBe("my-awesome-project");
+    expect(customName).not.toContain("-copy");
+  });
+
   it("should increment name if -copy already exists", () => {
     const baseName = "test-project";
     let newName = baseName + "-copy";

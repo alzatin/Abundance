@@ -1,6 +1,8 @@
 import React, { memo, useEffect, useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import ShareDialog from "./ShareDialog.jsx";
+import DuplicateProjectDialog from "./DuplicateProjectDialog.jsx";
+import DuplicateCompleteDialog from "./DuplicateCompleteDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import SettingsPopUp from "./SettingsPopUp.jsx";
 import { useAuth, useAppState, useRendering, useProject } from "../../contexts/index.js";
@@ -45,34 +47,53 @@ function TopMenu({
   let [dialogContent, setDialog] = useState("");
   let [duplicateProgress, setDuplicateProgress] = useState(0);
   let [duplicatingProject, setDuplicatingProject] = useState(false);
+  let [duplicateDialog, setDuplicateDialog] = useState(false);
+  let [duplicateCompleteDialog, setDuplicateCompleteDialog] = useState(false);
+  let [duplicatedProjectInfo, setDuplicatedProjectInfo] = useState(null);
 
   const navigate = useNavigate();
 
   /**
-   * Handle the duplicate project action
+   * Handle the duplicate project action - show dialog first
    */
-  const handleDuplicateProject = async () => {
+  const handleDuplicateProject = () => {
     if (!authorizedUserOcto) {
       window.alert("You must be authenticated to duplicate a project.");
       return;
     }
 
+    // Generate default name
+    const currentRepo = GlobalVariables.currentRepo;
+    if (!currentRepo) {
+      window.alert("No active project to duplicate.");
+      return;
+    }
+
+    // Show the dialog to get the name
+    setDuplicateDialog(true);
+  };
+
+  /**
+   * Execute the actual duplication with the user-provided name
+   */
+  const executeDuplication = async (customName) => {
+    setDuplicateDialog(false);
     setDuplicatingProject(true);
     setDuplicateProgress(0);
 
     const newProject = await duplicateProject(
       authorizedUserOcto,
-      setDuplicateProgress
+      setDuplicateProgress,
+      customName
     );
 
     if (newProject) {
-      // Navigate to the new project
+      // Show completion dialog
       setTimeout(() => {
         setDuplicatingProject(false);
-        navigate(`/${newProject.owner}/${newProject.repoName}`);
-        // Reload the page to load the new project
-        window.location.reload();
-      }, 1000);
+        setDuplicatedProjectInfo(newProject);
+        setDuplicateCompleteDialog(true);
+      }, 500);
     } else {
       setDuplicatingProject(false);
     }
@@ -380,6 +401,23 @@ function TopMenu({
       {shareDialog ? (
         <ShareDialog
           {...{ shareDialog, setShareDialog, dialogContent, activeAtom }}
+        />
+      ) : null}
+      {duplicateDialog ? (
+        <DuplicateProjectDialog
+          isOpen={duplicateDialog}
+          onClose={() => setDuplicateDialog(false)}
+          onConfirm={executeDuplication}
+          defaultName={GlobalVariables.currentRepo?.name + "-copy"}
+        />
+      ) : null}
+      {duplicateCompleteDialog && duplicatedProjectInfo ? (
+        <DuplicateCompleteDialog
+          isOpen={duplicateCompleteDialog}
+          onClose={() => setDuplicateCompleteDialog(false)}
+          newProjectName={duplicatedProjectInfo.repoName}
+          newProjectOwner={duplicatedProjectInfo.owner}
+          newProjectRepoName={duplicatedProjectInfo.repoName}
         />
       ) : null}
       {currentMoleculeTop ? <TopLevel /> : null}

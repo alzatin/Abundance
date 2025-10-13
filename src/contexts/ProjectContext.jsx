@@ -249,12 +249,13 @@ export function ProjectProvider({ children, cad, loadProject }) {
   };
 
   /**
-   * Duplicate the current project by creating a new repository with "-copy" suffix
+   * Duplicate the current project by creating a new repository
    * @param {object} authorizedUserOcto - Authenticated Octokit instance
    * @param {function} setDuplicateProjectBar - Progress bar callback
+   * @param {string} customName - Custom name for the duplicated project (optional)
    * @returns {object} The new project AWS node or null on error
    */
-  const duplicateProject = async (authorizedUserOcto, setDuplicateProjectBar) => {
+  const duplicateProject = async (authorizedUserOcto, setDuplicateProjectBar, customName = null) => {
     try {
       const currentRepo = GlobalVariables.currentRepo;
       const currentUser = GlobalVariables.currentUser;
@@ -264,27 +265,29 @@ export function ProjectProvider({ children, cad, loadProject }) {
         return null;
       }
 
-      // Generate new project name with "-copy" suffix
-      let newRepoName = currentRepo.name + "-copy";
+      // Use custom name or generate new project name with "-copy" suffix
+      let newRepoName = customName || (currentRepo.name + "-copy");
       
-      // Check if name already exists and increment if needed
-      let nameExists = true;
-      let counter = 1;
-      while (nameExists) {
-        try {
-          await authorizedUserOcto.request("GET /repos/{owner}/{repo}", {
-            owner: currentUser,
-            repo: newRepoName,
-          });
-          // If we get here, repo exists, so try with a counter
-          newRepoName = currentRepo.name + "-copy-" + counter;
-          counter++;
-        } catch (err) {
-          // 404 means repo doesn't exist, so we can use this name
-          if (err.status === 404) {
-            nameExists = false;
-          } else {
-            throw err;
+      // Check if name already exists and increment if needed (only if using default name)
+      if (!customName) {
+        let nameExists = true;
+        let counter = 1;
+        while (nameExists) {
+          try {
+            await authorizedUserOcto.request("GET /repos/{owner}/{repo}", {
+              owner: currentUser,
+              repo: newRepoName,
+            });
+            // If we get here, repo exists, so try with a counter
+            newRepoName = currentRepo.name + "-copy-" + counter;
+            counter++;
+          } catch (err) {
+            // 404 means repo doesn't exist, so we can use this name
+            if (err.status === 404) {
+              nameExists = false;
+            } else {
+              throw err;
+            }
           }
         }
       }
@@ -444,10 +447,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
       });
 
       setDuplicateProjectBar(100);
-
-      window.alert(
-        `Project duplicated successfully!\n\nNew project: ${newRepo.data.name}\n\nYou will now be redirected to the new project.`
-      );
 
       return newProjectBody;
     } catch (err) {
