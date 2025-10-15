@@ -18,10 +18,8 @@ describe("Duplicate Dialog Keydown Priority", () => {
     const duplicateDialogRef = { current: false };
     
     // Simulate handleKeyDown function from CreateMode.jsx
+    // (simplified version focusing on the dialog checks)
     const handleKeyDown = (e) => {
-      // Prevent forwarding if code atom is active
-      // (skipping this check for simplicity in test)
-      
       // Check if any popup is open
       if (settingsPopUpRef.current) return;
       if (exportPopUpRef.current) return;
