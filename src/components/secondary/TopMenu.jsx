@@ -3,6 +3,7 @@ import GlobalVariables from "../../js/globalvariables.js";
 import ShareDialog from "./ShareDialog.jsx";
 import DuplicateProjectDialog from "./DuplicateProjectDialog.jsx";
 import DuplicateCompleteDialog from "./DuplicateCompleteDialog.jsx";
+import RenameProjectDialog from "./RenameProjectDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import SettingsPopUp from "./SettingsPopUp.jsx";
 import { useAuth, useAppState, useRendering, useProject } from "../../contexts/index.js";
@@ -41,7 +42,7 @@ function TopMenu({
     showBackgroundModel,
     setShowBackgroundModel,
   } = useRendering();
-  const { duplicateProject, loadProject } = useProject();
+  const { duplicateProject, renameProject, loadProject } = useProject();
 
   let [shareDialog, setShareDialog] = useState(false);
   let [dialogContent, setDialog] = useState("");
@@ -50,6 +51,9 @@ function TopMenu({
   let [duplicateDialog, setDuplicateDialog] = useState(false);
   let [duplicateCompleteDialog, setDuplicateCompleteDialog] = useState(false);
   let [duplicatedProjectInfo, setDuplicatedProjectInfo] = useState(null);
+  let [renameDialog, setRenameDialog] = useState(false);
+  let [renamingProject, setRenamingProject] = useState(false);
+  let [renameProgress, setRenameProgress] = useState(0);
 
   const navigate = useNavigate();
 
@@ -96,6 +100,58 @@ function TopMenu({
       }, 500);
     } else {
       setDuplicatingProject(false);
+    }
+  };
+
+  /**
+   * Handle the rename project action - show dialog first
+   */
+  const handleRenameProject = () => {
+    if (!authorizedUserOcto) {
+      window.alert("You must be authenticated to rename a project.");
+      return;
+    }
+
+    const currentRepo = GlobalVariables.currentRepo;
+    if (!currentRepo) {
+      window.alert("No active project to rename.");
+      return;
+    }
+
+    // Check if user owns the project
+    if (currentRepo.owner.login !== GlobalVariables.currentUser) {
+      window.alert("You can only rename projects that you own.");
+      return;
+    }
+
+    // Show the dialog to get the new name
+    setRenameDialog(true);
+  };
+
+  /**
+   * Execute the actual rename with the user-provided name
+   */
+  const executeRename = async (newName) => {
+    setRenameDialog(false);
+    setRenamingProject(true);
+    setRenameProgress(0);
+
+    const updatedProject = await renameProject(
+      authorizedUserOcto,
+      newName,
+      setRenameProgress
+    );
+
+    setRenamingProject(false);
+
+    if (updatedProject) {
+      // Navigate to the new URL
+      window.alert(`Project successfully renamed to "${newName}"`);
+      navigate(`/${updatedProject.owner}/${newName}`);
+      // Reload the project with the new name
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     }
   };
 
@@ -289,6 +345,24 @@ function TopMenu({
     );
   };
 
+  const RenameBar = ({ renameProgress, renamingProject }) => {
+    return (
+      <>
+        <div className="save-bar">
+          <div className="progress">
+            <div
+              className="progress-done"
+              data-done="70"
+              style={{ width: renameProgress + "%", opacity: "1" }}
+            >
+              {renameProgress !== 100 ? renameProgress + "%" : "Project Renamed!"}
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
+
   /*{nav bar toggle component}*/
   const Navbar = ({ currentMoleculeTop }) => {
     const [navbarOpen, setNavbarOpen] = useState(false);
@@ -371,6 +445,9 @@ function TopMenu({
       {duplicatingProject ? (
         <DuplicateBar {...{ duplicateProgress, duplicatingProject }} />
       ) : null}
+      {renamingProject ? (
+        <RenameBar {...{ renameProgress, renamingProject }} />
+      ) : null}
       {settingsPopUp ? (
         <SettingsPopUp
           {...{
@@ -395,6 +472,7 @@ function TopMenu({
             saveProject,
             setSaveState,
             setSavePopUp,
+            handleRenameProject,
           }}
         />
       ) : null}
@@ -409,6 +487,14 @@ function TopMenu({
           onClose={() => setDuplicateDialog(false)}
           onConfirm={executeDuplication}
           defaultName={GlobalVariables.currentRepo?.name + "-copy"}
+        />
+      ) : null}
+      {renameDialog ? (
+        <RenameProjectDialog
+          isOpen={renameDialog}
+          onClose={() => setRenameDialog(false)}
+          onConfirm={executeRename}
+          currentName={GlobalVariables.currentRepo?.name}
         />
       ) : null}
       {duplicateCompleteDialog && duplicatedProjectInfo ? (

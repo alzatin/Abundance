@@ -13,6 +13,7 @@ import { useTutorial } from "../../tutorial/TutorialManager";
 import { useProject } from "../../contexts/index.js";
 import { licenses } from "../../js/licenseOptions.js";
 import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
+import RenameProjectDialog from "../secondary/RenameProjectDialog.jsx";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -304,13 +305,20 @@ const FeaturedHighlight = ({ highestRankingNode, highestRankingToolNode }) => (
   </div>
 );
 
-const ProjectDiv = ({ nodes, browseType, orderType }) => {
+const ProjectDiv = ({ nodes, browseType, orderType, authorizedUserOcto }) => {
+  const { renameProject } = useProject();
+  const navigate = useNavigate();
+  
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
     y: 0,
     node: null,
   });
+  const [renameDialog, setRenameDialog] = useState(false);
+  const [renamingProject, setRenamingProject] = useState(false);
+  const [renameProgress, setRenameProgress] = useState(0);
+  const [projectToRename, setProjectToRename] = useState(null);
 
   // Handler for right-click on a project
   const handleProjectRightClick = (event, node) => {
@@ -331,8 +339,38 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
       window.open(repoUrl, "_blank");
     } else if (action === "delete") {
       window.open(`${repoUrl}/settings?tab=delete`, "_blank");
+    } else if (action === "rename") {
+      // Set up for rename
+      GlobalVariables.currentAWSnode = contextMenu.node;
+      GlobalVariables.currentRepo = {
+        name: contextMenu.node.repoName,
+        owner: { login: contextMenu.node.owner },
+      };
+      setProjectToRename(contextMenu.node);
+      setRenameDialog(true);
     }
     handleCloseContextMenu();
+  };
+
+  // Execute the rename
+  const executeRename = async (newName) => {
+    setRenameDialog(false);
+    setRenamingProject(true);
+    setRenameProgress(0);
+
+    const updatedProject = await renameProject(
+      authorizedUserOcto,
+      newName,
+      setRenameProgress
+    );
+
+    setRenamingProject(false);
+
+    if (updatedProject) {
+      window.alert(`Project successfully renamed to "${newName}"`);
+      // Reload the page to show updated projects
+      window.location.reload();
+    }
   };
 
   const ThumbItem = ({ node }) => {
@@ -564,13 +602,44 @@ const ProjectDiv = ({ nodes, browseType, orderType }) => {
             </button>
             {contextMenu.node &&
               contextMenu.node.owner === GlobalVariables.currentUser && (
-                <button
-                  className="context-menu-btn"
-                  onClick={() => handleMenuAction("delete")}
-                >
-                  Delete
-                </button>
+                <>
+                  <button
+                    className="context-menu-btn"
+                    onClick={() => handleMenuAction("rename")}
+                  >
+                    Rename
+                  </button>
+                  <button
+                    className="context-menu-btn"
+                    onClick={() => handleMenuAction("delete")}
+                  >
+                    Delete
+                  </button>
+                </>
               )}
+          </div>
+        </div>
+      )}
+      {/* Rename dialog */}
+      {renameDialog && projectToRename && (
+        <RenameProjectDialog
+          isOpen={renameDialog}
+          onClose={() => setRenameDialog(false)}
+          onConfirm={executeRename}
+          currentName={projectToRename.repoName}
+        />
+      )}
+      {/* Rename progress bar */}
+      {renamingProject && (
+        <div className="save-bar">
+          <div className="progress">
+            <div
+              className="progress-done"
+              data-done="70"
+              style={{ width: renameProgress + "%", opacity: "1" }}
+            >
+              {renameProgress !== 100 ? renameProgress + "%" : "Project Renamed!"}
+            </div>
           </div>
         </div>
       )}

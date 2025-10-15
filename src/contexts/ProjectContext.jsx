@@ -458,6 +458,118 @@ export function ProjectProvider({ children, cad, loadProject }) {
     }
   };
 
+  /**
+   * Rename an existing project by updating GitHub repository and AWS entry
+   * @param {object} authorizedUserOcto - Authenticated Octokit instance
+   * @param {string} newName - New name for the project
+   * @param {function} setRenameProgress - Progress callback (0-100)
+   * @returns {object|null} Updated AWS node or null on error
+   */
+  const renameProject = async (authorizedUserOcto, newName, setRenameProgress = () => {}) => {
+    try {
+      const currentUser = GlobalVariables.currentUser;
+      const currentRepo = GlobalVariables.currentRepo;
+      const currentAWSnode = GlobalVariables.currentAWSnode;
+      const oldRepoName = currentRepo.name;
+      const oldOwner = currentAWSnode.owner;
+
+      if (!authorizedUserOcto || !currentUser || !currentRepo) {
+        window.alert("Missing required data for renaming project.");
+        return null;
+      }
+
+      // Check if new name is the same as current
+      if (newName === oldRepoName) {
+        window.alert("New project name is the same as the current name.");
+        return null;
+      }
+
+      setRenameProgress(10);
+
+      // Rename the GitHub repository
+      try {
+        await authorizedUserOcto.rest.repos.update({
+          owner: currentUser,
+          repo: oldRepoName,
+          name: newName,
+        });
+      } catch (err) {
+        console.error("Error renaming GitHub repository:", err);
+        window.alert(
+          "Error renaming repository on GitHub. The name might already be taken or invalid. Please try a different name."
+        );
+        return null;
+      }
+
+      setRenameProgress(50);
+
+      // Update AWS DynamoDB entry
+      // Delete the old entry
+      const deleteUrl =
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/abundance-projects";
+      await fetch(deleteUrl, {
+        method: "DELETE",
+        body: JSON.stringify({
+          owner: oldOwner,
+          repoName: oldRepoName,
+        }),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      });
+
+      setRenameProgress(70);
+
+      // Create new entry with updated name
+      const updatedSearchField = (
+        newName +
+        " " +
+        currentAWSnode.owner +
+        " " +
+        (currentAWSnode.description || "")
+      ).toLowerCase();
+
+      const updatedProjectBody = {
+        ...currentAWSnode,
+        repoName: newName,
+        searchField: updatedSearchField,
+        html_url: `https://github.com/${currentAWSnode.owner}/${newName}`,
+        readme: `https://raw.githubusercontent.com/${currentAWSnode.owner}/${newName}/master/README.md?sanitize=true`,
+        contentURL: `https://raw.githubusercontent.com/${currentAWSnode.owner}/${newName}/master/project.abundance?sanitize=true`,
+        svgURL: `https://raw.githubusercontent.com/${currentAWSnode.owner}/${newName}/master/project.svg?sanitize=true`,
+      };
+
+      const apiUrl =
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
+      await fetch(apiUrl, {
+        method: "POST",
+        body: JSON.stringify(updatedProjectBody),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      });
+
+      setRenameProgress(90);
+
+      // Update global variables
+      GlobalVariables.currentAWSnode = updatedProjectBody;
+      GlobalVariables.currentRepoName = newName;
+      if (GlobalVariables.currentRepo) {
+        GlobalVariables.currentRepo.name = newName;
+      }
+
+      setRenameProgress(100);
+
+      return updatedProjectBody;
+    } catch (err) {
+      console.error("Error renaming project:", err);
+      window.alert(
+        "An error occurred while renaming the project. Please try again."
+      );
+      return null;
+    }
+  };
+
   const value = {
     size,
     setSize,
@@ -465,6 +577,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
     loadProject,
     createProject,
     duplicateProject,
+    renameProject,
   };
   return (
     <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>
