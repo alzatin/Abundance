@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ShareDialog from "./ShareDialog.jsx";
+import RenderProgressBar from "./RenderProgressBar.jsx";
 import { useNavigate } from "react-router-dom";
 import GlobalVariables from "../../js/globalvariables.js";
 import { re } from "mathjs";
@@ -142,6 +143,10 @@ function RunNavigation({
   let [starredState, setStarred] = useState(false);
   let [dialogContent, setDialog] = useState("");
 
+  // Fork progress tracking
+  const [forkProgress, setForkProgress] = useState(0);
+  const [forkBarVisible, setForkBarVisible] = useState(false);
+
   // Tooltip state for each button
   const [showTooltip, setShowTooltip] = useState({});
 
@@ -274,18 +279,28 @@ function RunNavigation({
       );
       return;
     } else {
+      // Show progress bar and set initial progress
+      setForkBarVisible(true);
+      setForkProgress(0);
+
       authorizedUserOcto
         .request("GET /repos/{owner}/{repo}", {
           owner: owner,
           repo: repo,
         })
         .then((result) => {
+          // Initial checks complete
+          setForkProgress(5);
+
           authorizedUserOcto.rest.repos
             .createFork({
               owner: owner,
               repo: repo,
             })
             .then(() => {
+              // Fork created
+              setForkProgress(50);
+
               /*aws dynamo post*/
               const apiUrl =
                 "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
@@ -330,6 +345,10 @@ function RunNavigation({
                   "/" +
                   result.data.name,
               };
+
+              // Updating AWS database
+              setForkProgress(75);
+
               fetch(apiUrl, {
                 method: "POST",
                 body: JSON.stringify(forkedNodeBody),
@@ -337,8 +356,17 @@ function RunNavigation({
                   "Content-type": "application/json; charset=UTF-8",
                 },
               }).then((response) => {
+                // Complete
+                setForkProgress(100);
+
                 GlobalVariables.currentAWSnode = forkedNodeBody;
                 setRedirectType(null);
+
+                // Hide progress bar after a short delay
+                setTimeout(() => {
+                  setForkBarVisible(false);
+                }, 1000);
+
                 navigate(
                   `/${GlobalVariables.currentUser}/${GlobalVariables.currentAWSnode.repoName}`
                 ),
@@ -348,7 +376,15 @@ function RunNavigation({
             .catch((error) => {
               console.error("Error during forking the repository:", error);
               setRedirectType(null);
+              // Hide progress bar on error
+              setForkBarVisible(false);
             });
+        })
+        .catch((error) => {
+          console.error("Error getting repository information:", error);
+          setRedirectType(null);
+          // Hide progress bar on error
+          setForkBarVisible(false);
         });
     }
   };
@@ -358,6 +394,13 @@ function RunNavigation({
       {shareDialog ? (
         <ShareDialog
           {...{ shareDialog, setShareDialog, dialogContent, activeAtom }}
+        />
+      ) : null}
+      {forkBarVisible ? (
+        <RenderProgressBar
+          progress={forkProgress}
+          label="Forking"
+          run={true}
         />
       ) : null}
       <div className="run-navigation">
