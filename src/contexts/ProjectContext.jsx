@@ -507,16 +507,26 @@ export function ProjectProvider({ children, cad, loadProject }) {
       // Delete the old entry
       const deleteUrl =
         "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/abundance-projects";
-      await fetch(deleteUrl, {
-        method: "DELETE",
-        body: JSON.stringify({
-          owner: oldOwner,
-          repoName: oldRepoName,
-        }),
-        headers: {
-          "Content-type": "application/json; charset=UTF-8",
-        },
-      });
+      try {
+        const deleteResponse = await fetch(deleteUrl, {
+          method: "DELETE",
+          body: JSON.stringify({
+            owner: oldOwner,
+            repoName: oldRepoName,
+          }),
+          headers: {
+            "Content-type": "application/json; charset=UTF-8",
+          },
+        });
+        
+        if (!deleteResponse.ok) {
+          console.error("Failed to delete old AWS entry");
+          // Continue anyway as the GitHub repo is already renamed
+        }
+      } catch (err) {
+        console.error("Error deleting old AWS entry:", err);
+        // Continue anyway as the GitHub repo is already renamed
+      }
 
       setRenameProgress(70);
 
@@ -540,14 +550,25 @@ export function ProjectProvider({ children, cad, loadProject }) {
       };
 
       const apiUrl =
-        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
-      await fetch(apiUrl, {
-        method: "POST",
-        body: JSON.stringify(updatedProjectBody),
-        headers: {
-          "Content-type": "application/json; charset=UTF-8",
-        },
-      });
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/post-new-project";
+      try {
+        const createResponse = await fetch(apiUrl, {
+          method: "POST",
+          body: JSON.stringify(updatedProjectBody),
+          headers: {
+            "Content-type": "application/json; charset=UTF-8",
+          },
+        });
+        
+        if (!createResponse.ok) {
+          throw new Error("Failed to create new AWS entry");
+        }
+      } catch (err) {
+        console.error("Error creating new AWS entry:", err);
+        window.alert(
+          "Project renamed on GitHub, but there was an issue updating the database. The project may not appear in search results until the database sync completes."
+        );
+      }
 
       setRenameProgress(90);
 
