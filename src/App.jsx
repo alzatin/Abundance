@@ -5,6 +5,7 @@ import {
   // BrowserRouter as Router,
   Routes,
   Route,
+  useNavigate,
 } from "react-router-dom";
 
 import { wrap } from "comlink";
@@ -67,8 +68,10 @@ function AppContent() {
     authRedirectHandler,
   } = useAuth();
 
-  const { activeAtom, setActiveAtom, shortCutsOn, setRedirectType } =
+  const { activeAtom, setActiveAtom, shortCutsOn, setRedirectType, errorNotification, setErrorNotification } =
     useAppState();
+
+  const navigate = useNavigate();
 
   const [size, setSize] = useState(5);
 
@@ -304,13 +307,20 @@ function AppContent() {
           });
           return;
         }
-        alert("Can't load/find project " + e);
+        setErrorNotification("Can't load/find project: " + (e.message || e));
+        setTimeout(() => setErrorNotification(null), 5000);
+        // Navigate back to projects page after error
+        navigate("/");
         throw new Error("Can't load/find project " + e);
       });
   };
 
   return (
     <main>
+      {/* Error notification */}
+      {errorNotification && (
+        <div className="error-notification">{errorNotification}</div>
+      )}
       <Routes>
         <Route
           exact

@@ -59,7 +59,7 @@ function useWindowSize() {
 function runMode() {
   // Get context values
   const { isloggedIn, authorizedUserOcto, authRedirectHandler } = useAuth();
-  const { activeAtom, redirectType, setRedirectType, setActiveAtom } =
+  const { activeAtom, redirectType, setRedirectType, setActiveAtom, setErrorNotification } =
     useAppState();
   const {
     mesh,
@@ -78,6 +78,8 @@ function runMode() {
     setSolid,
   } = useRendering();
   const { loadProject } = useProject();
+
+  const navigate = useNavigate();
 
   const { next, isActive } = useTutorial();
 
@@ -176,6 +178,9 @@ function runMode() {
         })
         .catch((e) => {
           console.error("Error fetching AWS project data:", e);
+          setErrorNotification("Can't load/find project: " + (e.message || e));
+          setTimeout(() => setErrorNotification(null), 5000);
+          navigate("/");
         });
     }
 
