@@ -16,6 +16,8 @@ function TopMenu({
   currentMoleculeTop,
   settingsPopUp,
   setSettingsPopUp,
+  duplicateDialog,
+  setDuplicateDialog,
 }) {
   const { authorizedUserOcto, authRedirectHandler } = useAuth();
   const {
@@ -47,7 +49,6 @@ function TopMenu({
   let [dialogContent, setDialog] = useState("");
   let [duplicateProgress, setDuplicateProgress] = useState(0);
   let [duplicatingProject, setDuplicatingProject] = useState(false);
-  let [duplicateDialog, setDuplicateDialog] = useState(false);
   let [duplicateCompleteDialog, setDuplicateCompleteDialog] = useState(false);
   let [duplicatedProjectInfo, setDuplicatedProjectInfo] = useState(null);
 

@@ -89,6 +89,13 @@ function CreateMode() {
     exportPopUpRef.current = exportPopUp;
   }, [exportPopUp]);
 
+  const [duplicateDialog, setDuplicateDialog] = useState(false);
+  // Ref to always have latest duplicateDialog value in event handlers
+  const duplicateDialogRef = useRef(duplicateDialog);
+  useEffect(() => {
+    duplicateDialogRef.current = duplicateDialog;
+  }, [duplicateDialog]);
+
   /** State for top level molecule */
   const [currentMoleculeTop, setTop] = useState(false);
 
@@ -206,6 +213,7 @@ function CreateMode() {
     // Use ref to always get latest value
     if (settingsPopUpRef.current) return; // Do not trigger shortcuts if settings popup is open
     if (exportPopUpRef.current) return; // Do not trigger shortcuts if export popup is open
+    if (duplicateDialogRef.current) return; // Do not trigger shortcuts if duplicate dialog is open
     if (
       (e.key === "Alt" || e.key === "AltGraph") &&
       !GlobalVariables.ctrlDown
@@ -1004,6 +1012,8 @@ function CreateMode() {
               currentMoleculeTop,
               settingsPopUp,
               setSettingsPopUp,
+              duplicateDialog,
+              setDuplicateDialog,
             }}
           />
 
