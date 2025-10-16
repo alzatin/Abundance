@@ -318,7 +318,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
             return false; // Allow intermediate states during typing
           }
           const numValue = Number(v);
-          return isNaN(numValue) || numValue === null || numValue === undefined;
+          return isNaN(numValue);
         });
         if (hasInvalidValue) {
           // Invalid point - revert to previous valid value
@@ -639,8 +639,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                 // Ensure all values are valid numbers
                                 for (let i = 0; i < arr.length; i++) {
                                   const numValue = Number(arr[i]);
-                                  // Only set to number if it's valid, otherwise keep previous value
-                                  if (!isNaN(numValue) && numValue !== null && numValue !== undefined) {
+                                  // Only set to number if it's valid, otherwise use fallback
+                                  if (!isNaN(numValue)) {
                                     arr[i] = numValue;
                                   } else {
                                     // Get the committed value from controlValues as fallback
