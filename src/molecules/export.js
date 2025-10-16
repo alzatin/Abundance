@@ -173,11 +173,12 @@ export default class Export extends Atom {
     let fileType = this.findIOValue("File Type");
     let resolution = this.findIOValue("Resolution (dpi)");
     let partName = this.findIOValue("Part Name");
+    let geometry = this.findIOValue("geometry");
 
     console.log(this);
     GlobalVariables.cad
       .downExport(
-        this.value,
+        geometry,
         fileType,
         resolution,
         GlobalVariables.topLevelMolecule.unitsKey
