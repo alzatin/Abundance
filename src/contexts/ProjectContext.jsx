@@ -78,7 +78,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
     setNewProjectBar(10);
     let currentRepoName = result.data.name;
     let currentUser = GlobalVariables.currentUser;
-    
+
     // Check if the repo name was changed by GitHub
     if (currentRepoName !== name) {
       errors.push(
@@ -255,19 +255,27 @@ export function ProjectProvider({ children, cad, loadProject }) {
    * @param {string} customName - Custom name for the duplicated project (optional)
    * @returns {object} The new project AWS node or null on error
    */
-  const duplicateProject = async (authorizedUserOcto, setDuplicateProjectBar, customName = null) => {
+  const duplicateProject = async (
+    authorizedUserOcto,
+    setDuplicateProjectBar,
+    customName = null
+  ) => {
+    console.log("Duplicating project...");
+    console.log(GlobalVariables.currentRepo);
     try {
       const currentRepo = GlobalVariables.currentRepo;
       const currentUser = GlobalVariables.currentUser;
-      
+
       if (!currentRepo || !currentUser) {
-        window.alert("Cannot duplicate project: No active project or user not authenticated.");
+        window.alert(
+          "Cannot duplicate project: No active project or user not authenticated."
+        );
         return null;
       }
 
       // Use custom name or generate new project name with "-copy" suffix
-      let newRepoName = customName || (currentRepo.name + "-copy");
-      
+      let newRepoName = customName || currentRepo.name + "-copy";
+
       // Check if name already exists and increment if needed (only if using default name)
       if (!customName) {
         let nameExists = true;
@@ -305,9 +313,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
           },
         });
       } catch (err) {
-        window.alert(
-          "Error creating duplicate project. Please try again."
-        );
+        window.alert("Error creating duplicate project. Please try again.");
         return null;
       }
 
@@ -341,14 +347,17 @@ export function ProjectProvider({ children, cad, loadProject }) {
           );
 
           let fileContent;
-          if (!fileResponse.data.content || fileResponse.data.content.length === 0) {
+          if (
+            !fileResponse.data.content ||
+            fileResponse.data.content.length === 0
+          ) {
             // Handle large files using download_url
             const contentResponse = await fetch(fileResponse.data.download_url);
             const rawContent = await contentResponse.text();
             fileContent = window.btoa(GlobalVariables.toBinaryStr(rawContent));
           } else {
             // Use the base64 content directly
-            fileContent = fileResponse.data.content.replace(/\n/g, '');
+            fileContent = fileResponse.data.content.replace(/\n/g, "");
           }
 
           // Create file in new repo
@@ -422,19 +431,25 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
       // Post new project to AWS database
       const apiUrl =
-        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
-      await fetch(apiUrl, {
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/post-new-project";
+      const postProjectResponse = await fetch(apiUrl, {
         method: "POST",
         body: JSON.stringify(newProjectBody),
         headers: {
           "Content-type": "application/json; charset=UTF-8",
         },
       });
+      console.log("Posted new project to AWS:", postProjectResponse);
+      if (postProjectResponse.status !== 200) {
+        throw new Error(
+          `Failed to post new project: ${postProjectResponse.status}`
+        );
+      }
 
       // Update user table
       const apiUpdateUserUrl =
         "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE";
-      await fetch(apiUpdateUserUrl, {
+      const updateUserResponse = await fetch(apiUpdateUserUrl, {
         method: "POST",
         body: JSON.stringify({
           user: currentUser,
@@ -445,6 +460,11 @@ export function ProjectProvider({ children, cad, loadProject }) {
           "Content-type": "application/json; charset=UTF-8",
         },
       });
+      if (!updateUserResponse.ok) {
+        throw new Error(
+          `Failed to update user table: ${updateUserResponse.status}`
+        );
+      }
 
       setDuplicateProjectBar(100);
 
@@ -458,6 +478,111 @@ export function ProjectProvider({ children, cad, loadProject }) {
     }
   };
 
+  /**
+   * Rename an existing project by updating GitHub repository and AWS entry
+   * @param {object} authorizedUserOcto - Authenticated Octokit instance
+   * @param {string} newName - New name for the project
+   * @param {function} setRenameProgress - Progress callback (0-100)
+   * @returns {object|null} Updated AWS node or null on error
+   */
+  const renameProject = async (
+    authorizedUserOcto,
+    newName,
+    setRenameProgress = () => {}
+  ) => {
+    console.log(GlobalVariables.currentRepo);
+    try {
+      const currentUser = GlobalVariables.currentUser;
+      const currentAWSnode = GlobalVariables.currentAWSnode;
+      const oldRepoName = currentAWSnode.repoName;
+      const oldOwner = currentAWSnode.owner;
+
+      if (!authorizedUserOcto || !currentUser) {
+        window.alert("Missing required data for renaming project.");
+        return null;
+      }
+
+      // Check if new name is the same as current
+      if (newName === oldRepoName) {
+        window.alert("New project name is the same as the current name.");
+        return null;
+      }
+
+      setRenameProgress(10);
+
+      // Rename the GitHub repository
+      try {
+        await authorizedUserOcto.rest.repos.update({
+          owner: currentUser,
+          repo: oldRepoName,
+          name: newName,
+        });
+      } catch (err) {
+        console.error("Error renaming GitHub repository:", err);
+        window.alert(
+          "Error renaming repository on GitHub. The name might already be taken or invalid. Please try a different name."
+        );
+        return null;
+      }
+
+      setRenameProgress(50);
+
+      // Update project entry in AWS
+      const updateKeysUrl =
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-project-keys";
+      const updatedSearchField = (
+        newName +
+        " " +
+        currentAWSnode.owner +
+        " " +
+        (currentAWSnode.description || "") +
+        " " +
+        currentAWSnode.topics?.join(" " || "")
+      ).toLowerCase();
+
+      const updateKeysResponse = await fetch(updateKeysUrl, {
+        method: "POST",
+        body: JSON.stringify({
+          oldOwner: oldOwner,
+          oldRepoName: oldRepoName,
+          newOwner: currentAWSnode.owner,
+          newRepoName: newName,
+          searchField: updatedSearchField,
+          html_url: `https://github.com/${currentAWSnode.owner}/${newName}`,
+          readMe: `https://raw.githubusercontent.com/${currentAWSnode.owner}/${newName}/master/README.md?sanitize=true`,
+          contentURL: `https://raw.githubusercontent.com/${currentAWSnode.owner}/${newName}/master/project.abundance?sanitize=true`,
+          svgURL: `https://raw.githubusercontent.com/${currentAWSnode.owner}/${newName}/master/project.svg?sanitize=true`,
+        }),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      });
+
+      setRenameProgress(70);
+
+      const updatedAWSnode = await updateKeysResponse.json();
+      console.log("AWS update response:", updatedAWSnode);
+
+      setRenameProgress(90);
+      console.log("Project renamed successfully");
+      // Update global variables
+      GlobalVariables.currentAWSnode = updatedAWSnode;
+      GlobalVariables.currentRepoName = newName;
+      /*if (GlobalVariables.currentRepo) {
+          GlobalVariables.currentRepo.name = newName;
+        }*/
+
+      setRenameProgress(100);
+      return updatedAWSnode;
+    } catch (err) {
+      console.error("Error renaming project:", err);
+      window.alert(
+        "An error occurred while renaming the project. Please try again."
+      );
+      return null;
+    }
+  };
+
   const value = {
     size,
     setSize,
@@ -465,6 +590,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
     loadProject,
     createProject,
     duplicateProject,
+    renameProject,
   };
   return (
     <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>

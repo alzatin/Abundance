@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 
-function DuplicateProjectDialog({
+function RenameProjectDialog({
   isOpen,
   onClose,
   onConfirm,
-  defaultName,
+  currentName,
 }) {
-  const [projectName, setProjectName] = useState(defaultName);
+  const [projectName, setProjectName] = useState(currentName);
   const [error, setError] = useState("");
 
   const validateProjectName = (name) => {
@@ -90,7 +90,7 @@ function DuplicateProjectDialog({
       }}
       className="share-dialog"
     >
-      <h3 style={{ margin: "0 0 15px 0" }}>Duplicate Project</h3>
+      <h3 style={{ margin: "0 0 15px 0" }}>Rename Project</h3>
       
       <label style={{ marginBottom: "5px", fontWeight: "500" }}>
         New project name:
@@ -104,7 +104,7 @@ function DuplicateProjectDialog({
           setError("");
         }}
         onKeyDown={handleKeyPress}
-        placeholder={defaultName}
+        placeholder={currentName}
         autoFocus
         style={{
           padding: "8px",
@@ -155,7 +155,7 @@ function DuplicateProjectDialog({
             borderRadius: "4px",
           }}
         >
-          Duplicate
+          Rename
         </button>
       </div>
       
@@ -170,4 +170,4 @@ function DuplicateProjectDialog({
   );
 }
 
-export default DuplicateProjectDialog;
+export default RenameProjectDialog;

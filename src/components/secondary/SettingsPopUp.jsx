@@ -19,6 +19,7 @@ const SettingsPopUp = ({
   saveProject,
   setSaveState,
   setSavePopUp,
+  handleRenameProject,
 }) => {
   let repoTopics = [];
   if (Globalvariables.currentAWSnode.topics.length > 0) {
@@ -167,9 +168,31 @@ const SettingsPopUp = ({
             <div id="project-info">
               <div id="project-info-name">
                 <label className="info-label-highlight">Project Name</label>
-                <p title="To change the Project Name go to your Github repository">
-                  {Globalvariables.currentAWSnode.repoName}
-                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <p style={{ margin: 0 }}>
+                    {Globalvariables.currentAWSnode.repoName}
+                  </p>
+                  {handleRenameProject && Globalvariables.currentRepo?.owner?.login === Globalvariables.currentUser && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettingsPopUp(false);
+                        handleRenameProject();
+                      }}
+                      style={{
+                        padding: "4px 12px",
+                        fontSize: "12px",
+                        cursor: "pointer",
+                        backgroundColor: "#4CAF50",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      Rename
+                    </button>
+                  )}
+                </div>
               </div>
               <div id="project-info-date">
                 <label className="info-label-highlight">Date Created</label>
