@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function RenameProjectDialog({
   isOpen,
@@ -48,11 +48,33 @@ function RenameProjectDialog({
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
       handleConfirm();
     } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
       onClose();
     }
   };
+
+  // Add document-level keyboard event listener with priority
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter" || e.key === "Escape") {
+        handleKeyPress(e);
+      }
+    };
+
+    // Add listener with capture phase to get priority
+    document.addEventListener("keydown", handleKeyDown, true);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [isOpen, projectName, error]);
 
   if (!isOpen) return null;
 
