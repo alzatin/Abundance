@@ -78,7 +78,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
     setNewProjectBar(10);
     let currentRepoName = result.data.name;
     let currentUser = GlobalVariables.currentUser;
-    
+
     // Check if the repo name was changed by GitHub
     if (currentRepoName !== name) {
       errors.push(
@@ -255,19 +255,25 @@ export function ProjectProvider({ children, cad, loadProject }) {
    * @param {string} customName - Custom name for the duplicated project (optional)
    * @returns {object} The new project AWS node or null on error
    */
-  const duplicateProject = async (authorizedUserOcto, setDuplicateProjectBar, customName = null) => {
+  const duplicateProject = async (
+    authorizedUserOcto,
+    setDuplicateProjectBar,
+    customName = null
+  ) => {
     try {
       const currentRepo = GlobalVariables.currentRepo;
       const currentUser = GlobalVariables.currentUser;
-      
+
       if (!currentRepo || !currentUser) {
-        window.alert("Cannot duplicate project: No active project or user not authenticated.");
+        window.alert(
+          "Cannot duplicate project: No active project or user not authenticated."
+        );
         return null;
       }
 
       // Use custom name or generate new project name with "-copy" suffix
-      let newRepoName = customName || (currentRepo.name + "-copy");
-      
+      let newRepoName = customName || currentRepo.name + "-copy";
+
       // Check if name already exists and increment if needed (only if using default name)
       if (!customName) {
         let nameExists = true;
@@ -305,9 +311,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
           },
         });
       } catch (err) {
-        window.alert(
-          "Error creating duplicate project. Please try again."
-        );
+        window.alert("Error creating duplicate project. Please try again.");
         return null;
       }
 
@@ -341,14 +345,17 @@ export function ProjectProvider({ children, cad, loadProject }) {
           );
 
           let fileContent;
-          if (!fileResponse.data.content || fileResponse.data.content.length === 0) {
+          if (
+            !fileResponse.data.content ||
+            fileResponse.data.content.length === 0
+          ) {
             // Handle large files using download_url
             const contentResponse = await fetch(fileResponse.data.download_url);
             const rawContent = await contentResponse.text();
             fileContent = window.btoa(GlobalVariables.toBinaryStr(rawContent));
           } else {
             // Use the base64 content directly
-            fileContent = fileResponse.data.content.replace(/\n/g, '');
+            fileContent = fileResponse.data.content.replace(/\n/g, "");
           }
 
           // Create file in new repo
@@ -404,7 +411,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
         topics: currentRepo.topics || [],
         html_url: newRepo.data.html_url,
         parentRepo: null,
-        readme:
+        readMe:
           "https://raw.githubusercontent.com/" +
           newRepo.data.full_name +
           "/master/README.md?sanitize=true",
@@ -465,7 +472,11 @@ export function ProjectProvider({ children, cad, loadProject }) {
    * @param {function} setRenameProgress - Progress callback (0-100)
    * @returns {object|null} Updated AWS node or null on error
    */
-  const renameProject = async (authorizedUserOcto, newName, setRenameProgress = () => {}) => {
+  const renameProject = async (
+    authorizedUserOcto,
+    newName,
+    setRenameProgress = () => {}
+  ) => {
     try {
       const currentUser = GlobalVariables.currentUser;
       const currentRepo = GlobalVariables.currentRepo;
@@ -503,85 +514,65 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
       setRenameProgress(50);
 
-      // Update AWS DynamoDB entry
-      // Delete the old entry
-      const deleteUrl =
-        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/abundance-projects";
+      // Update project entry in AWS
+      const updateKeysUrl =
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-project-keys";
       try {
-        const deleteResponse = await fetch(deleteUrl, {
-          method: "DELETE",
+        const updatedSearchField = (
+          newName +
+          " " +
+          currentAWSnode.owner +
+          " " +
+          (currentAWSnode.description || "") +
+          " " +
+          currentAWSnode.topics?.join(" " || "")
+        ).toLowerCase();
+
+        const updateKeysResponse = await fetch(updateKeysUrl, {
+          method: "POST",
           body: JSON.stringify({
-            owner: oldOwner,
-            repoName: oldRepoName,
+            oldOwner: oldOwner,
+            oldRepoName: oldRepoName,
+            newOwner: currentAWSnode.owner,
+            newRepoName: newName,
+            searchField: updatedSearchField,
+            html_url: `https://github.com/${currentAWSnode.owner}/${newName}`,
+            readMe: `https://raw.githubusercontent.com/${currentAWSnode.owner}/${newName}/master/README.md?sanitize=true`,
+            contentURL: `https://raw.githubusercontent.com/${currentAWSnode.owner}/${newName}/master/project.abundance?sanitize=true`,
+            svgURL: `https://raw.githubusercontent.com/${currentAWSnode.owner}/${newName}/master/project.svg?sanitize=true`,
           }),
           headers: {
             "Content-type": "application/json; charset=UTF-8",
           },
         });
-        
-        if (!deleteResponse.ok) {
-          console.error("Failed to delete old AWS entry");
+
+        setRenameProgress(70);
+
+        console.log(updateKeysResponse);
+        if (!updateKeysResponse.ok) {
+          console.error("Failed to update project keys in AWS");
           // Continue anyway as the GitHub repo is already renamed
         }
-      } catch (err) {
-        console.error("Error deleting old AWS entry:", err);
-        // Continue anyway as the GitHub repo is already renamed
-      }
 
-      setRenameProgress(70);
+        const result = await updateKeysResponse.json();
+        const updatedAWSnode = JSON.parse(result.body);
 
-      // Create new entry with updated name
-      const updatedSearchField = (
-        newName +
-        " " +
-        currentAWSnode.owner +
-        " " +
-        (currentAWSnode.description || "")
-      ).toLowerCase();
+        setRenameProgress(90);
 
-      const updatedProjectBody = {
-        ...currentAWSnode,
-        repoName: newName,
-        searchField: updatedSearchField,
-        html_url: `https://github.com/${currentAWSnode.owner}/${newName}`,
-        readme: `https://raw.githubusercontent.com/${currentAWSnode.owner}/${newName}/master/README.md?sanitize=true`,
-        contentURL: `https://raw.githubusercontent.com/${currentAWSnode.owner}/${newName}/master/project.abundance?sanitize=true`,
-        svgURL: `https://raw.githubusercontent.com/${currentAWSnode.owner}/${newName}/master/project.svg?sanitize=true`,
-      };
-
-      const apiUrl =
-        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/post-new-project";
-      try {
-        const createResponse = await fetch(apiUrl, {
-          method: "POST",
-          body: JSON.stringify(updatedProjectBody),
-          headers: {
-            "Content-type": "application/json; charset=UTF-8",
-          },
-        });
-        
-        if (!createResponse.ok) {
-          throw new Error("Failed to create new AWS entry");
+        // Update global variables
+        GlobalVariables.currentAWSnode = updatedAWSnode;
+        GlobalVariables.currentRepoName = newName;
+        if (GlobalVariables.currentRepo) {
+          GlobalVariables.currentRepo.name = newName;
         }
       } catch (err) {
-        console.error("Error creating new AWS entry:", err);
-        window.alert(
-          "Project renamed on GitHub, but there was an issue updating the database. The project may not appear in search results until the database sync completes."
-        );
-      }
-
-      setRenameProgress(90);
-
-      // Update global variables
-      GlobalVariables.currentAWSnode = updatedProjectBody;
-      GlobalVariables.currentRepoName = newName;
-      if (GlobalVariables.currentRepo) {
-        GlobalVariables.currentRepo.name = newName;
+        console.error("Error updating project keys in AWS:", err);
+        // Continue anyway as the GitHub repo is already renamed
       }
 
       setRenameProgress(100);
 
-      return updatedProjectBody;
+      return updatedAWSnode;
     } catch (err) {
       console.error("Error renaming project:", err);
       window.alert(
