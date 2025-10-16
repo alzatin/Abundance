@@ -413,7 +413,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
         topics: currentRepo.topics || [],
         html_url: newRepo.data.html_url,
         parentRepo: null,
-        readMe:
+        readme:
           "https://raw.githubusercontent.com/" +
           newRepo.data.full_name +
           "/master/README.md?sanitize=true",
@@ -431,19 +431,25 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
       // Post new project to AWS database
       const apiUrl =
-        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
-      await fetch(apiUrl, {
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/post-new-project";
+      const postProjectResponse = await fetch(apiUrl, {
         method: "POST",
         body: JSON.stringify(newProjectBody),
         headers: {
           "Content-type": "application/json; charset=UTF-8",
         },
       });
+      console.log("Posted new project to AWS:", postProjectResponse);
+      if (postProjectResponse.status !== 200) {
+        throw new Error(
+          `Failed to post new project: ${postProjectResponse.status}`
+        );
+      }
 
       // Update user table
       const apiUpdateUserUrl =
         "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE";
-      await fetch(apiUpdateUserUrl, {
+      const updateUserResponse = await fetch(apiUpdateUserUrl, {
         method: "POST",
         body: JSON.stringify({
           user: currentUser,
@@ -454,6 +460,11 @@ export function ProjectProvider({ children, cad, loadProject }) {
           "Content-type": "application/json; charset=UTF-8",
         },
       });
+      if (!updateUserResponse.ok) {
+        throw new Error(
+          `Failed to update user table: ${updateUserResponse.status}`
+        );
+      }
 
       setDuplicateProjectBar(100);
 
