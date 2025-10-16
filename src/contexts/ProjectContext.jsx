@@ -493,12 +493,11 @@ export function ProjectProvider({ children, cad, loadProject }) {
     console.log(GlobalVariables.currentRepo);
     try {
       const currentUser = GlobalVariables.currentUser;
-      const currentRepo = GlobalVariables.currentRepo;
       const currentAWSnode = GlobalVariables.currentAWSnode;
-      const oldRepoName = currentRepo.name;
+      const oldRepoName = currentAWSnode.repoName;
       const oldOwner = currentAWSnode.owner;
 
-      if (!authorizedUserOcto || !currentUser || !currentRepo) {
+      if (!authorizedUserOcto || !currentUser) {
         window.alert("Missing required data for renaming project.");
         return null;
       }
@@ -566,12 +565,9 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
       setRenameProgress(90);
       console.log("Project renamed successfully");
-      console.log("Current AWS node:", GlobalVariables.currentAWSnode);
-      console.log("Updated AWS node:", updatedAWSnode);
       // Update global variables
       GlobalVariables.currentAWSnode = updatedAWSnode;
       GlobalVariables.currentRepoName = newName;
-      console.log(GlobalVariables.currentRepo);
       /*if (GlobalVariables.currentRepo) {
           GlobalVariables.currentRepo.name = newName;
         }*/

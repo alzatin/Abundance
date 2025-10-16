@@ -342,10 +342,6 @@ const ProjectDiv = ({ nodes, browseType, orderType, authorizedUserOcto }) => {
     } else if (action === "rename") {
       // Set up for rename
       GlobalVariables.currentAWSnode = contextMenu.node;
-      GlobalVariables.currentRepo = {
-        name: contextMenu.node.repoName,
-        owner: { login: contextMenu.node.owner },
-      };
       setProjectToRename(contextMenu.node);
       setRenameDialog(true);
     }
