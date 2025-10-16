@@ -312,9 +312,14 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     // For point types, validate all array elements
     if (config.type === "point") {
       if (Array.isArray(value)) {
-        const hasInvalidValue = value.some(
-          (v) => isNaN(v) || v === null || v === undefined
-        );
+        const hasInvalidValue = value.some((v) => {
+          // Handle intermediate typing states
+          if (typeof v === "string" && (v === "" || v === "-")) {
+            return false; // Allow intermediate states during typing
+          }
+          const numValue = Number(v);
+          return isNaN(numValue) || numValue === null || numValue === undefined;
+        });
         if (hasInvalidValue) {
           // Invalid point - revert to previous valid value
           setLocalValues((prev) => {
@@ -631,9 +636,19 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                               onBlur={() => {
                                 // Commit changes when leaving the input
                                 const arr = [...currentArrayValue];
-                                // Ensure all values are numbers
+                                // Ensure all values are valid numbers
                                 for (let i = 0; i < arr.length; i++) {
-                                  arr[i] = Number(arr[i]);
+                                  const numValue = Number(arr[i]);
+                                  // Only set to number if it's valid, otherwise keep previous value
+                                  if (!isNaN(numValue) && numValue !== null && numValue !== undefined) {
+                                    arr[i] = numValue;
+                                  } else {
+                                    // Get the committed value from controlValues as fallback
+                                    const committedValue = Array.isArray(controlValues[key]) 
+                                      ? controlValues[key][i] 
+                                      : 0;
+                                    arr[i] = committedValue;
+                                  }
                                 }
                                 commitChange(key, arr, config);
                                 
