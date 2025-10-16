@@ -308,7 +308,7 @@ const FeaturedHighlight = ({ highestRankingNode, highestRankingToolNode }) => (
 const ProjectDiv = ({ nodes, browseType, orderType, authorizedUserOcto }) => {
   const { renameProject } = useProject();
   const navigate = useNavigate();
-  
+
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
@@ -369,7 +369,7 @@ const ProjectDiv = ({ nodes, browseType, orderType, authorizedUserOcto }) => {
     if (updatedProject) {
       window.alert(`Project successfully renamed to "${newName}"`);
       // Reload the page to show updated projects
-      window.location.reload();
+      // window.location.reload();
     }
   };
 
@@ -638,7 +638,9 @@ const ProjectDiv = ({ nodes, browseType, orderType, authorizedUserOcto }) => {
               data-done="70"
               style={{ width: renameProgress + "%", opacity: "1" }}
             >
-              {renameProgress !== 100 ? renameProgress + "%" : "Project Renamed!"}
+              {renameProgress !== 100
+                ? renameProgress + "%"
+                : "Project Renamed!"}
             </div>
           </div>
         </div>
