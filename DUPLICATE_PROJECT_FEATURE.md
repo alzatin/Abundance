@@ -50,7 +50,7 @@ The "Duplicate Project" menu item appears in the top menu dropdown, positioned a
 
 ### Files Copied
 The following files are duplicated from the original project:
-1. `project.abundance` - Main CAD model
+1. `project.abundance` - Main CAD model (top molecule name automatically updated to match new project name)
 2. `BillOfMaterials.md` - Bill of materials
 3. `README.md` - Project documentation
 4. `project.svg` - Project image
@@ -62,6 +62,9 @@ The following files are duplicated from the original project:
 - Project description
 - Project topics/tags
 - Project metadata
+
+### Automatic Updates
+- **Top Molecule Name**: The name of the top-level molecule is automatically updated to match the new project name, ensuring consistency between the project and its CAD model.
 
 ## Error Handling
 

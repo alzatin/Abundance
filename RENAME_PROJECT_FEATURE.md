@@ -35,8 +35,8 @@ This feature allows users to rename their Abundance projects. The rename operati
 Process flow:
 1. Validates new name against current name
 2. Renames GitHub repository via Octokit API (`repos.update`)
-3. Deletes old AWS DynamoDB entry
-4. Creates new AWS DynamoDB entry with updated:
+3. Updates `project.abundance` file to change top molecule name to match new project name
+4. Updates AWS DynamoDB entry with updated:
    - `repoName`
    - `searchField`
    - `html_url`
@@ -62,8 +62,9 @@ Process flow:
 - Progress stages:
   - 10%: GitHub API call initiated
   - 50%: GitHub repository renamed
-  - 70%: Old AWS entry deleted
-  - 90%: New AWS entry created
+  - 70%: AWS DynamoDB entry updated
+  - 75%: Top molecule name updated in project.abundance
+  - 90%: Finalization
   - 100%: Global variables updated
 
 ## User Experience
@@ -73,9 +74,10 @@ Process flow:
 2. Dialog appears with current project name pre-filled
 3. User enters new name and clicks "Rename"
 4. Progress bar shows operation status
-5. Alert confirms successful rename
-6. Page refreshes/navigates to new URL
-7. Project accessible at new GitHub URL
+5. Top molecule name is automatically updated to match the new project name
+6. Alert confirms successful rename
+7. Page refreshes/navigates to new URL
+8. Project accessible at new GitHub URL
 
 ### Error Handling
 - **Invalid Name**: Dialog shows validation error message
