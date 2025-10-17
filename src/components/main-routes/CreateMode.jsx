@@ -403,6 +403,7 @@ function CreateMode() {
           molecule.nodesOnTheScreen.forEach((node) => {
             if (node.atomType === "GitHubMolecule") {
               // Add to the githubMoleculeUsedList if atomType is "Github molecule"
+              if (node.parentRepo == null) return; // Safety check if parentRepo is null
               githubMoleculeUsedList.push({
                 owner: node.parentRepo.owner,
                 repoName: node.parentRepo.repoName,
