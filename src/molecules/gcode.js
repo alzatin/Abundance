@@ -524,10 +524,25 @@ export default class Gcode extends Atom {
   }
 
   onUpstreamChange() {
-    this.setWaiting();
+    // No-op if this atom isn't enabled
+    if (!this.isEnabled()) {
+      return;
+    }
 
-    if (this.findIOValue("geometry") !== null) {
-      this._handleGeometryInput(this.findIOValue("geometry"));
+    // Check for errors in inputs first
+    if (this.inputsHaveErrors()) {
+      this.setUpstreamError();
+      return;
+    }
+
+    // Check if geometry input is ready
+    const geometryValue = this.findIOValue("geometry");
+    if (geometryValue !== null) {
+      this.setWaiting();
+      this._handleGeometryInput(geometryValue);
+    } else {
+      // If geometry is not available yet, set to waiting
+      this.setWaiting();
     }
   }
 
