@@ -17,7 +17,7 @@ class ObservableEntity {
     this.subscribers = {};
   }
 
-  setStatus(status, value = null) {
+  setStatus(status, value = null, propagate = true) {
     if (status == Status.READY && value === null) {
       throw new Error("Ready status must have a value");
     } else if (
@@ -44,13 +44,15 @@ class ObservableEntity {
       );
       this.status = status;
       this.value = value;
-      this.propagateChange();
+      if (propagate) {
+        this.propagateChange();
+      }
     }
   }
 
-  setDisabled() {
+  setDisabled(propagate = true) {
     // Preserve value when making disabled.
-    this.setStatus(Status.DISABLED, this.value);
+    this.setStatus(Status.DISABLED, this.value, propagate);
   }
 
   setWaiting() {

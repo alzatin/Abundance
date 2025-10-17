@@ -119,6 +119,8 @@ export default class Atom extends ObservableEntity {
       message: "",
     };
 
+    this.context = undefined;
+
     this.subscribe(this.selfSubscriber.bind(this), "self-clear-alert");
   }
 
@@ -134,6 +136,21 @@ export default class Atom extends ObservableEntity {
       // if status just became ready and we're selected, update the render
       this.sendToRender();
     }
+  }
+
+  /**
+   * Gets the context of this atom for passing to the worker functions.
+   * See RequestContext type defined in geometryProvider.ts
+   */
+  getContext() {
+    if (!this.context) {
+      let curr = this;
+      while (curr.parent) {
+        curr = curr.parent;
+      }
+      this.context = { project: curr.uniqueID };
+    }
+    return this.context;
   }
 
   /**
@@ -480,6 +497,12 @@ export default class Atom extends ObservableEntity {
       this.onUpstreamChange(); // prompt atom to compute it's value and callback its subscribers.
     }
     return true;
+  }
+
+  disable() {
+    // TODO(tristan): do something clever about preserving value for cases
+    // where we'll be re-enabled.
+    this.setDisabled(false);
   }
 
   /**
