@@ -1179,10 +1179,14 @@ function LoginMode() {
   } = useAuth();
   const { exportPopUp, setExportPopUp } = useAppState();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const pageDict = { 0: null };
 
-  const [noUserBrowsing, setNoUserBrowsing] = useState(false);
+  // Check if we're coming from run mode (Browse Projects was clicked)
+  const fromRunMode = location.state?.fromRunMode;
+  
+  const [noUserBrowsing, setNoUserBrowsing] = useState(fromRunMode || false);
   const [projectToShow, setProjectsToShow] = useState("all");
 
   const logoutHandler = () => {
