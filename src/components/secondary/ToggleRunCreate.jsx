@@ -1,16 +1,22 @@
 import React, { useState } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
   const [runModeon, setRunMode] = useState(run);
   const [showTooltip, setShowTooltip] = useState(false);
+  const navigate = useNavigate();
   const handleChange = () => {
     // set ActiveAtom to toplevel when switching modes
     if (setActiveAtom) {
       setActiveAtom(GlobalVariables.topLevelMolecule);
     }
     setRunMode(!runModeon);
+  };
+  const handleBrowseProjects = (e) => {
+    e.preventDefault();
+    handleChange();
+    navigate("/", { state: { fromRunMode: true } });
   };
   if (GlobalVariables.currentRepo) {
     if (!runModeon) {
@@ -68,17 +74,51 @@ function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
     } else {
       return (
         <>
-          <Link
-            key={GlobalVariables.currentRepo.id}
-            to={
-              isItOwned
-                ? `/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`
-                : "/"
-            }
-            onClick={handleChange}
-          >
-            <label title="Create/Run Mode" className="switch_run">
-              <button id="create-mode-btn">
+          {isItOwned ? (
+            <Link
+              key={GlobalVariables.currentRepo.id}
+              to={`/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`}
+              onClick={handleChange}
+            >
+              <label title="Create/Run Mode" className="switch_run">
+                <button id="create-mode-btn">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{
+                      transform: "rotate(90deg)",
+                      alignSelf: "center",
+                      display: "block",
+                    }}
+                  >
+                    <polyline
+                      points="5,7 9,13 13,7"
+                      fill="none"
+                      stroke="#c4a3d5"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      padding: "0 5px 0 5px",
+                      color: "#c4a3d5",
+                      fontFamily:
+                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+                    }}
+                  >
+                    Create Mode
+                  </p>
+                </button>
+              </label>
+            </Link>
+          ) : (
+            <label title="Browse Projects" className="switch_run">
+              <button id="create-mode-btn" onClick={handleBrowseProjects}>
                 <svg
                   width="18"
                   height="18"
@@ -108,11 +148,11 @@ function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
                       "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
                   }}
                 >
-                  {isItOwned ? "Create Mode" : "Browse Projects"}
+                  Browse Projects
                 </p>
               </button>
             </label>
-          </Link>
+          )}
         </>
       );
     }
