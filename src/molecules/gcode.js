@@ -253,13 +253,15 @@ export default class Gcode extends Atom {
       .then((visExported) => {
         const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         GlobalVariables.cad
-          .downExport(visExported, "STL", null, units)
+          .downExport(visExported, "STL", null, units, this.getContext())
           .then((result) => {
             //Delete anything previously stored
             if (this.stlURL) {
               URL.revokeObjectURL(this.stlURL); // Clean up the previous URL
             }
+
             this.stlURL = URL.createObjectURL(result); // Store the STL URL
+
             GlobalVariables.cad
               .getBoundingBox(visExported, this.getContext())
               .then((bounds) => {
