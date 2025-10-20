@@ -372,13 +372,19 @@ function TopMenu({
   });
 
   /*{nav bar toggle component}*/
-  const Navbar = memo(({ currentMoleculeTop }) => {
-    const [navbarOpen, setNavbarOpen] = useState(false);
+  // Use a ref to persist navbar state across re-renders without triggering them
+  const navbarOpenRef = useRef(false);
+  const [navbarRenderTrigger, setNavbarRenderTrigger] = useState(0);
+  
+  const Navbar = memo(({ currentMoleculeTop, renderTrigger }) => {
     const ref = useRef();
+    const navbarOpen = navbarOpenRef.current;
+    
     useEffect(() => {
       const handler = (event) => {
-        if (navbarOpen && ref.current && !ref.current.contains(event.target)) {
-          setNavbarOpen(false);
+        if (navbarOpenRef.current && ref.current && !ref.current.contains(event.target)) {
+          navbarOpenRef.current = false;
+          setNavbarRenderTrigger(prev => prev + 1);
         }
       };
       document.addEventListener("mousedown", handler);
@@ -386,13 +392,19 @@ function TopMenu({
         // Cleanup the event listener
         document.removeEventListener("mousedown", handler);
       };
-    }, [navbarOpen]);
+    }, []);
+    
+    const toggleNavbar = () => {
+      navbarOpenRef.current = !navbarOpenRef.current;
+      setNavbarRenderTrigger(prev => prev + 1);
+    };
+    
     return (
       <>
         <nav ref={ref} className="navbar">
           <button
             className="toggle menu-nav-button"
-            onClick={() => setNavbarOpen((prev) => !prev)}
+            onClick={toggleNavbar}
           >
             {navbarOpen ? (
               <img
@@ -515,7 +527,7 @@ function TopMenu({
         />
       ) : null}
       {currentMoleculeTop ? <TopLevel /> : null}
-      <Navbar {...{ currentMoleculeTop }} />
+      <Navbar {...{ currentMoleculeTop, renderTrigger: navbarRenderTrigger }} />
     </>
   );
 }
