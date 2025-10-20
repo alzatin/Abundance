@@ -1108,7 +1108,7 @@ Sidebar navigation
     margin: 5px auto;
     padding: 0px;
     width: 97%;
-    height: 50px;
+    height: 40px;
     border-left: 3px solid var(--abundance-color-brightPurple);
     background-color: rgba(124, 77, 255, 0.1);
   }

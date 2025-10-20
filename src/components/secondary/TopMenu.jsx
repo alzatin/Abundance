@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState, useRef } from "react";
+import React, { memo, useEffect, useState, useRef, useMemo } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import ShareDialog from "./ShareDialog.jsx";
 import DuplicateProjectDialog from "./DuplicateProjectDialog.jsx";
@@ -157,7 +157,7 @@ function TopMenu({
   };
 
   // objects for navigation items in the top menu
-  const navItems = [
+  const navItems = useMemo(() => [
     {
       id: "Open",
       buttonFunc: () => {
@@ -284,7 +284,7 @@ function TopMenu({
         //tryDelete();
       },
     },
-  ];
+  ], [navigate, setDialog, setShareDialog, setSavePopUp, saveProject, setSaveState, handleDuplicateProject, authRedirectHandler, setSettingsPopUp, setExportPopUp]);
 
   //{checks for top level variable and show go-up button if this is not top molecule
   //i'm not so sure this useeffect is right. put on list to review
@@ -310,7 +310,7 @@ function TopMenu({
     );
   };
 
-  const SaveBar = ({ saveState, savePopUp, setSavePopUp }) => {
+  const SaveBar = memo(({ saveState, savePopUp, setSavePopUp }) => {
     if (saveState === 100) {
       // delay and then set savepopupstate to false
       var delayInMilliseconds = 2000; //1 second
@@ -333,9 +333,9 @@ function TopMenu({
         </div>
       </>
     );
-  };
+  });
 
-  const DuplicateBar = ({ duplicateProgress, duplicatingProject }) => {
+  const DuplicateBar = memo(({ duplicateProgress, duplicatingProject }) => {
     return (
       <>
         <div className="save-bar">
@@ -351,9 +351,9 @@ function TopMenu({
         </div>
       </>
     );
-  };
+  });
 
-  const RenameBar = ({ renameProgress, renamingProject }) => {
+  const RenameBar = memo(({ renameProgress, renamingProject }) => {
     return (
       <>
         <div className="save-bar">
@@ -369,16 +369,22 @@ function TopMenu({
         </div>
       </>
     );
-  };
+  });
 
   /*{nav bar toggle component}*/
-  const Navbar = ({ currentMoleculeTop }) => {
-    const [navbarOpen, setNavbarOpen] = useState(false);
+  // Use a ref to persist navbar state across re-renders without triggering them
+  const navbarOpenRef = useRef(false);
+  const [navbarRenderTrigger, setNavbarRenderTrigger] = useState(0);
+  
+  const Navbar = memo(({ currentMoleculeTop, renderTrigger }) => {
     const ref = useRef();
+    const navbarOpen = navbarOpenRef.current;
+    
     useEffect(() => {
       const handler = (event) => {
-        if (navbarOpen && ref.current && !ref.current.contains(event.target)) {
-          setNavbarOpen(false);
+        if (navbarOpenRef.current && ref.current && !ref.current.contains(event.target)) {
+          navbarOpenRef.current = false;
+          setNavbarRenderTrigger(prev => prev + 1);
         }
       };
       document.addEventListener("mousedown", handler);
@@ -386,13 +392,19 @@ function TopMenu({
         // Cleanup the event listener
         document.removeEventListener("mousedown", handler);
       };
-    }, [navbarOpen]);
+    }, []);
+    
+    const toggleNavbar = () => {
+      navbarOpenRef.current = !navbarOpenRef.current;
+      setNavbarRenderTrigger(prev => prev + 1);
+    };
+    
     return (
       <>
         <nav ref={ref} className="navbar">
           <button
             className="toggle menu-nav-button"
-            onClick={() => setNavbarOpen((prev) => !prev)}
+            onClick={toggleNavbar}
           >
             {navbarOpen ? (
               <img
@@ -443,7 +455,7 @@ function TopMenu({
         </nav>
       </>
     );
-  };
+  });
 
   return (
     <>
@@ -515,9 +527,25 @@ function TopMenu({
         />
       ) : null}
       {currentMoleculeTop ? <TopLevel /> : null}
-      <Navbar {...{ currentMoleculeTop }} />
+      <Navbar {...{ currentMoleculeTop, renderTrigger: navbarRenderTrigger }} />
     </>
   );
 }
 
-export default TopMenu;
+// Memoize TopMenu with custom comparison to ignore progress-related props
+export default memo(TopMenu, (prevProps, nextProps) => {
+  // Return true if props are equal (should NOT re-render)
+  // Return false if props are different (should re-render)
+  
+  // Ignore changes to progress-related props
+  const propsToIgnore = ['saveState', 'savePopUp', 'setSavePopUp', 'setSaveState'];
+  
+  // Check all other props for changes
+  for (const key in nextProps) {
+    if (!propsToIgnore.includes(key) && prevProps[key] !== nextProps[key]) {
+      return false; // Props changed, should re-render
+    }
+  }
+  
+  return true; // Props are equal (ignoring progress props), should NOT re-render
+});
