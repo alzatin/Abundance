@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState, useRef } from "react";
+import React, { memo, useEffect, useState, useRef, useMemo } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import ShareDialog from "./ShareDialog.jsx";
 import DuplicateProjectDialog from "./DuplicateProjectDialog.jsx";
@@ -157,7 +157,7 @@ function TopMenu({
   };
 
   // objects for navigation items in the top menu
-  const navItems = [
+  const navItems = useMemo(() => [
     {
       id: "Open",
       buttonFunc: () => {
@@ -284,7 +284,7 @@ function TopMenu({
         //tryDelete();
       },
     },
-  ];
+  ], [navigate, setDialog, setShareDialog, setSavePopUp, saveProject, setSaveState, handleDuplicateProject, authRedirectHandler, setSettingsPopUp, setExportPopUp]);
 
   //{checks for top level variable and show go-up button if this is not top molecule
   //i'm not so sure this useeffect is right. put on list to review
