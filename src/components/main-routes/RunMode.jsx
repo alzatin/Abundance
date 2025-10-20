@@ -163,7 +163,7 @@ function runMode() {
     } else {
       /*resetting viewport*/
       GlobalVariables.writeToDisplay(
-        GlobalVariables.currentAWSnode.topMoleculeID || null, // should not be an id unless reseting view
+        GlobalVariables.currentAWSnode?.topMoleculeID || null, // should not be an id unless reseting view
         true
       );
       fetch(
