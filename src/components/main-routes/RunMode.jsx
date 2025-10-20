@@ -59,8 +59,13 @@ function useWindowSize() {
 function runMode() {
   // Get context values
   const { isloggedIn, authorizedUserOcto, authRedirectHandler } = useAuth();
-  const { activeAtom, redirectType, setRedirectType, setActiveAtom, setErrorNotification } =
-    useAppState();
+  const {
+    activeAtom,
+    redirectType,
+    setRedirectType,
+    setActiveAtom,
+    setErrorNotification,
+  } = useAppState();
   const {
     mesh,
     wireMesh,
@@ -156,6 +161,11 @@ function runMode() {
       GlobalVariables.currentMolecule.selected = true;
       setActiveAtom(GlobalVariables.currentMolecule);
     } else {
+      /*resetting viewport*/
+      GlobalVariables.writeToDisplay(
+        GlobalVariables.currentAWSnode?.topMoleculeID || null, // should not be an id unless reseting view
+        true
+      );
       fetch(
         `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
       )
