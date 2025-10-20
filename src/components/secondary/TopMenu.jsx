@@ -310,7 +310,7 @@ function TopMenu({
     );
   };
 
-  const SaveBar = ({ saveState, savePopUp, setSavePopUp }) => {
+  const SaveBar = memo(({ saveState, savePopUp, setSavePopUp }) => {
     if (saveState === 100) {
       // delay and then set savepopupstate to false
       var delayInMilliseconds = 2000; //1 second
@@ -333,9 +333,9 @@ function TopMenu({
         </div>
       </>
     );
-  };
+  });
 
-  const DuplicateBar = ({ duplicateProgress, duplicatingProject }) => {
+  const DuplicateBar = memo(({ duplicateProgress, duplicatingProject }) => {
     return (
       <>
         <div className="save-bar">
@@ -351,9 +351,9 @@ function TopMenu({
         </div>
       </>
     );
-  };
+  });
 
-  const RenameBar = ({ renameProgress, renamingProject }) => {
+  const RenameBar = memo(({ renameProgress, renamingProject }) => {
     return (
       <>
         <div className="save-bar">
@@ -369,10 +369,10 @@ function TopMenu({
         </div>
       </>
     );
-  };
+  });
 
   /*{nav bar toggle component}*/
-  const Navbar = ({ currentMoleculeTop }) => {
+  const Navbar = memo(({ currentMoleculeTop }) => {
     const [navbarOpen, setNavbarOpen] = useState(false);
     const ref = useRef();
     useEffect(() => {
@@ -443,7 +443,7 @@ function TopMenu({
         </nav>
       </>
     );
-  };
+  });
 
   return (
     <>
