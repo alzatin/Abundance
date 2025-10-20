@@ -2,7 +2,7 @@ import * as replicad from "replicad";
 import opencascade from "replicad-opencascadejs/src/replicad_single.js";
 import opencascadeWasm from "replicad-opencascadejs/src/replicad_single.wasm?url";
 import { v4 as uuidv4 } from "uuid";
-import { GeometryProvider } from "./geometryProvider";
+import { GeometryProvider, RequestContext } from "./geometryProvider";
 
 let defaultColor: string = "#aad7f2";
 let loaded: boolean = false;
@@ -61,7 +61,8 @@ function is3D(part: AbundanceObject): boolean {
 }
 
 async function getBounds(
-  geometry: AbundanceObject
+  geometry: AbundanceObject,
+  context: RequestContext
 ): Promise<{ min: number[]; max: number[] }> {
   try {
     let minX = Infinity,
@@ -72,7 +73,7 @@ async function getBounds(
       maxZ = -Infinity;
 
     await actOnLeafs(geometry, async (leaf: AbundanceLeaf) => {
-      const replicadbox = (await geometryProvider!.get(leaf.geometry))
+      const replicadbox = (await geometryProvider!.get(leaf.geometry, context))
         .boundingBox;
       let bbox = replicadbox.bounds;
       minX = Math.min(minX, bbox[0][0]);
@@ -223,6 +224,21 @@ const XYPlane: SimplePlane = {
   normal: [0, 0, 1],
 };
 
+async function hashFileContents(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  let hash = "";
+  if (self.crypto?.subtle) {
+    const digest = await self.crypto.subtle.digest("SHA-256", arrayBuffer);
+    hash = Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  } else {
+    console.warn("SubtleCrypto not available, falling back to simple hash");
+    hash = hashString(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+  }
+  return hash;
+}
+
 /**
  * Generates a concise 32-bit FNV-1a hash for a string (suitable for cache keys).
  * @param {string} str - The input string to hash (e.g., G-code)
@@ -249,6 +265,7 @@ export {
   generateUniqueID,
   geometryProvider,
   getBounds,
+  hashFileContents,
   hashString,
   init,
   is3D,

@@ -296,6 +296,42 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 
   // Commit changes to actual control values
   const commitChange = (key, value, config) => {
+    // For number types, validate that the value is not NaN
+    if (config.type === "number" || config.type === "range") {
+      if (isNaN(value) || value === null || value === undefined) {
+        // Invalid number - revert to previous valid value
+        setLocalValues((prev) => {
+          const next = { ...prev };
+          delete next[key]; // Remove from local state to show committed value
+          return next;
+        });
+        return; // Don't commit invalid values
+      }
+    }
+
+    // For point types, validate all array elements
+    if (config.type === "point") {
+      if (Array.isArray(value)) {
+        const hasInvalidValue = value.some((v) => {
+          // Handle intermediate typing states
+          if (typeof v === "string" && (v === "" || v === "-")) {
+            return false; // Allow intermediate states during typing
+          }
+          const numValue = Number(v);
+          return isNaN(numValue);
+        });
+        if (hasInvalidValue) {
+          // Invalid point - revert to previous valid value
+          setLocalValues((prev) => {
+            const next = { ...prev };
+            delete next[key]; // Remove from local state to show committed value
+            return next;
+          });
+          return; // Don't commit invalid values
+        }
+      }
+    }
+
     setControlValue(key, value);
     setLocalValues((prev) => {
       const next = { ...prev };
@@ -585,12 +621,37 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                               onChange={(e) => {
                                 if (!isDisabled) {
                                   const val = Number(e.target.value);
-                                  const arr = [...currentArrayValue];
-                                  arr[axisIdx] = val;
-                                  handleLocalChange(key, arr);
+                                  // Allow intermediate typing states
+                                  if (e.target.value === "" || e.target.value === "-") {
+                                    const arr = [...currentArrayValue];
+                                    arr[axisIdx] = e.target.value;
+                                    handleLocalChange(key, arr);
+                                  } else {
+                                    const arr = [...currentArrayValue];
+                                    arr[axisIdx] = val;
+                                    handleLocalChange(key, arr);
+                                  }
                                 }
                               }}
                               onBlur={() => {
+                                // Commit changes when leaving the input
+                                const arr = [...currentArrayValue];
+                                // Ensure all values are valid numbers
+                                for (let i = 0; i < arr.length; i++) {
+                                  const numValue = Number(arr[i]);
+                                  // Only set to number if it's valid, otherwise use fallback
+                                  if (!isNaN(numValue)) {
+                                    arr[i] = numValue;
+                                  } else {
+                                    // Get the committed value from controlValues as fallback
+                                    const committedValue = Array.isArray(controlValues[key]) 
+                                      ? controlValues[key][i] 
+                                      : 0;
+                                    arr[i] = committedValue;
+                                  }
+                                }
+                                commitChange(key, arr, config);
+                                
                                 setFocusedAxis((fa) => ({
                                   ...fa,
                                   [key]: undefined,
@@ -659,32 +720,29 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         <input
                           type="number"
                           value={currentValue ?? 0}
-                          onChange={(e) =>
-                            handleLocalChange(key, Number(e.target.value))
-                          }
-                          onBlur={(e) =>
-                            commitChange(key, Number(e.target.value), config)
-                          }
+                          onChange={(e) => {
+                            const numValue = Number(e.target.value);
+                            // Allow empty string for intermediate state while typing
+                            if (e.target.value === "" || e.target.value === "-") {
+                              handleLocalChange(key, e.target.value);
+                            } else {
+                              handleLocalChange(key, numValue);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            const numValue = Number(e.target.value);
+                            commitChange(key, numValue, config);
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
-                              commitChange(key, Number(e.target.value), config);
+                              const numValue = Number(e.target.value);
+                              commitChange(key, numValue, config);
                               e.preventDefault();
                             }
                           }}
                           {...commonProps}
                         />
                       </div>
-                    );
-                  case "spacer":
-                    return (
-                      <div
-                        key={key}
-                        style={{
-                          height: config.height || 12,
-                          width: "100%",
-                          minHeight: 1,
-                        }}
-                      />
                     );
                   case "list":
                     return (
@@ -897,13 +955,23 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           min={config.min}
                           max={config.max}
                           step={config.step}
-                          onChange={(e) => handleChange(Number(e.target.value))}
-                          onBlur={(e) =>
-                            commitChange(key, Number(e.target.value), config)
-                          }
+                          onChange={(e) => {
+                            const numValue = Number(e.target.value);
+                            // Allow empty string for intermediate state while typing
+                            if (e.target.value === "" || e.target.value === "-") {
+                              handleLocalChange(key, e.target.value);
+                            } else {
+                              handleChange(numValue);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            const numValue = Number(e.target.value);
+                            commitChange(key, numValue, config);
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
-                              commitChange(key, Number(e.target.value), config);
+                              const numValue = Number(e.target.value);
+                              commitChange(key, numValue, config);
                               e.preventDefault();
                             }
                           }}

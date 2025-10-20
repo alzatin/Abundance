@@ -1076,6 +1076,22 @@ export default class Molecule extends Atom {
     return true;
   }
 
+  disable() {
+    this.setDisabled(false);
+    this.nodesOnTheScreen.forEach((atom) => {
+      atom.disable();
+    });
+  }
+
+  async recomputeAll() {
+    this.disable();
+    await GlobalVariables.cad.clearCache(this.getContext());
+    this.enable();
+    for (const atom of this.nodesOnTheScreen) {
+      atom.enable();
+    }
+  }
+
   /**
    * Loads a project into this GitHub molecule from GitHub based on the passed GitHub object.
    * This function is async and execution time depends on project complexity and network speed.

@@ -89,7 +89,11 @@ export default class Export extends Atom {
    * Update the displayed svg file
    */
   compute(inputs) {
-    return GlobalVariables.cad.visExport(inputs.geometry, inputs["File Type"]);
+    return GlobalVariables.cad.visExport(
+      inputs.geometry,
+      inputs["File Type"],
+      this.getContext()
+    );
   }
 
   createInputParams(setInputChanged) {
@@ -173,14 +177,16 @@ export default class Export extends Atom {
     let fileType = this.findIOValue("File Type");
     let resolution = this.findIOValue("Resolution (dpi)");
     let partName = this.findIOValue("Part Name");
+    let geometry = this.findIOValue("geometry");
 
     console.log(this);
     GlobalVariables.cad
       .downExport(
-        this.value,
+        geometry,
         fileType,
         resolution,
-        GlobalVariables.topLevelMolecule.unitsKey
+        GlobalVariables.topLevelMolecule.unitsKey,
+        this.getContext()
       )
       .then((result) => {
         console.log("Export result");
