@@ -520,4 +520,20 @@ function TopMenu({
   );
 }
 
-export default TopMenu;
+// Memoize TopMenu with custom comparison to ignore progress-related props
+export default memo(TopMenu, (prevProps, nextProps) => {
+  // Return true if props are equal (should NOT re-render)
+  // Return false if props are different (should re-render)
+  
+  // Ignore changes to progress-related props
+  const propsToIgnore = ['saveState', 'savePopUp', 'setSavePopUp', 'setSaveState'];
+  
+  // Check all other props for changes
+  for (const key in nextProps) {
+    if (!propsToIgnore.includes(key) && prevProps[key] !== nextProps[key]) {
+      return false; // Props changed, should re-render
+    }
+  }
+  
+  return true; // Props are equal (ignoring progress props), should NOT re-render
+});
