@@ -14,12 +14,12 @@ export default memo(function LowerHalf({ windowSize }) {
   useEffect(() => {
     /*Reset the camera zoom to 1 when a new molecule is loaded*/
     setCameraZoom(1);
-  }, [globalvariables.topLevelMolecule]);
+  }, [globalvariables.currentAWSnode]);
 
   useEffect(() => {
     if (cameraZoom == 1 && mesh[0]) {
+      console.log("mesh[0].cameraZoom", mesh[0].cameraZoom);
       setCameraZoom(mesh[0].cameraZoom);
-      console.log("cameraZoom", cameraZoom);
     }
   }, [mesh]);
 
