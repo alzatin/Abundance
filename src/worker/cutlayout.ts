@@ -365,7 +365,8 @@ async function rotateForLayout(
       ...leaf,
       geometry: await util.geometryProvider!.addSingularToCache(
         newGeom,
-        context
+        context,
+        leafID.toString()
       ),
       id: leafID,
       referencePoint: selected.face.center,
