@@ -640,7 +640,7 @@ class GeometryProvider {
     if (sketchIds.length != planes.length) {
       throw new Error("Number of sketches and planes must match");
     }
-    const loftId = this._makeId("loft", ...sketchIds);
+    const loftId = this._makeId("loft", ...sketchIds, ...planes);
     await this.createIfAbsent(loftId, context, async () => {
       const sketches = [];
       for (let i = 0; i < sketchIds.length; i++) {
