@@ -376,6 +376,7 @@ export default class Molecule extends Atom {
     var distFromClick = GlobalVariables.distBetweenPoints(x, this.x, y, this.y);
 
     if (distFromClick < this.radius * 2) {
+      GlobalVariables.writeToDisplay(this, true); // reset display to clear background mesh.
       GlobalVariables.currentMolecule = this; //set this to be the currently displayed molecule
       this.enableAllChildren();
 
@@ -385,6 +386,9 @@ export default class Molecule extends Atom {
        */
       this.selected = false;
       clickProcessed = true;
+
+      // update to the new current molecule's background mesh
+      this.getOutputAtom()?.sendToRender();
     }
 
     return clickProcessed;
@@ -888,7 +892,7 @@ export default class Molecule extends Atom {
       GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
         atom.selected = false;
       });
-
+      GlobalVariables.writeToDisplay(this.value, true); // reset the display to clear our background output mesh.
       GlobalVariables.currentMolecule = GlobalVariables.currentMolecule.parent; //set parent this to be the currently displayed molecule
       GlobalVariables.currentMolecule.enableAllChildren();
 
@@ -899,6 +903,9 @@ export default class Molecule extends Atom {
       if (value !== null && value !== undefined) {
         this.setReady(value);
       }
+      this.selected = true;
+      this.sendToRender();
+      GlobalVariables.currentMolecule.getOutputAtom()?.sendToRender();
     }
   }
 
@@ -1604,12 +1611,6 @@ export default class Molecule extends Atom {
     return state;
   }
 
-  sendToRender() {
-    //Send code to JSxCAD to render
-    //console.log(this);
-    GlobalVariables.writeToDisplay(this.value);
-  }
-
   /**
    * Get the path from the top-level molecule to the current molecule
    * @returns {string[]} Array of molecule names representing the path
@@ -1673,5 +1674,28 @@ export default class Molecule extends Atom {
         break;
       }
     }
+  }
+
+  setNewCurrentMolecule(newCurrent) {
+    // Steps:
+    // going up
+    // deselect all atoms on the screen
+    // update currentMolecule to new Current
+    // clear background mesh
+    // enable all children of the new current molecule
+    // set prior current molecule as selected. TODO: does this automatically render it's mesh?
+    // if going up more than one step, then only set the most-recent-child as selected.
+
+    // going down
+    // deselect all atoms on the screen
+    // disable downstream atoms from current?
+    // update current to new value
+    // enable all children
+    // clear background mesh
+    // render output atom as new background mesh
+
+    const prior = GlobalVariables.currentMolecule;
+    GlobalVariables.currentMolecule = newCurrent;
+    GlobalVariables.currentMolecule.enableAllChildren();
   }
 }
