@@ -16,6 +16,7 @@ import CreateMode from "./components/main-routes/CreateMode.jsx";
 import UserGuidePage from "./components/main-routes/UserGuidePage.jsx";
 import cadWorker from "./worker/worker.js?worker";
 import WorkerURL from "./worker/worker.js?url&worker";
+import RendererURL from "./worker/worker.ts?url&worker";
 import * as workerpool from "workerpool";
 
 import { QueryClient, QueryClientProvider } from "react-query";
@@ -49,7 +50,14 @@ const queryClient = new QueryClient();
  */
 
 const pool = workerpool.pool(WorkerURL, {
-    maxWorkers: 3,
+    maxWorkers: 1,
+    workerOpts: {
+        // By default, Vite uses a module worker in dev mode, which can cause your application to fail. Therefore, we need to use a module worker in dev mode and a classic worker in prod mode.
+        type: import.meta.env.PROD ? undefined : "module"
+    }
+});
+const renderer = workerpool.pool(RendererURL, {
+    maxWorkers: 1,
     workerOpts: {
         // By default, Vite uses a module worker in dev mode, which can cause your application to fail. Therefore, we need to use a module worker in dev mode and a classic worker in prod mode.
         type: import.meta.env.PROD ? undefined : "module"
