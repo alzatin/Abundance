@@ -4,7 +4,7 @@ const ATOM_PREDICTIONS = {
   Difference: ["Move", "Fusion", "Tag"],
   Assembly: ["ExtractTag", "Export", "Tag"],
   Fusion: ["Move", "Assembly", "Tag"],
-  Loft: ["Extrude", "Move", "Tag"],
+  Loft: ["Move", "Tag"],
   ShrinkWrap: ["Move", "Fusion", "Tag"],
   Readme: [],
   "Add-BOM-Tag": ["Tag", "Readme", "Tag"],
