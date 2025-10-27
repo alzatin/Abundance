@@ -27,6 +27,7 @@ import {
 } from "./tags";
 import type { AbundanceObject, AbundanceLeaf } from "./util";
 import * as util from "./util";
+import * as workerpool from "workerpool";
 
 // --- Type Definitions ---
 
@@ -699,6 +700,13 @@ async function clearCache(context: RequestContext): Promise<boolean> {
   await started;
   return util.geometryProvider!.clearCache(context);
 }
+
+workerpool.worker({
+  generateDisplayMesh: generateDisplayMesh,
+  rectangle: rectangle,
+  extrude: extrude,
+  createMesh: createMesh,
+});
 
 if (
   typeof self !== "undefined" &&
