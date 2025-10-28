@@ -11,6 +11,7 @@ import {
   Scene,
   Mesh,
   MeshBasicMaterial,
+  LineBasicMaterial,
   PerspectiveCamera,
   Vector3,
 } from "three";
@@ -21,6 +22,7 @@ import {
 } from "replicad-threejs-helper";
 import { Wireframe } from "@react-three/drei";
 import { useRendering } from "../../contexts/index.js";
+import { SVGRenderer } from "three/examples/jsm/renderers/SVGRenderer.js";
 
 export default React.memo(
   forwardRef(function ShapeMeshes({ isSolid }, ref) {
@@ -76,6 +78,9 @@ export default React.memo(
         const svg = await meshArrayToSVG2(fullMesh);
         console.log("Generated SVG thumbnail in ReplicadMesh.", svg);
         return svg;
+        /* METHOD WITH SVG RENDERER, TOO EXPENSIVE 
+        let svg = meshArrayToSVG(fullMesh);
+        console.log("Generated SVG thumbnail in ReplicadMesh.", svg);*/
       },
     }));
 
@@ -167,7 +172,9 @@ export default React.memo(
           path += `M${x1},${y1} L${x2},${y2} `;
         }
         centeredPaths.push(
-          //`<path d="${path.trim()}" stroke="${m.color}" fill="none"/>`
+          /*`<path d="${path.trim()}" stroke="${
+            m.color
+          }" stroke-width="4" fill="none"/>`*/
           `<path d="${path.trim()}" stroke="black"  stroke-width="4"  fill="red"/>`
         );
       });
@@ -176,6 +183,111 @@ export default React.memo(
       const svgWidth = maxX - minX;
       const svgHeight = maxY - minY;
       return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">${centeredPaths.join("\n")}</svg>`;
+    }
+
+    function meshArrayToSVG(meshArray, width = 1000, height = 1000) {
+      let scene = new Scene();
+      let camera = new PerspectiveCamera(25, width / height, 0.1, 1000);
+      camera.position.set(80, 80, 50);
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld();
+      camera.updateProjectionMatrix();
+      // Convert meshArray entries to Three.js Meshes and add to scene
+      meshArray.forEach((m, i) => {
+        if (m.body && m.color) {
+          // Add the solid mesh (if body exists)
+          const meshMat = new MeshBasicMaterial({ color: m.color });
+          const mesh = new Mesh(m.body, meshMat);
+          scene.add(mesh);
+          // Add the line/wireframe (if lines exist)
+          if (m.lines) {
+            const lineMat = new LineBasicMaterial({
+              color: "#000000",
+              linewidth: 3,
+            });
+            const line = new THREE.Line(m.lines, lineMat);
+            scene.add(line);
+          }
+          // Debug: Log created mesh and geometry
+          console.log(`[DEBUG] Created Mesh #${i}:`, mesh);
+          if (
+            mesh.geometry &&
+            mesh.geometry.attributes &&
+            mesh.geometry.attributes.position
+          ) {
+            console.log(
+              `[DEBUG] Mesh #${i} position count:`,
+              mesh.geometry.attributes.position.count
+            );
+          } else {
+            console.warn(`[DEBUG] Mesh #${i} has no valid geometry.position`);
+          }
+        } else {
+          console.warn(
+            `[DEBUG] meshArray entry #${i} missing body or color`,
+            m
+          );
+        }
+      });
+
+      // Setup the svg renderer
+      const svgRenderer = new SVGRenderer();
+      svgRenderer.setSize(width, height);
+
+      // Optionally append to DOM for debugging (browser only)
+      if (
+        typeof window !== "undefined" &&
+        svgRenderer.domElement &&
+        !svgRenderer.domElement.parentNode
+      ) {
+        document.body.appendChild(svgRenderer.domElement);
+      }
+
+      // Render the scene
+      svgRenderer.render(scene, camera);
+
+      // Get SVG output as a valid SVG markup string
+      let svgOutput = "";
+      if (svgRenderer.domElement) {
+        // If domElement is an <svg> element
+        if (
+          svgRenderer.domElement.tagName &&
+          svgRenderer.domElement.tagName.toLowerCase() === "svg"
+        ) {
+          svgOutput = svgRenderer.domElement.outerHTML;
+        } else {
+          // If domElement is a container, try to find the <svg> child
+          const svgChild =
+            svgRenderer.domElement.querySelector &&
+            svgRenderer.domElement.querySelector("svg");
+          if (svgChild && svgChild.outerHTML) {
+            svgOutput = svgChild.outerHTML;
+          } else if (svgRenderer.domElement.outerHTML) {
+            svgOutput = svgRenderer.domElement.outerHTML;
+          } else if (typeof XMLSerializer !== "undefined") {
+            svgOutput = new XMLSerializer().serializeToString(
+              svgRenderer.domElement
+            );
+          }
+        }
+      }
+      console.log("[DEBUG] SVG output string:", svgOutput);
+      downloadSVG(svgOutput, "my-model.svg");
+      return svgOutput;
+    }
+
+    function downloadSVG(svgString, filename = "drawing.svg") {
+      const blob = new Blob([svgString], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 0);
     }
 
     useEffect(
@@ -211,6 +323,7 @@ export default React.memo(
     return (
       <>
         {fullMesh.map((m, index) => {
+          console.log(m);
           return (
             <group key={"group" + m.color + index}>
               {!isSolid ? (
