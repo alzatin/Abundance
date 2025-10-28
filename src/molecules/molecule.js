@@ -615,7 +615,7 @@ export default class Molecule extends Atom {
     try {
       // Save the current molecule path so we can navigate back to it after undo
       const currentMoleculePath = this.getMoleculePath();
-      
+
       // Get the last saved state and operation info
       let rawFile = JSON.parse(
         GlobalVariables.recentMoleculeRepresentation.pop()
@@ -688,9 +688,11 @@ export default class Molecule extends Atom {
             bomList[bomElement.BOMitemName].numberNeeded +=
               bomElement.numberNeeded;
             // Round to nearest penny to avoid floating-point precision errors
-            bomList[bomElement.BOMitemName].costUSD = Math.round(
-              (bomList[bomElement.BOMitemName].costUSD + bomElement.costUSD) * 100
-            ) / 100;
+            bomList[bomElement.BOMitemName].costUSD =
+              Math.round(
+                (bomList[bomElement.BOMitemName].costUSD + bomElement.costUSD) *
+                  100
+              ) / 100;
           }
         });
 
@@ -1102,7 +1104,8 @@ export default class Molecule extends Atom {
   async loadGithubMoleculeByName(
     gitObj,
     oldObject = {},
-    oldParentObjectConnectors = []
+    oldParentObjectConnectors = [],
+    position
   ) {
     let octokit = new Octokit();
     try {
@@ -1149,8 +1152,8 @@ export default class Molecule extends Atom {
               ioValues: oldObject.ioValues,
             };
           } else {
-            let xPos = 0.5;
-            let yPos = 0.6;
+            let xPos = position ? position.x : 0.5;
+            let yPos = position ? position.y : 0.6;
             //If there's no last click default to middle of screen
             if (GlobalVariables.lastClick) {
               xPos = GlobalVariables.pixelsToWidth(
@@ -1605,18 +1608,18 @@ export default class Molecule extends Atom {
   getMoleculePath() {
     const path = [];
     let currentMolecule = GlobalVariables.currentMolecule;
-    
+
     // Build path from current molecule back to top level
     while (currentMolecule && !currentMolecule.topLevel) {
       path.unshift(currentMolecule.name);
       currentMolecule = currentMolecule.parent;
     }
-    
+
     // Add the top level molecule name if it exists
     if (currentMolecule && currentMolecule.topLevel) {
       path.unshift(currentMolecule.name);
     }
-    
+
     return path;
   }
 
@@ -1627,34 +1630,37 @@ export default class Molecule extends Atom {
   navigateToMoleculePath(moleculePath) {
     // Start from the top level molecule
     GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
-    
+
     // If the path is empty or only contains the top level, we're done
     if (moleculePath.length <= 1) {
       GlobalVariables.currentMolecule.enableAllChildren();
       return;
     }
-    
+
     // Navigate through the path (skip the first element which is the top level)
     for (let i = 1; i < moleculePath.length; i++) {
       const targetMoleculeName = moleculePath[i];
       let foundMolecule = null;
-      
+
       // Look for a molecule with the target name in the current molecule's nodes
       if (GlobalVariables.currentMolecule.nodesOnTheScreen) {
         foundMolecule = GlobalVariables.currentMolecule.nodesOnTheScreen.find(
-          (atom) => 
-            (atom.atomType === "Molecule" || atom.atomType === "GitHubMolecule") && 
+          (atom) =>
+            (atom.atomType === "Molecule" ||
+              atom.atomType === "GitHubMolecule") &&
             atom.name === targetMoleculeName
         );
       }
-      
+
       if (foundMolecule) {
         // Navigate into this molecule
         GlobalVariables.currentMolecule = foundMolecule;
         GlobalVariables.currentMolecule.enableAllChildren();
       } else {
         // If we can't find a molecule in the path, stop at the current level
-        console.warn(`Cannot find molecule "${targetMoleculeName}" in path, stopping navigation at current level`);
+        console.warn(
+          `Cannot find molecule "${targetMoleculeName}" in path, stopping navigation at current level`
+        );
         break;
       }
     }
