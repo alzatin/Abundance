@@ -1362,6 +1362,46 @@ function LoginMode() {
               </div>
             </div>
           </section>
+        ) : noUserBrowsing ? (
+          <section id="mobile-nav" className="top-nav">
+            <input id="menu-toggle-guest" type="checkbox" />
+            <label className="menu-button-container" htmlFor="menu-toggle-guest">
+              <div className="menu-button"></div>
+            </label>
+
+            <div className="menu">
+              <div
+                className="login-nav-item"
+                onClick={() => {
+                  setNoUserBrowsing(false);
+                }}
+              >
+                <p>Login</p>
+              </div>
+              <div
+                className={
+                  "login-nav-item" +
+                  (projectToShow == "featured" ? " login-nav-item-clicked" : "")
+                }
+                onClick={() => {
+                  setProjectsToShow("featured");
+                }}
+              >
+                <p> Browse Featured Projects</p>
+              </div>
+              <div
+                className={
+                  "login-nav-item" +
+                  (projectToShow == "all" ? " login-nav-item-clicked" : "")
+                }
+                onClick={() => {
+                  setProjectsToShow("all");
+                }}
+              >
+                <p> Browse All Other Projects</p>
+              </div>
+            </div>
+          </section>
         ) : null}
       </div>
       {popUpContent}
