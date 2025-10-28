@@ -1154,15 +1154,7 @@ export default class Molecule extends Atom {
           } else {
             let xPos = position ? position.x : 0.5;
             let yPos = position ? position.y : 0.6;
-            //If there's no last click default to middle of screen
-            if (GlobalVariables.lastClick) {
-              xPos = GlobalVariables.pixelsToWidth(
-                GlobalVariables.lastClick[0]
-              );
-              yPos = GlobalVariables.pixelsToHeight(
-                GlobalVariables.lastClick[1]
-              );
-            }
+
             valuesToOverwriteInLoadedVersion = {
               uniqueID: newMoleculeUniqueID,
               parentRepo: gitObj,

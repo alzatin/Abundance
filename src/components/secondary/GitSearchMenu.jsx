@@ -67,7 +67,7 @@ export default function GitSearchMenu({
    */
   function placeGitHubMolecule(e, item, position) {
     GlobalVariables.currentMolecule
-      .loadGithubMoleculeByName(item, position)
+      .loadGithubMoleculeByName(item, {}, [], position)
       .catch(() => {
         setErrorNotification(`Error: Project Missing`);
         // Auto-dismiss notification after 3 seconds
