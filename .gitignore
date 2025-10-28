@@ -5,5 +5,5 @@ dist/
 coverage/
 # Puppeteer test screenshots (generated during CI)
 Puppet/images/*.png
-# Vitest browser test screenshots (generated during tests)
+# Vitest test screenshots (generated during tests)
 tests/__screenshots__/
