@@ -3,7 +3,7 @@ import Connector from "../prototypes/connector.js";
 import AttachmentPoint from "../prototypes/attachmentpoint.js";
 import GlobalVariables from "../js/globalvariables.js";
 
-import { Octokit } from "https://esm.sh/octokit@2.0.19";
+import { Octokit } from "octokit";
 import { BOMEntry } from "../js/BOM";
 
 import { Status } from "../prototypes/observableEntity.js";
