@@ -818,11 +818,13 @@
   padding: 10px;
   display: flex;
   align-items: center;
-  position: absolute;
-  right: 35%;
+  position: fixed;
+  left: 50%;
   top: 45%;
+  transform: translateX(-50%);
   border-radius: 5px;
   width: 400px;
+  max-width: 90%;
   z-index: 5;
 }
 .save-bar-label {
@@ -866,6 +868,15 @@
     width: 90%;
     margin: 30px 10px;
     padding: 30px 10px;
+  }
+  .save-bar-run {
+    width: 90%;
+    max-width: 350px;
+    font-size: 12px;
+    padding: 8px;
+  }
+  .save-bar-run .progress {
+    width: 100%;
   }
 }
 
