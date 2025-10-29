@@ -110,12 +110,6 @@ export default class Gcode extends Atom {
     this.center = [0, 0, 0]; //Used to correctly position the gcode
 
     /**
-     * Flag to track if we're processing an assembly
-     * @type {boolean}
-     */
-    this._isProcessingAssembly = false;
-
-    /**
      * Direction to sort parts in assemblies
      * @type {string}
      */
@@ -247,7 +241,6 @@ export default class Gcode extends Atom {
    * @param {string} inputID - The input geometry ID
    */
   async _processSinglePart(inputID) {
-    this._isProcessingAssembly = false;
     GlobalVariables.cad
       .visExport(inputID, "STL")
       .then((visExported) => {
@@ -286,8 +279,6 @@ export default class Gcode extends Atom {
    */
   async _processAssembly(inputID) {
     try {
-      this._isProcessingAssembly = true;
-
       // Extract individual parts from assembly
       const parts = await this._extractPartsFromAssembly(inputID);
 
