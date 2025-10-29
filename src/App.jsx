@@ -58,6 +58,7 @@ function AppContent() {
     setRenderProgress,
     setRenderBarVisible,
     setTopLevelWireMesh,
+    setPlane,
   } = useRendering();
 
   const {
@@ -175,6 +176,7 @@ function AppContent() {
           .then((m) => {
             setMesh(m);
             setOutdatedMesh(false);
+            setPlane(moleculeValue?.plane);
           })
           .catch((e) => {
             console.error("Can't display Mesh " + e);
