@@ -770,7 +770,6 @@ function CreateMode() {
         GlobalVariables.topLevelMolecule.getContext()
       )
       .then(async (m) => {
-        console.log(m);
         const svg = await meshRef.current.buildThumbnail(m);
         console.log("Project thumbnail generated.");
         return svg;

@@ -23,18 +23,14 @@ import {
 import { Wireframe } from "@react-three/drei";
 import { useRendering } from "../../contexts/index.js";
 import { SVGRenderer } from "three/examples/jsm/renderers/SVGRenderer.js";
-import { Global } from "@emotion/react";
 import globalvariables from "../../js/globalvariables.js";
 
 export default React.memo(
   forwardRef(function ShapeMeshes({ isSolid, cameraZoom }, ref) {
     const { mesh, setOutdatedMesh } = useRendering();
     const { invalidate } = useThree();
-    //const body = useRef(new BufferGeometry());
-    //const lines = useRef(new BufferGeometry());
 
     const [fullMesh, setFullMesh] = useState([]);
-    console.log("cameraZoom in ReplicadMesh:", cameraZoom);
 
     useLayoutEffect(() => {
       let meshArray = makeMeshes(mesh);
@@ -85,7 +81,7 @@ export default React.memo(
       buildThumbnail: async (m) => {
         const meshArray = makeMeshes(m);
         const svg = await meshArrayToSVG2(meshArray);
-        console.log("Generated SVG thumbnail in ReplicadMesh.", svg);
+        //console.log("Generated SVG thumbnail in ReplicadMesh.", svg);
         return svg;
         /* METHOD WITH SVG RENDERER, TOO EXPENSIVE 
         let svg = meshArrayToSVG(fullMesh);
@@ -96,17 +92,16 @@ export default React.memo(
     function meshArrayToSVG2(meshArray, width = 1000, height = 1000) {
       // 1. Setup camera (match your 3D scene)
       const camera = new PerspectiveCamera(25, width / height, 0.1, 1000);
-      camera.zoom = cameraZoom * 10;
-      camera.position.set(3000, 3000, 5000);
-      /* const projectUnits = globalvariables.topLevelMolecule?.unitsKey;
-
-      if (projectUnits === "Inches") {
-        camera.position.set(80, 80, 50);
-      } else {
-        camera.position.set(450, 450, 100);
-      }*/
-
-      //camera.position.set(800, 800, 100);
+      if (globalvariables.topLevelMolecule) {
+        const projectUnits =
+          globalvariables.topLevelMolecule?.unitsKey || "Millimeters";
+        if (projectUnits === "Inches") {
+          camera.zoom = cameraZoom * 5;
+        } else {
+          camera.zoom = cameraZoom * 10;
+        }
+      }
+      camera.position.set(3000, 3000, 2000);
       camera.lookAt(0, 0, 0);
       camera.updateMatrixWorld();
       camera.updateProjectionMatrix();
