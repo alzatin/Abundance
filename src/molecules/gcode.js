@@ -600,21 +600,15 @@ export default class Gcode extends Atom {
     };
 
     const partName = this.findIOValue("Part Name") || this.partName || "output";
-    // For assemblies, show "Assembly" in the button name, otherwise use the part name
-    const displayName = this._isProcessingAssembly
-      ? `${partName}_assembly`
-      : partName;
-    inputParams[`Download Gcode - ${displayName}`] = {
+    inputParams[`Download Gcode - ${partName}`] = {
       type: "button",
-      label: `Download Gcode - ${displayName}`,
+      label: `Download Gcode - ${partName}`,
       onClick: () => {
         if (this.gcodeGenerated && this.gcodeString) {
           // Get the current part name dynamically when button is clicked
           const currentPartName =
             this.findIOValue("Part Name") || this.partName || "output";
-          const fileName = this._isProcessingAssembly
-            ? `${currentPartName}_assembly.gcode`
-            : `${currentPartName}.gcode`;
+          const fileName = `${currentPartName}.gcode`;
           this.downloadGcode(this.gcodeString, fileName);
         } else {
           console.warn("No G-code available. Please generate G-code first.");
