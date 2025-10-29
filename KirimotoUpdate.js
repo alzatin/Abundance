@@ -145,7 +145,7 @@ const generateGcode = (
         camRetractFeed: 300,
         camSpindleSpeed: speed,
         camFastFeed: 6000,
-        camFastFeedZ: 300,
+        camFastFeedZ: speed, // Match Z feed to speed to maintain feedrate during ramp down
         ops: [
           {
             type: "outline",
