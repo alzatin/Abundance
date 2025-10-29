@@ -88,20 +88,24 @@ export default React.memo(
         console.log("Generated SVG thumbnail in ReplicadMesh.", svg);*/
       },
     }));
-
-    function meshArrayToSVG2(meshArray, width = 1000, height = 1000) {
+    /**
+     * Convert an array of mesh objects to an SVG string.
+     */
+    function meshArrayToSVG2(meshArray, width = 800, height = 800) {
       // 1. Setup camera (match your 3D scene)
       const camera = new PerspectiveCamera(25, width / height, 0.1, 1000);
       if (globalvariables.topLevelMolecule) {
         const projectUnits =
           globalvariables.topLevelMolecule?.unitsKey || "Millimeters";
         if (projectUnits === "Inches") {
-          camera.zoom = cameraZoom * 5;
+          camera.zoom = cameraZoom;
+          camera.position.set(100, 100, 50);
         } else {
-          camera.zoom = cameraZoom * 10;
+          camera.position.set(1000, 1000, 500);
+          camera.zoom = cameraZoom;
         }
       }
-      camera.position.set(3000, 3000, 2000);
+
       camera.lookAt(0, 0, 0);
       camera.updateMatrixWorld();
       camera.updateProjectionMatrix();
@@ -198,7 +202,9 @@ export default React.memo(
       const svgHeight = maxY - minY;
       return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">${centeredPaths.join("\n")}</svg>`;
     }
-
+    /**
+     * Convert an array of mesh objects to an SVG string with SVGRenderer. (UNUSED)
+     */
     function meshArrayToSVG(meshArray, width = 1000, height = 1000) {
       let scene = new Scene();
       let camera = new PerspectiveCamera(25, width / height, 0.1, 1000);
