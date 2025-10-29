@@ -47,7 +47,11 @@ const LowerHalf = forwardRef(function LowerHalf({ windowSize }, ref) {
             >
               {wireParam ? <WireframeMesh /> : null}
               <TopLevelWireframeMesh />
-              <ReplicadMesh isSolid={solidParam} ref={ref} />
+              <ReplicadMesh
+                isSolid={solidParam}
+                ref={ref}
+                cameraZoom={cameraZoom}
+              />
             </ThreeContext>
           ) : (
             <div

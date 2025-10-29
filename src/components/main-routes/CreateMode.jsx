@@ -770,8 +770,8 @@ function CreateMode() {
         GlobalVariables.topLevelMolecule.getContext()
       )
       .then(async (m) => {
-        const svg = await meshRef.current.buildThumbnail();
-        console.log("Generated project thumbnail SVG in ReplicadMesh.", svg);
+        console.log(m);
+        const svg = await meshRef.current.buildThumbnail(m);
         console.log("Project thumbnail generated.");
         return svg;
       });

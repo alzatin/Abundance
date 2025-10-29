@@ -604,7 +604,7 @@ async function generateDisplayMesh(
   context: RequestContext
 ): Promise<DisplayMesh[]> {
   await started;
-  console.log("Generating display mesh for ID:", JSON.stringify(id));
+  console.log("Generating display mesh for ID:" /*JSON.stringify(id)*/);
   let geom = undefined;
   if (util.isAbundanceObject(id) && id.geometry.length !== 0) {
     geom = id;
