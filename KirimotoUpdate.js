@@ -145,7 +145,7 @@ const generateGcode = (
         camRetractFeed: 300,
         camSpindleSpeed: speed,
         camFastFeed: 6000,
-        camFastFeedZ: 300,
+        camFastFeedZ: speed, // Match Z feed to speed to maintain feedrate during ramp down
         ops: [
           {
             type: "outline",
@@ -155,7 +155,7 @@ const generateGcode = (
             steps: 1,
             down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
             rate: speed,
-            plunge: 300,
+            plunge: speed, // Match plunge rate to XY feedrate for consistent speed during ramp down
             dogbones: false,
             omitvoid: false,
             omitthru: false,
@@ -175,7 +175,7 @@ const generateGcode = (
             steps: 1,
             down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
             rate: speed,
-            plunge: 300,
+            plunge: speed, // Match plunge rate to XY feedrate for consistent speed during ramp down
             dogbones: false,
             omitvoid: false,
             omitthru: true,
