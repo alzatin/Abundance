@@ -62,6 +62,7 @@ function CreateMode() {
   } = useRendering();
 
   const { cad, loadProject } = useProject();
+  const meshRef = useRef();
 
   const navigate = useNavigate();
 
@@ -78,6 +79,7 @@ function CreateMode() {
   const [settingsPopUp, setSettingsPopUp] = useState(false);
   // Ref to always have latest settingsPopUp value in event handlers
   const settingsPopUpRef = useRef(settingsPopUp);
+
   useEffect(() => {
     settingsPopUpRef.current = settingsPopUp;
   }, [settingsPopUp]);
@@ -760,6 +762,20 @@ function CreateMode() {
     }
   };
 
+  const generateProjectThumbnail = async () => {
+    //Generate a thumbnail for the project
+    return await GlobalVariables.cad
+      .generateDisplayMesh(
+        GlobalVariables.topLevelMolecule.value,
+        GlobalVariables.topLevelMolecule.getContext()
+      )
+      .then(async (m) => {
+        const svg = await meshRef.current.buildThumbnail(m);
+        console.log("Project thumbnail generated.");
+        return svg;
+      });
+  };
+
   /**
    * Saves project by making a commit to the Github repository.
    * @param {Function} setSaveProgress - Function to update save progress
@@ -799,11 +815,9 @@ function CreateMode() {
       let finalSVG;
       // Only generate thumbnail for user-triggered saves, not auto saves
       if (typeSave !== "Auto Save") {
-        finalSVG = await GlobalVariables.topLevelMolecule
-          .generateProjectThumbnail()
-          .catch((error) => {
-            console.error("Error generating final project thumbnail: ", error);
-          });
+        finalSVG = await generateProjectThumbnail().catch((error) => {
+          console.error("Error generating final project thumbnail: ", error);
+        });
       }
 
       setSaveProgress(10);
@@ -1078,7 +1092,7 @@ function CreateMode() {
             }}
           />
           <div className="parent flex-parent" id="lowerHalf">
-            <LowerHalf windowSize={windowSize} />
+            <LowerHalf windowSize={windowSize} ref={meshRef} />
           </div>
         </>
       );

@@ -900,7 +900,16 @@ export default class Molecule extends Atom {
 
   async generateProjectThumbnail() {
     //Generate a thumbnail for the project
-    return GlobalVariables.cad.generateThumbnail(this.value);
+    return GlobalVariables.cad
+      .generateDisplayMesh(
+        GlobalVariables.topLevelMolecule.value,
+        GlobalVariables.topLevelMolecule.getContext()
+      )
+      .then((m) => {
+        console.log("Generated project thumbnail");
+        console.log(m);
+        return m;
+      });
   }
 
   /**
