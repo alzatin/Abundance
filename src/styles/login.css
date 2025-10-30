@@ -883,10 +883,19 @@
   .save-bar-run .progress {
     width: 100%;
   }
+  .project-items-div {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
   #featured-div {
     flex-direction: column;
     padding: 0;
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0 auto;
   }
   .featured-project-div {
     width: calc(100% - 50px);
