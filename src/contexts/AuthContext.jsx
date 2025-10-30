@@ -12,12 +12,6 @@ export function AuthProvider({ children }) {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authorizedUserOcto, setAuthorizedUserOcto] = useState(null);
 
-  // Helper to build the GitHub OAuth URL
-  function buildOAuthUrl({ client_id, scope, csrfToken, stateObj }) {
-    const state = encodeURIComponent(JSON.stringify(stateObj));
-    return `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=${scope}&redirect_uri=${window.origin}/callback&state=${state}`;
-  }
-
   /**
    * Unified handler for login and re-authentication.
    * @param {Object} options
@@ -30,6 +24,11 @@ export function AuthProvider({ children }) {
     currentProjectRep,
     returnTo,
   } = {}) => {
+    // Helper to build the GitHub OAuth URL
+    function buildOAuthUrl({ client_id, scope, csrfToken, stateObj }) {
+      const state = encodeURIComponent(JSON.stringify(stateObj));
+      return `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=${scope}&redirect_uri=${window.origin}/callback&state=${state}`;
+    }
     // Save project if provided (for re-auth)
     if (currentProjectRep) {
       localStorage.setItem("pendingProjectSave", currentProjectRep);
