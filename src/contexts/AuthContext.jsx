@@ -12,10 +12,16 @@ export function AuthProvider({ children }) {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authorizedUserOcto, setAuthorizedUserOcto] = useState(null);
 
+  // Helper to build the GitHub OAuth URL
+  function buildOAuthUrl({ client_id, scope, csrfToken, stateObj }) {
+    const state = encodeURIComponent(JSON.stringify(stateObj));
+    return `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=${scope}&redirect_uri=${window.origin}/callback&state=${state}`;
+  }
+
   /**
    * Unified handler for login and re-authentication.
    * @param {Object} options
-   *   - redirectType: "fork" | "like" | "reauth" | undefined
+   *   - authType: "fork" | "like" | "reauth" | "save" |undefined
    *   - currentProjectRep: string (optional, for re-auth)
    *   - returnTo: string (optional, for re-auth)
    */
@@ -60,10 +66,7 @@ export function AuthProvider({ children }) {
     };
     if (returnTo) stateObj.returnTo = returnTo;
 
-    const state = JSON.stringify(stateObj);
-    const link = `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=repo&redirect_uri=${
-      window.origin
-    }/callback&state=${encodeURIComponent(state)}&scope=${scope}`;
+    const link = buildOAuthUrl({ client_id, scope, csrfToken, stateObj });
     window.location.assign(link);
   };
 
