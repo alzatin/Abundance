@@ -27,7 +27,7 @@ import globalvariables from "../../js/globalvariables.js";
 
 export default React.memo(
   forwardRef(function ShapeMeshes({ isSolid, cameraZoom }, ref) {
-    const { mesh, setOutdatedMesh } = useRendering();
+    const { mesh, setOutdatedMesh, plane } = useRendering();
     const { invalidate } = useThree();
 
     const [fullMesh, setFullMesh] = useState([]);
