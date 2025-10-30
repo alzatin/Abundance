@@ -1185,7 +1185,7 @@ function LoginMode() {
 
   // Check if we're coming from run mode (Browse Projects was clicked)
   const fromRunMode = location.state?.fromRunMode;
-  
+
   const [noUserBrowsing, setNoUserBrowsing] = useState(fromRunMode || false);
   const [projectToShow, setProjectsToShow] = useState("all");
 
@@ -1298,14 +1298,6 @@ function LoginMode() {
             <label className="menu-button-container" htmlFor="menu-toggle">
               <div className="menu-button"></div>
             </label>
-            <button
-              className="longButton"
-              onClick={() => {
-                logoutHandler();
-              }}
-            >
-              <span> Log out </span>
-            </button>
 
             <div className="menu">
               <div
@@ -1370,7 +1362,10 @@ function LoginMode() {
         ) : noUserBrowsing ? (
           <section id="mobile-nav" className="top-nav">
             <input id="menu-toggle-guest" type="checkbox" />
-            <label className="menu-button-container" htmlFor="menu-toggle-guest">
+            <label
+              className="menu-button-container"
+              htmlFor="menu-toggle-guest"
+            >
               <div className="menu-button"></div>
             </label>
 
