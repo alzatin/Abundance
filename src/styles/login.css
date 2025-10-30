@@ -646,7 +646,6 @@
   text-overflow: ellipsis;
   display: block;
   overflow: hidden;
-  width: 80%;
 }
 
 .project_name_list {
@@ -890,8 +889,9 @@
     width: 100%;
   }
   .featured-project-div {
-    width: calc(100% - 10px);
+    width: calc(100% - 50px);
     margin: 5px auto;
+    height: 70px;
   }
 }
 
