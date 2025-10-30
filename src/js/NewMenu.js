@@ -79,7 +79,7 @@ const createCMenu = (targetElement, setExpandedMenu) => {
       },
       {
         title: "Shapes",
-        icon: "Shapes",
+        icon: "shapes",
         menus: makeArray("Shapes"),
       },
       {
