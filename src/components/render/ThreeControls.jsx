@@ -58,7 +58,7 @@ const Controls = React.memo(
         planeRef.current.setRotationFromMatrix(basis);
         axesRef.current.setRotationFromMatrix(basis);
       }
-    }, [planeDef]);
+    }, [planeDef, extraPlane]);
 
     return (
       <>
@@ -76,7 +76,7 @@ const Controls = React.memo(
         </mesh>
 
         {/* Add a visible ground plane under the origin */}
-        {extraPlane ? (
+        {plane && extraPlane ? (
           <mesh ref={planeRef}>
             <planeGeometry args={[100, 100]} />
             <meshStandardMaterial
