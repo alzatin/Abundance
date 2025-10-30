@@ -183,7 +183,8 @@ function RunNavigation({
           forkProject(authorizedUserOcto);
         }
         if (redirectType === "like") {
-          !starredState
+          // Use the fresh isLiked value instead of starredState to avoid race condition
+          !isLiked
             ? likeProject(authorizedUserOcto)
             : unlikeProject(authorizedUserOcto);
         }
