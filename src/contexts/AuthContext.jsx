@@ -52,7 +52,6 @@ export function AuthProvider({ children }) {
         repo: GlobalVariables.currentRepo.name,
       };
     }
-
     // Build state param
     const stateObj = {
       authType: authType,
