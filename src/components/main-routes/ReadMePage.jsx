@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { Octokit } from "octokit";
 import GlobalVariables from "../../js/globalvariables.js";
@@ -11,6 +11,7 @@ import { useAuth } from "../../contexts/index.js";
  */
 function ReadMePage() {
   const navigate = useNavigate();
+  const { owner, repoName } = useParams();
   const { authorizedUserOcto } = useAuth();
   const [readmeContent, setReadmeContent] = useState("");
   const [loading, setLoading] = useState(true);
@@ -20,16 +21,16 @@ function ReadMePage() {
     const fetchReadme = async () => {
       try {
         setLoading(true);
-        const currentRepo = GlobalVariables.currentRepo;
         
-        if (!currentRepo) {
-          setError("No project loaded. Please open a project first.");
+        // Use route params if available, otherwise fall back to GlobalVariables
+        const repoOwner = owner || GlobalVariables.currentRepo?.owner?.login;
+        const repoNameToUse = repoName || GlobalVariables.currentRepo?.name;
+        
+        if (!repoOwner || !repoNameToUse) {
+          setError("No project information available. Please open a project first.");
           setLoading(false);
           return;
         }
-
-        const owner = currentRepo.owner.login;
-        const repo = currentRepo.name;
 
         // Create Octokit instance (authenticated if available, otherwise public)
         const octokit = authorizedUserOcto || new Octokit();
@@ -38,8 +39,8 @@ function ReadMePage() {
         const response = await octokit.request(
           "GET /repos/{owner}/{repo}/readme",
           {
-            owner: owner,
-            repo: repo,
+            owner: repoOwner,
+            repo: repoNameToUse,
             mediaType: {
               format: "raw",
             },
@@ -59,7 +60,7 @@ function ReadMePage() {
     };
 
     fetchReadme();
-  }, [authorizedUserOcto]);
+  }, [owner, repoName, authorizedUserOcto]);
 
   const handleBack = () => {
     navigate(-1);
@@ -72,7 +73,7 @@ function ReadMePage() {
           ← Back
         </button>
         <h1 className="readme-title">
-          {GlobalVariables.currentRepo?.name || "Project"} README
+          {repoName || GlobalVariables.currentRepo?.name || "Project"} README
         </h1>
       </div>
 
