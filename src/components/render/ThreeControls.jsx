@@ -9,7 +9,7 @@ const Controls = React.memo(
     { axesParam, enableDamping },
     controlsRef
   ) {
-    const { plane } = useRendering();
+    const { plane, geometryType } = useRendering();
     const [extraPlane, setExtraPlane] = useState(false);
 
     // Example plane definition (replace with your actual plane)
@@ -19,7 +19,7 @@ const Controls = React.memo(
       normal: [0, 0, 1],
     };
     const planeDef = plane || examplePlane;
-
+    console.log(plane);
     // Compare plane and examplePlane, set extraPlane if different
     useEffect(() => {
       function arraysEqual(a, b) {
@@ -76,7 +76,7 @@ const Controls = React.memo(
         </mesh>
 
         {/* Add a visible ground plane under the origin */}
-        {plane && extraPlane ? (
+        {plane && extraPlane && geometryType == "2D" ? (
           <mesh ref={planeRef}>
             <planeGeometry args={[100, 100]} />
             <meshStandardMaterial
