@@ -59,6 +59,7 @@ function AppContent() {
     setRenderBarVisible,
     setTopLevelWireMesh,
     setPlane,
+    setGeometryType,
   } = useRendering();
 
   const {
@@ -176,7 +177,9 @@ function AppContent() {
           .then((m) => {
             setMesh(m);
             setOutdatedMesh(false);
+            /*Set plane and geometry type for ThreeContext*/
             setPlane(moleculeValue?.plane);
+            setGeometryType(moleculeValue?.dimension);
           })
           .catch((e) => {
             console.error("Can't display Mesh " + e);
