@@ -6,20 +6,21 @@
 import { describe, it, expect } from 'vitest';
 
 describe('Camera Zoom Calculation', () => {
-  it('should apply margin factor to prevent thumbnails from being too zoomed in', () => {
-    // Reference bounding box (from the example in the code)
-    const exampleBoundingBox = {
-      width: 312.0005000624958,
-      height: 312.00074999364347,
-      depth: 432.0009977339615,
-    };
-    const exampleZoom = 0.5;
+  // Shared constants across tests
+  const exampleBoundingBox = {
+    width: 312.0005000624958,
+    height: 312.00074999364347,
+    depth: 432.0009977339615,
+  };
+  const exampleZoom = 0.5;
+  const marginFactor = 0.8;
 
+  it('should apply margin factor to prevent thumbnails from being too zoomed in', () => {
     // Calculate the diagonal length of the example bounding box
     const exampleDiagonal = Math.sqrt(
-      Math.pow(exampleBoundingBox.width, 2) +
-        Math.pow(exampleBoundingBox.height, 2) +
-        Math.pow(exampleBoundingBox.depth, 2)
+      exampleBoundingBox.width ** 2 +
+        exampleBoundingBox.height ** 2 +
+        exampleBoundingBox.depth ** 2
     );
 
     // Test case: A bounding box similar to the example
@@ -30,16 +31,15 @@ describe('Camera Zoom Calculation', () => {
     };
 
     const testDiagonal = Math.sqrt(
-      Math.pow(testBoundingBox.width, 2) +
-        Math.pow(testBoundingBox.height, 2) +
-        Math.pow(testBoundingBox.depth, 2)
+      testBoundingBox.width ** 2 +
+        testBoundingBox.height ** 2 +
+        testBoundingBox.depth ** 2
     );
 
     // Calculate zoom without margin (the old way - would be too zoomed in)
     const zoomWithoutMargin = (exampleZoom * exampleDiagonal) / testDiagonal;
 
     // Calculate zoom with margin factor (the new way - proper zoom with breathing room)
-    const marginFactor = 0.8;
     const zoomWithMargin = (exampleZoom * exampleDiagonal * marginFactor) / testDiagonal;
 
     // Verify that zoom with margin is less than zoom without margin
@@ -55,17 +55,10 @@ describe('Camera Zoom Calculation', () => {
   });
 
   it('should handle large objects with appropriate zoom out', () => {
-    const exampleBoundingBox = {
-      width: 312.0005000624958,
-      height: 312.00074999364347,
-      depth: 432.0009977339615,
-    };
-    const exampleZoom = 0.5;
-
     const exampleDiagonal = Math.sqrt(
-      Math.pow(exampleBoundingBox.width, 2) +
-        Math.pow(exampleBoundingBox.height, 2) +
-        Math.pow(exampleBoundingBox.depth, 2)
+      exampleBoundingBox.width ** 2 +
+        exampleBoundingBox.height ** 2 +
+        exampleBoundingBox.depth ** 2
     );
 
     // Large object (like Sauna-Stove)
@@ -76,12 +69,11 @@ describe('Camera Zoom Calculation', () => {
     };
 
     const largeDiagonal = Math.sqrt(
-      Math.pow(largeBoundingBox.width, 2) +
-        Math.pow(largeBoundingBox.height, 2) +
-        Math.pow(largeBoundingBox.depth, 2)
+      largeBoundingBox.width ** 2 +
+        largeBoundingBox.height ** 2 +
+        largeBoundingBox.depth ** 2
     );
 
-    const marginFactor = 0.8;
     const zoom = (exampleZoom * exampleDiagonal * marginFactor) / largeDiagonal;
 
     // Large objects should have smaller zoom values (zoomed out)
@@ -90,17 +82,10 @@ describe('Camera Zoom Calculation', () => {
   });
 
   it('should handle small objects with appropriate zoom in', () => {
-    const exampleBoundingBox = {
-      width: 312.0005000624958,
-      height: 312.00074999364347,
-      depth: 432.0009977339615,
-    };
-    const exampleZoom = 0.5;
-
     const exampleDiagonal = Math.sqrt(
-      Math.pow(exampleBoundingBox.width, 2) +
-        Math.pow(exampleBoundingBox.height, 2) +
-        Math.pow(exampleBoundingBox.depth, 2)
+      exampleBoundingBox.width ** 2 +
+        exampleBoundingBox.height ** 2 +
+        exampleBoundingBox.depth ** 2
     );
 
     // Small object
@@ -111,12 +96,11 @@ describe('Camera Zoom Calculation', () => {
     };
 
     const smallDiagonal = Math.sqrt(
-      Math.pow(smallBoundingBox.width, 2) +
-        Math.pow(smallBoundingBox.height, 2) +
-        Math.pow(smallBoundingBox.depth, 2)
+      smallBoundingBox.width ** 2 +
+        smallBoundingBox.height ** 2 +
+        smallBoundingBox.depth ** 2
     );
 
-    const marginFactor = 0.8;
     const zoom = (exampleZoom * exampleDiagonal * marginFactor) / smallDiagonal;
 
     // Small objects should have larger zoom values (zoomed in), but still with margin
@@ -124,20 +108,11 @@ describe('Camera Zoom Calculation', () => {
   });
 
   it('should maintain consistency across different aspect ratios', () => {
-    const exampleBoundingBox = {
-      width: 312.0005000624958,
-      height: 312.00074999364347,
-      depth: 432.0009977339615,
-    };
-    const exampleZoom = 0.5;
-
     const exampleDiagonal = Math.sqrt(
-      Math.pow(exampleBoundingBox.width, 2) +
-        Math.pow(exampleBoundingBox.height, 2) +
-        Math.pow(exampleBoundingBox.depth, 2)
+      exampleBoundingBox.width ** 2 +
+        exampleBoundingBox.height ** 2 +
+        exampleBoundingBox.depth ** 2
     );
-
-    const marginFactor = 0.8;
 
     // Wide and flat object
     const wideBoundingBox = {
@@ -147,9 +122,9 @@ describe('Camera Zoom Calculation', () => {
     };
 
     const wideDiagonal = Math.sqrt(
-      Math.pow(wideBoundingBox.width, 2) +
-        Math.pow(wideBoundingBox.height, 2) +
-        Math.pow(wideBoundingBox.depth, 2)
+      wideBoundingBox.width ** 2 +
+        wideBoundingBox.height ** 2 +
+        wideBoundingBox.depth ** 2
     );
 
     const wideZoom = (exampleZoom * exampleDiagonal * marginFactor) / wideDiagonal;
@@ -162,9 +137,9 @@ describe('Camera Zoom Calculation', () => {
     };
 
     const tallDiagonal = Math.sqrt(
-      Math.pow(tallBoundingBox.width, 2) +
-        Math.pow(tallBoundingBox.height, 2) +
-        Math.pow(tallBoundingBox.depth, 2)
+      tallBoundingBox.width ** 2 +
+        tallBoundingBox.height ** 2 +
+        tallBoundingBox.depth ** 2
     );
 
     const tallZoom = (exampleZoom * exampleDiagonal * marginFactor) / tallDiagonal;
