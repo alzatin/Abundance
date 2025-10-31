@@ -175,15 +175,15 @@ function RunNavigation({
         const isLiked = awsUserJson.repos.some(
           (project) => project.owner === owner && project.repoName === repoName
         );
-        if (isLiked) {
-          setStarred(true);
-        }
+        // Sync starred state with server state
+        setStarred(isLiked);
         // now handle the redirect action that was requested
         if (redirectType === "fork") {
           forkProject(authorizedUserOcto);
         }
         if (redirectType === "like") {
-          !starredState
+          // Use fresh isLiked value instead of potentially stale starredState
+          !isLiked
             ? likeProject(authorizedUserOcto)
             : unlikeProject(authorizedUserOcto);
         }
