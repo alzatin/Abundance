@@ -13,7 +13,7 @@ describe('Camera Zoom Calculation', () => {
     depth: 432.0009977339615,
   };
   const exampleZoom = 0.5;
-  const marginFactor = 0.7;
+  const marginFactor = 0.9;
 
   it('should apply margin factor to prevent thumbnails from being too zoomed in', () => {
     // Calculate the diagonal length of the example bounding box
@@ -49,9 +49,9 @@ describe('Camera Zoom Calculation', () => {
     // Verify margin factor is applied correctly
     expect(zoomWithMargin).toBeCloseTo(zoomWithoutMargin * marginFactor, 5);
 
-    // Verify margin factor creates approximately 30% more space (70% fill)
+    // Verify margin factor creates approximately 10% more space (90% fill)
     const marginPercentage = ((zoomWithoutMargin - zoomWithMargin) / zoomWithoutMargin) * 100;
-    expect(marginPercentage).toBeCloseTo(30, 0);
+    expect(marginPercentage).toBeCloseTo(10, 0);
   });
 
   it('should handle large objects with appropriate zoom out', () => {
