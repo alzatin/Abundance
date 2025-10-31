@@ -372,7 +372,7 @@ export default React.memo(
                     <meshBasicMaterial
                       geometry={m.body}
                       transparent={true}
-                      opacity={0.5}
+                      opacity={0.3}
                       color={m.color}
                     >
                       <Wireframe geometry={m.body} {...wireframeProps} />
