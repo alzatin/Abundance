@@ -1,5 +1,4 @@
 import { create, all } from "mathjs";
-import { v4 as uuidv4 } from "uuid";
 import Assembly from "../molecules/assembly.js";
 import Circle from "../molecules/circle.js";
 import Color from "../molecules/color.js";
