@@ -584,10 +584,10 @@ function calculateZoom(boundingBox: {
     );
 
     // Calculate the zoom level based on the proportional relationship
-    // Apply a margin factor (0.5) to leave significant visual breathing room around the object
+    // Apply a margin factor (0.7) to leave visual breathing room around the object
     // This prevents thumbnails from appearing too zoomed in
-    // The 0.5 factor means objects fill only ~50% of the viewport, providing generous margins
-    const marginFactor = 0.5;
+    // The 0.7 factor means objects fill ~70% of the viewport, providing good margins
+    const marginFactor = 0.7;
     const zoom = (exampleZoom * exampleDiagonal * marginFactor) / diagonal;
     return zoom;
   } catch (e) {
