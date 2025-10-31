@@ -27,7 +27,7 @@ import globalvariables from "../../js/globalvariables.js";
 
 export default React.memo(
   forwardRef(function ShapeMeshes({ isSolid, cameraZoom }, ref) {
-    const { mesh, setOutdatedMesh } = useRendering();
+    const { mesh, setOutdatedMesh, plane } = useRendering();
     const { invalidate } = useThree();
 
     const [fullMesh, setFullMesh] = useState([]);
@@ -372,7 +372,7 @@ export default React.memo(
                     <meshBasicMaterial
                       geometry={m.body}
                       transparent={true}
-                      opacity={0.5}
+                      opacity={0.3}
                       color={m.color}
                     >
                       <Wireframe geometry={m.body} {...wireframeProps} />
