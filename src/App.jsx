@@ -304,6 +304,9 @@ function AppContent() {
 
         let rawFile = JSON.parse(rawFileContent);
 
+        // Reset ID counter to avoid collisions with existing IDs
+        GlobalVariables.resetIdCounter(rawFile);
+
         if (rawFile.filetypeVersion == 1) {
           GlobalVariables.topLevelMolecule.deserialize(rawFile);
         } else {

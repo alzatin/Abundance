@@ -299,6 +299,8 @@ export default class Molecule extends Atom {
               console.error("Failed to parse project.abundance:", err);
               return;
             }
+            // Reset ID counter to avoid collisions with existing IDs
+            GlobalVariables.resetIdCounter(rawFile);
             // Only call deserialize after rawFile is ready
             if (rawFile.filetypeVersion == 1) {
               await GlobalVariables.topLevelMolecule.deserialize(rawFile);
@@ -644,6 +646,8 @@ export default class Molecule extends Atom {
 
       // Restore the previous state if it's a valid format
       if (rawFile && rawFile.fileTypeVersion == 1) {
+        // Reset ID counter to avoid collisions with existing IDs
+        GlobalVariables.resetIdCounter(rawFile);
         await GlobalVariables.topLevelMolecule.deserialize(rawFile);
         // Navigate back to the molecule where the user was working before undo
         this.navigateToMoleculePath(currentMoleculePath);

@@ -74,6 +74,8 @@ export default memo(function FlowCanvas({
         if (pendingProject) {
           // Only deserialize after all atoms have been deleted
           let rawFile = JSON.parse(pendingProject);
+          // Reset ID counter to avoid collisions with existing IDs
+          GlobalVariables.resetIdCounter(rawFile);
           if (rawFile.filetypeVersion == 1) {
             GlobalVariables.topLevelMolecule.deserialize(rawFile);
           } else {
