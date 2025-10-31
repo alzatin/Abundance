@@ -178,13 +178,14 @@ function TopMenu({
       },
       {
         /**
-         * Open a new tab with the README page for the project.
+         * Navigate to the embedded README page for the project.
          */
         id: "Read Me",
         buttonFunc: () => {
-          var url =
-            GlobalVariables.currentRepo.html_url + "/blob/master/README.md";
-          window.open(url);
+          const currentRepo = GlobalVariables.currentRepo;
+          if (currentRepo) {
+            navigate(`/readme/${currentRepo.owner.login}/${currentRepo.name}`);
+          }
         },
       },
       {

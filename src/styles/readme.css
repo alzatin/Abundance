@@ -1,0 +1,227 @@
+/* Styles for the embedded README page */
+
+.readme-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--background-color, #ffffff);
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.readme-header {
+  position: sticky;
+  top: 0;
+  background: var(--header-background, #f5f5f5);
+  border-bottom: 1px solid var(--border-color, #e1e4e8);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  z-index: 1001;
+}
+
+.readme-back-button {
+  background: var(--button-background, #0366d6);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.readme-back-button:hover {
+  background: var(--button-hover-background, #0256c4);
+}
+
+.readme-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color, #24292e);
+  margin: 0;
+}
+
+.readme-content {
+  max-width: 1012px;
+  margin: 0 auto;
+  padding: 2rem;
+  color: var(--text-color, #24292e);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.readme-loading,
+.readme-error {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.1rem;
+  color: var(--text-secondary, #586069);
+}
+
+.readme-error button {
+  margin-top: 1rem;
+  background: var(--button-background, #0366d6);
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* Markdown content styling */
+.readme-content h1,
+.readme-h1 {
+  font-size: 2em;
+  font-weight: 600;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border-color, #e1e4e8);
+  margin-top: 24px;
+  margin-bottom: 16px;
+}
+
+.readme-content h2,
+.readme-h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border-color, #e1e4e8);
+  margin-top: 24px;
+  margin-bottom: 16px;
+}
+
+.readme-content h3,
+.readme-h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin-top: 24px;
+  margin-bottom: 16px;
+}
+
+.readme-content p {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.readme-content ul,
+.readme-content ol {
+  padding-left: 2em;
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.readme-content li {
+  margin-top: 0.25em;
+}
+
+.readme-content a {
+  color: var(--link-color, #0366d6);
+  text-decoration: none;
+}
+
+.readme-content a:hover {
+  text-decoration: underline;
+}
+
+.readme-content img {
+  max-width: 100%;
+  box-sizing: border-box;
+  background-color: var(--image-background, #fff);
+  border-radius: 6px;
+  margin: 16px 0;
+}
+
+.readme-content blockquote {
+  padding: 0 1em;
+  color: var(--text-secondary, #586069);
+  border-left: 0.25em solid var(--border-color, #dfe2e5);
+  margin: 0 0 16px 0;
+}
+
+.readme-inline-code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: var(--code-background, rgba(175, 184, 193, 0.2));
+  border-radius: 6px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.readme-pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: var(--code-background, #f6f8fa);
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.readme-code-block {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.readme-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.readme-content table th,
+.readme-content table td {
+  padding: 6px 13px;
+  border: 1px solid var(--border-color, #dfe2e5);
+}
+
+.readme-content table tr {
+  background-color: var(--background-color, #fff);
+  border-top: 1px solid var(--border-color, #c6cbd1);
+}
+
+.readme-content table tr:nth-child(2n) {
+  background-color: var(--table-alt-background, #f6f8fa);
+}
+
+.readme-content hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: var(--border-color, #e1e4e8);
+  border: 0;
+}
+
+/* Dark mode support */
+html.dark-theme .readme-page {
+  --background-color: #0d1117;
+  --header-background: #161b22;
+  --text-color: #c9d1d9;
+  --text-secondary: #8b949e;
+  --border-color: #30363d;
+  --link-color: #58a6ff;
+  --button-background: #238636;
+  --button-hover-background: #2ea043;
+  --code-background: rgba(240, 246, 252, 0.15);
+  --table-alt-background: rgba(56, 139, 253, 0.1);
+  --image-background: #0d1117;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .readme-header {
+    padding: 1rem;
+  }
+
+  .readme-title {
+    font-size: 1.2rem;
+  }
+
+  .readme-content {
+    padding: 1rem;
+  }
+}
