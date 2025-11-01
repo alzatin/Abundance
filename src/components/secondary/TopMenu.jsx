@@ -178,14 +178,13 @@ function TopMenu({
       },
       {
         /**
-         * Navigate to the embedded README page for the project.
+         * Open a new tab with the README page for the project.
          */
         id: "Read Me",
         buttonFunc: () => {
-          const currentRepo = GlobalVariables.currentRepo;
-          if (currentRepo) {
-            navigate(`/readme/${currentRepo.owner.login}/${currentRepo.name}`);
-          }
+          var url =
+            GlobalVariables.currentRepo.html_url + "/blob/master/README.md";
+          window.open(url);
         },
       },
       {
@@ -291,6 +290,15 @@ function TopMenu({
           var url = GlobalVariables.currentRepo.html_url + "/settings";
           window.open(url);
           //tryDelete();
+        },
+      },
+      {
+        /**
+         * Navigate to the Abundance User Guide page.
+         */
+        id: "User Guide",
+        buttonFunc: () => {
+          navigate("/user-guide");
         },
       },
     ],

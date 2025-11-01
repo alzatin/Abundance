@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { Octokit } from "octokit";
-import GlobalVariables from "../../js/globalvariables.js";
 import { useAuth } from "../../contexts/index.js";
 
 /**
- * ReadMePage component displays the README.md content from the current project
- * embedded within the application, accessible both when logged in and logged out.
+ * UserGuidePage component displays the Abundance repository README.md
+ * as a user guide, embedded within the application.
+ * Accessible both when logged in and logged out.
  */
-function ReadMePage() {
+function UserGuidePage() {
   const navigate = useNavigate();
-  const { owner, repoName } = useParams();
   const { authorizedUserOcto } = useAuth();
   const [readmeContent, setReadmeContent] = useState("");
   const [loading, setLoading] = useState(true);
@@ -22,15 +21,9 @@ function ReadMePage() {
       try {
         setLoading(true);
         
-        // Use route params if available, otherwise fall back to GlobalVariables
-        const repoOwner = owner || GlobalVariables.currentRepo?.owner?.login;
-        const repoNameToUse = repoName || GlobalVariables.currentRepo?.name;
-        
-        if (!repoOwner || !repoNameToUse) {
-          setError("No project information available. Please open a project first.");
-          setLoading(false);
-          return;
-        }
+        // Always fetch from the Abundance repository
+        const repoOwner = "BarbourSmith";
+        const repoNameToUse = "Abundance";
 
         // Create Octokit instance (authenticated if available, otherwise public)
         const octokit = authorizedUserOcto || new Octokit();
@@ -50,9 +43,9 @@ function ReadMePage() {
         setReadmeContent(response.data);
         setError(null);
       } catch (err) {
-        console.error("Error fetching README:", err);
+        console.error("Error fetching User Guide:", err);
         setError(
-          "Unable to load README. The project may not have a README.md file."
+          "Unable to load the User Guide. Please try again later."
         );
       } finally {
         setLoading(false);
@@ -60,7 +53,7 @@ function ReadMePage() {
     };
 
     fetchReadme();
-  }, [owner, repoName, authorizedUserOcto]);
+  }, [authorizedUserOcto]);
 
   const handleBack = () => {
     navigate(-1);
@@ -73,13 +66,13 @@ function ReadMePage() {
           ← Back
         </button>
         <h1 className="readme-title">
-          {repoName || GlobalVariables.currentRepo?.name || "Project"} README
+          Abundance User Guide
         </h1>
       </div>
 
       <div className="readme-content">
         {loading && (
-          <div className="readme-loading">Loading README...</div>
+          <div className="readme-loading">Loading User Guide...</div>
         )}
         
         {error && (
@@ -128,4 +121,4 @@ function ReadMePage() {
   );
 }
 
-export default ReadMePage;
+export default UserGuidePage;
