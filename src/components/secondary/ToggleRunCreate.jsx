@@ -16,6 +16,13 @@ function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
   const handleBrowseProjects = (e) => {
     e.preventDefault();
     handleChange();
+    // Save current project state to localStorage before navigating
+    if (GlobalVariables.topLevelMolecule && GlobalVariables.currentAWSnode) {
+      const projectState = GlobalVariables.topLevelMolecule.serialize();
+      projectState.filetypeVersion = 1;
+      const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
+      localStorage.setItem(projectKey, JSON.stringify(projectState));
+    }
     navigate("/", { state: { fromRunMode: true } });
   };
   if (GlobalVariables.currentRepo) {

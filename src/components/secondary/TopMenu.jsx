@@ -167,6 +167,13 @@ function TopMenu({
       {
         id: "Open",
         buttonFunc: () => {
+          // Save current project state to localStorage before navigating
+          if (GlobalVariables.topLevelMolecule) {
+            const projectState = GlobalVariables.topLevelMolecule.serialize();
+            projectState.filetypeVersion = 1;
+            const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode?.owner}_${GlobalVariables.currentAWSnode?.repoName}`;
+            localStorage.setItem(projectKey, JSON.stringify(projectState));
+          }
           navigate("/");
         },
       },
