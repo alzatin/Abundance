@@ -100,6 +100,8 @@ export default memo(function FlowCanvas({
         }
       } else {
         // Check for unsaved project state from browsing projects
+        // Note: owner and repoName come from GitHub's API and are validated by GitHub,
+        // so they are safe to use in the localStorage key
         const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
         const unsavedProject = localStorage.getItem(projectKey);
         
@@ -109,12 +111,8 @@ export default memo(function FlowCanvas({
             let rawFile = JSON.parse(unsavedProject);
             // Reset ID counter to avoid collisions with existing IDs
             GlobalVariables.resetIdCounter(rawFile);
-            if (rawFile.filetypeVersion == 1) {
-              GlobalVariables.topLevelMolecule.deserialize(rawFile);
-            } else {
-              // For older file versions, try to deserialize directly for now
-              GlobalVariables.topLevelMolecule.deserialize(rawFile);
-            }
+            // Deserialize the saved project state
+            GlobalVariables.topLevelMolecule.deserialize(rawFile);
             setActiveAtom(GlobalVariables.currentMolecule);
             GlobalVariables.currentMolecule.selected = true;
             GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
