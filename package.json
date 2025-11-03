@@ -52,7 +52,7 @@
     "react-three-fiber": "^6.0.13",
     "rehype-raw": "^7.0.0",
     "replicad": "^0.20.2",
-    "replicad-decorate": "^0.1.0",
+    "replicad-decorate": "^0.1.2",
     "replicad-opencascadejs": "^0.20.2",
     "replicad-shrink-wrap": "^0.1.0",
     "replicad-threejs-helper": "^0.20.0",

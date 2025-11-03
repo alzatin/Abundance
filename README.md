@@ -246,9 +246,72 @@ The constant atom defines a constant number that can be used to control multiple
 
 ### Equation
 
-The equation Atom lets you perform basic math operations on numbers produced by constants.
+The equation Atom lets you perform math operations on numbers produced by constants and inputs. The equation atom uses the [mathjs library](https://mathjs.org/) to evaluate mathematical expressions.
 
 <img width="872" alt="equation-example" src="https://github.com/user-attachments/assets/82a8915c-4085-42c9-915d-1f1b217bb34b" />
+
+#### Supported Math Functions
+
+The equation atom supports a wide range of mathematical operations:
+
+**Basic Arithmetic Operators:**
+- `+` (addition), `-` (subtraction), `*` (multiplication), `/` (division)
+- `%` (modulo), `^` (power/exponentiation)
+
+**Mathematical Constants:**
+- `pi` or `PI` - π (3.14159...)
+- `e` or `E` - Euler's number (~2.718)
+- `tau` - Circle constant (2π)
+- `Infinity` - Positive infinity
+- `NaN` - Not a Number
+
+**Arithmetic Functions:**
+- `sqrt(x)` - Square root
+- `pow(x, y)` - Power (x raised to y)
+- `abs(x)` - Absolute value
+- `ceil(x)` - Round up to nearest integer
+- `floor(x)` - Round down to nearest integer
+- `round(x)` - Round to nearest integer
+- `exp(x)` - Exponential (e^x)
+- `log(x)` - Natural logarithm
+- `log10(x)` - Base-10 logarithm
+- `log2(x)` - Base-2 logarithm
+- `sign(x)` - Sign of a number (-1, 0, or 1)
+- `cube(x)` - Cube of a number
+- `square(x)` - Square of a number
+- `cbrt(x)` - Cube root
+
+**Trigonometric Functions:**
+- `sin(x)`, `cos(x)`, `tan(x)` - Basic trig functions (x in radians)
+- `asin(x)`, `acos(x)`, `atan(x)` - Inverse trig functions
+- `atan2(y, x)` - Two-argument arctangent
+- `sinh(x)`, `cosh(x)`, `tanh(x)` - Hyperbolic functions
+
+**Statistical Functions:**
+- `min(a, b, ...)` - Minimum value
+- `max(a, b, ...)` - Maximum value
+- `mean(a, b, ...)` - Average value
+- `median(a, b, ...)` - Median value
+- `sum(a, b, ...)` - Sum of values
+- `std(a, b, ...)` - Standard deviation
+
+**Comparison Operators:**
+- `<`, `<=`, `>`, `>=` - Comparison
+- `==`, `!=` - Equality
+
+**Logical Operators:**
+- `&&` (and), `||` (or), `!` (not)
+
+**Example Equations:**
+```
+x + y                    // Add two inputs
+2 * pi * r              // Calculate circumference
+sqrt(x^2 + y^2)         // Distance formula
+sin(angle * pi / 180)   // Convert degrees to radians and calculate sine
+max(width, height)      // Get maximum of two values
+```
+
+Variables in equations automatically become inputs to the atom. For example, if you enter `x + y`, two inputs named `x` and `y` will be created automatically.
 
 
 ## Import/Export
