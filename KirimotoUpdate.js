@@ -21,6 +21,7 @@ const generateGcode = (
 ) => {
   const STOCK_MARGIN = 10;
   const CUT_THROUGH = cutThrough || 0.25; // Default cut-through thickness if not provided
+  console.log(CUT_THROUGH);
 
   if (!stlUrl) {
     console.error("STL URL is not available.");
@@ -127,19 +128,29 @@ const generateGcode = (
       const z = bounds.max.z - bounds.min.z;
       const zBottom = z; // ensure cut through stock bottom
 
-      const validPasses = passes;
-      const down = validPasses == 1 ? 1000 : zBottom / (validPasses - 1);
+      /*Hack for kiri 4.3.0*/
+      //const validPasses = passes;
+      //const down = validPasses == 1 ? 1000 : zBottom / (validPasses - 1);
+
+      /*End Hack for kiri 4.3.0, add cut through in down value and set camzThru to 0 to avoid extra pass, set camZBottom to real value (not 1000)*/
+      const down = (zBottom + CUT_THROUGH) / passes;
+      const camZBottom = -zBottom - CUT_THROUGH;
+      const camZThru = passes > 1 ? 0 : CUT_THROUGH;
+
+      console.log("Down per pass:", down);
+      console.log("CAM Z Bottom:", camZBottom);
+      console.log("CAM Z Thru:", camZThru);
 
       return eng.setProcess({
         camEaseAngle: 10,
         camEaseDown: true,
         camZAnchor: "bottom",
         camDepthFirst: false,
-        camZThru: 0,
+        camZThru: camZThru,
         camZClearance: 3,
-        camZTop: 1, //top of stock
+        camZTop: 0, //top of stock
         camStockOffset: true,
-        camZBottom: -1000, //-zBottom, // temp hack to get around setTopZ bug
+        camZBottom: camZBottom, //-zBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
         camOutlineSpeed: speed,
         camRetractFeed: 300,
@@ -249,6 +260,7 @@ const generateGcode = (
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.5); // 50% - Process set
+      console.log(kiriEngine);
       startSlicingProgress();
       return eng.slice();
     })
