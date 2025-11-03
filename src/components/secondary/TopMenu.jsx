@@ -169,10 +169,10 @@ function TopMenu({
         buttonFunc: () => {
           // Save current project state to localStorage before navigating
           // Note: owner and repoName come from GitHub's API and are validated by GitHub
-          if (GlobalVariables.topLevelMolecule) {
+          if (GlobalVariables.topLevelMolecule && GlobalVariables.currentAWSnode?.owner && GlobalVariables.currentAWSnode?.repoName) {
             const projectState = GlobalVariables.topLevelMolecule.serialize();
             projectState.filetypeVersion = 1;
-            const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode?.owner}_${GlobalVariables.currentAWSnode?.repoName}`;
+            const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
             localStorage.setItem(projectKey, JSON.stringify(projectState));
           }
           navigate("/");

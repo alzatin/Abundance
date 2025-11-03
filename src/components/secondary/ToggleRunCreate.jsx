@@ -18,7 +18,7 @@ function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
     handleChange();
     // Save current project state to localStorage before navigating
     // Note: owner and repoName come from GitHub's API and are validated by GitHub
-    if (GlobalVariables.topLevelMolecule && GlobalVariables.currentAWSnode) {
+    if (GlobalVariables.topLevelMolecule && GlobalVariables.currentAWSnode?.owner && GlobalVariables.currentAWSnode?.repoName) {
       const projectState = GlobalVariables.topLevelMolecule.serialize();
       projectState.filetypeVersion = 1;
       const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
