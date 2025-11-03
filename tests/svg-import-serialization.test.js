@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 
 describe('SVG Import Serialization', () => {
+  let testIdCounter = 0;
+
   // Mock Import atom based on the actual implementation
   class MockImport {
     constructor(values) {
@@ -12,13 +14,13 @@ describe('SVG Import Serialization', () => {
       this.SVGwidth = 10; // default value
       this.repoOwner = null;
       this.repoName = null;
-      this.uniqueID = 'test-id-' + Math.random();
+      this.uniqueID = 'test-id-' + (testIdCounter++);
       this.x = 0;
       this.y = 0;
       
       // Apply values from constructor
       if (values) {
-        for (var key in values) {
+        for (const key in values) {
           this[key] = values[key];
         }
       }
