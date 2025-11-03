@@ -1,4 +1,4 @@
-/* Styles for the embedded README page */
+/* Styles for the embedded README page - Abundance theme */
 
 .readme-page {
   position: fixed;
@@ -6,7 +6,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--background-color, #ffffff);
+  background: var(--background-color, #232832);
   overflow-y: auto;
   z-index: 1000;
 }
@@ -14,8 +14,8 @@
 .readme-header {
   position: sticky;
   top: 0;
-  background: var(--header-background, #f5f5f5);
-  border-bottom: 1px solid var(--border-color, #e1e4e8);
+  background: var(--header-background, #3f4243);
+  border-bottom: 1px solid var(--border-color, #c4a3d5);
   padding: 1rem 2rem;
   display: flex;
   align-items: center;
@@ -24,8 +24,8 @@
 }
 
 .readme-back-button {
-  background: var(--button-background, #0366d6);
-  color: white;
+  background: var(--button-background, #be3fe5);
+  color: var(--button-text, #f2f0f0);
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 6px;
@@ -36,13 +36,13 @@
 }
 
 .readme-back-button:hover {
-  background: var(--button-hover-background, #0256c4);
+  background: var(--button-hover-background, #9c46b4);
 }
 
 .readme-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--text-color, #24292e);
+  color: var(--text-color, #f2f0f0);
   margin: 0;
 }
 
@@ -50,7 +50,7 @@
   max-width: 1012px;
   margin: 0 auto;
   padding: 2rem;
-  color: var(--text-color, #24292e);
+  color: var(--text-color, #e0e5ef);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
@@ -61,13 +61,13 @@
   text-align: center;
   padding: 3rem;
   font-size: 1.1rem;
-  color: var(--text-secondary, #586069);
+  color: var(--text-secondary, #c4a3d5);
 }
 
 .readme-error button {
   margin-top: 1rem;
-  background: var(--button-background, #0366d6);
-  color: white;
+  background: var(--button-background, #be3fe5);
+  color: var(--button-text, #f2f0f0);
   border: none;
   padding: 0.5rem 1.5rem;
   border-radius: 6px;
@@ -75,15 +75,16 @@
   font-size: 14px;
 }
 
-/* Markdown content styling */
+/* Markdown content styling - Abundance theme */
 .readme-content h1,
 .readme-h1 {
   font-size: 2em;
   font-weight: 600;
   padding-bottom: 0.3em;
-  border-bottom: 1px solid var(--border-color, #e1e4e8);
+  border-bottom: 1px solid var(--border-color, #c4a3d5);
   margin-top: 24px;
   margin-bottom: 16px;
+  color: var(--heading-color, #c4a3d5);
 }
 
 .readme-content h2,
@@ -91,9 +92,10 @@
   font-size: 1.5em;
   font-weight: 600;
   padding-bottom: 0.3em;
-  border-bottom: 1px solid var(--border-color, #e1e4e8);
+  border-bottom: 1px solid var(--border-color, #c4a3d5);
   margin-top: 24px;
   margin-bottom: 16px;
+  color: var(--heading-color, #dec9e0);
 }
 
 .readme-content h3,
@@ -102,6 +104,7 @@
   font-weight: 600;
   margin-top: 24px;
   margin-bottom: 16px;
+  color: var(--heading-color, #dec9e0);
 }
 
 .readme-content p {
@@ -121,36 +124,40 @@
 }
 
 .readme-content a {
-  color: var(--link-color, #0366d6);
+  color: var(--link-color, #be3fe5);
   text-decoration: none;
 }
 
 .readme-content a:hover {
   text-decoration: underline;
+  color: var(--link-hover-color, #cb7eff);
 }
 
 .readme-content img {
   max-width: 100%;
   box-sizing: border-box;
-  background-color: var(--image-background, #fff);
+  background-color: var(--image-background, #3f4243);
   border-radius: 6px;
   margin: 16px 0;
+  border: 1px solid var(--border-color, #545252);
 }
 
 .readme-content blockquote {
   padding: 0 1em;
-  color: var(--text-secondary, #586069);
-  border-left: 0.25em solid var(--border-color, #dfe2e5);
+  color: var(--text-secondary, #c4a3d5);
+  border-left: 0.25em solid var(--border-color, #be3fe5);
   margin: 0 0 16px 0;
+  background-color: rgba(196, 163, 213, 0.1);
 }
 
 .readme-inline-code {
   padding: 0.2em 0.4em;
   margin: 0;
   font-size: 85%;
-  background-color: var(--code-background, rgba(175, 184, 193, 0.2));
+  background-color: var(--code-background, rgba(196, 163, 213, 0.2));
   border-radius: 6px;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color: var(--code-text, #c4a3d5);
 }
 
 .readme-pre {
@@ -158,13 +165,15 @@
   overflow: auto;
   font-size: 85%;
   line-height: 1.45;
-  background-color: var(--code-background, #f6f8fa);
+  background-color: var(--code-background, #3f4243);
   border-radius: 6px;
   margin-bottom: 16px;
+  border: 1px solid var(--border-color, #545252);
 }
 
 .readme-code-block {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color: var(--code-text, #e0e5ef);
 }
 
 .readme-content table {
@@ -176,39 +185,51 @@
 .readme-content table th,
 .readme-content table td {
   padding: 6px 13px;
-  border: 1px solid var(--border-color, #dfe2e5);
+  border: 1px solid var(--border-color, #545252);
+}
+
+.readme-content table th {
+  background-color: var(--table-header-background, #3f4243);
+  color: var(--heading-color, #c4a3d5);
+  font-weight: 600;
 }
 
 .readme-content table tr {
-  background-color: var(--background-color, #fff);
-  border-top: 1px solid var(--border-color, #c6cbd1);
+  background-color: var(--table-background, #232832);
+  border-top: 1px solid var(--border-color, #545252);
 }
 
 .readme-content table tr:nth-child(2n) {
-  background-color: var(--table-alt-background, #f6f8fa);
+  background-color: var(--table-alt-background, rgba(63, 66, 67, 0.5));
 }
 
 .readme-content hr {
   height: 0.25em;
   padding: 0;
   margin: 24px 0;
-  background-color: var(--border-color, #e1e4e8);
+  background-color: var(--border-color, #545252);
   border: 0;
 }
 
-/* Dark mode support */
-html.dark-theme .readme-page {
-  --background-color: #0d1117;
-  --header-background: #161b22;
-  --text-color: #c9d1d9;
-  --text-secondary: #8b949e;
-  --border-color: #30363d;
-  --link-color: #58a6ff;
-  --button-background: #238636;
-  --button-hover-background: #2ea043;
-  --code-background: rgba(240, 246, 252, 0.15);
-  --table-alt-background: rgba(56, 139, 253, 0.1);
-  --image-background: #0d1117;
+/* Light theme support (optional - app uses dark theme by default) */
+html.light-theme .readme-page {
+  --background-color: #f8f3fb;
+  --header-background: #fffffff6;
+  --text-color: #333;
+  --text-secondary: #545252;
+  --heading-color: #640080;
+  --border-color: #c4a3d5;
+  --link-color: #be3fe5;
+  --link-hover-color: #9c46b4;
+  --button-background: #be3fe5;
+  --button-hover-background: #9c46b4;
+  --button-text: #f2f0f0;
+  --code-background: rgba(196, 163, 213, 0.15);
+  --code-text: #640080;
+  --table-alt-background: rgba(196, 163, 213, 0.1);
+  --table-header-background: #e9ddf2;
+  --table-background: #ffffff;
+  --image-background: #ffffff;
 }
 
 /* Mobile responsiveness */
