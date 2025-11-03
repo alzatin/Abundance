@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import { Octokit } from "octokit";
 import { useAuth } from "../../contexts/index.js";
 
@@ -84,6 +85,7 @@ function UserGuidePage() {
         
         {!loading && !error && (
           <ReactMarkdown
+            rehypePlugins={[rehypeRaw]}
             components={{
               // Ensure external links open in new tab
               a: ({ node, ...props }) => (

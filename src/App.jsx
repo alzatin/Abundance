@@ -374,12 +374,8 @@ function AppContent() {
           }
         />
         <Route
-          path="/:owner/:repoName"
-          element={
-            <ProjectProvider cad={cad} loadProject={loadProject}>
-              <CreateMode />
-            </ProjectProvider>
-          }
+          path="/user-guide"
+          element={<UserGuidePage />}
         />
         <Route
           path="/run/:owner/:repoName"
@@ -390,8 +386,12 @@ function AppContent() {
           }
         />
         <Route
-          path="/user-guide"
-          element={<UserGuidePage />}
+          path="/:owner/:repoName"
+          element={
+            <ProjectProvider cad={cad} loadProject={loadProject}>
+              <CreateMode />
+            </ProjectProvider>
+          }
         />
       </Routes>
     </main>
