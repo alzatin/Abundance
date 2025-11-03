@@ -159,6 +159,25 @@ const generateGcode = (
         camFastFeedZ: speed, // Match Z feed to speed to maintain feedrate during ramp down
         ops: [
           {
+            type: "rough",
+            tool: 1000,
+            spindle: 1000,
+            down: down,
+            step: 10,
+            rate: speed,
+            plunge: speed,
+            leave: 0,
+            leavez: 0,
+            all: false,
+            voids: true,
+            flats: true,
+            inside: true,
+            omitthru: true,
+            ov_topz: 0,
+            ov_botz: 0,
+            ov_conv: false,
+          },
+          {
             type: "outline",
             tool: 1000,
             spindle: 1000,
