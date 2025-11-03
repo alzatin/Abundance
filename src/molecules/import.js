@@ -289,6 +289,7 @@ export default class Import extends Atom {
     superSerialObject.type = this.type;
     superSerialObject.repoOwner = this.repoOwner;
     superSerialObject.repoName = this.repoName;
+    superSerialObject.SVGwidth = this.SVGwidth;
 
     return superSerialObject;
   }
