@@ -94,18 +94,7 @@ function UserGuidePage() {
       const targetElement = document.getElementById(targetId);
       
       if (targetElement) {
-        // Get the header height to offset the scroll position
-        const header = document.querySelector(".readme-header");
-        const headerHeight = header ? header.offsetHeight : 80; // Fallback to 80px
-        
-        // Calculate the target position accounting for the sticky header
-        const elementPosition = targetElement.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerHeight - 16; // Extra 16px padding
-        
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth"
-        });
+        targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
     // For external links, let them work normally (same tab)
