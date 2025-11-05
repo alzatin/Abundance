@@ -87,9 +87,9 @@ function UserGuidePage() {
           <ReactMarkdown
             rehypePlugins={[rehypeRaw]}
             components={{
-              // Ensure external links open in new tab
+              // Render links without opening in new tab
               a: ({ node, ...props }) => (
-                <a {...props} target="_blank" rel="noopener noreferrer" />
+                <a {...props} />
               ),
               // Add styling classes to headers
               h1: ({ node, ...props }) => <h1 className="readme-h1" {...props} />,
