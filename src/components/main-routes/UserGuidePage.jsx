@@ -60,6 +60,31 @@ function UserGuidePage() {
     navigate(-1);
   };
 
+  // Convert heading text to GitHub-style ID
+  const generateHeadingId = (children) => {
+    if (!children) return "";
+    
+    // Extract text from children (handle both string and array)
+    let text = "";
+    if (typeof children === "string") {
+      text = children;
+    } else if (Array.isArray(children)) {
+      text = children.map(child => 
+        typeof child === "string" ? child : child?.props?.children || ""
+      ).join("");
+    } else if (children.props?.children) {
+      text = children.props.children;
+    }
+    
+    // Convert to lowercase and replace spaces with hyphens
+    return text
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "") // Remove special characters
+      .replace(/\s+/g, "-")      // Replace spaces with hyphens
+      .replace(/--+/g, "-")      // Replace multiple hyphens with single
+      .trim();
+  };
+
   // Handle link clicks for anchor navigation
   const handleLinkClick = (e, href) => {
     // Check if it's an anchor link (starts with #)
@@ -110,9 +135,33 @@ function UserGuidePage() {
                 />
               ),
               // Add styling classes and IDs to headers for anchor navigation
-              h1: ({ node, ...props }) => <h1 className="readme-h1" {...props} />,
-              h2: ({ node, ...props }) => <h2 className="readme-h2" {...props} />,
-              h3: ({ node, ...props }) => <h3 className="readme-h3" {...props} />,
+              h1: ({ node, children, ...props }) => (
+                <h1 
+                  className="readme-h1" 
+                  id={generateHeadingId(children)}
+                  {...props}
+                >
+                  {children}
+                </h1>
+              ),
+              h2: ({ node, children, ...props }) => (
+                <h2 
+                  className="readme-h2" 
+                  id={generateHeadingId(children)}
+                  {...props}
+                >
+                  {children}
+                </h2>
+              ),
+              h3: ({ node, children, ...props }) => (
+                <h3 
+                  className="readme-h3" 
+                  id={generateHeadingId(children)}
+                  {...props}
+                >
+                  {children}
+                </h3>
+              ),
               // Style images to be responsive
               img: ({ node, ...props }) => (
                 <img
