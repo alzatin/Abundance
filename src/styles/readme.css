@@ -12,15 +12,13 @@
 }
 
 .readme-header {
-  position: sticky;
-  top: 0;
+  position: static;
   background: var(--header-background, #3f4243);
   border-bottom: 1px solid var(--border-color, #c4a3d5);
   padding: 1rem 2rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  z-index: 1001;
 }
 
 .readme-back-button {
