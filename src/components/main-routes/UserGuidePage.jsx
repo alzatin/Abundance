@@ -60,6 +60,21 @@ function UserGuidePage() {
     navigate(-1);
   };
 
+  // Handle link clicks for anchor navigation
+  const handleLinkClick = (e, href) => {
+    // Check if it's an anchor link (starts with #)
+    if (href && href.startsWith("#")) {
+      e.preventDefault();
+      const targetId = href.substring(1);
+      const targetElement = document.getElementById(targetId);
+      
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+    // For external links, let them work normally (same tab)
+  };
+
   return (
     <div className="readme-page">
       <div className="readme-header">
@@ -87,11 +102,14 @@ function UserGuidePage() {
           <ReactMarkdown
             rehypePlugins={[rehypeRaw]}
             components={{
-              // Render links without opening in new tab
+              // Handle links with proper anchor navigation
               a: ({ node, ...props }) => (
-                <a {...props} />
+                <a 
+                  {...props} 
+                  onClick={(e) => handleLinkClick(e, props.href)}
+                />
               ),
-              // Add styling classes to headers
+              // Add styling classes and IDs to headers for anchor navigation
               h1: ({ node, ...props }) => <h1 className="readme-h1" {...props} />,
               h2: ({ node, ...props }) => <h2 className="readme-h2" {...props} />,
               h3: ({ node, ...props }) => <h3 className="readme-h3" {...props} />,
