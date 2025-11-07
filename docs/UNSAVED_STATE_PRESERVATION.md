@@ -32,6 +32,21 @@ if (GlobalVariables.topLevelMolecule && GlobalVariables.currentAWSnode) {
 }
 ```
 
+**Location: ToggleRunCreate.jsx - Create Mode to Run Mode toggle**
+```javascript
+const handleCreateToRun = (e) => {
+  // Save current project state to localStorage before switching to Run mode
+  // This preserves unsaved changes when toggling between Create and Run modes
+  if (GlobalVariables.topLevelMolecule && GlobalVariables.currentAWSnode?.owner && GlobalVariables.currentAWSnode?.repoName) {
+    const projectState = GlobalVariables.topLevelMolecule.serialize();
+    projectState.filetypeVersion = 1;
+    const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
+    localStorage.setItem(projectKey, JSON.stringify(projectState));
+  }
+  handleChange();
+};
+```
+
 ### 2. Restoring State (On Return)
 **Location: flowCanvas.jsx - useEffect on mount**
 ```javascript
@@ -101,6 +116,15 @@ This prevents state collision when switching between multiple projects.
 6. Saved state is restored from localStorage
 7. Project state is preserved
 
+### Scenario 3: Toggling Between Create Mode and Run Mode
+1. User has project open in Create Mode with unsaved changes
+2. User clicks toggle button to switch to Run Mode
+3. Project state is saved to localStorage
+4. User views project in Run Mode
+5. User clicks toggle button to return to Create Mode
+6. Saved state is restored from localStorage
+7. User's unsaved changes are preserved
+
 ## Testing
 
 ### Documentation Tests
@@ -108,6 +132,7 @@ Location: `tests/unsaved-project-preservation.test.js`
 
 Covers:
 - Saving state when clicking "Open" or "Browse Projects"
+- Saving state when toggling from Create Mode to Run Mode
 - Restoring state when returning to a project
 - Error handling for corrupted data
 - Unique localStorage keys per project
@@ -122,6 +147,8 @@ Covers:
 - [ ] Click "Return to project"
 - [ ] Verify changes are still present
 - [ ] Repeat with "Browse Projects" button
+- [ ] Test toggling Create Mode → Run Mode → Create Mode
+- [ ] Verify unsaved changes preserved across mode toggles
 - [ ] Test with multiple projects to ensure no collision
 - [ ] Test error handling by corrupting localStorage data
 

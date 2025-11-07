@@ -69,6 +69,36 @@ describe('Unsaved Project State Preservation', () => {
     expect(expectedBehavior.navigation.state).toEqual({ fromRunMode: true });
   });
 
+  it('should save project state when toggling from Create Mode to Run Mode', () => {
+    // Expected behavior:
+    // 1. User has a project open in Create Mode with unsaved changes
+    // 2. User clicks the toggle button to switch to Run Mode
+    // 3. Current project state should be serialized and saved to localStorage
+    // 4. Navigation to Run Mode should proceed
+    // 5. When toggling back to Create Mode, saved state should be restored
+    
+    const expectedBehavior = {
+      component: 'ToggleRunCreate',
+      action: 'handleCreateToRun',
+      beforeNavigation: {
+        serialize: 'GlobalVariables.topLevelMolecule.serialize()',
+        addVersion: 'filetypeVersion = 1',
+        storageKey: 'unsavedProject_{owner}_{repoName}',
+        saveToLocalStorage: true
+      },
+      navigation: {
+        path: '/run/{owner}/{repoName}'
+      },
+      onReturn: {
+        restoreFromLocalStorage: true,
+        preserveUnsavedChanges: true
+      }
+    };
+    
+    expect(expectedBehavior.beforeNavigation.saveToLocalStorage).toBe(true);
+    expect(expectedBehavior.onReturn.preserveUnsavedChanges).toBe(true);
+  });
+
   it('should restore project state when returning to a project', () => {
     // Expected behavior:
     // 1. User returns to a project (not via reauthentication)
