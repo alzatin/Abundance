@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock GlobalVariables
 const mockGlobalVariables = {
-  generateUniqueID: () => "test-id-" + Math.random().toString(36).substr(2, 9),
+  generateUniqueID: () => "test-id-" + Math.random().toString(36).substring(2, 11),
   cad: {
     generateThumbnail: vi.fn(),
   },
@@ -24,7 +24,7 @@ class MockAtom {
 
   setValues(values) {
     if (values) {
-      for (var key in values) {
+      for (const key in values) {
         this[key] = values[key];
       }
     }
