@@ -300,6 +300,15 @@ function TopMenu({
           //tryDelete();
         },
       },
+      {
+        /**
+         * Navigate to the Abundance User Guide page.
+         */
+        id: "User Guide",
+        buttonFunc: () => {
+          navigate("/user-guide");
+        },
+      },
     ],
     [
       navigate,
