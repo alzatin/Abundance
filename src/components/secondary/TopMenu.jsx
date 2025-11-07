@@ -12,6 +12,7 @@ import {
   useRendering,
   useProject,
 } from "../../contexts/index.js";
+import { useProgressBar } from "./ProgressBarManager.jsx";
 
 function TopMenu({
   savePopUp,
@@ -62,6 +63,21 @@ function TopMenu({
   let [renameProgress, setRenameProgress] = useState(0);
 
   const navigate = useNavigate();
+
+  // Register progress bars with the manager
+  useProgressBar('save', savePopUp, saveState, 'Saving', false);
+  useProgressBar('duplicate', duplicatingProject, duplicateProgress, 'Duplicating', false);
+  useProgressBar('rename', renamingProject, renameProgress, 'Renaming', false);
+
+  // Auto-hide save bar when complete
+  useEffect(() => {
+    if (saveState === 100 && savePopUp) {
+      const timer = setTimeout(() => {
+        setSavePopUp(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveState, savePopUp, setSavePopUp]);
 
   /**
    * Handle the duplicate project action - show dialog first
@@ -340,71 +356,6 @@ function TopMenu({
     );
   };
 
-  const SaveBar = memo(({ saveState, savePopUp, setSavePopUp }) => {
-    if (saveState === 100) {
-      // delay and then set savepopupstate to false
-      var delayInMilliseconds = 2000; //1 second
-      setTimeout(function () {
-        setSavePopUp(false);
-      }, delayInMilliseconds);
-    }
-    return (
-      <>
-        <div className="save-bar">
-          <div className="progress">
-            <div
-              className="progress-done"
-              data-done="70"
-              style={{ width: saveState + "%", opacity: "1" }}
-            >
-              {saveState !== 100 ? saveState + "%" : "Project Saved!"}
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  });
-
-  const DuplicateBar = memo(({ duplicateProgress, duplicatingProject }) => {
-    return (
-      <>
-        <div className="save-bar">
-          <div className="progress">
-            <div
-              className="progress-done"
-              data-done="70"
-              style={{ width: duplicateProgress + "%", opacity: "1" }}
-            >
-              {duplicateProgress !== 100
-                ? duplicateProgress + "%"
-                : "Project Duplicated!"}
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  });
-
-  const RenameBar = memo(({ renameProgress, renamingProject }) => {
-    return (
-      <>
-        <div className="save-bar">
-          <div className="progress">
-            <div
-              className="progress-done"
-              data-done="70"
-              style={{ width: renameProgress + "%", opacity: "1" }}
-            >
-              {renameProgress !== 100
-                ? renameProgress + "%"
-                : "Project Renamed!"}
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  });
-
   /*{nav bar toggle component}*/
   // Use a ref to persist navbar state across re-renders without triggering them
   const navbarOpenRef = useRef(false);
@@ -494,15 +445,6 @@ function TopMenu({
 
   return (
     <>
-      {savePopUp ? (
-        <SaveBar {...{ saveState, savePopUp, setSavePopUp }} />
-      ) : null}
-      {duplicatingProject ? (
-        <DuplicateBar {...{ duplicateProgress, duplicatingProject }} />
-      ) : null}
-      {renamingProject ? (
-        <RenameBar {...{ renameProgress, renamingProject }} />
-      ) : null}
       {settingsPopUp ? (
         <SettingsPopUp
           {...{
