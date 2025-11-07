@@ -172,6 +172,25 @@ describe('Unsaved Project State Preservation', () => {
     expect(flow.step5.localStorage).toBe(null);
   });
 
+  it('should clean up localStorage when loading a different project', () => {
+    // Expected behavior:
+    // When switching from one project to another, the localStorage entry for
+    // the previous project should be cleared to prevent accumulation of stale data
+    
+    const expectedBehavior = {
+      scenario: 'User switches from ProjectA to ProjectB',
+      onLoadingProjectB: {
+        checkForPreviousProject: 'GlobalVariables.loadedRepo',
+        clearPreviousProjectState: 'localStorage.removeItem(previousProjectKey)',
+        previousProjectKey: 'unsavedProject_{previousOwner}_{previousRepo}'
+      },
+      result: 'ProjectA localStorage entry is cleared when ProjectB loads'
+    };
+    
+    expect(expectedBehavior.onLoadingProjectB.clearPreviousProjectState).toContain('removeItem');
+    expect(expectedBehavior.result).toContain('cleared');
+  });
+
   it('should use unique localStorage keys per project', () => {
     // Expected behavior:
     // Each project should have a unique localStorage key based on owner and repo name

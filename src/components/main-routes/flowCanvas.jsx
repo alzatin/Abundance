@@ -50,6 +50,14 @@ export default memo(function FlowCanvas({
       GlobalVariables.currentAWSnode.repoName !==
         GlobalVariables.loadedRepo.repoName
     ) {
+      // Clean up any stale localStorage entries for the previously loaded project
+      // This prevents accumulation of saved states when switching between projects
+      if (GlobalVariables.loadedRepo?.owner && GlobalVariables.loadedRepo?.name) {
+        const previousProjectKey = `unsavedProject_${GlobalVariables.loadedRepo.owner.login}_${GlobalVariables.loadedRepo.name}`;
+        localStorage.removeItem(previousProjectKey);
+        console.log(`Cleared localStorage for previous project: ${previousProjectKey}`);
+      }
+      
       GlobalVariables.writeToDisplay(
         GlobalVariables.currentAWSnode.topMoleculeID, // should not be an id unless reseting view
         true

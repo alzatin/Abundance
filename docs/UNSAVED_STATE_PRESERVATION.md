@@ -74,6 +74,18 @@ if (unsavedProject) {
 }
 ```
 
+### 3. Cleanup When Loading Different Project
+**Location: flowCanvas.jsx - useEffect on mount**
+```javascript
+// Clean up any stale localStorage entries for the previously loaded project
+// This prevents accumulation of saved states when switching between projects
+if (GlobalVariables.loadedRepo?.owner && GlobalVariables.loadedRepo?.name) {
+  const previousProjectKey = `unsavedProject_${GlobalVariables.loadedRepo.owner.login}_${GlobalVariables.loadedRepo.name}`;
+  localStorage.removeItem(previousProjectKey);
+  console.log(`Cleared localStorage for previous project: ${previousProjectKey}`);
+}
+```
+
 ## Key Features
 
 ### Unique Storage Keys
@@ -94,7 +106,9 @@ This prevents state collision when switching between multiple projects.
 
 ### Automatic Cleanup
 - localStorage entry is automatically removed after successful restoration
-- Ensures no stale data accumulates
+- When loading a different project, the previous project's localStorage entry is cleared
+- Prevents accumulation of stale data in browser storage
+- Ensures localStorage only contains data for the currently active or recently visited project
 
 ## User Flow
 
