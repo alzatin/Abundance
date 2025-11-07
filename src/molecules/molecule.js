@@ -1675,27 +1675,4 @@ export default class Molecule extends Atom {
       }
     }
   }
-
-  setNewCurrentMolecule(newCurrent) {
-    // Steps:
-    // going up
-    // deselect all atoms on the screen
-    // update currentMolecule to new Current
-    // clear background mesh
-    // enable all children of the new current molecule
-    // set prior current molecule as selected. TODO: does this automatically render it's mesh?
-    // if going up more than one step, then only set the most-recent-child as selected.
-
-    // going down
-    // deselect all atoms on the screen
-    // disable downstream atoms from current?
-    // update current to new value
-    // enable all children
-    // clear background mesh
-    // render output atom as new background mesh
-
-    const prior = GlobalVariables.currentMolecule;
-    GlobalVariables.currentMolecule = newCurrent;
-    GlobalVariables.currentMolecule.enableAllChildren();
-  }
 }
