@@ -48,8 +48,18 @@ export default memo(function FlowCanvas({
     if (
       !GlobalVariables.loadedRepo ||
       GlobalVariables.currentAWSnode.repoName !==
-        GlobalVariables.loadedRepo.repoName
+        GlobalVariables.loadedRepo.name  // GitHub API uses 'name', not 'repoName'
     ) {
+      // Clean up any stale localStorage entries for the previously loaded project
+      // This prevents accumulation of saved states when switching between projects
+      // Only clean up if we're actually loading a DIFFERENT project
+      if (GlobalVariables.loadedRepo?.owner?.login && GlobalVariables.loadedRepo?.name &&
+          GlobalVariables.loadedRepo.name !== GlobalVariables.currentAWSnode.repoName) {
+        const previousProjectKey = `unsavedProject_${GlobalVariables.loadedRepo.owner.login}_${GlobalVariables.loadedRepo.name}`;
+        localStorage.removeItem(previousProjectKey);
+        console.log(`Cleared localStorage for previous project: ${previousProjectKey}`);
+      }
+      
       GlobalVariables.writeToDisplay(
         GlobalVariables.currentAWSnode.topMoleculeID, // should not be an id unless reseting view
         true
@@ -99,7 +109,55 @@ export default memo(function FlowCanvas({
           loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto);
         }
       } else {
-        loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto);
+        // Check for unsaved project state from browsing projects
+        // Note: owner and repoName come from GitHub's API and are validated by GitHub,
+        // so they are safe to use in the localStorage key
+        const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
+        const unsavedProject = localStorage.getItem(projectKey);
+        
+        if (unsavedProject) {
+          console.log("Loading unsaved project state from localStorage...");
+          try {
+            let rawFile = JSON.parse(unsavedProject);
+            // Reset ID counter to avoid collisions with existing IDs
+            GlobalVariables.resetIdCounter(rawFile);
+            // Deserialize the saved project state
+            GlobalVariables.topLevelMolecule.deserialize(rawFile);
+            setActiveAtom(GlobalVariables.currentMolecule);
+            GlobalVariables.currentMolecule.selected = true;
+            GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
+            // Clear the unsaved state from localStorage after restoring
+            localStorage.removeItem(projectKey);
+            // Also load the project metadata from GitHub (without overwriting the molecules)
+            if (authorizedUserOcto) {
+              const octokit = authorizedUserOcto;
+              octokit
+                .request("GET /repos/{owner}/{repo}", {
+                  owner: GlobalVariables.currentAWSnode.owner,
+                  repo: GlobalVariables.currentAWSnode.repoName,
+                })
+                .then(async (response) => {
+                  GlobalVariables.loadedRepo = response.data;
+                  GlobalVariables.currentRepo = response.data;
+                  GlobalVariables.currentRepoName = GlobalVariables.currentAWSnode.repoName;
+                })
+                .catch((e) => {
+                  console.error("Error loading repo metadata:", e);
+                  if (setErrorNotification) {
+                    setErrorNotification("Error loading project metadata: " + e.message);
+                    setTimeout(() => setErrorNotification(null), 5000);
+                  }
+                });
+            }
+          } catch (e) {
+            console.error("Error restoring unsaved project:", e);
+            // If restoration fails, load from GitHub
+            loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto);
+            localStorage.removeItem(projectKey);
+          }
+        } else {
+          loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto);
+        }
       }
     }
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
