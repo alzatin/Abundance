@@ -14,9 +14,8 @@ import LoginMode from "./components/main-routes/LoginMode.jsx";
 import RunMode from "./components/main-routes/RunMode.jsx";
 import CreateMode from "./components/main-routes/CreateMode.jsx";
 import UserGuidePage from "./components/main-routes/UserGuidePage.jsx";
-import cadWorker from "./worker/worker.js?worker";
-import WorkerURL from "./worker/worker.js?url&worker";
-import RendererURL from "./worker/worker.ts?url&worker";
+import cadWorker from "./worker/worker.ts?worker";
+import RenderURL from "./worker/meshWorker.ts?url&worker";
 import * as workerpool from "workerpool";
 
 import { QueryClient, QueryClientProvider } from "react-query";
@@ -33,7 +32,6 @@ import {
   useAppState,
 } from "./contexts/index.js";
 
-import { TutorialOverlay } from "./tutorial/TutorialOverlay";
 import { TutorialProvider } from "./tutorial/TutorialManager";
 
 /*Import style scripts*/
@@ -49,14 +47,7 @@ const queryClient = new QueryClient();
  * @type {object}
  */
 
-const pool = workerpool.pool(WorkerURL, {
-    maxWorkers: 1,
-    workerOpts: {
-        // By default, Vite uses a module worker in dev mode, which can cause your application to fail. Therefore, we need to use a module worker in dev mode and a classic worker in prod mode.
-        type: import.meta.env.PROD ? undefined : "module"
-    }
-});
-const renderer = workerpool.pool(RendererURL, {
+const pool = workerpool.pool(RenderURL  , {
     maxWorkers: 1,
     workerOpts: {
         // By default, Vite uses a module worker in dev mode, which can cause your application to fail. Therefore, we need to use a module worker in dev mode and a classic worker in prod mode.
@@ -189,8 +180,8 @@ function AppContent() {
           });
       } else {
         console.log("Generating mesh for value:", moleculeValue);
-        cad
-          .generateDisplayMesh(
+        pool.proxy().then((worker) =>
+          worker.generateDisplayMesh(
             moleculeValue,
             GlobalVariables.topLevelMolecule.getContext()
           )
@@ -211,7 +202,8 @@ function AppContent() {
           })
           .finally(() => {
             createPuppeteerDiv();
-          });
+          })
+        );
       }
     }
 
