@@ -48,11 +48,13 @@ export default memo(function FlowCanvas({
     if (
       !GlobalVariables.loadedRepo ||
       GlobalVariables.currentAWSnode.repoName !==
-        GlobalVariables.loadedRepo.repoName
+        GlobalVariables.loadedRepo.name  // GitHub API uses 'name', not 'repoName'
     ) {
       // Clean up any stale localStorage entries for the previously loaded project
       // This prevents accumulation of saved states when switching between projects
-      if (GlobalVariables.loadedRepo?.owner && GlobalVariables.loadedRepo?.name) {
+      // Only clean up if we're actually loading a DIFFERENT project
+      if (GlobalVariables.loadedRepo?.owner?.login && GlobalVariables.loadedRepo?.name &&
+          GlobalVariables.loadedRepo.name !== GlobalVariables.currentAWSnode.repoName) {
         const previousProjectKey = `unsavedProject_${GlobalVariables.loadedRepo.owner.login}_${GlobalVariables.loadedRepo.name}`;
         localStorage.removeItem(previousProjectKey);
         console.log(`Cleared localStorage for previous project: ${previousProjectKey}`);
