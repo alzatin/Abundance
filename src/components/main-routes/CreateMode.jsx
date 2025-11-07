@@ -67,6 +67,9 @@ function CreateMode() {
   // Make meshRef available globally for thumbnail generation
   useEffect(() => {
     GlobalVariables.meshRef = meshRef;
+    return () => {
+      GlobalVariables.meshRef = null;
+    };
   }, []);
 
   const navigate = useNavigate();

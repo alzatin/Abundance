@@ -113,7 +113,7 @@ export default class Readme extends Atom {
     try {
       const geometry = this.findIOValue("geometry");
       // Generate a thumbnail only if geometry is present
-      if (geometry != null) {
+      if (geometry != null && this.parent) {
         // Use the new thumbnail generation method
         // First generate the display mesh from the geometry
         const mesh = await GlobalVariables.cad.generateDisplayMesh(
