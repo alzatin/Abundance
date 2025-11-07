@@ -63,6 +63,11 @@ function CreateMode() {
 
   const { cad, loadProject } = useProject();
   const meshRef = useRef();
+  
+  // Make meshRef available globally for thumbnail generation
+  useEffect(() => {
+    GlobalVariables.meshRef = meshRef;
+  }, []);
 
   const navigate = useNavigate();
 

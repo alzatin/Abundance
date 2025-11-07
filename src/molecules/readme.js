@@ -114,7 +114,21 @@ export default class Readme extends Atom {
       const geometry = this.findIOValue("geometry");
       // Generate a thumbnail only if geometry is present
       if (geometry != null) {
-        return GlobalVariables.cad.generateThumbnail(geometry);
+        // Use the new thumbnail generation method
+        // First generate the display mesh from the geometry
+        const mesh = await GlobalVariables.cad.generateDisplayMesh(
+          geometry,
+          this.parent.getContext()
+        );
+        
+        // Then convert the mesh to SVG using the meshRef
+        if (GlobalVariables.meshRef && GlobalVariables.meshRef.current) {
+          const svg = await GlobalVariables.meshRef.current.buildThumbnail(mesh);
+          return svg;
+        } else {
+          console.warn("meshRef not available for thumbnail generation");
+          return null;
+        }
       }
       return null;
     } catch (error) {
