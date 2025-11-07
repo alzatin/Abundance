@@ -938,6 +938,10 @@ export default class Molecule extends Atom {
 
     await Promise.all(promiseArray).then((values) => {
       values.forEach((value) => {
+        // Skip undefined or null values
+        if (!value) {
+          return;
+        }
         let text;
         if (value instanceof Array) {
           value.forEach((arrayItem) => {

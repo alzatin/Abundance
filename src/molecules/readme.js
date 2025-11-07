@@ -146,6 +146,11 @@ export default class Readme extends Atom {
         })
         .catch((error) => {
           console.log(error);
+          return {
+            readMeText: this.readMeText,
+            svg: null,
+            uniqueID: this.uniqueID,
+          };
         });
     } else {
       return [];
