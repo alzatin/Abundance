@@ -94,6 +94,9 @@ function AppContent() {
 
   const [size, setSize] = useState(5);
 
+  /* Track in-flight rendering tasks, for the foreground and background*/
+  const inFlightRenderTasks = React.useRef({"foreground": null, "background": null});
+
   useEffect(() => {
     cad.createMesh(size).then((m) => {
       setMesh(m);
@@ -165,21 +168,28 @@ function AppContent() {
 
   useEffect(() => {
     GlobalVariables.writeToDisplay = (moleculeValue, resetView = false, wireOnly = false) => {
+      const cancelInFlight = (foreOrBack) => {
+        const fore = inFlightRenderTasks.current[foreOrBack];
+        if (fore && fore.isPending()) {
+          fore.cancel();
+          inFlightRenderTasks.current[foreOrBack] = null;
+        }
+      }
+
       setOutdatedMesh(true);
       if (resetView) {
-        console.log("Resetting view for value:", moleculeValue);
-        cad
-          .resetView()
-          .then((m) => {
-            setMesh(m);
-            setWireMesh(m);
-            setOutdatedMesh(false);
-          })
-          .catch((e) => {
-            console.error("reset view not working" + e);
-          });
+        setMesh([]);
+        setWireMesh([]);
+        setOutdatedMesh(false);
+        cancelInFlight("foreground");
+        cancelInFlight("background");
       } else {
         console.log("Generating mesh for value:", moleculeValue);
+        if (wireOnly) {
+          cancelInFlight("background");
+        } else {
+          cancelInFlight("foreground");
+        }
         pool.proxy().then((worker) =>
           worker.generateDisplayMesh(
             moleculeValue,
