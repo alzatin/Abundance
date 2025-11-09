@@ -376,6 +376,7 @@ export default class Molecule extends Atom {
     var distFromClick = GlobalVariables.distBetweenPoints(x, this.x, y, this.y);
 
     if (distFromClick < this.radius * 2) {
+      GlobalVariables.writeToDisplay(this, true); // reset display to clear background mesh.
       GlobalVariables.currentMolecule = this; //set this to be the currently displayed molecule
       this.enableAllChildren();
 
@@ -385,6 +386,9 @@ export default class Molecule extends Atom {
        */
       this.selected = false;
       clickProcessed = true;
+
+      // update to the new current molecule's background mesh
+      this.getOutputAtom()?.sendToRender();
     }
 
     return clickProcessed;
@@ -888,7 +892,7 @@ export default class Molecule extends Atom {
       GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
         atom.selected = false;
       });
-
+      GlobalVariables.writeToDisplay(this.value, true); // reset the display to clear our background output mesh.
       GlobalVariables.currentMolecule = GlobalVariables.currentMolecule.parent; //set parent this to be the currently displayed molecule
       GlobalVariables.currentMolecule.enableAllChildren();
 
@@ -899,6 +903,9 @@ export default class Molecule extends Atom {
       if (value !== null && value !== undefined) {
         this.setReady(value);
       }
+      this.selected = true;
+      this.sendToRender();
+      GlobalVariables.currentMolecule.getOutputAtom()?.sendToRender();
     }
   }
 
@@ -938,6 +945,10 @@ export default class Molecule extends Atom {
 
     await Promise.all(promiseArray).then((values) => {
       values.forEach((value) => {
+        // Skip undefined or null values
+        if (!value) {
+          return;
+        }
         let text;
         if (value instanceof Array) {
           value.forEach((arrayItem) => {
@@ -1598,12 +1609,6 @@ export default class Molecule extends Atom {
       }
     });
     return state;
-  }
-
-  sendToRender() {
-    //Send code to JSxCAD to render
-    //console.log(this);
-    GlobalVariables.writeToDisplay(this.value);
   }
 
   /**

@@ -13,9 +13,30 @@ function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
     }
     setRunMode(!runModeon);
   };
+  
+  const handleCreateToRun = (e) => {
+    // Save current project state to localStorage before switching to Run mode
+    // This preserves unsaved changes when toggling between Create and Run modes
+    // Note: owner and repoName come from GitHub's API and are validated by GitHub
+    if (GlobalVariables.topLevelMolecule && GlobalVariables.currentAWSnode?.owner && GlobalVariables.currentAWSnode?.repoName) {
+      const projectState = GlobalVariables.topLevelMolecule.serialize();
+      projectState.filetypeVersion = 1;
+      const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
+      localStorage.setItem(projectKey, JSON.stringify(projectState));
+    }
+    handleChange();
+  };
   const handleBrowseProjects = (e) => {
     e.preventDefault();
     handleChange();
+    // Save current project state to localStorage before navigating
+    // Note: owner and repoName come from GitHub's API and are validated by GitHub
+    if (GlobalVariables.topLevelMolecule && GlobalVariables.currentAWSnode?.owner && GlobalVariables.currentAWSnode?.repoName) {
+      const projectState = GlobalVariables.topLevelMolecule.serialize();
+      projectState.filetypeVersion = 1;
+      const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
+      localStorage.setItem(projectKey, JSON.stringify(projectState));
+    }
     navigate("/", { state: { fromRunMode: true } });
   };
   if (GlobalVariables.currentRepo) {
@@ -33,7 +54,7 @@ function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
                 ? `/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`
                 : "/run"
             }
-            onClick={handleChange}
+            onClick={handleCreateToRun}
             style={{ position: "absolute" }}
           >
             <label className="switch runmode-tooltip-container">
