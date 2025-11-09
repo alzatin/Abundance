@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import RenderProgressBar from "./RenderProgressBar.jsx";
 
 const ProgressBarContext = createContext();
@@ -37,10 +37,12 @@ export function ProgressBarProvider({ children }) {
     });
   }, []);
 
-  const value = useMemo(() => ({ bars, registerBar, unregisterBar }), [bars, registerBar, unregisterBar]);
+  // Use a ref to maintain stable context value for functions
+  const contextRef = useRef({ registerBar, unregisterBar });
+  contextRef.current = { registerBar, unregisterBar };
 
   return (
-    <ProgressBarContext.Provider value={value}>
+    <ProgressBarContext.Provider value={contextRef.current}>
       {children}
       <ProgressBarDisplay bars={bars} />
     </ProgressBarContext.Provider>
@@ -65,7 +67,8 @@ export function useProgressBar(id, visible, progress, label, run = false) {
     return () => {
       context.unregisterBar(id);
     };
-  }, [id, visible, progress, label, run, context]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, visible, progress, label, run]);
 }
 
 /**

@@ -77,7 +77,7 @@ function TopMenu({
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [saveState, savePopUp, setSavePopUp]);
+  }, [saveState, savePopUp]);
 
   /**
    * Handle the duplicate project action - show dialog first
