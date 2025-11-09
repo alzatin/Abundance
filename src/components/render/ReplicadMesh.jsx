@@ -14,6 +14,7 @@ import {
   LineBasicMaterial,
   PerspectiveCamera,
   Vector3,
+  Box3,
 } from "three";
 import {
   syncFaces,
@@ -77,40 +78,111 @@ export default React.memo(
       return meshArray;
     }
 
+    /**
+     * Calculates a camera zoom level to fit a 3D object within the view, based on its bounding box dimensions.
+     *
+     * @param {number} width - The width of the bounding box.
+     * @param {number} height - The height of the bounding box.
+     * @param {number} depth - The depth of the bounding box.
+     * @param {number} [marginFactor=0.9] - Optional. A factor that helps adjust the size of the svg in the frame.
+     * @returns {number} The computed zoom level for the camera.
+     *
+     * Example usage:
+     *   const zoom = calculateZoom(box.width, box.height, box.depth, 0.9);
+     */
+    function calculateZoom(width, height, depth, marginFactor = 0.9) {
+      try {
+        // Given example bounding box and zoom level
+        const exampleBoundingBox = {
+          width: 312.0005000624958,
+          height: 312.00074999364347,
+          depth: 432.0009977339615,
+        };
+        const exampleZoom = 0.5;
+
+        // Calculate the diagonal length of the given example bounding box
+        const exampleDiagonal = Math.sqrt(
+          Math.pow(exampleBoundingBox.width, 2) +
+            Math.pow(exampleBoundingBox.height, 2) +
+            Math.pow(exampleBoundingBox.depth, 2)
+        );
+
+        // Calculate the diagonal length of the input bounding box
+        const diagonal = Math.sqrt(
+          Math.pow(width, 2) + Math.pow(height, 2) + Math.pow(depth, 2)
+        );
+
+        // Calculate the zoom level based on the proportional relationship
+        const zoom = (exampleZoom * exampleDiagonal * marginFactor) / diagonal;
+        return zoom;
+      } catch (e) {
+        throw new Error("Error calculating zoom level");
+      }
+    }
+
     useImperativeHandle(ref, () => ({
       buildThumbnail: async (m) => {
         const meshArray = makeMeshes(m);
         const svg = await meshArrayToSVG2(meshArray);
-        //console.log("Generated SVG thumbnail in ReplicadMesh.", svg);
         return svg;
-        /* METHOD WITH SVG RENDERER, TOO EXPENSIVE 
-        let svg = meshArrayToSVG(fullMesh);
-        console.log("Generated SVG thumbnail in ReplicadMesh.", svg);*/
       },
     }));
     /**
-     * Convert an array of mesh objects to an SVG string.
+     * Converts an array of mesh objects to an SVG string for 2D preview or thumbnail generation.
+     *
+     * @param {Array} meshArray - Array of mesh objects, each with .lines (BufferGeometry) and .color.
+     * @param {number} [width=800] - Width of the SVG output in pixels.
+     * @param {number} [height=800] - Height of the SVG output in pixels.
+     * @returns {string} SVG markup as a string.
+     *
+     *   const svg = meshArrayToSVG2(meshArray, 400, 400);
      */
     function meshArrayToSVG2(meshArray, width = 800, height = 800) {
-      // 1. Setup camera (match your 3D scene)
-      const camera = new PerspectiveCamera(25, width / height, 0.1, 1000);
-      if (globalvariables.topLevelMolecule) {
-        const projectUnits =
-          globalvariables.topLevelMolecule?.unitsKey || "Millimeters";
-        if (projectUnits === "Inches") {
-          camera.zoom = cameraZoom;
-          camera.position.set(100, 100, 50);
-        } else {
-          camera.position.set(1000, 1000, 500);
-          camera.zoom = cameraZoom;
+      // 1. Calculate bounding box of all geometry
+      const boundingBox = new Box3();
+      meshArray.forEach((m) => {
+        if (m.lines && m.lines.attributes && m.lines.attributes.position) {
+          const positions = m.lines.attributes.position.array;
+          for (let i = 0; i < positions.length; i += 3) {
+            boundingBox.expandByPoint(
+              new Vector3(positions[i], positions[i + 1], positions[i + 2])
+            );
+          }
         }
-      }
+      });
+
+      // Calculate bounding box dimensions
+      const boxSize = new Vector3();
+      boundingBox.getSize(boxSize);
+      const boundingBoxDimensions = {
+        width: boxSize.x,
+        height: boxSize.y,
+        depth: boxSize.z,
+      };
+
+      const zoomFromBounds = calculateZoom(
+        boundingBoxDimensions.width,
+        boundingBoxDimensions.height,
+        boundingBoxDimensions.depth,
+        9
+      );
+
+      // 2. Setup camera with dynamic positioning
+      const camera = new PerspectiveCamera(25, width / height, 0.1, 10000);
+      camera.position.set(3000, 3000, 3000);
+
+      // Apply calculated zoom
+      camera.zoom = zoomFromBounds;
+      /* Camera set up mimicks the ThreeContext camera for consistent thumbnails */
+      camera.far = 9000;
+      camera.pov = 1000;
 
       camera.lookAt(0, 0, 0);
       camera.updateMatrixWorld();
       camera.updateProjectionMatrix();
+      console.log("Camera :", camera);
 
-      // 2. Project all points to 2D and collect for bounding box
+      // 3. Project all points to 2D and collect for bounding box
       let allProjectedPoints = [];
       let svgPaths = [];
       meshArray.forEach((m) => {
@@ -147,7 +219,7 @@ export default React.memo(
         );
       });
 
-      // 3. Compute bounding box and center
+      // 4. Compute bounding box and center
       if (allProjectedPoints.length === 0) {
         return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"></svg>`;
       }
@@ -160,7 +232,7 @@ export default React.memo(
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
 
-      // 4. Shift all paths by center
+      // 5. Shift all paths by center
       let centeredPaths = [];
       meshArray.forEach((m, idx) => {
         if (!m.lines) return;
@@ -197,103 +269,10 @@ export default React.memo(
         );
       });
 
-      // 5. SVG viewBox centered at 0,0
+      // 6. SVG viewBox centered at 0,0
       const svgWidth = maxX - minX;
       const svgHeight = maxY - minY;
       return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">${centeredPaths.join("\n")}</svg>`;
-    }
-    /**
-     * Convert an array of mesh objects to an SVG string with SVGRenderer. (UNUSED)
-     */
-    function meshArrayToSVG(meshArray, width = 1000, height = 1000) {
-      let scene = new Scene();
-      let camera = new PerspectiveCamera(25, width / height, 0.1, 1000);
-      camera.position.set(80, 80, 50);
-      camera.lookAt(0, 0, 0);
-      camera.updateMatrixWorld();
-      camera.updateProjectionMatrix();
-      // Convert meshArray entries to Three.js Meshes and add to scene
-      meshArray.forEach((m, i) => {
-        if (m.body && m.color) {
-          // Add the solid mesh (if body exists)
-          const meshMat = new MeshBasicMaterial({ color: m.color });
-          const mesh = new Mesh(m.body, meshMat);
-          scene.add(mesh);
-          // Add the line/wireframe (if lines exist)
-          if (m.lines) {
-            const lineMat = new LineBasicMaterial({
-              color: "#000000",
-              linewidth: 3,
-            });
-            const line = new THREE.Line(m.lines, lineMat);
-            scene.add(line);
-          }
-          // Debug: Log created mesh and geometry
-          console.log(`[DEBUG] Created Mesh #${i}:`, mesh);
-          if (
-            mesh.geometry &&
-            mesh.geometry.attributes &&
-            mesh.geometry.attributes.position
-          ) {
-            console.log(
-              `[DEBUG] Mesh #${i} position count:`,
-              mesh.geometry.attributes.position.count
-            );
-          } else {
-            console.warn(`[DEBUG] Mesh #${i} has no valid geometry.position`);
-          }
-        } else {
-          console.warn(
-            `[DEBUG] meshArray entry #${i} missing body or color`,
-            m
-          );
-        }
-      });
-
-      // Setup the svg renderer
-      const svgRenderer = new SVGRenderer();
-      svgRenderer.setSize(width, height);
-
-      // Optionally append to DOM for debugging (browser only)
-      if (
-        typeof window !== "undefined" &&
-        svgRenderer.domElement &&
-        !svgRenderer.domElement.parentNode
-      ) {
-        document.body.appendChild(svgRenderer.domElement);
-      }
-
-      // Render the scene
-      svgRenderer.render(scene, camera);
-
-      // Get SVG output as a valid SVG markup string
-      let svgOutput = "";
-      if (svgRenderer.domElement) {
-        // If domElement is an <svg> element
-        if (
-          svgRenderer.domElement.tagName &&
-          svgRenderer.domElement.tagName.toLowerCase() === "svg"
-        ) {
-          svgOutput = svgRenderer.domElement.outerHTML;
-        } else {
-          // If domElement is a container, try to find the <svg> child
-          const svgChild =
-            svgRenderer.domElement.querySelector &&
-            svgRenderer.domElement.querySelector("svg");
-          if (svgChild && svgChild.outerHTML) {
-            svgOutput = svgChild.outerHTML;
-          } else if (svgRenderer.domElement.outerHTML) {
-            svgOutput = svgRenderer.domElement.outerHTML;
-          } else if (typeof XMLSerializer !== "undefined") {
-            svgOutput = new XMLSerializer().serializeToString(
-              svgRenderer.domElement
-            );
-          }
-        }
-      }
-      console.log("[DEBUG] SVG output string:", svgOutput);
-      downloadSVG(svgOutput, "my-model.svg");
-      return svgOutput;
     }
 
     function downloadSVG(svgString, filename = "drawing.svg") {
