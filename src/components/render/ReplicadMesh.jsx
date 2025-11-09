@@ -78,6 +78,39 @@ export default React.memo(
       return meshArray;
     }
 
+    function calculateZoom(width, height, depth, marginFactor = 0.9) {
+      try {
+        // Given example bounding box and zoom level
+        const exampleBoundingBox = {
+          width: 312.0005000624958,
+          height: 312.00074999364347,
+          depth: 432.0009977339615,
+        };
+        const exampleZoom = 0.5;
+
+        // Calculate the diagonal length of the given example bounding box
+        const exampleDiagonal = Math.sqrt(
+          Math.pow(exampleBoundingBox.width, 2) +
+            Math.pow(exampleBoundingBox.height, 2) +
+            Math.pow(exampleBoundingBox.depth, 2)
+        );
+
+        // Calculate the diagonal length of the input bounding box
+        const diagonal = Math.sqrt(
+          Math.pow(width, 2) + Math.pow(height, 2) + Math.pow(depth, 2)
+        );
+
+        // Calculate the zoom level based on the proportional relationship
+        // Apply a margin factor example(0.9) to leave visual breathing room around the object
+        // This prevents thumbnails from appearing too zoomed in
+
+        const zoom = (exampleZoom * exampleDiagonal * marginFactor) / diagonal;
+        return zoom;
+      } catch (e) {
+        throw new Error("Error calculating zoom level");
+      }
+    }
+
     useImperativeHandle(ref, () => ({
       buildThumbnail: async (m) => {
         const meshArray = makeMeshes(m);
@@ -115,62 +148,27 @@ export default React.memo(
         depth: boxSize.z,
       };
 
-      // Determine project units to handle unit conversion
-      const projectUnits =
-        globalvariables.topLevelMolecule?.unitsKey || "Millimeters";
-      
-      // Calculate the diagonal length of the bounding box
-      const diagonal = Math.sqrt(
-        boundingBoxDimensions.width ** 2 +
-          boundingBoxDimensions.height ** 2 +
-          boundingBoxDimensions.depth ** 2
+      const zoomFromBounds = calculateZoom(
+        boundingBoxDimensions.width,
+        boundingBoxDimensions.height,
+        boundingBoxDimensions.depth,
+        1.9
       );
-
-      // Reference bounding box and zoom for scaling (based on test expectations)
-      // Reference is in millimeters, convert to project units if needed
-      const referenceBoundingBoxMM = {
-        width: 312.0005000624958,
-        height: 312.00074999364347,
-        depth: 432.0009977339615,
-      };
-      
-      // Convert reference to project units (1 inch = 25.4mm)
-      const unitScale = projectUnits === "Inches" ? 1 / 25.4 : 1;
-      const referenceBoundingBox = {
-        width: referenceBoundingBoxMM.width * unitScale,
-        height: referenceBoundingBoxMM.height * unitScale,
-        depth: referenceBoundingBoxMM.depth * unitScale,
-      };
-      
-      const referenceZoom = 0.5;
-      const marginFactor = 0.9; // 10% breathing room to prevent thumbnails from being too zoomed in
-
-      const referenceDiagonal = Math.sqrt(
-        referenceBoundingBox.width ** 2 +
-          referenceBoundingBox.height ** 2 +
-          referenceBoundingBox.depth ** 2
-      );
-
-      // Calculate zoom based on the object size with margin factor
-      const calculatedZoom = (referenceZoom * referenceDiagonal * marginFactor) / diagonal;
 
       // 2. Setup camera with dynamic positioning
       const camera = new PerspectiveCamera(25, width / height, 0.1, 10000);
-      
-      if (projectUnits === "Inches") {
-        // Scale down for inches (1 inch = 25.4mm)
-        camera.position.set(100, 100, 50);
-      } else {
-        // Default for millimeters
-        camera.position.set(1000, 1000, 500);
-      }
-      
+      camera.position.set(3000, 3000, 3000);
+
       // Apply calculated zoom
-      camera.zoom = calculatedZoom;
+      camera.zoom = zoomFromBounds;
+      /* Camera set up mimicks the ThreeContext camera for consistent thumbnails */
+      camera.far = 9000;
+      camera.pov = 1000;
 
       camera.lookAt(0, 0, 0);
       camera.updateMatrixWorld();
       camera.updateProjectionMatrix();
+      console.log("Camera :", camera);
 
       // 3. Project all points to 2D and collect for bounding box
       let allProjectedPoints = [];
@@ -270,7 +268,7 @@ export default React.memo(
     function meshArrayToSVG(meshArray, width = 1000, height = 1000) {
       let scene = new Scene();
       let camera = new PerspectiveCamera(25, width / height, 0.1, 1000);
-      camera.position.set(80, 80, 50);
+      camera.position.set(3000, 3000, 5000);
       camera.lookAt(0, 0, 0);
       camera.updateMatrixWorld();
       camera.updateProjectionMatrix();
