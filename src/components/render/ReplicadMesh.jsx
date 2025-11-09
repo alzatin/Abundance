@@ -14,6 +14,7 @@ import {
   LineBasicMaterial,
   PerspectiveCamera,
   Vector3,
+  Box3,
 } from "three";
 import {
   syncFaces,
@@ -92,25 +93,76 @@ export default React.memo(
      * Convert an array of mesh objects to an SVG string.
      */
     function meshArrayToSVG2(meshArray, width = 800, height = 800) {
-      // 1. Setup camera (match your 3D scene)
-      const camera = new PerspectiveCamera(25, width / height, 0.1, 1000);
-      if (globalvariables.topLevelMolecule) {
-        const projectUnits =
-          globalvariables.topLevelMolecule?.unitsKey || "Millimeters";
-        if (projectUnits === "Inches") {
-          camera.zoom = cameraZoom;
-          camera.position.set(100, 100, 50);
-        } else {
-          camera.position.set(1000, 1000, 500);
-          camera.zoom = cameraZoom;
+      // 1. Calculate bounding box of all geometry
+      const boundingBox = new Box3();
+      meshArray.forEach((m) => {
+        if (m.lines && m.lines.attributes && m.lines.attributes.position) {
+          const positions = m.lines.attributes.position.array;
+          for (let i = 0; i < positions.length; i += 3) {
+            boundingBox.expandByPoint(
+              new Vector3(positions[i], positions[i + 1], positions[i + 2])
+            );
+          }
         }
+      });
+
+      // Calculate bounding box dimensions
+      const boxSize = new Vector3();
+      boundingBox.getSize(boxSize);
+      const boundingBoxDimensions = {
+        width: boxSize.x,
+        height: boxSize.y,
+        depth: boxSize.z,
+      };
+
+      // Calculate the diagonal length of the bounding box
+      const diagonal = Math.sqrt(
+        boundingBoxDimensions.width ** 2 +
+          boundingBoxDimensions.height ** 2 +
+          boundingBoxDimensions.depth ** 2
+      );
+
+      // Reference bounding box and zoom for scaling (based on test expectations)
+      const referenceBoundingBox = {
+        width: 312.0005000624958,
+        height: 312.00074999364347,
+        depth: 432.0009977339615,
+      };
+      const referenceZoom = 0.5;
+      const marginFactor = 0.9; // 10% breathing room to prevent thumbnails from being too zoomed in
+
+      const referenceDiagonal = Math.sqrt(
+        referenceBoundingBox.width ** 2 +
+          referenceBoundingBox.height ** 2 +
+          referenceBoundingBox.depth ** 2
+      );
+
+      // Calculate zoom based on the object size with margin factor
+      const calculatedZoom = (referenceZoom * referenceDiagonal * marginFactor) / diagonal;
+
+      // 2. Setup camera with dynamic positioning
+      const camera = new PerspectiveCamera(25, width / height, 0.1, 10000);
+      
+      // Determine base camera position based on project units
+      const projectUnits =
+        globalvariables.topLevelMolecule?.unitsKey || "Millimeters";
+      
+      if (projectUnits === "Inches") {
+        // Scale down for inches (1 inch = 25.4mm)
+        camera.position.set(100, 100, 50);
+      } else {
+        // Default for millimeters
+        camera.position.set(1000, 1000, 500);
       }
+      
+      // Apply calculated zoom
+      camera.zoom = calculatedZoom;
 
       camera.lookAt(0, 0, 0);
       camera.updateMatrixWorld();
       camera.updateProjectionMatrix();
 
-      // 2. Project all points to 2D and collect for bounding box
+      // 3. Project all points to 2D and collect for bounding box
       let allProjectedPoints = [];
       let svgPaths = [];
       meshArray.forEach((m) => {
@@ -147,7 +199,7 @@ export default React.memo(
         );
       });
 
-      // 3. Compute bounding box and center
+      // 4. Compute bounding box and center
       if (allProjectedPoints.length === 0) {
         return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"></svg>`;
       }
@@ -160,7 +212,7 @@ export default React.memo(
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
 
-      // 4. Shift all paths by center
+      // 5. Shift all paths by center
       let centeredPaths = [];
       meshArray.forEach((m, idx) => {
         if (!m.lines) return;
@@ -197,7 +249,7 @@ export default React.memo(
         );
       });
 
-      // 5. SVG viewBox centered at 0,0
+      // 6. SVG viewBox centered at 0,0
       const svgWidth = maxX - minX;
       const svgHeight = maxY - minY;
       return `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">${centeredPaths.join("\n")}</svg>`;
