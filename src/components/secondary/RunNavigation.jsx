@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import ShareDialog from "./ShareDialog.jsx";
-import RenderProgressBar from "./RenderProgressBar.jsx";
 import { useNavigate } from "react-router-dom";
 import GlobalVariables from "../../js/globalvariables.js";
 import { re } from "mathjs";
+import { useProgressBar } from "./ProgressBarManager.jsx";
 
 //navigation svg icons - turn into key pairs later
 let shareSvg = (
@@ -146,6 +146,9 @@ function RunNavigation({
   // Fork progress tracking
   const [forkProgress, setForkProgress] = useState(0);
   const [forkBarVisible, setForkBarVisible] = useState(false);
+
+  // Register fork progress bar with the stacking system
+  useProgressBar('fork-run', forkBarVisible, forkProgress, 'Forking', true);
 
   // Tooltip state for each button
   const [showTooltip, setShowTooltip] = useState({});
@@ -395,9 +398,6 @@ function RunNavigation({
         <ShareDialog
           {...{ shareDialog, setShareDialog, dialogContent, activeAtom }}
         />
-      ) : null}
-      {forkBarVisible ? (
-        <RenderProgressBar progress={forkProgress} label="Forking" run={true} />
       ) : null}
       <div className="run-navigation">
         {/* Share Button */}
