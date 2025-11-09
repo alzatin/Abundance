@@ -433,6 +433,42 @@ async function recursiveCut(
       continue;
       // skip this leaf. bounding boxes don't intersect
     }
+    // --- Coplanarity check for 2D shapes ---
+    if (
+      partToCut.dimension === "2D" &&
+      cuttingPart.dimension === "2D" &&
+      partToCut.plane &&
+      cuttingPart.plane
+    ) {
+      // Compare normals (should be parallel) and origins (should be on the same plane)
+      const p1 = partToCut.plane;
+      const p2 = cuttingPart.plane;
+      const normalsAreParallel =
+        Math.abs(p1.normal[0] * p2.normal[1] - p1.normal[1] * p2.normal[0]) <
+          1e-6 &&
+        Math.abs(p1.normal[0] * p2.normal[2] - p1.normal[2] * p2.normal[0]) <
+          1e-6 &&
+        Math.abs(p1.normal[1] * p2.normal[2] - p1.normal[2] * p2.normal[1]) <
+          1e-6;
+
+      // Check if origins are on the same plane (dot product of normal and vector between origins is zero)
+      const originDelta = [
+        p2.origin[0] - p1.origin[0],
+        p2.origin[1] - p1.origin[1],
+        p2.origin[2] - p1.origin[2],
+      ];
+      const originOnPlane =
+        Math.abs(
+          p1.normal[0] * originDelta[0] +
+            p1.normal[1] * originDelta[1] +
+            p1.normal[2] * originDelta[2]
+        ) < 1e-6;
+
+      if (!normalsAreParallel || !originOnPlane) {
+        continue; // skip: not coplanar
+      }
+    }
+    // --- end coplanarity check ---
 
     resultGeomId = await util.geometryProvider!.cut(
       resultGeomId,
