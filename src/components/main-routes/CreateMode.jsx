@@ -64,7 +64,7 @@ function CreateMode() {
 
   const { cad, loadProject } = useProject();
   const meshRef = useRef();
-  
+
   // Make meshRef available globally for thumbnail generation
   useEffect(() => {
     GlobalVariables.meshRef = meshRef;
@@ -76,7 +76,13 @@ function CreateMode() {
   const navigate = useNavigate();
 
   // Register render progress bar
-  useProgressBar('render', renderBarVisible, renderProgress, 'Rendering', false);
+  useProgressBar(
+    "render",
+    renderBarVisible,
+    renderProgress,
+    "Rendering",
+    false
+  );
 
   /** State for import notifications */
   const [importNotification, setImportNotification] = useState(null);
@@ -776,6 +782,12 @@ function CreateMode() {
 
   const generateProjectThumbnail = async () => {
     //Generate a thumbnail for the project
+    if (GlobalVariables.topLevelMolecule.value == null) {
+      console.warn(
+        "No top level molecule value found for thumbnail generation."
+      );
+      return null;
+    }
     return await GlobalVariables.cad
       .generateDisplayMesh(
         GlobalVariables.topLevelMolecule.value,
@@ -884,17 +896,24 @@ function CreateMode() {
         if (!svg) return false;
         // Check if SVG is empty (has no paths or other content between svg tags)
         // An empty SVG looks like: <svg viewBox="..." xmlns="..."></svg>
-        const hasContent = svg.includes('<path') || svg.includes('<circle') || 
-                          svg.includes('<rect') || svg.includes('<line') ||
-                          svg.includes('<polygon') || svg.includes('<polyline');
+        const hasContent =
+          svg.includes("<path") ||
+          svg.includes("<circle") ||
+          svg.includes("<rect") ||
+          svg.includes("<line") ||
+          svg.includes("<polygon") ||
+          svg.includes("<polyline");
         return hasContent;
       };
 
       // Only update project thumbnail if a valid one has been generated
       // Prioritize finalSVG from main output, but fall back to readme SVG if main output is empty
-      const thumbnailToUse = (finalSVG && isValidSVG(finalSVG)) ? finalSVG : 
-                             (backupProjectSVG && isValidSVG(backupProjectSVG)) ? backupProjectSVG : 
-                             null;
+      const thumbnailToUse =
+        finalSVG && isValidSVG(finalSVG)
+          ? finalSVG
+          : backupProjectSVG && isValidSVG(backupProjectSVG)
+          ? backupProjectSVG
+          : null;
       if (thumbnailToUse) {
         filesObject["project.svg"] = thumbnailToUse;
       }
