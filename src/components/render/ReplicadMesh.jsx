@@ -152,7 +152,7 @@ export default React.memo(
         boundingBoxDimensions.width,
         boundingBoxDimensions.height,
         boundingBoxDimensions.depth,
-        1.9
+        9
       );
 
       // 2. Setup camera with dynamic positioning
