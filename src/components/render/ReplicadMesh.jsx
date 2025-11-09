@@ -115,6 +115,10 @@ export default React.memo(
         depth: boxSize.z,
       };
 
+      // Determine project units to handle unit conversion
+      const projectUnits =
+        globalvariables.topLevelMolecule?.unitsKey || "Millimeters";
+      
       // Calculate the diagonal length of the bounding box
       const diagonal = Math.sqrt(
         boundingBoxDimensions.width ** 2 +
@@ -123,11 +127,21 @@ export default React.memo(
       );
 
       // Reference bounding box and zoom for scaling (based on test expectations)
-      const referenceBoundingBox = {
+      // Reference is in millimeters, convert to project units if needed
+      const referenceBoundingBoxMM = {
         width: 312.0005000624958,
         height: 312.00074999364347,
         depth: 432.0009977339615,
       };
+      
+      // Convert reference to project units (1 inch = 25.4mm)
+      const unitScale = projectUnits === "Inches" ? 1 / 25.4 : 1;
+      const referenceBoundingBox = {
+        width: referenceBoundingBoxMM.width * unitScale,
+        height: referenceBoundingBoxMM.height * unitScale,
+        depth: referenceBoundingBoxMM.depth * unitScale,
+      };
+      
       const referenceZoom = 0.5;
       const marginFactor = 0.9; // 10% breathing room to prevent thumbnails from being too zoomed in
 
@@ -142,10 +156,6 @@ export default React.memo(
 
       // 2. Setup camera with dynamic positioning
       const camera = new PerspectiveCamera(25, width / height, 0.1, 10000);
-      
-      // Determine base camera position based on project units
-      const projectUnits =
-        globalvariables.topLevelMolecule?.unitsKey || "Millimeters";
       
       if (projectUnits === "Inches") {
         // Scale down for inches (1 inch = 25.4mm)
