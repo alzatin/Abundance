@@ -5,13 +5,25 @@ export default function RenderProgressBar({
   offsetTop = 0,
 }) {
   return (
-    <div 
+    <div
       className={!run ? "save-bar" : "save-bar-run"}
-      style={offsetTop > 0 ? { top: `calc(${run ? '45%' : '40%'} + ${offsetTop}px)` } : {}}
+      style={
+        offsetTop != 0
+          ? { top: `calc(${run ? "45%" : "40%"} + ${offsetTop}px)` }
+          : {}
+      }
     >
       <div className="progress">
         <p className="save-bar-label">
-          {progress < 100 ? `${label} ${progress}%` : `${label === "Rendering" ? "Render" : label === "Building" ? "Build" : label} Complete!`}
+          {progress < 100
+            ? `${label} ${progress}%`
+            : `${
+                label === "Rendering"
+                  ? "Render"
+                  : label === "Building"
+                  ? "Build"
+                  : label
+              } Complete!`}
         </p>
         <div
           className="progress-done"
