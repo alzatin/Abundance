@@ -20,6 +20,7 @@ import GitSearchMenu from "../secondary/GitSearchMenu.jsx";
 import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 import { useTutorial } from "../../tutorial/TutorialManager";
 import { TutorialOverlay } from "../../tutorial/TutorialOverlay";
+import { useProgressBar } from "../secondary/ProgressBarManager.jsx";
 
 // Import contexts
 import {
@@ -73,6 +74,9 @@ function CreateMode() {
   }, []);
 
   const navigate = useNavigate();
+
+  // Register render progress bar
+  useProgressBar('render', renderBarVisible, renderProgress, 'Rendering', false);
 
   /** State for import notifications */
   const [importNotification, setImportNotification] = useState(null);
@@ -968,9 +972,6 @@ function CreateMode() {
               setErrorNotification: setErrorNotification,
             }}
           />
-          {renderBarVisible ? (
-            <RenderProgressBar progress={renderProgress} label="Rendering" />
-          ) : null}
           <div id="headerBar">
             <img
               className="thumnail-logo"
