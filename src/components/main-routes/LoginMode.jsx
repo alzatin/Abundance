@@ -92,6 +92,7 @@ const InitialLog = ({ setNoUserBrowsing }) => {
 
 // adds individual projects after API call
 const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
+  const [svgCacheBuster, setSvgCacheBuster] = useState(Date.now());
   const [browseType, setBrowseType] = useState("thumb");
   let nodes = projectsLoaded ? projectsLoaded["repos"] : [];
   const [showForks, setShowForks] = useState(true);
@@ -229,7 +230,13 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
         ) : null}
         {nodes.length > 0 ? (
           <ProjectDiv
-            {...{ nodes, browseType, orderType, authorizedUserOcto }}
+            {...{
+              nodes,
+              browseType,
+              orderType,
+              authorizedUserOcto,
+              svgCacheBuster,
+            }}
           />
         ) : (
           <p>No projects match your search</p>
@@ -304,7 +311,13 @@ const FeaturedHighlight = ({ highestRankingNode, highestRankingToolNode }) => (
   </div>
 );
 
-const ProjectDiv = ({ nodes, browseType, orderType, authorizedUserOcto }) => {
+const ProjectDiv = ({
+  nodes,
+  browseType,
+  orderType,
+  authorizedUserOcto,
+  svgCacheBuster,
+}) => {
   const { renameProject } = useProject();
   const navigate = useNavigate();
 
@@ -368,7 +381,7 @@ const ProjectDiv = ({ nodes, browseType, orderType, authorizedUserOcto }) => {
     }
   };
 
-  const ThumbItem = ({ node }) => {
+  const ThumbItem = ({ node, svgCacheBuster }) => {
     return (
       <div
         className="project"
@@ -387,15 +400,20 @@ const ProjectDiv = ({ nodes, browseType, orderType, authorizedUserOcto }) => {
         <p className="project_name">{node.repoName}</p>
         <img
           className="project_image"
-          src={node.svgURL}
+          src={
+            node.svgURL +
+            (node.svgURL.includes("?") ? "&" : "?") +
+            "cb=" +
+            svgCacheBuster
+          }
           onError={({ currentTarget }) => {
-            currentTarget.onerror = null; // prevents looping
+            currentTarget.onerror = null;
             currentTarget.src =
               import.meta.env.VITE_APP_PATH_FOR_PICS +
               "/imgs/defaultThumbnail.svg";
           }}
           alt={node.repoName}
-        ></img>
+        />
         <div
           style={{
             height: "30px",
