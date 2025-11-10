@@ -87,7 +87,13 @@ function runMode() {
   const navigate = useNavigate();
 
   // Register render progress bar
-  useProgressBar('render-run', renderBarVisible, renderProgress, 'Rendering', true);
+  useProgressBar(
+    "render-run",
+    renderBarVisible,
+    renderProgress,
+    "Rendering",
+    true
+  );
 
   const { next, isActive } = useTutorial();
 
@@ -219,20 +225,13 @@ function runMode() {
     <>
       <ParamsMenu
         activeAtom={activeAtom}
-        position={{ top: 30, left: screenWidth - 320 }}
+        position={{ top: 30, left: screenWidth - 365 }}
         id={"atom-run-params-panel"}
         contentCollapsed={expandedMenu !== "params"}
         setContentCollapsed={() => setExpandedMenu("params")}
         closeMenu={() => setExpandedMenu("none")}
-        initialCollapsed={GlobalVariables.isMobile() ? true : false}
-      />
-      <ExportMenu
-        activeAtom={activeAtom}
-        position={{ top: 75, left: screenWidth - 365 }}
-        id={"atom-run-export-panel"}
-        contentCollapsed={expandedMenu !== "export"}
-        setContentCollapsed={() => setExpandedMenu("export")}
-        closeMenu={() => setExpandedMenu("none")}
+        initialCollapsed={true}
+        collapsedOffset={[45, 0]}
       />
       <RenderMenu
         {...{
@@ -248,9 +247,19 @@ function runMode() {
           contentCollapsed: expandedMenu !== "render",
           setContentCollapsed: () => setExpandedMenu("render"),
           closeMenu: () => setExpandedMenu("none"),
-          position: { top: 30, left: screenWidth - 365 },
+          position: { top: 75, left: screenWidth - 365 },
+          collapsedOffset: [45, -45],
         }}
         id={"atom-run-render-panel"}
+      />
+      <ExportMenu
+        activeAtom={activeAtom}
+        position={{ top: 120, left: screenWidth - 365 }}
+        id={"atom-run-export-panel"}
+        contentCollapsed={expandedMenu !== "export"}
+        setContentCollapsed={() => setExpandedMenu("export")}
+        closeMenu={() => setExpandedMenu("none")}
+        collapsedOffset={[45, -90]}
       />
       <BomMenu
         {...{
@@ -259,9 +268,9 @@ function runMode() {
           contentCollapsed: expandedMenu !== "bom",
           setContentCollapsed: () => setExpandedMenu("bom"),
           closeMenu: () => setExpandedMenu("none"),
-          position: { top: 120, left: screenWidth - 365 },
+          position: { top: 165, left: screenWidth - 365 },
         }}
-        collapsedOffset={[45, -90]}
+        collapsedOffset={[45, -135]}
       />
       <div id="headerBarRun">
         <img
