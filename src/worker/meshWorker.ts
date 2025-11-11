@@ -21,7 +21,7 @@ type DisplayMesh = {
 };
 
 let defaultMesh: any = undefined;
-const started: Promise<boolean> = util.init();
+const started: Promise<boolean> = util.init(false);
 
 function getLargestBoundingBox(meshArray: ReplicadObject[]):
   | {
@@ -148,7 +148,9 @@ function generateCameraPosition(meshArray: ReplicadObject[]): number {
  * @param {string} id - The unique identifier to store the default mesh in the library
  * @returns {Promise} A promise that resolves to the default text mesh
  */
-async function generateDefaultMesh(context: RequestContext) {
+async function generateDefaultMesh(
+  context: RequestContext
+): Promise<{ id: AbundanceObject; mesh: DisplayMesh[] }> {
   if (defaultMesh == undefined) {
     const defaultText = await text(
       "No output to display",
@@ -164,94 +166,100 @@ async function generateDefaultMesh(context: RequestContext) {
 async function generateDisplayMesh(
   id: AbundanceObject,
   context: RequestContext
-): Promise<DisplayMesh[]> {
-  console.log("waiting for geometry provider to start...");
-  await started;
-  console.log("Generating display mesh for ID:" /*JSON.stringify(id)*/);
-  let geom = undefined;
-  if (util.isAbundanceObject(id) && id.geometry.length !== 0) {
-    geom = id;
-  } else {
-    return generateDefaultMesh(context);
-  }
+): Promise<{ id: AbundanceObject; mesh: DisplayMesh[] }> {
+  try {
+    console.log("waiting for geometry provider to start...");
+    await started;
+    console.log("Generating display mesh for ID: ", JSON.stringify(id));
+    let geom = undefined;
+    if (util.isAbundanceObject(id) && id.geometry.length !== 0) {
+      geom = id;
+    } else {
+      return generateDefaultMesh(context);
+    }
 
-  // Flatten the assembly to remove hierarchy
-  const flattened = util.flattenAssembly(geom);
+    // Flatten the assembly to remove hierarchy
+    const flattened = util.flattenAssembly(geom);
 
-  let meshArray: { color: string; geometry: ReplicadObject }[] = [];
+    let meshArray: { color: string; geometry: ReplicadObject }[] = [];
 
-  for (let i = 0; i < flattened.length; i++) {
-    const displayObject = flattened[i];
-    let cleanedGeometry;
-    // TODO: would love a better way to check if geometry is 2D or 3D.
-    const geom = await util.geometryProvider!.get(
-      displayObject.geometry,
-      context
-    );
-    if (!("mesh" in geom) || geom.mesh == undefined) {
-      cleanedGeometry = await util.geometryProvider!.get(
-        await util.geometryProvider!.extrude(
-          displayObject.geometry,
-          displayObject.plane,
-          0.0001,
-          context
-        ),
+    for (let i = 0; i < flattened.length; i++) {
+      const displayObject = flattened[i];
+      let cleanedGeometry;
+      // TODO: would love a better way to check if geometry is 2D or 3D.
+      const geom = await util.geometryProvider!.get(
+        displayObject.geometry,
         context
       );
-    } else {
-      cleanedGeometry = geom;
-    }
-    meshArray.push({
-      color: displayObject.color,
-      geometry: cleanedGeometry,
-    });
-  }
-
-  let cameraZoom;
-  try {
-    cameraZoom = generateCameraPosition(meshArray.map((m) => m.geometry));
-  } catch (e) {
-    console.error("Error generating camera position:", e);
-    cameraZoom = 1;
-  }
-
-  let finalMeshes = [];
-  // Iterate through the meshArray and create final meshes with faces, edges and color to pass to display
-  for (const meshObj of meshArray) {
-    try {
-      let sketchPlane = util.asReplicadPlane(geom.plane);
-      if (meshObj.geometry instanceof replicad.Drawing) {
-        const threeDShape = meshObj.geometry
-          .sketchOnPlane(sketchPlane)
-          .extrude(0.0001);
-        finalMeshes.push({
-          cameraZoom: cameraZoom,
-          faces: threeDShape.mesh({ tolerance: 0.1, angularTolerance: 0.5 }),
-          edges: threeDShape.meshEdges({
-            tolerance: 0.1,
-            angularTolerance: 0.5,
-          }),
-          color: meshObj.color,
-        });
+      if (!("mesh" in geom) || geom.mesh == undefined) {
+        cleanedGeometry = await util.geometryProvider!.get(
+          await util.geometryProvider!.extrude(
+            displayObject.geometry,
+            displayObject.plane,
+            0.0001,
+            context
+          ),
+          context
+        );
       } else {
-        finalMeshes.push({
-          cameraZoom: cameraZoom,
-          faces: meshObj.geometry.mesh({
-            tolerance: 0.1,
-            angularTolerance: 0.5,
-          }),
-          edges: meshObj.geometry.meshEdges({
-            tolerance: 0.1,
-            angularTolerance: 0.5,
-          }),
-          color: meshObj.color,
-        });
+        cleanedGeometry = geom;
       }
-    } catch (e) {
-      throw new Error("Error generating display mesh" + e);
+      meshArray.push({
+        color: displayObject.color,
+        geometry: cleanedGeometry,
+      });
     }
+
+    let cameraZoom;
+    try {
+      cameraZoom = generateCameraPosition(meshArray.map((m) => m.geometry));
+    } catch (e) {
+      console.error("Error generating camera position:", e);
+      cameraZoom = 1;
+    }
+
+    let finalMeshes = [];
+    // Iterate through the meshArray and create final meshes with faces, edges and color to pass to display
+    for (const meshObj of meshArray) {
+      try {
+        let sketchPlane = util.asReplicadPlane(geom.plane);
+        if (meshObj.geometry instanceof replicad.Drawing) {
+          const threeDShape = meshObj.geometry
+            .sketchOnPlane(sketchPlane)
+            .extrude(0.0001);
+          finalMeshes.push({
+            cameraZoom: cameraZoom,
+            faces: threeDShape.mesh({ tolerance: 0.1, angularTolerance: 0.5 }),
+            edges: threeDShape.meshEdges({
+              tolerance: 0.1,
+              angularTolerance: 0.5,
+            }),
+            color: meshObj.color,
+          });
+        } else {
+          finalMeshes.push({
+            cameraZoom: cameraZoom,
+            faces: meshObj.geometry.mesh({
+              tolerance: 0.1,
+              angularTolerance: 0.5,
+            }),
+            edges: meshObj.geometry.meshEdges({
+              tolerance: 0.1,
+              angularTolerance: 0.5,
+            }),
+            color: meshObj.color,
+          });
+        }
+      } catch (e) {
+        throw new Error("Error generating display mesh" + e);
+      }
+    }
+    console.log("finished mesh generation for: ", JSON.stringify(id));
+    return { id: geom, mesh: finalMeshes };
+  } catch (e) {
+    console.error("Error in generateDisplayMesh:", e);
+    return { id: undefined, mesh: [] };
   }
-  return finalMeshes;
 }
 
 workerpool.worker({

@@ -94,9 +94,6 @@ function AppContent() {
 
   const [size, setSize] = useState(5);
 
-  /* Track in-flight rendering tasks, for the foreground and background*/
-  const inFlightRenderTasks = React.useRef({"foreground": null, "background": null});
-
   useEffect(() => {
     cad.createMesh(size).then((m) => {
       setMesh(m);
@@ -166,54 +163,87 @@ function AppContent() {
     localStorage.setItem("shortcuts", shortCutsOn);
   }, [shortCutsOn]);
 
-  useEffect(() => {
-    GlobalVariables.writeToDisplay = (moleculeValue, resetView = false, wireOnly = false) => {
-      const cancelInFlight = (foreOrBack) => {
-        const fore = inFlightRenderTasks.current[foreOrBack];
-        if (fore && fore.isPending()) {
-          fore.cancel();
-          inFlightRenderTasks.current[foreOrBack] = null;
-        }
-      }
+  /* Track in-flight rendering tasks, for the foreground and background*/
+  const inFlightMeshRender = React.useRef(undefined);
+  const targetMesh = React.useRef(undefined);
+  const backgroundMesh = React.useRef(undefined);
 
-      setOutdatedMesh(true);
+  function makeMesh() {
+    setOutdatedMesh(true);
+    pool.proxy().then((worker) => {
+      // No-op condition
+      if (!targetMesh.current || JSON.stringify(targetMesh.current) === JSON.stringify(inFlightMeshRender.current?.value)) {
+        console.log("no-op because target is already in-flight or undefined");
+        return;
+      }
+      console.log('dispatching mesh generation for: ', targetMesh.current);
+      const genTask = worker.generateDisplayMesh(
+        targetMesh.current,
+        GlobalVariables.topLevelMolecule.getContext()
+      );
+      inFlightMeshRender.current = {task: genTask, value: targetMesh.current};
+      genTask
+      .then((m) => {
+        console.log("received mesh for : ", m.id);
+        const mesh = m.mesh;
+        const id = m.id;
+        if (JSON.stringify(id) !== JSON.stringify(targetMesh.current)) {
+          console.log("discarding outdated mesh for: ", id);
+          return;
+        }
+        inFlightMeshRender.current = undefined;
+        setMesh(mesh);
+        setOutdatedMesh(false);
+        /*Set plane and geometry type for ThreeContext*/
+        setPlane(id?.plane);
+        setGeometryType(id?.dimension);
+      })
+      .catch((e) => {
+        if (e instanceof CancellationError) {
+          console.log("cancellation caught");
+        } else {
+          console.error("Can't display Mesh " + e);
+          activeAtom.setError("Can't display Mesh " + e);
+        }
+      })
+      .finally(() => {
+        createPuppeteerDiv();
+      })
+    });
+  }
+
+  useEffect(() => {
+    GlobalVariables.writeToDisplay = (moleculeValue, resetView = false, backgroundMolecule = false) => {
       if (resetView) {
+        setOutdatedMesh(true);
+        targetMesh.current = undefined;
         setMesh([]);
         setWireMesh([]);
         setOutdatedMesh(false);
-        cancelInFlight("foreground");
-        cancelInFlight("background");
-      } else {
-        console.log("Generating mesh for value:", moleculeValue);
-        if (wireOnly) {
-          cancelInFlight("background");
+      }
+
+      if (backgroundMolecule) {
+        if (backgroundMesh.current && JSON.stringify(backgroundMesh.current.id) === JSON.stringify(moleculeValue)) {
+          console.log("skipping background mesh generation because the target is already set");
+          setWireMesh(backgroundMesh.current.mesh)
         } else {
-          cancelInFlight("foreground");
+          // New background is required
+          backgroundMesh.current = {id: moleculeValue, mesh: undefined};
+          console.log('dispatching background mesh generation for: ', moleculeValue);
+          pool.proxy().then((worker) => {
+            worker.generateDisplayMesh(moleculeValue, GlobalVariables.topLevelMolecule.getContext())
+              .then((m) => {
+                // TODO: this should have additional checks
+                backgroundMesh.current.mesh = m.mesh;
+                setWireMesh(m.mesh);
+              });
+          });
         }
-        pool.proxy().then((worker) =>
-          worker.generateDisplayMesh(
-            moleculeValue,
-            GlobalVariables.topLevelMolecule.getContext()
-          )
-          .then((m) => {
-            if (wireOnly) {
-              setWireMesh(m);
-            } else {
-              setMesh(m);
-            }
-            setOutdatedMesh(false);
-            /*Set plane and geometry type for ThreeContext*/
-            setPlane(moleculeValue?.plane);
-            setGeometryType(moleculeValue?.dimension);
-          })
-          .catch((e) => {
-            console.error("Can't display Mesh " + e);
-            activeAtom.setError("Can't display Mesh " + e);
-          })
-          .finally(() => {
-            createPuppeteerDiv();
-          })
-        );
+      }
+
+      else {
+        targetMesh.current = moleculeValue;
+        makeMesh();
       }
     }
 
