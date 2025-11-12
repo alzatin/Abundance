@@ -432,6 +432,7 @@ export default class CutLayout extends Atom {
     //Save the readme text to the serial stream
     var valuesObj = super.serialize(values);
     valuesObj.placements = this.placements;
+    valuesObj.placementsFor = this.placementsFor;
 
     return valuesObj;
   }
