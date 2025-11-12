@@ -962,21 +962,21 @@ function CreateMode() {
         <>
           {isActive ? <TutorialOverlay /> : null}
           <ParamsMenu
-            position={{ top: screenHeight / 2 - 10, left: 55 }}
+            position={{ top: screenHeight / 2 - 10, left: 10 }}
             id={"atom-create-params-panel"}
             contentCollapsed={expandedMenu !== "params"}
             setContentCollapsed={() => setExpandedMenu("params")}
             panelRef={panelRef}
             closeMenu={() => setExpandedMenu("none")}
-            initialCollapsed={GlobalVariables.isMobile() ? true : false}
-            collapsedOffset={[0, 0]}
+            initialCollapsed={true}
+            collapsedOffset={[45, 0]}
           />
           <RenderMenu
             {...{
               contentCollapsed: expandedMenu !== "render",
               setContentCollapsed: () => setExpandedMenu("render"),
-              position: { top: screenHeight / 2 - 10, left: 10 },
-              collapsedOffset: [45, 0],
+              position: { top: screenHeight / 2 + 35, left: 10 },
+              collapsedOffset: [45, -45],
               closeMenu: () => setExpandedMenu("none"),
             }}
             id={"atom-create-render-panel"}
@@ -987,8 +987,8 @@ function CreateMode() {
               contentCollapsed: expandedMenu !== "bom",
               setContentCollapsed: () => setExpandedMenu("bom"),
               closeMenu: () => setExpandedMenu("none"),
-              position: { top: screenHeight / 2 + 35, left: 10 },
-              collapsedOffset: [45, -45],
+              position: { top: screenHeight / 2 + 80, left: 10 },
+              collapsedOffset: [45, -90],
             }}
           />
           <GitSearchMenu
@@ -999,8 +999,8 @@ function CreateMode() {
               setContentCollapsed: () => setExpandedMenu("git-search"),
               closeMenu: () => setExpandedMenu("none"),
               setParamsMenuExpanded: () => setExpandedMenu("params"),
-              position: { top: screenHeight / 2 + 80, left: 10 },
-              collapsedOffset: [45, -90],
+              position: { top: screenHeight / 2 + 125, left: 10 },
+              collapsedOffset: [45, -135],
               gitRef: gitRef,
               setErrorNotification: setErrorNotification,
             }}

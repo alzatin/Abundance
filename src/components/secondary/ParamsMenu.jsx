@@ -75,7 +75,7 @@ export default function ParamsMenu({
       <SimpleControlPanel
         controls={controls}
         id={id}
-        position={position || { top: screenHeight / 2 - 10, left: 55 }}
+        position={position || { top: screenHeight / 2 - 10, left: 10 }}
         title={activeAtom?.name || "Controls"}
         minWidth={280}
         initialCollapsed={initialCollapsed}

@@ -9,6 +9,7 @@ export default function ExportMenu({
   position,
   contentCollapsed,
   setContentCollapsed,
+  collapsedOffset,
 }) {
   const [inputChanged, setInputChanged] = useState("");
   let exportParams = {};
@@ -63,7 +64,7 @@ export default function ExportMenu({
         initialCollapsed={true}
         minWidth={280}
         collapsedIcon={ExportIcon}
-        collapsedOffset={[45, -45]}
+        collapsedOffset={collapsedOffset || [45, 0]}
         contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
       />
