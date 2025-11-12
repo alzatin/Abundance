@@ -251,11 +251,9 @@ export default class CutLayout extends Atom {
     // However, computation must be manually triggered via the "compute layout" button
     // so there's not much else to do here.
 
-    if (
-      this.placements?.length > 0 &&
-      JSON.stringify(this.placementsFor) ==
-        JSON.stringify(this.findIOValue("geometry"))
-    ) {
+    // If we have saved placements, try to display them with the current geometry.
+    // If the geometry structure has changed, displayLayout will fail and we'll reset.
+    if (this.placements?.length > 0) {
       this.displayLayout(true).catch(() => {
         // If displayLayout fails we have an inconsistent state between the current geom and whatever
         // saved placements are here. Clear the placements and set ourselves to wait for a new click
@@ -432,7 +430,6 @@ export default class CutLayout extends Atom {
     //Save the readme text to the serial stream
     var valuesObj = super.serialize(values);
     valuesObj.placements = this.placements;
-    valuesObj.placementsFor = this.placementsFor;
 
     return valuesObj;
   }

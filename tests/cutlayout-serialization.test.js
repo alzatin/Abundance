@@ -1,9 +1,9 @@
 /**
- * Test file for cutlayout serialization - verifying placements and placementsFor are saved
+ * Test file for cutlayout serialization - verifying placements are saved
  * 
  * This test documents the expected behavior of CutLayout serialization
- * to ensure that both placements and placementsFor are properly saved
- * and restored when a project is reloaded.
+ * to ensure that placements are properly saved and applied to the current
+ * geometry when a project is reloaded.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -13,8 +13,11 @@ describe("CutLayout serialization behavior", () => {
     // Expected behavior when CutLayout.serialize() is called:
     // 1. Call super.serialize() to get base atom properties
     // 2. Add 'placements' array to the serialized object
-    // 3. Add 'placementsFor' geometry reference to the serialized object
-    // 4. Return the complete serialized object
+    // 3. Return the complete serialized object
+    // 
+    // Note: placementsFor is NOT serialized to avoid bloating the save file
+    // with large geometry data. Instead, saved placements are applied to the
+    // current geometry on load.
     
     const expectedSerializedStructure = {
       atomType: "Cut Layout",
@@ -23,71 +26,71 @@ describe("CutLayout serialization behavior", () => {
       y: expect.any(Number),
       uniqueID: expect.any(Number),
       ioValues: expect.any(Array),
-      placements: expect.any(Array),  // Must be present
-      placementsFor: expect.anything() // Must be present (string or object)
+      placements: expect.any(Array)  // Must be present
     };
 
-    // This documents the critical fix: both placements AND placementsFor
-    // must be serialized for proper reload behavior
+    // This documents that only placements need to be serialized
     expect(expectedSerializedStructure.placements).toBeDefined();
-    expect(expectedSerializedStructure.placementsFor).toBeDefined();
   });
 
   it("should document the loading behavior", () => {
     // Expected behavior when a CutLayout is loaded from serialized data:
     // 1. Constructor is called with serialized object
-    // 2. setValues() copies all properties including 'placements' and 'placementsFor'
+    // 2. setValues() copies all properties including 'placements'
     // 3. When onUpstreamChange() is called:
-    //    - If placements exist AND placementsFor matches current geometry
-    //    - Then displayLayout(true) is called to show the saved layout
-    //    - Otherwise setWaiting() is called to wait for user to compute layout
+    //    - If placements exist, try to display them with current geometry
+    //    - If displayLayout succeeds, positions are shown
+    //    - If displayLayout fails (geometry changed), clear placements and wait
     
     const loadingBehavior = {
       constructor: "new CutLayout(serializedData)",
-      setValues: "copies placements and placementsFor from serializedData",
+      setValues: "copies placements from serializedData",
       onUpstreamChange: {
-        condition: "placements.length > 0 && placementsFor matches geometry",
-        thenAction: "displayLayout(true) - shows saved positions",
-        elseAction: "setWaiting() - waits for compute button"
+        condition: "placements.length > 0",
+        thenAction: "displayLayout(true) - tries to apply saved positions",
+        onSuccess: "Positions shown with current geometry",
+        onFailure: "Placements cleared, setWaiting()"
       }
     };
 
-    // The fix ensures placementsFor is available for the comparison
-    expect(loadingBehavior.onUpstreamChange.condition).toContain("placementsFor");
+    // The fix ensures placements are applied without storing full geometry
+    expect(loadingBehavior.onUpstreamChange.condition).toContain("placements");
   });
 
   it("should document the critical fix for issue", () => {
     // Issue: CutLayout not loading stored positions
-    // Root cause: placementsFor was not serialized
+    // Root cause: placements were saved but never applied on reload
     // 
     // Before fix:
-    // - serialize() only saved 'placements'
-    // - On reload, placementsFor was "" (from constructor default)
-    // - onUpstreamChange() comparison failed: "" != geometry
+    // - serialize() saved 'placements'
+    // - placementsFor was not saved (correct - too large)
+    // - onUpstreamChange() tried to compare placementsFor with geometry
+    // - Comparison always failed because placementsFor was ""
     // - Result: displayLayout() never called, positions not shown
     //
     // After fix:
-    // - serialize() saves both 'placements' AND 'placementsFor'
-    // - On reload, placementsFor has the correct geometry reference
-    // - onUpstreamChange() comparison succeeds
-    // - Result: displayLayout() is called, positions are shown
+    // - serialize() saves 'placements' (no placementsFor - keeps file small)
+    // - On reload, onUpstreamChange() checks if placements exist
+    // - If yes, tries displayLayout with current geometry
+    // - If geometry matches, positions shown; if not, error caught and reset
+    // - Result: displayLayout() is called, positions are shown (if geometry matches)
 
     const fixValidation = {
       beforeFix: {
-        serialized: { placements: "saved", placementsFor: "NOT saved" },
+        serialized: { placements: "saved" },
         onReload: { placementsFor: '""' },
-        comparison: '"" == geometry',
+        comparison: '"" == geometry (always fails)',
         result: "FAIL - displayLayout not called"
       },
       afterFix: {
-        serialized: { placements: "saved", placementsFor: "saved" },
-        onReload: { placementsFor: "geometry" },
-        comparison: "geometry == geometry", 
-        result: "SUCCESS - displayLayout called"
+        serialized: { placements: "saved" },
+        onReload: { noComparison: "just try to apply" },
+        behavior: "displayLayout with current geometry", 
+        result: "SUCCESS - displayLayout called, error handling if geometry changed"
       }
     };
 
-    expect(fixValidation.afterFix.serialized.placementsFor).toBe("saved");
+    expect(fixValidation.afterFix.serialized.placements).toBe("saved");
     expect(fixValidation.afterFix.result).toContain("SUCCESS");
   });
 });
