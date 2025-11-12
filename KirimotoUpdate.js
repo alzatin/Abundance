@@ -136,10 +136,13 @@ const generateGcode = (
       const down = (zBottom + CUT_THROUGH) / passes;
       const camZBottom = -zBottom - CUT_THROUGH;
       const camZThru = passes > 1 ? 0 : CUT_THROUGH;
+      const roughingStepOver = 0.6;
 
       console.log("Down per pass:", down);
       console.log("CAM Z Bottom:", camZBottom);
       console.log("CAM Z Thru:", camZThru);
+      console.log("Tool Size:", toolSize);
+      console.log("Roughing step over:", roughingStepOver);
 
       return eng.setProcess({
         camEaseAngle: 10,
@@ -163,7 +166,7 @@ const generateGcode = (
             tool: 1000,
             spindle: 1000,
             down: down,
-            step: 10,
+            step: roughingStepOver,
             rate: speed,
             plunge: speed,
             leave: 0,
@@ -217,25 +220,6 @@ const generateGcode = (
             ov_botz: 0,
             ov_conv: true,
           },
-          /*{
-            type: "rough",
-            tool: 1000,
-            spindle: 1000,
-            down: 1000,
-            step: 1,
-            rate: 1000,
-            plunge: 250,
-            leave: 0,
-            leavez: 0,
-            all: false,
-            voids: true,
-            flats: true,
-            inside: true,
-            omitthru: false,
-            ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: false,
-          },*/
         ],
       });
     })
