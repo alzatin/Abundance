@@ -213,15 +213,14 @@ function AppContent() {
   }
 
   useEffect(() => {
-    GlobalVariables.writeToDisplay = (moleculeValue, resetView = false, backgroundMolecule = false) => {
-      if (resetView) {
-        setOutdatedMesh(true);
-        targetMesh.current = undefined;
-        setMesh([]);
-        setWireMesh([]);
-        setOutdatedMesh(false);
-      }
-
+    GlobalVariables.resetView = () => {
+      setOutdatedMesh(true);
+      targetMesh.current = undefined;
+      setMesh([]);
+      setWireMesh([]);
+      setOutdatedMesh(false);
+    };
+    GlobalVariables.writeToDisplay = (moleculeValue, context, backgroundMolecule = false) => {
       if (backgroundMolecule) {
         if (backgroundMesh.current && JSON.stringify(backgroundMesh.current.id) === JSON.stringify(moleculeValue)) {
           console.log("skipping background mesh generation because the target is already set");

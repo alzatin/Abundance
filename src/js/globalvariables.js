@@ -461,11 +461,18 @@ class GlobalVariables {
   }
 
   /**
-   * A function which reads the value of a unique ID and passes to display
-   * @param {string} The value of the molecule to display
-   * @param {boolean} resetView - Whether to reset the view to fit the molecule
+   * Clear current display and camera position.
    */
-  writeToDisplay(moleculeValue, resetView = false) {
+  resetView() {
+    // Placeholder function - implementation is set in App.jsx
+  }
+
+  /**
+   * Display a given atom's mesh on the screen. Requires also the molecule context. See atom's getContext() function.
+   * @param {string} The value of the molecule to display
+   * @param {object} context - Project context of the atom to display.
+   */
+  writeToDisplay(moleculeValue, context) {
     // Placeholder function - implementation is set in App.jsx
   }
 
@@ -487,7 +494,7 @@ class GlobalVariables {
     let maxId = 0;
 
     const extractIdNumber = (id) => {
-      if (typeof id === 'string' && id.startsWith('id-')) {
+      if (typeof id === "string" && id.startsWith("id-")) {
         const num = parseInt(id.substring(3), 10);
         if (!isNaN(num)) {
           return num;
@@ -497,7 +504,7 @@ class GlobalVariables {
     };
 
     const scanForIds = (obj) => {
-      if (!obj || typeof obj !== 'object') {
+      if (!obj || typeof obj !== "object") {
         return;
       }
 
@@ -511,10 +518,10 @@ class GlobalVariables {
 
       // Recursively scan arrays
       if (Array.isArray(obj)) {
-        obj.forEach(item => scanForIds(item));
+        obj.forEach((item) => scanForIds(item));
       } else {
         // Recursively scan object properties
-        Object.values(obj).forEach(value => scanForIds(value));
+        Object.values(obj).forEach((value) => scanForIds(value));
       }
     };
 

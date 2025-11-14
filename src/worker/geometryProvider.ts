@@ -178,9 +178,7 @@ class GeometryProvider {
     const shape = await getShape(context.project, id);
     if (shape == undefined) {
       console.trace("Cache miss for id:", id);
-      console.log(this.warmCache);
-
-      throw new Error(`Geometry with ID ${id} not found in cache`);
+      throw new Error(`Geometry with ID ${id} not found in cache, context: ${JSON.stringify(context)}`);
     }
     let result = undefined;
     try {

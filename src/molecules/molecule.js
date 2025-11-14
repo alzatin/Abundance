@@ -376,7 +376,7 @@ export default class Molecule extends Atom {
     var distFromClick = GlobalVariables.distBetweenPoints(x, this.x, y, this.y);
 
     if (distFromClick < this.radius * 2) {
-      GlobalVariables.writeToDisplay(this, true); // reset display to clear background mesh.
+      GlobalVariables.resetView();
       GlobalVariables.currentMolecule = this; //set this to be the currently displayed molecule
       this.enableAllChildren();
 
@@ -892,7 +892,7 @@ export default class Molecule extends Atom {
       GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
         atom.selected = false;
       });
-      GlobalVariables.writeToDisplay(this.value, true); // reset the display to clear our background output mesh.
+      GlobalVariables.resetView();
       GlobalVariables.currentMolecule = GlobalVariables.currentMolecule.parent; //set parent this to be the currently displayed molecule
       GlobalVariables.currentMolecule.enableAllChildren();
 

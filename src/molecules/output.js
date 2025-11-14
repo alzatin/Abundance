@@ -89,16 +89,10 @@ export default class Output extends Atom {
 
   sendToRender() {
     try {
-      if (
+      const asWireOnly =
         this.parent.uniqueID == GlobalVariables.currentMolecule.uniqueID &&
-        !this.selected
-      ) {
-        // Write self as a wire-only object to provide background context for whatever the
-        // user is currently working on.
-        GlobalVariables.writeToDisplay(this.value, false, true);
-      } else if (this.selected) {
-        GlobalVariables.writeToDisplay(this.value);
-      }
+        !this.selected;
+      GlobalVariables.writeToDisplay(this.value, this.getContext(), asWireOnly);
     } catch (err) {
       this.setError(err);
     }
