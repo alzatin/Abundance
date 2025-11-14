@@ -84,7 +84,10 @@ export default class Output extends Atom {
     }
     const enabledButDisconnected =
       status != Status.DISABLED && this.inputs?.[0].connectors.length === 0;
-    if (status == Status.READY || enabledButDisconnected) {
+    if (
+      this.parent == GlobalVariables.currentMolecule &&
+      (status == Status.READY || enabledButDisconnected)
+    ) {
       this.sendToRender();
     }
   }

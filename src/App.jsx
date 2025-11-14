@@ -216,6 +216,7 @@ function AppContent() {
       setWireMesh([]);
     };
     GlobalVariables.writeToDisplay = (moleculeValue, context, backgroundMolecule = false) => {
+      console.trace("writeToDisplay called with: ", moleculeValue, backgroundMolecule);
       if (!moleculeValue) {
         moleculeValue = {geometry: []}; // use a non-null structure which still generates the default mesh
       }
