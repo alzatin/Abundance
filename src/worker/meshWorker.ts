@@ -185,28 +185,14 @@ async function generateDisplayMesh(
 
     for (let i = 0; i < flattened.length; i++) {
       const displayObject = flattened[i];
-      let cleanedGeometry;
       // TODO: would love a better way to check if geometry is 2D or 3D.
       const geom = await util.geometryProvider!.get(
         displayObject.geometry,
         context
       );
-      if (!("mesh" in geom) || geom.mesh == undefined) {
-        cleanedGeometry = await util.geometryProvider!.get(
-          await util.geometryProvider!.extrude(
-            displayObject.geometry,
-            displayObject.plane,
-            0.0001,
-            context
-          ),
-          context
-        );
-      } else {
-        cleanedGeometry = geom;
-      }
       meshArray.push({
         color: displayObject.color,
-        geometry: cleanedGeometry,
+        geometry: geom,
       });
     }
 
