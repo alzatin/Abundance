@@ -179,9 +179,9 @@ async function generateDefaultMesh(
         color: util.defaultColor,
       },
     ];
-    console.log("generated default mesh. took ", performance.now() - s, "ms");
+    console.debug("generated default mesh. took ", performance.now() - s, "ms");
   } else {
-    console.log("default mesh hit");
+    console.debug("default mesh hit");
   }
   return defaultMesh;
 }
@@ -192,7 +192,6 @@ async function generateDisplayMesh(
 ): Promise<{ id: AbundanceObject; mesh: DisplayMesh[] }> {
   try {
     await started;
-    console.log("Generating display mesh for ID: ", JSON.stringify(id));
     let geom = undefined;
     if (util.isAbundanceObject(id) && id.geometry.length !== 0) {
       geom = id;
@@ -261,7 +260,6 @@ async function generateDisplayMesh(
         throw new Error("Error generating display mesh" + e);
       }
     }
-    console.log("finished mesh generation for: ", JSON.stringify(id));
     return { id: geom, mesh: finalMeshes };
   } catch (e) {
     console.error("Error in generateDisplayMesh:", e);

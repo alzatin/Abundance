@@ -164,9 +164,9 @@ function AppContent() {
   }, [shortCutsOn]);
 
   /* Track in-flight rendering tasks, for the foreground and background*/
-  const inFlightMeshRender = React.useRef(undefined);
-  const targetMesh = React.useRef(undefined);
-  const backgroundMesh = React.useRef(undefined);
+  const inFlightMeshRender = React.useRef(undefined); // {task: Promise, value: atom.value}
+  const targetMesh = React.useRef(undefined); // id of most recently displayed mesh
+  const backgroundMesh = React.useRef(undefined); // {id: atom.value, mesh: generated mesh}
 
   function makeMesh() {
     setOutdatedMesh(true);
@@ -176,7 +176,6 @@ function AppContent() {
         console.log("no-op because target is already in-flight or undefined");
         return;
       }
-      console.log('dispatching mesh generation for: ', targetMesh.current);
       const genTask = worker.generateDisplayMesh(
         targetMesh.current,
         GlobalVariables.topLevelMolecule.getContext()
@@ -184,12 +183,11 @@ function AppContent() {
       inFlightMeshRender.current = {task: genTask, value: targetMesh.current};
       genTask
       .then((m) => {
-        console.log("received mesh for : ", m.id);
         const mesh = m.mesh;
         const id = m.id;
         inFlightMeshRender.current = undefined;
         if (JSON.stringify(id) !== JSON.stringify(targetMesh.current)) {
-          console.log("discarding outdated mesh for: ", id);
+          console.debug("discarding outdated mesh for: ", id);
           return;
         }
         setMesh(mesh);
@@ -216,22 +214,17 @@ function AppContent() {
       setWireMesh([]);
     };
     GlobalVariables.writeToDisplay = (moleculeValue, context, backgroundMolecule = false) => {
-      console.trace("writeToDisplay called with: ", moleculeValue, backgroundMolecule);
       if (!moleculeValue) {
         moleculeValue = {geometry: []}; // use a non-null structure which still generates the default mesh
       }
       if (backgroundMolecule) {
         if (backgroundMesh.current && JSON.stringify(backgroundMesh.current.id) === JSON.stringify(moleculeValue)) {
-          console.log("skipping background mesh generation because the target is already set");
           setWireMesh(backgroundMesh.current.mesh)
         } else {
-          // New background is required
           backgroundMesh.current = {id: moleculeValue, mesh: undefined};
-          console.log('dispatching background mesh generation for: ', moleculeValue);
           pool.proxy().then((worker) => {
             worker.generateDisplayMesh(moleculeValue, context)
               .then((m) => {
-                // TODO: this should have additional checks
                 backgroundMesh.current.mesh = m.mesh;
                 setWireMesh(m.mesh);
                 setOutdatedMesh(false);
@@ -242,7 +235,17 @@ function AppContent() {
 
       else {
         targetMesh.current = moleculeValue;
-        makeMesh();
+        if (JSON.stringify(targetMesh.current) === JSON.stringify(backgroundMesh.current?.id) && backgroundMesh.current?.mesh) {
+          // Special case where we're trying to show the output and have already prepared it as the
+          // wireframe background.
+          setMesh(backgroundMesh.current.mesh);
+          setOutdatedMesh(false);
+          setPlane(targetMesh.current?.plane);
+          setGeometryType(targetMesh.current?.dimension);
+        } else {
+          // General case - generate the mesh for selected atom
+          makeMesh();
+        }
       }
     }
 
