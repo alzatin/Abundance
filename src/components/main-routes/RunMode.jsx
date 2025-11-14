@@ -178,10 +178,7 @@ function runMode() {
       setActiveAtom(GlobalVariables.currentMolecule);
     } else {
       /*resetting viewport*/
-      GlobalVariables.writeToDisplay(
-        GlobalVariables.currentAWSnode?.topMoleculeID || null, // should not be an id unless reseting view
-        true
-      );
+      GlobalVariables.resetView(); // TODO(tristan): possibly also need to writeToDisplay here.
       fetch(
         `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
       )

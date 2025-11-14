@@ -82,23 +82,22 @@ export default class Output extends Atom {
     if (status != Status.ERROR) {
       this.clearAlert();
     }
-    if (status == Status.READY) {
+    const enabledButDisconnected =
+      status != Status.DISABLED && this.inputs?.[0].connectors.length === 0;
+    if (
+      this.parent == GlobalVariables.currentMolecule &&
+      (status == Status.READY || enabledButDisconnected)
+    ) {
       this.sendToRender();
     }
   }
 
   sendToRender() {
     try {
-      if (
+      const asWireOnly =
         this.parent.uniqueID == GlobalVariables.currentMolecule.uniqueID &&
-        !this.selected
-      ) {
-        // Write self as a wire-only object to provide background context for whatever the
-        // user is currently working on.
-        GlobalVariables.writeToDisplay(this.value, false, true);
-      } else if (this.selected) {
-        GlobalVariables.writeToDisplay(this.value);
-      }
+        !this.selected;
+      GlobalVariables.writeToDisplay(this.value, this.getContext(), asWireOnly);
     } catch (err) {
       this.setError(err);
     }
