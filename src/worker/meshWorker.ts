@@ -81,10 +81,15 @@ function getLargestBoundingBox(meshArray: ReplicadObject[]):
       }
     });
 
+    let depth = overallMax[2] - overallMin[2];
+    if (!isFinite(depth)) {
+      depth = 0;
+    }
+
     return {
       width: overallMax[0] - overallMin[0],
       height: overallMax[1] - overallMin[1],
-      depth: overallMax[2] - overallMin[2],
+      depth: depth,
     };
   } catch (error) {
     console.error("Error in getLargestBoundingBox:", error);
@@ -153,15 +158,28 @@ function generateCameraPosition(meshArray: ReplicadObject[]): number {
  */
 async function generateDefaultMesh(
   context: RequestContext
-): Promise<{ id: AbundanceObject; mesh: DisplayMesh[] }> {
+): Promise<DisplayMesh[]> {
   if (defaultMesh == undefined) {
-    const defaultText = await text(
-      "No output to display",
-      28,
-      "ROBOTO",
-      context
-    );
-    defaultMesh = await generateDisplayMesh(defaultText, context);
+    const s = performance.now();
+    const textId = await text("No output to display", 28, "ROBOTO", context);
+    const rObj = await util.geometryProvider?.get(textId.geometry, context);
+    const meshShape = (rObj as replicad.Drawing)
+      .sketchOnPlane("XY")
+      .extrude(0.0001);
+    defaultMesh = [
+      {
+        cameraZoom: 10,
+        faces: meshShape.mesh({ tolerance: 0.1, angularTolerance: 0.5 }),
+        edges: meshShape.meshEdges({
+          tolerance: 0.1,
+          angularTolerance: 0.5,
+        }),
+        color: util.defaultColor,
+      },
+    ];
+    console.log("generated default mesh. took ", performance.now() - s, "ms");
+  } else {
+    console.log("default mesh hit");
   }
   return defaultMesh;
 }
@@ -178,7 +196,7 @@ async function generateDisplayMesh(
     if (util.isAbundanceObject(id) && id.geometry.length !== 0) {
       geom = id;
     } else {
-      return generateDefaultMesh(context);
+      return { id: id, mesh: await generateDefaultMesh(context) };
     }
 
     // Flatten the assembly to remove hierarchy
@@ -188,7 +206,6 @@ async function generateDisplayMesh(
 
     for (let i = 0; i < flattened.length; i++) {
       const displayObject = flattened[i];
-      // TODO: would love a better way to check if geometry is 2D or 3D.
       const geom = await util.geometryProvider!.get(
         displayObject.geometry,
         context
