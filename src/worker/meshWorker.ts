@@ -81,15 +81,17 @@ function getLargestBoundingBox(meshArray: ReplicadObject[]):
       }
     });
 
-    let depth = overallMax[2] - overallMin[2];
-    if (!isFinite(depth)) {
-      depth = 0;
+    for (let i = 0; i < 3; i++) {
+      if (!isFinite(overallMax[i]) || !isFinite(overallMin[i])) {
+        overallMin[i] = 0;
+        overallMax[i] = 0;
+      }
     }
 
     return {
       width: overallMax[0] - overallMin[0],
       height: overallMax[1] - overallMin[1],
-      depth: depth,
+      depth: overallMax[2] - overallMin[2],
     };
   } catch (error) {
     console.error("Error in getLargestBoundingBox:", error);

@@ -221,6 +221,9 @@ function AppContent() {
       setOutdatedMesh(false);
     };
     GlobalVariables.writeToDisplay = (moleculeValue, context, backgroundMolecule = false) => {
+      if (!moleculeValue) {
+        moleculeValue = {geometry: []}; // use a non-null structure which still generates the default mesh
+      }
       if (backgroundMolecule) {
         if (backgroundMesh.current && JSON.stringify(backgroundMesh.current.id) === JSON.stringify(moleculeValue)) {
           console.log("skipping background mesh generation because the target is already set");
@@ -230,7 +233,7 @@ function AppContent() {
           backgroundMesh.current = {id: moleculeValue, mesh: undefined};
           console.log('dispatching background mesh generation for: ', moleculeValue);
           pool.proxy().then((worker) => {
-            worker.generateDisplayMesh(moleculeValue, GlobalVariables.topLevelMolecule.getContext())
+            worker.generateDisplayMesh(moleculeValue, context)
               .then((m) => {
                 // TODO: this should have additional checks
                 backgroundMesh.current.mesh = m.mesh;
