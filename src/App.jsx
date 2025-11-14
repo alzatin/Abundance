@@ -187,11 +187,11 @@ function AppContent() {
         console.log("received mesh for : ", m.id);
         const mesh = m.mesh;
         const id = m.id;
+        inFlightMeshRender.current = undefined;
         if (JSON.stringify(id) !== JSON.stringify(targetMesh.current)) {
           console.log("discarding outdated mesh for: ", id);
           return;
         }
-        inFlightMeshRender.current = undefined;
         setMesh(mesh);
         setOutdatedMesh(false);
         /*Set plane and geometry type for ThreeContext*/
@@ -199,12 +199,8 @@ function AppContent() {
         setGeometryType(id?.dimension);
       })
       .catch((e) => {
-        if (e instanceof CancellationError) {
-          console.log("cancellation caught");
-        } else {
-          console.error("Can't display Mesh " + e);
-          activeAtom.setError("Can't display Mesh " + e);
-        }
+        console.error("Can't display Mesh " + e);
+        activeAtom.setError("Can't display Mesh " + e);
       })
       .finally(() => {
         createPuppeteerDiv();
@@ -218,7 +214,6 @@ function AppContent() {
       targetMesh.current = undefined;
       setMesh([]);
       setWireMesh([]);
-      setOutdatedMesh(false);
     };
     GlobalVariables.writeToDisplay = (moleculeValue, context, backgroundMolecule = false) => {
       if (!moleculeValue) {
@@ -238,6 +233,7 @@ function AppContent() {
                 // TODO: this should have additional checks
                 backgroundMesh.current.mesh = m.mesh;
                 setWireMesh(m.mesh);
+                setOutdatedMesh(false);
               });
           });
         }

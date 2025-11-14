@@ -82,7 +82,9 @@ export default class Output extends Atom {
     if (status != Status.ERROR) {
       this.clearAlert();
     }
-    if (status == Status.READY) {
+    const enabledButDisconnected =
+      status != Status.DISABLED && this.inputs?.[0].connectors.length === 0;
+    if (status == Status.READY || enabledButDisconnected) {
       this.sendToRender();
     }
   }

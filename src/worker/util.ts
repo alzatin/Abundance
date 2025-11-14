@@ -10,7 +10,7 @@ let geometryProvider: GeometryProvider | undefined = undefined;
 
 const init = async (logMetrics: boolean = true): Promise<boolean> => {
   if (loaded) return Promise.resolve(true);
-
+  const start = performance.now();
   //@ts-ignore
   const OC = await opencascade({
     locateFile: () => opencascadeWasm,
@@ -19,6 +19,9 @@ const init = async (logMetrics: boolean = true): Promise<boolean> => {
   loaded = true;
   replicad.setOC(OC);
   geometryProvider = new GeometryProvider(logMetrics);
+  console.log(
+    `Replicad and OpenCascade initialized. took ${performance.now() - start} ms`
+  );
 
   return true;
 };
