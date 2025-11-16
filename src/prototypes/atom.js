@@ -688,15 +688,23 @@ export default class Atom extends ObservableEntity {
         typeof ap.getValue() == "number" ||
         typeof ap.getValue() == "string"
       ) {
-        var saveIO = {
-          name: ap.name,
-          ioValue: ap.getValue(),
-        };
-        // Only include currentEquation if it exists
-        if (ap.currentEquation) {
-          saveIO.currentEquation = ap.currentEquation;
+        // Only save values that differ from defaults or have custom equations
+        const currentValue = ap.getValue();
+        const hasCustomEquation = ap.currentEquation && ap.currentEquation.trim() !== '';
+        const isDifferentFromDefault = ap.defaultValue !== currentValue;
+        
+        // Save if value changed from default OR if there's a custom equation
+        if (isDifferentFromDefault || hasCustomEquation) {
+          var saveIO = {
+            name: ap.name,
+            ioValue: currentValue,
+          };
+          // Only include currentEquation if it exists
+          if (hasCustomEquation) {
+            saveIO.currentEquation = ap.currentEquation;
+          }
+          ioValues.push(saveIO);
         }
-        ioValues.push(saveIO);
       }
     });
     var object = {
