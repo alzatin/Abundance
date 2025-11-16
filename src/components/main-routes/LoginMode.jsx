@@ -13,6 +13,7 @@ import { useProject } from "../../contexts/index.js";
 import { licenses } from "../../js/licenseOptions.js";
 import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 import RenameProjectDialog from "../secondary/RenameProjectDialog.jsx";
+import { convertToDisplayName } from "../../js/projectNameUtils.js";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -262,7 +263,7 @@ const FeaturedHighlight = ({ highestRankingNode, highestRankingToolNode }) => (
       }
     >
       <div style={{ flexBasis: "60%" }}>
-        <p className="project_name">{highestRankingNode.repoName}</p>
+        <p className="project_name">{convertToDisplayName(highestRankingNode.repoName)}</p>
         <p className="project_name">By {highestRankingNode.owner}</p>
       </div>
       <img
@@ -293,7 +294,7 @@ const FeaturedHighlight = ({ highestRankingNode, highestRankingToolNode }) => (
       }
     >
       <div style={{ flexBasis: "60%" }}>
-        <p className="project_name">{highestRankingToolNode?.repoName}</p>
+        <p className="project_name">{convertToDisplayName(highestRankingToolNode?.repoName)}</p>
         <p className="project_name">By {highestRankingToolNode?.owner}</p>
       </div>
       <img
@@ -397,7 +398,7 @@ const ProjectDiv = ({
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node)}
       >
-        <p className="project_name">{node.repoName}</p>
+        <p className="project_name">{convertToDisplayName(node.repoName)}</p>
         <img
           className="project_image"
           src={
@@ -491,7 +492,7 @@ const ProjectDiv = ({
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node.node)} // <-- add right-click handler for list mode
       >
-        <p className="project_name_list">{node.node.repoName}</p>
+        <p className="project_name_list">{convertToDisplayName(node.node.repoName)}</p>
 
         <p className="project_name_list">{node.node.owner}</p>
         <p style={{ width: "20%", display: "block" }}>
