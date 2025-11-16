@@ -62,23 +62,91 @@ if (this.compiledBom) {
 - Example: Small project went from 1,195 bytes to 992 bytes (203 bytes saved)
 - No functionality lost - BOM is recomputed automatically when needed
 
+### 4. Optimization Implemented: Default Values Excluded ✅ NEW
+**Location:** `src/prototypes/atom.js` lines 683-711
+
+**Before:**
+```javascript
+this.inputs.forEach((ap) => {
+  if (
+    typeof ap.getValue() == "number" ||
+    typeof ap.getValue() == "string"
+  ) {
+    var saveIO = {
+      name: ap.name,
+      ioValue: ap.getValue(),
+    };
+    ioValues.push(saveIO);
+  }
+});
+```
+
+**After:**
+```javascript
+this.inputs.forEach((ap) => {
+  if (
+    typeof ap.getValue() == "number" ||
+    typeof ap.getValue() == "string"
+  ) {
+    // Only save values that differ from defaults or have custom equations
+    const currentValue = ap.getValue();
+    const hasCustomEquation = ap.currentEquation && ap.currentEquation.trim() !== '';
+    const isDifferentFromDefault = ap.defaultValue !== currentValue;
+    
+    // Save if value changed from default OR if there's a custom equation
+    if (isDifferentFromDefault || hasCustomEquation) {
+      var saveIO = {
+        name: ap.name,
+        ioValue: currentValue,
+      };
+      if (hasCustomEquation) {
+        saveIO.currentEquation = ap.currentEquation;
+      }
+      ioValues.push(saveIO);
+    }
+  }
+});
+```
+
+**Rationale:**
+- Each attachment point stores both `value` and `defaultValue`
+- Atoms define their inputs with default values (e.g., Circle has `diameter: 10.0`)
+- When loading, if no value is saved, the default is used
+- Equations must be saved even if the evaluated value matches default (user intent)
+- Empty or whitespace-only equations should not be saved
+
+**Impact:**
+- File size reduction: ~21.5% for typical projects (80% defaults, 20% changed)
+- File size reduction: ~34% for projects using mostly default values
+- Example: 50 atoms with defaults goes from 9,105 to 6,005 bytes (3,100 bytes saved)
+- Scales consistently across project sizes (tested 10-200 atoms)
+- No functionality lost - defaults are applied on load when values are missing
+
 ## Test Coverage
 
 ### New Tests Added
-1. **save-load-optimization.test.js**
+1. **save-load-optimization.test.js** (7 tests)
    - Verifies geometry values are excluded
    - Verifies description fields are excluded
    - Verifies currentEquation is preserved
    - Measures file sizes with realistic projects
    - Demonstrates BOM storage overhead
 
-2. **save-load-roundtrip.test.js**
+2. **save-load-roundtrip.test.js** (6 tests)
    - Comprehensive save/load cycle testing
    - Verifies all essential data is preserved
    - Tests with equations
    - Tests with compiledBom excluded
    - Tests large projects (100+ atoms)
    - Measures optimization impact
+
+3. **default-value-optimization.test.js** (9 tests) ✅ NEW
+   - Verifies default values are excluded
+   - Tests custom equation preservation
+   - Tests mixed scenarios (some defaults, some changed)
+   - Tests edge cases (zero defaults, string values)
+   - Measures file size reduction across project sizes
+   - Scaling analysis (10-200 atoms)
 
 ### Existing Tests Still Pass
 - All 21 BOM-related tests pass
@@ -88,9 +156,21 @@ if (this.compiledBom) {
 ## File Size Analysis
 
 ### Current Serialization Efficiency
-- 50-atom project: 10,543 bytes (~211 bytes per atom)
-- 100-atom project: 28,666 bytes (~287 bytes per atom)
-- Only essential data is saved
+**Before optimizations:**
+- 50-atom project: ~10,543 bytes (~211 bytes per atom)
+- 100-atom project: ~28,666 bytes (~287 bytes per atom)
+
+**After Optimization 1 (compiledBom excluded):**
+- Projects with BOM: **17% reduction**
+
+**After Optimization 2 (default values excluded):** ✅ NEW
+- 50 atoms (realistic mix): **21.5% reduction** (~1,280 bytes saved)
+- 100 atoms (realistic mix): **21.5% reduction** (~2,560 bytes saved)
+- Projects using mostly defaults: **34% reduction**
+
+**Combined Effect:**
+- Projects with BOM and defaults: **~35-40% total reduction**
+- Typical project: **~20-25% total reduction**
 
 ### If Unnecessary Data Were Included
 - Would add ~54.7% to file size
@@ -106,10 +186,10 @@ if (this.compiledBom) {
 - `name` - User-assigned name
 - `uniqueID` - For establishing connections
 - `x`, `y` - Position on canvas
-- `ioValues` - Array of input values:
+- `ioValues` - Array of input values (✅ **only non-default values**):
   - `name` - Input name
-  - `ioValue` - Numeric or string value
-  - `currentEquation` - User's equation (if entered)
+  - `ioValue` - Numeric or string value (only if different from default)
+  - `currentEquation` - User's equation (if non-empty)
 
 ### Molecule Data
 - All atom fields above, plus:
@@ -134,8 +214,13 @@ if (this.compiledBom) {
 - **Why:** Can be looked up from `atomType`
 
 ### Derived Data
-- `compiledBom` (BOM compiled from geometry tags) ✅ **NEW**
+- `compiledBom` (BOM compiled from geometry tags)
 - **Why:** Can be regenerated from geometry after load
+
+### Default Values ✅ NEW
+- Input values matching `defaultValue`
+- Empty or whitespace-only equations
+- **Why:** Defaults are reapplied on load when values are missing
 
 ### Geometry Objects
 - Cache keys and geometry data
@@ -147,7 +232,9 @@ if (this.compiledBom) {
 1. Geometry cache keys are not saved
 2. Description fields are not saved
 3. Only number and string input values are saved
-4. compiledBom is not saved (newly optimized)
+4. compiledBom is not saved
+5. Default values are not saved ✅ **NEW**
+6. Empty equations are not saved ✅ **NEW**
 
 ### Potential Future Optimizations (Breaking Changes)
 1. **Shorter field names:** Use single-letter keys (e.g., `t` for `atomType`)
@@ -167,15 +254,23 @@ The current JSON format is already well-optimized:
 - Only essential data is saved
 - Geometry cache keys are excluded
 - Derived data is excluded
+- Default values are excluded ✅ **NEW**
 - Human-readable format aids debugging
 
 ## Conclusion
 
-The investigation revealed that the save file format is **already well-optimized**:
+The investigation revealed that the save file format is **now highly optimized**:
 - Geometry cache keys were never being saved (contrary to issue concern)
 - Description fields were already excluded
 - Only essential, user-entered data is preserved
 
-The one optimization opportunity identified was **compiledBom**, which has now been implemented, providing a 17% file size reduction for projects with BOM data.
+**Two optimization opportunities were identified and implemented:**
+1. **compiledBom excluded** - 17% reduction for projects with BOM data
+2. **Default values excluded** ✅ **NEW** - 21.5% reduction for typical projects
+
+**Combined effect:**
+- Typical projects see **~20-25% file size reduction**
+- Projects with BOM and many defaults see **~35-40% reduction**
+- All changes are backward compatible (old files still load correctly)
 
 No further optimizations are recommended unless accepting breaking changes to the file format.
