@@ -709,12 +709,24 @@ export default class Atom extends ObservableEntity {
     });
     var object = {
       atomType: this.atomType,
-      name: this.name,
       x: this.x + offset.x,
       y: this.y - offset.y,
       uniqueID: this.uniqueID,
-      ioValues: ioValues,
     };
+    
+    // Only save name if it differs from atomType or for special types that can have custom names
+    const needsName = this.atomType === "Molecule" || 
+                      this.atomType === "GitHubMolecule" || 
+                      this.name !== this.atomType;
+    if (needsName) {
+      object.name = this.name;
+    }
+    
+    // Only save ioValues if not empty
+    if (ioValues.length > 0) {
+      object.ioValues = ioValues;
+    }
+    
     return object;
   }
 
