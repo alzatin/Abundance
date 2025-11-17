@@ -123,6 +123,11 @@ export default class shrinkWrap extends Atom {
       }
     });
 
+    // Ensure ioValues array exists before pushing
+    if (!thisAsObject.ioValues) {
+      thisAsObject.ioValues = [];
+    }
+    
     ioValues.forEach((ioValue) => {
       thisAsObject.ioValues.push(ioValue);
     });
