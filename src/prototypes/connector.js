@@ -367,7 +367,6 @@ export default class Connector {
   serialize() {
     if (this.attachmentPoint2 != null) {
       var object = {
-        ap1Name: this.attachmentPoint1.name,
         ap2Name: this.attachmentPoint2.name,
         ap1ID: this.attachmentPoint1.parentMolecule.uniqueID,
         ap2ID: this.attachmentPoint2.parentMolecule.uniqueID,
