@@ -265,24 +265,7 @@ export default class Input extends Atom {
     }
   }
 
-  /**
-   * Get a color based on the input type for visual differentiation
-   * @returns {string} Color hex code for the input type
-   */
-  getTypeBasedColor() {
-    switch (this.type) {
-      case "number":
-        return "#feed7bff"; // Light yellow - associated with numbers/data
-      case "string":
-        return "#f3a830ff"; // Bright orange - warm color for text
-      case "geometry":
-        return "#e27bfeff"; // Light purple - for complex 3D objects
-      case "array":
-        return "#b6f8b6ff"; // Light green - for collections/lists
-      default:
-        return Atom.DEFAULT_COLOR; // Fallback to default
-    }
-  }
+
 
   /** Solution to canvas overflow https://stackoverflow.com/questions/10508988/html-canvas-text-overflow-ellipsis*/
   fittingString(c, str, maxWidth) {
@@ -347,15 +330,9 @@ export default class Input extends Atom {
       this.updateParentName();
     }
 
-    //Set colors - use type-based color when ready and not selected, otherwise use status-based color
+    //Set colors based on status
     GlobalVariables.c.fillStyle = Atom.DEFAULT_COLOR;
-
-    // Use type-based color when the input is ready and not selected to show type visually
-    if (this.status === Status.READY && !this.selected) {
-      this.color = this.getTypeBasedColor();
-    } else {
-      this.color = Atom.statusAsColor(this.status, this.selected);
-    }
+    this.color = Atom.statusAsColor(this.status, this.selected);
 
     GlobalVariables.c.strokeStyle = this.selected
       ? Atom.DEFAULT_COLOR
