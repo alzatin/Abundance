@@ -1008,10 +1008,7 @@ export default class Molecule extends Atom {
       thisAsObject.unitsKey = this.unitsKey;
     }
     thisAsObject.fileTypeVersion = 1;
-    // Only include compiledBom if it exists
-    if (this.compiledBom) {
-      thisAsObject.compiledBom = this.compiledBom;
-    }
+    // Note: compiledBom is not saved - it can be regenerated from geometry tags on load
 
     return thisAsObject;
   }

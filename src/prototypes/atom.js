@@ -688,25 +688,45 @@ export default class Atom extends ObservableEntity {
         typeof ap.getValue() == "number" ||
         typeof ap.getValue() == "string"
       ) {
-        var saveIO = {
-          name: ap.name,
-          ioValue: ap.getValue(),
-        };
-        // Only include currentEquation if it exists
-        if (ap.currentEquation) {
-          saveIO.currentEquation = ap.currentEquation;
+        // Only save values that differ from defaults or have custom equations
+        const currentValue = ap.getValue();
+        const hasCustomEquation = ap.currentEquation && ap.currentEquation.trim() !== '';
+        const isDifferentFromDefault = ap.defaultValue !== currentValue;
+        
+        // Save if value changed from default OR if there's a custom equation
+        if (isDifferentFromDefault || hasCustomEquation) {
+          var saveIO = {
+            name: ap.name,
+            ioValue: currentValue,
+          };
+          // Only include currentEquation if it exists
+          if (hasCustomEquation) {
+            saveIO.currentEquation = ap.currentEquation;
+          }
+          ioValues.push(saveIO);
         }
-        ioValues.push(saveIO);
       }
     });
     var object = {
       atomType: this.atomType,
-      name: this.name,
       x: this.x + offset.x,
       y: this.y - offset.y,
       uniqueID: this.uniqueID,
-      ioValues: ioValues,
     };
+    
+    // Only save name if it differs from atomType or for special types that can have custom names
+    const needsName = this.atomType === "Molecule" || 
+                      this.atomType === "GitHubMolecule" || 
+                      this.name !== this.atomType;
+    if (needsName) {
+      object.name = this.name;
+    }
+    
+    // Only save ioValues if not empty
+    if (ioValues.length > 0) {
+      object.ioValues = ioValues;
+    }
+    
     return object;
   }
 
