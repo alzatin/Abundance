@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { convertToGithubName } from "../../js/projectNameUtils.js";
 
 function DuplicateProjectDialog({ isOpen, onClose, onConfirm, defaultName }) {
   const [projectName, setProjectName] = useState(defaultName);
@@ -9,23 +10,21 @@ function DuplicateProjectDialog({ isOpen, onClose, onConfirm, defaultName }) {
       return "Project name cannot be empty";
     }
 
-    // Check for spaces
-    if (name.includes(" ")) {
-      return "Project name cannot contain spaces (use hyphens instead)";
-    }
+    // Convert spaces to underscores for GitHub compatibility
+    const githubName = convertToGithubName(name);
 
-    // Check for invalid characters (GitHub allows alphanumeric and hyphens)
-    if (!/^[a-zA-Z0-9._-]+$/.test(name)) {
+    // Check for invalid characters (GitHub allows alphanumeric, dots, underscores, and hyphens)
+    if (!/^[a-zA-Z0-9._-]+$/.test(githubName)) {
       return "Project name can only contain letters, numbers, dots, underscores, and hyphens";
     }
 
     // Check if starts/ends with hyphen
-    if (name.startsWith("-") || name.endsWith("-")) {
+    if (githubName.startsWith("-") || githubName.endsWith("-")) {
       return "Project name cannot start or end with a hyphen";
     }
 
     // Check length
-    if (name.length > 100) {
+    if (githubName.length > 100) {
       return "Project name must be 100 characters or less";
     }
 
@@ -38,7 +37,8 @@ function DuplicateProjectDialog({ isOpen, onClose, onConfirm, defaultName }) {
       setError(validationError);
       return;
     }
-    onConfirm(projectName);
+    // Convert to GitHub format before confirming
+    onConfirm(convertToGithubName(projectName));
   };
 
   const handleKeyPress = (e) => {
