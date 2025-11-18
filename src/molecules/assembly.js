@@ -132,11 +132,26 @@ export default class Assembly extends Atom {
     var ioValues = [];
     this.inputs.forEach((io) => {
       if (io.connectors.length > 0) {
-        var saveIO = {
-          name: io.name,
-          ioValue: io.getValue(),
-        };
-        ioValues.push(saveIO);
+        // Skip geometry types to prevent bloating save files
+        if (io.valueType === "geometry") {
+          return;
+        }
+        
+        const value = io.getValue();
+        // Only save numbers and strings, and check size
+        if (typeof value === "number" || typeof value === "string") {
+          const MAX_VALUE_SIZE = 10000;
+          if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+            console.warn(`Skipping large string value (${value.length} chars) for Assembly input: ${io.name}`);
+            return;
+          }
+          
+          var saveIO = {
+            name: io.name,
+            ioValue: value,
+          };
+          ioValues.push(saveIO);
+        }
       }
     });
 

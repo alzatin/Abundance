@@ -678,6 +678,55 @@ export default class Atom extends ObservableEntity {
   }
 
   /**
+   * Helper method to safely add a value to a serialized object.
+   * Prevents accidentally serializing large objects or geometry data.
+   * @param {object} target - The object to add the value to
+   * @param {string} key - The property name
+   * @param {any} value - The value to add
+   * @param {string} atomName - Name of the atom for logging
+   * @returns {boolean} - True if value was added, false if skipped
+   */
+  static safeSerializeValue(target, key, value, atomName = 'unknown') {
+    const MAX_VALUE_SIZE = 10000; // 10KB limit
+    
+    // Skip null/undefined
+    if (value === null || value === undefined) {
+      return false;
+    }
+    
+    // Skip geometry objects
+    if (typeof value === 'object' && value !== null && 
+        (value.geometry || value.dimension || value.tags)) {
+      console.warn(`Skipping serialization of geometry object for ${atomName}.${key}`);
+      return false;
+    }
+    
+    // Check string size
+    if (typeof value === 'string' && value.length > MAX_VALUE_SIZE) {
+      console.warn(`Skipping serialization of large string (${value.length} chars) for ${atomName}.${key}`);
+      return false;
+    }
+    
+    // Check object size when stringified
+    if (typeof value === 'object' && value !== null) {
+      try {
+        const stringified = JSON.stringify(value);
+        if (stringified.length > MAX_VALUE_SIZE) {
+          console.warn(`Skipping serialization of large object (${stringified.length} chars) for ${atomName}.${key}`);
+          return false;
+        }
+      } catch (e) {
+        console.warn(`Skipping serialization of non-serializable object for ${atomName}.${key}:`, e.message);
+        return false;
+      }
+    }
+    
+    // Value is safe to add
+    target[key] = value;
+    return true;
+  }
+
+  /**
    * Create an object containing the information about this atom that we want to save.
    */
   serialize(offset = { x: 0, y: 0 }) {
