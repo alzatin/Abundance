@@ -170,17 +170,20 @@ export default class Atom extends ObservableEntity {
         this.inputs.forEach((ap) => {
           //Find the matching IO and set it to be the saved value
           if (ioValue.name == ap.name && ap.type == "input") {
-            // Set value and update status without propagating during deserialization
+            // Set value and status without propagating during deserialization
             // This prevents infinite loops while ensuring APs are properly initialized
             const newValue = ioValue.ioValue;
-            ap.value = newValue;
-            // Update status based on value type and value presence
             if (ap.valueType === "geometry") {
               // Geometry inputs should remain WAITING until connected
-              ap.status = Status.WAITING;
+              ap.value = newValue;
+              ap.setStatus(Status.WAITING, null, false);
             } else {
               // Number/string inputs are READY if they have a defined value
-              ap.status = (newValue === undefined || newValue === null) ? Status.WAITING : Status.READY;
+              if (newValue === undefined || newValue === null) {
+                ap.setStatus(Status.WAITING, null, false);
+              } else {
+                ap.setStatus(Status.READY, newValue, false);
+              }
             }
             if (
               "currentEquation" in ioValue &&
