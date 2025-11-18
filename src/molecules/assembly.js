@@ -132,8 +132,14 @@ export default class Assembly extends Atom {
     var ioValues = [];
     this.inputs.forEach((io) => {
       if (io.connectors.length > 0) {
-        // Skip geometry types to prevent bloating save files
+        // For geometry types, save with null value to preserve input structure
+        // This allows inputs to be recreated on load without saving large geometry data
         if (io.valueType === "geometry") {
+          var saveIO = {
+            name: io.name,
+            ioValue: null,
+          };
+          ioValues.push(saveIO);
           return;
         }
         
