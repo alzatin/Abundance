@@ -769,13 +769,8 @@ export default class Atom extends ObservableEntity {
           return;
         }
         
-        // For Input, Molecule, and GitHubMolecule atoms, always save values even if they're defaults
-        // This ensures proper initialization on load when these atoms define molecule interfaces
-        const alwaysSaveForTypes = ["Input", "Molecule", "GitHubMolecule"];
-        const shouldAlwaysSave = alwaysSaveForTypes.includes(this.atomType);
-        
-        // Save if value changed from default OR if there's a custom equation OR if this atom type requires it
-        if (isDifferentFromDefault || hasCustomEquation || shouldAlwaysSave) {
+        // Save if value changed from default OR if there's a custom equation
+        if (isDifferentFromDefault || hasCustomEquation) {
           var saveIO = {
             name: ap.name,
             ioValue: currentValue,
