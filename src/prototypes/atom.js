@@ -684,6 +684,11 @@ export default class Atom extends ObservableEntity {
     //Offsets are used to make copy and pasted atoms move over a little bit
     var ioValues = [];
     this.inputs.forEach((ap) => {
+      // Skip geometry types explicitly, even if value happens to be a string
+      if (ap.valueType === "geometry") {
+        return;
+      }
+      
       if (
         typeof ap.getValue() == "number" ||
         typeof ap.getValue() == "string"
@@ -693,15 +698,27 @@ export default class Atom extends ObservableEntity {
         const hasCustomEquation = ap.currentEquation && ap.currentEquation.trim() !== '';
         const isDifferentFromDefault = ap.defaultValue !== currentValue;
         
+        // Skip if value is a very large string (likely serialized object data)
+        // Normal equations and values should be under 10KB
+        const MAX_VALUE_SIZE = 10000;
+        if (typeof currentValue === "string" && currentValue.length > MAX_VALUE_SIZE) {
+          console.warn(`Skipping serialization of large string value (${currentValue.length} chars) for attachment point: ${ap.name}`);
+          return;
+        }
+        
         // Save if value changed from default OR if there's a custom equation
         if (isDifferentFromDefault || hasCustomEquation) {
           var saveIO = {
             name: ap.name,
             ioValue: currentValue,
           };
-          // Only include currentEquation if it exists
+          // Only include currentEquation if it exists and it's not too large
           if (hasCustomEquation) {
-            saveIO.currentEquation = ap.currentEquation;
+            if (ap.currentEquation.length > MAX_VALUE_SIZE) {
+              console.warn(`Skipping serialization of large equation (${ap.currentEquation.length} chars) for attachment point: ${ap.name}`);
+            } else {
+              saveIO.currentEquation = ap.currentEquation;
+            }
           }
           ioValues.push(saveIO);
         }
