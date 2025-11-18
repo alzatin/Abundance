@@ -135,6 +135,10 @@ class ObservableEntity {
 
   propagateChange() {
     // Notify all subscribers of this atom that it has changed
+    const subscriberCount = Object.keys(this.subscribers).length;
+    if (subscriberCount > 0) {
+      console.debug(`[propagateChange] ${this.name} (${this.uniqueID}) status=${this.status}, notifying ${subscriberCount} subscribers`);
+    }
     Object.entries(this.subscribers).forEach(([id, subscriber]) => {
       try {
         subscriber();
