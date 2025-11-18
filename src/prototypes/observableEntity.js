@@ -30,17 +30,18 @@ class ObservableEntity {
       );
     }
     if (this.status != status || this.value !== value) {
-      if (this.status == Status.READY && status == Status.READY) {
+      if (this.status == Status.READY && status == Status.READY && propagate) {
         // Special case for transitioning from READY to READY with a different value.
         // Force all downstream subscribers into a WAITING status in between. For downstream
         // components with multiple paths from this component, we need to ensure they wait
         // for all long paths to be READY before they attempt to reprocess.
+        // Only do this if propagate=true, otherwise we're in deserialization and should skip.
         this.status = Status.PROCESSING;
         this.value = null;
         this.propagateChange();
       }
       console.debug(
-        `Status change for ${this.name} (${this.uniqueID}): ${this.status} -> ${status}`
+        `Status change for ${this.name} (${this.uniqueID}): ${this.status} -> ${status}${propagate ? '' : ' (no propagation)'}`
       );
       this.status = status;
       this.value = value;

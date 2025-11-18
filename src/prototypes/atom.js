@@ -165,6 +165,7 @@ export default class Atom extends ObservableEntity {
     }
 
     if (typeof this.ioValues !== "undefined") {
+      console.debug(`[setValues] Processing ${this.ioValues.length} ioValues for atom ${this.name} (${this.atomType})`);
       this.ioValues.forEach((ioValue) => {
         //for each saved value
         this.inputs.forEach((ap) => {
@@ -173,16 +174,22 @@ export default class Atom extends ObservableEntity {
             // Set value and status without propagating during deserialization
             // This prevents infinite loops while ensuring APs are properly initialized
             const newValue = ioValue.ioValue;
+            const oldStatus = ap.status;
+            const oldValue = ap.value;
+            
             if (ap.valueType === "geometry") {
               // Geometry inputs should remain WAITING until connected
               ap.value = newValue;
               ap.setStatus(Status.WAITING, null, false);
+              console.debug(`[setValues] Geometry input "${ap.name}": ${oldStatus} -> WAITING, value: ${oldValue} -> ${newValue}`);
             } else {
               // Number/string inputs are READY if they have a defined value
               if (newValue === undefined || newValue === null) {
                 ap.setStatus(Status.WAITING, null, false);
+                console.debug(`[setValues] Number input "${ap.name}": ${oldStatus} -> WAITING (null/undefined value)`);
               } else {
                 ap.setStatus(Status.READY, newValue, false);
+                console.debug(`[setValues] Number input "${ap.name}": ${oldStatus} -> READY, value: ${oldValue} -> ${newValue}`);
               }
             }
             if (
@@ -191,6 +198,7 @@ export default class Atom extends ObservableEntity {
             ) {
               // only load currentEquation if it exists and isn't a numeric literal
               ap.currentEquation = ioValue.currentEquation;
+              console.debug(`[setValues] Set equation for "${ap.name}": ${ioValue.currentEquation}`);
             }
           }
         });
