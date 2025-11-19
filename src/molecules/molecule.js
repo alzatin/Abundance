@@ -1015,7 +1015,8 @@ export default class Molecule extends Atom {
       const additionalIoValues = [];
       
       inputAtoms.forEach(inputAtom => {
-        console.log(`[Molecule.serialize]   Input "${inputAtom.name}": value=${inputAtom.value}, parentAP=${!!inputAtom.parentAP}, parentAP.getValue()=${inputAtom.parentAP ? inputAtom.parentAP.getValue() : 'N/A'}`);
+        const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+        console.log(`[Molecule.serialize]   Input "${inputAtom.name}": value=${inputAtom.value}, parentAP=${!!inputAtom.parentAP}, parentAP.getValue()=${value}, typeof=${typeof value}`);
         
         // Skip if this input is already in ioValues
         if (existingNames.has(inputAtom.name)) {
@@ -1023,16 +1024,9 @@ export default class Molecule extends Atom {
           return;
         }
         
-        // Get the value from the Input atom's parentAP if it exists
-        const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
-        
-        // Skip geometry types based on the attachment point's valueType
-        if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
-          console.log(`[Molecule.serialize]     Skipping ${inputAtom.name} - geometry type`);
-          return;
-        }
-        
         // Only save if value is a number or string
+        // Don't check valueType - just check the actual value type
+        // This allows Input atoms with type="geometry" to save number/string values
         if (typeof value !== "number" && typeof value !== "string") {
           console.log(`[Molecule.serialize]     Skipping ${inputAtom.name} - not number/string (${typeof value})`);
           return;
