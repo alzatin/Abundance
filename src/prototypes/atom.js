@@ -165,7 +165,7 @@ export default class Atom extends ObservableEntity {
     }
 
     if (typeof this.ioValues !== "undefined") {
-      console.debug(`[setValues] Processing ${this.ioValues.length} ioValues for atom ${this.name} (${this.atomType})`);
+      console.log(`[setValues] Processing ${this.ioValues.length} ioValues for atom ${this.name} (${this.atomType})`);
       this.ioValues.forEach((ioValue) => {
         //for each saved value
         this.inputs.forEach((ap) => {
@@ -181,15 +181,15 @@ export default class Atom extends ObservableEntity {
               // Geometry inputs should remain WAITING until connected
               ap.value = newValue;
               ap.setStatus(Status.WAITING, null, false);
-              console.debug(`[setValues] Geometry input "${ap.name}": ${oldStatus} -> WAITING, value: ${oldValue} -> ${newValue}`);
+              console.log(`[setValues] Geometry input "${ap.name}": ${oldStatus} -> WAITING, value: ${oldValue} -> ${newValue}`);
             } else {
               // Number/string inputs are READY if they have a defined value
               if (newValue === undefined || newValue === null) {
                 ap.setStatus(Status.WAITING, null, false);
-                console.debug(`[setValues] Number input "${ap.name}": ${oldStatus} -> WAITING (null/undefined value)`);
+                console.log(`[setValues] Number input "${ap.name}": ${oldStatus} -> WAITING (null/undefined value)`);
               } else {
                 ap.setStatus(Status.READY, newValue, false);
-                console.debug(`[setValues] Number input "${ap.name}": ${oldStatus} -> READY, value: ${oldValue} -> ${newValue}`);
+                console.log(`[setValues] Number input "${ap.name}": ${oldStatus} -> READY, value: ${oldValue} -> ${newValue}`);
               }
             }
             if (
@@ -198,7 +198,7 @@ export default class Atom extends ObservableEntity {
             ) {
               // only load currentEquation if it exists and isn't a numeric literal
               ap.currentEquation = ioValue.currentEquation;
-              console.debug(`[setValues] Set equation for "${ap.name}": ${ioValue.currentEquation}`);
+              console.log(`[setValues] Set equation for "${ap.name}": ${ioValue.currentEquation}`);
             }
           }
         });

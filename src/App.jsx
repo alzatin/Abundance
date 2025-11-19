@@ -117,10 +117,20 @@ function AppContent() {
     let interval = setInterval(() => {
       const molecule = GlobalVariables.topLevelMolecule;
       if (molecule) {
-        console.log("Molecule state:", molecule.getState().status);
+        const moleculeState = molecule.getState();
         const [ready, total] = molecule.getCompletionTuple();
-        // Update your UI with progress here
-        //console.log(`Molecule progress: ${ready} / ${total}`);
+        console.log(`[App Poll] Molecule "${molecule.name}" state: ${moleculeState.status}, completion: ${ready}/${total}`);
+        
+        // Log details if stuck in processing
+        if (moleculeState.status === "processing") {
+          const outputAtom = molecule.getOutputAtom();
+          if (outputAtom) {
+            console.log(`[App Poll] Output atom "${outputAtom.name}" status: ${outputAtom.status}`);
+          }
+          const inputStatuses = molecule.inputs.map(i => `${i.name}:${i.status}`).join(', ');
+          console.log(`[App Poll] Inputs: ${inputStatuses}`);
+        }
+        
         const progress = Math.floor((ready / total) * 100);
         setRenderProgress(progress);
         if (molecule.getState().status === "ready") {
