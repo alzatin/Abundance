@@ -84,13 +84,17 @@ const generateGcode = (
       return eng.setMode("CAM");
     })
     .then((eng) => {
-      if (progressCallback) progressCallback(0.15); // 15% - Mode set to CAM
-      //const bounds = eng.widget.getBoundingBox();
-      //const x = bounds.max.x - bounds.min.x;
-      //const y = bounds.max.y - bounds.min.y;
-      //const z = bounds.max.z - bounds.min.z;
-      return eng.setStock({ x: 5, y: 5, z: 0 }); // camStockOffset is true so set offset by 5mm in each direction for safety margin
+      const bounds = eng.widget.getBoundingBox();
+      const z = bounds.max.z - bounds.min.z;
+      return eng.setOrigin(0, 0, 0);
     })
+    .then((eng) =>
+      eng.setStock({
+        x: 3,
+        y: 3,
+        z: 0.1,
+      })
+    )
     .then((eng) => {
       if (progressCallback) progressCallback(0.2); // 20% - Stock set
       if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
@@ -145,13 +149,27 @@ const generateGcode = (
       console.log("Roughing step over:", roughingStepOver);
 
       return eng.setProcess({
+        camOriginTop: true,
+        camOriginCenter: false,
+        camZBottom: -25, // temp hack to get around setTopZ bug
+        camRoughAll: false,
+        camZOffset: 0,
+        camZTop: -1, //top of stock
+        camRoughDown: 2,
+        camRoughFlat: true,
+        camRoughIn: true,
+        camRoughOmitThru: false,
+        camRoughOmitVoid: false,
+        camRoughOn: true,
+        camRoughTop: false,
+        camRoughVoid: false,
+        camStockZ: 0,
         camEaseAngle: 10,
         camEaseDown: true,
         camZAnchor: "bottom",
         camDepthFirst: false,
         camZThru: camZThru,
         camZClearance: 3,
-        camZTop: 0, //top of stock
         camStockOffset: true,
         camZBottom: camZBottom, //-zBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
