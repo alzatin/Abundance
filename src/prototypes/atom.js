@@ -732,6 +732,15 @@ export default class Atom extends ObservableEntity {
   serialize(offset = { x: 0, y: 0 }) {
     //Offsets are used to make copy and pasted atoms move over a little bit
     var ioValues = [];
+    
+    // Debug logging for molecules with Input atoms
+    if (this.atomType === "Molecule" && this.name && (this.name.includes("Vertical") || this.name.includes("Horizontal"))) {
+      console.log(`[Serialize Molecule] Serializing ${this.name}, has ${this.inputs.length} inputs`);
+      this.inputs.forEach((ap, idx) => {
+        console.log(`  Input[${idx}]: name="${ap.name}", type="${ap.type}", valueType="${ap.valueType}", value=${ap.getValue()}`);
+      });
+    }
+    
     this.inputs.forEach((ap) => {
       // Skip geometry types explicitly, even if value happens to be a string
       if (ap.valueType === "geometry") {
@@ -780,9 +789,20 @@ export default class Atom extends ObservableEntity {
             }
           }
           ioValues.push(saveIO);
+          
+          // Debug: Log when pushing to ioValues for molecules
+          if (this.atomType === "Molecule" && this.name && (this.name.includes("Vertical") || this.name.includes("Horizontal"))) {
+            console.log(`  [Serialize] Pushed to ioValues: ${ap.name} = ${currentValue}`);
+          }
         }
       }
     });
+    
+    // Debug: Log final ioValues count for molecules
+    if (this.atomType === "Molecule" && this.name && (this.name.includes("Vertical") || this.name.includes("Horizontal"))) {
+      console.log(`[Serialize Molecule] ${this.name} final ioValues.length = ${ioValues.length}`);
+    }
+    
     var object = {
       atomType: this.atomType,
       x: this.x + offset.x,

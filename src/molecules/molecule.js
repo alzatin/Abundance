@@ -999,6 +999,29 @@ export default class Molecule extends Atom {
     thisAsObject.topLevel = this.topLevel;
     thisAsObject.allAtoms = allAtoms;
     thisAsObject.allConnectors = allConnectors;
+    
+    // If this molecule has Input atoms but no ioValues were saved by Atom.serialize(),
+    // reconstruct the ioValues from the Input atoms to preserve the molecule's interface
+    if (!thisAsObject.ioValues || thisAsObject.ioValues.length === 0) {
+      const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
+      if (inputAtoms.length > 0) {
+        const reconstructedIoValues = [];
+        inputAtoms.forEach(inputAtom => {
+          // Get the value from the Input atom's parentAP if it exists
+          const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+          if (value !== undefined && value !== null) {
+            reconstructedIoValues.push({
+              name: inputAtom.name,
+              ioValue: value
+            });
+          }
+        });
+        if (reconstructedIoValues.length > 0) {
+          thisAsObject.ioValues = reconstructedIoValues;
+        }
+      }
+    }
+    
     // Only include parentRepo if it exists
     if (this.parentRepo) {
       thisAsObject.parentRepo = this.parentRepo;
