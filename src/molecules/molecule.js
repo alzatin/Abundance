@@ -1000,47 +1000,54 @@ export default class Molecule extends Atom {
     thisAsObject.allAtoms = allAtoms;
     thisAsObject.allConnectors = allConnectors;
     
-    // If this molecule has Input atoms but no ioValues were saved by Atom.serialize(),
-    // reconstruct the ioValues from the Input atoms to preserve the molecule's interface
-    if (!thisAsObject.ioValues || thisAsObject.ioValues.length === 0) {
-      const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
-      if (inputAtoms.length > 0) {
-        const reconstructedIoValues = [];
-        const MAX_VALUE_SIZE = 10000; // Same limit as Atom.serialize()
-        
-        inputAtoms.forEach(inputAtom => {
-          // Get the value from the Input atom's parentAP if it exists
-          const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
-          
-          // Skip geometry types based on the attachment point's valueType (same as Atom.serialize() line 737)
-          // Only check valueType if parentAP exists - if no parentAP, rely on typeof checks below
-          if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
-            return;
-          }
-          
-          // Only save if value is a number or string (same as Atom.serialize() line 741-744)
-          if (typeof value !== "number" && typeof value !== "string") {
-            return;
-          }
-          
-          // Skip large strings (same as Atom.serialize() line 753-756)
-          if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
-            console.warn(`Skipping serialization of large string value (${value.length} chars) for Input atom: ${inputAtom.name}`);
-            return;
-          }
-          
-          // Skip undefined and null values
-          if (value !== undefined && value !== null) {
-            reconstructedIoValues.push({
-              name: inputAtom.name,
-              ioValue: value
-            });
-          }
-        });
-        
-        if (reconstructedIoValues.length > 0) {
-          thisAsObject.ioValues = reconstructedIoValues;
+    // Check if there are Input atoms whose values aren't in ioValues
+    // This handles cases where Input atoms exist but their attachment points weren't added to this.inputs
+    const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
+    if (inputAtoms.length > 0) {
+      // Get existing ioValues or create empty array
+      const existingIoValues = thisAsObject.ioValues || [];
+      const existingNames = new Set(existingIoValues.map(io => io.name));
+      
+      const MAX_VALUE_SIZE = 10000;
+      const additionalIoValues = [];
+      
+      inputAtoms.forEach(inputAtom => {
+        // Skip if this input is already in ioValues
+        if (existingNames.has(inputAtom.name)) {
+          return;
         }
+        
+        // Get the value from the Input atom's parentAP if it exists
+        const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+        
+        // Skip geometry types based on the attachment point's valueType
+        if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
+          return;
+        }
+        
+        // Only save if value is a number or string
+        if (typeof value !== "number" && typeof value !== "string") {
+          return;
+        }
+        
+        // Skip large strings
+        if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+          console.warn(`Skipping serialization of large string value (${value.length} chars) for Input atom: ${inputAtom.name}`);
+          return;
+        }
+        
+        // Skip undefined and null values
+        if (value !== undefined && value !== null) {
+          additionalIoValues.push({
+            name: inputAtom.name,
+            ioValue: value
+          });
+        }
+      });
+      
+      // Merge additional ioValues with existing ones
+      if (additionalIoValues.length > 0) {
+        thisAsObject.ioValues = [...existingIoValues, ...additionalIoValues];
       }
     }
     
