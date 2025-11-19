@@ -1004,6 +1004,9 @@ export default class Molecule extends Atom {
     // This handles cases where Input atoms exist but their attachment points weren't added to this.inputs
     const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
     if (inputAtoms.length > 0) {
+      // Debug logging
+      console.log(`[Molecule.serialize] ${this.name || this.atomType} has ${inputAtoms.length} Input atoms, existing ioValues:`, thisAsObject.ioValues);
+      
       // Get existing ioValues or create empty array
       const existingIoValues = thisAsObject.ioValues || [];
       const existingNames = new Set(existingIoValues.map(io => io.name));
@@ -1012,8 +1015,11 @@ export default class Molecule extends Atom {
       const additionalIoValues = [];
       
       inputAtoms.forEach(inputAtom => {
+        console.log(`[Molecule.serialize]   Input "${inputAtom.name}": value=${inputAtom.value}, parentAP=${!!inputAtom.parentAP}, parentAP.getValue()=${inputAtom.parentAP ? inputAtom.parentAP.getValue() : 'N/A'}`);
+        
         // Skip if this input is already in ioValues
         if (existingNames.has(inputAtom.name)) {
+          console.log(`[Molecule.serialize]     Skipping ${inputAtom.name} - already in ioValues`);
           return;
         }
         
@@ -1022,11 +1028,13 @@ export default class Molecule extends Atom {
         
         // Skip geometry types based on the attachment point's valueType
         if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
+          console.log(`[Molecule.serialize]     Skipping ${inputAtom.name} - geometry type`);
           return;
         }
         
         // Only save if value is a number or string
         if (typeof value !== "number" && typeof value !== "string") {
+          console.log(`[Molecule.serialize]     Skipping ${inputAtom.name} - not number/string (${typeof value})`);
           return;
         }
         
@@ -1038,16 +1046,20 @@ export default class Molecule extends Atom {
         
         // Skip undefined and null values
         if (value !== undefined && value !== null) {
+          console.log(`[Molecule.serialize]     Adding ${inputAtom.name} = ${value}`);
           additionalIoValues.push({
             name: inputAtom.name,
             ioValue: value
           });
+        } else {
+          console.log(`[Molecule.serialize]     Skipping ${inputAtom.name} - null/undefined`);
         }
       });
       
       // Merge additional ioValues with existing ones
       if (additionalIoValues.length > 0) {
         thisAsObject.ioValues = [...existingIoValues, ...additionalIoValues];
+        console.log(`[Molecule.serialize] Final ioValues for ${this.name || this.atomType}:`, thisAsObject.ioValues);
       }
     }
     
