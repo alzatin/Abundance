@@ -38,7 +38,7 @@ describe('Molecule Input Serialization Fix', () => {
         };
       }
       
-      // Molecule.serialize() - includes our fix
+      // Molecule.serialize() - includes our fix with validation
       serialize(offset = { x: 0, y: 0 }) {
         var allAtoms = [];
         this.nodesOnTheScreen.forEach((atom) => {
@@ -50,13 +50,31 @@ describe('Molecule Input Serialization Fix', () => {
         thisAsObject.allAtoms = allAtoms;
         thisAsObject.allConnectors = [];
         
-        // THE FIX: Reconstruct ioValues from Input atoms
+        // THE FIX: Reconstruct ioValues from Input atoms with validation
         if (!thisAsObject.ioValues || thisAsObject.ioValues.length === 0) {
           const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
           if (inputAtoms.length > 0) {
             const reconstructedIoValues = [];
+            const MAX_VALUE_SIZE = 10000;
+            
             inputAtoms.forEach(inputAtom => {
+              // Skip geometry types
+              if (inputAtom.type === "geometry") {
+                return;
+              }
+              
               const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+              
+              // Only save numbers and strings
+              if (typeof value !== "number" && typeof value !== "string") {
+                return;
+              }
+              
+              // Skip large strings
+              if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+                return;
+              }
+              
               if (value !== undefined && value !== null) {
                 reconstructedIoValues.push({
                   name: inputAtom.name,
@@ -64,6 +82,7 @@ describe('Molecule Input Serialization Fix', () => {
                 });
               }
             });
+            
             if (reconstructedIoValues.length > 0) {
               thisAsObject.ioValues = reconstructedIoValues;
             }
@@ -137,8 +156,23 @@ describe('Molecule Input Serialization Fix', () => {
           const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
           if (inputAtoms.length > 0) {
             const reconstructedIoValues = [];
+            const MAX_VALUE_SIZE = 10000;
+            
             inputAtoms.forEach(inputAtom => {
+              if (inputAtom.type === "geometry") {
+                return;
+              }
+              
               const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+              
+              if (typeof value !== "number" && typeof value !== "string") {
+                return;
+              }
+              
+              if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+                return;
+              }
+              
               if (value !== undefined && value !== null) {
                 reconstructedIoValues.push({
                   name: inputAtom.name,
@@ -214,8 +248,23 @@ describe('Molecule Input Serialization Fix', () => {
           const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
           if (inputAtoms.length > 0) {
             const reconstructedIoValues = [];
+            const MAX_VALUE_SIZE = 10000;
+            
             inputAtoms.forEach(inputAtom => {
+              if (inputAtom.type === "geometry") {
+                return;
+              }
+              
               const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+              
+              if (typeof value !== "number" && typeof value !== "string") {
+                return;
+              }
+              
+              if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+                return;
+              }
+              
               if (value !== undefined && value !== null) {
                 reconstructedIoValues.push({
                   name: inputAtom.name,
@@ -305,8 +354,23 @@ describe('Molecule Input Serialization Fix', () => {
           const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
           if (inputAtoms.length > 0) {
             const reconstructedIoValues = [];
+            const MAX_VALUE_SIZE = 10000;
+            
             inputAtoms.forEach(inputAtom => {
+              if (inputAtom.type === "geometry") {
+                return;
+              }
+              
               const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+              
+              if (typeof value !== "number" && typeof value !== "string") {
+                return;
+              }
+              
+              if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+                return;
+              }
+              
               if (value !== undefined && value !== null) {
                 reconstructedIoValues.push({
                   name: inputAtom.name,
@@ -314,6 +378,7 @@ describe('Molecule Input Serialization Fix', () => {
                 });
               }
             });
+            
             if (reconstructedIoValues.length > 0) {
               thisAsObject.ioValues = reconstructedIoValues;
             }
@@ -328,6 +393,7 @@ describe('Molecule Input Serialization Fix', () => {
     molecule.nodesOnTheScreen.push({
       atomType: 'Input',
       name: 'Should Not Be Saved',
+      type: 'number',
       value: 123,
       parentAP: { getValue: () => 123 }
     });
@@ -339,5 +405,274 @@ describe('Molecule Input Serialization Fix', () => {
     expect(serialized.ioValues[0]).toEqual({ name: 'Existing', ioValue: 999 });
     
     console.log('✅ Existing ioValues preserved');
+  });
+  
+  it('should skip geometry type Input atoms to prevent file bloat', () => {
+    class MockMolecule {
+      constructor() {
+        this.atomType = 'Molecule';
+        this.inputs = [];
+        this.nodesOnTheScreen = [];
+        this.topLevel = false;
+      }
+      
+      atomSerialize() {
+        return { atomType: this.atomType };
+      }
+      
+      serialize() {
+        var thisAsObject = this.atomSerialize();
+        thisAsObject.topLevel = this.topLevel;
+        thisAsObject.allAtoms = [];
+        thisAsObject.allConnectors = [];
+        
+        if (!thisAsObject.ioValues || thisAsObject.ioValues.length === 0) {
+          const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
+          if (inputAtoms.length > 0) {
+            const reconstructedIoValues = [];
+            const MAX_VALUE_SIZE = 10000;
+            
+            inputAtoms.forEach(inputAtom => {
+              // Skip geometry types to prevent file bloat
+              if (inputAtom.type === "geometry") {
+                return;
+              }
+              
+              const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+              
+              if (typeof value !== "number" && typeof value !== "string") {
+                return;
+              }
+              
+              if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+                return;
+              }
+              
+              if (value !== undefined && value !== null) {
+                reconstructedIoValues.push({
+                  name: inputAtom.name,
+                  ioValue: value
+                });
+              }
+            });
+            
+            if (reconstructedIoValues.length > 0) {
+              thisAsObject.ioValues = reconstructedIoValues;
+            }
+          }
+        }
+        
+        return thisAsObject;
+      }
+    }
+    
+    const molecule = new MockMolecule();
+    
+    // Add a geometry type Input (should be skipped)
+    molecule.nodesOnTheScreen.push({
+      atomType: 'Input',
+      name: 'Geometry Input',
+      type: 'geometry',
+      value: { huge: 'geometry object' },
+      parentAP: { getValue: () => ({ huge: 'geometry object' }) }
+    });
+    
+    // Add a number type Input (should be saved)
+    molecule.nodesOnTheScreen.push({
+      atomType: 'Input',
+      name: 'Number Input',
+      type: 'number',
+      value: 42,
+      parentAP: { getValue: () => 42 }
+    });
+    
+    const serialized = molecule.serialize();
+    
+    // Should only save the number input, not the geometry
+    expect(serialized.ioValues).toBeDefined();
+    expect(serialized.ioValues).toHaveLength(1);
+    expect(serialized.ioValues[0]).toEqual({ name: 'Number Input', ioValue: 42 });
+    
+    console.log('✅ Geometry inputs correctly skipped');
+  });
+  
+  it('should skip large string values to prevent file bloat', () => {
+    class MockMolecule {
+      constructor() {
+        this.atomType = 'Molecule';
+        this.inputs = [];
+        this.nodesOnTheScreen = [];
+        this.topLevel = false;
+      }
+      
+      atomSerialize() {
+        return { atomType: this.atomType };
+      }
+      
+      serialize() {
+        var thisAsObject = this.atomSerialize();
+        thisAsObject.topLevel = this.topLevel;
+        thisAsObject.allAtoms = [];
+        thisAsObject.allConnectors = [];
+        
+        if (!thisAsObject.ioValues || thisAsObject.ioValues.length === 0) {
+          const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
+          if (inputAtoms.length > 0) {
+            const reconstructedIoValues = [];
+            const MAX_VALUE_SIZE = 10000;
+            
+            inputAtoms.forEach(inputAtom => {
+              if (inputAtom.type === "geometry") {
+                return;
+              }
+              
+              const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+              
+              if (typeof value !== "number" && typeof value !== "string") {
+                return;
+              }
+              
+              // Skip large strings
+              if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+                console.warn(`Skipping large string: ${value.length} chars`);
+                return;
+              }
+              
+              if (value !== undefined && value !== null) {
+                reconstructedIoValues.push({
+                  name: inputAtom.name,
+                  ioValue: value
+                });
+              }
+            });
+            
+            if (reconstructedIoValues.length > 0) {
+              thisAsObject.ioValues = reconstructedIoValues;
+            }
+          }
+        }
+        
+        return thisAsObject;
+      }
+    }
+    
+    const molecule = new MockMolecule();
+    
+    // Add a large string Input (should be skipped)
+    const largeString = 'x'.repeat(20000);
+    molecule.nodesOnTheScreen.push({
+      atomType: 'Input',
+      name: 'Large String',
+      type: 'string',
+      value: largeString,
+      parentAP: { getValue: () => largeString }
+    });
+    
+    // Add a normal string Input (should be saved)
+    molecule.nodesOnTheScreen.push({
+      atomType: 'Input',
+      name: 'Normal String',
+      type: 'string',
+      value: 'hello',
+      parentAP: { getValue: () => 'hello' }
+    });
+    
+    const serialized = molecule.serialize();
+    
+    // Should only save the normal string, not the large one
+    expect(serialized.ioValues).toBeDefined();
+    expect(serialized.ioValues).toHaveLength(1);
+    expect(serialized.ioValues[0]).toEqual({ name: 'Normal String', ioValue: 'hello' });
+    
+    console.log('✅ Large strings correctly skipped');
+  });
+  
+  it('should skip non-number and non-string values', () => {
+    class MockMolecule {
+      constructor() {
+        this.atomType = 'Molecule';
+        this.inputs = [];
+        this.nodesOnTheScreen = [];
+        this.topLevel = false;
+      }
+      
+      atomSerialize() {
+        return { atomType: this.atomType };
+      }
+      
+      serialize() {
+        var thisAsObject = this.atomSerialize();
+        thisAsObject.topLevel = this.topLevel;
+        thisAsObject.allAtoms = [];
+        thisAsObject.allConnectors = [];
+        
+        if (!thisAsObject.ioValues || thisAsObject.ioValues.length === 0) {
+          const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
+          if (inputAtoms.length > 0) {
+            const reconstructedIoValues = [];
+            const MAX_VALUE_SIZE = 10000;
+            
+            inputAtoms.forEach(inputAtom => {
+              if (inputAtom.type === "geometry") {
+                return;
+              }
+              
+              const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+              
+              // Only save numbers and strings
+              if (typeof value !== "number" && typeof value !== "string") {
+                return;
+              }
+              
+              if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+                return;
+              }
+              
+              if (value !== undefined && value !== null) {
+                reconstructedIoValues.push({
+                  name: inputAtom.name,
+                  ioValue: value
+                });
+              }
+            });
+            
+            if (reconstructedIoValues.length > 0) {
+              thisAsObject.ioValues = reconstructedIoValues;
+            }
+          }
+        }
+        
+        return thisAsObject;
+      }
+    }
+    
+    const molecule = new MockMolecule();
+    
+    // Add an object value Input (should be skipped)
+    molecule.nodesOnTheScreen.push({
+      atomType: 'Input',
+      name: 'Object Input',
+      type: 'number',
+      value: { some: 'object' },
+      parentAP: { getValue: () => ({ some: 'object' }) }
+    });
+    
+    // Add a number Input (should be saved)
+    molecule.nodesOnTheScreen.push({
+      atomType: 'Input',
+      name: 'Number Input',
+      type: 'number',
+      value: 99,
+      parentAP: { getValue: () => 99 }
+    });
+    
+    const serialized = molecule.serialize();
+    
+    // Should only save the number, not the object
+    expect(serialized.ioValues).toBeDefined();
+    expect(serialized.ioValues).toHaveLength(1);
+    expect(serialized.ioValues[0]).toEqual({ name: 'Number Input', ioValue: 99 });
+    
+    console.log('✅ Non-number/non-string values correctly skipped');
   });
 });

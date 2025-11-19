@@ -1006,9 +1006,29 @@ export default class Molecule extends Atom {
       const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
       if (inputAtoms.length > 0) {
         const reconstructedIoValues = [];
+        const MAX_VALUE_SIZE = 10000; // Same limit as Atom.serialize()
+        
         inputAtoms.forEach(inputAtom => {
+          // Skip geometry types (same as Atom.serialize() line 737-739)
+          if (inputAtom.type === "geometry") {
+            return;
+          }
+          
           // Get the value from the Input atom's parentAP if it exists
           const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+          
+          // Only save if value is a number or string (same as Atom.serialize() line 741-744)
+          if (typeof value !== "number" && typeof value !== "string") {
+            return;
+          }
+          
+          // Skip large strings (same as Atom.serialize() line 753-756)
+          if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+            console.warn(`Skipping serialization of large string value (${value.length} chars) for Input atom: ${inputAtom.name}`);
+            return;
+          }
+          
+          // Skip undefined and null values
           if (value !== undefined && value !== null) {
             reconstructedIoValues.push({
               name: inputAtom.name,
@@ -1016,6 +1036,7 @@ export default class Molecule extends Atom {
             });
           }
         });
+        
         if (reconstructedIoValues.length > 0) {
           thisAsObject.ioValues = reconstructedIoValues;
         }
