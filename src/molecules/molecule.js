@@ -1013,9 +1013,8 @@ export default class Molecule extends Atom {
           const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
           
           // Skip geometry types based on the attachment point's valueType (same as Atom.serialize() line 737)
-          // Check parentAP.valueType if it exists, otherwise check the atom's type
-          const valueType = inputAtom.parentAP ? inputAtom.parentAP.valueType : inputAtom.type;
-          if (valueType === "geometry") {
+          // Only check valueType if parentAP exists - if no parentAP, rely on typeof checks below
+          if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
             return;
           }
           

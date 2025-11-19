@@ -61,8 +61,8 @@ describe('Molecule Input Serialization Fix', () => {
               const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
               
               // Skip geometry types based on valueType
-              const valueType = inputAtom.parentAP ? inputAtom.parentAP.valueType : inputAtom.type;
-              if (valueType === "geometry") {
+              // Only check valueType if parentAP exists
+              if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
                 return;
               }
               
@@ -162,8 +162,8 @@ describe('Molecule Input Serialization Fix', () => {
             inputAtoms.forEach(inputAtom => {
               const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
               
-              const valueType = inputAtom.parentAP ? inputAtom.parentAP.valueType : inputAtom.type;
-              if (valueType === "geometry") {
+              // Only check valueType if parentAP exists
+              if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
                 return;
               }
               
@@ -255,8 +255,8 @@ describe('Molecule Input Serialization Fix', () => {
             inputAtoms.forEach(inputAtom => {
               const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
               
-              const valueType = inputAtom.parentAP ? inputAtom.parentAP.valueType : inputAtom.type;
-              if (valueType === "geometry") {
+              // Only check valueType if parentAP exists
+              if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
                 return;
               }
               
@@ -362,8 +362,8 @@ describe('Molecule Input Serialization Fix', () => {
             inputAtoms.forEach(inputAtom => {
               const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
               
-              const valueType = inputAtom.parentAP ? inputAtom.parentAP.valueType : inputAtom.type;
-              if (valueType === "geometry") {
+              // Only check valueType if parentAP exists
+              if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
                 return;
               }
               
@@ -440,8 +440,8 @@ describe('Molecule Input Serialization Fix', () => {
               // Skip geometry types to prevent file bloat
               const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
               
-              const valueType = inputAtom.parentAP ? inputAtom.parentAP.valueType : inputAtom.type;
-              if (valueType === "geometry") {
+              // Only check valueType if parentAP exists
+              if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
                 return;
               }
               
@@ -535,8 +535,8 @@ describe('Molecule Input Serialization Fix', () => {
             inputAtoms.forEach(inputAtom => {
               const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
               
-              const valueType = inputAtom.parentAP ? inputAtom.parentAP.valueType : inputAtom.type;
-              if (valueType === "geometry") {
+              // Only check valueType if parentAP exists
+              if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
                 return;
               }
               
@@ -627,8 +627,8 @@ describe('Molecule Input Serialization Fix', () => {
             inputAtoms.forEach(inputAtom => {
               const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
               
-              const valueType = inputAtom.parentAP ? inputAtom.parentAP.valueType : inputAtom.type;
-              if (valueType === "geometry") {
+              // Only check valueType if parentAP exists
+              if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
                 return;
               }
               
@@ -720,8 +720,8 @@ describe('Molecule Input Serialization Fix', () => {
               const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
               
               // Check valueType from parentAP, not atom's type
-              const valueType = inputAtom.parentAP ? inputAtom.parentAP.valueType : inputAtom.type;
-              if (valueType === "geometry") {
+              // Only check valueType if parentAP exists
+              if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
                 return;
               }
               
@@ -774,5 +774,88 @@ describe('Molecule Input Serialization Fix', () => {
     expect(serialized.ioValues[0]).toEqual({ name: 'Wood Thickness', ioValue: 12 });
     
     console.log('✅ Number values saved even when Input atom type is geometry');
+  });
+  
+  it('should save number values when parentAP does not exist', () => {
+    // This tests the case where Input atom has no parentAP yet
+    // We should still save the value if it's a number or string
+    class MockMolecule {
+      constructor() {
+        this.atomType = 'Molecule';
+        this.inputs = [];
+        this.nodesOnTheScreen = [];
+        this.topLevel = false;
+      }
+      
+      atomSerialize() {
+        return { atomType: this.atomType };
+      }
+      
+      serialize() {
+        var thisAsObject = this.atomSerialize();
+        thisAsObject.topLevel = this.topLevel;
+        thisAsObject.allAtoms = [];
+        thisAsObject.allConnectors = [];
+        
+        if (!thisAsObject.ioValues || thisAsObject.ioValues.length === 0) {
+          const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
+          if (inputAtoms.length > 0) {
+            const reconstructedIoValues = [];
+            const MAX_VALUE_SIZE = 10000;
+            
+            inputAtoms.forEach(inputAtom => {
+              const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+              
+              // Only check valueType if parentAP exists
+              if (inputAtom.parentAP && inputAtom.parentAP.valueType === "geometry") {
+                return;
+              }
+              
+              if (typeof value !== "number" && typeof value !== "string") {
+                return;
+              }
+              
+              if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+                return;
+              }
+              
+              if (value !== undefined && value !== null) {
+                reconstructedIoValues.push({
+                  name: inputAtom.name,
+                  ioValue: value
+                });
+              }
+            });
+            
+            if (reconstructedIoValues.length > 0) {
+              thisAsObject.ioValues = reconstructedIoValues;
+            }
+          }
+        }
+        
+        return thisAsObject;
+      }
+    }
+    
+    const molecule = new MockMolecule();
+    
+    // Add an Input with type="geometry" but NO parentAP
+    // Should save the number value from inputAtom.value
+    molecule.nodesOnTheScreen.push({
+      atomType: 'Input',
+      name: 'Wood Thickness',
+      type: 'geometry',  // Atom type is geometry
+      value: 12,
+      parentAP: null  // No parentAP
+    });
+    
+    const serialized = molecule.serialize();
+    
+    // Should save the number value (12) even without parentAP
+    expect(serialized.ioValues).toBeDefined();
+    expect(serialized.ioValues).toHaveLength(1);
+    expect(serialized.ioValues[0]).toEqual({ name: 'Wood Thickness', ioValue: 12 });
+    
+    console.log('✅ Number values saved when parentAP does not exist');
   });
 });
