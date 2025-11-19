@@ -168,7 +168,8 @@ export default class Constant extends Atom {
   serialize(values) {
     //Save the readme text to the serial stream
     var valuesObj = super.serialize(values);
-    valuesObj.value = this.value;
+    // Use safe serialization to prevent large values from bloating the save file
+    Atom.safeSerializeValue(valuesObj, 'value', this.value, this.name || 'Constant');
 
     return valuesObj;
   }

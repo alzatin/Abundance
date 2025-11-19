@@ -142,7 +142,8 @@ export default class Tag extends Atom {
    */
   serialize(offset = { x: 0, y: 0 }) {
     var superSerialObject = super.serialize(offset);
-    superSerialObject.tags = this.tags;
+    // Use safe serialization to prevent large tag arrays from bloating the save file
+    Atom.safeSerializeValue(superSerialObject, 'tags', this.tags, this.name || 'Tag');
 
     return superSerialObject;
   }

@@ -227,7 +227,8 @@ export default class Equation extends Atom {
     var superSerialObject = super.serialize(offset);
 
     //Write the current equation to the serialized object
-    superSerialObject.currentEquation = this.currentEquation;
+    // Use safe serialization to prevent large equations from bloating the save file
+    Atom.safeSerializeValue(superSerialObject, 'currentEquation', this.currentEquation, this.name || 'Equation');
 
     return superSerialObject;
   }

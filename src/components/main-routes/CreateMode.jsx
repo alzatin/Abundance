@@ -845,7 +845,7 @@ function CreateMode() {
       }
 
       setSaveProgress(10);
-      var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
+      // Reuse the already serialized project data instead of serializing again
       jsonRepOfProject.filetypeVersion = 1;
       const projectContent = JSON.stringify(jsonRepOfProject, null, 2);
       // format and compile the BOM
