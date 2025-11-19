@@ -755,8 +755,12 @@ export default class Atom extends ObservableEntity {
           return;
         }
         
-        // Save if value changed from default OR if there's a custom equation
-        if (isDifferentFromDefault || hasCustomEquation) {
+        // For Input atoms, ALWAYS save values (even if they match defaults)
+        // because they define the parent molecule's interface
+        const isInputAtom = this.atomType === "Input";
+        
+        // Save if value changed from default OR has custom equation OR is an Input atom
+        if (isDifferentFromDefault || hasCustomEquation || isInputAtom) {
           var saveIO = {
             name: ap.name,
             ioValue: currentValue,
