@@ -757,8 +757,8 @@ export default class Atom extends ObservableEntity {
         
         // For attachment points that are inputs to molecules (created by Input atoms),
         // ALWAYS save values (even if they match defaults) because they define 
-        // the molecule's interface. Input attachments have direction="input".
-        const isMoleculeInput = ap.direction === "input";
+        // the molecule's interface. Input attachments have type="input".
+        const isMoleculeInput = ap.type === "input";
         
         // Save if value changed from default OR has custom equation OR is a molecule input
         if (isDifferentFromDefault || hasCustomEquation || isMoleculeInput) {
