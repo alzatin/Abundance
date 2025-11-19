@@ -814,7 +814,6 @@ export default class Molecule extends Atom {
   onUpstreamChange() {
     // No-op if this atom is disabled
     if (this.status === Status.DISABLED) {
-      console.log(`[onUpstreamChange] ${this.name} - DISABLED, skipping`);
       return;
     }
 
@@ -827,7 +826,6 @@ export default class Molecule extends Atom {
     });
 
     if (hasErrorInputs) {
-      console.log(`[onUpstreamChange] ${this.name} - Has error inputs, setting UPSTREAM_ERROR`);
       this.setUpstreamError();
       return;
     }
@@ -835,11 +833,7 @@ export default class Molecule extends Atom {
     const outputAtom = this.getOutputAtom();
     if (outputAtom) {
       const outputState = outputAtom.getState();
-      const allInputsReady = this.inputs.every((input) => input.status == Status.READY);
-      console.log(`[onUpstreamChange] ${this.name} - outputStatus=${outputState.status}, allInputsReady=${allInputsReady}, inputCount=${this.inputs.length}`);
-      
       if (outputState.status == Status.READY) {
-        console.log(`[onUpstreamChange] ${this.name} - Output READY, setting molecule READY`);
         this.setReady(outputState.value);
         this.compileBom()
           .then((bom) => {
@@ -850,26 +844,21 @@ export default class Molecule extends Atom {
           })
           .catch(this.alertingErrorHandler);
       } else {
-        if (allInputsReady) {
+        if (this.inputs.every((input) => input.status == Status.READY)) {
           // All inputs are ready but our output isn't yet. check for an internal error
           // else we're in progress.
           if (
             outputAtom.status == Status.UPSTREAM_ERROR ||
             outputAtom.status == Status.ERROR
           ) {
-            console.log(`[onUpstreamChange] ${this.name} - Output has error, calling onChildError`);
             this.onChildError();
           } else if (outputAtom.inputs[0]?.connectors.length == 0) {
-            console.log(`[onUpstreamChange] ${this.name} - No connectors to output, setting WAITING`);
             this.setWaiting(); // No connectors to our internal output means we're in a freshly initialized state.;
           } else {
-            console.log(`[onUpstreamChange] ${this.name} - All inputs READY but output not ready (${outputAtom.status}), setting PROCESSING`);
             this.setProcessing();
           }
         } else {
           // Else set status to waiting since some of our inputs are not ready.
-          const notReadyInputs = this.inputs.filter(i => i.status !== Status.READY).map(i => `${i.name}:${i.status}`).join(', ');
-          console.log(`[onUpstreamChange] ${this.name} - Some inputs not ready (${notReadyInputs}), setting WAITING`);
           this.setWaiting();
         }
       }

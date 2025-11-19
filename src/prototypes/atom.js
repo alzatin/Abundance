@@ -165,45 +165,18 @@ export default class Atom extends ObservableEntity {
     }
 
     if (typeof this.ioValues !== "undefined") {
-      console.log(`[setValues] Processing ${this.ioValues.length} ioValues for atom ${this.name} (${this.atomType})`);
       this.ioValues.forEach((ioValue) => {
         //for each saved value
         this.inputs.forEach((ap) => {
           //Find the matching IO and set it to be the saved value
           if (ioValue.name == ap.name && ap.type == "input") {
-            // Set value and status without propagating during deserialization
-            // This prevents infinite loops while ensuring APs are properly initialized
-            const newValue = ioValue.ioValue;
-            const oldStatus = ap.status;
-            const oldValue = ap.value;
-            
-            if (ap.valueType === "geometry") {
-              // For geometry inputs, only set value if not null
-              // Don't change status - let connector restoration handle it
-              if (newValue !== null && newValue !== undefined) {
-                ap.value = newValue;
-                console.log(`[setValues] Geometry input "${ap.name}": value set to ${newValue}, status unchanged (${oldStatus})`);
-              } else {
-                // Null geometry value means it will be connected - don't touch status
-                console.log(`[setValues] Geometry input "${ap.name}": null placeholder, leaving status as ${oldStatus} for connector restoration`);
-              }
-            } else {
-              // Number/string inputs are READY if they have a defined value
-              if (newValue === undefined || newValue === null) {
-                ap.setStatus(Status.WAITING, null, false);
-                console.log(`[setValues] Number input "${ap.name}": ${oldStatus} -> WAITING (null/undefined value)`);
-              } else {
-                ap.setStatus(Status.READY, newValue, false);
-                console.log(`[setValues] Number input "${ap.name}": ${oldStatus} -> READY, value: ${oldValue} -> ${newValue}`);
-              }
-            }
+            ap.value = ioValue.ioValue;
             if (
               "currentEquation" in ioValue &&
               !Number.isFinite(Number(ioValue.currentEquation))
             ) {
               // only load currentEquation if it exists and isn't a numeric literal
               ap.currentEquation = ioValue.currentEquation;
-              console.log(`[setValues] Set equation for "${ap.name}": ${ioValue.currentEquation}`);
             }
           }
         });
