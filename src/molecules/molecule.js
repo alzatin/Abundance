@@ -1043,8 +1043,6 @@ export default class Molecule extends Atom {
         //Place the atoms
         const promise = this.placeAtom(atom, false);
         promiseArray.push(promise);
-
-        this.setValues([]); //Call set values again with an empty list to trigger loading of IO values from memory
       });
     }
     return Promise.all(promiseArray).then(() => {
