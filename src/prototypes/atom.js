@@ -178,10 +178,15 @@ export default class Atom extends ObservableEntity {
             const oldValue = ap.value;
             
             if (ap.valueType === "geometry") {
-              // Geometry inputs should remain WAITING until connected
-              ap.value = newValue;
-              ap.setStatus(Status.WAITING, null, false);
-              console.log(`[setValues] Geometry input "${ap.name}": ${oldStatus} -> WAITING, value: ${oldValue} -> ${newValue}`);
+              // For geometry inputs, only set value if not null
+              // Don't change status - let connector restoration handle it
+              if (newValue !== null && newValue !== undefined) {
+                ap.value = newValue;
+                console.log(`[setValues] Geometry input "${ap.name}": value set to ${newValue}, status unchanged (${oldStatus})`);
+              } else {
+                // Null geometry value means it will be connected - don't touch status
+                console.log(`[setValues] Geometry input "${ap.name}": null placeholder, leaving status as ${oldStatus} for connector restoration`);
+              }
             } else {
               // Number/string inputs are READY if they have a defined value
               if (newValue === undefined || newValue === null) {
