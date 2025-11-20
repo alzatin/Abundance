@@ -999,6 +999,55 @@ export default class Molecule extends Atom {
     thisAsObject.topLevel = this.topLevel;
     thisAsObject.allAtoms = allAtoms;
     thisAsObject.allConnectors = allConnectors;
+    
+    // Check if there are Input atoms whose values aren't in ioValues
+    // This handles cases where Input atoms exist but their attachment points weren't added to this.inputs
+    const inputAtoms = this.nodesOnTheScreen.filter(atom => atom.atomType === "Input");
+    if (inputAtoms.length > 0) {
+      // Get existing ioValues or create empty array
+      const existingIoValues = thisAsObject.ioValues || [];
+      const existingNames = new Set(existingIoValues.map(io => io.name));
+      
+      const MAX_VALUE_SIZE = 10000;
+      const additionalIoValues = [];
+      
+      inputAtoms.forEach(inputAtom => {
+        // Skip if this input is already in ioValues
+        if (existingNames.has(inputAtom.name)) {
+          return;
+        }
+        
+        // Get the value from the Input atom's parentAP if it exists
+        const value = inputAtom.parentAP ? inputAtom.parentAP.getValue() : inputAtom.value;
+        
+        // Only save if value is a number or string
+        // Don't check valueType - just check the actual value type
+        // This allows Input atoms with type="geometry" to save number/string values
+        if (typeof value !== "number" && typeof value !== "string") {
+          return;
+        }
+        
+        // Skip large strings
+        if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+          console.warn(`Skipping serialization of large string value (${value.length} chars) for Input atom: ${inputAtom.name}`);
+          return;
+        }
+        
+        // Skip undefined and null values
+        if (value !== undefined && value !== null) {
+          additionalIoValues.push({
+            name: inputAtom.name,
+            ioValue: value
+          });
+        }
+      });
+      
+      // Merge additional ioValues with existing ones
+      if (additionalIoValues.length > 0) {
+        thisAsObject.ioValues = [...existingIoValues, ...additionalIoValues];
+      }
+    }
+    
     // Only include parentRepo if it exists
     if (this.parentRepo) {
       thisAsObject.parentRepo = this.parentRepo;
@@ -1043,8 +1092,6 @@ export default class Molecule extends Atom {
         //Place the atoms
         const promise = this.placeAtom(atom, false);
         promiseArray.push(promise);
-
-        this.setValues([]); //Call set values again with an empty list to trigger loading of IO values from memory
       });
     }
     return Promise.all(promiseArray).then(() => {
