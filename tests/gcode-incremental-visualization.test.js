@@ -1,6 +1,6 @@
 import { expect, test, describe, beforeAll } from "vitest";
 import { init } from "../src/worker/util.ts";
-import { visualizeGcode, visualizeGcodeIncremental } from "../src/worker/worker.ts";
+import { visualizeGcodeIncremental } from "../src/worker/worker.ts";
 
 describe("Incremental G-code Visualization Performance Tests", () => {
   beforeAll(async () => {
@@ -60,7 +60,7 @@ G1 X40 Y0 Z0
     expect(result.dimension).toBe("3D");
   });
 
-  test("should produce same visual result for both methods", async () => {
+  test("should visualize multiple parts correctly", async () => {
     const gcodePart1 = `
 G0 X0 Y0 Z0
 G1 X10 Y0 Z0
@@ -76,23 +76,18 @@ G1 X30 Y10 Z0
 G1 X20 Y10 Z0
 G1 X20 Y0 Z0
 `;
-
-    const concatenatedGcode = gcodePart1 + "\n" + gcodePart2;
     
-    const contextOriginal = { project: "test-original-method" };
-    const contextIncremental = { project: "test-incremental-method" };
+    const context = { project: "test-multi-part" };
     
-    const resultOriginal = await visualizeGcode(concatenatedGcode, contextOriginal);
-    const resultIncremental = await visualizeGcodeIncremental(
+    const result = await visualizeGcodeIncremental(
       [gcodePart1, gcodePart2],
-      contextIncremental
+      context
     );
     
-    // Both methods should produce valid results
-    expect(resultOriginal).toBeDefined();
-    expect(resultIncremental).toBeDefined();
-    expect(resultOriginal.dimension).toBe("3D");
-    expect(resultIncremental.dimension).toBe("3D");
+    // Should produce valid result
+    expect(result).toBeDefined();
+    expect(result.dimension).toBe("3D");
+    expect(result.geometry).toBeDefined();
   });
 
   test("should handle empty gcode array", async () => {
@@ -101,7 +96,7 @@ G1 X20 Y0 Z0
     await expect(visualizeGcodeIncremental([], context)).rejects.toThrow();
   });
 
-  test("should compare performance for multiple parts", async () => {
+  test("should handle multiple parts efficiently", async () => {
     // Create 5 gcode parts
     const gcodeParts = [];
     for (let i = 0; i < 5; i++) {
@@ -114,33 +109,20 @@ G1 X${x} Y10 Z0
 G1 X${x} Y0 Z0
 `);
     }
-
-    const concatenatedGcode = gcodeParts.join("\n");
-    
-    // Time original method
-    const startOriginal = performance.now();
-    const contextOriginal = { project: "test-perf-original" };
-    const resultOriginal = await visualizeGcode(concatenatedGcode, contextOriginal);
-    const timeOriginal = performance.now() - startOriginal;
     
     // Time incremental method
-    const startIncremental = performance.now();
-    const contextIncremental = { project: "test-perf-incremental" };
-    const resultIncremental = await visualizeGcodeIncremental(gcodeParts, contextIncremental);
-    const timeIncremental = performance.now() - startIncremental;
+    const start = performance.now();
+    const context = { project: "test-perf-incremental" };
+    const result = await visualizeGcodeIncremental(gcodeParts, context);
+    const time = performance.now() - start;
     
     console.log(`\n=== Performance Test Results (5 parts) ===`);
-    console.log(`Original method: ${timeOriginal.toFixed(2)}ms`);
-    console.log(`Incremental method: ${timeIncremental.toFixed(2)}ms`);
-    const improvement = ((timeOriginal - timeIncremental) / timeOriginal * 100);
-    console.log(`Performance difference: ${improvement.toFixed(1)}%`);
+    console.log(`Incremental method: ${time.toFixed(2)}ms`);
     
-    // Both methods should produce valid results
-    expect(resultOriginal).toBeDefined();
-    expect(resultIncremental).toBeDefined();
+    // Should produce valid result
+    expect(result).toBeDefined();
     
-    // Report the performance comparison
-    console.log(`✅ Both methods produce valid results`);
+    console.log(`✅ Incremental method produces valid results`);
   });
 
   test("should handle complex gcode with Z movements", async () => {

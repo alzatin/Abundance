@@ -279,63 +279,6 @@ async function importingSVG(
  * Visualizes G-code by parsing movement commands and creating 3D wire geometry.
  * @param {string} gcode - The G-code string to visualize
  */
-async function visualizeGcode(
-  gcode: string,
-  context: RequestContext
-): Promise<AbundanceObject> {
-  let currentPosition: [number, number, number] = [0, 0, 0];
-  let edges: Edge[] = [];
-  // Split the gcode into lines
-  const lines = gcode.split("\n");
-  lines.forEach((line) => {
-    // Normalize line: trim whitespace and uppercase for robust matching
-    const cmd = line.trim().toUpperCase();
-    // Only process lines that start with G0 or G1
-    if (cmd.startsWith("G0") || cmd.startsWith("G1")) {
-      // Parse the line for X, Y, Z values
-      const xMatch = cmd.match(/X([\d.-]+)/);
-      const yMatch = cmd.match(/Y([\d.-]+)/);
-      const zMatch = cmd.match(/Z([\d.-]+)/);
-
-      // Update coordinates if found, otherwise keep the previous value
-      let x = xMatch ? Number(xMatch[1]) : currentPosition[0];
-      let y = yMatch ? Number(yMatch[1]) : currentPosition[1];
-      let z = zMatch ? Number(zMatch[1]) : currentPosition[2];
-
-      // Lower threshold to capture all movements
-      const threshold = 0.001; // Accept nearly all movements
-      if (
-        Math.abs(x - currentPosition[0]) < threshold &&
-        Math.abs(y - currentPosition[1]) < threshold &&
-        Math.abs(z - currentPosition[2]) < threshold
-      ) {
-        return; // Skip truly negligible movements
-      }
-
-      // Create a line from the current position to the new position
-      edges.push(util.replicad.makeLine(currentPosition, [x, y, z]));
-
-      currentPosition = [x, y, z];
-    }
-  });
-  // Create a wire from the edges
-
-  const wire = util.replicad.assembleWire(edges);
-  return {
-    geometry: await util.geometryProvider!.addSingularToCache(
-      wire,
-      context,
-      "gcode-vis",
-      [util.hashString(gcode)]
-    ),
-    tags: [],
-    plane: util.XYPlane,
-    color: util.defaultColor,
-    bom: [],
-    dimension: "3D",
-  };
-}
-
 /**
  * Visualize gcode incrementally by processing individual parts and assembling wires
  * instead of assembling all edges at once. This is more efficient for projects with many parts.
@@ -603,7 +546,6 @@ if (
     loftShapes,
     text,
     resetView,
-    visualizeGcode,
     visualizeGcodeIncremental,
     getBoundingBox,
     isAssembly,
@@ -649,6 +591,5 @@ export {
   tag,
   text,
   visExport,
-  visualizeGcode,
   visualizeGcodeIncremental,
 };
