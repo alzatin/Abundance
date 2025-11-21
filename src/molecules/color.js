@@ -101,6 +101,13 @@ export default class Color extends Atom {
    */
   compute(inputs) {
     const color = Object.values(this.colorOptions)[this.selectedColorIndex];
+    
+    // Set the color output value so anything connected to it gets the hex color
+    // This is required for Keep Out tagging in tags.ts, which checks for "#D9544D"
+    if (this.output) {
+      this.output.value = color;
+    }
+    
     return GlobalVariables.cad.color(inputs.geometry, color);
   }
 
@@ -170,13 +177,48 @@ export default class Color extends Atom {
   }
 
   /**
+   * Override setValues to handle backwards compatibility with old selectedColorIndex format
+   */
+  setValues(values) {
+    // Call parent setValues first to set all properties
+    super.setValues(values);
+
+    // Handle backwards compatibility for color selection
+    // Prefer the new selectedColor format over the old selectedColorIndex
+    if (values.selectedColor !== undefined) {
+      // New format: selectedColor contains the color name (e.g., "Orange", "Keep Out", "Glass")
+      const colorNames = Object.keys(this.colorOptions);
+      const colorIndex = colorNames.indexOf(values.selectedColor);
+      
+      if (colorIndex !== -1) {
+        // Found the color name in our options - override any selectedColorIndex that was set
+        this.selectedColorIndex = colorIndex;
+      } else {
+        // Color name not found, default to first color
+        console.warn(`Color "${values.selectedColor}" not found in colorOptions, defaulting to first color`);
+        this.selectedColorIndex = 0;
+      }
+    } else if (this.selectedColorIndex !== undefined) {
+      // Old format: selectedColorIndex was already set by super.setValues()
+      // Validate it's within range
+      const maxIndex = Object.keys(this.colorOptions).length - 1;
+      if (this.selectedColorIndex < 0 || this.selectedColorIndex > maxIndex) {
+        console.warn(`Invalid selectedColorIndex ${this.selectedColorIndex}, defaulting to 0`);
+        this.selectedColorIndex = 0;
+      }
+    }
+  }
+
+  /**
    * Add the color choice to the object which is saved for this molecule
    */
   serialize(offset = { x: 0, y: 0 }) {
     var superSerialObject = super.serialize(offset);
 
-    //Write the current color selection to the serialized object
-    superSerialObject.selectedColorIndex = this.selectedColorIndex;
+    // Save the color name (e.g., "Orange", "Keep Out", "Glass") instead of the index or hex value
+    // This allows for special materials and enables changing hex values later without breaking saved files
+    const selectedColorName = Object.keys(this.colorOptions)[this.selectedColorIndex];
+    superSerialObject.selectedColor = selectedColorName;
 
     return superSerialObject;
   }
