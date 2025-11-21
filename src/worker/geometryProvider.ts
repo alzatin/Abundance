@@ -12,8 +12,10 @@ import {
   putShape,
   deleteProjectCache,
   shapeExists,
-  deleteShape,
   getAllProjectIds,
+  sweep,
+  filter,
+  StoredGeometryRecord,
 } from "./indexeddbUtils";
 
 type ReplicadObject = replicad.Shape3D | replicad.Drawing | replicad.Wire;
@@ -178,7 +180,11 @@ class GeometryProvider {
     const shape = await getShape(context.project, id);
     if (shape == undefined) {
       console.trace("Cache miss for id:", id);
-      throw new Error(`Geometry with ID ${id} not found in cache, context: ${JSON.stringify(context)}`);
+      throw new Error(
+        `Geometry with ID ${id} not found in cache, context: ${JSON.stringify(
+          context
+        )}`
+      );
     }
     let result = undefined;
     try {
@@ -210,6 +216,46 @@ class GeometryProvider {
     this.projectLRU = this.projectLRU.filter((id) => id !== context.project);
     await deleteProjectCache(context.project);
     return true;
+  }
+
+  /**
+   * In the given context, removes all saved geometries except those which are
+   * in the provided set of IDs to retain.
+   */
+  async sweepCache(
+    idsToRetain: Set<string>,
+    context: RequestContext
+  ): Promise<number> {
+    return await filter(
+      context.project,
+      (shapeKey: string, value: StoredGeometryRecord) => {
+        if (value.type === "AbundanceObject") {
+          try {
+            // Retain batch operation results only if all of their constituent geometries are in
+            // the retain set. This may lead to retaining some stale batch results but is accurate
+            // enough to help reduce cache size.
+            const assembly = JSON.parse(value.serialized) as AbundanceObject;
+            let retain = true;
+            for (const leaf of flattenAssembly(assembly)) {
+              if (!idsToRetain.has(leaf.geometry)) {
+                retain = false;
+                break;
+              }
+            }
+            return retain;
+          } catch (e) {
+            console.error(
+              "Failed to parse AbundanceObject during sweep for key:",
+              shapeKey,
+              e
+            );
+            return true;
+          }
+        } else {
+          return idsToRetain.has(shapeKey);
+        }
+      }
+    );
   }
 
   /**

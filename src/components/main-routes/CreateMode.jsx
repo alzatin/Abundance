@@ -574,7 +574,6 @@ function CreateMode() {
         });
 
         console.warn("Project saved on git and aws updated");
-        setSaveProgress(100);
       }
     } catch (error) {
       console.error("Error during commit creation:", error);
@@ -935,6 +934,17 @@ function CreateMode() {
         setSaveProgress,
         typeSave
       );
+
+
+      if (typeSave !== "Auto Save") {
+        const geomIds = GlobalVariables.topLevelMolecule.deepGeomList();
+        // TODO: do we need to await here? I want there to be some indication of the ongoing work.
+        const deleteCount = await GlobalVariables.cad.sweepCache(geomIds, GlobalVariables.topLevelMolecule.getContext());
+        console.log("cache sweep complete, removed: " + deleteCount + " items");
+      }
+
+      setSaveProgress(100);
+
     } catch (error) {
       console.error("Error during project save:", error);
 

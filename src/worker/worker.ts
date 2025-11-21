@@ -31,7 +31,6 @@ import * as util from "./util";
 // --- Type Definitions ---
 const started: Promise<boolean> = util.init();
 
-
 /**
  * Deletes a geometry from the library.
  * @param inputID - The library ID to delete.
@@ -444,7 +443,6 @@ let colorOptions = {
   "Keep Out": "#E0E0E0",
 };
 
-
 /**
  * Resets the view by returning an empty array.
  * @returns {Promise<Array>} A promise that resolves to an empty array
@@ -458,6 +456,23 @@ function resetView() {
 async function clearCache(context: RequestContext): Promise<boolean> {
   await started;
   return util.geometryProvider!.clearCache(context);
+}
+
+async function sweepCache(
+  shapesToRetain: Set<AbundanceObject>,
+  context: RequestContext
+): Promise<number> {
+  await started;
+
+  // Filter down to the set of distinct geometry ids from the given abundance objects
+  let idsToRetainSet = new Set<string>();
+  for (let abundanceObj of shapesToRetain) {
+    for (let leaf of await util.flattenAssembly(abundanceObj)) {
+      idsToRetainSet.add(leaf.geometry);
+    }
+  }
+
+  return util.geometryProvider!.sweepCache(idsToRetainSet, context);
 }
 
 if (
@@ -505,6 +520,7 @@ if (
     getBoundingBox,
     isAssembly,
     extractParts,
+    sweepCache,
   });
 }
 
@@ -543,6 +559,7 @@ export {
   scale,
   shrinkWrapSketches,
   started,
+  sweepCache,
   tag,
   text,
   visExport,

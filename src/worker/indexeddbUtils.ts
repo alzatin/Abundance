@@ -152,6 +152,58 @@ export async function shapeExists(
   });
 }
 
+/**
+ * Filter entries in a project based on the given predicate. If predicate returns false, the entry will
+ * be deleted.
+ *
+ * @param projectId
+ * @param predicate function which takes the shapeKey and a serialized value. Return true to retain
+ *     this entry, false to delete
+ * @returns
+ */
+export async function filter(
+  projectId: string,
+  predicate: (shapeKey: string, value: StoredGeometryRecord) => boolean
+): Promise<number> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    const index = store.index("projectId");
+    const request = index.openCursor(IDBKeyRange.only(projectId));
+
+    let deletedCount = 0;
+    let retained = 0;
+    request.onsuccess = (event) => {
+      const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+      if (cursor) {
+        const entryKey = cursor.primaryKey as [string, string];
+        const retain = predicate(
+          entryKey[1],
+          cursor.value as StoredGeometryRecord
+        );
+        if (!retain) {
+          cursor.delete();
+          deletedCount++;
+        } else {
+          retained++;
+        }
+        cursor.continue();
+      } else {
+        console.debug(
+          `Deleted ${deletedCount} shapes from project ${projectId}. retained ${retained}`
+        );
+        db.close();
+        resolve(deletedCount);
+      }
+    };
+    request.onerror = () => {
+      db.close();
+      reject(request.error);
+    };
+  });
+}
+
 export async function deleteProjectCache(projectId: string): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -163,7 +215,7 @@ export async function deleteProjectCache(projectId: string): Promise<void> {
     request.onsuccess = (event) => {
       const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
       if (cursor) {
-        store.delete(cursor.primaryKey as [string, string]);
+        cursor.delete();
         cursor.continue();
       } else {
         db.close();
