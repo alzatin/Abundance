@@ -103,6 +103,7 @@ export default class Color extends Atom {
     const color = Object.values(this.colorOptions)[this.selectedColorIndex];
     
     // Set the color output value so anything connected to it gets the hex color
+    // This is required for Keep Out tagging in tags.ts, which checks for "#D9544D"
     if (this.output) {
       this.output.value = color;
     }
