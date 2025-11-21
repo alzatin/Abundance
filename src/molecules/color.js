@@ -170,13 +170,46 @@ export default class Color extends Atom {
   }
 
   /**
+   * Override setValues to handle backwards compatibility with old selectedColorIndex format
+   */
+  setValues(values) {
+    // Call parent setValues first
+    super.setValues(values);
+
+    // Handle backwards compatibility for color selection
+    if (values.selectedColor !== undefined) {
+      // New format: selectedColor contains the actual hex color value
+      const colorValues = Object.values(this.colorOptions);
+      const colorIndex = colorValues.indexOf(values.selectedColor);
+      
+      if (colorIndex !== -1) {
+        // Found the color in our options
+        this.selectedColorIndex = colorIndex;
+      } else {
+        // Color not found, default to first color
+        console.warn(`Color ${values.selectedColor} not found in colorOptions, defaulting to first color`);
+        this.selectedColorIndex = 0;
+      }
+    } else if (values.selectedColorIndex !== undefined) {
+      // Old format: selectedColorIndex is already set by super.setValues()
+      // Just ensure it's within valid range
+      const maxIndex = Object.keys(this.colorOptions).length - 1;
+      if (this.selectedColorIndex < 0 || this.selectedColorIndex > maxIndex) {
+        console.warn(`Invalid selectedColorIndex ${this.selectedColorIndex}, defaulting to 0`);
+        this.selectedColorIndex = 0;
+      }
+    }
+  }
+
+  /**
    * Add the color choice to the object which is saved for this molecule
    */
   serialize(offset = { x: 0, y: 0 }) {
     var superSerialObject = super.serialize(offset);
 
-    //Write the current color selection to the serialized object
-    superSerialObject.selectedColorIndex = this.selectedColorIndex;
+    // Save the actual color value instead of the index for resilience to color list reordering
+    const selectedColor = Object.values(this.colorOptions)[this.selectedColorIndex];
+    superSerialObject.selectedColor = selectedColor;
 
     return superSerialObject;
   }
