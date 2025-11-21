@@ -349,11 +349,11 @@ async function visualizeGcodeIncremental(
 ): Promise<AbundanceObject> {
   const wires: replicad.Wire[] = [];
   
+  // Maintain position across all parts to avoid phantom lines back to origin
+  let currentPosition: [number, number, number] = [0, 0, 0];
+  
   // Process each gcode part separately to create individual wires
   for (const gcode of gcodeArray) {
-    // Reset position for each part - each part in an assembly has its own coordinate system
-    // and the gcode generator outputs absolute coordinates for each part independently
-    let currentPosition: [number, number, number] = [0, 0, 0];
     let edges: Edge[] = [];
     
     // Split the gcode into lines
