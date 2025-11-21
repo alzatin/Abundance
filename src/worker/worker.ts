@@ -337,6 +337,103 @@ async function visualizeGcode(
 }
 
 /**
+ * Visualize gcode incrementally by processing individual parts and assembling wires
+ * instead of assembling all edges at once. This is more efficient for projects with many parts.
+ * @param gcodeArray - Array of individual gcode strings for each part
+ * @param context - Request context for caching
+ * @returns Promise<AbundanceObject> - The assembled visualization
+ */
+async function visualizeGcodeIncremental(
+  gcodeArray: string[],
+  context: RequestContext
+): Promise<AbundanceObject> {
+  const wires: replicad.Wire[] = [];
+  
+  // Process each gcode part separately to create individual wires
+  for (const gcode of gcodeArray) {
+    let currentPosition: [number, number, number] = [0, 0, 0];
+    let edges: Edge[] = [];
+    
+    // Split the gcode into lines
+    const lines = gcode.split("\n");
+    lines.forEach((line) => {
+      // Normalize line: trim whitespace and uppercase for robust matching
+      const cmd = line.trim().toUpperCase();
+      // Only process lines that start with G0 or G1
+      if (cmd.startsWith("G0") || cmd.startsWith("G1")) {
+        // Parse the line for X, Y, Z values
+        const xMatch = cmd.match(/X([\d.-]+)/);
+        const yMatch = cmd.match(/Y([\d.-]+)/);
+        const zMatch = cmd.match(/Z([\d.-]+)/);
+
+        // Update coordinates if found, otherwise keep the previous value
+        let x = xMatch ? Number(xMatch[1]) : currentPosition[0];
+        let y = yMatch ? Number(yMatch[1]) : currentPosition[1];
+        let z = zMatch ? Number(zMatch[1]) : currentPosition[2];
+
+        // Lower threshold to capture all movements
+        const threshold = 0.001; // Accept nearly all movements
+        if (
+          Math.abs(x - currentPosition[0]) < threshold &&
+          Math.abs(y - currentPosition[1]) < threshold &&
+          Math.abs(z - currentPosition[2]) < threshold
+        ) {
+          return; // Skip truly negligible movements
+        }
+
+        // Create a line from the current position to the new position
+        edges.push(util.replicad.makeLine(currentPosition, [x, y, z]));
+
+        currentPosition = [x, y, z];
+      }
+    });
+    
+    // Create a wire from the edges for this part
+    if (edges.length > 0) {
+      const wire = util.replicad.assembleWire(edges);
+      wires.push(wire);
+    }
+  }
+  
+  // Now assemble the wires together instead of assembling all edges
+  let finalWire: replicad.Wire;
+  if (wires.length === 0) {
+    // No wires to assemble - this will throw, but matches original behavior
+    // If all gcode parts are empty, assembleWire will fail
+    finalWire = util.replicad.assembleWire([]);
+  } else if (wires.length === 1) {
+    // Only one wire, use it directly
+    finalWire = wires[0];
+  } else {
+    // Multiple wires - combine them using assembleWire
+    // We need to convert wires to edges for assembly
+    const allEdges: Edge[] = [];
+    for (const wire of wires) {
+      const wireEdges = wire.edges;
+      allEdges.push(...wireEdges);
+    }
+    finalWire = util.replicad.assembleWire(allEdges);
+  }
+  
+  // Create a unique hash for the array of gcode strings
+  const combinedHash = util.hashString(gcodeArray.join("|||"));
+  
+  return {
+    geometry: await util.geometryProvider!.addSingularToCache(
+      finalWire,
+      context,
+      "gcode-vis-incremental",
+      [combinedHash]
+    ),
+    tags: [],
+    plane: util.XYPlane,
+    color: util.defaultColor,
+    bom: [],
+    dimension: "3D",
+  };
+}
+
+/**
  * Creates a pretty projection of a 3D shape for thumbnail generation.
  * @param {Object} shape - The 3D shape to create a projection from
  * @returns {Object} An object containing visible and hidden projection lines
@@ -502,6 +599,7 @@ if (
     text,
     resetView,
     visualizeGcode,
+    visualizeGcodeIncremental,
     getBoundingBox,
     isAssembly,
     extractParts,
@@ -547,4 +645,5 @@ export {
   text,
   visExport,
   visualizeGcode,
+  visualizeGcodeIncremental,
 };
