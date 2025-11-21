@@ -340,6 +340,9 @@ async function visualizeGcodeIncremental(
   
   // Now assemble ALL edges into a single wire
   // This works because we maintained position continuity across all parts
+  if (allEdges.length === 0) {
+    throw new Error("No valid gcode movements found to visualize");
+  }
   const finalWire = util.replicad.assembleWire(allEdges);
   
   // Create a unique hash for the array of gcode strings
