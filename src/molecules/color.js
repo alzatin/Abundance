@@ -101,6 +101,12 @@ export default class Color extends Atom {
    */
   compute(inputs) {
     const color = Object.values(this.colorOptions)[this.selectedColorIndex];
+    
+    // Set the color output value so anything connected to it gets the hex color
+    if (this.output) {
+      this.output.value = color;
+    }
+    
     return GlobalVariables.cad.color(inputs.geometry, color);
   }
 
