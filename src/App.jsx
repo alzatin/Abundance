@@ -72,6 +72,7 @@ function AppContent() {
     setTopLevelWireMesh,
     setPlane,
     setGeometryType,
+    setIsViewingOutputMesh,
   } = useRendering();
 
   const {
@@ -232,6 +233,13 @@ function AppContent() {
               });
           });
         }
+        // We're showing wireframe background
+        // Check if we're also viewing this as the main mesh
+        if (targetMesh.current && JSON.stringify(targetMesh.current) === JSON.stringify(moleculeValue)) {
+          setIsViewingOutputMesh(true);
+        } else {
+          setIsViewingOutputMesh(false);
+        }
       }
 
       else {
@@ -243,9 +251,17 @@ function AppContent() {
           setOutdatedMesh(false);
           setPlane(targetMesh.current?.plane);
           setGeometryType(targetMesh.current?.dimension);
+          // We're viewing the output mesh directly, hide the wireframe
+          setIsViewingOutputMesh(true);
         } else {
           // General case - generate the mesh for selected atom
           makeMesh();
+          // Check if we're viewing the same geometry as the wireframe
+          if (backgroundMesh.current?.id && JSON.stringify(targetMesh.current) === JSON.stringify(backgroundMesh.current.id)) {
+            setIsViewingOutputMesh(true);
+          } else {
+            setIsViewingOutputMesh(false);
+          }
         }
       }
     }
@@ -259,6 +275,7 @@ function AppContent() {
     setOutdatedMesh,
     setRenderProgress,
     setTopLevelWireMesh,
+    setIsViewingOutputMesh,
   ]);
 
   /**
