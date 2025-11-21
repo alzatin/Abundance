@@ -290,15 +290,16 @@ async function visualizeGcodeIncremental(
   gcodeArray: string[],
   context: RequestContext
 ): Promise<AbundanceObject> {
-  const wires: replicad.Wire[] = [];
-  
   // Maintain position across all parts to avoid phantom lines back to origin
   let currentPosition: [number, number, number] = [0, 0, 0];
   
-  // Process each gcode part separately to create individual wires
+  // Collect ALL edges from ALL parts into a single array
+  // Do NOT create separate wires per part - that causes disconnection issues
+  const allEdges: Edge[] = [];
+  
+  // Process each gcode part separately to create edges
   for (let i = 0; i < gcodeArray.length; i++) {
     const gcode = gcodeArray[i];
-    let edges: Edge[] = [];
     
     // Split the gcode into lines
     const lines = gcode.split("\n");
@@ -328,48 +329,18 @@ async function visualizeGcodeIncremental(
         }
 
         // Create a line from the current position to the new position
-        edges.push(util.replicad.makeLine(currentPosition, [x, y, z]));
+        allEdges.push(util.replicad.makeLine(currentPosition, [x, y, z]));
 
         currentPosition = [x, y, z];
       }
     });
-    
-    // Create a wire from the edges for this part
-    if (edges.length > 0) {
-      try {
-        const wire = util.replicad.assembleWire(edges);
-        wires.push(wire);
-      } catch (err) {
-        console.warn(`Failed to assemble wire for part ${i + 1}:`, err);
-        // Continue processing other parts even if one fails
-      }
-    }
   }
   
-  console.log(`Processed ${wires.length} wires out of ${gcodeArray.length} gcode parts`);
+  console.log(`Processed ${allEdges.length} edges from ${gcodeArray.length} gcode parts`);
   
-  // Now assemble the wires together instead of assembling all edges
-  let finalWire: replicad.Wire;
-  if (wires.length === 0) {
-    // No wires to assemble - this will throw, but matches original behavior
-    // If all gcode parts are empty, assembleWire will fail
-    finalWire = util.replicad.assembleWire([]);
-  } else if (wires.length === 1) {
-    // Only one wire, use it directly
-    finalWire = wires[0];
-  } else {
-    // Multiple wires - combine them using assembleWire
-    // Note: We extract edges from wires and reassemble because replicad doesn't provide
-    // a direct wire fusion operation. This still provides performance benefits because
-    // each wire is pre-assembled from fewer edges, reducing the computational complexity
-    // compared to assembling all edges at once from a concatenated gcode string.
-    const allEdges: Edge[] = [];
-    for (const wire of wires) {
-      const wireEdges = wire.edges;
-      allEdges.push(...wireEdges);
-    }
-    finalWire = util.replicad.assembleWire(allEdges);
-  }
+  // Now assemble ALL edges into a single wire
+  // This works because we maintained position continuity across all parts
+  const finalWire = util.replicad.assembleWire(allEdges);
   
   // Create a unique hash for the array of gcode strings
   const combinedHash = util.hashString(gcodeArray.join("|||"));
