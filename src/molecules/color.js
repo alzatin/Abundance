@@ -173,26 +173,27 @@ export default class Color extends Atom {
    * Override setValues to handle backwards compatibility with old selectedColorIndex format
    */
   setValues(values) {
-    // Call parent setValues first
+    // Call parent setValues first to set all properties
     super.setValues(values);
 
     // Handle backwards compatibility for color selection
+    // Prefer the new selectedColor format over the old selectedColorIndex
     if (values.selectedColor !== undefined) {
       // New format: selectedColor contains the actual hex color value
       const colorValues = Object.values(this.colorOptions);
       const colorIndex = colorValues.indexOf(values.selectedColor);
       
       if (colorIndex !== -1) {
-        // Found the color in our options
+        // Found the color in our options - override any selectedColorIndex that was set
         this.selectedColorIndex = colorIndex;
       } else {
         // Color not found, default to first color
         console.warn(`Color ${values.selectedColor} not found in colorOptions, defaulting to first color`);
         this.selectedColorIndex = 0;
       }
-    } else if (values.selectedColorIndex !== undefined) {
-      // Old format: selectedColorIndex is already set by super.setValues()
-      // Just ensure it's within valid range
+    } else if (this.selectedColorIndex !== undefined) {
+      // Old format: selectedColorIndex was already set by super.setValues()
+      // Validate it's within range
       const maxIndex = Object.keys(this.colorOptions).length - 1;
       if (this.selectedColorIndex < 0 || this.selectedColorIndex > maxIndex) {
         console.warn(`Invalid selectedColorIndex ${this.selectedColorIndex}, defaulting to 0`);
