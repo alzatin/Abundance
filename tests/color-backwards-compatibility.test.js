@@ -3,7 +3,7 @@
  * 
  * This test demonstrates that:
  * 1. Old files with selectedColorIndex can still be loaded
- * 2. New files save with selectedColor for resilience
+ * 2. New files save with selectedColor (color name) for resilience
  * 3. The fix prevents issues when color list is reordered
  */
 
@@ -30,8 +30,8 @@ describe("Color atom backwards compatibility integration", () => {
     setValues(values) {
       // New format takes precedence
       if (values.selectedColor !== undefined) {
-        const colorValues = Object.values(this.colorOptions);
-        const colorIndex = colorValues.indexOf(values.selectedColor);
+        const colorNames = Object.keys(this.colorOptions);
+        const colorIndex = colorNames.indexOf(values.selectedColor);
         this.selectedColorIndex = colorIndex !== -1 ? colorIndex : 0;
       } else if (values.selectedColorIndex !== undefined) {
         this.selectedColorIndex = values.selectedColorIndex;
@@ -43,18 +43,22 @@ describe("Color atom backwards compatibility integration", () => {
     }
 
     serialize() {
-      const selectedColor = Object.values(this.colorOptions)[this.selectedColorIndex];
+      const selectedColorName = Object.keys(this.colorOptions)[this.selectedColorIndex];
       return {
         atomType: "Color",
         x: 0.5,
         y: 0.5,
         uniqueID: "color-123",
-        selectedColor: selectedColor,
+        selectedColor: selectedColorName,
       };
     }
 
     getSelectedColor() {
       return Object.values(this.colorOptions)[this.selectedColorIndex];
+    }
+    
+    getSelectedColorName() {
+      return Object.keys(this.colorOptions)[this.selectedColorIndex];
     }
   }
 
@@ -84,14 +88,14 @@ describe("Color atom backwards compatibility integration", () => {
   });
 
   describe("Scenario: Saving new project file", () => {
-    it("should save with selectedColor instead of selectedColorIndex", () => {
+    it("should save with selectedColor name instead of selectedColorIndex", () => {
       const colorAtom = new ColorAtom();
       colorAtom.selectedColorIndex = 3; // Yellow
       
       const savedData = colorAtom.serialize();
 
       // Verify new format is used
-      expect(savedData.selectedColor).toBe("#FFD600"); // Yellow hex value
+      expect(savedData.selectedColor).toBe("Yellow"); // Color name
       expect(savedData.selectedColorIndex).toBeUndefined(); // Old format not saved
     });
   });
@@ -103,7 +107,7 @@ describe("Color atom backwards compatibility integration", () => {
       colorAtom1.selectedColorIndex = 2; // Orange at index 2
       const savedData = colorAtom1.serialize();
       
-      expect(savedData.selectedColor).toBe("#FFB458"); // Orange
+      expect(savedData.selectedColor).toBe("Orange"); // Color name
 
       // Step 2: Simulate color list being reordered
       // (In reality, a developer might add/remove colors from the list)
@@ -129,8 +133,9 @@ describe("Color atom backwards compatibility integration", () => {
       colorAtom2.setValues(savedData);
 
       // Verify: Even though Orange is now at index 3 (not 2),
-      // it loads correctly because we saved the hex value
-      expect(colorAtom2.getSelectedColor()).toBe("#FFB458"); // Still Orange!
+      // it loads correctly because we saved the color name
+      expect(colorAtom2.getSelectedColorName()).toBe("Orange"); // Still Orange!
+      expect(colorAtom2.getSelectedColor()).toBe("#FFB458"); // Same hex value
       expect(colorAtom2.selectedColorIndex).toBe(3); // New index for Orange
     });
   });
@@ -144,14 +149,15 @@ describe("Color atom backwards compatibility integration", () => {
         y: 0.5,
         uniqueID: "color-123",
         selectedColorIndex: 1, // Red (old format)
-        selectedColor: "#A3CE5B", // Green (new format)
+        selectedColor: "Green", // Green (new format)
       };
 
       const colorAtom = new ColorAtom();
       colorAtom.setValues(mixedData);
 
       // Should prefer the new format
-      expect(colorAtom.getSelectedColor()).toBe("#A3CE5B"); // Green
+      expect(colorAtom.getSelectedColorName()).toBe("Green");
+      expect(colorAtom.getSelectedColor()).toBe("#A3CE5B"); // Green hex
       expect(colorAtom.selectedColorIndex).toBe(7); // Green's index
     });
   });
@@ -164,20 +170,22 @@ describe("Color atom backwards compatibility integration", () => {
       
       // Save it
       const saved1 = atom1.serialize();
-      expect(saved1.selectedColor).toBe("#C7DF66");
+      expect(saved1.selectedColor).toBe("Olive");
 
       // Load into new atom
       const atom2 = new ColorAtom();
       atom2.setValues(saved1);
+      expect(atom2.getSelectedColorName()).toBe("Olive");
       expect(atom2.getSelectedColor()).toBe("#C7DF66");
 
       // Save again
       const saved2 = atom2.serialize();
-      expect(saved2.selectedColor).toBe("#C7DF66");
+      expect(saved2.selectedColor).toBe("Olive");
 
       // Load into third atom
       const atom3 = new ColorAtom();
       atom3.setValues(saved2);
+      expect(atom3.getSelectedColorName()).toBe("Olive");
       expect(atom3.getSelectedColor()).toBe("#C7DF66");
 
       // All three atoms should have the same color

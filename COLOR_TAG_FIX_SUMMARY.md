@@ -16,15 +16,21 @@ If a developer adds, removes, or reorders colors in the color list, all existing
 
 ## Solution Implemented
 
-Changed to store the actual color hex value instead of the index:
+Changed to store the color name (e.g., "Orange", "Keep Out", "Glass") instead of the index:
 
 ```javascript
 // New format - ROBUST
 {
   "atomType": "Color",
-  "selectedColor": "#FFB458"  // Always Orange, regardless of list order
+  "selectedColor": "Orange"  // Always Orange, regardless of list order
 }
 ```
+
+**Benefits of using color names:**
+- Works correctly with special materials like "Keep Out" and "Glass"
+- Allows changing hex values later without breaking saved files
+- More human-readable than hex values
+- Resilient to color list reordering
 
 ## Technical Implementation
 
@@ -32,7 +38,7 @@ Changed to store the actual color hex value instead of the index:
 
 1. **`src/molecules/color.js`**
    - Added `setValues()` override for backwards compatibility
-   - Modified `serialize()` to save `selectedColor` instead of `selectedColorIndex`
+   - Modified `serialize()` to save color name instead of `selectedColorIndex`
    - Handles both old and new formats gracefully
 
 ### Key Code Changes
@@ -51,10 +57,10 @@ serialize(offset = { x: 0, y: 0 }) {
 setValues(values) {
   super.setValues(values);
   
-  // Prefer new format (selectedColor) over old format (selectedColorIndex)
+  // Prefer new format (selectedColor name) over old format (selectedColorIndex)
   if (values.selectedColor !== undefined) {
-    const colorValues = Object.values(this.colorOptions);
-    const colorIndex = colorValues.indexOf(values.selectedColor);
+    const colorNames = Object.keys(this.colorOptions);
+    const colorIndex = colorNames.indexOf(values.selectedColor);
     this.selectedColorIndex = colorIndex !== -1 ? colorIndex : 0;
   } else if (this.selectedColorIndex !== undefined) {
     // Validate old format
@@ -67,8 +73,8 @@ setValues(values) {
 
 serialize(offset = { x: 0, y: 0 }) {
   var superSerialObject = super.serialize(offset);
-  const selectedColor = Object.values(this.colorOptions)[this.selectedColorIndex];
-  superSerialObject.selectedColor = selectedColor;
+  const selectedColorName = Object.keys(this.colorOptions)[this.selectedColorIndex];
+  superSerialObject.selectedColor = selectedColorName;
   return superSerialObject;
 }
 ```
@@ -100,7 +106,7 @@ serialize(offset = { x: 0, y: 0 }) {
 
 ### Test Results
 ```
-✅ All 11 new tests passing
+✅ All 12 new tests passing
 ✅ All existing tests still passing (417 tests)
 ✅ Build succeeds
 ✅ Security scan: No vulnerabilities
@@ -113,15 +119,18 @@ serialize(offset = { x: 0, y: 0 }) {
 1. User opens old project with `selectedColorIndex`
 2. Project loads correctly (backwards compatibility)
 3. User saves the project
-4. Project now uses `selectedColor` format
+4. Project now uses `selectedColor` (color name) format
 5. Future color list changes won't affect this project
 
 ## Benefits
 
 1. **Robustness:** Color assignments won't break if the color list is modified
 2. **Maintainability:** Developers can freely add/remove/reorder colors
-3. **Future-proof:** No migration scripts needed for existing projects
-4. **Safe:** Backwards compatible, no risk of data loss
+3. **Special materials:** Works correctly with "Keep Out" and "Glass" materials
+4. **Hex value changes:** Allows updating hex values without breaking saved files
+5. **Future-proof:** No migration scripts needed for existing projects
+6. **Safe:** Backwards compatible, no risk of data loss
+7. **Readable:** Color names are more human-readable than hex values
 
 ## Example Scenarios
 
@@ -137,7 +146,7 @@ serialize(offset = { x: 0, y: 0 }) {
 ### Scenario 2: Color List Reordering
 ```javascript
 // Original: Orange at index 2
-// Saved as: { "selectedColor": "#FFB458" }
+// Saved as: { "selectedColor": "Orange" }
 
 // After reordering: Orange now at index 3
 // Still loads as Orange! Index updated automatically.
@@ -147,8 +156,29 @@ serialize(offset = { x: 0, y: 0 }) {
 ```javascript
 // User selects Yellow
 // Old format would save: { "selectedColorIndex": 3 }
-// New format saves: { "selectedColor": "#FFD600" }
+// New format saves: { "selectedColor": "Yellow" }
 // Resilient to future changes!
+```
+
+### Scenario 4: Special Materials
+```javascript
+// User selects "Keep Out" material
+// Saved as: { "selectedColor": "Keep Out" }
+// Works correctly with special material handling
+
+// User selects "Glass" material
+// Saved as: { "selectedColor": "Glass" }
+// Preserves special material semantics
+```
+
+### Scenario 5: Changing Hex Values
+```javascript
+// Developer updates hex value for "Orange"
+// Old: Orange: "#FFB458"
+// New: Orange: "#FFA500"
+
+// All saved files with "Orange" automatically use new hex value
+// No file migration needed!
 ```
 
 ## Verification Completed
@@ -162,4 +192,11 @@ serialize(offset = { x: 0, y: 0 }) {
 
 ## Conclusion
 
-This fix ensures that color tag assignments in Abundance projects are resilient to changes in the color list, while maintaining complete backwards compatibility with existing projects. The implementation is minimal, focused, and thoroughly tested.
+This fix ensures that color tag assignments in Abundance projects are resilient to changes in the color list, while maintaining complete backwards compatibility with existing projects. By storing color names (e.g., "Orange", "Keep Out", "Glass") instead of indices or hex values, the solution:
+
+- Enables special materials like "Keep Out" and "Glass" to work correctly
+- Allows developers to change hex values without breaking saved files
+- Makes saved files more human-readable
+- Prevents color mismatches when the color list is reordered
+
+The implementation is minimal, focused, and thoroughly tested.

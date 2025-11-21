@@ -2,7 +2,7 @@
  * Test for Color atom serialization with backwards compatibility
  * 
  * This test validates that:
- * 1. Color atoms now save the actual color hex value (selectedColor) instead of index
+ * 1. Color atoms now save the color name (e.g., "Orange") instead of index
  * 2. Old files with selectedColorIndex can still be loaded correctly
  * 3. Color selection is resilient to reordering of the color list
  */
@@ -44,11 +44,11 @@ describe("Color atom serialization", () => {
     }
 
     setValues(values) {
-      // Replicate the logic from the actual Color class
+      // Replicate the updated logic from the actual Color class
       if (values.selectedColor !== undefined) {
-        // New format: selectedColor contains the actual hex color value
-        const colorValues = Object.values(this.colorOptions);
-        const colorIndex = colorValues.indexOf(values.selectedColor);
+        // New format: selectedColor contains the color name (e.g., "Orange", "Keep Out")
+        const colorNames = Object.keys(this.colorOptions);
+        const colorIndex = colorNames.indexOf(values.selectedColor);
         
         if (colorIndex !== -1) {
           this.selectedColorIndex = colorIndex;
@@ -66,42 +66,52 @@ describe("Color atom serialization", () => {
     }
 
     serialize() {
-      const selectedColor = Object.values(this.colorOptions)[this.selectedColorIndex];
+      const selectedColorName = Object.keys(this.colorOptions)[this.selectedColorIndex];
       return {
         atomType: "Color",
-        selectedColor: selectedColor,
+        selectedColor: selectedColorName,
       };
     }
   }
 
-  describe("New behavior (using selectedColor)", () => {
-    it("should serialize with actual color value", () => {
+  describe("New behavior (using selectedColor name)", () => {
+    it("should serialize with color name", () => {
       const colorAtom = new MockColor();
       colorAtom.selectedColorIndex = 3; // Yellow
       const serialized = colorAtom.serialize();
       
-      // Should save the actual color
-      expect(serialized.selectedColor).toBe("#FFD600");
+      // Should save the color name
+      expect(serialized.selectedColor).toBe("Yellow");
     });
 
-    it("should restore color from selectedColor value", () => {
+    it("should restore color from selectedColor name", () => {
       const colorAtom = new MockColor();
       const savedData = {
-        selectedColor: "#FFB458", // Orange
+        selectedColor: "Orange",
       };
       
       colorAtom.setValues(savedData);
       
       // Should find the matching color in colorOptions
-      const expectedIndex = Object.values(colorAtom.colorOptions).indexOf("#FFB458");
+      const expectedIndex = Object.keys(colorAtom.colorOptions).indexOf("Orange");
       expect(colorAtom.selectedColorIndex).toBe(expectedIndex);
       expect(colorAtom.selectedColorIndex).toBe(2); // Orange is at index 2
     });
 
-    it("should handle unknown color values gracefully", () => {
+    it("should handle special materials like Glass and Keep Out", () => {
+      const colorAtom1 = new MockColor();
+      colorAtom1.setValues({ selectedColor: "Glass" });
+      expect(colorAtom1.selectedColorIndex).toBe(22); // Glass position
+      
+      const colorAtom2 = new MockColor();
+      colorAtom2.setValues({ selectedColor: "Keep Out" });
+      expect(colorAtom2.selectedColorIndex).toBe(23); // Keep Out position
+    });
+
+    it("should handle unknown color names gracefully", () => {
       const colorAtom = new MockColor();
       const savedData = {
-        selectedColor: "#UNKNOWN", // Unknown color
+        selectedColor: "UnknownColor",
       };
       
       colorAtom.setValues(savedData);
@@ -129,13 +139,13 @@ describe("Color atom serialization", () => {
       const colorAtom = new MockColor();
       const mixedData = {
         selectedColorIndex: 2, // Orange (old format)
-        selectedColor: "#A3CE5B", // Green (new format)
+        selectedColor: "Green", // Green (new format)
       };
       
       colorAtom.setValues(mixedData);
       
       // Should use the new format (selectedColor)
-      const expectedIndex = Object.values(colorAtom.colorOptions).indexOf("#A3CE5B");
+      const expectedIndex = Object.keys(colorAtom.colorOptions).indexOf("Green");
       expect(colorAtom.selectedColorIndex).toBe(expectedIndex);
       expect(colorAtom.selectedColorIndex).toBe(7); // Green is at index 7
     });
@@ -144,19 +154,19 @@ describe("Color atom serialization", () => {
   describe("Color reordering resilience", () => {
     it("should maintain correct color after save/load cycle", () => {
       const colorAtom1 = new MockColor();
-      colorAtom1.selectedColorIndex = 5; // Teal "#71D1C2"
+      colorAtom1.selectedColorIndex = 5; // Teal
       const serialized = colorAtom1.serialize();
       
-      // Verify the serialized data contains the color value
-      expect(serialized.selectedColor).toBe("#71D1C2");
+      // Verify the serialized data contains the color name
+      expect(serialized.selectedColor).toBe("Teal");
       
       // Load into a new instance
       const colorAtom2 = new MockColor();
       colorAtom2.setValues(serialized);
       
       // Should restore to the same color
-      const actualColor = Object.values(colorAtom2.colorOptions)[colorAtom2.selectedColorIndex];
-      expect(actualColor).toBe("#71D1C2");
+      const actualColorName = Object.keys(colorAtom2.colorOptions)[colorAtom2.selectedColorIndex];
+      expect(actualColorName).toBe("Teal");
       expect(colorAtom2.selectedColorIndex).toBe(5);
     });
   });

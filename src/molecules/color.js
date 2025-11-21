@@ -179,16 +179,16 @@ export default class Color extends Atom {
     // Handle backwards compatibility for color selection
     // Prefer the new selectedColor format over the old selectedColorIndex
     if (values.selectedColor !== undefined) {
-      // New format: selectedColor contains the actual hex color value
-      const colorValues = Object.values(this.colorOptions);
-      const colorIndex = colorValues.indexOf(values.selectedColor);
+      // New format: selectedColor contains the color name (e.g., "Orange", "Keep Out", "Glass")
+      const colorNames = Object.keys(this.colorOptions);
+      const colorIndex = colorNames.indexOf(values.selectedColor);
       
       if (colorIndex !== -1) {
-        // Found the color in our options - override any selectedColorIndex that was set
+        // Found the color name in our options - override any selectedColorIndex that was set
         this.selectedColorIndex = colorIndex;
       } else {
-        // Color not found, default to first color
-        console.warn(`Color ${values.selectedColor} not found in colorOptions, defaulting to first color`);
+        // Color name not found, default to first color
+        console.warn(`Color "${values.selectedColor}" not found in colorOptions, defaulting to first color`);
         this.selectedColorIndex = 0;
       }
     } else if (this.selectedColorIndex !== undefined) {
@@ -208,9 +208,10 @@ export default class Color extends Atom {
   serialize(offset = { x: 0, y: 0 }) {
     var superSerialObject = super.serialize(offset);
 
-    // Save the actual color value instead of the index for resilience to color list reordering
-    const selectedColor = Object.values(this.colorOptions)[this.selectedColorIndex];
-    superSerialObject.selectedColor = selectedColor;
+    // Save the color name (e.g., "Orange", "Keep Out", "Glass") instead of the index or hex value
+    // This allows for special materials and enables changing hex values later without breaking saved files
+    const selectedColorName = Object.keys(this.colorOptions)[this.selectedColorIndex];
+    superSerialObject.selectedColor = selectedColorName;
 
     return superSerialObject;
   }
