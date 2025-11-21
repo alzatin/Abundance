@@ -13,8 +13,7 @@ import {
   deleteProjectCache,
   shapeExists,
   getAllProjectIds,
-  sweep,
-  filter,
+  filterKeys,
   StoredGeometryRecord,
 } from "./indexeddbUtils";
 
@@ -226,36 +225,12 @@ class GeometryProvider {
     idsToRetain: Set<string>,
     context: RequestContext
   ): Promise<number> {
-    return await filter(
-      context.project,
-      (shapeKey: string, value: StoredGeometryRecord) => {
-        if (value.type === "AbundanceObject") {
-          try {
-            // Retain batch operation results only if all of their constituent geometries are in
-            // the retain set. This may lead to retaining some stale batch results but is accurate
-            // enough to help reduce cache size.
-            const assembly = JSON.parse(value.serialized) as AbundanceObject;
-            let retain = true;
-            for (const leaf of flattenAssembly(assembly)) {
-              if (!idsToRetain.has(leaf.geometry)) {
-                retain = false;
-                break;
-              }
-            }
-            return retain;
-          } catch (e) {
-            console.error(
-              "Failed to parse AbundanceObject during sweep for key:",
-              shapeKey,
-              e
-            );
-            return true;
-          }
-        } else {
-          return idsToRetain.has(shapeKey);
-        }
-      }
-    );
+    return await filterKeys(context.project, (shapeKey: string) => {
+      // TODO: improve this by making "type" part of the key schema and for all
+      // AbundanceObject types retain them only if all of their geometries are in the
+      // idsToRetain set.
+      return idsToRetain.has(shapeKey);
+    });
   }
 
   /**

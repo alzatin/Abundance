@@ -938,9 +938,12 @@ function CreateMode() {
 
       if (typeSave !== "Auto Save") {
         const geomIds = GlobalVariables.topLevelMolecule.deepGeomList();
-        // TODO: do we need to await here? I want there to be some indication of the ongoing work.
-        const deleteCount = await GlobalVariables.cad.sweepCache(geomIds, GlobalVariables.topLevelMolecule.getContext());
-        console.log("cache sweep complete, removed: " + deleteCount + " items");
+        GlobalVariables.cad.sweepCache(geomIds, GlobalVariables.topLevelMolecule.getContext())
+          .then((count) => {
+            console.log("cache sweep complete, removed: " + count + " items");
+          }).catch((error) => {
+            console.error("Error during cache sweep:", error);
+          });
       }
 
       setSaveProgress(100);

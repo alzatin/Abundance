@@ -161,16 +161,20 @@ export async function shapeExists(
  *     this entry, false to delete
  * @returns
  */
-export async function filter(
+export async function filterKeys(
   projectId: string,
-  predicate: (shapeKey: string, value: StoredGeometryRecord) => boolean
+  predicate: (shapeKey: string) => boolean
 ): Promise<number> {
+  const startTime = performance.now();
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
     const index = store.index("projectId");
-    const request = index.openCursor(IDBKeyRange.only(projectId));
+    // Performance note: using openKeyCursor is more efficient than openCursor when we only need keys
+    // Empirically, similar batch deletes using openCursor and cursor.delete took about 4x longer.
+    // This is likely due to the large size of our serialized data blobs.
+    const request = index.openKeyCursor(IDBKeyRange.only(projectId));
 
     let deletedCount = 0;
     let retained = 0;
@@ -178,12 +182,9 @@ export async function filter(
       const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
       if (cursor) {
         const entryKey = cursor.primaryKey as [string, string];
-        const retain = predicate(
-          entryKey[1],
-          cursor.value as StoredGeometryRecord
-        );
+        const retain = predicate(entryKey[1]);
         if (!retain) {
-          cursor.delete();
+          store.delete(cursor.primaryKey as [string, string]);
           deletedCount++;
         } else {
           retained++;
@@ -191,7 +192,9 @@ export async function filter(
         cursor.continue();
       } else {
         console.debug(
-          `Deleted ${deletedCount} shapes from project ${projectId}. retained ${retained}`
+          `Deleted ${deletedCount} shapes from project ${projectId}. retained ${retained}. took ${
+            performance.now() - startTime
+          } ms.`
         );
         db.close();
         resolve(deletedCount);
