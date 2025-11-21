@@ -167,7 +167,7 @@ export default class Gcode extends Atom {
       this.gcodeGenerated = true;
       this.progress = 1.0; // Complete progress
       this.setReady(
-        GlobalVariables.cad.visualizeGcode(gcode, this.getContext())
+        GlobalVariables.cad.visualizeGcodeIncremental([gcode], this.getContext())
       );
     };
   }
