@@ -296,7 +296,8 @@ async function visualizeGcodeIncremental(
   let currentPosition: [number, number, number] = [0, 0, 0];
   
   // Process each gcode part separately to create individual wires
-  for (const gcode of gcodeArray) {
+  for (let i = 0; i < gcodeArray.length; i++) {
+    const gcode = gcodeArray[i];
     let edges: Edge[] = [];
     
     // Split the gcode into lines
@@ -335,10 +336,17 @@ async function visualizeGcodeIncremental(
     
     // Create a wire from the edges for this part
     if (edges.length > 0) {
-      const wire = util.replicad.assembleWire(edges);
-      wires.push(wire);
+      try {
+        const wire = util.replicad.assembleWire(edges);
+        wires.push(wire);
+      } catch (err) {
+        console.warn(`Failed to assemble wire for part ${i + 1}:`, err);
+        // Continue processing other parts even if one fails
+      }
     }
   }
+  
+  console.log(`Processed ${wires.length} wires out of ${gcodeArray.length} gcode parts`);
   
   // Now assemble the wires together instead of assembling all edges
   let finalWire: replicad.Wire;
