@@ -101,6 +101,12 @@ export default class Color extends Atom {
    */
   compute(inputs) {
     const color = Object.values(this.colorOptions)[this.selectedColorIndex];
+    const colorName = Object.keys(this.colorOptions)[this.selectedColorIndex];
+    
+    // Log for debugging Keep Out color issue
+    if (colorName === "Keep Out") {
+      console.log(`[Color atom] Keep Out selected - applying color: ${color}`);
+    }
     
     // Set the color output value so anything connected to it gets the hex color
     // This is required for Keep Out tagging in tags.ts, which checks for "#D9544D"
