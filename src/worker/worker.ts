@@ -351,6 +351,8 @@ async function visualizeGcodeIncremental(
   
   // Process each gcode part separately to create individual wires
   for (const gcode of gcodeArray) {
+    // Reset position for each part - each part in an assembly has its own coordinate system
+    // and the gcode generator outputs absolute coordinates for each part independently
     let currentPosition: [number, number, number] = [0, 0, 0];
     let edges: Edge[] = [];
     
@@ -406,7 +408,10 @@ async function visualizeGcodeIncremental(
     finalWire = wires[0];
   } else {
     // Multiple wires - combine them using assembleWire
-    // We need to convert wires to edges for assembly
+    // Note: We extract edges from wires and reassemble because replicad doesn't provide
+    // a direct wire fusion operation. This still provides performance benefits because
+    // each wire is pre-assembled from fewer edges, reducing the computational complexity
+    // compared to assembling all edges at once from a concatenated gcode string.
     const allEdges: Edge[] = [];
     for (const wire of wires) {
       const wireEdges = wire.edges;

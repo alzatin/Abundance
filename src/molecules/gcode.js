@@ -423,36 +423,50 @@ export default class Gcode extends Atom {
     this.gcodeString = this._concatenateGcode(allGcode);
     this.gcodeGenerated = true;
 
-    // Performance comparison: test both methods
-    console.log(`\n=== Performance Comparison for ${allGcode.length} parts ===`);
+    // In development mode, compare both methods for performance analysis
+    const isDevelopment = import.meta.env?.DEV || false;
     
-    // Method 1: Original - concatenate all and visualize at once
-    const startOriginal = performance.now();
-    const gcodeWireOriginal = await GlobalVariables.cad.visualizeGcode(
-      this.gcodeString,
-      this.getContext()
-    );
-    const timeOriginal = performance.now() - startOriginal;
-    console.log(`Original method (concatenate then visualize): ${timeOriginal.toFixed(2)}ms`);
+    if (isDevelopment && allGcode.length > 1) {
+      // Performance comparison: test both methods (dev mode only)
+      console.log(`\n=== Performance Comparison for ${allGcode.length} parts ===`);
+      
+      // Method 1: Original - concatenate all and visualize at once
+      const startOriginal = performance.now();
+      const gcodeWireOriginal = await GlobalVariables.cad.visualizeGcode(
+        this.gcodeString,
+        this.getContext()
+      );
+      const timeOriginal = performance.now() - startOriginal;
+      console.log(`Original method (concatenate then visualize): ${timeOriginal.toFixed(2)}ms`);
 
-    // Method 2: Incremental - visualize each part separately
-    const startIncremental = performance.now();
-    const gcodeWireIncremental = await GlobalVariables.cad.visualizeGcodeIncremental(
-      allGcode,
-      this.getContext()
-    );
-    const timeIncremental = performance.now() - startIncremental;
-    console.log(`Incremental method (visualize parts separately): ${timeIncremental.toFixed(2)}ms`);
-    
-    // Calculate improvement
-    const improvement = ((timeOriginal - timeIncremental) / timeOriginal * 100);
-    console.log(`Performance improvement: ${improvement.toFixed(1)}% ${improvement > 0 ? 'faster' : 'slower'}`);
-    console.log(`Time saved: ${(timeOriginal - timeIncremental).toFixed(2)}ms\n`);
+      // Method 2: Incremental - visualize each part separately
+      const startIncremental = performance.now();
+      const gcodeWireIncremental = await GlobalVariables.cad.visualizeGcodeIncremental(
+        allGcode,
+        this.getContext()
+      );
+      const timeIncremental = performance.now() - startIncremental;
+      console.log(`Incremental method (visualize parts separately): ${timeIncremental.toFixed(2)}ms`);
+      
+      // Calculate improvement
+      const improvement = ((timeOriginal - timeIncremental) / timeOriginal * 100);
+      console.log(`Performance improvement: ${improvement.toFixed(1)}% ${improvement > 0 ? 'faster' : 'slower'}`);
+      console.log(`Time saved: ${(timeOriginal - timeIncremental).toFixed(2)}ms\n`);
 
-    // Use the incremental method result (the faster one)
-    this.setReady(gcodeWireIncremental);
-    this.progress = 1.0;
-    return gcodeWireIncremental;
+      // Use the incremental method result (the faster one)
+      this.setReady(gcodeWireIncremental);
+      this.progress = 1.0;
+      return gcodeWireIncremental;
+    } else {
+      // Production mode: use only the incremental method
+      const gcodeWire = await GlobalVariables.cad.visualizeGcodeIncremental(
+        allGcode,
+        this.getContext()
+      );
+      this.setReady(gcodeWire);
+      this.progress = 1.0;
+      return gcodeWire;
+    }
   }
 
   /**
