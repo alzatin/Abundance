@@ -227,85 +227,8 @@ export async function filter(
   });
 }
 
-/**
- * Filter entries in a project based on the given predicate. If predicate returns false, the entry will
- * be deleted. Unlike FilterKeys, the entry value will be provided to the predicate in this method.
- * FilterKeys is substantially faster than this method and should be preferred whenever possible.
- *
- * @param projectId
- * @param predicate function which takes the shapeKey and a serialized value. Return true to retain
- *     this entry, false to delete
- * @returns
- */
-export async function filterKV(
-  projectId: string,
-  type: DataType,
-  predicate: (shapeKey: string, value: StoredGeometryRecord) => boolean
-): Promise<number> {
-  const startTime = performance.now();
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
-    const index = store.index("projectIdAndType");
-    // Performance note: using openKeyCursor is more efficient than openCursor when we only need keys
-    // Empirically, similar batch deletes using openCursor and cursor.delete took about 4x longer.
-    // This is likely due to the large size of our serialized data blobs.
-    const request = index.openKeyCursor(IDBKeyRange.only([projectId, type]));
-
-    let deletedCount = 0;
-    let retained = 0;
-    request.onsuccess = (event) => {
-      const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-      if (cursor) {
-        const entryKey = cursor.primaryKey as [string, string];
-        const retain = predicate(entryKey[1]);
-        if (!retain) {
-          store.delete(cursor.primaryKey as [string, string]);
-          deletedCount++;
-        } else {
-          retained++;
-        }
-        cursor.continue();
-      } else {
-        console.debug(
-          `Deleted ${deletedCount} shapes from project ${projectId}. retained ${retained}. took ${
-            performance.now() - startTime
-          } ms.`
-        );
-        db.close();
-        resolve(deletedCount);
-      }
-    };
-    request.onerror = () => {
-      db.close();
-      reject(request.error);
-    };
-  });
-}
-
 export async function deleteProjectCache(projectId: string): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    console.log("Deleting cache for project:", projectId);
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
-    const index = store.index("projectId");
-    const request = index.openKeyCursor(IDBKeyRange.only(projectId));
-    request.onsuccess = (event) => {
-      const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-      if (cursor) {
-        cursor.delete();
-        cursor.continue();
-      } else {
-        db.close();
-        resolve();
-      }
-    };
-    request.onerror = () => {
-      db.close();
-      reject(request.error);
-    };
-    console.log("Deletion finished for project:", projectId);
-  });
+  await filter(projectId, "ReplicadObject", () => false, false);
+  await filter(projectId, "AbundanceObject", () => false, false);
+  return;
 }
