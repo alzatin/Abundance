@@ -37,7 +37,7 @@ export default class Equation extends Atom {
      * @type {string}
      */
     this.description =
-      "Defines a mathematical equation. Edit the output field to add or remove inputs.";
+      "Defines a mathematical equation or string concatenation. Use quotes (single or double) for string values. Examples: x + y * 2, thickness + 'mm plywood'. Edit the output field to add or remove inputs.";
 
     /**
      * This atom's height as drawn on the screen
