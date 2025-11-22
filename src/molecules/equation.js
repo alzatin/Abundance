@@ -111,10 +111,64 @@ export default class Equation extends Atom {
       variables = [...new Set(variables)];
     } catch (e) {
       // Fallback for string expressions that mathjs can't parse
-      variables = this.currentEquation.match(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g) || [];
-      variables = [...new Set(variables)];
+      // Need to extract variables while respecting quote boundaries
+      variables = this._extractVariablesRespectingQuotes(this.currentEquation);
     }
     return variables;
+  }
+
+  /**
+   * Extract variables from an expression while respecting quote boundaries.
+   * Variables inside quoted strings are not extracted.
+   * @param {string} equation - The equation string to parse
+   * @returns {string[]} Array of variable names
+   */
+  _extractVariablesRespectingQuotes(equation) {
+    const variables = [];
+    let current = "";
+    let inQuotes = false;
+    let quoteChar = "";
+
+    // Parse the expression, only extracting from non-quoted sections
+    for (let i = 0; i < equation.length; i++) {
+      const char = equation[i];
+
+      if ((char === '"' || char === "'") && !inQuotes) {
+        inQuotes = true;
+        quoteChar = char;
+        // Process accumulated non-quoted content
+        if (current.trim()) {
+          this._extractVariablesFromPart(current, variables);
+        }
+        current = "";
+      } else if (char === quoteChar && inQuotes) {
+        inQuotes = false;
+        quoteChar = "";
+        // Skip the content inside quotes
+        current = "";
+      } else if (!inQuotes) {
+        current += char;
+      }
+      // Skip characters inside quotes
+    }
+
+    // Process any remaining content
+    if (current.trim() && !inQuotes) {
+      this._extractVariablesFromPart(current, variables);
+    }
+
+    return [...new Set(variables)];
+  }
+
+  /**
+   * Extract identifiers from a non-quoted part of an expression
+   * @param {string} part - The part of the expression to extract from
+   * @param {string[]} variables - Array to add extracted variables to
+   */
+  _extractVariablesFromPart(part, variables) {
+    // Extract identifiers from non-quoted parts
+    const matches = part.match(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g) || [];
+    variables.push(...matches);
   }
 
   /**
