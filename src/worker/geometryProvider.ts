@@ -13,7 +13,6 @@ import {
   deleteProjectCache,
   shapeExists,
   getAllProjectIds,
-  filterKeys,
   StoredGeometryRecord,
   filter,
 } from "./indexeddbUtils";
@@ -226,7 +225,7 @@ class GeometryProvider {
     idsToRetain: Set<string>,
     context: RequestContext
   ): Promise<number> {
-    // Step 1: filter geometries based on key since that's much a much faster approach
+    // Step 1: filter geometries based on key since that's a much faster approach
     // and we don't need access to the geom values.
     const s = performance.now();
     const deletedGeoms = await filter(
@@ -253,7 +252,11 @@ class GeometryProvider {
               }
             }
           } catch (e) {
-            console.error("Failed to parse AbundanceObject:", e);
+            console.error(
+              "Failed to parse AbundanceObject. Deleting from cache: ",
+              e
+            );
+            return false; // delete malformed assemblies
           }
           return true;
         }

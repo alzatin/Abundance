@@ -1175,8 +1175,10 @@ export default class Molecule extends Atom {
           const subGeomList = atom.deepGeomList();
           geomList = geomList.concat(subGeomList);
         } else {
-          // Only include non-null object values (e.g., geometries)
-          geomList.push(atom.value);
+          // exclude null values and string or numeric values (eg: from input or equation atoms)
+          if (atom.value && atom.value instanceof Object) {
+            geomList.push(atom.value);
+          }
         }
       }
     });
