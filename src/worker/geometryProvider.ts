@@ -15,6 +15,7 @@ import {
   getAllProjectIds,
   filterKeys,
   StoredGeometryRecord,
+  filter,
 } from "./indexeddbUtils";
 
 type ReplicadObject = replicad.Shape3D | replicad.Drawing | replicad.Wire;
@@ -225,12 +226,48 @@ class GeometryProvider {
     idsToRetain: Set<string>,
     context: RequestContext
   ): Promise<number> {
-    return await filterKeys(context.project, (shapeKey: string) => {
-      // TODO: improve this by making "type" part of the key schema and for all
-      // AbundanceObject types retain them only if all of their geometries are in the
-      // idsToRetain set.
-      return idsToRetain.has(shapeKey);
-    });
+    // Step 1: filter geometries based on key since that's much a much faster approach
+    // and we don't need access to the geom values.
+    const s = performance.now();
+    const deletedGeoms = await filter(
+      context.project,
+      "ReplicadObject",
+      (shapeKey: string) => {
+        return idsToRetain.has(shapeKey);
+      }
+    );
+    const geomTime = performance.now() - s;
+
+    // Step 2: filter AbundanceObjects based on whether all their geometries
+    // are in the idsToRetain set, here we need access to their values.
+    const deletedAssemblies = await filter(
+      context.project,
+      "AbundanceObject",
+      (shapeKey: string, value?: StoredGeometryRecord) => {
+        if (value) {
+          try {
+            const assembly: AbundanceObject = JSON.parse(value.serialized);
+            for (const leaf of flattenAssembly(assembly)) {
+              if (!idsToRetain.has(leaf.geometry)) {
+                return false;
+              }
+            }
+          } catch (e) {
+            console.error("Failed to parse AbundanceObject:", e);
+          }
+          return true;
+        }
+        console.warn("Received no value for AbundanceObject:", shapeKey);
+        return false;
+      },
+      true
+    );
+
+    const assemblyTime = performance.now() - s - geomTime;
+    console.log(
+      `swept cache. removed ${deletedGeoms} geoms in ${geomTime}ms and ${deletedAssemblies} assemblies in ${assemblyTime}ms`
+    );
+    return deletedGeoms + deletedAssemblies;
   }
 
   /**
