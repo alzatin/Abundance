@@ -9,6 +9,42 @@ import { parse } from 'mathjs';
 
 describe('Equation String Concatenation Issue - Exact User Scenario', () => {
   
+  // Helper to parse string expression into parts
+  function parseStringExpression(equation) {
+    const parts = [];
+    let current = "";
+    let inQuotes = false;
+    let quoteChar = "";
+    
+    for (let i = 0; i < equation.length; i++) {
+      const char = equation[i];
+      
+      if ((char === '"' || char === "'") && !inQuotes) {
+        inQuotes = true;
+        quoteChar = char;
+        current += char;
+      } else if (char === quoteChar && inQuotes) {
+        inQuotes = false;
+        current += char;
+        quoteChar = "";
+      } else if (char === "+" && !inQuotes) {
+        if (current.trim()) {
+          parts.push(current.trim());
+        }
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+    if (current.trim()) {
+      parts.push(current.trim());
+    }
+    
+    return parts;
+  }
+  
+  const MOCK_INPUT_VALUE = 10;
+  
   // Test the exact scenario the user described: L + ' 2x6'
   it('should handle the exact user equation: L + \' 2x6\'', () => {
     const equation = "L + ' 2x6'";
@@ -46,36 +82,7 @@ describe('Equation String Concatenation Issue - Exact User Scenario', () => {
   
   it('should parse the string expression correctly', () => {
     const equation = "L + ' 2x6'";
-    
-    // Manually parse like evaluateStringExpression does
-    const parts = [];
-    let current = "";
-    let inQuotes = false;
-    let quoteChar = "";
-    
-    for (let i = 0; i < equation.length; i++) {
-      const char = equation[i];
-      
-      if ((char === '"' || char === "'") && !inQuotes) {
-        inQuotes = true;
-        quoteChar = char;
-        current += char;
-      } else if (char === quoteChar && inQuotes) {
-        inQuotes = false;
-        current += char;
-        quoteChar = "";
-      } else if (char === "+" && !inQuotes) {
-        if (current.trim()) {
-          parts.push(current.trim());
-        }
-        current = "";
-      } else {
-        current += char;
-      }
-    }
-    if (current.trim()) {
-      parts.push(current.trim());
-    }
+    const parts = parseStringExpression(equation);
     
     // Should get two parts: "L" and "' 2x6'"
     expect(parts.length).toBe(2);
@@ -84,39 +91,8 @@ describe('Equation String Concatenation Issue - Exact User Scenario', () => {
   });
   
   it('should evaluate to a concatenated string', () => {
-    // Mock the full evaluation flow
     const equation = "L + ' 2x6'";
-    const inputValue = 10;
-    
-    // Parse parts
-    const parts = [];
-    let current = "";
-    let inQuotes = false;
-    let quoteChar = "";
-    
-    for (let i = 0; i < equation.length; i++) {
-      const char = equation[i];
-      
-      if ((char === '"' || char === "'") && !inQuotes) {
-        inQuotes = true;
-        quoteChar = char;
-        current += char;
-      } else if (char === quoteChar && inQuotes) {
-        inQuotes = false;
-        current += char;
-        quoteChar = "";
-      } else if (char === "+" && !inQuotes) {
-        if (current.trim()) {
-          parts.push(current.trim());
-        }
-        current = "";
-      } else {
-        current += char;
-      }
-    }
-    if (current.trim()) {
-      parts.push(current.trim());
-    }
+    const parts = parseStringExpression(equation);
     
     // Evaluate parts
     let result = "";
@@ -126,8 +102,8 @@ describe('Equation String Concatenation Issue - Exact User Scenario', () => {
       } else if (part.startsWith("'") && part.endsWith("'")) {
         result += part.slice(1, -1);
       } else {
-        // Assume it's variable L with value 10
-        result += String(inputValue);
+        // Assume it's variable L with mock value
+        result += String(MOCK_INPUT_VALUE);
       }
     }
     
