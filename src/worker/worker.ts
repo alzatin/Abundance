@@ -374,8 +374,11 @@ async function visualizeGcodeIncremental(
       const wire = util.replicad.assembleWire(edgesPerPart[i]);
       const wireTime = performance.now() - wireStart;
       
-      // Create a unique hash for this part based on index and gcode content
-      const partHash = util.hashString(`gcode-part-${i}-${gcodeArray[i]}`);
+      // Create a unique hash for this part based on context, index, and gcode content
+      // Include context.operationId to prevent cache collisions between different generations
+      const partHash = util.hashString(
+        `gcode-part-${context.operationId || 'default'}-${i}-${gcodeArray[i]}`
+      );
       
       wireObjects.push({
         geometry: await util.geometryProvider!.addSingularToCache(
@@ -451,7 +454,10 @@ async function visualizeGcodeAsAssembly(
     if (partEdges.length > 0) {
       try {
         const wire = util.replicad.assembleWire(partEdges);
-        const partHash = util.hashString(`${i}-${gcode}`);
+        // Include context.operationId in hash to prevent cache collisions
+        const partHash = util.hashString(
+          `gcode-exp-${context.operationId || 'default'}-${i}-${gcode}`
+        );
         
         wireObjects.push({
           geometry: await util.geometryProvider!.addSingularToCache(
