@@ -333,7 +333,7 @@ async function visualizeGcodeIncremental(
   gcodeArray: string[],
   context: RequestContext
 ): Promise<AbundanceObject> {
-  console.log(`\n=== Gcode Visualization Performance Analysis ===`);
+  console.log(`\n=== Gcode Visualization with Individual Wire Assembly ===`);
   console.log(`Processing ${gcodeArray.length} gcode parts`);
   
   const overallStart = performance.now();
@@ -341,10 +341,7 @@ async function visualizeGcodeIncremental(
   // Maintain position across all parts to avoid phantom lines back to origin
   const currentPosition: [number, number, number] = [0, 0, 0];
   
-  // Collect ALL edges from ALL parts into a single array
-  const allEdges: Edge[] = [];
-  
-  // ALSO collect edges per part for comparison
+  // Collect edges per part for individual wire assembly
   const edgesPerPart: Edge[][] = [];
   
   // Process each gcode part separately to create edges
@@ -353,7 +350,6 @@ async function visualizeGcodeIncremental(
     const gcode = gcodeArray[i];
     const partEdges = parseGcodeToEdges(gcode, currentPosition);
     
-    allEdges.push(...partEdges);
     if (partEdges.length > 0) {
       edgesPerPart.push(partEdges);
     }
@@ -361,76 +357,69 @@ async function visualizeGcodeIncremental(
   const parseTime = performance.now() - parseStart;
   
   console.log(`Parsed gcode in ${parseTime.toFixed(2)}ms`);
-  console.log(`Total edges: ${allEdges.length}, Parts with edges: ${edgesPerPart.length}`);
+  console.log(`Parts with edges: ${edgesPerPart.length}`);
   
-  if (allEdges.length === 0) {
+  if (edgesPerPart.length === 0) {
     throw new Error("No valid gcode movements found to visualize");
   }
   
-  // METHOD 1: Assemble individual wires then combine
-  console.log(`\n--- Method 1: Individual Wire Assembly ---`);
-  const method1Start = performance.now();
-  const individualWires: replicad.Wire[] = [];
+  // Assemble individual wires and create separate AbundanceObjects
+  console.log(`\n--- Assembling Individual Wires ---`);
+  const assemblyStart = performance.now();
+  const wireObjects: AbundanceObject[] = [];
   
-  try {
-    for (let i = 0; i < edgesPerPart.length; i++) {
+  for (let i = 0; i < edgesPerPart.length; i++) {
+    try {
       const wireStart = performance.now();
       const wire = util.replicad.assembleWire(edgesPerPart[i]);
       const wireTime = performance.now() - wireStart;
-      individualWires.push(wire);
-      if (i < 5 || i === edgesPerPart.length - 1) { // Log first 5 and last
-        console.log(`  Part ${i + 1}: assembled ${edgesPerPart[i].length} edges in ${wireTime.toFixed(2)}ms`);
+      
+      // Create a unique hash for this part
+      const partHash = util.hashString(`gcode-part-${i}-${edgesPerPart[i].length}`);
+      
+      wireObjects.push({
+        geometry: await util.geometryProvider!.addSingularToCache(
+          wire,
+          context,
+          `gcode-part-${i}`,
+          [partHash]
+        ),
+        tags: [],
+        plane: util.XYPlane,
+        color: util.defaultColor,
+        bom: [],
+        dimension: "3D",
+      });
+      
+      if (i < 5 || i === edgesPerPart.length - 1 || (i + 1) % 10 === 0) {
+        console.log(`  Part ${i + 1}/${edgesPerPart.length}: ${edgesPerPart[i].length} edges in ${wireTime.toFixed(2)}ms`);
       }
+    } catch (err) {
+      console.warn(`Failed to create wire for part ${i + 1}:`, err);
+      // Continue processing other parts even if one fails
     }
-    const method1Time = performance.now() - method1Start;
-    console.log(`Total time for individual assembly: ${method1Time.toFixed(2)}ms`);
-    console.log(`Average per wire: ${(method1Time / edgesPerPart.length).toFixed(2)}ms`);
-  } catch (err) {
-    console.warn(`Method 1 failed: ${err}`);
   }
-  const method1End = performance.now();
-  const method1Total = method1End - method1Start;
   
-  // METHOD 2: Assemble all edges at once
-  console.log(`\n--- Method 2: Single Assembly of All Edges ---`);
-  const method2Start = performance.now();
-  const finalWire = util.replicad.assembleWire(allEdges);
-  const method2Time = performance.now() - method2Start;
-  console.log(`Assembled all ${allEdges.length} edges in ${method2Time.toFixed(2)}ms`);
-  
-  // Comparison
-  console.log(`\n--- Performance Comparison ---`);
-  if (individualWires.length > 0) {
-    const speedup = ((method1Total - method2Time) / method1Total * 100);
-    console.log(`Method 1 (individual wires): ${method1Total.toFixed(2)}ms`);
-    console.log(`Method 2 (all edges at once): ${method2Time.toFixed(2)}ms`);
-    console.log(`Method 2 is ${speedup > 0 ? 'FASTER' : 'SLOWER'} by ${Math.abs(speedup).toFixed(1)}%`);
-  }
+  const assemblyTime = performance.now() - assemblyStart;
+  console.log(`\nAssembled ${wireObjects.length} wires in ${assemblyTime.toFixed(2)}ms`);
+  console.log(`Average per wire: ${(assemblyTime / wireObjects.length).toFixed(2)}ms`);
   
   const overallTime = performance.now() - overallStart;
-  console.log(`\nTotal visualization time: ${overallTime.toFixed(2)}ms`);
+  console.log(`Total visualization time: ${overallTime.toFixed(2)}ms`);
   console.log(`===========================================\n`);
   
-  // Use Method 2 (single wire) as it's proven to work correctly
-  // Note: We cannot use an assembly of individual wires because they appear disconnected
-  // in the visualization, even though they share position continuity
+  // Return as an assembly if multiple wires, single wire if only one
+  if (wireObjects.length === 0) {
+    throw new Error("No valid wires could be created");
+  }
   
-  // Create a unique hash for the array of gcode strings
-  const combinedHash = util.hashString(gcodeArray.join("|||"));
+  if (wireObjects.length === 1) {
+    return wireObjects[0];
+  }
   
-  return {
-    geometry: await util.geometryProvider!.addSingularToCache(
-      finalWire,
-      context,
-      "gcode-vis-incremental",
-      [combinedHash]
-    ),
-    tags: [],
-    plane: util.XYPlane,
-    color: util.defaultColor,
-    bom: [],
-    dimension: "3D",
-  };
+  // Use the assembly function to combine multiple wires
+  console.log(`Creating assembly of ${wireObjects.length} wire objects...`);
+  return await assembly(wireObjects, context);
 }
 
 /**
