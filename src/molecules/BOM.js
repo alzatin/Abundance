@@ -196,7 +196,9 @@ export default class AddBOMTag extends Atom {
     //Save the readme text to the serial stream
     var valuesObj = super.serialize(values);
 
-    valuesObj.BOMitem = Object.assign({}, this.BOMitem); //Makes a shallow copy to prevent issues when copy pasting
+    // Use safe serialization to prevent large BOM items from bloating the save file
+    const bomCopy = Object.assign({}, this.BOMitem); //Makes a shallow copy to prevent issues when copy pasting
+    Atom.safeSerializeValue(valuesObj, 'BOMitem', bomCopy, this.name || 'BOM');
 
     return valuesObj;
   }

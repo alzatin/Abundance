@@ -38,19 +38,18 @@ class GeometryProvider {
   private MAX_PROJECTS = 4;
   private projectLRU: string[] = [];
   private cacheHitMetrics: Record<string, [number, number, number]>; // hits, misses, total-miss-duration-ms
-  private nextId: number;
   private warmCache: Map<string, Map<string, ReplicadObject>> = new Map();
   private batchMetrics: [number, number] = [0, 0];
 
-  constructor() {
+  constructor(logMetrics: boolean = true) {
     this.cacheHitMetrics = {};
-    this.nextId = 0;
 
-    setInterval(() => {
-      console.log(this.cacheHitMetrics);
-    }, 10000);
+    if (logMetrics) {
+      setInterval(() => {
+        console.log(this.cacheHitMetrics);
+      }, 10000);
+    }
   }
-
   private cacheHit(id: string): void {
     const type = id.split("-")[0];
     if (!this.cacheHitMetrics[type]) {
@@ -179,9 +178,7 @@ class GeometryProvider {
     const shape = await getShape(context.project, id);
     if (shape == undefined) {
       console.trace("Cache miss for id:", id);
-      console.log(this.warmCache);
-
-      throw new Error(`Geometry with ID ${id} not found in cache`);
+      throw new Error(`Geometry with ID ${id} not found in cache, context: ${JSON.stringify(context)}`);
     }
     let result = undefined;
     try {

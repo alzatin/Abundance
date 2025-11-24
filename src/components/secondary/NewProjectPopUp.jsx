@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import CreatableSelect from "react-select/creatable";
 import topics from "../../js/maslowTopics.js";
 import { useProject } from "../../contexts/index.js";
+import { convertToGithubName } from "../../js/projectNameUtils.js";
 
 // Helper function to validate project name
 const validateProjectName = (name) => {
@@ -15,23 +16,21 @@ const validateProjectName = (name) => {
     return errors;
   }
   
-  // Check for spaces
-  if (name.includes(" ")) {
-    errors.push("Project name cannot contain spaces (use hyphens instead)");
-  }
+  // Convert spaces to underscores for GitHub compatibility
+  const githubName = convertToGithubName(name);
   
-  // Check for invalid characters (GitHub allows alphanumeric and hyphens)
-  if (!/^[a-zA-Z0-9._-]+$/.test(name)) {
+  // Check for invalid characters (GitHub allows alphanumeric, dots, underscores, and hyphens)
+  if (!/^[a-zA-Z0-9._-]+$/.test(githubName)) {
     errors.push("Project name can only contain letters, numbers, dots, underscores, and hyphens");
   }
   
   // Check if starts/ends with hyphen
-  if (name.startsWith("-") || name.endsWith("-")) {
+  if (githubName.startsWith("-") || githubName.endsWith("-")) {
     errors.push("Project name cannot start or end with a hyphen");
   }
   
   // Check length
-  if (name.length > 100) {
+  if (githubName.length > 100) {
     errors.push("Project name must be 100 characters or less");
   }
   
@@ -182,6 +181,9 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
     setValidationErrors([]);
     setPending(true);
 
+    // Convert project name for GitHub (spaces to underscores)
+    const githubProjectName = convertToGithubName(projectName);
+
     if (GlobalVariables.currentMolecule) {
       var molecule = GlobalVariables.currentMolecule;
     }
@@ -189,7 +191,7 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
     createProject(
       authorizedUserOcto,
       [
-        projectName,
+        githubProjectName,
         topicValidation.sanitized.length > 0 ? topicValidation.sanitized : projectTopic,
         projectDescription,
         projectLicense,

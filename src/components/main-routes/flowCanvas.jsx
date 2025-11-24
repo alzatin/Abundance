@@ -60,10 +60,7 @@ export default memo(function FlowCanvas({
         console.log(`Cleared localStorage for previous project: ${previousProjectKey}`);
       }
       
-      GlobalVariables.writeToDisplay(
-        GlobalVariables.currentAWSnode.topMoleculeID, // should not be an id unless reseting view
-        true
-      );
+      GlobalVariables.resetView();
       //Load a blank project
       GlobalVariables.topLevelMolecule = new Molecule({
         x: 0,

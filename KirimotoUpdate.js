@@ -84,23 +84,22 @@ const generateGcode = (
       return eng.setMode("CAM");
     })
     .then((eng) => {
-      if (progressCallback) progressCallback(0.15); // 15% - Mode set to CAM
-      //const bounds = eng.widget.getBoundingBox();
-      //const x = bounds.max.x - bounds.min.x;
-      //const y = bounds.max.y - bounds.min.y;
-      //const z = bounds.max.z - bounds.min.z;
-      return eng.setStock({ x: 5, y: 5, z: 0 }); // camStockOffset is true so set offset by 5mm in each direction for safety margin
-    })
-    .then((eng) => {
-      if (progressCallback) progressCallback(0.2); // 20% - Stock set
+      if (progressCallback) progressCallback(0.15); // 15% - Mode set
+      const bounds = eng.widget.getBoundingBox();
+      const z = bounds.max.z - bounds.min.z;
       if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
         eng.widget.scale(25.4, 25.4, 25.4); // Scale from mm to inches (1 inch = 25.4 mm)
-        eng.moveTo(centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0
-        return eng;
+        return eng.setOrigin(centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0
       }
-      eng.moveTo(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
-      return eng;
+      return eng.setOrigin(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
     })
+    .then((eng) =>
+      eng.setStock({
+        x: 3,
+        y: 3,
+        z: 0.1,
+      })
+    )
     .then((eng) => {
       // Determine if project uses metric units
       const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
@@ -145,13 +144,27 @@ const generateGcode = (
       console.log("Roughing step over:", roughingStepOver);
 
       return eng.setProcess({
+        camOriginTop: true,
+        camOriginCenter: false,
+        camZBottom: -25, // temp hack to get around setTopZ bug
+        camRoughAll: false,
+        camZOffset: 0,
+        camZTop: -1, //top of stock
+        camRoughDown: 2,
+        camRoughFlat: true,
+        camRoughIn: true,
+        camRoughOmitThru: false,
+        camRoughOmitVoid: false,
+        camRoughOn: true,
+        camRoughTop: false,
+        camRoughVoid: false,
+        camStockZ: 0,
         camEaseAngle: 10,
         camEaseDown: true,
         camZAnchor: "bottom",
         camDepthFirst: false,
         camZThru: camZThru,
         camZClearance: 3,
-        camZTop: 0, //top of stock
         camStockOffset: true,
         camZBottom: camZBottom, //-zBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
@@ -180,7 +193,7 @@ const generateGcode = (
             ov_botz: 0,
             ov_conv: false,
           },
-          {
+          /*{
             type: "outline",
             tool: 1000,
             spindle: 1000,
@@ -199,7 +212,7 @@ const generateGcode = (
             ov_topz: 0,
             ov_botz: 0,
             ov_conv: true,
-          },
+          },*/
           {
             type: "outline",
             tool: 1000,

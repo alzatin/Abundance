@@ -8,9 +8,9 @@ let defaultColor: string = "#aad7f2";
 let loaded: boolean = false;
 let geometryProvider: GeometryProvider | undefined = undefined;
 
-const init = async (): Promise<boolean> => {
+const init = async (logMetrics: boolean = true): Promise<boolean> => {
   if (loaded) return Promise.resolve(true);
-
+  const start = performance.now();
   //@ts-ignore
   const OC = await opencascade({
     locateFile: () => opencascadeWasm,
@@ -18,7 +18,10 @@ const init = async (): Promise<boolean> => {
 
   loaded = true;
   replicad.setOC(OC);
-  geometryProvider = new GeometryProvider();
+  geometryProvider = new GeometryProvider(logMetrics);
+  console.log(
+    `Replicad and OpenCascade initialized. took ${performance.now() - start} ms`
+  );
 
   return true;
 };
@@ -249,6 +252,41 @@ async function hashFileContents(file: File): Promise<string> {
     hash = hashString(String.fromCharCode(...new Uint8Array(arrayBuffer)));
   }
   return hash;
+}
+
+/**
+ * Compares two abundance objects. Return true only if they are of identical
+ * structure and reference identical geometries.
+ */
+function abundanceEquals(a: AbundanceObject, b: AbundanceObject): boolean {
+  if (isLeaf(a) && isLeaf(b)) {
+    return (
+      a.geometry === b.geometry &&
+      a.dimension === b.dimension &&
+      JSON.stringify(a.plane) === JSON.stringify(b.plane) &&
+      a.color === b.color &&
+      JSON.stringify(a.tags) === JSON.stringify(b.tags) &&
+      JSON.stringify(a.bom) === JSON.stringify(b.bom)
+    );
+  } else if (isAssembly(a) && isAssembly(b)) {
+    if (a.geometry.length === b.geometry.length) {
+      for (let i = 0; i < a.geometry.length; i++) {
+        if (!abundanceEquals(a.geometry[i], b.geometry[i])) {
+          return false;
+        }
+      }
+      return (
+        JSON.stringify(a.plane) === JSON.stringify(b.plane) &&
+        a.color === b.color &&
+        JSON.stringify(a.tags) === JSON.stringify(b.tags) &&
+        JSON.stringify(a.bom) === JSON.stringify(b.bom)
+      );
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
 }
 
 /**

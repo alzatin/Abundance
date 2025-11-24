@@ -788,13 +788,14 @@ function CreateMode() {
       );
       return null;
     }
-    return await GlobalVariables.cad
-      .generateDisplayMesh(
+
+    return GlobalVariables.pool.proxy().then((worker) => {
+      return worker.generateDisplayMesh(
         GlobalVariables.topLevelMolecule.value,
         GlobalVariables.topLevelMolecule.getContext()
-      )
+      )})
       .then(async (m) => {
-        const svg = await meshRef.current.buildThumbnail(m);
+        const svg = await meshRef.current.buildThumbnail(m.mesh);
         console.log("Project thumbnail generated.");
         return svg;
       });
@@ -845,7 +846,7 @@ function CreateMode() {
       }
 
       setSaveProgress(10);
-      var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
+      // Reuse the already serialized project data instead of serializing again
       jsonRepOfProject.filetypeVersion = 1;
       const projectContent = JSON.stringify(jsonRepOfProject, null, 2);
       // format and compile the BOM

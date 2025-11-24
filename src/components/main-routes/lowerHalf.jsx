@@ -7,7 +7,7 @@ import globalvariables from "../../js/globalvariables.js";
 import { useRendering } from "../../contexts/index.js";
 
 const LowerHalf = forwardRef(function LowerHalf({ windowSize }, ref) {
-  const { mesh, wireMesh, wireParam, solidParam } = useRendering();
+  const { mesh, wireMesh, wireParam, solidParam, isViewingOutputMesh } = useRendering();
 
   const [cameraZoom, setCameraZoom] = useState(1);
 
@@ -17,7 +17,7 @@ const LowerHalf = forwardRef(function LowerHalf({ windowSize }, ref) {
   }, [globalvariables.currentAWSnode]);
 
   useEffect(() => {
-    if (cameraZoom == 1 && mesh[0]) {
+    if (cameraZoom == 1 && mesh && mesh[0]) {
       console.log("mesh[0].cameraZoom", mesh[0].cameraZoom);
       setCameraZoom(mesh[0].cameraZoom);
     }
@@ -45,7 +45,7 @@ const LowerHalf = forwardRef(function LowerHalf({ windowSize }, ref) {
                 cameraZoom,
               }}
             >
-              {wireParam ? <WireframeMesh /> : null}
+              {wireParam && !isViewingOutputMesh ? <WireframeMesh /> : null}
               <TopLevelWireframeMesh />
               <ReplicadMesh
                 isSolid={solidParam}

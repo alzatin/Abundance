@@ -407,7 +407,8 @@ export default class Code extends Atom {
     var valuesObj = super.serialize(values);
 
     valuesObj.codeVersion = 1;
-    valuesObj.code = this.code;
+    // Use safe serialization to prevent large code from bloating the save file
+    Atom.safeSerializeValue(valuesObj, 'code', this.code, this.name || 'Code');
 
     return valuesObj;
   }

@@ -5,5 +5,7 @@ dist/
 coverage/
 # Puppeteer test screenshots (generated during CI)
 Puppet/images/*.png
+# Puppeteer temp error files
+Puppet/temp-error-*.html
 # Vitest test screenshots (generated during tests)
 tests/__screenshots__/

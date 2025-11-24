@@ -678,35 +678,131 @@ export default class Atom extends ObservableEntity {
   }
 
   /**
+   * Helper method to safely add a value to a serialized object.
+   * Prevents accidentally serializing large objects or geometry data.
+   * @param {object} target - The object to add the value to
+   * @param {string} key - The property name
+   * @param {any} value - The value to add
+   * @param {string} atomName - Name of the atom for logging
+   * @returns {boolean} - True if value was added, false if skipped
+   */
+  static safeSerializeValue(target, key, value, atomName = 'unknown') {
+    const MAX_VALUE_SIZE = 10000; // 10KB limit
+    
+    // Skip null/undefined
+    if (value === null || value === undefined) {
+      return false;
+    }
+    
+    // Skip geometry objects
+    if (typeof value === 'object' && value !== null && 
+        (value.geometry || value.dimension || value.tags)) {
+      console.warn(`Skipping serialization of geometry object for ${atomName}.${key}`);
+      return false;
+    }
+    
+    // Check string size
+    if (typeof value === 'string' && value.length > MAX_VALUE_SIZE) {
+      console.warn(`Skipping serialization of large string (${value.length} chars) for ${atomName}.${key}`);
+      return false;
+    }
+    
+    // Check object size when stringified
+    if (typeof value === 'object' && value !== null) {
+      try {
+        const stringified = JSON.stringify(value);
+        if (stringified.length > MAX_VALUE_SIZE) {
+          console.warn(`Skipping serialization of large object (${stringified.length} chars) for ${atomName}.${key}`);
+          return false;
+        }
+      } catch (e) {
+        console.warn(`Skipping serialization of non-serializable object for ${atomName}.${key}:`, e.message);
+        return false;
+      }
+    }
+    
+    // Value is safe to add
+    target[key] = value;
+    return true;
+  }
+
+  /**
    * Create an object containing the information about this atom that we want to save.
    */
   serialize(offset = { x: 0, y: 0 }) {
     //Offsets are used to make copy and pasted atoms move over a little bit
     var ioValues = [];
     this.inputs.forEach((ap) => {
+      // Skip geometry types explicitly, even if value happens to be a string
+      if (ap.valueType === "geometry") {
+        return;
+      }
+      
       if (
         typeof ap.getValue() == "number" ||
         typeof ap.getValue() == "string"
       ) {
-        var saveIO = {
-          name: ap.name,
-          ioValue: ap.getValue(),
-        };
-        // Only include currentEquation if it exists
-        if (ap.currentEquation) {
-          saveIO.currentEquation = ap.currentEquation;
+        // Only save values that differ from defaults or have custom equations
+        const currentValue = ap.getValue();
+        const hasCustomEquation = ap.currentEquation && ap.currentEquation.trim() !== '';
+        const isDifferentFromDefault = ap.defaultValue !== currentValue;
+        
+        // Skip if value is a very large string (likely serialized object data)
+        // Normal equations and values should be under 10KB
+        const MAX_VALUE_SIZE = 10000;
+        if (typeof currentValue === "string" && currentValue.length > MAX_VALUE_SIZE) {
+          console.warn(`Skipping serialization of large string value (${currentValue.length} chars) for attachment point: ${ap.name}`);
+          return;
         }
-        ioValues.push(saveIO);
+        
+        // For attachment points that are inputs to molecules (created by Input atoms),
+        // ALWAYS save values (even if they match defaults) because they define 
+        // the molecule's interface. Input attachments have type="input".
+        const isMoleculeInput = ap.type === "input";
+        
+        // Debug logging for Input-type attachments
+        if (isMoleculeInput || ap.name === "Wood Thickness") {
+          console.log(`[Serialize Debug] AP="${ap.name}", type="${ap.type}", valueType="${ap.valueType}", currentValue=${currentValue}, defaultValue=${ap.defaultValue}, isMoleculeInput=${isMoleculeInput}, willSave=${isDifferentFromDefault || hasCustomEquation || isMoleculeInput}`);
+        }
+        
+        // Save if value changed from default OR has custom equation OR is a molecule input
+        if (isDifferentFromDefault || hasCustomEquation || isMoleculeInput) {
+          var saveIO = {
+            name: ap.name,
+            ioValue: currentValue,
+          };
+          // Only include currentEquation if it exists and it's not too large
+          if (hasCustomEquation) {
+            if (ap.currentEquation.length > MAX_VALUE_SIZE) {
+              console.warn(`Skipping serialization of large equation (${ap.currentEquation.length} chars) for attachment point: ${ap.name}`);
+            } else {
+              saveIO.currentEquation = ap.currentEquation;
+            }
+          }
+          ioValues.push(saveIO);
+        }
       }
     });
     var object = {
       atomType: this.atomType,
-      name: this.name,
       x: this.x + offset.x,
       y: this.y - offset.y,
       uniqueID: this.uniqueID,
-      ioValues: ioValues,
     };
+    
+    // Only save name if it differs from atomType or for special types that can have custom names
+    const needsName = this.atomType === "Molecule" || 
+                      this.atomType === "GitHubMolecule" || 
+                      this.name !== this.atomType;
+    if (needsName) {
+      object.name = this.name;
+    }
+    
+    // Only save ioValues if not empty
+    if (ioValues.length > 0) {
+      object.ioValues = ioValues;
+    }
+    
     return object;
   }
 
@@ -809,7 +905,7 @@ export default class Atom extends ObservableEntity {
   sendToRender() {
     //Send code to JSxCAD to render
     try {
-      GlobalVariables.writeToDisplay(this.value);
+      GlobalVariables.writeToDisplay(this.value, this.getContext());
     } catch (err) {
       this.setError(err);
     }

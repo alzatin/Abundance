@@ -34,6 +34,9 @@ export function RenderingProvider({ children }) {
   const [showTopLevelWireframe, setShowTopLevelWireframe] = useState(false);
   const [topLevelWireMesh, setTopLevelWireMesh] = useState(null);
 
+  // Track if we're currently viewing the output mesh directly
+  const [isViewingOutputMesh, setIsViewingOutputMesh] = useState(false);
+
   const value = {
     // Mesh state
     mesh,
@@ -78,6 +81,10 @@ export function RenderingProvider({ children }) {
     setShowTopLevelWireframe,
     topLevelWireMesh,
     setTopLevelWireMesh,
+
+    // Output mesh viewing state
+    isViewingOutputMesh,
+    setIsViewingOutputMesh,
   };
 
   return (
