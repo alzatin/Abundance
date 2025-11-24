@@ -280,6 +280,49 @@ async function importingSVG(
  * @param {string} gcode - The G-code string to visualize
  */
 /**
+ * Helper function to parse gcode and create edges
+ * @param gcode - Gcode string to parse
+ * @param currentPosition - Current position state (modified in place)
+ * @returns Array of edges created from the gcode
+ */
+function parseGcodeToEdges(
+  gcode: string,
+  currentPosition: [number, number, number]
+): Edge[] {
+  const edges: Edge[] = [];
+  const lines = gcode.split("\n");
+  
+  lines.forEach((line) => {
+    const cmd = line.trim().toUpperCase();
+    if (cmd.startsWith("G0") || cmd.startsWith("G1")) {
+      const xMatch = cmd.match(/X([\d.-]+)/);
+      const yMatch = cmd.match(/Y([\d.-]+)/);
+      const zMatch = cmd.match(/Z([\d.-]+)/);
+
+      let x = xMatch ? Number(xMatch[1]) : currentPosition[0];
+      let y = yMatch ? Number(yMatch[1]) : currentPosition[1];
+      let z = zMatch ? Number(zMatch[1]) : currentPosition[2];
+
+      const threshold = 0.001;
+      if (
+        Math.abs(x - currentPosition[0]) < threshold &&
+        Math.abs(y - currentPosition[1]) < threshold &&
+        Math.abs(z - currentPosition[2]) < threshold
+      ) {
+        return;
+      }
+
+      edges.push(util.replicad.makeLine(currentPosition, [x, y, z]));
+      currentPosition[0] = x;
+      currentPosition[1] = y;
+      currentPosition[2] = z;
+    }
+  });
+  
+  return edges;
+}
+
+/**
  * Visualize gcode incrementally by processing individual parts and assembling wires
  * instead of assembling all edges at once. This is more efficient for projects with many parts.
  * @param gcodeArray - Array of individual gcode strings for each part
@@ -296,7 +339,7 @@ async function visualizeGcodeIncremental(
   const overallStart = performance.now();
   
   // Maintain position across all parts to avoid phantom lines back to origin
-  let currentPosition: [number, number, number] = [0, 0, 0];
+  const currentPosition: [number, number, number] = [0, 0, 0];
   
   // Collect ALL edges from ALL parts into a single array
   const allEdges: Edge[] = [];
@@ -308,44 +351,9 @@ async function visualizeGcodeIncremental(
   const parseStart = performance.now();
   for (let i = 0; i < gcodeArray.length; i++) {
     const gcode = gcodeArray[i];
-    const partEdges: Edge[] = [];
+    const partEdges = parseGcodeToEdges(gcode, currentPosition);
     
-    // Split the gcode into lines
-    const lines = gcode.split("\n");
-    lines.forEach((line) => {
-      // Normalize line: trim whitespace and uppercase for robust matching
-      const cmd = line.trim().toUpperCase();
-      // Only process lines that start with G0 or G1
-      if (cmd.startsWith("G0") || cmd.startsWith("G1")) {
-        // Parse the line for X, Y, Z values
-        const xMatch = cmd.match(/X([\d.-]+)/);
-        const yMatch = cmd.match(/Y([\d.-]+)/);
-        const zMatch = cmd.match(/Z([\d.-]+)/);
-
-        // Update coordinates if found, otherwise keep the previous value
-        let x = xMatch ? Number(xMatch[1]) : currentPosition[0];
-        let y = yMatch ? Number(yMatch[1]) : currentPosition[1];
-        let z = zMatch ? Number(zMatch[1]) : currentPosition[2];
-
-        // Lower threshold to capture all movements
-        const threshold = 0.001; // Accept nearly all movements
-        if (
-          Math.abs(x - currentPosition[0]) < threshold &&
-          Math.abs(y - currentPosition[1]) < threshold &&
-          Math.abs(z - currentPosition[2]) < threshold
-        ) {
-          return; // Skip truly negligible movements
-        }
-
-        // Create a line from the current position to the new position
-        const edge = util.replicad.makeLine(currentPosition, [x, y, z]);
-        allEdges.push(edge);
-        partEdges.push(edge);
-
-        currentPosition = [x, y, z];
-      }
-    });
-    
+    allEdges.push(...partEdges);
     if (partEdges.length > 0) {
       edgesPerPart.push(partEdges);
     }
@@ -380,6 +388,8 @@ async function visualizeGcodeIncremental(
   } catch (err) {
     console.warn(`Method 1 failed: ${err}`);
   }
+  const method1End = performance.now();
+  const method1Total = method1End - method1Start;
   
   // METHOD 2: Assemble all edges at once
   console.log(`\n--- Method 2: Single Assembly of All Edges ---`);
@@ -391,7 +401,6 @@ async function visualizeGcodeIncremental(
   // Comparison
   console.log(`\n--- Performance Comparison ---`);
   if (individualWires.length > 0) {
-    const method1Total = performance.now() - method1Start;
     const speedup = ((method1Total - method2Time) / method1Total * 100);
     console.log(`Method 1 (individual wires): ${method1Total.toFixed(2)}ms`);
     console.log(`Method 2 (all edges at once): ${method2Time.toFixed(2)}ms`);
@@ -438,39 +447,13 @@ async function visualizeGcodeAsAssembly(
   console.log(`\n=== Experimental: Gcode as Assembly ===`);
   const startTime = performance.now();
   
-  let currentPosition: [number, number, number] = [0, 0, 0];
+  const currentPosition: [number, number, number] = [0, 0, 0];
   const wireObjects: AbundanceObject[] = [];
   
   // Process each gcode part and create a separate AbundanceObject for each wire
   for (let i = 0; i < gcodeArray.length; i++) {
     const gcode = gcodeArray[i];
-    const partEdges: Edge[] = [];
-    
-    const lines = gcode.split("\n");
-    lines.forEach((line) => {
-      const cmd = line.trim().toUpperCase();
-      if (cmd.startsWith("G0") || cmd.startsWith("G1")) {
-        const xMatch = cmd.match(/X([\d.-]+)/);
-        const yMatch = cmd.match(/Y([\d.-]+)/);
-        const zMatch = cmd.match(/Z([\d.-]+)/);
-
-        let x = xMatch ? Number(xMatch[1]) : currentPosition[0];
-        let y = yMatch ? Number(yMatch[1]) : currentPosition[1];
-        let z = zMatch ? Number(zMatch[1]) : currentPosition[2];
-
-        const threshold = 0.001;
-        if (
-          Math.abs(x - currentPosition[0]) < threshold &&
-          Math.abs(y - currentPosition[1]) < threshold &&
-          Math.abs(z - currentPosition[2]) < threshold
-        ) {
-          return;
-        }
-
-        partEdges.push(util.replicad.makeLine(currentPosition, [x, y, z]));
-        currentPosition = [x, y, z];
-      }
-    });
+    const partEdges = parseGcodeToEdges(gcode, currentPosition);
     
     if (partEdges.length > 0) {
       try {
