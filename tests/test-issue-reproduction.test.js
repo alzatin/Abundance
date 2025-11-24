@@ -10,6 +10,16 @@ import { parse } from 'mathjs';
 describe('Issue: Equation atom not doing string concatenation - L + \' 2x6\'', () => {
 
   /**
+   * Helper function to normalize smart/curly quotes to standard ASCII quotes
+   * Simulates the normalization logic from atom.js
+   */
+  function normalizeQuotes(equation) {
+    return equation
+      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')  // Various double quote styles
+      .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'"); // Various single quote styles
+  }
+
+  /**
    * Helper function to parse string expression into parts
    * Simulates the evaluateStringExpression logic from atom.js
    */
@@ -185,9 +195,7 @@ describe('Issue: Equation atom not doing string concatenation - L + \' 2x6\'', (
     // Smart double quotes: " and "
     const smartDoubleQuotes = 'L + \u201C 2x6\u201D';
     // After normalization, should become standard quotes
-    const normalized = smartDoubleQuotes
-      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
-      .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
+    const normalized = normalizeQuotes(smartDoubleQuotes);
     
     expect(normalized).toBe('L + " 2x6"');
     expect(/["']/.test(normalized)).toBe(true);
@@ -196,10 +204,7 @@ describe('Issue: Equation atom not doing string concatenation - L + \' 2x6\'', (
   // Test 12: Parse smart quotes after normalization
   it('should correctly parse expression with normalized smart quotes', () => {
     // Simulate what the code does: normalize then parse
-    let equation = 'L + \u201C 2x6\u201D';  // Smart quotes
-    equation = equation
-      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
-      .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
+    const equation = normalizeQuotes('L + \u201C 2x6\u201D');  // Smart quotes
     
     const parts = parseStringExpression(equation);
     expect(parts).toEqual(['L', '" 2x6"']);
@@ -211,10 +216,7 @@ describe('Issue: Equation atom not doing string concatenation - L + \' 2x6\'', (
   // Test 13: Handle single smart quotes
   it('should normalize single smart quotes', () => {
     // Smart single quotes: ' and '
-    let equation = "L + \u2018 2x6\u2019";  // Smart single quotes
-    equation = equation
-      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
-      .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
+    const equation = normalizeQuotes("L + \u2018 2x6\u2019");  // Smart single quotes
     
     expect(equation).toBe("L + ' 2x6'");
     
