@@ -196,6 +196,25 @@ export default class AddBOMTag extends Atom {
     //Save the readme text to the serial stream
     var valuesObj = super.serialize(values);
 
+    // Sync BOMitem properties with current input values before serializing
+    // This ensures values from upstream connections (like Equation atoms) are saved correctly
+    const itemName = this.findIOValue("Item Name");
+    if (itemName !== null && itemName !== undefined) {
+      this.BOMitem.BOMitemName = itemName;
+    }
+    const numberNeeded = this.findIOValue("Number Needed");
+    if (numberNeeded !== null && numberNeeded !== undefined) {
+      this.BOMitem.numberNeeded = numberNeeded;
+    }
+    const costUSD = this.findIOValue("Cost (USD)");
+    if (costUSD !== null && costUSD !== undefined) {
+      this.BOMitem.costUSD = costUSD;
+    }
+    const sourceLink = this.findIOValue("Source Link");
+    if (sourceLink !== null && sourceLink !== undefined) {
+      this.BOMitem.source = sourceLink;
+    }
+
     // Use safe serialization to prevent large BOM items from bloating the save file
     const bomCopy = Object.assign({}, this.BOMitem); //Makes a shallow copy to prevent issues when copy pasting
     Atom.safeSerializeValue(valuesObj, 'BOMitem', bomCopy, this.name || 'BOM');
