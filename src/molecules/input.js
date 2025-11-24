@@ -75,7 +75,11 @@ export default class Input extends Atom {
     this.setValues(values);
 
     // Sanitize the name to replace spaces with underscores for equation compatibility
-    this.name = this.name.replace(/\s+/g, '_');
+    // Only sanitize new atoms (not loaded from save files) to preserve existing names
+    const isLoadedFromSave = values && values.name !== undefined;
+    if (!isLoadedFromSave) {
+      this.name = this.name.replace(/\s+/g, '_');
+    }
 
     // Apply Y-offset to prevent overlapping with existing Input atoms
     this.adjustYForCollision();
