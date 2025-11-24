@@ -162,7 +162,7 @@ const generateGcode = (
         camEaseAngle: 10,
         camEaseDown: true,
         camZAnchor: "bottom",
-        camDepthFirst: false,
+        camDepthFirst: true,
         camZThru: camZThru,
         camZClearance: 3,
         camStockOffset: true,
