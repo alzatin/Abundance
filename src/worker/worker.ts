@@ -290,16 +290,25 @@ async function visualizeGcodeIncremental(
   gcodeArray: string[],
   context: RequestContext
 ): Promise<AbundanceObject> {
+  console.log(`\n=== Gcode Visualization Performance Analysis ===`);
+  console.log(`Processing ${gcodeArray.length} gcode parts`);
+  
+  const overallStart = performance.now();
+  
   // Maintain position across all parts to avoid phantom lines back to origin
   let currentPosition: [number, number, number] = [0, 0, 0];
   
   // Collect ALL edges from ALL parts into a single array
-  // Do NOT create separate wires per part - that causes disconnection issues
   const allEdges: Edge[] = [];
   
+  // ALSO collect edges per part for comparison
+  const edgesPerPart: Edge[][] = [];
+  
   // Process each gcode part separately to create edges
+  const parseStart = performance.now();
   for (let i = 0; i < gcodeArray.length; i++) {
     const gcode = gcodeArray[i];
+    const partEdges: Edge[] = [];
     
     // Split the gcode into lines
     const lines = gcode.split("\n");
@@ -329,21 +338,73 @@ async function visualizeGcodeIncremental(
         }
 
         // Create a line from the current position to the new position
-        allEdges.push(util.replicad.makeLine(currentPosition, [x, y, z]));
+        const edge = util.replicad.makeLine(currentPosition, [x, y, z]);
+        allEdges.push(edge);
+        partEdges.push(edge);
 
         currentPosition = [x, y, z];
       }
     });
+    
+    if (partEdges.length > 0) {
+      edgesPerPart.push(partEdges);
+    }
   }
+  const parseTime = performance.now() - parseStart;
   
-  console.log(`Processed ${allEdges.length} edges from ${gcodeArray.length} gcode parts`);
+  console.log(`Parsed gcode in ${parseTime.toFixed(2)}ms`);
+  console.log(`Total edges: ${allEdges.length}, Parts with edges: ${edgesPerPart.length}`);
   
-  // Now assemble ALL edges into a single wire
-  // This works because we maintained position continuity across all parts
   if (allEdges.length === 0) {
     throw new Error("No valid gcode movements found to visualize");
   }
+  
+  // METHOD 1: Assemble individual wires then combine
+  console.log(`\n--- Method 1: Individual Wire Assembly ---`);
+  const method1Start = performance.now();
+  const individualWires: replicad.Wire[] = [];
+  
+  try {
+    for (let i = 0; i < edgesPerPart.length; i++) {
+      const wireStart = performance.now();
+      const wire = util.replicad.assembleWire(edgesPerPart[i]);
+      const wireTime = performance.now() - wireStart;
+      individualWires.push(wire);
+      if (i < 5 || i === edgesPerPart.length - 1) { // Log first 5 and last
+        console.log(`  Part ${i + 1}: assembled ${edgesPerPart[i].length} edges in ${wireTime.toFixed(2)}ms`);
+      }
+    }
+    const method1Time = performance.now() - method1Start;
+    console.log(`Total time for individual assembly: ${method1Time.toFixed(2)}ms`);
+    console.log(`Average per wire: ${(method1Time / edgesPerPart.length).toFixed(2)}ms`);
+  } catch (err) {
+    console.warn(`Method 1 failed: ${err}`);
+  }
+  
+  // METHOD 2: Assemble all edges at once
+  console.log(`\n--- Method 2: Single Assembly of All Edges ---`);
+  const method2Start = performance.now();
   const finalWire = util.replicad.assembleWire(allEdges);
+  const method2Time = performance.now() - method2Start;
+  console.log(`Assembled all ${allEdges.length} edges in ${method2Time.toFixed(2)}ms`);
+  
+  // Comparison
+  console.log(`\n--- Performance Comparison ---`);
+  if (individualWires.length > 0) {
+    const method1Total = performance.now() - method1Start;
+    const speedup = ((method1Total - method2Time) / method1Total * 100);
+    console.log(`Method 1 (individual wires): ${method1Total.toFixed(2)}ms`);
+    console.log(`Method 2 (all edges at once): ${method2Time.toFixed(2)}ms`);
+    console.log(`Method 2 is ${speedup > 0 ? 'FASTER' : 'SLOWER'} by ${Math.abs(speedup).toFixed(1)}%`);
+  }
+  
+  const overallTime = performance.now() - overallStart;
+  console.log(`\nTotal visualization time: ${overallTime.toFixed(2)}ms`);
+  console.log(`===========================================\n`);
+  
+  // Use Method 2 (single wire) as it's proven to work correctly
+  // Note: We cannot use an assembly of individual wires because they appear disconnected
+  // in the visualization, even though they share position continuity
   
   // Create a unique hash for the array of gcode strings
   const combinedHash = util.hashString(gcodeArray.join("|||"));
@@ -361,6 +422,96 @@ async function visualizeGcodeIncremental(
     bom: [],
     dimension: "3D",
   };
+}
+
+/**
+ * EXPERIMENTAL: Visualize gcode as an assembly of separate wires
+ * This allows individual wires to be created and potentially displayed progressively
+ * @param gcodeArray - Array of individual gcode strings for each part
+ * @param context - Request context for caching
+ * @returns Promise<AbundanceObject> - The assembly of wire visualizations
+ */
+async function visualizeGcodeAsAssembly(
+  gcodeArray: string[],
+  context: RequestContext
+): Promise<AbundanceObject> {
+  console.log(`\n=== Experimental: Gcode as Assembly ===`);
+  const startTime = performance.now();
+  
+  let currentPosition: [number, number, number] = [0, 0, 0];
+  const wireObjects: AbundanceObject[] = [];
+  
+  // Process each gcode part and create a separate AbundanceObject for each wire
+  for (let i = 0; i < gcodeArray.length; i++) {
+    const gcode = gcodeArray[i];
+    const partEdges: Edge[] = [];
+    
+    const lines = gcode.split("\n");
+    lines.forEach((line) => {
+      const cmd = line.trim().toUpperCase();
+      if (cmd.startsWith("G0") || cmd.startsWith("G1")) {
+        const xMatch = cmd.match(/X([\d.-]+)/);
+        const yMatch = cmd.match(/Y([\d.-]+)/);
+        const zMatch = cmd.match(/Z([\d.-]+)/);
+
+        let x = xMatch ? Number(xMatch[1]) : currentPosition[0];
+        let y = yMatch ? Number(yMatch[1]) : currentPosition[1];
+        let z = zMatch ? Number(zMatch[1]) : currentPosition[2];
+
+        const threshold = 0.001;
+        if (
+          Math.abs(x - currentPosition[0]) < threshold &&
+          Math.abs(y - currentPosition[1]) < threshold &&
+          Math.abs(z - currentPosition[2]) < threshold
+        ) {
+          return;
+        }
+
+        partEdges.push(util.replicad.makeLine(currentPosition, [x, y, z]));
+        currentPosition = [x, y, z];
+      }
+    });
+    
+    if (partEdges.length > 0) {
+      try {
+        const wire = util.replicad.assembleWire(partEdges);
+        const partHash = util.hashString(`${i}-${gcode}`);
+        
+        wireObjects.push({
+          geometry: await util.geometryProvider!.addSingularToCache(
+            wire,
+            context,
+            `gcode-part-${i}`,
+            [partHash]
+          ),
+          tags: [],
+          plane: util.XYPlane,
+          color: util.defaultColor,
+          bom: [],
+          dimension: "3D",
+        });
+      } catch (err) {
+        console.warn(`Failed to create wire for part ${i + 1}:`, err);
+      }
+    }
+  }
+  
+  const assemblyTime = performance.now() - startTime;
+  console.log(`Created assembly with ${wireObjects.length} wires in ${assemblyTime.toFixed(2)}ms`);
+  console.log(`Note: This approach may show wires as disconnected in the UI`);
+  console.log(`=======================================\n`);
+  
+  // Return as an assembly
+  if (wireObjects.length === 0) {
+    throw new Error("No valid wires could be created");
+  }
+  
+  if (wireObjects.length === 1) {
+    return wireObjects[0];
+  }
+  
+  // Use the assembly function to combine them
+  return await assembly(wireObjects, context);
 }
 
 /**
@@ -529,6 +680,7 @@ if (
     text,
     resetView,
     visualizeGcodeIncremental,
+    visualizeGcodeAsAssembly,
     getBoundingBox,
     isAssembly,
     extractParts,
@@ -574,4 +726,5 @@ export {
   text,
   visExport,
   visualizeGcodeIncremental,
+  visualizeGcodeAsAssembly,
 };
