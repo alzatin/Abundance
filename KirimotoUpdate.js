@@ -1,10 +1,6 @@
 import { Engine } from "./engine.js";
 import GlobalVariables from "./src/js/globalvariables.js";
 
-const display_message = (message) => {
-  console.log(message);
-};
-
 const kiriEngine = new Engine({ workURL: "/worker.js" });
 
 const generateGcode = (
@@ -21,7 +17,6 @@ const generateGcode = (
 ) => {
   const STOCK_MARGIN = 10;
   const CUT_THROUGH = cutThrough || 0.25; // Default cut-through thickness if not provided
-  console.log(CUT_THROUGH);
 
   if (!stlUrl) {
     console.error("STL URL is not available.");
@@ -60,8 +55,6 @@ const generateGcode = (
       slicingTimer = null;
     }
   };
-
-  console.log(kiriEngine);
 
   kiriEngine
     .setListener((message) => {
@@ -137,11 +130,12 @@ const generateGcode = (
       const camZThru = passes > 1 ? 0 : CUT_THROUGH;
       const roughingStepOver = 0.6;
 
+      /*
       console.log("Down per pass:", down);
       console.log("CAM Z Bottom:", camZBottom);
       console.log("CAM Z Thru:", camZThru);
       console.log("Tool Size:", toolSize);
-      console.log("Roughing step over:", roughingStepOver);
+      console.log("Roughing step over:", roughingStepOver);*/
 
       return eng.setProcess({
         camOriginTop: true,
@@ -276,7 +270,7 @@ const generateGcode = (
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.5); // 50% - Process set
-      console.log(kiriEngine);
+      // console.log(kiriEngine);
       startSlicingProgress();
       return eng.slice();
     })

@@ -172,7 +172,7 @@ export default class Gcode extends Atom {
       this.gcodeGenerated = true;
       this.progress = 1.0; // Complete progress
       this.setReady(
-        GlobalVariables.cad.visualizeGcode(gcode, this.getContext())
+        GlobalVariables.cad.visualizeGcodeIncremental([gcode], this.getContext())
       );
     };
   }
@@ -438,10 +438,9 @@ export default class Gcode extends Atom {
     this.gcodeString = this._concatenateGcode(allGcode);
     this.gcodeGenerated = true;
 
-    // Generate visualization for the final G-code and returns as
-    // an AbundanceObject.
-    const gcodeWire = await GlobalVariables.cad.visualizeGcode(
-      this.gcodeString,
+    // Use the incremental visualization method
+    const gcodeWire = await GlobalVariables.cad.visualizeGcodeIncremental(
+      allGcode,
       this.getContext()
     );
     this.setReady(gcodeWire);
