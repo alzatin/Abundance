@@ -74,6 +74,9 @@ export default class Input extends Atom {
     // Set values first to ensure this.name is correct before creating the parent input
     this.setValues(values);
 
+    // Sanitize the name to replace spaces with underscores for equation compatibility
+    this.name = this.name.replace(/\s+/g, '_');
+
     // Apply Y-offset to prevent overlapping with existing Input atoms
     this.adjustYForCollision();
 
@@ -506,9 +509,11 @@ export default class Input extends Atom {
       label: "Input Name",
       disabled: false,
       onChange: (newName) => {
-        if (this.name !== newName) {
-          this.name = newName;
-          this.parentAP.name = newName; // Update the attachment point name
+        // Replace spaces with underscores to ensure compatibility with equation parsing
+        const sanitizedName = newName.replace(/\s+/g, '_');
+        if (this.name !== sanitizedName) {
+          this.name = sanitizedName;
+          this.parentAP.name = sanitizedName; // Update the attachment point name
         }
       },
     };
