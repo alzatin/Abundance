@@ -48,6 +48,13 @@ export default class AttachmentPoint extends ObservableEntity {
     return 1 / 150;
   }
 
+  // Regular expression pattern to match simple identifier names for name-based subscriptions.
+  // Matches strings that start with a letter or underscore, followed by any number of
+  // letters, digits, or underscores (e.g., "wood", "diameter", "my_value").
+  static get NAME_PATTERN() {
+    return /^[A-Za-z_][A-Za-z0-9_]*$/;
+  }
+
   /**
    * The constructor function.
    * @param {object} values An array of values passed in which will be assigned to the class as this.x
@@ -521,7 +528,7 @@ export default class AttachmentPoint extends ObservableEntity {
         if (!silent) {
           // Try to re-establish name-based subscription if the current value is a name-like string
           const currentValue = this.currentEquation || this.value;
-          if (typeof currentValue === "string" && /^[A-Za-z_][A-Za-z0-9_]*$/.test(currentValue)) {
+          if (typeof currentValue === "string" && AttachmentPoint.NAME_PATTERN.test(currentValue)) {
             if (this.subscribeToInputByName(currentValue)) {
               // Successfully re-established name subscription, no need to call setDefault
               return;
@@ -748,7 +755,7 @@ export default class AttachmentPoint extends ObservableEntity {
         this.unsubscribeNameSubscription();
       } else {
         // Check if newValue is a name-like string (simple identifier pattern)
-        if (typeof newValue === "string" && /^[A-Za-z_][A-Za-z0-9_]*$/.test(newValue)) {
+        if (typeof newValue === "string" && AttachmentPoint.NAME_PATTERN.test(newValue)) {
           // Attempt to subscribe to an Input atom by this name
           if (this.subscribeToInputByName(newValue)) {
             // Successfully subscribed - store the name for later reference

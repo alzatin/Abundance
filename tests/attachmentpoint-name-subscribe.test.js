@@ -69,16 +69,8 @@ describe("AttachmentPoint name-based Input subscription", () => {
   });
 
   it("should subscribe to Input atom by name and receive initial value", () => {
-    // Debug: Check the input atom output status
-    console.log("Input atom output status:", inputAtom.output.status);
-    console.log("Input atom output value:", inputAtom.output.getValue());
-    
     // Set the attachment point value to the name of the input atom
     attachmentPoint.setValue("wood");
-
-    // Debug: Check AP status after setValue
-    console.log("AP status after setValue:", attachmentPoint.status);
-    console.log("AP value after setValue:", attachmentPoint.getValue());
 
     // The AP should have subscribed to the input atom and received its value
     expect(attachmentPoint.getValue()).toBe(42);
