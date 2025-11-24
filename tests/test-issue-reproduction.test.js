@@ -153,4 +153,75 @@ describe('Issue: Equation atom not doing string concatenation - L + \' 2x6\'', (
     expect(evaluateParts(parts, { L: 5 })).toBe('5 2x6');
     expect(evaluateParts(parts, { L: 100 })).toBe('100 2x6');
   });
+
+  // Test 8: Verify double quotes work (exact user scenario from comment)
+  it('should detect string literals with double quotes', () => {
+    const equation = 'L + " 2x6"';
+    const hasStringLiterals = /["']/.test(equation);
+    expect(hasStringLiterals).toBe(true);
+  });
+
+  // Test 9: Parse double-quoted string expression
+  it('should correctly parse L + " 2x6" with double quotes', () => {
+    const equation = 'L + " 2x6"';
+    const parts = parseStringExpression(equation);
+    
+    // Should split into variable L and string " 2x6"
+    expect(parts).toEqual(['L', '" 2x6"']);
+  });
+
+  // Test 10: Evaluate double-quoted string expression
+  it('should evaluate L + " 2x6" to concatenated string "10 2x6"', () => {
+    const equation = 'L + " 2x6"';
+    const parts = parseStringExpression(equation);
+    const result = evaluateParts(parts, { L: 10 });
+    
+    // Final result should be "10 2x6"
+    expect(result).toBe('10 2x6');
+  });
+
+  // Test 11: Detect and normalize smart/curly quotes
+  it('should detect smart/curly quotes after normalization', () => {
+    // Smart double quotes: " and "
+    const smartDoubleQuotes = 'L + \u201C 2x6\u201D';
+    // After normalization, should become standard quotes
+    const normalized = smartDoubleQuotes
+      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+      .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
+    
+    expect(normalized).toBe('L + " 2x6"');
+    expect(/["']/.test(normalized)).toBe(true);
+  });
+
+  // Test 12: Parse smart quotes after normalization
+  it('should correctly parse expression with normalized smart quotes', () => {
+    // Simulate what the code does: normalize then parse
+    let equation = 'L + \u201C 2x6\u201D';  // Smart quotes
+    equation = equation
+      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+      .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
+    
+    const parts = parseStringExpression(equation);
+    expect(parts).toEqual(['L', '" 2x6"']);
+    
+    const result = evaluateParts(parts, { L: 10 });
+    expect(result).toBe('10 2x6');
+  });
+
+  // Test 13: Handle single smart quotes
+  it('should normalize single smart quotes', () => {
+    // Smart single quotes: ' and '
+    let equation = "L + \u2018 2x6\u2019";  // Smart single quotes
+    equation = equation
+      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+      .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
+    
+    expect(equation).toBe("L + ' 2x6'");
+    
+    const parts = parseStringExpression(equation);
+    expect(parts).toEqual(['L', "' 2x6'"]);
+    
+    const result = evaluateParts(parts, { L: 10 });
+    expect(result).toBe('10 2x6');
+  });
 });
