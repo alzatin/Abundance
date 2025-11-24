@@ -213,7 +213,6 @@ export default class Gcode extends Atom {
       this.setError(err);
       this.progress = 1.0;
       this.processing = false;
-      this.isGenerating = false;
       //this.sendToRender();
     } finally {
       // Always reset the flag when generation completes
@@ -447,7 +446,6 @@ export default class Gcode extends Atom {
     );
     this.setReady(gcodeWire);
     this.progress = 1.0;
-    this.isGenerating = false;
     return gcodeWire;
   }
 
