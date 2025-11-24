@@ -59,6 +59,11 @@ export default class Gcode extends Atom {
      * @type {number}
      */
     this.progress = 1.0;
+    /**
+     * Flag to track if gcode generation is in progress
+     * @type {boolean}
+     */
+    this.isGenerating = false;
     this.parent = values?.parent;
     this.partName = this.parent?.name ?? "output";
     this.tools = [
@@ -177,9 +182,16 @@ export default class Gcode extends Atom {
    * Handles both single parts and assemblies
    */
   async _generateGcode() {
+    // Prevent multiple concurrent gcode generation processes
+    if (this.isGenerating) {
+      console.warn("G-code generation already in progress, ignoring new request");
+      return;
+    }
+
     // Initialize progress tracking
     this.progress = 0.0;
     this.processing = true;
+    this.isGenerating = true;
 
     try {
       // Get the current input ID
@@ -201,7 +213,11 @@ export default class Gcode extends Atom {
       this.setError(err);
       this.progress = 1.0;
       this.processing = false;
+      this.isGenerating = false;
       //this.sendToRender();
+    } finally {
+      // Always reset the flag when generation completes
+      this.isGenerating = false;
     }
   }
 
@@ -431,6 +447,7 @@ export default class Gcode extends Atom {
     );
     this.setReady(gcodeWire);
     this.progress = 1.0;
+    this.isGenerating = false;
     return gcodeWire;
   }
 
