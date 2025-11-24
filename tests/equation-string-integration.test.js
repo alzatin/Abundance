@@ -3,7 +3,7 @@
  * Tests the modified atom.js evaluateEquation method
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { parse } from "mathjs";
 
 describe('Equation String Integration Tests', () => {
