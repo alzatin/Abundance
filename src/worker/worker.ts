@@ -336,6 +336,10 @@ async function visualizeGcodeIncremental(
   console.log(`\n=== Gcode Visualization with Individual Wire Assembly ===`);
   console.log(`Processing ${gcodeArray.length} gcode parts`);
   
+  // Create a generation-specific ID by hashing all gcode content together
+  // This ensures each unique set of gcode strings gets a unique generation ID
+  const generationId = util.hashString(gcodeArray.join('|||'));
+  
   const overallStart = performance.now();
   
   // Maintain position across all parts to avoid phantom lines back to origin
@@ -374,10 +378,10 @@ async function visualizeGcodeIncremental(
       const wire = util.replicad.assembleWire(edgesPerPart[i]);
       const wireTime = performance.now() - wireStart;
       
-      // Create a unique hash for this part based on context, index, and gcode content
-      // Include context.operationId to prevent cache collisions between different generations
+      // Create a unique hash for this part using generation ID, index, and gcode content
+      // The generationId (hash of all gcode) ensures different generations don't collide in cache
       const partHash = util.hashString(
-        `gcode-part-${context.operationId || 'default'}-${i}-${gcodeArray[i]}`
+        `gcode-part-${generationId}-${i}-${gcodeArray[i]}`
       );
       
       wireObjects.push({
@@ -443,6 +447,9 @@ async function visualizeGcodeAsAssembly(
   console.log(`\n=== Experimental: Gcode as Assembly ===`);
   const startTime = performance.now();
   
+  // Create a generation-specific ID by hashing all gcode content together
+  const generationId = util.hashString(gcodeArray.join('|||'));
+  
   const currentPosition: [number, number, number] = [0, 0, 0];
   const wireObjects: AbundanceObject[] = [];
   
@@ -454,9 +461,9 @@ async function visualizeGcodeAsAssembly(
     if (partEdges.length > 0) {
       try {
         const wire = util.replicad.assembleWire(partEdges);
-        // Include context.operationId in hash to prevent cache collisions
+        // Use generationId to prevent cache collisions between different generations
         const partHash = util.hashString(
-          `gcode-exp-${context.operationId || 'default'}-${i}-${gcode}`
+          `gcode-exp-${generationId}-${i}-${gcode}`
         );
         
         wireObjects.push({
