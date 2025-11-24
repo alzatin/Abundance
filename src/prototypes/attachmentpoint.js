@@ -108,6 +108,18 @@ export default class AttachmentPoint extends ObservableEntity {
     this.currentEquation = undefined;
 
     /**
+     * The Input atom currently subscribed to by name (if any)
+     * @type {object}
+     */
+    this._nameSubscribedAtom = null;
+
+    /**
+     * Flag indicating if a name-based subscription is currently active
+     * @type {boolean}
+     */
+    this._nameSubscriptionActive = false;
+
+    /**
      * This atom's parent, usually the molecule which contains this atom...how is this different from this.parent?
      * @type {object}
      */
@@ -483,6 +495,9 @@ export default class AttachmentPoint extends ObservableEntity {
    * being removed from an assembly)
    */
   deleteSelf(silent = false) {
+    // Clean up any name-based subscriptions
+    this.unsubscribeNameSubscription();
+    
     for (const connector of [...this.connectors]) {
       this.deleteConnector(connector, silent);
     }
@@ -504,6 +519,15 @@ export default class AttachmentPoint extends ObservableEntity {
         }
         this.connectors = [];
         if (!silent) {
+          // Try to re-establish name-based subscription if the current value is a name-like string
+          const currentValue = this.currentEquation || this.value;
+          if (typeof currentValue === "string" && /^[A-Za-z_][A-Za-z0-9_]*$/.test(currentValue)) {
+            if (this.subscribeToInputByName(currentValue)) {
+              // Successfully re-established name subscription, no need to call setDefault
+              return;
+            }
+          }
+          // Fall back to default if name subscription failed
           this.setDefault();
         }
       } else if (this.connectors.length > 1) {
@@ -571,6 +595,84 @@ export default class AttachmentPoint extends ObservableEntity {
   }
 
   /**
+   * Finds an Input atom by name, starting from this AP's parent molecule and walking up the parent chain.
+   * Returns the closest matching Input atom or null if not found.
+   * @param {string} name - The name of the Input atom to find
+   * @returns {object|null} The Input atom or null if not found
+   */
+  findInputAtomByName(name) {
+    if (!name || typeof name !== "string") {
+      return null;
+    }
+
+    let currentMolecule = this.parentMolecule?.parent || this.parentMolecule;
+    
+    // Walk up the parent chain to find the Input atom
+    while (currentMolecule) {
+      // Check if this molecule has the Input atom
+      if (currentMolecule.nodesOnTheScreen) {
+        const inputAtom = currentMolecule.nodesOnTheScreen.find(
+          (atom) => atom.atomType === "Input" && atom.name === name
+        );
+        if (inputAtom) {
+          return inputAtom;
+        }
+      }
+      
+      // Move to parent molecule
+      currentMolecule = currentMolecule.parent;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Unsubscribes from any existing name-based subscription
+   */
+  unsubscribeNameSubscription() {
+    if (this._nameSubscriptionActive && this._nameSubscribedAtom) {
+      // Unsubscribe from the Input atom's output
+      if (this._nameSubscribedAtom.output) {
+        this._nameSubscribedAtom.output.unsubscribe(this.uniqueID);
+      }
+      this._nameSubscribedAtom = null;
+      this._nameSubscriptionActive = false;
+    }
+  }
+
+  /**
+   * Subscribes to an Input atom by name. The callback will update this AP's status and value
+   * to match the Input atom's output.
+   * @param {string} name - The name of the Input atom to subscribe to
+   * @returns {boolean} True if subscription was successful, false otherwise
+   */
+  subscribeToInputByName(name) {
+    // First unsubscribe from any existing name subscription
+    this.unsubscribeNameSubscription();
+
+    const inputAtom = this.findInputAtomByName(name);
+    if (!inputAtom || !inputAtom.output) {
+      return false;
+    }
+
+    // Subscribe to the Input atom's output
+    this._nameSubscribedAtom = inputAtom;
+    this._nameSubscriptionActive = true;
+
+    // Subscribe with a callback that updates this AP's status/value
+    inputAtom.output.subscribe(() => {
+      const state = inputAtom.output.getState();
+      if (state.status === Status.READY) {
+        this.setStatus(Status.READY, state.value);
+      } else {
+        this.setStatus(state.status); // Pass through non-ready states
+      }
+    }, this.uniqueID, true); // immediateCallback = true to get current value
+
+    return true;
+  }
+
+  /**
    * Attaches a new connector to this ap
    * @param {object} connector - The connector to attach
    */
@@ -580,6 +682,9 @@ export default class AttachmentPoint extends ObservableEntity {
     }
 
     if (this.type == "input") {
+      // Cancel any name-based subscription when a connector is attached
+      this.unsubscribeNameSubscription();
+
       if (this.connectors.length === 1) {
         this.deleteConnector(this.connectors[0]); // new inbound connector usurps the old one.
       } else if (this.connectors.length > 1) {
@@ -639,7 +744,25 @@ export default class AttachmentPoint extends ObservableEntity {
         // by the onUpstreamChange callback subscribed a connector
         this.value = newValue;
         this.setWaiting();
+        // No name-based subscription for geometry types
+        this.unsubscribeNameSubscription();
       } else {
+        // Check if newValue is a name-like string (simple identifier pattern)
+        if (typeof newValue === "string" && /^[A-Za-z_][A-Za-z0-9_]*$/.test(newValue)) {
+          // Attempt to subscribe to an Input atom by this name
+          if (this.subscribeToInputByName(newValue)) {
+            // Successfully subscribed - store the name for later reference
+            this.currentEquation = newValue;
+            // The subscription callback will update status/value, so we don't call setStatus here
+            return;
+          }
+          // If subscription failed, fall through to normal behavior
+          this.unsubscribeNameSubscription();
+        } else {
+          // Not a name-like string, clear any existing name subscription
+          this.unsubscribeNameSubscription();
+        }
+
         // This is a number input. As long as the deserialized value is defined then we're
         // ready.
         this.setStatus(
