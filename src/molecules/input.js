@@ -265,8 +265,6 @@ export default class Input extends Atom {
     }
   }
 
-
-
   /** Solution to canvas overflow https://stackoverflow.com/questions/10508988/html-canvas-text-overflow-ellipsis*/
   fittingString(c, str, maxWidth) {
     if (!str) {
@@ -506,9 +504,10 @@ export default class Input extends Atom {
       label: "Input Name",
       disabled: false,
       onChange: (newName) => {
-        if (this.name !== newName) {
-          this.name = newName;
-          this.parentAP.name = newName; // Update the attachment point name
+        const sanitizedName = newName.replace(/\s+/g, "_");
+        if (this.name !== sanitizedName) {
+          this.name = sanitizedName;
+          this.parentAP.name = sanitizedName; // Update the attachment point name
         }
       },
     };
