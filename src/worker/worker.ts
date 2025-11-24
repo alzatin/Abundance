@@ -374,8 +374,8 @@ async function visualizeGcodeIncremental(
       const wire = util.replicad.assembleWire(edgesPerPart[i]);
       const wireTime = performance.now() - wireStart;
       
-      // Create a unique hash for this part
-      const partHash = util.hashString(`gcode-part-${i}-${edgesPerPart[i].length}`);
+      // Create a unique hash for this part based on index and gcode content
+      const partHash = util.hashString(`gcode-part-${i}-${gcodeArray[i]}`);
       
       wireObjects.push({
         geometry: await util.geometryProvider!.addSingularToCache(
@@ -391,7 +391,9 @@ async function visualizeGcodeIncremental(
         dimension: "3D",
       });
       
-      if (i < 5 || i === edgesPerPart.length - 1 || (i + 1) % 10 === 0) {
+      // Log progress: first 5 parts, every 10th part, and last part
+      const shouldLog = i < 5 || i === edgesPerPart.length - 1 || (i + 1) % 10 === 0;
+      if (shouldLog) {
         console.log(`  Part ${i + 1}/${edgesPerPart.length}: ${edgesPerPart[i].length} edges in ${wireTime.toFixed(2)}ms`);
       }
     } catch (err) {
@@ -402,7 +404,9 @@ async function visualizeGcodeIncremental(
   
   const assemblyTime = performance.now() - assemblyStart;
   console.log(`\nAssembled ${wireObjects.length} wires in ${assemblyTime.toFixed(2)}ms`);
-  console.log(`Average per wire: ${(assemblyTime / wireObjects.length).toFixed(2)}ms`);
+  if (wireObjects.length > 0) {
+    console.log(`Average per wire: ${(assemblyTime / wireObjects.length).toFixed(2)}ms`);
+  }
   
   const overallTime = performance.now() - overallStart;
   console.log(`Total visualization time: ${overallTime.toFixed(2)}ms`);
