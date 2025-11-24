@@ -13,23 +13,33 @@ describe("Input atom name sanitization fix (PR #1184)", () => {
   
   /**
    * Mock Input class constructor behavior
+   * Simulates the exact order of operations in the real Input constructor
    */
   function createInputAtom(values = {}) {
-    // Simulate Input constructor behavior
-    let name = "Input"; // default name
+    // Simulate Input constructor default initialization
+    let atom = {
+      name: "Input" // default name set on line 20 of input.js
+    };
     
-    // setValues() - load from save if provided
-    if (values.name !== undefined) {
-      name = values.name;
+    // Simulate setValues(values) call on line 75 of input.js
+    if (values && values.name !== undefined) {
+      atom.name = values.name; // setValues would copy values.name to this.name
     }
     
-    // Sanitization logic from the fix
+    // Sanitization logic from the fix (lines 79-82 of input.js)
     const isLoadedFromSave = values && values.name !== undefined;
     if (!isLoadedFromSave) {
-      name = name.replace(/\s+/g, '_');
+      atom.name = atom.name.replace(/\s+/g, '_');
     }
     
-    return { name };
+    return atom;
+  }
+  
+  /**
+   * Simulates the onChange handler behavior
+   */
+  function onChangeName(newName) {
+    return newName.replace(/\s+/g, '_');
   }
 
   describe("New Input atoms (not loaded from save)", () => {
@@ -80,22 +90,12 @@ describe("Input atom name sanitization fix (PR #1184)", () => {
 
   describe("User interaction (onChange handler)", () => {
     it("should demonstrate onChange handler sanitizes user input", () => {
-      // Simulate the onChange handler behavior
-      function onChangeName(newName) {
-        return newName.replace(/\s+/g, '_');
-      }
-
       // When user types "X Length", onChange sanitizes it
       const sanitized = onChangeName("X Length");
       expect(sanitized).toBe("X_Length");
     });
 
     it("should demonstrate onChange handler preserves underscores", () => {
-      // Simulate the onChange handler behavior
-      function onChangeName(newName) {
-        return newName.replace(/\s+/g, '_');
-      }
-
       // When user types "X_Length", onChange leaves it unchanged
       const sanitized = onChangeName("X_Length");
       expect(sanitized).toBe("X_Length");
