@@ -206,58 +206,11 @@ export default class AddBOMTag extends Atom {
   }
 
   /**
-   * Get the current value of an input, checking upstream connections first.
-   * When a connector is attached, get the value directly from the upstream atom
-   * to ensure we have the most current value (not a stale cached value).
-   * @param {string} inputName - The name of the input to get the value for
-   * @returns {any} The current value of the input
-   */
-  getLiveInputValue(inputName) {
-    const input = this.inputs.find(i => i.name === inputName && i.type === "input");
-    if (!input) return null;
-
-    // If there's a connector, get the value directly from the upstream atom
-    if (input.connectors && input.connectors.length > 0) {
-      const connector = input.connectors[0];
-      const upstreamAP = connector.attachmentPoint1;
-      if (upstreamAP && upstreamAP.parentMolecule) {
-        const upstreamState = upstreamAP.parentMolecule.getState();
-        if (upstreamState && upstreamState.value !== undefined) {
-          return upstreamState.value;
-        }
-      }
-    }
-
-    // Fall back to the attachment point's current value
-    return input.getValue();
-  }
-
-  /**
    * Add the bom item to the saved object
    */
   serialize(values) {
     //Save the readme text to the serial stream
     var valuesObj = super.serialize(values);
-
-    // Sync BOMitem properties with current input values before serializing
-    // This ensures values from upstream connections (like Equation atoms) are saved correctly
-    // Use getLiveInputValue to get the most current value from upstream connections
-    const itemName = this.getLiveInputValue("Item Name");
-    if (itemName !== null && itemName !== undefined) {
-      this.BOMitem.BOMitemName = itemName;
-    }
-    const numberNeeded = this.getLiveInputValue("Number Needed");
-    if (numberNeeded !== null && numberNeeded !== undefined) {
-      this.BOMitem.numberNeeded = numberNeeded;
-    }
-    const costUSD = this.getLiveInputValue("Cost (USD)");
-    if (costUSD !== null && costUSD !== undefined) {
-      this.BOMitem.costUSD = costUSD;
-    }
-    const sourceLink = this.getLiveInputValue("Source Link");
-    if (sourceLink !== null && sourceLink !== undefined) {
-      this.BOMitem.source = sourceLink;
-    }
 
     // Use safe serialization to prevent large BOM items from bloating the save file
     const bomCopy = Object.assign({}, this.BOMitem); //Makes a shallow copy to prevent issues when copy pasting
