@@ -37,7 +37,10 @@ export default class Equation extends Atom {
      * @type {string}
      */
     this.description =
-      "Defines a mathematical equation. Edit the output field to add or remove inputs.";
+      "Defines a mathematical equation or string concatenation. " +
+      "Use quotes (single or double) for string values. " +
+      "Examples: x + y * 2, thickness + 'mm plywood'. " +
+      "Edit the output field to add or remove inputs.";
 
     /**
      * This atom's height as drawn on the screen
@@ -291,7 +294,15 @@ export default class Equation extends Atom {
    * Set the current equation to be a new value.
    */
   setEquation(newEquation) {
-    this.currentEquation = String(newEquation).trim(); //convert to string first, then remove leading and trailing whitespace
+    let equation = String(newEquation).trim(); //convert to string first, then remove leading and trailing whitespace
+    
+    // Normalize smart/curly quotes to standard ASCII quotes
+    // This handles copy-paste from Word, Google Docs, etc.
+    equation = equation
+      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')  // Various double quote styles
+      .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'"); // Various single quote styles
+    
+    this.currentEquation = equation;
     this.name = this.currentEquation; // Update the displayed name to match the current equation
     this.addAndRemoveInputs();
   }

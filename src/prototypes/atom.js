@@ -1104,6 +1104,12 @@ export default class Atom extends ObservableEntity {
       substitutedEquation = "0";
     }
 
+    // Normalize smart/curly quotes to standard ASCII quotes
+    // This handles copy-paste from Word, Google Docs, etc.
+    substitutedEquation = substitutedEquation
+      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')  // Various double quote styles
+      .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'"); // Various single quote styles
+
     // Check if equation contains string literals (quoted text)
     const hasStringLiterals = /["']/.test(substitutedEquation);
 
