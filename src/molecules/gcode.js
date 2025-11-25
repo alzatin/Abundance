@@ -172,7 +172,10 @@ export default class Gcode extends Atom {
       this.gcodeGenerated = true;
       this.progress = 1.0; // Complete progress
       this.setReady(
-        GlobalVariables.cad.visualizeGcodeIncremental([gcode], this.getContext())
+        GlobalVariables.cad.visualizeGcodeIncremental(
+          [gcode],
+          this.getContext()
+        )
       );
     };
   }
@@ -184,7 +187,9 @@ export default class Gcode extends Atom {
   async _generateGcode() {
     // Prevent multiple concurrent gcode generation processes
     if (this.isGenerating) {
-      console.warn("G-code generation already in progress, ignoring new request");
+      console.warn(
+        "G-code generation already in progress, ignoring new request"
+      );
       return;
     }
 
@@ -280,7 +285,7 @@ export default class Gcode extends Atom {
                   (bounds.max[2] + bounds.min[2]) / 2,
                 ];
                 // Mark as ready for gcode generation - user must click Generate button
-                this.setReady(null);
+                this.setWaiting();
               });
           });
       })
@@ -298,7 +303,7 @@ export default class Gcode extends Atom {
     try {
       // Clear any previously cached parts to prevent stale data
       this._cachedSortedParts = null;
-      
+
       // Extract individual parts from assembly
       const parts = await this._extractPartsFromAssembly(inputID);
 
@@ -307,9 +312,9 @@ export default class Gcode extends Atom {
 
       // Store the sorted parts for later generation
       this._cachedSortedParts = sortedParts;
-      
+
       // Mark as ready for gcode generation - user must click Generate button
-      this.setReady(null);
+      this.setWaiting();
     } catch (err) {
       console.error("Error processing assembly:", err);
       this.setError(err);
@@ -600,14 +605,6 @@ export default class Gcode extends Atom {
       label: "Sort Direction",
       onChange: (value) => {
         this.sortDirection = value;
-      },
-    };
-
-    inputParams["Generate Gcode"] = {
-      type: "button",
-      label: "Generate Gcode",
-      onClick: () => {
-        this._generateGcode();
       },
     };
 
