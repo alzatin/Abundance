@@ -253,6 +253,7 @@ export default class Gcode extends Atom {
 
   /**
    * Process a single part (original behavior)
+   * Prepares the STL and center position but does NOT auto-generate gcode
    * @param {string} inputID - The input geometry ID
    */
   async _processSinglePart(inputID) {
@@ -278,8 +279,8 @@ export default class Gcode extends Atom {
                   (bounds.max[1] + bounds.min[1]) / 2,
                   (bounds.max[2] + bounds.min[2]) / 2,
                 ];
-                // Always generate gcode when geometry input is processed
-                this._generateGcode();
+                // Mark as ready for gcode generation - user must click Generate button
+                this.setReady(null);
               });
           });
       })
@@ -289,20 +290,26 @@ export default class Gcode extends Atom {
   }
 
   /**
-   * Process an assembly by extracting parts and generating G-code sequentially
+   * Process an assembly by extracting parts and preparing for G-code generation
+   * Does NOT auto-generate gcode - user must click Generate button
    * @param {string} inputID - The input assembly ID
    */
   async _processAssembly(inputID) {
     try {
+      // Clear any previously cached parts to prevent stale data
+      this._cachedSortedParts = null;
+      
       // Extract individual parts from assembly
       const parts = await this._extractPartsFromAssembly(inputID);
 
       // Sort parts based on selected direction
       const sortedParts = await this._sortParts(parts);
 
-      // Always generate G-code when assembly is processed
-      // Generate G-code for each part sequentially
-      await this._generateSequentialGcode(sortedParts);
+      // Store the sorted parts for later generation
+      this._cachedSortedParts = sortedParts;
+      
+      // Mark as ready for gcode generation - user must click Generate button
+      this.setReady(null);
     } catch (err) {
       console.error("Error processing assembly:", err);
       this.setError(err);
