@@ -127,7 +127,7 @@ const generateGcode = (
       /*End Hack for kiri 4.3.0, add cut through in down value and set camzThru to 0 to avoid extra pass, set camZBottom to real value (not 1000)*/
       const down = (zBottom + CUT_THROUGH) / passes;
       const camZBottom = -zBottom - CUT_THROUGH;
-      const camZThru = passes > 1 ? 0 : CUT_THROUGH;
+      const camZThru = passes > 1 ? -1 : CUT_THROUGH - 1;
       const roughingStepOver = 0.6;
 
       /*
@@ -140,7 +140,6 @@ const generateGcode = (
       return eng.setProcess({
         camOriginTop: true,
         camOriginCenter: false,
-        camZBottom: -25, // temp hack to get around setTopZ bug
         camRoughAll: false,
         camZOffset: 0,
         camZTop: -1, //top of stock
