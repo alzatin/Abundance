@@ -453,10 +453,11 @@ async function applyLayout(
         transform.rotate,
         context
       );
+      // Center the layout on the origin by offsetting by half the sheet dimensions
       newGeom = await util.geometryProvider!.move(
         newGeom,
-        transform.translate.x,
-        transform.translate.y + i * layoutConfig.height,
+        transform.translate.x - layoutConfig.width / 2,
+        transform.translate.y + i * layoutConfig.height - layoutConfig.height / 2,
         0,
         context
       );
