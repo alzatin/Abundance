@@ -82,9 +82,9 @@ const generateGcode = (
       const z = bounds.max.z - bounds.min.z;
       if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
         eng.widget.scale(25.4, 25.4, 25.4); // Scale from mm to inches (1 inch = 25.4 mm)
-        return eng.setOrigin(centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0
+        return eng.setOrigin(-centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0 (negate X to match coordinate systems)
       }
-      return eng.setOrigin(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
+      return eng.setOrigin(-centerPos[0], centerPos[1], 0); // move part so top is at Z=0 (negate X to match coordinate systems)
     })
     .then((eng) =>
       eng.setStock({
