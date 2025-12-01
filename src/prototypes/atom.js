@@ -974,16 +974,18 @@ export default class Atom extends ObservableEntity {
     /** Runs through active atom inputs and adds IO parameters to default param*/
     if (this.inputs) {
       this.inputs.map((input) => {
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
+        // Check if input has a connector attached
+        const hasConnector = input.connectors.length > 0;
+        
         /* Makes inputs for Io's other than geometry */
         if (input.valueType === "string") {
+          // When connector is attached, show the value from upstream connection
+          const displayValue = hasConnector ? input.getValue() : input.value;
           inputParams[this.uniqueID + input.name] = {
             type: input.valueType,
-            value: input.value,
+            value: displayValue,
             label: input.name,
-            disabled: checkConnector(),
+            disabled: hasConnector,
             onChange: (value) => {
               if (input.value !== value) {
                 input.setValue(value);
@@ -991,11 +993,18 @@ export default class Atom extends ObservableEntity {
             },
           };
         } else if (input.valueType !== "geometry") {
+          // When connector is attached, show the value from upstream connection
+          let displayValue;
+          if (hasConnector) {
+            displayValue = input.getValue();
+          } else {
+            displayValue = input.currentEquation || input.value;
+          }
           inputParams[this.uniqueID + input.name] = {
             type: "string", //forcing string type to evaluate as equation
-            value: input.currentEquation ? input.currentEquation : input.value,
+            value: displayValue,
             label: input.name,
-            disabled: checkConnector(),
+            disabled: hasConnector,
             onChange: (value) => {
               let currentEquation = String(value).trim();
               input.currentEquation = currentEquation;
