@@ -132,22 +132,18 @@ function CreateMode() {
    */
   var shortCuts = {
     a: "Assembly",
-    b: "Loft", //>
+    b: "Molecule",
     c: "Copy",
-    d: "Difference",
     e: "Extrude",
-    g: "GitHub", // Not working yet
     i: "Input",
     j: "Move",
     r: "Rotate",
-    u: "Rectangle",
-    l: "Circle",
-    m: "Molecule",
+    m: "Move-to-Molecule",
     s: "Save",
     v: "Paste",
     x: "Equation",
-    y: "Code", //is there a more natural code letter? can't seem to prevent command t new tab behavior
-    z: "Undo", //saving this letter
+    z: "Undo",
+    "(ALT)": "GitSearch",
   };
 
   // Initialize state with undefined width/height so server and client renders match
@@ -789,11 +785,14 @@ function CreateMode() {
       return null;
     }
 
-    return GlobalVariables.pool.proxy().then((worker) => {
-      return worker.generateDisplayMesh(
-        GlobalVariables.topLevelMolecule.value,
-        GlobalVariables.topLevelMolecule.getContext()
-      )})
+    return GlobalVariables.pool
+      .proxy()
+      .then((worker) => {
+        return worker.generateDisplayMesh(
+          GlobalVariables.topLevelMolecule.value,
+          GlobalVariables.topLevelMolecule.getContext()
+        );
+      })
       .then(async (m) => {
         const svg = await meshRef.current.buildThumbnail(m.mesh);
         console.log("Project thumbnail generated.");

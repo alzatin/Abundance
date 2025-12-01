@@ -356,9 +356,9 @@ body {
 
 /* Shortcut button */
 #shortcutDiv {
-  width: 120px;
+  width: 250px;
   position: absolute;
-  left: calc(100% - 200px);
+  left: calc(100% - 250px);
   top: 25px;
   color: var(--abundance-color-fontTransparentGrey);
   z-index: 4;
