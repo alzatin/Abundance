@@ -1011,6 +1011,14 @@ export default class Atom extends ObservableEntity {
               try {
                 // Ensure inputs exist for variables in the equation before evaluating
                 this.ensureInputsForEquation(currentEquation);
+                
+                // If the AttachmentPoint has active name-based subscriptions, it will handle
+                // the evaluation and value updates. Skip duplicate evaluation.
+                if (input._nameSubscriptionActive && input._nameSubscribedAtoms && input._nameSubscribedAtoms.size > 0) {
+                  // Subscriptions are handling updates, no need to evaluate here
+                  return;
+                }
+                
                 const result = this.evaluateEquation(currentEquation);
 
                 if (Number.isFinite(result)) {
