@@ -66,6 +66,22 @@ export default class AddBOMTag extends Atom {
 
   compute(inputs) {
     const input = inputs.geometry;
+    
+    // Sync BOMitem with current input values before computing
+    // This ensures values from upstream connections are properly used
+    if (inputs["Item Name"] !== null && inputs["Item Name"] !== undefined) {
+      this.BOMitem.BOMitemName = inputs["Item Name"];
+    }
+    if (inputs["Number Needed"] !== null && inputs["Number Needed"] !== undefined) {
+      this.BOMitem.numberNeeded = inputs["Number Needed"];
+    }
+    if (inputs["Cost (USD)"] !== null && inputs["Cost (USD)"] !== undefined) {
+      this.BOMitem.costUSD = inputs["Cost (USD)"];
+    }
+    if (inputs["Source Link"] !== null && inputs["Source Link"] !== undefined) {
+      this.BOMitem.source = inputs["Source Link"];
+    }
+    
     const bomItem = this.BOMitem;
     return GlobalVariables.cad.bom(input, bomItem);
   }

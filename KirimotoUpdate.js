@@ -1,10 +1,6 @@
 import { Engine } from "./engine.js";
 import GlobalVariables from "./src/js/globalvariables.js";
 
-const display_message = (message) => {
-  console.log(message);
-};
-
 const kiriEngine = new Engine({ workURL: "/worker.js" });
 
 const generateGcode = (
@@ -21,7 +17,6 @@ const generateGcode = (
 ) => {
   const STOCK_MARGIN = 10;
   const CUT_THROUGH = cutThrough || 0.25; // Default cut-through thickness if not provided
-  console.log(CUT_THROUGH);
 
   if (!stlUrl) {
     console.error("STL URL is not available.");
@@ -61,8 +56,6 @@ const generateGcode = (
     }
   };
 
-  console.log(kiriEngine);
-
   kiriEngine
     .setListener((message) => {
       // Check if message contains slicing progress information
@@ -89,9 +82,9 @@ const generateGcode = (
       const z = bounds.max.z - bounds.min.z;
       if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
         eng.widget.scale(25.4, 25.4, 25.4); // Scale from mm to inches (1 inch = 25.4 mm)
-        return eng.setOrigin(centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0
+        return eng.setOrigin(-centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0 (negate X to match coordinate systems)
       }
-      return eng.setOrigin(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
+      return eng.setOrigin(-centerPos[0], centerPos[1], 0); // move part so top is at Z=0 (negate X to match coordinate systems)
     })
     .then((eng) =>
       eng.setStock({
@@ -134,19 +127,19 @@ const generateGcode = (
       /*End Hack for kiri 4.3.0, add cut through in down value and set camzThru to 0 to avoid extra pass, set camZBottom to real value (not 1000)*/
       const down = (zBottom + CUT_THROUGH) / passes;
       const camZBottom = -zBottom - CUT_THROUGH;
-      const camZThru = passes > 1 ? 0 : CUT_THROUGH;
+      const camZThru = passes > 1 ? 0 : CUT_THROUGH - 1;
       const roughingStepOver = 0.6;
 
+      /*
       console.log("Down per pass:", down);
       console.log("CAM Z Bottom:", camZBottom);
       console.log("CAM Z Thru:", camZThru);
       console.log("Tool Size:", toolSize);
-      console.log("Roughing step over:", roughingStepOver);
+      console.log("Roughing step over:", roughingStepOver);*/
 
       return eng.setProcess({
         camOriginTop: true,
         camOriginCenter: false,
-        camZBottom: -25, // temp hack to get around setTopZ bug
         camRoughAll: false,
         camZOffset: 0,
         camZTop: -1, //top of stock
@@ -185,7 +178,7 @@ const generateGcode = (
             leave: 0,
             leavez: 0,
             all: false,
-            voids: true,
+            voids: false,
             flats: true,
             inside: true,
             omitthru: true,
@@ -193,7 +186,7 @@ const generateGcode = (
             ov_botz: 0,
             ov_conv: false,
           },
-          /*{
+          {
             type: "outline",
             tool: 1000,
             spindle: 1000,
@@ -212,7 +205,7 @@ const generateGcode = (
             ov_topz: 0,
             ov_botz: 0,
             ov_conv: true,
-          },*/
+          },
           {
             type: "outline",
             tool: 1000,
@@ -276,7 +269,7 @@ const generateGcode = (
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.5); // 50% - Process set
-      console.log(kiriEngine);
+      // console.log(kiriEngine);
       startSlicingProgress();
       return eng.slice();
     })
