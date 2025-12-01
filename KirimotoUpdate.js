@@ -82,9 +82,9 @@ const generateGcode = (
       const z = bounds.max.z - bounds.min.z;
       if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
         eng.widget.scale(25.4, 25.4, 25.4); // Scale from mm to inches (1 inch = 25.4 mm)
-        return eng.setOrigin(centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0
+        return eng.setOrigin(-centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0 (negate X to match coordinate systems)
       }
-      return eng.setOrigin(centerPos[0], centerPos[1], 0); // move part so top is at Z=0
+      return eng.setOrigin(-centerPos[0], centerPos[1], 0); // move part so top is at Z=0 (negate X to match coordinate systems)
     })
     .then((eng) =>
       eng.setStock({
@@ -178,7 +178,7 @@ const generateGcode = (
             leave: 0,
             leavez: 0,
             all: false,
-            voids: true,
+            voids: false,
             flats: true,
             inside: true,
             omitthru: true,
@@ -186,7 +186,7 @@ const generateGcode = (
             ov_botz: 0,
             ov_conv: false,
           },
-          /*{
+          {
             type: "outline",
             tool: 1000,
             spindle: 1000,
@@ -205,7 +205,7 @@ const generateGcode = (
             ov_topz: 0,
             ov_botz: 0,
             ov_conv: true,
-          },*/
+          },
           {
             type: "outline",
             tool: 1000,
