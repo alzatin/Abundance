@@ -48,6 +48,13 @@ export default class AttachmentPoint extends ObservableEntity {
     return 1 / 150;
   }
 
+  // Regular expression pattern to match simple identifier names for name-based subscriptions.
+  // Matches strings that start with a letter or underscore, followed by any number of
+  // letters, digits, or underscores (e.g., "wood", "diameter", "my_value").
+  static get NAME_PATTERN() {
+    return /^[A-Za-z_][A-Za-z0-9_]*$/;
+  }
+
   /**
    * The constructor function.
    * @param {object} values An array of values passed in which will be assigned to the class as this.x
@@ -105,7 +112,24 @@ export default class AttachmentPoint extends ObservableEntity {
      */
     this.defaultValue = this.valueType == "number" ? 10 : null;
 
-    this.currentEquation = undefined;
+    /**
+     * Internal storage for currentEquation
+     * @type {string}
+     * @private
+     */
+    this._currentEquation = undefined;
+
+    /**
+     * Map of Input atoms currently subscribed to by name (variable name -> Input atom)
+     * @type {Map<string, object>}
+     */
+    this._nameSubscribedAtoms = new Map();
+
+    /**
+     * Flag indicating if name-based subscriptions are currently active
+     * @type {boolean}
+     */
+    this._nameSubscriptionActive = false;
 
     /**
      * This atom's parent, usually the molecule which contains this atom...how is this different from this.parent?
@@ -123,6 +147,38 @@ export default class AttachmentPoint extends ObservableEntity {
     // Initially hide this attachment point.
     this.unexpand();
     this.setDefault();
+  }
+
+  /**
+   * Gets the current equation value
+   * @returns {string} The current equation
+   */
+  get currentEquation() {
+    return this._currentEquation;
+  }
+
+  /**
+   * Sets the current equation and attempts to subscribe to matching Input atoms.
+   * Extracts all variable names from the equation and subscribes to any matching
+   * Input atoms for live value updates. When any subscribed Input changes,
+   * the equation is re-evaluated.
+   * @param {string} value - The equation string
+   */
+  set currentEquation(value) {
+    this._currentEquation = value;
+    
+    // Skip subscription logic for geometry types
+    if (this.valueType === "geometry") {
+      return;
+    }
+
+    // Extract variables from the equation and subscribe to matching Input atoms
+    if (typeof value === "string" && value.trim()) {
+      this.subscribeToVariablesInEquation(value);
+    } else {
+      // Clear all subscriptions if no equation
+      this.unsubscribeAllNameSubscriptions();
+    }
   }
 
   /**
@@ -483,6 +539,9 @@ export default class AttachmentPoint extends ObservableEntity {
    * being removed from an assembly)
    */
   deleteSelf(silent = false) {
+    // Clean up any name-based subscriptions
+    this.unsubscribeNameSubscription();
+    
     for (const connector of [...this.connectors]) {
       this.deleteConnector(connector, silent);
     }
@@ -504,6 +563,17 @@ export default class AttachmentPoint extends ObservableEntity {
         }
         this.connectors = [];
         if (!silent) {
+          // Try to re-establish name-based subscriptions if the current equation contains variables
+          const currentValue = this.currentEquation || this.value;
+          if (typeof currentValue === "string" && currentValue.trim()) {
+            // Re-subscribe to variables in the equation
+            this.subscribeToVariablesInEquation(currentValue);
+            if (this._nameSubscribedAtoms && this._nameSubscribedAtoms.size > 0) {
+              // Successfully re-established name subscriptions, no need to call setDefault
+              return;
+            }
+          }
+          // Fall back to default if no subscriptions were established
           this.setDefault();
         }
       } else if (this.connectors.length > 1) {
@@ -571,6 +641,224 @@ export default class AttachmentPoint extends ObservableEntity {
   }
 
   /**
+   * Finds an Input atom by name, starting from this AP's parent molecule and walking up the parent chain.
+   * Returns the closest matching Input atom or null if not found.
+   * @param {string} name - The name of the Input atom to find
+   * @returns {object|null} The Input atom or null if not found
+   */
+  findInputAtomByName(name) {
+    if (!name || typeof name !== "string") {
+      return null;
+    }
+
+    let currentMolecule = this.parentMolecule?.parent || this.parentMolecule;
+    
+    // Walk up the parent chain to find the Input atom
+    while (currentMolecule) {
+      // Check if this molecule has the Input atom
+      if (currentMolecule.nodesOnTheScreen) {
+        const inputAtom = currentMolecule.nodesOnTheScreen.find(
+          (atom) => atom.atomType === "Input" && atom.name === name
+        );
+        if (inputAtom) {
+          return inputAtom;
+        }
+      }
+      
+      // Move to parent molecule
+      currentMolecule = currentMolecule.parent;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Unsubscribes from all existing name-based subscriptions
+   */
+  unsubscribeAllNameSubscriptions() {
+    if (this._nameSubscribedAtoms && this._nameSubscribedAtoms.size > 0) {
+      for (const [varName, inputAtom] of this._nameSubscribedAtoms) {
+        console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) unsubscribing from Input atom "${inputAtom.name}"`);
+        inputAtom.unsubscribe(this.uniqueID);
+      }
+      this._nameSubscribedAtoms.clear();
+      this._nameSubscriptionActive = false;
+    }
+  }
+
+  // Alias for backward compatibility
+  unsubscribeNameSubscription() {
+    this.unsubscribeAllNameSubscriptions();
+  }
+
+  /**
+   * Extracts variable names from an equation string.
+   * Uses mathjs parsing if available on parentMolecule, otherwise falls back to regex.
+   * @param {string} equation - The equation string
+   * @returns {string[]} Array of variable names found in the equation
+   */
+  extractVariablesFromEquation(equation) {
+    // Try to use parent molecule's extractVariablesFromEquation if available
+    if (this.parentMolecule && typeof this.parentMolecule.extractVariablesFromEquation === 'function') {
+      return this.parentMolecule.extractVariablesFromEquation(equation);
+    }
+    
+    // Fallback: simple regex to find identifiers
+    const identifierPattern = /[A-Za-z_][A-Za-z0-9_]*/g;
+    const matches = equation.match(identifierPattern) || [];
+    // Filter out common math functions and constants
+    const mathFunctions = new Set(['sin', 'cos', 'tan', 'sqrt', 'abs', 'min', 'max', 'pow', 'log', 'exp', 'floor', 'ceil', 'round', 'pi', 'e', 'tau', 'Infinity', 'NaN']);
+    return [...new Set(matches.filter(m => !mathFunctions.has(m)))];
+  }
+
+  /**
+   * Subscribes to all Input atoms that match variables in the given equation.
+   * When any subscribed Input atom changes, the equation is re-evaluated.
+   * @param {string} equation - The equation string containing variable references
+   */
+  subscribeToVariablesInEquation(equation) {
+    // First, unsubscribe from any existing subscriptions
+    this.unsubscribeAllNameSubscriptions();
+    
+    // Extract variables from the equation
+    const variables = this.extractVariablesFromEquation(equation);
+    console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) found variables in equation "${equation}": [${variables.join(', ')}]`);
+    
+    if (variables.length === 0) {
+      return;
+    }
+    
+    // Subscribe to each variable that matches an Input atom
+    let subscribedCount = 0;
+    for (const varName of variables) {
+      const inputAtom = this.findInputAtomByName(varName);
+      if (inputAtom) {
+        console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) subscribing to Input atom "${inputAtom.name}" (${inputAtom.uniqueID}) for variable "${varName}"`);
+        
+        this._nameSubscribedAtoms.set(varName, inputAtom);
+        
+        // Subscribe with a callback that re-evaluates the equation
+        inputAtom.subscribe(() => {
+          this.onSubscribedInputChanged(inputAtom);
+        }, this.uniqueID, false); // Don't use immediateCallback - we'll trigger evaluation once after all subscriptions
+        
+        subscribedCount++;
+      } else {
+        console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) could not find Input atom for variable "${varName}"`);
+      }
+    }
+    
+    if (subscribedCount > 0) {
+      this._nameSubscriptionActive = true;
+      // Trigger initial evaluation
+      this.reevaluateEquation();
+    }
+  }
+
+  /**
+   * Called when a subscribed Input atom changes. Re-evaluates the current equation.
+   * @param {object} inputAtom - The Input atom that changed
+   */
+  onSubscribedInputChanged(inputAtom) {
+    const state = inputAtom.getState();
+    console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) received update from Input atom "${inputAtom.name}": status=${state.status}, value=${state.value}`);
+    
+    // Re-evaluate the equation
+    this.reevaluateEquation();
+  }
+
+  /**
+   * Re-evaluates the current equation and updates this AP's value.
+   * For simple single-variable equations, uses the subscribed Input atom's value directly.
+   * For complex expressions, substitutes variable values and evaluates.
+   */
+  reevaluateEquation() {
+    if (!this._currentEquation || !this.parentMolecule) {
+      return;
+    }
+    
+    try {
+      // For simple single-variable equations, use the Input atom's value directly
+      // This ensures we get the most up-to-date value even if the molecule's inputs haven't been updated
+      if (this._nameSubscribedAtoms && this._nameSubscribedAtoms.size === 1) {
+        const [varName, inputAtom] = [...this._nameSubscribedAtoms.entries()][0];
+        if (this._currentEquation === varName) {
+          const state = inputAtom.getState();
+          console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) using Input atom "${inputAtom.name}" value directly: ${state.value}`);
+          if (state.status === Status.READY && state.value !== null && state.value !== undefined) {
+            this.setStatus(Status.READY, state.value);
+          } else {
+            this.setStatus(state.status);
+          }
+          return;
+        }
+      }
+      
+      // For complex expressions with multiple variables or operators,
+      // substitute the variable values directly and evaluate
+      let substitutedEquation = this._currentEquation;
+      let allReady = true;
+      
+      for (const [varName, inputAtom] of this._nameSubscribedAtoms) {
+        const state = inputAtom.getState();
+        if (state.status === Status.READY && state.value !== null && state.value !== undefined) {
+          const safeVar = varName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          substitutedEquation = substitutedEquation.replace(new RegExp(`\\b${safeVar}\\b`, 'g'), String(state.value));
+        } else {
+          allReady = false;
+        }
+      }
+      
+      if (!allReady) {
+        // Some variables are not ready yet
+        this.setStatus(Status.WAITING);
+        return;
+      }
+      
+      // Use the parent molecule's evaluateEquation on the substituted equation
+      // (which now has numeric literals instead of variable names)
+      let result;
+      if (typeof this.parentMolecule.evaluateEquation === 'function') {
+        result = this.parentMolecule.evaluateEquation(substitutedEquation);
+      } else {
+        // Fallback: try to evaluate as a simple JavaScript expression
+        result = Function('"use strict"; return (' + substitutedEquation + ')')();
+      }
+      
+      console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) re-evaluated equation "${this._currentEquation}" (substituted: "${substitutedEquation}") = ${result}`);
+      
+      if (Number.isFinite(result)) {
+        this.setStatus(Status.READY, result);
+      } else {
+        // Result is not a valid number
+        this.setStatus(Status.WAITING);
+      }
+    } catch (err) {
+      console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) equation evaluation failed: ${err.message}`);
+      this.setStatus(Status.WAITING);
+    }
+  }
+
+  /**
+   * @deprecated Use subscribeToVariablesInEquation instead
+   * Subscribes to an Input atom by name. The callback will update this AP's status and value
+   * to match the Input atom's state.
+   * @param {string} name - The name of the Input atom to subscribe to
+   * @returns {boolean} True if subscription was successful, false otherwise
+   */
+  subscribeToInputByName(name) {
+    const inputAtom = this.findInputAtomByName(name);
+    if (!inputAtom) {
+      console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) could not find Input atom named "${name}"`);
+      return false;
+    }
+
+    // Use the new method for single variable equations
+    this.subscribeToVariablesInEquation(name);
+    return this._nameSubscribedAtoms.size > 0;
+  }
+
+  /**
    * Attaches a new connector to this ap
    * @param {object} connector - The connector to attach
    */
@@ -580,6 +868,9 @@ export default class AttachmentPoint extends ObservableEntity {
     }
 
     if (this.type == "input") {
+      // Cancel any name-based subscription when a connector is attached
+      this.unsubscribeAllNameSubscriptions();
+
       if (this.connectors.length === 1) {
         this.deleteConnector(this.connectors[0]); // new inbound connector usurps the old one.
       } else if (this.connectors.length > 1) {
@@ -629,6 +920,8 @@ export default class AttachmentPoint extends ObservableEntity {
 
   /**
    * Sets the current value of the ap.
+   * If the value is a string containing variable names, it will attempt to subscribe
+   * to matching Input atoms and evaluate the expression.
    */
   setValue(newValue, type = this.valueType) {
     if (this.type == "input") {
@@ -639,9 +932,27 @@ export default class AttachmentPoint extends ObservableEntity {
         // by the onUpstreamChange callback subscribed a connector
         this.value = newValue;
         this.setWaiting();
+        // No name-based subscription for geometry types
+        this.unsubscribeAllNameSubscriptions();
       } else {
-        // This is a number input. As long as the deserialized value is defined then we're
-        // ready.
+        // Check if newValue is a string that might contain variable references
+        if (typeof newValue === "string") {
+          // Store as current equation and let the setter handle subscriptions
+          this.currentEquation = newValue;
+          
+          // If we successfully subscribed to variables, the reevaluateEquation will set the value
+          if (this._nameSubscribedAtoms && this._nameSubscribedAtoms.size > 0) {
+            // Subscriptions are active, value will be set by reevaluateEquation
+            return;
+          }
+          // No subscriptions established, try to evaluate as-is or use as literal value
+        } else {
+          // Non-string value (number, etc.) - clear any existing subscriptions
+          this.unsubscribeAllNameSubscriptions();
+          this._currentEquation = undefined; // Clear stored equation
+        }
+        
+        // This is a number or a string with no matching variables. Set the value directly.
         this.setStatus(
           newValue === undefined || newValue === null
             ? Status.WAITING
