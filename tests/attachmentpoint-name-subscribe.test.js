@@ -251,19 +251,24 @@ describe("AttachmentPoint name-based Input subscription", () => {
     expect(attachmentPoint.getValue()).toBe(99);
   });
 
-  it("should only match simple identifier-like names", () => {
+  it("should subscribe to variables in complex expressions", () => {
     // Valid identifier names should work
     attachmentPoint.setValue("wood");
     expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeDefined();
 
     // Clean up subscription
     attachmentPoint.setValue(10);
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
     
-    // Invalid names (with special characters) should not trigger subscription
-    attachmentPoint.setValue("wood+metal");
-    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
+    // Expressions with variables should subscribe to those variables
+    attachmentPoint.setValue("wood+10");
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeDefined();
 
-    attachmentPoint.setValue("10 * wood");
-    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
+    // Clean up
+    attachmentPoint.setValue(10);
+    
+    // Expression with multiplication should also subscribe
+    attachmentPoint.setValue("wood * 2");
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeDefined();
   });
 });
