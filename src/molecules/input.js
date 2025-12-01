@@ -504,7 +504,9 @@ export default class Input extends Atom {
       label: "Input Name",
       disabled: false,
       onChange: (newName) => {
-        const sanitizedName = newName.replace(/\s+/g, "_");
+        // Replace spaces and equation operator characters (-, +, *, /, %) with underscores
+        // to prevent them from being mistaken as operators in equations
+        const sanitizedName = newName.replace(/[\s\-+*/%]+/g, "_");
         if (this.name !== sanitizedName) {
           this.name = sanitizedName;
           this.parentAP.name = sanitizedName; // Update the attachment point name
