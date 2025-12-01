@@ -64,6 +64,11 @@ export default class Gcode extends Atom {
      * @type {boolean}
      */
     this.isGenerating = false;
+    /**
+     * Flag to track if a new generation is requested while one is running
+     * @type {boolean}
+     */
+    this.pendingGeneration = false;
     this.parent = values?.parent;
     this.partName = this.parent?.name ?? "output";
     this.tools = [
@@ -187,8 +192,10 @@ export default class Gcode extends Atom {
   async _generateGcode() {
     // Prevent multiple concurrent gcode generation processes
     if (this.isGenerating) {
+      // If a run is in progress, queue a pending run
+      this.pendingGeneration = true;
       console.warn(
-        "G-code generation already in progress, ignoring new request"
+        "G-code generation already in progress, queuing pending run"
       );
       return;
     }
@@ -197,6 +204,7 @@ export default class Gcode extends Atom {
     this.progress = 0.0;
     this.processing = true;
     this.isGenerating = true;
+    this.pendingGeneration = false;
 
     try {
       // Get the current input ID
@@ -222,6 +230,13 @@ export default class Gcode extends Atom {
     } finally {
       // Always reset the flag when generation completes
       this.isGenerating = false;
+      // If a pending run was queued, run again
+      if (this.pendingGeneration) {
+        this.pendingGeneration = false;
+        setTimeout(() => {
+          this._generateGcode();
+        }, 0);
+      }
     }
   }
 
@@ -567,7 +582,8 @@ export default class Gcode extends Atom {
     const geometryValue = this.findIOValue("geometry");
     if (geometryValue !== null) {
       this.setWaiting();
-      this._handleGeometryInput(geometryValue);
+      // Always call _generateGcode so concurrency guard and pending logic are respected
+      this._generateGcode();
     } else {
       // If geometry is not available yet, set to waiting
       this.setWaiting();
