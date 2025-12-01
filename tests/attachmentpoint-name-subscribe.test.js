@@ -38,12 +38,8 @@ describe("AttachmentPoint name-based Input subscription", () => {
     molecule.nodesOnTheScreen.push(inputAtom);
     
     // Set the input atom to ready state with value 42
+    // Since we subscribe to the Input atom itself (not its output), this is all we need
     inputAtom.setReady(42);
-    
-    // Also update the output AP to reflect the input atom's value
-    if (inputAtom.output) {
-      inputAtom.output.setStatus(Status.READY, 42);
-    }
 
     // Create a simple child atom (we'll use a minimal Atom object)
     childAtom = new Atom({
@@ -77,7 +73,7 @@ describe("AttachmentPoint name-based Input subscription", () => {
     expect(attachmentPoint.status).toBe(Status.READY);
 
     // Verify subscription exists (check that the inputAtom has this AP as a subscriber)
-    expect(inputAtom.output.subscribers[attachmentPoint.uniqueID]).toBeDefined();
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeDefined();
   });
 
   it("should update AP value when Input atom value changes", () => {
@@ -85,12 +81,9 @@ describe("AttachmentPoint name-based Input subscription", () => {
     attachmentPoint.setValue("wood");
     expect(attachmentPoint.getValue()).toBe(42);
 
-    // Change the input atom value
+    // Change the input atom value - since we subscribe to the Input atom itself,
+    // calling setReady on it will notify our subscription
     inputAtom.setReady(100);
-    // Also update the output AP to reflect the change
-    if (inputAtom.output) {
-      inputAtom.output.setStatus(Status.READY, 100);
-    }
 
     // The AP should have been notified and updated
     expect(attachmentPoint.getValue()).toBe(100);
@@ -101,7 +94,7 @@ describe("AttachmentPoint name-based Input subscription", () => {
     // First establish name-based subscription
     attachmentPoint.setValue("wood");
     expect(attachmentPoint.getValue()).toBe(42);
-    expect(inputAtom.output.subscribers[attachmentPoint.uniqueID]).toBeDefined();
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeDefined();
 
     // Create an output attachment point from another atom
     const outputAtom = new Atom({
@@ -132,7 +125,7 @@ describe("AttachmentPoint name-based Input subscription", () => {
     });
 
     // The name-based subscription should be removed
-    expect(inputAtom.output.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
 
     // The AP should now receive value from the connector
     expect(attachmentPoint.getValue()).toBe(200);
@@ -169,13 +162,13 @@ describe("AttachmentPoint name-based Input subscription", () => {
     });
 
     // Name subscription should be removed
-    expect(inputAtom.output.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
 
     // Delete the connector
     attachmentPoint.deleteConnector(connector);
 
     // The name-based subscription should be re-established
-    expect(inputAtom.output.subscribers[attachmentPoint.uniqueID]).toBeDefined();
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeDefined();
     expect(attachmentPoint.getValue()).toBe(42);
   });
 
@@ -194,7 +187,7 @@ describe("AttachmentPoint name-based Input subscription", () => {
     geometryAP.setValue("wood", "geometry");
 
     // Geometry APs should not subscribe to Input atoms by name
-    expect(inputAtom.output.subscribers[geometryAP.uniqueID]).toBeUndefined();
+    expect(inputAtom.subscribers[geometryAP.uniqueID]).toBeUndefined();
     expect(geometryAP.status).toBe(Status.WAITING);
   });
 
@@ -203,7 +196,7 @@ describe("AttachmentPoint name-based Input subscription", () => {
     attachmentPoint.setValue("nonexistent");
 
     // Should not have subscribed to anything
-    expect(inputAtom.output.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
     
     // Should fall back to treating it as a regular value or stay at default
     expect(attachmentPoint.status).toBe(Status.READY);
@@ -222,21 +215,17 @@ describe("AttachmentPoint name-based Input subscription", () => {
     });
     molecule.nodesOnTheScreen.push(inputAtom2);
     inputAtom2.setReady(75);
-    // Update the output AP as well
-    if (inputAtom2.output) {
-      inputAtom2.output.setStatus(Status.READY, 75);
-    }
 
     // Subscribe to first input
     attachmentPoint.setValue("wood");
     expect(attachmentPoint.getValue()).toBe(42);
-    expect(inputAtom.output.subscribers[attachmentPoint.uniqueID]).toBeDefined();
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeDefined();
 
     // Change to subscribe to second input
     attachmentPoint.setValue("metal");
     expect(attachmentPoint.getValue()).toBe(75);
-    expect(inputAtom.output.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
-    expect(inputAtom2.output.subscribers[attachmentPoint.uniqueID]).toBeDefined();
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
+    expect(inputAtom2.subscribers[attachmentPoint.uniqueID]).toBeDefined();
   });
 
   it("should handle Input atom status changes (not just READY)", () => {
@@ -245,27 +234,19 @@ describe("AttachmentPoint name-based Input subscription", () => {
     expect(attachmentPoint.getValue()).toBe(42);
     expect(attachmentPoint.status).toBe(Status.READY);
 
-    // Change input status to PROCESSING
+    // Change input status to PROCESSING - since we subscribe to the Input atom itself,
+    // calling setProcessing on it will notify our subscription
     inputAtom.setProcessing();
-    if (inputAtom.output) {
-      inputAtom.output.setStatus(Status.PROCESSING);
-    }
 
     // AP should reflect the new status
     expect(attachmentPoint.status).toBe(Status.PROCESSING);
 
     // Change input status to WAITING
     inputAtom.setWaiting();
-    if (inputAtom.output) {
-      inputAtom.output.setStatus(Status.WAITING);
-    }
     expect(attachmentPoint.status).toBe(Status.WAITING);
 
     // Return to READY
     inputAtom.setReady(99);
-    if (inputAtom.output) {
-      inputAtom.output.setStatus(Status.READY, 99);
-    }
     expect(attachmentPoint.status).toBe(Status.READY);
     expect(attachmentPoint.getValue()).toBe(99);
   });
@@ -273,16 +254,16 @@ describe("AttachmentPoint name-based Input subscription", () => {
   it("should only match simple identifier-like names", () => {
     // Valid identifier names should work
     attachmentPoint.setValue("wood");
-    expect(inputAtom.output.subscribers[attachmentPoint.uniqueID]).toBeDefined();
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeDefined();
 
     // Clean up subscription
     attachmentPoint.setValue(10);
     
     // Invalid names (with special characters) should not trigger subscription
     attachmentPoint.setValue("wood+metal");
-    expect(inputAtom.output.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
 
     attachmentPoint.setValue("10 * wood");
-    expect(inputAtom.output.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
+    expect(inputAtom.subscribers[attachmentPoint.uniqueID]).toBeUndefined();
   });
 });
