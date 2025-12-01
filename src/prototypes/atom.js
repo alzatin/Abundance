@@ -1065,9 +1065,17 @@ export default class Atom extends ObservableEntity {
   /**
    * Ensure that inputs exist for all variables in the given equation.
    * This method adds missing inputs dynamically but doesn't remove existing ones.
+   * NOTE: Only Equation and Code atoms are allowed to dynamically add new inputs.
+   * Other atoms will get an error when evaluating if variables are not found.
    * @param {string} equation - The equation to check for variables
    */
   ensureInputsForEquation(equation) {
+    // Only Equation and Code atoms are allowed to dynamically add new inputs
+    // Other atoms should get an error if variables are not recognized
+    if (this.atomType !== "Equation" && this.atomType !== "Code") {
+      return; // Don't add inputs for other atom types
+    }
+
     const variables = this.extractVariablesFromEquation(equation);
     const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
     const parentInputs =
