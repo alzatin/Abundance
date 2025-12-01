@@ -122,7 +122,7 @@ export default class Input extends Atom {
     const totalInputs = existingInputs.length + 1;
 
     // Default spacing and starting position
-    const defaultSpacing = GlobalVariables.atomSize * 5;
+    const defaultSpacing = GlobalVariables.atomSize * 6;
     const defaultStartY = GlobalVariables.atomSize * 10;
 
     // Calculate available canvas height (in fractional units, where 1.0 = full height)
