@@ -112,7 +112,12 @@ export default class AttachmentPoint extends ObservableEntity {
      */
     this.defaultValue = this.valueType == "number" ? 10 : null;
 
-    this.currentEquation = undefined;
+    /**
+     * Internal storage for currentEquation
+     * @type {string}
+     * @private
+     */
+    this._currentEquation = undefined;
 
     /**
      * The Input atom currently subscribed to by name (if any)
@@ -142,6 +147,44 @@ export default class AttachmentPoint extends ObservableEntity {
     // Initially hide this attachment point.
     this.unexpand();
     this.setDefault();
+  }
+
+  /**
+   * Gets the current equation value
+   * @returns {string} The current equation
+   */
+  get currentEquation() {
+    return this._currentEquation;
+  }
+
+  /**
+   * Sets the current equation and attempts to subscribe to matching Input atoms.
+   * When the equation is a simple identifier matching an Input atom name,
+   * this AP will subscribe to that Input atom for live value updates.
+   * @param {string} value - The equation string
+   */
+  set currentEquation(value) {
+    this._currentEquation = value;
+    
+    // Skip subscription logic for geometry types
+    if (this.valueType === "geometry") {
+      return;
+    }
+
+    // Check if value is a simple identifier that could match an Input atom name
+    if (typeof value === "string" && AttachmentPoint.NAME_PATTERN.test(value)) {
+      console.log(`[Name Subscription] currentEquation setter: AP "${this.name}" (${this.uniqueID}) checking for Input atom named "${value}"`);
+      // Attempt to subscribe to an Input atom by this name
+      if (this.subscribeToInputByName(value)) {
+        console.log(`[Name Subscription] currentEquation setter: Successfully subscribed AP "${this.name}" to Input "${value}"`);
+        // Successfully subscribed - the callback will handle status/value updates
+        return;
+      }
+      console.log(`[Name Subscription] currentEquation setter: No Input atom found named "${value}"`);
+    }
+    
+    // Not a simple identifier or no matching Input atom found - clear any existing subscription
+    this.unsubscribeNameSubscription();
   }
 
   /**
