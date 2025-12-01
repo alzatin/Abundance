@@ -638,6 +638,7 @@ export default class AttachmentPoint extends ObservableEntity {
    */
   unsubscribeNameSubscription() {
     if (this._nameSubscriptionActive && this._nameSubscribedAtom) {
+      console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) unsubscribing from Input atom "${this._nameSubscribedAtom.name}"`);
       // Unsubscribe from the Input atom itself (which extends ObservableEntity)
       this._nameSubscribedAtom.unsubscribe(this.uniqueID);
       this._nameSubscribedAtom = null;
@@ -657,8 +658,11 @@ export default class AttachmentPoint extends ObservableEntity {
 
     const inputAtom = this.findInputAtomByName(name);
     if (!inputAtom) {
+      console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) could not find Input atom named "${name}"`);
       return false;
     }
+
+    console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) subscribing to Input atom "${inputAtom.name}" (${inputAtom.uniqueID})`);
 
     // Subscribe to the Input atom itself (Input extends Atom extends ObservableEntity)
     this._nameSubscribedAtom = inputAtom;
@@ -667,6 +671,7 @@ export default class AttachmentPoint extends ObservableEntity {
     // Subscribe with a callback that updates this AP's status/value
     inputAtom.subscribe(() => {
       const state = inputAtom.getState();
+      console.log(`[Name Subscription] AP "${this.name}" (${this.uniqueID}) received update from Input atom "${inputAtom.name}": status=${state.status}, value=${state.value}`);
       if (state.status === Status.READY) {
         this.setStatus(Status.READY, state.value);
       } else {
