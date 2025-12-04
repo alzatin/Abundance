@@ -140,7 +140,7 @@ class GeometryProvider {
     if (!operationCache) {
       // Warm cache doesn't exist for this operation. This can happen in edge cases
       // like concurrent execution or if the batch was cleaned up. Fall back to disk cache.
-      console.warn("No warm cache for operation " + context.operationId + ", falling back to disk cache");
+      console.warn(`No warm cache for operation ${context.operationId}, falling back to disk cache`);
       return undefined;
     }
     const result = operationCache.get(id);
@@ -157,7 +157,7 @@ class GeometryProvider {
     if (!operationCache) {
       // Warm cache doesn't exist. This can happen in edge cases like concurrent execution.
       // Fall back to disk cache by not storing in warm cache.
-      console.warn("No warm cache for operation " + operationId + ", skipping warm cache storage");
+      console.warn(`No warm cache for operation ${operationId}, skipping warm cache storage`);
       return;
     }
     operationCache.set(id, geometry);
