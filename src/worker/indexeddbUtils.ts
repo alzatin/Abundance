@@ -1,12 +1,13 @@
+export type DataType = "ReplicadObject" | "AbundanceObject";
 export type StoredGeometryRecord = {
   projectId: string;
   shapeKey: string;
-  type: "ReplicadObject" | "AbundanceObject";
+  type: DataType;
   serialized: string; // Your serialized data
 };
 
 const DB_NAME = "AbundanceProjectCaches";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NAME = "shapes";
 
 function openDB(): Promise<IDBDatabase> {
@@ -21,6 +22,9 @@ function openDB(): Promise<IDBDatabase> {
         keyPath: ["projectId", "shapeKey"],
       });
       store.createIndex("projectId", "projectId", { unique: false });
+      store.createIndex("projectIdAndType", ["projectId", "type"], {
+        unique: false,
+      });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -152,28 +156,79 @@ export async function shapeExists(
   });
 }
 
-export async function deleteProjectCache(projectId: string): Promise<void> {
+/**
+ * Filter entries in a project based on the given predicate. Predicate returns false
+ * to remove an entry, true to retain.
+ *
+ * @param projectId within which entries will be filtered
+ * @param type DataType to filter, either "ReplicadObject" or "AbundanceObject", not both.
+ * @param predicate function which takes the shapeKey. Return true to retain
+ *     this entry, false to delete. If includeValues is true, the value will also be provided
+ *     to the predicate.
+ * @param includeValues if true, the value will be fetched and provided to the predicate.
+ *     WARNING: includeValues=true will be ~4x slower than includeValues=false.
+ * @returns async - the number of deleted entries
+ */
+export async function filter(
+  projectId: string,
+  type: DataType,
+  predicate: (shapeKey: string, value?: StoredGeometryRecord) => boolean,
+  includeValues: boolean = false
+): Promise<number> {
+  const startTime = performance.now();
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    console.log("Deleting cache for project:", projectId);
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
-    const index = store.index("projectId");
-    const request = index.openKeyCursor(IDBKeyRange.only(projectId));
+    const index = store.index("projectIdAndType");
+    // Performance note: using openKeyCursor is more efficient than openCursor when we only need keys
+    // Empirically, similar batch deletes using openCursor and cursor.delete took about 4x longer.
+    // This is likely due to the large size of our serialized data blobs.
+
+    const indexer = IDBKeyRange.only([projectId, type]);
+    const request = includeValues
+      ? index.openCursor(indexer)
+      : index.openKeyCursor(indexer);
+
+    let deletedCount = 0;
+    let retained = 0;
     request.onsuccess = (event) => {
-      const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+      const cursor = (
+        event.target as IDBRequest<IDBCursorWithValue | IDBCursor>
+      ).result;
       if (cursor) {
-        store.delete(cursor.primaryKey as [string, string]);
+        const entryKey = cursor.primaryKey as [string, string];
+        const retain = includeValues
+          ? predicate(entryKey[1], (cursor as IDBCursorWithValue).value)
+          : predicate(entryKey[1]);
+        if (!retain) {
+          includeValues
+            ? cursor.delete()
+            : store.delete(cursor.primaryKey as [string, string]);
+          deletedCount++;
+        } else {
+          retained++;
+        }
         cursor.continue();
       } else {
+        console.debug(
+          `Deleted ${deletedCount} shapes from project ${projectId}. retained ${retained}. took ${
+            performance.now() - startTime
+          } ms.`
+        );
         db.close();
-        resolve();
+        resolve(deletedCount);
       }
     };
     request.onerror = () => {
       db.close();
       reject(request.error);
     };
-    console.log("Deletion finished for project:", projectId);
   });
+}
+
+export async function deleteProjectCache(projectId: string): Promise<void> {
+  await filter(projectId, "ReplicadObject", () => false, false);
+  await filter(projectId, "AbundanceObject", () => false, false);
+  return;
 }

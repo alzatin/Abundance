@@ -570,7 +570,6 @@ function CreateMode() {
         });
 
         console.warn("Project saved on git and aws updated");
-        setSaveProgress(100);
       }
     } catch (error) {
       console.error("Error during commit creation:", error);
@@ -935,6 +934,22 @@ function CreateMode() {
         setSaveProgress,
         typeSave
       );
+
+
+      if (typeSave !== "Auto Save") {
+        const geomIds = GlobalVariables.topLevelMolecule.deepGeomList();
+        // Sweep is best-effort and can take a long time (up to a minute). Don't await, just let it run
+        // in the background and mark save as completed.
+        GlobalVariables.cad.sweepCache(geomIds, GlobalVariables.topLevelMolecule.getContext())
+          .then((count) => {
+            console.log("cache sweep complete, removed: " + count + " items");
+          }).catch((error) => {
+            console.error("Error during cache sweep:", error);
+          });
+      }
+
+      setSaveProgress(100);
+
     } catch (error) {
       console.error("Error during project save:", error);
 

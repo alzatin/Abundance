@@ -12,8 +12,9 @@ import {
   putShape,
   deleteProjectCache,
   shapeExists,
-  deleteShape,
   getAllProjectIds,
+  StoredGeometryRecord,
+  filter,
 } from "./indexeddbUtils";
 
 type ReplicadObject = replicad.Shape3D | replicad.Drawing | replicad.Wire;
@@ -178,7 +179,11 @@ class GeometryProvider {
     const shape = await getShape(context.project, id);
     if (shape == undefined) {
       console.trace("Cache miss for id:", id);
-      throw new Error(`Geometry with ID ${id} not found in cache, context: ${JSON.stringify(context)}`);
+      throw new Error(
+        `Geometry with ID ${id} not found in cache, context: ${JSON.stringify(
+          context
+        )}`
+      );
     }
     let result = undefined;
     try {
@@ -210,6 +215,62 @@ class GeometryProvider {
     this.projectLRU = this.projectLRU.filter((id) => id !== context.project);
     await deleteProjectCache(context.project);
     return true;
+  }
+
+  /**
+   * In the given context, removes all saved geometries except those which are
+   * in the provided set of IDs to retain.
+   */
+  async sweepCache(
+    idsToRetain: Set<string>,
+    context: RequestContext
+  ): Promise<number> {
+    // Step 1: filter geometries based on key since that's a much faster approach
+    // and we don't need access to the geom values.
+    const s = performance.now();
+    const deletedGeoms = await filter(
+      context.project,
+      "ReplicadObject",
+      (shapeKey: string) => {
+        return idsToRetain.has(shapeKey);
+      }
+    );
+    const geomTime = performance.now() - s;
+
+    // Step 2: filter AbundanceObjects based on whether all their geometries
+    // are in the idsToRetain set, here we need access to their values.
+    const deletedAssemblies = await filter(
+      context.project,
+      "AbundanceObject",
+      (shapeKey: string, value?: StoredGeometryRecord) => {
+        if (value) {
+          try {
+            const assembly: AbundanceObject = JSON.parse(value.serialized);
+            for (const leaf of flattenAssembly(assembly)) {
+              if (!idsToRetain.has(leaf.geometry)) {
+                return false;
+              }
+            }
+          } catch (e) {
+            console.error(
+              "Failed to parse AbundanceObject. Deleting from cache: ",
+              e
+            );
+            return false; // delete malformed assemblies
+          }
+          return true;
+        }
+        console.warn("Received no value for AbundanceObject:", shapeKey);
+        return false;
+      },
+      true
+    );
+
+    const assemblyTime = performance.now() - s - geomTime;
+    console.log(
+      `swept cache. removed ${deletedGeoms} geoms in ${geomTime}ms and ${deletedAssemblies} assemblies in ${assemblyTime}ms`
+    );
+    return deletedGeoms + deletedAssemblies;
   }
 
   /**
