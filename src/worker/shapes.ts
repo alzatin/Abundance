@@ -106,7 +106,7 @@ async function textGeom(
         startX: 0,
         startY: 0,
         fontSize: fontSize,
-        font: fontFamily,
+        fontFamily: fontFamily,
       },
       context
     ),
