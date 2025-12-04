@@ -64,16 +64,23 @@ export async function putShape(
   projectId: string,
   shapeKey: string,
   serializedShape: string,
-  isAbundanceObject: boolean = false
+  typeOrIsAbundance: boolean | string = false
 ): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
+    // Support both legacy boolean and new string type parameters
+    let type: string;
+    if (typeof typeOrIsAbundance === "string") {
+      type = typeOrIsAbundance;
+    } else {
+      type = typeOrIsAbundance ? "AbundanceObject" : "ReplicadObject";
+    }
     store.put({
       projectId: projectId,
       shapeKey: shapeKey,
-      type: isAbundanceObject ? "AbundanceObject" : "ReplicadObject",
+      type: type,
       serialized: serializedShape,
     });
     tx.oncomplete = () => {
