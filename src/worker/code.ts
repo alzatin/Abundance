@@ -143,13 +143,13 @@ function isPrimitive(value: any): boolean {
 
 /**
  * Executes the given code with the provided arguments list.
- * Can return geometry (AbundanceObject) or primitive values (number, string, boolean).
+ * Can return geometry (AbundanceObject) or primitive values (number, string, boolean, null, undefined).
  */
 async function executeCode(
   code: string,
   argumentsArray: { [key: string]: any },
   context: RequestContext
-): Promise<AbundanceObject | number | string | boolean> {
+): Promise<AbundanceObject | number | string | boolean | null | undefined> {
   try {
     // Validate input parameters
     if (typeof code !== "string") {

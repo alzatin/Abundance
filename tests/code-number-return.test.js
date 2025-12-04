@@ -4,6 +4,12 @@ import { describe, it, expect } from "vitest";
  * Test for the isPrimitive function logic used in code atoms
  * This validates that the code atom can properly detect and handle
  * primitive return values (numbers, strings, booleans) vs geometry.
+ * 
+ * Note: We duplicate the isPrimitive function here instead of importing it
+ * from src/worker/code.ts because the worker modules use WebAssembly and
+ * have complex dependencies that don't work with the browser test runner.
+ * This pattern is consistent with other tests in the repository that test
+ * isolated logic (e.g., code-input-parsing.test.js).
  */
 
 // This mirrors the isPrimitive function from src/worker/code.ts
