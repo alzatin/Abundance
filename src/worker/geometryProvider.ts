@@ -648,7 +648,7 @@ class GeometryProvider {
 
   async endBatchOperation(
     context: RequestContext,
-    result: AbundanceObject
+    result: AbundanceObject | null
   ): Promise<void> {
     if (!context.operationId) {
       throw new Error("provided context is not a batch operation " + context);
@@ -659,6 +659,13 @@ class GeometryProvider {
       }. size: ${this.warmCache.get(context.operationId)?.size}`
     );
     this.batchMetrics = [0, 0];
+    
+    // If result is null (e.g., code atom returned a primitive), just clean up the batch
+    if (result === null) {
+      this.warmCache.delete(context.operationId);
+      return;
+    }
+    
     if (!context.persistIntermediates) {
       // For all intermediate shapes which are part of the result assembly,
       // promote them to the serialized cache.
