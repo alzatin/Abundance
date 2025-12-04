@@ -643,7 +643,11 @@ class GeometryProvider {
       return preparedResult;
     }
 
-    this.warmCache.set(batchId, new Map());
+    // Only create a new warm cache if one doesn't already exist for this batch.
+    // This prevents concurrent operations with the same ID from clobbering each other.
+    if (!this.warmCache.has(batchId)) {
+      this.warmCache.set(batchId, new Map());
+    }
     return {
       ...context,
       operationId: batchId,
