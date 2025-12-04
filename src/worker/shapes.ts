@@ -98,7 +98,10 @@ async function textGeom(
   context: RequestContext
 ): Promise<AbundanceLeaf> {
   await util.init();
-  await util.replicad.loadFont(Fonts[fontFamily as keyof typeof Fonts]);
+  await util.replicad.loadFont(
+    Fonts[fontFamily as keyof typeof Fonts],
+    fontFamily
+  );
   return {
     geometry: await util.geometryProvider!.drawText(
       text,
