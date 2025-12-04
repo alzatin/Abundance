@@ -339,7 +339,79 @@ export default class Gcode extends Atom {
   }
 
   /**
+   * Check if bounding box A is entirely inside bounding box B (in XY plane)
+   * @param {Object} boundsA - Bounding box with min/max arrays [x, y, z]
+   * @param {Object} boundsB - Bounding box with min/max arrays [x, y, z]
+   * @returns {boolean} True if A is entirely inside B
+   */
+  _isBoundsInsideBounds(boundsA, boundsB) {
+    // Check if A's min is greater than B's min AND A's max is less than B's max
+    // in both X and Y dimensions (ignoring Z for 2D cutting)
+    return (
+      boundsA.min[0] > boundsB.min[0] &&
+      boundsA.max[0] < boundsB.max[0] &&
+      boundsA.min[1] > boundsB.min[1] &&
+      boundsA.max[1] < boundsB.max[1]
+    );
+  }
+
+  /**
+   * Reorder parts so that interior parts come before their containing exterior parts
+   * Uses topological sort to handle nested containment
+   * @param {Array} partsWithBounds - Array of parts with bounds info
+   * @returns {Array} Reordered array with interior parts before exterior parts
+   */
+  _reorderForNestedParts(partsWithBounds) {
+    const n = partsWithBounds.length;
+    if (n <= 1) return partsWithBounds;
+
+    // Build containment relationships: contains[i] = indices of parts that are inside part i
+    const contains = partsWithBounds.map(() => []);
+
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (i !== j) {
+          // Check if part j is inside part i
+          if (
+            this._isBoundsInsideBounds(
+              partsWithBounds[j].bounds,
+              partsWithBounds[i].bounds
+            )
+          ) {
+            contains[i].push(j);
+          }
+        }
+      }
+    }
+
+    // Topological sort: when we visit a part, first add all parts it contains
+    const visited = new Set();
+    const result = [];
+
+    const visit = (index) => {
+      if (visited.has(index)) return;
+      visited.add(index);
+
+      // First recursively add all parts contained within this part
+      for (const containedIndex of contains[index]) {
+        visit(containedIndex);
+      }
+
+      // Then add this part
+      result.push(partsWithBounds[index]);
+    };
+
+    // Visit in original order to maintain directional sort as tiebreaker
+    for (let i = 0; i < n; i++) {
+      visit(i);
+    }
+
+    return result;
+  }
+
+  /**
    * Sort parts based on the selected direction using their bounding boxes
+   * Also ensures interior parts are cut before their containing exterior parts
    * @param {Array} parts - Array of part IDs
    * @returns {Promise<Array>} Sorted array of part IDs
    */
@@ -389,7 +461,10 @@ export default class Gcode extends Atom {
         break;
     }
 
-    return partsWithBounds.map((part) => part.partGeom);
+    // Reorder to ensure interior parts are cut before their containing exterior parts
+    const reorderedParts = this._reorderForNestedParts(partsWithBounds);
+
+    return reorderedParts.map((part) => part.partGeom);
   }
 
   /**
