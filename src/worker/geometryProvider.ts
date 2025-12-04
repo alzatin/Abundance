@@ -138,8 +138,10 @@ class GeometryProvider {
     }
     const operationCache = this.warmCache.get(context.operationId);
     if (!operationCache) {
-      console.error("No warm cache for operation " + context.operationId);
-      throw new Error("No warm cache for operation " + context.operationId);
+      // Warm cache doesn't exist for this operation. This can happen in edge cases
+      // like concurrent execution or if the batch was cleaned up. Fall back to disk cache.
+      console.warn("No warm cache for operation " + context.operationId + ", falling back to disk cache");
+      return undefined;
     }
     const result = operationCache.get(id);
     result ? this.batchMetrics[0]++ : this.batchMetrics[1]++;
@@ -153,7 +155,10 @@ class GeometryProvider {
   ) {
     const operationCache = this.warmCache.get(operationId);
     if (!operationCache) {
-      throw new Error("No warm cache for operation " + operationId);
+      // Warm cache doesn't exist. This can happen in edge cases like concurrent execution.
+      // Fall back to disk cache by not storing in warm cache.
+      console.warn("No warm cache for operation " + operationId + ", skipping warm cache storage");
+      return;
     }
     operationCache.set(id, geometry);
   }
