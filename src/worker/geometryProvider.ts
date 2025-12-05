@@ -138,10 +138,8 @@ class GeometryProvider {
     }
     const operationCache = this.warmCache.get(context.operationId);
     if (!operationCache) {
-      // Warm cache doesn't exist for this operation. This can happen in edge cases
-      // like concurrent execution or if the batch was cleaned up. Fall back to disk cache.
-      console.warn(`No warm cache for operation ${context.operationId}, falling back to disk cache`);
-      return undefined;
+      console.error("No warm cache for operation " + context.operationId);
+      throw new Error("No warm cache for operation " + context.operationId);
     }
     const result = operationCache.get(id);
     result ? this.batchMetrics[0]++ : this.batchMetrics[1]++;
@@ -155,10 +153,7 @@ class GeometryProvider {
   ) {
     const operationCache = this.warmCache.get(operationId);
     if (!operationCache) {
-      // Warm cache doesn't exist. This can happen in edge cases like concurrent execution.
-      // Fall back to disk cache by not storing in warm cache.
-      console.warn(`No warm cache for operation ${operationId}, skipping warm cache storage`);
-      return;
+      throw new Error("No warm cache for operation " + operationId);
     }
     operationCache.set(id, geometry);
   }
@@ -643,11 +638,7 @@ class GeometryProvider {
       return preparedResult;
     }
 
-    // Only create a new warm cache if one doesn't already exist for this batch.
-    // This prevents concurrent operations with the same ID from clobbering each other.
-    if (!this.warmCache.has(batchId)) {
-      this.warmCache.set(batchId, new Map());
-    }
+    this.warmCache.set(batchId, new Map());
     return {
       ...context,
       operationId: batchId,
@@ -657,7 +648,7 @@ class GeometryProvider {
 
   async endBatchOperation(
     context: RequestContext,
-    result: AbundanceObject | null
+    result: AbundanceObject
   ): Promise<void> {
     if (!context.operationId) {
       throw new Error("provided context is not a batch operation " + context);
@@ -668,13 +659,6 @@ class GeometryProvider {
       }. size: ${this.warmCache.get(context.operationId)?.size}`
     );
     this.batchMetrics = [0, 0];
-    
-    // If result is null (e.g., code atom returned a primitive), just clean up the batch
-    if (result === null) {
-      this.warmCache.delete(context.operationId);
-      return;
-    }
-    
     if (!context.persistIntermediates) {
       // For all intermediate shapes which are part of the result assembly,
       // promote them to the serialized cache.
@@ -698,6 +682,22 @@ class GeometryProvider {
       }
     }
     await this.cacheAssemblyStructure(context.operationId, result, context);
+    this.warmCache.delete(context.operationId);
+  }
+
+  /**
+   * Clean up a batch operation without caching its result.
+   * Used when code atoms return primitive values (numbers, strings, etc.)
+   * instead of geometry - we just discard the warm cache without persisting anything.
+   */
+  cleanupBatchWithoutCaching(context: RequestContext): void {
+    if (!context.operationId) {
+      throw new Error("provided context is not a batch operation " + context);
+    }
+    console.log(
+      `Cleanup batch ${context.operationId} without caching (primitive result)`
+    );
+    this.batchMetrics = [0, 0];
     this.warmCache.delete(context.operationId);
   }
 

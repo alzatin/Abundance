@@ -5,7 +5,6 @@ import * as util from "./util";
 import { AbundanceObject } from "./util";
 import * as replicad from "replicad";
 import { RequestContext } from "./geometryProvider";
-import { putShape, getShape } from "./indexeddbUtils";
 
 /**
  * For backward compatibility reasons we allow users to call functions with
@@ -177,15 +176,8 @@ async function executeCode(
       }
     }
 
-    // check cache for existing result
+    // check cache for existing result (only geometry results are cached)
     const cacheId = composeID(code, argsSignature);
-    
-    // Check for cached primitive result first
-    const cachedPrimitive = await getShape(context.project, "primitive-" + cacheId);
-    if (cachedPrimitive && cachedPrimitive.type === "PrimitiveResult") {
-      return JSON.parse(cachedPrimitive.serialized);
-    }
-    
     const cached = await util.geometryProvider!.getAssembly(cacheId, context);
     if (cached) {
       return cached;
@@ -384,16 +376,11 @@ async function executeCode(
       timeoutPromise,
     ]);
 
-    // If the result is a primitive value, cache it and return directly
+    // If the result is a primitive value, clean up batch and return directly (don't cache)
     if (isPrimitive(rawResult)) {
-      // Cache the primitive result so subsequent runs can return early
-      await putShape(
-        context.project,
-        "primitive-" + cacheId,
-        JSON.stringify(rawResult),
-        "PrimitiveResult"
-      );
-      util.geometryProvider!.endBatchOperation(context, null);
+      // Clean up the warm cache without caching the result
+      // Primitive results are not cached - only geometry results are cached
+      util.geometryProvider!.cleanupBatchWithoutCaching(context);
       return rawResult;
     }
 
