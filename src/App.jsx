@@ -134,7 +134,7 @@ function AppContent() {
         const linearProgress = ready / total;
         // Power of 3 means: 50% atoms ready → 12.5% displayed, 70% → 34%, 90% → 73%
         // This gives more visual progress space to the expensive later computations
-        const scaledProgress = Math.pow(linearProgress, 3);
+        const scaledProgress = Math.pow(linearProgress, 4);
         const progress = Math.min(99, Math.floor(scaledProgress * 100));
         setRenderProgress(progress);
       }
