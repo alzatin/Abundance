@@ -132,9 +132,9 @@ function AppContent() {
         // Later atoms are more computationally expensive, so we use power > 1
         // to compress early progress and leave more visual space for later work
         const linearProgress = ready / total;
-        // Power of 2 means: 50% atoms ready → 25% displayed, 70% → 49%, 90% → 81%
+        // Power of 3 means: 50% atoms ready → 12.5% displayed, 70% → 34%, 90% → 73%
         // This gives more visual progress space to the expensive later computations
-        const scaledProgress = Math.pow(linearProgress, 2);
+        const scaledProgress = Math.pow(linearProgress, 3);
         const progress = Math.min(99, Math.floor(scaledProgress * 100));
         setRenderProgress(progress);
       }
