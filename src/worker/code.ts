@@ -129,13 +129,27 @@ async function toGeometry(
 }
 
 /**
+ * Check if a value is a primitive type (number, string, boolean, null, undefined).
+ */
+function isPrimitive(value: any): boolean {
+  return (
+    value === null ||
+    value === undefined ||
+    typeof value === "number" ||
+    typeof value === "string" ||
+    typeof value === "boolean"
+  );
+}
+
+/**
  * Executes the given code with the provided arguments list.
+ * Can return geometry (AbundanceObject) or primitive values (number, string, boolean, null, undefined).
  */
 async function executeCode(
   code: string,
   argumentsArray: { [key: string]: any },
   context: RequestContext
-): Promise<AbundanceObject> {
+): Promise<AbundanceObject | number | string | boolean | null | undefined> {
   try {
     // Validate input parameters
     if (typeof code !== "string") {
@@ -162,7 +176,7 @@ async function executeCode(
       }
     }
 
-    // check cache for existing result
+    // check cache for existing result (only geometry results are cached)
     const cacheId = composeID(code, argsSignature);
     const cached = await util.geometryProvider!.getAssembly(cacheId, context);
     if (cached) {
@@ -356,18 +370,29 @@ async function executeCode(
       setTimeout(() => reject(new Error("Code execution timed out")), 60000); // 1 min timeout
     });
 
-    return await Promise.race([
-      ensureDimension(userFunction(...inputValues)),
+    // Get the raw result from user code
+    const rawResult = await Promise.race([
+      userFunction(...inputValues),
       timeoutPromise,
-    ]).then(async (result) => {
-      const abundanceObj = await addAssemblyPartsToCache(
-        result as RealizedAssembly,
-        context,
-        cacheId
-      );
-      util.geometryProvider!.endBatchOperation(context, abundanceObj);
-      return abundanceObj;
-    });
+    ]);
+
+    // If the result is a primitive value, clean up batch and return directly (don't cache)
+    if (isPrimitive(rawResult)) {
+      // Clean up the warm cache without caching the result
+      // Primitive results are not cached - only geometry results are cached
+      util.geometryProvider!.cleanupBatchWithoutCaching(context);
+      return rawResult;
+    }
+
+    // Otherwise, process as geometry
+    const processedResult = await ensureDimension(rawResult);
+    const abundanceObj = await addAssemblyPartsToCache(
+      processedResult as RealizedAssembly,
+      context,
+      cacheId
+    );
+    util.geometryProvider!.endBatchOperation(context, abundanceObj);
+    return abundanceObj;
   } catch (error) {
     console.error("Code execution error:", error);
     throw new Error(`Code execution failed: ${(error as Error).message}`);

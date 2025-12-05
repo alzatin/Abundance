@@ -685,6 +685,22 @@ class GeometryProvider {
     this.warmCache.delete(context.operationId);
   }
 
+  /**
+   * Clean up a batch operation without caching its result.
+   * Used when code atoms return primitive values (numbers, strings, etc.)
+   * instead of geometry - we just discard the warm cache without persisting anything.
+   */
+  cleanupBatchWithoutCaching(context: RequestContext): void {
+    if (!context.operationId) {
+      throw new Error("provided context is not a batch operation " + context);
+    }
+    console.log(
+      `Cleanup batch ${context.operationId} without caching (primitive result)`
+    );
+    this.batchMetrics = [0, 0];
+    this.warmCache.delete(context.operationId);
+  }
+
   async shrinkWrapSketches(
     compositeSketchId: string,
     points: number,
