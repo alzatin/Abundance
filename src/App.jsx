@@ -128,13 +128,13 @@ function AppContent() {
         }
         
         const [ready, total] = molecule.getCompletionTuple();
-        // Apply square root scaling to make progress appear more linear
-        // Later atoms are more computationally expensive, so we use power scaling
-        // to weight earlier progress less and later progress more
+        // Apply power scaling to make progress appear more linear
+        // Later atoms are more computationally expensive, so we use power > 1
+        // to compress early progress and leave more visual space for later work
         const linearProgress = ready / total;
-        // Use a power function to compress early progress and expand later progress
-        // This makes the bar progress more steadily as later computations are heavier
-        const scaledProgress = Math.pow(linearProgress, 0.5);
+        // Power of 2 means: 50% atoms ready → 25% displayed, 70% → 49%, 90% → 81%
+        // This gives more visual progress space to the expensive later computations
+        const scaledProgress = Math.pow(linearProgress, 2);
         const progress = Math.min(99, Math.floor(scaledProgress * 100));
         setRenderProgress(progress);
       }
