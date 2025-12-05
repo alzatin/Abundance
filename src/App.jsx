@@ -119,14 +119,24 @@ function AppContent() {
       const molecule = GlobalVariables.topLevelMolecule;
       if (molecule) {
         console.log("Molecule state:", molecule.getState().status);
-        const [ready, total] = molecule.getCompletionTuple();
-        // Update your UI with progress here
-        //console.log(`Molecule progress: ${ready} / ${total}`);
-        const progress = Math.floor((ready / total) * 100);
-        setRenderProgress(progress);
+        
+        // Check if molecule is fully ready first
         if (molecule.getState().status === "ready") {
+          setRenderProgress(100);
           clearInterval(interval);
+          return;
         }
+        
+        const [ready, total] = molecule.getCompletionTuple();
+        // Apply power scaling to make progress appear more linear
+        // Later atoms are more computationally expensive, so we use power > 1
+        // to compress early progress and leave more visual space for later work
+        const linearProgress = ready / total;
+        // Power of 3 means: 50% atoms ready → 12.5% displayed, 70% → 34%, 90% → 73%
+        // This gives more visual progress space to the expensive later computations
+        const scaledProgress = Math.pow(linearProgress, 4);
+        const progress = Math.min(99, Math.floor(scaledProgress * 100));
+        setRenderProgress(progress);
       }
     }, 500); // Poll every 500ms
 

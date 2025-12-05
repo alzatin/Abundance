@@ -110,43 +110,40 @@ export default class Molecule extends Atom {
   }
 
   // Returns a tuple of [READY_child_count, total_child_count]
+  // Always computes total recursively to ensure progress bar never goes backwards
   getCompletionTuple() {
-    let childCount = this.nodesOnTheScreen.filter(
-      (atom) => atom.status !== Status.DISABLED
-    ).length;
-    if (childCount === 0) {
+    let totalCount = 0;
+    let readyCount = 0;
+
+    this.nodesOnTheScreen.forEach((atom) => {
+      const status = atom.getState().status;
+      if (status === Status.DISABLED) {
+        // Skip disabled children entirely (and their subtrees)
+        return;
+      }
+
+      if (
+        atom.atomType === "Molecule" ||
+        atom.atomType === "GitHubMolecule"
+      ) {
+        // Recurse into nested molecules to get consistent totals
+        const [ready, total] = atom.getCompletionTuple();
+        totalCount += total;
+        readyCount += ready;
+      } else {
+        // Non-molecule atom counts as 1
+        totalCount += 1;
+        if (status === Status.READY) {
+          readyCount += 1;
+        }
+      }
+    });
+
+    if (totalCount === 0) {
       return [1, 1]; // be nice about division by 0
     }
-    switch (this.getState().status) {
-      case Status.READY:
-        return [childCount, childCount];
-      case Status.WAITING:
-        return [0, childCount];
-      case Status.PROCESSING:
-      case Status.PROCESSING: {
-        let readyChildCount = 0;
-        this.nodesOnTheScreen.forEach((atom) => {
-          const status = atom.getState().status;
-          if (status === Status.DISABLED) {
-            // Skip disabled children entirely (and their subtrees)
-            return;
-          }
-          if (
-            atom.atomType === "Molecule" ||
-            atom.atomType === "GitHubMolecule"
-          ) {
-            const [ready, total] = atom.getCompletionTuple();
-            childCount += total - 1; // exclude the nested molecule node itself
-            readyChildCount += ready;
-          } else if (status === Status.READY) {
-            readyChildCount++;
-          }
-        });
-        return [readyChildCount, childCount];
-      }
-      default:
-        return [0, childCount];
-    }
+
+    return [readyCount, totalCount];
   }
 
   /**
