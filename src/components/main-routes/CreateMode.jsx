@@ -60,6 +60,10 @@ function CreateMode() {
     setShowBackgroundModel,
     userUploadedFile,
     setUserUploadedFile,
+    solidParam,
+    setSolid,
+    showTopLevelWireframe,
+    setShowTopLevelWireframe,
   } = useRendering();
 
   const { cad, loadProject } = useProject();
@@ -218,6 +222,28 @@ function CreateMode() {
       setSavePopUp(true);
       saveProject(setSaveState, "User Save");
     }
+    
+    // CMD+SHIFT+I: Go up a level
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "I") {
+      e.preventDefault();
+      if (!currentMoleculeTop) {
+        GlobalVariables.currentMolecule.goToParentMolecule();
+        setActiveAtom(GlobalVariables.currentMolecule);
+      }
+    }
+    
+    // CMD+SHIFT+W: Toggle wireframe on/off
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "W") {
+      e.preventDefault();
+      setSolid(!solidParam);
+    }
+    
+    // CMD+SHIFT+M: Toggle top level wireframe on/off
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "M") {
+      e.preventDefault();
+      setShowTopLevelWireframe(!showTopLevelWireframe);
+    }
+    
     //Copy /paste listeners
     if (e.key == "Control" || e.key == "Meta") {
       GlobalVariables.ctrlDown = true;
