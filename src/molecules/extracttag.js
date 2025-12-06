@@ -98,20 +98,12 @@ export default class ExtractTag extends Atom {
     let tagList = this.tagList.tags || [];
     let inputParams = {};
 
-    inputParams[this.uniqueID + "extracting"] = {
-      type: "string",
-      value: this.tag,
-      label: "Tag",
-      disabled: true,
-    };
-
     inputParams[this.uniqueID + "tag_ops"] = {
       type: "select",
-      value: "Select Tag",
+      value: this.tag ? this.tag : "Select Tag",
       options: tagList,
       label: "Extract Tag",
       onChange: (value) => {
-        //setInputChanged(value);
         if (this.tag != value && value != "Select Tag") {
           this.tag = value;
           this.onUpstreamChange();
