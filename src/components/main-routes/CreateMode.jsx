@@ -121,19 +121,13 @@ function CreateMode() {
 
   /** State for top level molecule */
   const [currentMoleculeTop, setTop] = useState(false);
-  
-  // Ref to always have latest currentMoleculeTop value in event handlers
-  const currentMoleculeTopRef = useRef(currentMoleculeTop);
-  useEffect(() => {
-    currentMoleculeTopRef.current = currentMoleculeTop;
-  }, [currentMoleculeTop]);
-  
+
   // Refs for rendering state to avoid stale closures in keyboard shortcuts
   const solidParamRef = useRef(solidParam);
   useEffect(() => {
     solidParamRef.current = solidParam;
   }, [solidParam]);
-  
+
   const showTopLevelWireframeRef = useRef(showTopLevelWireframe);
   useEffect(() => {
     showTopLevelWireframeRef.current = showTopLevelWireframe;
@@ -239,7 +233,7 @@ function CreateMode() {
       setSavePopUp(true);
       saveProject(setSaveState, "User Save");
     }
-    
+
     //Copy /paste listeners
     if (e.key == "Control" || e.key == "Meta") {
       GlobalVariables.ctrlDown = true;
@@ -251,31 +245,30 @@ function CreateMode() {
     if (settingsPopUpRef.current) return; // Do not trigger shortcuts if settings popup is open
     if (exportPopUpRef.current) return; // Do not trigger shortcuts if export popup is open
     if (duplicateDialogRef.current) return; // Do not trigger shortcuts if duplicate dialog is open
-    
-    // CMD+SHIFT+I: Go up a level
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "I") {
+
+    // CTRL+SHIFT+I: Go up a level
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "U") {
       e.preventDefault();
-      if (!currentMoleculeTopRef.current) {
-        GlobalVariables.currentMolecule.goToParentMolecule();
-        setActiveAtom(GlobalVariables.currentMolecule);
-      }
+      GlobalVariables.currentMolecule.goToParentMolecule();
+      setActiveAtom(GlobalVariables.currentMolecule);
+
       return;
     }
-    
-    // CMD+SHIFT+W: Toggle wireframe on/off
+
+    // CTRL+SHIFT+W: Toggle wireframe on/off
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "W") {
       e.preventDefault();
       setSolid(!solidParamRef.current);
       return;
     }
-    
-    // CMD+SHIFT+M: Toggle top level wireframe on/off
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "M") {
+
+    // CTRL+SHIFT+A: Toggle top level wireframe on/off
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "A") {
       e.preventDefault();
       setShowTopLevelWireframe(!showTopLevelWireframeRef.current);
       return;
     }
-    
+
     if (
       (e.key === "Alt" || e.key === "AltGraph") &&
       !GlobalVariables.ctrlDown
@@ -982,21 +975,21 @@ function CreateMode() {
         typeSave
       );
 
-
       if (typeSave !== "Auto Save") {
         const geomIds = GlobalVariables.topLevelMolecule.deepGeomList();
         // Sweep is best-effort and can take a long time (up to a minute). Don't await, just let it run
         // in the background and mark save as completed.
-        GlobalVariables.cad.sweepCache(geomIds, GlobalVariables.topLevelMolecule.getContext())
+        GlobalVariables.cad
+          .sweepCache(geomIds, GlobalVariables.topLevelMolecule.getContext())
           .then((count) => {
             console.log("cache sweep complete, removed: " + count + " items");
-          }).catch((error) => {
+          })
+          .catch((error) => {
             console.error("Error during cache sweep:", error);
           });
       }
 
       setSaveProgress(100);
-
     } catch (error) {
       console.error("Error during project save:", error);
 
