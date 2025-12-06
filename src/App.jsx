@@ -180,17 +180,22 @@ function AppContent() {
         pool.proxy().then((worker) => {
           worker.generateDisplayMesh(moleculeValue, context)
             .then((m) => {
-              // Store the generated mesh
-              topLevelMesh.current.mesh = m.mesh;
-              setTopLevelWireMesh(m.mesh);
+              // Check if the molecule ID still matches (avoid race condition)
+              if (topLevelMesh.current && topLevelMesh.current.id === moleculeId) {
+                // Store the generated mesh
+                topLevelMesh.current.mesh = m.mesh;
+                setTopLevelWireMesh(m.mesh);
+              }
             })
             .catch((e) => {
               console.error("Failed to generate top-level wireframe mesh:", e);
+              // Reset to allow retry
+              topLevelMesh.current = undefined;
             });
         });
       }
     }
-  }, [renderProgress, setTopLevelWireMesh]);
+  }, [renderProgress, setTopLevelWireMesh, pool]);
 
   /* Creates an element to check with Puppeteer if the molecule is fully loaded*/
   const createPuppeteerDiv = () => {
