@@ -358,8 +358,8 @@ body {
 #shortcutDiv {
   width: 250px;
   position: absolute;
-  left: calc(100% - 250px);
-  top: 25px;
+  left: calc(100% - 350px);
+  top: 15px;
   color: var(--abundance-color-fontTransparentGrey);
   z-index: 4;
   padding: 10px;

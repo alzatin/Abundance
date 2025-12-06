@@ -159,6 +159,9 @@ function CreateMode() {
     x: "Equation",
     z: "Undo",
     "(ALT)": "GitSearch",
+    "(CTRL+SHIFT)+U": "Go-Up",
+    "(CTRL+SHIFT)+W": "Wireframe",
+    "(CTRL+SHIFT)+A": "Show-Top-Level-Mesh",
   };
 
   // Initialize state with undefined width/height so server and client renders match
