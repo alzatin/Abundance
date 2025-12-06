@@ -141,6 +141,7 @@ const inputStyle = {
   outline: "none",
   transition: "border 0.2s, box-shadow 0.2s",
   flex: "1 1 0",
+  width: "100%",
 };
 
 const inputDisabledStyle = {
@@ -622,7 +623,10 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                 if (!isDisabled) {
                                   const val = Number(e.target.value);
                                   // Allow intermediate typing states
-                                  if (e.target.value === "" || e.target.value === "-") {
+                                  if (
+                                    e.target.value === "" ||
+                                    e.target.value === "-"
+                                  ) {
                                     const arr = [...currentArrayValue];
                                     arr[axisIdx] = e.target.value;
                                     handleLocalChange(key, arr);
@@ -644,14 +648,16 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                     arr[i] = numValue;
                                   } else {
                                     // Get the committed value from controlValues as fallback
-                                    const committedValue = Array.isArray(controlValues[key]) 
-                                      ? controlValues[key][i] 
+                                    const committedValue = Array.isArray(
+                                      controlValues[key]
+                                    )
+                                      ? controlValues[key][i]
                                       : 0;
                                     arr[i] = committedValue;
                                   }
                                 }
                                 commitChange(key, arr, config);
-                                
+
                                 setFocusedAxis((fa) => ({
                                   ...fa,
                                   [key]: undefined,
@@ -723,7 +729,10 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           onChange={(e) => {
                             const numValue = Number(e.target.value);
                             // Allow empty string for intermediate state while typing
-                            if (e.target.value === "" || e.target.value === "-") {
+                            if (
+                              e.target.value === "" ||
+                              e.target.value === "-"
+                            ) {
                               handleLocalChange(key, e.target.value);
                             } else {
                               handleLocalChange(key, numValue);
@@ -958,7 +967,10 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           onChange={(e) => {
                             const numValue = Number(e.target.value);
                             // Allow empty string for intermediate state while typing
-                            if (e.target.value === "" || e.target.value === "-") {
+                            if (
+                              e.target.value === "" ||
+                              e.target.value === "-"
+                            ) {
                               handleLocalChange(key, e.target.value);
                             } else {
                               handleChange(numValue);
