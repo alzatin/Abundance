@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Octokit } from "octokit";
 import {
   HashRouter as Router,
@@ -156,6 +156,42 @@ function AppContent() {
     }
   }, [renderProgress, setRenderBarVisible]);
 
+  // Generate top-level molecule wireframe mesh when molecule is ready
+  useEffect(() => {
+    if (renderProgress >= 100 && GlobalVariables.topLevelMolecule) {
+      const molecule = GlobalVariables.topLevelMolecule;
+      const moleculeId = molecule.uniqueID;
+      const moleculeValue = molecule.value;
+      const context = molecule.getContext();
+      
+      // Check if we've already generated the mesh for this molecule
+      if (topLevelMesh.current && topLevelMesh.current.id === moleculeId) {
+        // Already generated for this molecule, just ensure it's set
+        if (topLevelMesh.current.mesh) {
+          setTopLevelWireMesh(topLevelMesh.current.mesh);
+        }
+        return;
+      }
+      
+      if (moleculeValue && context) {
+        // Mark that we're generating for this molecule
+        topLevelMesh.current = { id: moleculeId, mesh: undefined };
+        
+        pool.proxy().then((worker) => {
+          worker.generateDisplayMesh(moleculeValue, context)
+            .then((m) => {
+              // Store the generated mesh
+              topLevelMesh.current.mesh = m.mesh;
+              setTopLevelWireMesh(m.mesh);
+            })
+            .catch((e) => {
+              console.error("Failed to generate top-level wireframe mesh:", e);
+            });
+        });
+      }
+    }
+  }, [renderProgress, setTopLevelWireMesh]);
+
   /* Creates an element to check with Puppeteer if the molecule is fully loaded*/
   const createPuppeteerDiv = () => {
     // Check if the div already exists
@@ -179,6 +215,7 @@ function AppContent() {
   const inFlightMeshRender = React.useRef(undefined); // {task: Promise, value: atom.value}
   const targetMesh = React.useRef(undefined); // id of most recently displayed mesh
   const backgroundMesh = React.useRef(undefined); // {id: atom.value, mesh: generated mesh}
+  const topLevelMesh = React.useRef(undefined); // {id: molecule.uniqueID, mesh: generated mesh}
 
   function makeMesh() {
     setOutdatedMesh(true);
