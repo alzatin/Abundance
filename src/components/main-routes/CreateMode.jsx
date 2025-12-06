@@ -121,6 +121,23 @@ function CreateMode() {
 
   /** State for top level molecule */
   const [currentMoleculeTop, setTop] = useState(false);
+  
+  // Ref to always have latest currentMoleculeTop value in event handlers
+  const currentMoleculeTopRef = useRef(currentMoleculeTop);
+  useEffect(() => {
+    currentMoleculeTopRef.current = currentMoleculeTop;
+  }, [currentMoleculeTop]);
+  
+  // Refs for rendering state to avoid stale closures in keyboard shortcuts
+  const solidParamRef = useRef(solidParam);
+  useEffect(() => {
+    solidParamRef.current = solidParam;
+  }, [solidParam]);
+  
+  const showTopLevelWireframeRef = useRef(showTopLevelWireframe);
+  useEffect(() => {
+    showTopLevelWireframeRef.current = showTopLevelWireframe;
+  }, [showTopLevelWireframe]);
 
   const lastSaveData = useRef({}); // The object saved last time the project was saved...used for comparison
 
@@ -216,32 +233,11 @@ function CreateMode() {
    * @param {KeyboardEvent} e
    */
   const handleKeyDown = (e) => {
-    //Save project with Ctrl+S or Cmd+S
+    //Save project with Ctrl+S or Cmd+S (should work even when code is active)
     if ((e.ctrlKey || e.metaKey) && e.key === "s") {
       e.preventDefault();
       setSavePopUp(true);
       saveProject(setSaveState, "User Save");
-    }
-    
-    // CMD+SHIFT+I: Go up a level
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "I") {
-      e.preventDefault();
-      if (!currentMoleculeTop) {
-        GlobalVariables.currentMolecule.goToParentMolecule();
-        setActiveAtom(GlobalVariables.currentMolecule);
-      }
-    }
-    
-    // CMD+SHIFT+W: Toggle wireframe on/off
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "W") {
-      e.preventDefault();
-      setSolid(!solidParam);
-    }
-    
-    // CMD+SHIFT+M: Toggle top level wireframe on/off
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "M") {
-      e.preventDefault();
-      setShowTopLevelWireframe(!showTopLevelWireframe);
     }
     
     //Copy /paste listeners
@@ -255,6 +251,31 @@ function CreateMode() {
     if (settingsPopUpRef.current) return; // Do not trigger shortcuts if settings popup is open
     if (exportPopUpRef.current) return; // Do not trigger shortcuts if export popup is open
     if (duplicateDialogRef.current) return; // Do not trigger shortcuts if duplicate dialog is open
+    
+    // CMD+SHIFT+I: Go up a level
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "I") {
+      e.preventDefault();
+      if (!currentMoleculeTopRef.current) {
+        GlobalVariables.currentMolecule.goToParentMolecule();
+        setActiveAtom(GlobalVariables.currentMolecule);
+      }
+      return;
+    }
+    
+    // CMD+SHIFT+W: Toggle wireframe on/off
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "W") {
+      e.preventDefault();
+      setSolid(!solidParamRef.current);
+      return;
+    }
+    
+    // CMD+SHIFT+M: Toggle top level wireframe on/off
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "M") {
+      e.preventDefault();
+      setShowTopLevelWireframe(!showTopLevelWireframeRef.current);
+      return;
+    }
+    
     if (
       (e.key === "Alt" || e.key === "AltGraph") &&
       !GlobalVariables.ctrlDown
