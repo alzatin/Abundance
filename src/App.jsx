@@ -177,22 +177,23 @@ function AppContent() {
         // Mark that we're generating for this molecule
         topLevelMesh.current = { id: moleculeId, mesh: undefined };
         
-        pool.proxy().then((worker) => {
-          worker.generateDisplayMesh(moleculeValue, context)
-            .then((m) => {
-              // Check if the molecule ID still matches (avoid race condition)
-              if (topLevelMesh.current && topLevelMesh.current.id === moleculeId) {
-                // Store the generated mesh
-                topLevelMesh.current.mesh = m.mesh;
-                setTopLevelWireMesh(m.mesh);
-              }
-            })
-            .catch((e) => {
-              console.error("Failed to generate top-level wireframe mesh:", e);
-              // Reset to allow retry
-              topLevelMesh.current = undefined;
-            });
-        });
+        pool.proxy()
+          .then((worker) => {
+            return worker.generateDisplayMesh(moleculeValue, context);
+          })
+          .then((m) => {
+            // Check if the molecule ID still matches (avoid race condition)
+            if (topLevelMesh.current && topLevelMesh.current.id === moleculeId) {
+              // Store the generated mesh
+              topLevelMesh.current.mesh = m.mesh;
+              setTopLevelWireMesh(m.mesh);
+            }
+          })
+          .catch((e) => {
+            console.error("Failed to generate top-level wireframe mesh:", e);
+            // Reset to allow retry
+            topLevelMesh.current = undefined;
+          });
       }
     }
   }, [renderProgress, setTopLevelWireMesh, pool]);
