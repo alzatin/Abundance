@@ -263,7 +263,9 @@ const FeaturedHighlight = ({ highestRankingNode, highestRankingToolNode }) => (
       }
     >
       <div style={{ flexBasis: "60%" }}>
-        <p className="project_name">{convertToDisplayName(highestRankingNode.repoName)}</p>
+        <p className="project_name">
+          {convertToDisplayName(highestRankingNode.repoName)}
+        </p>
         <p className="project_name">By {highestRankingNode.owner}</p>
       </div>
       <img
@@ -294,7 +296,9 @@ const FeaturedHighlight = ({ highestRankingNode, highestRankingToolNode }) => (
       }
     >
       <div style={{ flexBasis: "60%" }}>
-        <p className="project_name">{convertToDisplayName(highestRankingToolNode?.repoName)}</p>
+        <p className="project_name">
+          {convertToDisplayName(highestRankingToolNode?.repoName)}
+        </p>
         <p className="project_name">By {highestRankingToolNode?.owner}</p>
       </div>
       <img
@@ -492,7 +496,9 @@ const ProjectDiv = ({
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node.node)} // <-- add right-click handler for list mode
       >
-        <p className="project_name_list">{convertToDisplayName(node.node.repoName)}</p>
+        <p className="project_name_list">
+          {convertToDisplayName(node.node.repoName)}
+        </p>
 
         <p className="project_name_list">{node.node.owner}</p>
         <p style={{ width: "20%", display: "block" }}>
@@ -847,12 +853,6 @@ const ShowProjects = ({
             });
           });
       });
-  };
-
-  /* Function to fork a dummy project if user has no projects */
-  const forkDummyProject = async function (authorizedUserOcto) {
-    console.log("User has no projects, forking dummy project");
-    await forkProject(authorizedUserOcto, "alzatin", "my-first-project");
   };
 
   const handleSearchChange = (e) => {

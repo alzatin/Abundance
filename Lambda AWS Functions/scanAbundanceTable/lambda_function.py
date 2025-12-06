@@ -79,7 +79,7 @@ def lambda_handler(event: any, context: any):
 
         elif (searchAttribute and query):
             scan_args = {
-                'FilterExpression': Attr(searchAttribute).contains(query) & ~(Attr('privateRepo').eq(True)) & ~(Attr('parentRepo').eq('alzatin/my-first-project')),
+                'FilterExpression': Attr(searchAttribute).contains(query) & ~(Attr('privateRepo').eq(True)) & ~(Attr('repoName').eq('tutorial-default')),
             }
             response = table.scan(**scan_args)
             item_array.extend(response.get('Items', []))
@@ -88,7 +88,7 @@ def lambda_handler(event: any, context: any):
             query_args = {
                 'IndexName': 'yyyy-dateCreated-index',
                 'KeyConditionExpression': Key('yyyy').eq(year),
-                'FilterExpression': ~(Attr('privateRepo').eq(True)) & ~(Attr('parentRepo').eq('alzatin/my-first-project'))
+                'FilterExpression': ~(Attr('privateRepo').eq(True)) & ~(Attr('repoName').eq('tutorial-default'))
             }
             if exclusiveKey:
                 query_args['ExclusiveStartKey'] = exclusiveKey
