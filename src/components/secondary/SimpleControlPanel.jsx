@@ -723,34 +723,118 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           {label}
                           {label ? ":" : ""}
                         </span>
-                        <input
-                          type="number"
-                          value={currentValue ?? 0}
-                          onChange={(e) => {
-                            const numValue = Number(e.target.value);
-                            // Allow empty string for intermediate state while typing
-                            if (
-                              e.target.value === "" ||
-                              e.target.value === "-"
-                            ) {
-                              handleLocalChange(key, e.target.value);
-                            } else {
-                              handleLocalChange(key, numValue);
-                            }
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            width: "100%",
                           }}
-                          onBlur={(e) => {
-                            const numValue = Number(e.target.value);
-                            commitChange(key, numValue, config);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
+                        >
+                          <input
+                            type="number"
+                            value={currentValue ?? 0}
+                            onChange={(e) => {
+                              const numValue = Number(e.target.value);
+                              // Allow empty string for intermediate state while typing
+                              if (
+                                e.target.value === "" ||
+                                e.target.value === "-"
+                              ) {
+                                handleLocalChange(key, e.target.value);
+                              } else {
+                                handleLocalChange(key, numValue);
+                              }
+                            }}
+                            onBlur={(e) => {
                               const numValue = Number(e.target.value);
                               commitChange(key, numValue, config);
-                              e.preventDefault();
-                            }
-                          }}
-                          {...commonProps}
-                        />
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                const numValue = Number(e.target.value);
+                                commitChange(key, numValue, config);
+                                e.preventDefault();
+                              }
+                            }}
+                            {...commonProps}
+                            style={{
+                              ...inputStyle,
+                              width: 70,
+                              marginRight: 4,
+                              ...(isDisabled ? inputDisabledStyle : {}),
+                            }}
+                          />
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 2,
+                            }}
+                          >
+                            <button
+                              type="button"
+                              style={{
+                                width: 18,
+                                height: 18,
+                                padding: 0,
+                                border: "none",
+                                background: "#232832",
+                                color: "#c4a3d5",
+                                borderRadius: 2,
+                                cursor: isDisabled ? "not-allowed" : "pointer",
+                                opacity: isDisabled ? 0.5 : 1,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                              disabled={isDisabled}
+                              tabIndex={isDisabled ? -1 : 0}
+                              aria-label="Increment"
+                              onClick={() => {
+                                if (isDisabled) return;
+                                let step = config.step ?? 1;
+                                let val = Number(currentValue ?? 0);
+                                if (isNaN(val)) val = 0;
+                                const newVal = val + step;
+                                handleLocalChange(key, newVal);
+                                commitChange(key, newVal, config);
+                              }}
+                            >
+                              ▲
+                            </button>
+                            <button
+                              type="button"
+                              style={{
+                                width: 18,
+                                height: 18,
+                                padding: 0,
+                                border: "none",
+                                background: "#232832",
+                                color: "#c4a3d5",
+                                borderRadius: 2,
+                                cursor: isDisabled ? "not-allowed" : "pointer",
+                                opacity: isDisabled ? 0.5 : 1,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                              disabled={isDisabled}
+                              tabIndex={isDisabled ? -1 : 0}
+                              aria-label="Decrement"
+                              onClick={() => {
+                                if (isDisabled) return;
+                                let step = config.step ?? 1;
+                                let val = Number(currentValue ?? 0);
+                                if (isNaN(val)) val = 0;
+                                const newVal = val - step;
+                                handleLocalChange(key, newVal);
+                                commitChange(key, newVal, config);
+                              }}
+                            >
+                              ▼
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     );
                   case "list":
@@ -1113,22 +1197,111 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             disabled={isDisabled}
                           />
                         ) : (
-                          <input
-                            type="text"
-                            value={currentValue ?? ""}
-                            placeholder={config.placeholder}
-                            onChange={(e) => handleChange(e.target.value)}
-                            onBlur={(e) =>
-                              commitChange(key, e.target.value, config)
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                commitChange(key, e.target.value, config);
-                                e.preventDefault();
-                              }
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              width: "100%",
                             }}
-                            {...commonProps}
-                          />
+                          >
+                            <input
+                              type="text"
+                              value={currentValue ?? ""}
+                              placeholder={config.placeholder}
+                              onChange={(e) => handleChange(e.target.value)}
+                              onBlur={(e) =>
+                                commitChange(key, e.target.value, config)
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  commitChange(key, e.target.value, config);
+                                  e.preventDefault();
+                                }
+                              }}
+                              {...commonProps}
+                              style={{
+                                ...inputStyle,
+                                width: 120,
+                                marginRight: 4,
+                                ...(isDisabled ? inputDisabledStyle : {}),
+                              }}
+                            />
+                            {!isNaN(Number(currentValue)) &&
+                              currentValue !== "" && (
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 2,
+                                  }}
+                                >
+                                  <button
+                                    type="button"
+                                    style={{
+                                      width: 18,
+                                      height: 9,
+                                      padding: 0,
+                                      border: "none",
+                                      background: "#232832",
+                                      color: "#c4a3d5",
+                                      borderRadius: 2,
+                                      cursor: isDisabled
+                                        ? "not-allowed"
+                                        : "pointer",
+                                      opacity: isDisabled ? 0.5 : 1,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                    disabled={isDisabled}
+                                    tabIndex={isDisabled ? -1 : 0}
+                                    aria-label="Increment"
+                                    onClick={() => {
+                                      if (isDisabled) return;
+                                      let val = Number(currentValue ?? 0);
+                                      if (isNaN(val)) val = 0;
+                                      const newVal = val + 1;
+                                      handleChange(String(newVal));
+                                      commitChange(key, String(newVal), config);
+                                    }}
+                                  >
+                                    ▲
+                                  </button>
+                                  <button
+                                    type="button"
+                                    style={{
+                                      width: 18,
+                                      height: 18,
+                                      padding: 0,
+                                      border: "none",
+                                      background: "#232832",
+                                      color: "#c4a3d5",
+                                      borderRadius: 2,
+                                      cursor: isDisabled
+                                        ? "not-allowed"
+                                        : "pointer",
+                                      opacity: isDisabled ? 0.5 : 1,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                    disabled={isDisabled}
+                                    tabIndex={isDisabled ? -1 : 0}
+                                    aria-label="Decrement"
+                                    onClick={() => {
+                                      if (isDisabled) return;
+                                      let val = Number(currentValue ?? 0);
+                                      if (isNaN(val)) val = 0;
+                                      const newVal = val - 1;
+                                      handleChange(String(newVal));
+                                      commitChange(key, String(newVal), config);
+                                    }}
+                                  >
+                                    ▼
+                                  </button>
+                                </div>
+                              )}
+                          </div>
                         )}
                       </div>
                     );
