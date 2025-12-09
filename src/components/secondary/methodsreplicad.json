@@ -1,0 +1,380 @@
+{
+  "setOC": {
+    "type": "function",
+    "requiredParams": ["oc"],
+    "optionalParams": [],
+    "usage": "global",
+    "returns": "void"
+  },
+  "draw": {
+    "type": "function",
+    "requiredParams": [],
+    "optionalParams": ["startPoint /* [x,y] */"],
+    "usage": "factory -> returns Drawing",
+    "returns": "Drawing"
+  },
+  "drawCircle": {
+    "type": "function",
+    "requiredParams": ["radius"],
+    "optionalParams": [],
+    "usage": "factory -> returns Drawing",
+    "returns": "Drawing"
+  },
+  "drawEllipse": {
+    "type": "function",
+    "requiredParams": ["rx", "ry"],
+    "optionalParams": [],
+    "usage": "factory -> returns Drawing",
+    "returns": "Drawing"
+  },
+  "drawRoundedRectangle": {
+    "type": "function",
+    "requiredParams": ["width", "height"],
+    "optionalParams": ["radius"],
+    "usage": "factory -> returns Drawing",
+    "returns": "Drawing"
+  },
+  "drawPolysides": {
+    "type": "function",
+    "requiredParams": ["points /* array of [x,y] */"],
+    "optionalParams": ["options"],
+    "usage": "factory -> returns Drawing",
+    "returns": "Drawing"
+  },
+  "drawText": {
+    "type": "function",
+    "requiredParams": ["text"],
+    "optionalParams": ["font", "options"],
+    "usage": "factory -> returns Drawing",
+    "returns": "Drawing"
+  },
+  "drawParametricFunction": {
+    "type": "function",
+    "requiredParams": ["fn /* (t) => [x,y] */"],
+    "optionalParams": ["tRange", "options"],
+    "usage": "factory -> returns Drawing",
+    "returns": "Drawing"
+  },
+  "makePlane": {
+    "type": "function",
+    "requiredParams": [],
+    "optionalParams": [],
+    "usage": "factory -> returns Plane",
+    "returns": "Plane"
+  },
+  "makeCylinder": {
+    "type": "function",
+    "requiredParams": ["radius", "height"],
+    "optionalParams": ["position /* [x,y,z] or plane */"],
+    "usage": "factory -> returns Shape",
+    "returns": "Shape"
+  },
+  "makeOffset": {
+    "type": "function",
+    "requiredParams": [],
+    "optionalParams": ["..."],
+    "usage": "factory/helper",
+    "returns": "Shape or helper (inferred)"
+  },
+  "mesh": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["options /* { tolerance?, angularTolerance? } */"],
+    "usage": "instance:Shape",
+    "returns": "meshed faces data (for three.js sync)"
+  },
+  "meshEdges": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["options /* { keepMesh? } */"],
+    "usage": "instance:Shape",
+    "returns": "meshed edges data"
+  },
+  "blobSTL": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "usage": "instance:Shape",
+    "returns": "Blob (STL)"
+  },
+  "blobSTEP": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "usage": "instance:Shape",
+    "returns": "Blob (STEP) - inferred name (STEP export exists)"
+  },
+  "Sketcher": {
+    "type": "class_constructor",
+    "requiredParams": [],
+    "optionalParams": ["planeNameOrPlane /* e.g. 'XZ' */"],
+    "usage": "constructor (use with new Sketcher(...))",
+    "returns": "Sketcher instance"
+  },
+  "Sketcher.movePointerTo": {
+    "type": "method",
+    "requiredParams": ["point /* [x,y] */"],
+    "optionalParams": [],
+    "usage": "instance:Sketcher",
+    "returns": "Sketcher (chainable)"
+  },
+  "Sketcher.hLine": {
+    "type": "method",
+    "requiredParams": ["length"],
+    "optionalParams": [],
+    "usage": "instance:Sketcher",
+    "returns": "Sketcher (chainable)"
+  },
+  "Sketcher.vLine": {
+    "type": "method",
+    "requiredParams": ["length"],
+    "optionalParams": [],
+    "usage": "instance:Sketcher",
+    "returns": "Sketcher (chainable)"
+  },
+  "Sketcher.line": {
+    "type": "method",
+    "requiredParams": ["dx", "dy"],
+    "optionalParams": [],
+    "usage": "instance:Sketcher",
+    "returns": "Sketcher (chainable)"
+  },
+  "Sketcher.lineTo": {
+    "type": "method",
+    "requiredParams": ["point /* [x,y] */"],
+    "optionalParams": [],
+    "usage": "instance:Sketcher",
+    "returns": "Sketcher (chainable)"
+  },
+  "Sketcher.quadraticBezierCurveTo": {
+    "type": "method",
+    "requiredParams": ["controlPoint", "endPoint"],
+    "optionalParams": [],
+    "usage": "instance:Sketcher",
+    "returns": "Sketcher (chainable)"
+  },
+  "Sketcher.threePointsArc": {
+    "type": "method",
+    "requiredParams": ["x1", "y1", "x2", "y2"],
+    "optionalParams": [],
+    "usage": "instance:Sketcher",
+    "returns": "Sketcher (chainable)"
+  },
+  "Sketcher.halfEllipse": {
+    "type": "method",
+    "requiredParams": ["dx", "dy", "axisLength"],
+    "optionalParams": ["cw /* clockwise boolean */"],
+    "usage": "instance:Sketcher",
+    "returns": "Sketcher (chainable)"
+  },
+  "Sketcher.close": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "usage": "instance:Sketcher",
+    "returns": "Sketcher (chainable)"
+  },
+  "Sketcher.closeWithMirror": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "usage": "instance:Sketcher",
+    "returns": "Sketcher (chainable)"
+  },
+  "Sketcher.extrude": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": ["options /* { extrusionDirection?, twistAngle? } */"],
+    "usage": "instance:Sketcher (produces Shape)",
+    "returns": "Shape"
+  },
+  "Sketcher.revolve": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["axis /* default Z */"],
+    "usage": "instance:Sketcher (produces Shape)",
+    "returns": "Shape"
+  },
+  "Sketcher.fillet": {
+    "type": "method",
+    "requiredParams": ["radius"],
+    "optionalParams": [],
+    "usage": "instance:Shape (post-extrude) or Sketcher (chainable in examples)",
+    "returns": "Shape"
+  },
+  "Sketcher.translateY": {
+    "type": "method",
+    "requiredParams": ["value"],
+    "optionalParams": [],
+    "usage": "instance:Sketcher or Shape",
+    "returns": "chainable"
+  },
+  "Sketcher.loftWith": {
+    "type": "method",
+    "requiredParams": ["otherSketchOrArray"],
+    "optionalParams": ["options /* { endPoint?, ... } */"],
+    "usage": "instance:Sketcher (produces Shape)",
+    "returns": "Shape"
+  },
+  "Drawing.clone": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "usage": "instance:Drawing",
+    "returns": "Drawing"
+  },
+  "Drawing.serialize": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "usage": "instance:Drawing",
+    "returns": "string (JSON)"
+  },
+  "Drawing.boundingBox": {
+    "type": "getter",
+    "requiredParams": [],
+    "optionalParams": [],
+    "usage": "instance:Drawing",
+    "returns": "BoundingBox2d"
+  },
+  "Drawing.repr": {
+    "type": "getter",
+    "requiredParams": [],
+    "optionalParams": [],
+    "usage": "instance:Drawing",
+    "returns": "string"
+  },
+  "Drawing.stretch": {
+    "type": "method",
+    "requiredParams": ["ratio", "direction", "origin"],
+    "optionalParams": [],
+    "usage": "instance:Drawing",
+    "returns": "Drawing"
+  },
+  "Drawing.rotate": {
+    "type": "method",
+    "requiredParams": ["angle"],
+    "optionalParams": ["center"],
+    "usage": "instance:Drawing",
+    "returns": "Drawing"
+  },
+  "Drawing.translate": {
+    "type": "method",
+    "requiredParams": ["xDist or translationVector"],
+    "optionalParams": ["yDist"],
+    "usage": "instance:Drawing",
+    "returns": "Drawing"
+  },
+  "Drawing.scale": {
+    "type": "method",
+    "requiredParams": ["scaleFactor"],
+    "optionalParams": ["center"],
+    "usage": "instance:Drawing",
+  "returns": "Drawing"
+  },
+  "Drawing.mirror": {
+    "type": "method",
+    "requiredParams": ["centerOrDirection"],
+    "optionalParams": ["origin", "mode /* 'center'|'plane' */"],
+    "usage": "instance:Drawing",
+    "returns": "Drawing"
+  },
+  "Drawing.sketchOnPlane": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["inputPlane /* Plane or PlaneName */", "origin"],
+    "usage": "instance:Drawing -> returns SketchInterface or Sketches",
+    "returns": "SketchInterface | Sketches"
+  },
+  "Drawing.punchHole": {
+    "type": "method",
+    "requiredParams": ["shape"],
+    "optionalParams": ["faceFinder", "options"],
+    "usage": "instance:Drawing",
+    "returns": "Shape (with hole)"
+  },
+  "Drawing.toSVG": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["margin"],
+    "usage": "instance:Drawing",
+    "returns": "string (svg markup)"
+  },
+  "Drawing.toSVGViewBox": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["margin /* default 1 */"],
+    "usage": "instance:Drawing",
+    "returns": "string (viewBox)"
+  },
+  "Drawing.toSVGPaths": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "usage": "instance:Drawing",
+    "returns": "string[] | string[][]"
+  },
+  "Drawing.offset": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": ["offsetConfig /* Offset2DConfig */"],
+    "usage": "instance:Drawing",
+    "returns": "Drawing"
+  },
+  "Drawing.approximate": {
+    "type": "method",
+    "requiredParams": ["target /* 'svg'|'arcs' */"],
+    "optionalParams": ["options /* ApproximationOptions */"],
+  "usage": "instance:Drawing",
+  "returns": "Drawing (approximation)"
+  },
+  "Drawing.blueprint": {
+    "type": "getter",
+    "requiredParams": [],
+  "optionalParams": [],
+  "usage": "instance:Drawing",
+  "returns": "Blueprint (throws if not a blueprint)"
+  },
+  "Blueprints.clone": {
+    "type": "method",
+    "requiredParams": [],
+  "optionalParams": [],
+  "usage": "instance:Blueprints",
+  "returns": "Blueprints"
+  },
+  "Blueprints.boundingBox": {
+    "type": "getter",
+    "requiredParams": [],
+  "optionalParams": [],
+  "usage": "instance:Blueprints",
+  "returns": "BoundingBox2d"
+  },
+  "Blueprints.translate": {
+    "type": "method",
+  "requiredParams": ["xDist or translationVector"],
+  "optionalParams": ["yDist"],
+  "usage": "instance:Blueprints",
+  "returns": "Blueprints"
+  },
+  "syncGeometries": {
+    "type": "function",
+  "requiredParams": ["meshedShapes", "existingGeometriesArray"],
+  "optionalParams": [],
+  "usage": "global (replicad-threejs-helper)",
+  "returns": "updated BufferGeometry array"
+  },
+  "syncFaces": {
+    "type": "function",
+  "requiredParams": ["facesBufferGeometry", "replicadMeshedFaces"],
+  "optionalParams": [],
+  "usage": "global (replicad-threejs-helper)",
+  "returns": "BufferGeometry"
+  },
+  "syncLines": {
+    "type": "function",
+  "requiredParams": ["linesBufferGeometry", "replicadMeshedEdges"],
+  "optionalParams": [],
+  "usage": "global (replicad-threejs-helper)",
+  "returns": "void"
+  }
+}
