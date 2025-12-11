@@ -136,6 +136,43 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
     };
   }
 
+  // Enhanced variable type inference for method chains
+  function inferVariableTypes(
+    code: string,
+    api: ApiJson
+  ): Record<string, string> {
+    const variableTypes: Record<string, string> = {};
+    // Find direct replicad assignments
+    const replicadAssignRegex =
+      /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*replicad\.([a-zA-Z_$][\w$]*)\s*\(/g;
+    let match;
+    while ((match = replicadAssignRegex.exec(code))) {
+      const varName = match[1];
+      const method = match[2];
+      if (api && api[method] && api[method].returns) {
+        variableTypes[varName] = api[method].returns!;
+      }
+    }
+    // Find assignments from other variables and method calls
+    const methodAssignRegex =
+      /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*([a-zA-Z_$][\w$]*)\.([a-zA-Z_$][\w$]*)\s*\(/g;
+    while ((match = methodAssignRegex.exec(code))) {
+      const varName = match[1];
+      const sourceVar = match[2];
+      const method = match[3];
+      const sourceType = variableTypes[sourceVar];
+      if (
+        sourceType &&
+        api &&
+        api[`${sourceType}.${method}`] &&
+        api[`${sourceType}.${method}`].returns
+      ) {
+        variableTypes[varName] = api[`${sourceType}.${method}`].returns!;
+      }
+    }
+    return variableTypes;
+  }
+
   /**
    * Build a completion source. If api is null/undefined, return a no-op source that returns null.
    * This prevents Object.keys(undefined) errors.
@@ -169,17 +206,8 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       // --- Local variable extraction and type inference ---
       const code = context.state.doc.toString();
       // Find all variable declarations and their assigned types (if replicad)
-      const variableTypes: Record<string, string> = {};
-      const replicadAssignRegex =
-        /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*replicad\.([a-zA-Z_$][\w$]*)\s*\(/g;
-      let replicadAssignMatch;
-      while ((replicadAssignMatch = replicadAssignRegex.exec(code))) {
-        const varName = replicadAssignMatch[1];
-        const method = replicadAssignMatch[2];
-        if (methodToType[method]) {
-          variableTypes[varName] = methodToType[method];
-        }
-      }
+      const variableTypes = inferVariableTypes(code, api);
+      console.log("Inferred variable types:", variableTypes);
       // Collect all variable names for completion
       const allVarRegex = /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)/g;
       const variableNames: string[] = [];
@@ -272,31 +300,61 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       // Instance method completions for inferred replicad variables
       else if (/^[a-zA-Z_$][\w$]*\.$/.test(text)) {
         const varName = text.slice(0, -1);
-        const type = variableTypes[varName];
+        let type = variableTypes[varName];
         if (type) {
-          const instanceMethods = keys.filter((k) => k.startsWith(type + "."));
-          for (const k of instanceMethods) {
-            const def = api[k];
-            if (def) {
-              options.push({
-                ...makeCompletion(k, def, true),
-                label: k.split(".")[1],
-                apply: (view, completion, fromPos, toPos) => {
-                  const params = (def.requiredParams || []).concat(
-                    def.optionalParams || []
-                  );
-                  const paramsPreview = params.join(", ");
-                  const insertText = `${k.split(".")[1]}(${
-                    paramsPreview ? paramsPreview : ""
-                  })`;
-                  const anchor = fromPos + insertText.indexOf("(") + 1;
-                  view.dispatch({
-                    changes: { from: fromPos, to: toPos, insert: insertText },
-                    selection: { anchor },
-                  });
-                  view.focus();
-                },
-              });
+          // If type is AnyShape, treat as union of all shape types
+          let typeList: string[];
+          if (type.includes("AnyShape")) {
+            // Collect all unique type prefixes for instance methods
+            const shapeTypes = Array.from(
+              new Set(
+                keys
+                  .filter(
+                    (k) =>
+                      k.includes(".") &&
+                      (k.startsWith("Shape.") ||
+                        k.startsWith("Shape3D.") ||
+                        k.startsWith("Sketch.") ||
+                        k.startsWith("Sketches.") ||
+                        k.startsWith("Wire.") ||
+                        k.startsWith("Face.") ||
+                        k.startsWith("Solid."))
+                  )
+                  .map((k) => k.split(".")[0])
+              )
+            );
+            typeList = shapeTypes;
+          } else {
+            typeList = type.split("|").map((t) => t.trim());
+          }
+          const seen = new Set();
+          for (const t of typeList) {
+            const instanceMethods = keys.filter((k) => k.startsWith(t + "."));
+            for (const k of instanceMethods) {
+              if (seen.has(k)) continue;
+              seen.add(k);
+              const def = api[k];
+              if (def) {
+                options.push({
+                  ...makeCompletion(k, def, true),
+                  label: k.split(".")[1],
+                  apply: (view, completion, fromPos, toPos) => {
+                    const params = (def.requiredParams || []).concat(
+                      def.optionalParams || []
+                    );
+                    const paramsPreview = params.join(", ");
+                    const insertText = `${k.split(".")[1]}(${
+                      paramsPreview ? paramsPreview : ""
+                    })`;
+                    const anchor = fromPos + insertText.indexOf("(") + 1;
+                    view.dispatch({
+                      changes: { from: fromPos, to: toPos, insert: insertText },
+                      selection: { anchor },
+                    });
+                    view.focus();
+                  },
+                });
+              }
             }
           }
           const dotIdx = text.indexOf(".");

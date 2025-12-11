@@ -905,7 +905,7 @@
     "type": "method",
     "requiredParams": [],
     "optionalParams": ["inputPlane", "origin"],
-    "returns": "SketchInterface | Sketches"
+    "returns": "Sketches"
   },
   "Drawing.sketchOnFace": {
     "type": "method",
