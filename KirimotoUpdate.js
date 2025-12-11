@@ -16,7 +16,7 @@ const generateGcode = (
   tool
 ) => {
   const STOCK_MARGIN = 10;
-  const CUT_THROUGH = cutThrough || 0.25; // Default cut-through thickness if not provided
+  const CUT_THROUGH = cutThrough || 0; // Default cut-through thickness if not provided
 
   if (!stlUrl) {
     console.error("STL URL is not available.");
@@ -125,17 +125,16 @@ const generateGcode = (
       //const down = validPasses == 1 ? 1000 : zBottom / (validPasses - 1);
 
       /*End Hack for kiri 4.3.0, add cut through in down value and set camzThru to 0 to avoid extra pass, set camZBottom to real value (not 1000)*/
-      const down = (zBottom + CUT_THROUGH) / passes;
-      const camZBottom = -zBottom - CUT_THROUGH;
-      const camZThru = passes > 1 ? 0 : CUT_THROUGH - 1;
+      const down = passes > 1 ? (zBottom + CUT_THROUGH) / passes : 10000;
+      const camZBottom = -zBottom - CUT_THROUGH - 1;
+      const camZThru = CUT_THROUGH;
       const roughingStepOver = 0.6;
 
-      /*
       console.log("Down per pass:", down);
       console.log("CAM Z Bottom:", camZBottom);
       console.log("CAM Z Thru:", camZThru);
       console.log("Tool Size:", toolSize);
-      console.log("Roughing step over:", roughingStepOver);*/
+      console.log("Roughing step over:", roughingStepOver);
 
       return eng.setProcess({
         camOriginTop: true,
