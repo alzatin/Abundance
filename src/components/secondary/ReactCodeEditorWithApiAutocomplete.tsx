@@ -14,7 +14,7 @@ import { andromeda, andromedaInit } from "@uiw/codemirror-theme-andromeda";
 
 import ReactCodeEditor from "@uiw/react-codemirror";
 // Uses linter.mjs
-import * as eslint from "eslint-linter-browserify";
+import * as esLint from "eslint-linter-browserify";
 // NOTE: adjust imports to match your project structure & packages
 
 type ApiDef = {
@@ -145,39 +145,124 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       // no API available: return a source that never provides completions
       return (_context: any): CompletionResult | null => null;
     }
-
     const keys = Object.keys(api);
-    const methodsByBase: Record<string, string[]> = {};
-    for (const k of keys) {
-      if (!k.includes(".")) continue;
-      const [base] = k.split(".");
-      methodsByBase[base] = methodsByBase[base] || [];
-      methodsByBase[base].push(k);
-    }
+    // Top-level methods (no dot)
+    const topLevelKeys = keys.filter((k) => !k.includes("."));
+    // Instance methods: group by class prefix (e.g., Drawing., Sketcher.)
+    const instancePrefixes = Array.from(
+      new Set(keys.filter((k) => k.includes(".")).map((k) => k.split(".")[0]))
+    );
 
     return (context: any): CompletionResult | null => {
       const word = context.matchBefore(/[$\w.]+/);
       if (!word && !context.explicit) return null;
 
       const text = word ? word.text : "";
-      const lastDot = text.lastIndexOf(".");
       let from = word ? word.from : context.pos;
+      let options: Completion[] = [];
 
-      const options: Completion[] = [];
-
-      if (lastDot >= 0) {
-        const base = text.slice(0, lastDot);
-        const candidates = methodsByBase[base] || [];
-        for (const fullKey of candidates) {
-          const def = (api as ApiJson)[fullKey];
-          if (def) options.push(makeCompletion(fullKey, def, true));
+      // If the user types 'replicad.' (optionally followed by more), show all top-level replicad methods
+      if (/^replicad\.?[\w]*$/.test(text)) {
+        for (const k of topLevelKeys) {
+          const def = api ? api[k] : undefined;
+          if (def) {
+            options.push({
+              ...makeCompletion(k, def, false),
+              label: k,
+              apply: (view, completion, fromPos, toPos) => {
+                const params = (def.requiredParams || []).concat(
+                  def.optionalParams || []
+                );
+                const paramsPreview = params.join(", ");
+                const insertText = `replicad.${k}(${
+                  paramsPreview ? paramsPreview : ""
+                })`;
+                const anchor = fromPos + `replicad.${k}(`.length;
+                view.dispatch({
+                  changes: { from: fromPos, to: toPos, insert: insertText },
+                  selection: { anchor },
+                });
+                view.focus();
+              },
+            });
+          }
         }
-        from = (word ? word.from : context.pos) + lastDot + 1;
+        const dotIdx = text.indexOf(".");
+        from =
+          dotIdx >= 0
+            ? (word ? word.from : context.pos) + dotIdx + 1
+            : word
+            ? word.from
+            : context.pos;
+      } else if (
+        instancePrefixes.some((prefix) => text.startsWith(prefix + "."))
+      ) {
+        // If user types Drawing. or Sketcher. etc, show all methods for that class
+        const prefix = instancePrefixes.find((prefix) =>
+          text.startsWith(prefix + ".")
+        );
+        if (prefix) {
+          const instanceMethods = keys.filter((k) =>
+            k.startsWith(prefix + ".")
+          );
+          for (const k of instanceMethods) {
+            const def = api ? api[k] : undefined;
+            if (def) {
+              options.push({
+                ...makeCompletion(k, def, true),
+                label: k.split(".")[1],
+                apply: (view, completion, fromPos, toPos) => {
+                  const params = (def.requiredParams || []).concat(
+                    def.optionalParams || []
+                  );
+                  const paramsPreview = params.join(", ");
+                  const insertText = `${k}(${
+                    paramsPreview ? paramsPreview : ""
+                  })`;
+                  const anchor = fromPos + `${k.split(".")[1]}(`.length;
+                  view.dispatch({
+                    changes: { from: fromPos, to: toPos, insert: insertText },
+                    selection: { anchor },
+                  });
+                  view.focus();
+                },
+              });
+            }
+          }
+          // Set completion to start after the dot
+          const dotIdx = text.indexOf(".");
+          from =
+            dotIdx >= 0
+              ? (word ? word.from : context.pos) + dotIdx + 1
+              : word
+              ? word.from
+              : context.pos;
+        }
       } else {
-        for (const k of keys) {
-          if (k.includes(".")) continue;
-          const def = (api as ApiJson)[k];
-          if (def) options.push(makeCompletion(k, def, false));
+        // If just typing a method name, also suggest all top-level methods, inserting replicad.methodName(...)
+        for (const k of topLevelKeys) {
+          const def = api ? api[k] : undefined;
+          if (def) {
+            options.push({
+              ...makeCompletion(k, def, false),
+              label: k,
+              apply: (view, completion, fromPos, toPos) => {
+                const params = (def.requiredParams || []).concat(
+                  def.optionalParams || []
+                );
+                const paramsPreview = params.join(", ");
+                const insertText = `replicad.${k}(${
+                  paramsPreview ? paramsPreview : ""
+                })`;
+                const anchor = fromPos + `replicad.${k}(`.length;
+                view.dispatch({
+                  changes: { from: fromPos, to: toPos, insert: insertText },
+                  selection: { anchor },
+                });
+                view.focus();
+              },
+            });
+          }
         }
       }
 
@@ -205,8 +290,12 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
     if (!lintCtor) return null;
     try {
       const linterInstance = new lintCtor();
+      // esLint is imported as * as esLint, so use esLint.default if available
+      const esLintFn =
+        typeof esLint === "function" ? esLint : (esLint as any).default;
+      if (!esLintFn) return null;
       return linter(
-        esLint(linterInstance, {
+        esLintFn(linterInstance, {
           rules: {
             semi: ["error", "never"],
             "no-undef": ["warn"],
@@ -220,17 +309,19 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
 
   const extensions = useMemo(() => {
     const exts: any[] = [
-      keymap.of({
-        key: "Mod-s",
-        run: () => {
-          console.log("mod-s pressed, attempting to save code");
-          if (activeAtom != null) {
-            activeAtom.saveCode();
-          }
-          return true;
+      keymap.of([
+        {
+          key: "Mod-s",
+          run: () => {
+            console.log("mod-s pressed, attempting to save code");
+            if (activeAtom != null) {
+              activeAtom.saveCode();
+            }
+            return true;
+          },
+          preventDefault: true,
         },
-        preventDefault: true,
-      }),
+      ]),
       javascript(),
       completionExtension,
     ];
