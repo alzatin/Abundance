@@ -1,380 +1,2149 @@
 {
-  "setOC": {
-    "type": "function",
-    "requiredParams": ["oc"],
+  "_1DShape._geomAdaptor": {
+    "type": "method",
+    "requiredParams": [],
     "optionalParams": [],
-    "usage": "global",
+    "returns": "CurveLike"
+  },
+  "_1DShape.tangentAt": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["position"],
+    "returns": "Vector"
+  },
+  "_1DShape.pointAt": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["position"],
+    "returns": "Vector"
+  },
+  "_3DShape.fuse": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": ["{ optimisation, }"],
+    "returns": "Shape3D"
+  },
+  "_3DShape.cut": {
+    "type": "method",
+    "requiredParams": ["tool"],
+    "optionalParams": ["{ optimisation, }"],
+    "returns": "Shape3D"
+  },
+  "_3DShape.intersect": {
+    "type": "method",
+    "requiredParams": ["tool"],
+    "optionalParams": [],
+    "returns": "AnyShape"
+  },
+  "_3DShape.shell": {
+    "type": "method",
+    "requiredParams": ["thickness", "finderFcn"],
+    "optionalParams": ["tolerance"],
+    "returns": "Shape3D"
+  },
+  "_3DShape._builderIter": {
+    "type": "method",
+    "requiredParams": ["radiusConfigInput", "builderAdd", "isRadius"],
+    "optionalParams": [],
+    "returns": "number"
+  },
+  "_3DShape.fillet": {
+    "type": "method",
+    "requiredParams": ["radiusConfig"],
+    "optionalParams": ["filter"],
+    "returns": "Shape3D"
+  },
+  "_3DShape.chamfer": {
+    "type": "method",
+    "requiredParams": ["radiusConfig"],
+    "optionalParams": ["filter"],
+    "returns": "Shape3D"
+  },
+  "asDir": {
+    "type": "function",
+    "requiredParams": ["coords"],
+    "optionalParams": [],
+    "returns": "gp_Dir"
+  },
+  "asPnt": {
+    "type": "function",
+    "requiredParams": ["coords"],
+    "optionalParams": [],
+    "returns": "gp_Pnt"
+  },
+  "BaseSketcher2d._convertToUV": {
+    "type": "method",
+    "requiredParams": ["[x, y]"],
+    "optionalParams": [],
+    "returns": "Point2D"
+  },
+  "BaseSketcher2d._convertFromUV": {
+    "type": "method",
+    "requiredParams": ["[u, v]"],
+    "optionalParams": [],
+    "returns": "Point2D"
+  },
+  "BaseSketcher2d.movePointerTo": {
+    "type": "method",
+    "requiredParams": ["point"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.saveCurve": {
+    "type": "method",
+    "requiredParams": ["curve"],
+    "optionalParams": [],
     "returns": "void"
+  },
+  "BaseSketcher2d.lineTo": {
+    "type": "method",
+    "requiredParams": ["point"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.line": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.vLine": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.hLine": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.vLineTo": {
+    "type": "method",
+    "requiredParams": ["yPos"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.hLineTo": {
+    "type": "method",
+    "requiredParams": ["xPos"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.polarLineTo": {
+    "type": "method",
+    "requiredParams": ["[r, theta]"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.polarLine": {
+    "type": "method",
+    "requiredParams": ["distance", "angle"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.tangentLine": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.threePointsArcTo": {
+    "type": "method",
+    "requiredParams": ["end", "midPoint"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.threePointsArc": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist", "viaXDist", "viaYDist"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.sagittaArcTo": {
+    "type": "method",
+    "requiredParams": ["end", "sagitta"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.sagittaArc": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist", "sagitta"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.vSagittaArc": {
+    "type": "method",
+    "requiredParams": ["distance", "sagitta"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.hSagittaArc": {
+    "type": "method",
+    "requiredParams": ["distance", "sagitta"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.bulgeArcTo": {
+    "type": "method",
+    "requiredParams": ["end", "bulge"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.bulgeArc": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist", "bulge"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.vBulgeArc": {
+    "type": "method",
+    "requiredParams": ["distance", "bulge"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.hBulgeArc": {
+    "type": "method",
+    "requiredParams": ["distance", "bulge"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.tangentArcTo": {
+    "type": "method",
+    "requiredParams": ["end"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.tangentArc": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.ellipseTo": {
+    "type": "method",
+    "requiredParams": ["end", "horizontalRadius", "verticalRadius"],
+    "optionalParams": ["rotation", "longAxis", "sweep"],
+    "returns": "this"
+  },
+  "BaseSketcher2d.ellipse": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist", "horizontalRadius", "verticalRadius"],
+    "optionalParams": ["rotation", "longAxis", "sweep"],
+    "returns": "this"
+  },
+  "BaseSketcher2d.halfEllipseTo": {
+    "type": "method",
+    "requiredParams": ["end", "minorRadius"],
+    "optionalParams": ["sweep"],
+    "returns": "this"
+  },
+  "BaseSketcher2d.halfEllipse": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist", "minorRadius"],
+    "optionalParams": ["sweep"],
+    "returns": "this"
+  },
+  "BaseSketcher2d.bezierCurveTo": {
+    "type": "method",
+    "requiredParams": ["end", "controlPoints"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.quadraticBezierCurveTo": {
+    "type": "method",
+    "requiredParams": ["end", "controlPoint"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.cubicBezierCurveTo": {
+    "type": "method",
+    "requiredParams": ["end", "startControlPoint", "endControlPoint"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "BaseSketcher2d.smoothSplineTo": {
+    "type": "method",
+    "requiredParams": ["end"],
+    "optionalParams": ["config"],
+    "returns": "this"
+  },
+  "BaseSketcher2d.smoothSpline": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist"],
+    "optionalParams": ["splineConfig"],
+    "returns": "this"
+  },
+  "BaseSketcher2d.customCorner": {
+    "type": "method",
+    "requiredParams": ["radius"],
+    "optionalParams": ["mode"],
+    "returns": "this"
+  },
+  "BaseSketcher2d._customCornerLastWithFirst": {
+    "type": "method",
+    "requiredParams": ["radius"],
+    "optionalParams": ["mode"],
+    "returns": "void"
+  },
+  "BaseSketcher2d._closeSketch": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "BaseSketcher2d._closeWithMirror": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "Blueprint.delete": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "Blueprint.clone": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Blueprint"
+  },
+  "Blueprint.stretch": {
+    "type": "method",
+    "requiredParams": ["ratio", "direction"],
+    "optionalParams": ["origin"],
+    "returns": "Blueprint"
+  },
+  "Blueprint.scale": {
+    "type": "method",
+    "requiredParams": ["scaleFactor"],
+    "optionalParams": ["center"],
+    "returns": "Blueprint"
+  },
+  "Blueprint.rotate": {
+    "type": "method",
+    "requiredParams": ["angle"],
+    "optionalParams": ["center"],
+    "returns": "Blueprint"
+  },
+  "Blueprint.translate": {
+    "type": "method",
+    "requiredParams": ["translationVector"],
+    "optionalParams": [],
+    "returns": "Blueprint"
+  },
+  "Blueprint.mirror": {
+    "type": "method",
+    "requiredParams": ["centerOrDirection"],
+    "optionalParams": ["origin", "mode"],
+    "returns": "Blueprint"
+  },
+  "Blueprint.sketchOnPlane": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["inputPlane", "origin"],
+    "returns": "Sketch"
+  },
+  "Blueprint.sketchOnFace": {
+    "type": "method",
+    "requiredParams": ["face"],
+    "optionalParams": ["scaleMode"],
+    "returns": "Sketch"
+  },
+  "Blueprint.toSVGPathD": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "string"
+  },
+  "Blueprint.toSVGPath": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "string"
+  },
+  "Blueprint.toSVGViewBox": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["margin"],
+    "returns": "string"
+  },
+  "Blueprint.toSVGPaths": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "string[]"
+  },
+  "Blueprint.toSVG": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["margin"],
+    "returns": "string"
+  },
+  "Blueprint.isInside": {
+    "type": "method",
+    "requiredParams": ["point"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "Blueprint.isClosed": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "Blueprint.intersects": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "Blueprints.clone": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Blueprints"
+  },
+  "Blueprints.stretch": {
+    "type": "method",
+    "requiredParams": ["ratio", "direction", "origin"],
+    "optionalParams": [],
+    "returns": "Blueprints"
+  },
+  "Blueprints.rotate": {
+    "type": "method",
+    "requiredParams": ["angle"],
+    "optionalParams": ["center"],
+    "returns": "Blueprints"
+  },
+  "Blueprints.scale": {
+    "type": "method",
+    "requiredParams": ["scaleFactor"],
+    "optionalParams": ["center"],
+    "returns": "Blueprints"
+  },
+  "Blueprints.translate": {
+    "type": "method",
+    "requiredParams": ["translationVector"],
+    "optionalParams": [],
+    "returns": "Blueprints"
+  },
+  "Blueprints.mirror": {
+    "type": "method",
+    "requiredParams": ["centerOrDirection"],
+    "optionalParams": ["origin", "mode"],
+    "returns": "Blueprints"
+  },
+  "Blueprints.sketchOnPlane": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["plane", "origin"],
+    "returns": "Sketches"
+  },
+  "Blueprints.sketchOnFace": {
+    "type": "method",
+    "requiredParams": ["face"],
+    "optionalParams": ["scaleMode"],
+    "returns": "Sketches"
+  },
+  "Blueprints.toSVGViewBox": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["margin"],
+    "returns": "string"
+  },
+  "Blueprints.toSVGPaths": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "string[][]"
+  },
+  "Blueprints.toSVG": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["margin"],
+    "returns": "string"
+  },
+  "BlueprintSketcher.done": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Blueprint"
+  },
+  "BlueprintSketcher.close": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Blueprint"
+  },
+  "BlueprintSketcher.closeWithMirror": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Blueprint"
+  },
+  "BlueprintSketcher.closeWithCustomCorner": {
+    "type": "method",
+    "requiredParams": ["radius"],
+    "optionalParams": ["mode"],
+    "returns": "Blueprint"
+  },
+  "BoundingBox.add": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "BoundingBox.isOut": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "BoundingBox2d.outsidePoint": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["paddingPercent"],
+    "returns": "Point2D"
+  },
+  "BoundingBox2d.add": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "BoundingBox2d.isOut": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "BoundingBox2d.containsPoint": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "cast": {
+    "type": "function",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "AnyShape"
+  },
+  "complexExtrude": {
+    "type": "function",
+    "requiredParams": ["wire", "center", "normal"],
+    "optionalParams": ["profileShape", "shellMode"],
+    "returns": "Shape3D"
+  },
+  "CompoundBlueprint.clone": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "CompoundBlueprint"
+  },
+  "CompoundBlueprint.stretch": {
+    "type": "method",
+    "requiredParams": ["ratio", "direction", "origin"],
+    "optionalParams": [],
+    "returns": "CompoundBlueprint"
+  },
+  "CompoundBlueprint.rotate": {
+    "type": "method",
+    "requiredParams": ["angle"],
+    "optionalParams": ["center"],
+    "returns": "CompoundBlueprint"
+  },
+  "CompoundBlueprint.scale": {
+    "type": "method",
+    "requiredParams": ["scaleFactor"],
+    "optionalParams": ["center"],
+    "returns": "CompoundBlueprint"
+  },
+  "CompoundBlueprint.translate": {
+    "type": "method",
+    "requiredParams": ["translationVector"],
+    "optionalParams": [],
+    "returns": "CompoundBlueprint"
+  },
+  "CompoundBlueprint.mirror": {
+    "type": "method",
+    "requiredParams": ["centerOrDirection"],
+    "optionalParams": ["origin", "mode"],
+    "returns": "CompoundBlueprint"
+  },
+  "CompoundBlueprint.sketchOnPlane": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["plane", "origin"],
+    "returns": "CompoundSketch"
+  },
+  "CompoundBlueprint.sketchOnFace": {
+    "type": "method",
+    "requiredParams": ["face"],
+    "optionalParams": ["scaleMode"],
+    "returns": "CompoundSketch"
+  },
+  "CompoundBlueprint.toSVGViewBox": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["margin"],
+    "returns": "string"
+  },
+  "CompoundBlueprint.toSVGPaths": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "string[]"
+  },
+  "CompoundBlueprint.toSVGGroup": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "string"
+  },
+  "CompoundBlueprint.toSVG": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["margin"],
+    "returns": "string"
+  },
+  "CompoundSketch.delete": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "CompoundSketch.face": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Face"
+  },
+  "CompoundSketch.extrude": {
+    "type": "method",
+    "requiredParams": ["extrusionDistance"],
+    "optionalParams": [
+      "{ extrusionDirection, extrusionProfile, twistAngle, origin, }"
+    ],
+    "returns": "Shape3D"
+  },
+  "CompoundSketch.revolve": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["revolutionAxis", "{ origin }"],
+    "returns": "Shape3D"
+  },
+  "CompoundSketch.loftWith": {
+    "type": "method",
+    "requiredParams": ["otherCompound", "loftConfig"],
+    "optionalParams": [],
+    "returns": "Shape3D"
+  },
+  "CornerFinder.clone": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "CornerFinder"
+  },
+  "CornerFinder.inList": {
+    "type": "method",
+    "requiredParams": ["elementList"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "CornerFinder.atDistance": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": ["point"],
+    "returns": "this"
+  },
+  "CornerFinder.atPoint": {
+    "type": "method",
+    "requiredParams": ["point"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "CornerFinder.inBox": {
+    "type": "method",
+    "requiredParams": ["corner1", "corner2"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "CornerFinder.ofAngle": {
+    "type": "method",
+    "requiredParams": ["angle"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "CornerFinder.shouldKeep": {
+    "type": "method",
+    "requiredParams": ["element"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "CornerFinder.applyFilter": {
+    "type": "method",
+    "requiredParams": ["blueprint"],
+    "optionalParams": [],
+    "returns": "Corner[]"
+  },
+  "createAssembly": {
+    "type": "function",
+    "requiredParams": [],
+    "optionalParams": ["shapes"],
+    "returns": "AssemblyExporter"
+  },
+  "Curve._mapParameter": {
+    "type": "method",
+    "requiredParams": ["position"],
+    "optionalParams": [],
+    "returns": "number"
+  },
+  "Curve.pointAt": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["position"],
+    "returns": "Vector"
+  },
+  "Curve.tangentAt": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["position"],
+    "returns": "Vector"
+  },
+  "Curve2D.serialize": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "string"
+  },
+  "Curve2D.value": {
+    "type": "method",
+    "requiredParams": ["parameter"],
+    "optionalParams": [],
+    "returns": "Point2D"
+  },
+  "Curve2D.adaptor": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Geom2dAdaptor_Curve"
+  },
+  "Curve2D.clone": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Curve2D"
+  },
+  "Curve2D.reverse": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "Curve2D.distanceFrom": {
+    "type": "method",
+    "requiredParams": ["element"],
+    "optionalParams": [],
+    "returns": "number"
+  },
+  "Curve2D.isOnCurve": {
+    "type": "method",
+    "requiredParams": ["point"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "Curve2D.parameter": {
+    "type": "method",
+    "requiredParams": ["point"],
+    "optionalParams": ["precision"],
+    "returns": "number"
+  },
+  "Curve2D.tangentAt": {
+    "type": "method",
+    "requiredParams": ["index"],
+    "optionalParams": [],
+    "returns": "Point2D"
+  },
+  "Curve2D.splitAt": {
+    "type": "method",
+    "requiredParams": ["points"],
+    "optionalParams": ["precision"],
+    "returns": "Curve2D[]"
+  },
+  "deserializeDrawing": {
+    "type": "function",
+    "requiredParams": ["data"],
+    "optionalParams": [],
+    "returns": "Drawing"
+  },
+  "deserializeShape": {
+    "type": "function",
+    "requiredParams": ["data"],
+    "optionalParams": [],
+    "returns": "AnyShape"
+  },
+  "DistanceQuery.distanceTo": {
+    "type": "method",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "number"
+  },
+  "DistanceTool.distanceBetween": {
+    "type": "method",
+    "requiredParams": ["shape1", "shape2"],
+    "optionalParams": [],
+    "returns": "number"
+  },
+  "downcast": {
+    "type": "function",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "GenericTopo"
   },
   "draw": {
     "type": "function",
     "requiredParams": [],
-    "optionalParams": ["startPoint /* [x,y] */"],
-    "usage": "factory -> returns Drawing",
-    "returns": "Drawing"
+    "optionalParams": ["initialPoint"],
+    "returns": "DrawingPen"
   },
   "drawCircle": {
     "type": "function",
     "requiredParams": ["radius"],
     "optionalParams": [],
-    "usage": "factory -> returns Drawing",
     "returns": "Drawing"
   },
   "drawEllipse": {
     "type": "function",
-    "requiredParams": ["rx", "ry"],
+    "requiredParams": ["majorRadius", "minorRadius"],
     "optionalParams": [],
-    "usage": "factory -> returns Drawing",
     "returns": "Drawing"
   },
-  "drawRoundedRectangle": {
+  "drawFaceOutline": {
     "type": "function",
-    "requiredParams": ["width", "height"],
-    "optionalParams": ["radius"],
-    "usage": "factory -> returns Drawing",
+    "requiredParams": ["face"],
+    "optionalParams": [],
     "returns": "Drawing"
-  },
-  "drawPolysides": {
-    "type": "function",
-    "requiredParams": ["points /* array of [x,y] */"],
-    "optionalParams": ["options"],
-    "usage": "factory -> returns Drawing",
-    "returns": "Drawing"
-  },
-  "drawText": {
-    "type": "function",
-    "requiredParams": ["text"],
-    "optionalParams": ["font", "options"],
-    "usage": "factory -> returns Drawing",
-    "returns": "Drawing"
-  },
-  "drawParametricFunction": {
-    "type": "function",
-    "requiredParams": ["fn /* (t) => [x,y] */"],
-    "optionalParams": ["tRange", "options"],
-    "usage": "factory -> returns Drawing",
-    "returns": "Drawing"
-  },
-  "makePlane": {
-    "type": "function",
-    "requiredParams": [],
-    "optionalParams": [],
-    "usage": "factory -> returns Plane",
-    "returns": "Plane"
-  },
-  "makeCylinder": {
-    "type": "function",
-    "requiredParams": ["radius", "height"],
-    "optionalParams": ["position /* [x,y,z] or plane */"],
-    "usage": "factory -> returns Shape",
-    "returns": "Shape"
-  },
-  "makeOffset": {
-    "type": "function",
-    "requiredParams": [],
-    "optionalParams": ["..."],
-    "usage": "factory/helper",
-    "returns": "Shape or helper (inferred)"
-  },
-  "mesh": {
-    "type": "method",
-    "requiredParams": [],
-    "optionalParams": ["options /* { tolerance?, angularTolerance? } */"],
-    "usage": "instance:Shape",
-    "returns": "meshed faces data (for three.js sync)"
-  },
-  "meshEdges": {
-    "type": "method",
-    "requiredParams": [],
-    "optionalParams": ["options /* { keepMesh? } */"],
-    "usage": "instance:Shape",
-    "returns": "meshed edges data"
-  },
-  "blobSTL": {
-    "type": "method",
-    "requiredParams": [],
-    "optionalParams": [],
-    "usage": "instance:Shape",
-    "returns": "Blob (STL)"
-  },
-  "blobSTEP": {
-    "type": "method",
-    "requiredParams": [],
-    "optionalParams": [],
-    "usage": "instance:Shape",
-    "returns": "Blob (STEP) - inferred name (STEP export exists)"
-  },
-  "Sketcher": {
-    "type": "class_constructor",
-    "requiredParams": [],
-    "optionalParams": ["planeNameOrPlane /* e.g. 'XZ' */"],
-    "usage": "constructor (use with new Sketcher(...))",
-    "returns": "Sketcher instance"
-  },
-  "Sketcher.movePointerTo": {
-    "type": "method",
-    "requiredParams": ["point /* [x,y] */"],
-    "optionalParams": [],
-    "usage": "instance:Sketcher",
-    "returns": "Sketcher (chainable)"
-  },
-  "Sketcher.hLine": {
-    "type": "method",
-    "requiredParams": ["length"],
-    "optionalParams": [],
-    "usage": "instance:Sketcher",
-    "returns": "Sketcher (chainable)"
-  },
-  "Sketcher.vLine": {
-    "type": "method",
-    "requiredParams": ["length"],
-    "optionalParams": [],
-    "usage": "instance:Sketcher",
-    "returns": "Sketcher (chainable)"
-  },
-  "Sketcher.line": {
-    "type": "method",
-    "requiredParams": ["dx", "dy"],
-    "optionalParams": [],
-    "usage": "instance:Sketcher",
-    "returns": "Sketcher (chainable)"
-  },
-  "Sketcher.lineTo": {
-    "type": "method",
-    "requiredParams": ["point /* [x,y] */"],
-    "optionalParams": [],
-    "usage": "instance:Sketcher",
-    "returns": "Sketcher (chainable)"
-  },
-  "Sketcher.quadraticBezierCurveTo": {
-    "type": "method",
-    "requiredParams": ["controlPoint", "endPoint"],
-    "optionalParams": [],
-    "usage": "instance:Sketcher",
-    "returns": "Sketcher (chainable)"
-  },
-  "Sketcher.threePointsArc": {
-    "type": "method",
-    "requiredParams": ["x1", "y1", "x2", "y2"],
-    "optionalParams": [],
-    "usage": "instance:Sketcher",
-    "returns": "Sketcher (chainable)"
-  },
-  "Sketcher.halfEllipse": {
-    "type": "method",
-    "requiredParams": ["dx", "dy", "axisLength"],
-    "optionalParams": ["cw /* clockwise boolean */"],
-    "usage": "instance:Sketcher",
-    "returns": "Sketcher (chainable)"
-  },
-  "Sketcher.close": {
-    "type": "method",
-    "requiredParams": [],
-    "optionalParams": [],
-    "usage": "instance:Sketcher",
-    "returns": "Sketcher (chainable)"
-  },
-  "Sketcher.closeWithMirror": {
-    "type": "method",
-    "requiredParams": [],
-    "optionalParams": [],
-    "usage": "instance:Sketcher",
-    "returns": "Sketcher (chainable)"
-  },
-  "Sketcher.extrude": {
-    "type": "method",
-    "requiredParams": ["distance"],
-    "optionalParams": ["options /* { extrusionDirection?, twistAngle? } */"],
-    "usage": "instance:Sketcher (produces Shape)",
-    "returns": "Shape"
-  },
-  "Sketcher.revolve": {
-    "type": "method",
-    "requiredParams": [],
-    "optionalParams": ["axis /* default Z */"],
-    "usage": "instance:Sketcher (produces Shape)",
-    "returns": "Shape"
-  },
-  "Sketcher.fillet": {
-    "type": "method",
-    "requiredParams": ["radius"],
-    "optionalParams": [],
-    "usage": "instance:Shape (post-extrude) or Sketcher (chainable in examples)",
-    "returns": "Shape"
-  },
-  "Sketcher.translateY": {
-    "type": "method",
-    "requiredParams": ["value"],
-    "optionalParams": [],
-    "usage": "instance:Sketcher or Shape",
-    "returns": "chainable"
-  },
-  "Sketcher.loftWith": {
-    "type": "method",
-    "requiredParams": ["otherSketchOrArray"],
-    "optionalParams": ["options /* { endPoint?, ... } */"],
-    "usage": "instance:Sketcher (produces Shape)",
-    "returns": "Shape"
   },
   "Drawing.clone": {
     "type": "method",
     "requiredParams": [],
     "optionalParams": [],
-    "usage": "instance:Drawing",
     "returns": "Drawing"
   },
   "Drawing.serialize": {
     "type": "method",
     "requiredParams": [],
     "optionalParams": [],
-    "usage": "instance:Drawing",
-    "returns": "string (JSON)"
-  },
-  "Drawing.boundingBox": {
-    "type": "getter",
-    "requiredParams": [],
-    "optionalParams": [],
-    "usage": "instance:Drawing",
-    "returns": "BoundingBox2d"
-  },
-  "Drawing.repr": {
-    "type": "getter",
-    "requiredParams": [],
-    "optionalParams": [],
-    "usage": "instance:Drawing",
     "returns": "string"
   },
   "Drawing.stretch": {
     "type": "method",
     "requiredParams": ["ratio", "direction", "origin"],
     "optionalParams": [],
-    "usage": "instance:Drawing",
     "returns": "Drawing"
   },
   "Drawing.rotate": {
     "type": "method",
     "requiredParams": ["angle"],
     "optionalParams": ["center"],
-    "usage": "instance:Drawing",
     "returns": "Drawing"
   },
   "Drawing.translate": {
     "type": "method",
-    "requiredParams": ["xDist or translationVector"],
-    "optionalParams": ["yDist"],
-    "usage": "instance:Drawing",
+    "requiredParams": ["translationVector"],
+    "optionalParams": [],
     "returns": "Drawing"
   },
   "Drawing.scale": {
     "type": "method",
     "requiredParams": ["scaleFactor"],
     "optionalParams": ["center"],
-    "usage": "instance:Drawing",
-  "returns": "Drawing"
+    "returns": "Drawing"
   },
   "Drawing.mirror": {
     "type": "method",
     "requiredParams": ["centerOrDirection"],
-    "optionalParams": ["origin", "mode /* 'center'|'plane' */"],
-    "usage": "instance:Drawing",
+    "optionalParams": ["origin", "mode"],
+    "returns": "Drawing"
+  },
+  "Drawing.cut": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": [],
+    "returns": "Drawing"
+  },
+  "Drawing.fuse": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": [],
+    "returns": "Drawing"
+  },
+  "Drawing.intersect": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": [],
+    "returns": "Drawing"
+  },
+  "Drawing.fillet": {
+    "type": "method",
+    "requiredParams": ["radius"],
+    "optionalParams": ["filter"],
+    "returns": "Drawing"
+  },
+  "Drawing.chamfer": {
+    "type": "method",
+    "requiredParams": ["radius"],
+    "optionalParams": ["filter"],
     "returns": "Drawing"
   },
   "Drawing.sketchOnPlane": {
     "type": "method",
     "requiredParams": [],
-    "optionalParams": ["inputPlane /* Plane or PlaneName */", "origin"],
-    "usage": "instance:Drawing -> returns SketchInterface or Sketches",
+    "optionalParams": ["inputPlane", "origin"],
     "returns": "SketchInterface | Sketches"
   },
-  "Drawing.punchHole": {
+  "Drawing.sketchOnFace": {
     "type": "method",
-    "requiredParams": ["shape"],
-    "optionalParams": ["faceFinder", "options"],
-    "usage": "instance:Drawing",
-    "returns": "Shape (with hole)"
+    "requiredParams": ["face", "scaleMode"],
+    "optionalParams": [],
+    "returns": "SketchInterface | Sketches"
   },
   "Drawing.toSVG": {
     "type": "method",
     "requiredParams": [],
     "optionalParams": ["margin"],
-    "usage": "instance:Drawing",
-    "returns": "string (svg markup)"
+    "returns": "string"
   },
   "Drawing.toSVGViewBox": {
     "type": "method",
     "requiredParams": [],
-    "optionalParams": ["margin /* default 1 */"],
-    "usage": "instance:Drawing",
-    "returns": "string (viewBox)"
+    "optionalParams": ["margin"],
+    "returns": "string"
   },
   "Drawing.toSVGPaths": {
     "type": "method",
     "requiredParams": [],
     "optionalParams": [],
-    "usage": "instance:Drawing",
     "returns": "string[] | string[][]"
   },
   "Drawing.offset": {
     "type": "method",
     "requiredParams": ["distance"],
-    "optionalParams": ["offsetConfig /* Offset2DConfig */"],
-    "usage": "instance:Drawing",
+    "optionalParams": ["offsetConfig"],
     "returns": "Drawing"
   },
   "Drawing.approximate": {
     "type": "method",
-    "requiredParams": ["target /* 'svg'|'arcs' */"],
-    "optionalParams": ["options /* ApproximationOptions */"],
-  "usage": "instance:Drawing",
-  "returns": "Drawing (approximation)"
+    "requiredParams": ["target"],
+    "optionalParams": ["options"],
+    "returns": "Drawing"
   },
-  "Drawing.blueprint": {
-    "type": "getter",
-    "requiredParams": [],
-  "optionalParams": [],
-  "usage": "instance:Drawing",
-  "returns": "Blueprint (throws if not a blueprint)"
-  },
-  "Blueprints.clone": {
+  "DrawingPen.done": {
     "type": "method",
     "requiredParams": [],
-  "optionalParams": [],
-  "usage": "instance:Blueprints",
-  "returns": "Blueprints"
+    "optionalParams": [],
+    "returns": "Drawing"
   },
-  "Blueprints.boundingBox": {
-    "type": "getter",
-    "requiredParams": [],
-  "optionalParams": [],
-  "usage": "instance:Blueprints",
-  "returns": "BoundingBox2d"
-  },
-  "Blueprints.translate": {
+  "DrawingPen.close": {
     "type": "method",
-  "requiredParams": ["xDist or translationVector"],
-  "optionalParams": ["yDist"],
-  "usage": "instance:Blueprints",
-  "returns": "Blueprints"
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Drawing"
   },
-  "syncGeometries": {
-    "type": "function",
-  "requiredParams": ["meshedShapes", "existingGeometriesArray"],
-  "optionalParams": [],
-  "usage": "global (replicad-threejs-helper)",
-  "returns": "updated BufferGeometry array"
+  "DrawingPen.closeWithMirror": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Drawing"
   },
-  "syncFaces": {
-    "type": "function",
-  "requiredParams": ["facesBufferGeometry", "replicadMeshedFaces"],
-  "optionalParams": [],
-  "usage": "global (replicad-threejs-helper)",
-  "returns": "BufferGeometry"
+  "DrawingPen.closeWithCustomCorner": {
+    "type": "method",
+    "requiredParams": ["radius"],
+    "optionalParams": ["mode"],
+    "returns": "Drawing"
   },
-  "syncLines": {
+  "drawPolysides": {
     "type": "function",
-  "requiredParams": ["linesBufferGeometry", "replicadMeshedEdges"],
-  "optionalParams": [],
-  "usage": "global (replicad-threejs-helper)",
-  "returns": "void"
+    "requiredParams": ["radius", "sidesCount"],
+    "optionalParams": ["sagitta"],
+    "returns": "Drawing"
+  },
+  "drawProjection": {
+    "type": "function",
+    "requiredParams": ["shape"],
+    "optionalParams": ["projectionCamera"],
+    "returns": "{\r\n    visible: Drawing;\r\n    hidden: Drawing;\r\n}"
+  },
+  "drawRoundedRectangle": {
+    "type": "function",
+    "requiredParams": ["width", "height"],
+    "optionalParams": ["r"],
+    "returns": "Drawing"
+  },
+  "drawSingleCircle": {
+    "type": "function",
+    "requiredParams": ["radius"],
+    "optionalParams": [],
+    "returns": "Drawing"
+  },
+  "drawSingleEllipse": {
+    "type": "function",
+    "requiredParams": ["majorRadius", "minorRadius"],
+    "optionalParams": [],
+    "returns": "Drawing"
+  },
+  "drawText": {
+    "type": "function",
+    "requiredParams": ["text"],
+    "optionalParams": ["{ startX, startY, fontSize, fontFamily }"],
+    "returns": "Drawing"
+  },
+  "Edge._geomAdaptor": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "BRepAdaptor_Curve"
+  },
+  "EdgeFinder.clone": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "EdgeFinder"
+  },
+  "EdgeFinder.inDirection": {
+    "type": "method",
+    "requiredParams": ["direction"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "EdgeFinder.ofLength": {
+    "type": "method",
+    "requiredParams": ["length"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "EdgeFinder.ofCurveType": {
+    "type": "method",
+    "requiredParams": ["curveType"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "EdgeFinder.parallelTo": {
+    "type": "method",
+    "requiredParams": ["plane"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "EdgeFinder.inPlane": {
+    "type": "method",
+    "requiredParams": ["inputPlane"],
+    "optionalParams": ["origin"],
+    "returns": "this"
+  },
+  "EdgeFinder.shouldKeep": {
+    "type": "method",
+    "requiredParams": ["element"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "EdgeFinder.applyFilter": {
+    "type": "method",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "Edge[]"
+  },
+  "exportSTEP": {
+    "type": "function",
+    "requiredParams": [],
+    "optionalParams": ["shapes", "{ unit, modelUnit }"],
+    "returns": "Blob"
+  },
+  "Face._geomAdaptor": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "BRepAdaptor_Surface"
+  },
+  "Face.pointOnSurface": {
+    "type": "method",
+    "requiredParams": ["u", "v"],
+    "optionalParams": [],
+    "returns": "Vector"
+  },
+  "Face.normalAt": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["locationVector"],
+    "returns": "Vector"
+  },
+  "Face.outerWire": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Wire"
+  },
+  "Face.innerWires": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Wire[]"
+  },
+  "Face.triangulation": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["index0"],
+    "returns": "FaceTriangulation | null"
+  },
+  "FaceFinder.clone": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "FaceFinder"
+  },
+  "FaceFinder.parallelTo": {
+    "type": "method",
+    "requiredParams": ["plane"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "FaceFinder.ofSurfaceType": {
+    "type": "method",
+    "requiredParams": ["surfaceType"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "FaceFinder.inPlane": {
+    "type": "method",
+    "requiredParams": ["inputPlane"],
+    "optionalParams": ["origin"],
+    "returns": "this"
+  },
+  "FaceFinder.shouldKeep": {
+    "type": "method",
+    "requiredParams": ["element"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "FaceFinder.applyFilter": {
+    "type": "method",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "Face[]"
+  },
+  "FaceSketcher._convertToUV": {
+    "type": "method",
+    "requiredParams": ["[x, y]"],
+    "optionalParams": [],
+    "returns": "Point2D"
+  },
+  "FaceSketcher._convertFromUV": {
+    "type": "method",
+    "requiredParams": ["[u, v]"],
+    "optionalParams": [],
+    "returns": "Point2D"
+  },
+  "FaceSketcher._adaptSurface": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Handle_Geom_Surface"
+  },
+  "FaceSketcher.buildWire": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Wire"
+  },
+  "FaceSketcher.done": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Sketch"
+  },
+  "FaceSketcher.close": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Sketch"
+  },
+  "FaceSketcher.closeWithMirror": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Sketch"
+  },
+  "FaceSketcher.closeWithCustomCorner": {
+    "type": "method",
+    "requiredParams": ["radius"],
+    "optionalParams": ["mode"],
+    "returns": "Sketch"
+  },
+  "Finder.applyFilter": {
+    "type": "method",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "Type[]"
+  },
+  "Finder.shouldKeep": {
+    "type": "method",
+    "requiredParams": ["t"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "Finder.delete": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "Finder.and": {
+    "type": "method",
+    "requiredParams": ["findersList"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Finder.not": {
+    "type": "method",
+    "requiredParams": ["finderFun"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Finder.either": {
+    "type": "method",
+    "requiredParams": ["findersList"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Finder.find": {
+    "type": "method",
+    "requiredParams": ["shape", "options"],
+    "optionalParams": [],
+    "returns": "Type[]"
+  },
+  "Finder3d.when": {
+    "type": "method",
+    "requiredParams": ["filter"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Finder3d.inList": {
+    "type": "method",
+    "requiredParams": ["elementList"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Finder3d.atAngleWith": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["direction", "angle"],
+    "returns": "this"
+  },
+  "Finder3d.atDistance": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": ["point"],
+    "returns": "this"
+  },
+  "Finder3d.containsPoint": {
+    "type": "method",
+    "requiredParams": ["point"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Finder3d.withinDistance": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": ["point"],
+    "returns": "this"
+  },
+  "Finder3d.inBox": {
+    "type": "method",
+    "requiredParams": ["corner1", "corner2"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Finder3d.inShape": {
+    "type": "method",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "genericSweep": {
+    "type": "function",
+    "requiredParams": ["wire", "spine", "sweepConfig"],
+    "optionalParams": ["shellMode"],
+    "returns": "Shape3D"
+  },
+  "importSTEP": {
+    "type": "function",
+    "requiredParams": ["STLBlob"],
+    "optionalParams": [],
+    "returns": "Promise<AnyShape>"
+  },
+  "importSTL": {
+    "type": "function",
+    "requiredParams": ["STLBlob"],
+    "optionalParams": [],
+    "returns": "Promise<AnyShape>"
+  },
+  "intersect2D": {
+    "type": "function",
+    "requiredParams": ["first", "second"],
+    "optionalParams": [],
+    "returns": "Blueprint | Blueprints | CompoundBlueprint | null"
+  },
+  "isPoint": {
+    "type": "function",
+    "requiredParams": ["p"],
+    "optionalParams": [],
+    "returns": "p is Point"
+  },
+  "isProjectionPlane": {
+    "type": "function",
+    "requiredParams": ["plane"],
+    "optionalParams": [],
+    "returns": "plane is ProjectionPlane"
+  },
+  "isShape3D": {
+    "type": "function",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "shape is Shape3D"
+  },
+  "isWire": {
+    "type": "function",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "shape is Wire"
+  },
+  "loadFont": {
+    "type": "function",
+    "requiredParams": ["fontPath"],
+    "optionalParams": ["fontFamily", "force"],
+    "returns": "Promise<opentype_2.Font>"
+  },
+  "lookFromPlane": {
+    "type": "function",
+    "requiredParams": ["projectionPlane"],
+    "optionalParams": [],
+    "returns": "ProjectionCamera"
+  },
+  "makeDirection": {
+    "type": "function",
+    "requiredParams": ["p"],
+    "optionalParams": [],
+    "returns": "Point"
+  },
+  "makePlane": {
+    "type": "function",
+    "requiredParams": [],
+    "optionalParams": ["plane", "origin"],
+    "returns": "Plane"
+  },
+  "makeProjectedEdges": {
+    "type": "function",
+    "requiredParams": ["shape", "camera"],
+    "optionalParams": ["withHiddenLines"],
+    "returns": "{\r\n    visible: Edge[];\r\n    hidden: Edge[];\r\n}"
+  },
+  "makeSolid": {
+    "type": "function",
+    "requiredParams": ["facesOrShells"],
+    "optionalParams": [],
+    "returns": "Solid"
+  },
+  "measureArea": {
+    "type": "function",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "number"
+  },
+  "measureDistanceBetween": {
+    "type": "function",
+    "requiredParams": ["shape1", "shape2"],
+    "optionalParams": [],
+    "returns": "number"
+  },
+  "measureLength": {
+    "type": "function",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "number"
+  },
+  "measureShapeLinearProperties": {
+    "type": "function",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "LinearPhysicalProperties"
+  },
+  "measureShapeSurfaceProperties": {
+    "type": "function",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "SurfacePhysicalProperties"
+  },
+  "measureShapeVolumeProperties": {
+    "type": "function",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "VolumePhysicalProperties"
+  },
+  "measureVolume": {
+    "type": "function",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "number"
+  },
+  "mirror": {
+    "type": "function",
+    "requiredParams": ["shape"],
+    "optionalParams": ["inputPlane", "origin"],
+    "returns": "TopoDS_Shape"
+  },
+  "Plane.delete": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "Plane.clone": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Plane"
+  },
+  "Plane.translateTo": {
+    "type": "method",
+    "requiredParams": ["point"],
+    "optionalParams": [],
+    "returns": "Plane"
+  },
+  "Plane.translate": {
+    "type": "method",
+    "requiredParams": ["vector"],
+    "optionalParams": [],
+    "returns": "Plane"
+  },
+  "Plane.translateX": {
+    "type": "method",
+    "requiredParams": ["xDist"],
+    "optionalParams": [],
+    "returns": "Plane"
+  },
+  "Plane.translateY": {
+    "type": "method",
+    "requiredParams": ["yDist"],
+    "optionalParams": [],
+    "returns": "Plane"
+  },
+  "Plane.translateZ": {
+    "type": "method",
+    "requiredParams": ["zDist"],
+    "optionalParams": [],
+    "returns": "Plane"
+  },
+  "Plane.pivot": {
+    "type": "method",
+    "requiredParams": ["angle"],
+    "optionalParams": ["direction"],
+    "returns": "Plane"
+  },
+  "Plane.rotate2DAxes": {
+    "type": "method",
+    "requiredParams": ["angle"],
+    "optionalParams": [],
+    "returns": "Plane"
+  },
+  "Plane._calcTransforms": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "Plane.setOrigin2d": {
+    "type": "method",
+    "requiredParams": ["x", "y"],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "Plane.toLocalCoords": {
+    "type": "method",
+    "requiredParams": ["vec"],
+    "optionalParams": [],
+    "returns": "Vector"
+  },
+  "Plane.toWorldCoords": {
+    "type": "method",
+    "requiredParams": ["v"],
+    "optionalParams": [],
+    "returns": "Vector"
+  },
+  "ProjectionCamera.autoAxes": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "ProjectionCamera.setPosition": {
+    "type": "method",
+    "requiredParams": ["position"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "ProjectionCamera.setXAxis": {
+    "type": "method",
+    "requiredParams": ["xAxis"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "ProjectionCamera.setYAxis": {
+    "type": "method",
+    "requiredParams": ["yAxis"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "ProjectionCamera.lookAt": {
+    "type": "method",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "rotate": {
+    "type": "function",
+    "requiredParams": ["shape", "angle"],
+    "optionalParams": ["position", "direction"],
+    "returns": "TopoDS_Shape"
+  },
+  "scale": {
+    "type": "function",
+    "requiredParams": ["shape", "center", "scale"],
+    "optionalParams": [],
+    "returns": "TopoDS_Shape"
+  },
+  "Shape.clone": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Shape.serialize": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "string"
+  },
+  "Shape.isSame": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "Shape.isEqual": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "Shape.simplify": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Shape.translate": {
+    "type": "method",
+    "requiredParams": ["vector"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Shape.translateX": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Shape.translateY": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Shape.translateZ": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Shape.rotate": {
+    "type": "method",
+    "requiredParams": ["angle"],
+    "optionalParams": ["position", "direction"],
+    "returns": "this"
+  },
+  "Shape.mirror": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["inputPlane", "origin"],
+    "returns": "this"
+  },
+  "Shape.scale": {
+    "type": "method",
+    "requiredParams": ["scale"],
+    "optionalParams": ["center"],
+    "returns": "this"
+  },
+  "Shape._iterTopo": {
+    "type": "method",
+    "requiredParams": ["topo"],
+    "optionalParams": [],
+    "returns": "IterableIterator<TopoDS_Shape>"
+  },
+  "Shape._listTopo": {
+    "type": "method",
+    "requiredParams": ["topo"],
+    "optionalParams": [],
+    "returns": "TopoDS_Shape[]"
+  },
+  "Shape._mesh": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["{ tolerance, angularTolerance }"],
+    "returns": "void"
+  },
+  "Shape.mesh": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["{ tolerance, angularTolerance }"],
+    "returns": "ShapeMesh"
+  },
+  "Shape.meshEdges": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["{ tolerance, angularTolerance }"],
+    "returns": "{\r\n        lines: number[];\r\n        edgeGroups: {\r\n            start: number;\r\n            count: number;\r\n            edgeId: number;\r\n        }[];\r\n    }"
+  },
+  "Shape.blobSTEP": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Blob"
+  },
+  "Shape.blobSTL": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["{ tolerance, angularTolerance, binary, }"],
+    "returns": "Blob"
+  },
+  "Sketch.delete": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "Sketch.clone": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Sketch"
+  },
+  "Sketch.face": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Face"
+  },
+  "Sketch.wires": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Wire"
+  },
+  "Sketch.faces": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Face"
+  },
+  "Sketch.revolve": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["revolutionAxis", "{ origin }"],
+    "returns": "Shape3D"
+  },
+  "Sketch.extrude": {
+    "type": "method",
+    "requiredParams": ["extrusionDistance"],
+    "optionalParams": [
+      "{ extrusionDirection, extrusionProfile, twistAngle, origin, }"
+    ],
+    "returns": "Shape3D"
+  },
+  "Sketch.sweepSketch": {
+    "type": "method",
+    "requiredParams": ["sketchOnPlane"],
+    "optionalParams": ["sweepConfig"],
+    "returns": "Shape3D"
+  },
+  "Sketch.loftWith": {
+    "type": "method",
+    "requiredParams": ["otherSketches"],
+    "optionalParams": ["loftConfig", "returnShell"],
+    "returns": "Shape3D"
+  },
+  "Sketcher.delete": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "Sketcher._updatePointer": {
+    "type": "method",
+    "requiredParams": ["newPointer"],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "Sketcher.movePointerTo": {
+    "type": "method",
+    "requiredParams": ["[x, y]"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.lineTo": {
+    "type": "method",
+    "requiredParams": ["[x, y]"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.line": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.vLine": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.hLine": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.vLineTo": {
+    "type": "method",
+    "requiredParams": ["yPos"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.hLineTo": {
+    "type": "method",
+    "requiredParams": ["xPos"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.polarLine": {
+    "type": "method",
+    "requiredParams": ["distance", "angle"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.polarLineTo": {
+    "type": "method",
+    "requiredParams": ["[r, theta]"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.tangentLine": {
+    "type": "method",
+    "requiredParams": ["distance"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.threePointsArcTo": {
+    "type": "method",
+    "requiredParams": ["end", "innerPoint"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.threePointsArc": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist", "viaXDist", "viaYDist"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.tangentArcTo": {
+    "type": "method",
+    "requiredParams": ["end"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.tangentArc": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.sagittaArcTo": {
+    "type": "method",
+    "requiredParams": ["end", "sagitta"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.sagittaArc": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist", "sagitta"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.vSagittaArc": {
+    "type": "method",
+    "requiredParams": ["distance", "sagitta"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.hSagittaArc": {
+    "type": "method",
+    "requiredParams": ["distance", "sagitta"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.bulgeArcTo": {
+    "type": "method",
+    "requiredParams": ["end", "bulge"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.bulgeArc": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist", "bulge"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.vBulgeArc": {
+    "type": "method",
+    "requiredParams": ["distance", "bulge"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.hBulgeArc": {
+    "type": "method",
+    "requiredParams": ["distance", "bulge"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.ellipseTo": {
+    "type": "method",
+    "requiredParams": ["end", "horizontalRadius", "verticalRadius"],
+    "optionalParams": ["rotation", "longAxis", "sweep"],
+    "returns": "this"
+  },
+  "Sketcher.ellipse": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist", "horizontalRadius", "verticalRadius"],
+    "optionalParams": ["rotation", "longAxis", "sweep"],
+    "returns": "this"
+  },
+  "Sketcher.halfEllipseTo": {
+    "type": "method",
+    "requiredParams": ["end", "verticalRadius"],
+    "optionalParams": ["sweep"],
+    "returns": "this"
+  },
+  "Sketcher.halfEllipse": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist", "verticalRadius"],
+    "optionalParams": ["sweep"],
+    "returns": "this"
+  },
+  "Sketcher.bezierCurveTo": {
+    "type": "method",
+    "requiredParams": ["end", "controlPoints"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.quadraticBezierCurveTo": {
+    "type": "method",
+    "requiredParams": ["end", "controlPoint"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.cubicBezierCurveTo": {
+    "type": "method",
+    "requiredParams": ["end", "startControlPoint", "endControlPoint"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Sketcher.smoothSplineTo": {
+    "type": "method",
+    "requiredParams": ["end"],
+    "optionalParams": ["config"],
+    "returns": "this"
+  },
+  "Sketcher.smoothSpline": {
+    "type": "method",
+    "requiredParams": ["xDist", "yDist"],
+    "optionalParams": ["splineConfig"],
+    "returns": "this"
+  },
+  "Sketcher._mirrorWireOnStartEnd": {
+    "type": "method",
+    "requiredParams": ["wire"],
+    "optionalParams": [],
+    "returns": "Wire"
+  },
+  "Sketcher.buildWire": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Wire"
+  },
+  "Sketcher._closeSketch": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
+  },
+  "Sketcher.done": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Sketch"
+  },
+  "Sketcher.close": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Sketch"
+  },
+  "Sketcher.closeWithMirror": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Sketch"
+  },
+  "Sketches.wires": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "AnyShape"
+  },
+  "Sketches.faces": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "AnyShape"
+  },
+  "Sketches.extrude": {
+    "type": "method",
+    "requiredParams": ["extrusionDistance"],
+    "optionalParams": ["extrusionConfig"],
+    "returns": "AnyShape"
+  },
+  "Sketches.revolve": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["revolutionAxis", "config"],
+    "returns": "AnyShape"
+  },
+  "sketchText": {
+    "type": "function",
+    "requiredParams": ["text"],
+    "optionalParams": ["textConfig", "planeConfig"],
+    "returns": "Sketches"
+  },
+  "textBlueprints": {
+    "type": "function",
+    "requiredParams": ["text"],
+    "optionalParams": ["{ startX, startY, fontSize, fontFamily }"],
+    "returns": "Blueprints"
+  },
+  "Transformation.translate": {
+    "type": "method",
+    "requiredParams": ["vector"],
+    "optionalParams": [],
+    "returns": "Transformation"
+  },
+  "Transformation.rotate": {
+    "type": "method",
+    "requiredParams": ["angle"],
+    "optionalParams": ["position", "direction"],
+    "returns": "Transformation"
+  },
+  "Transformation.mirror": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": ["inputPlane", "inputOrigin"],
+    "returns": "this"
+  },
+  "Transformation.scale": {
+    "type": "method",
+    "requiredParams": ["center", "scale"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Transformation.coordSystemChange": {
+    "type": "method",
+    "requiredParams": ["fromSystem", "toSystem"],
+    "optionalParams": [],
+    "returns": "this"
+  },
+  "Transformation.transformPoint": {
+    "type": "method",
+    "requiredParams": ["point"],
+    "optionalParams": [],
+    "returns": "gp_Pnt"
+  },
+  "Transformation.transform": {
+    "type": "method",
+    "requiredParams": ["shape"],
+    "optionalParams": [],
+    "returns": "TopoDS_Shape"
+  },
+  "translate": {
+    "type": "function",
+    "requiredParams": ["shape", "vector"],
+    "optionalParams": [],
+    "returns": "TopoDS_Shape"
+  },
+  "twistExtrude": {
+    "type": "function",
+    "requiredParams": [
+      "wire",
+      "angleDegrees",
+      "center",
+      "normal",
+      "profileShape",
+      "shellMode"
+    ],
+    "optionalParams": [],
+    "returns": "[Shape3D, Wire, Wire]"
+  },
+  "Vector.toTuple": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "[number, number, number]"
+  },
+  "Vector.cross": {
+    "type": "method",
+    "requiredParams": ["v"],
+    "optionalParams": [],
+    "returns": "Vector"
+  },
+  "Vector.dot": {
+    "type": "method",
+    "requiredParams": ["v"],
+    "optionalParams": [],
+    "returns": "number"
+  },
+  "Vector.sub": {
+    "type": "method",
+    "requiredParams": ["v"],
+    "optionalParams": [],
+    "returns": "Vector"
+  },
+  "Vector.add": {
+    "type": "method",
+    "requiredParams": ["v"],
+    "optionalParams": [],
+    "returns": "Vector"
+  },
+  "Vector.multiply": {
+    "type": "method",
+    "requiredParams": ["scale"],
+    "optionalParams": [],
+    "returns": "Vector"
+  },
+  "Vector.normalized": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Vector"
+  },
+  "Vector.normalize": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Vector"
+  },
+  "Vector.getCenter": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "Vector"
+  },
+  "Vector.getAngle": {
+    "type": "method",
+    "requiredParams": ["v"],
+    "optionalParams": [],
+    "returns": "number"
+  },
+  "Vector.projectToPlane": {
+    "type": "method",
+    "requiredParams": ["plane"],
+    "optionalParams": [],
+    "returns": "Vector"
+  },
+  "Vector.equals": {
+    "type": "method",
+    "requiredParams": ["other"],
+    "optionalParams": [],
+    "returns": "boolean"
+  },
+  "Vector.toPnt": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "gp_Pnt"
+  },
+  "Vector.toDir": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "gp_Dir"
+  },
+  "Vector.rotate": {
+    "type": "method",
+    "requiredParams": ["angle"],
+    "optionalParams": ["center", "direction"],
+    "returns": "Vector"
+  },
+  "Vertex.asTuple": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "[number, number, number]"
+  },
+  "weldShellsAndFaces": {
+    "type": "function",
+    "requiredParams": ["facesOrShells"],
+    "optionalParams": ["ignoreType"],
+    "returns": "Shell"
+  },
+  "Wire._geomAdaptor": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "BRepAdaptor_CompCurve"
+  },
+  "Wire.offset2D": {
+    "type": "method",
+    "requiredParams": ["offset"],
+    "optionalParams": ["kind"],
+    "returns": "Wire"
+  },
+  "WrappingObj.delete": {
+    "type": "method",
+    "requiredParams": [],
+    "optionalParams": [],
+    "returns": "void"
   }
 }
