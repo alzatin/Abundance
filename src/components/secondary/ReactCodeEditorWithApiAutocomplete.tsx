@@ -142,16 +142,21 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
    */
   function apiCompletionSource(api?: ApiJson) {
     if (!api) {
-      // no API available: return a source that never provides completions
       return (_context: any): CompletionResult | null => null;
     }
     const keys = Object.keys(api);
-    // Top-level methods (no dot)
     const topLevelKeys = keys.filter((k) => !k.includes("."));
-    // Instance methods: group by class prefix (e.g., Drawing., Sketcher.)
     const instancePrefixes = Array.from(
       new Set(keys.filter((k) => k.includes(".")).map((k) => k.split(".")[0]))
     );
+
+    // Map replicad method to return type (from API JSON)
+    const methodToType: Record<string, string> = {};
+    for (const key of Object.keys(api)) {
+      if (api[key].returns) {
+        methodToType[key] = api[key].returns!;
+      }
+    }
 
     return (context: any): CompletionResult | null => {
       const word = context.matchBefore(/[$\w.]+/);
@@ -161,10 +166,32 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       let from = word ? word.from : context.pos;
       let options: Completion[] = [];
 
-      // If the user types 'replicad.' (optionally followed by more), show all top-level replicad methods
+      // --- Local variable extraction and type inference ---
+      const code = context.state.doc.toString();
+      // Find all variable declarations and their assigned types (if replicad)
+      const variableTypes: Record<string, string> = {};
+      const replicadAssignRegex =
+        /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*replicad\.([a-zA-Z_$][\w$]*)\s*\(/g;
+      let replicadAssignMatch;
+      while ((replicadAssignMatch = replicadAssignRegex.exec(code))) {
+        const varName = replicadAssignMatch[1];
+        const method = replicadAssignMatch[2];
+        if (methodToType[method]) {
+          variableTypes[varName] = methodToType[method];
+        }
+      }
+      // Collect all variable names for completion
+      const allVarRegex = /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)/g;
+      const variableNames: string[] = [];
+      let allVarMatch;
+      while ((allVarMatch = allVarRegex.exec(code))) {
+        variableNames.push(allVarMatch[1]);
+      }
+
+      // Replicad top-level completions
       if (/^replicad\.?[\w]*$/.test(text)) {
         for (const k of topLevelKeys) {
-          const def = api ? api[k] : undefined;
+          const def = api[k];
           if (def) {
             options.push({
               ...makeCompletion(k, def, false),
@@ -174,10 +201,15 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
                   def.optionalParams || []
                 );
                 const paramsPreview = params.join(", ");
-                const insertText = `replicad.${k}(${
-                  paramsPreview ? paramsPreview : ""
-                })`;
-                const anchor = fromPos + `replicad.${k}(`.length;
+                let insertText;
+                if (/^replicad\.$/.test(text)) {
+                  insertText = `${k}(${paramsPreview ? paramsPreview : ""})`;
+                } else {
+                  insertText = `replicad.${k}(${
+                    paramsPreview ? paramsPreview : ""
+                  })`;
+                }
+                const anchor = fromPos + insertText.indexOf("(") + 1;
                 view.dispatch({
                   changes: { from: fromPos, to: toPos, insert: insertText },
                   selection: { anchor },
@@ -194,19 +226,18 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
             : word
             ? word.from
             : context.pos;
-      } else if (
+      }
+      // Instance method completions for known prefixes
+      else if (
         instancePrefixes.some((prefix) => text.startsWith(prefix + "."))
       ) {
-        // If user types Drawing. or Sketcher. etc, show all methods for that class
-        const prefix = instancePrefixes.find((prefix) =>
-          text.startsWith(prefix + ".")
-        );
+        const prefix = instancePrefixes.find((p) => text.startsWith(p + "."));
         if (prefix) {
           const instanceMethods = keys.filter((k) =>
             k.startsWith(prefix + ".")
           );
           for (const k of instanceMethods) {
-            const def = api ? api[k] : undefined;
+            const def = api[k];
             if (def) {
               options.push({
                 ...makeCompletion(k, def, true),
@@ -216,10 +247,10 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
                     def.optionalParams || []
                   );
                   const paramsPreview = params.join(", ");
-                  const insertText = `${k}(${
+                  const insertText = `${k.split(".")[1]}(${
                     paramsPreview ? paramsPreview : ""
                   })`;
-                  const anchor = fromPos + `${k.split(".")[1]}(`.length;
+                  const anchor = fromPos + insertText.indexOf("(") + 1;
                   view.dispatch({
                     changes: { from: fromPos, to: toPos, insert: insertText },
                     selection: { anchor },
@@ -229,7 +260,6 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
               });
             }
           }
-          // Set completion to start after the dot
           const dotIdx = text.indexOf(".");
           from =
             dotIdx >= 0
@@ -238,10 +268,50 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
               ? word.from
               : context.pos;
         }
-      } else {
-        // If just typing a method name, also suggest all top-level methods, inserting replicad.methodName(...)
+      }
+      // Instance method completions for inferred replicad variables
+      else if (/^[a-zA-Z_$][\w$]*\.$/.test(text)) {
+        const varName = text.slice(0, -1);
+        const type = variableTypes[varName];
+        if (type) {
+          const instanceMethods = keys.filter((k) => k.startsWith(type + "."));
+          for (const k of instanceMethods) {
+            const def = api[k];
+            if (def) {
+              options.push({
+                ...makeCompletion(k, def, true),
+                label: k.split(".")[1],
+                apply: (view, completion, fromPos, toPos) => {
+                  const params = (def.requiredParams || []).concat(
+                    def.optionalParams || []
+                  );
+                  const paramsPreview = params.join(", ");
+                  const insertText = `${k.split(".")[1]}(${
+                    paramsPreview ? paramsPreview : ""
+                  })`;
+                  const anchor = fromPos + insertText.indexOf("(") + 1;
+                  view.dispatch({
+                    changes: { from: fromPos, to: toPos, insert: insertText },
+                    selection: { anchor },
+                  });
+                  view.focus();
+                },
+              });
+            }
+          }
+          const dotIdx = text.indexOf(".");
+          from =
+            dotIdx >= 0
+              ? (word ? word.from : context.pos) + dotIdx + 1
+              : word
+              ? word.from
+              : context.pos;
+        }
+      }
+      // Fallback: top-level completions with replicad. prefix and variable name completions
+      else {
         for (const k of topLevelKeys) {
-          const def = api ? api[k] : undefined;
+          const def = api[k];
           if (def) {
             options.push({
               ...makeCompletion(k, def, false),
@@ -254,7 +324,7 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
                 const insertText = `replicad.${k}(${
                   paramsPreview ? paramsPreview : ""
                 })`;
-                const anchor = fromPos + `replicad.${k}(`.length;
+                const anchor = fromPos + insertText.indexOf("(") + 1;
                 view.dispatch({
                   changes: { from: fromPos, to: toPos, insert: insertText },
                   selection: { anchor },
@@ -262,6 +332,26 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
                 view.focus();
               },
             });
+          }
+        }
+        // Add variable name completions if user is typing a variable
+        if (/^[a-zA-Z_$][\w$]*$/.test(text)) {
+          for (const v of variableNames) {
+            if (v.startsWith(text)) {
+              options.push({
+                label: v,
+                type: "variable",
+                detail: "Local variable",
+                apply: (view, completion, fromPos, toPos) => {
+                  view.dispatch({
+                    changes: { from: fromPos, to: toPos, insert: v },
+                    selection: { anchor: fromPos + v.length },
+                  });
+                  view.focus();
+                },
+                boost: 100,
+              });
+            }
           }
         }
       }
