@@ -15,8 +15,7 @@ const generateGcode = (
   partProgressCallback,
   tool
 ) => {
-  const STOCK_MARGIN = 10;
-  const CUT_THROUGH = cutThrough || 0.25; // Default cut-through thickness if not provided
+  const CUT_THROUGH = cutThrough;
 
   if (!stlUrl) {
     console.error("STL URL is not available.");
@@ -120,29 +119,26 @@ const generateGcode = (
       const z = bounds.max.z - bounds.min.z;
       const zBottom = z; // ensure cut through stock bottom
 
-      /*Hack for kiri 4.3.0*/
-      //const validPasses = passes;
-      //const down = validPasses == 1 ? 1000 : zBottom / (validPasses - 1);
-
-      /*End Hack for kiri 4.3.0, add cut through in down value and set camzThru to 0 to avoid extra pass, set camZBottom to real value (not 1000)*/
-      const down = (zBottom + CUT_THROUGH) / passes;
-      const camZBottom = -zBottom - CUT_THROUGH;
-      const camZThru = passes > 1 ? 0 : CUT_THROUGH - 1;
+      // camCutthrough by pass for 1 pass, sets down to large value to avoid cutthrough extra pass/ extra pass is added for multi pass
+      const down = passes > 1 ? (zBottom + CUT_THROUGH) / passes : 10000;
+      // -1 to account for topZ -1 hack
+      const camZBottom = -zBottom - CUT_THROUGH - 1;
+      // single pass needs a cutthrough to generate correctly
+      const camZThru = passes <= 1 && !cutThrough ? 0.01 : CUT_THROUGH;
       const roughingStepOver = 0.6;
 
-      /*
       console.log("Down per pass:", down);
       console.log("CAM Z Bottom:", camZBottom);
       console.log("CAM Z Thru:", camZThru);
       console.log("Tool Size:", toolSize);
-      console.log("Roughing step over:", roughingStepOver);*/
+      console.log("Roughing step over:", roughingStepOver);
 
       return eng.setProcess({
         camOriginTop: true,
         camOriginCenter: false,
         camRoughAll: false,
         camZOffset: 0,
-        camZTop: -1, //top of stock
+        camZTop: -1, //top of stock hack has to be set to negative
         camRoughDown: 2,
         camRoughFlat: true,
         camRoughIn: true,
@@ -166,6 +162,7 @@ const generateGcode = (
         camSpindleSpeed: speed,
         camFastFeed: 6000,
         camFastFeedZ: speed, // Match Z feed to speed to maintain feedrate during ramp down
+        cutThruBypass: true,
         ops: [
           {
             type: "rough",
