@@ -10,10 +10,11 @@ import {
 } from "@uiw/codemirror-extensions-langs";
 import { javascript, esLint } from "@codemirror/lang-javascript";
 import { linter, lintGutter } from "@codemirror/lint";
-import { andromeda, andromedaInit } from "@uiw/codemirror-theme-andromeda";
+//import { andromeda, andromedaInit } from "@uiw/codemirror-theme-andromeda";
 
-// Uses linter.mjs
-import * as eslint from "eslint-linter-browserify";
+import apiJson from "./methodsreplicad.json"; // static import of the JSON file
+
+import ReactCodeEditorWithApiAutocomplete from "./ReactCodeEditorWithApiAutocomplete";
 
 /*
  * CodeWindow component is a code editor window that allows the user to edit the code of the active code atom.
@@ -52,37 +53,11 @@ export default function CodeWindow(props) {
 
   return (
     <div id="code-window" className=" code-off login-page code-window-div">
-      <ReactCodeEditor
-        width="100%"
-        height="500px"
-        extensions={[
-          keymap.of({
-            key: "Mod-s",
-            run: () => {
-              console.log("mod-s pressed, attempting to save code");
-              if (props.activeAtom != null) {
-                props.activeAtom.saveCode();
-              }
-              return true;
-            },
-            preventDefault: true,
-          }),
-          javascript(),
-          linter(
-            esLint(new eslint.Linter(), {
-              rules: {
-                semi: ["error", "never"],
-                "no-undef": ["warn"],
-              },
-            })
-          ),
-          lintGutter(),
-        ]}
+      <ReactCodeEditorWithApiAutocomplete
         value={docvalue}
-        onChange={(value) => {
-          setdocValue(value);
-        }}
-        theme={andromeda}
+        onChange={setdocValue}
+        apiJson={apiJson}
+        activeAtom={props.activeAtom}
       />
       <button
         type="button"
