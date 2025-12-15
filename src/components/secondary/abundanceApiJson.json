@@ -1,58 +1,71 @@
 {
+  "AbundanceObject": {
+    "type": "object",
+    "usage": "{ geometry: [], dimension: '3D', tags: [], color: '', plane: null, bom: [] }",
+    "detail": "A generic AbundanceObject. Used as input/output for all built-in Abundance functions.",
+    "properties": [
+      "geometry: Array",
+      "dimension: String",
+      "tags: Array",
+      "color: String",
+      "plane: Object",
+      "bom: Array"
+    ]
+  },
   "Move": {
     "type": "function",
     "requiredParams": ["AbundanceObject", "x", "y", "z"],
     "optionalParams": [],
-    "usage": "Move(AbundanceObject, x, y, z)",
+    "usage": "await Move(AbundanceObject, x, y, z)",
     "returns": "AbundanceObject"
   },
   "Rotate": {
     "type": "function",
     "requiredParams": ["AbundanceObject", "x", "y", "z"],
     "optionalParams": [],
-    "usage": "Rotate(AbundanceObject, x, y, z)",
+    "usage": "await Rotate(AbundanceObject, x, y, z)",
     "returns": "AbundanceObject"
   },
   "Scale": {
     "type": "function",
     "requiredParams": ["AbundanceObject", "factor"],
     "optionalParams": [],
-    "usage": "Scale(AbundanceObject, factor)",
+    "usage": "await Scale(AbundanceObject, factor)",
     "returns": "AbundanceObject"
   },
   "Assembly": {
     "type": "function",
     "requiredParams": ["AbundanceObject[]"],
     "optionalParams": [],
-    "usage": "Assembly([AbundanceObject])",
+    "usage": "await Assembly([AbundanceObject])",
     "returns": "AbundanceObject"
   },
   "Intersect": {
     "type": "function",
     "requiredParams": ["AbundanceObject", "AbundanceObject"],
     "optionalParams": [],
-    "usage": "Intersect(AbundanceObject, AbundanceObject)",
+    "usage": "await Intersect(AbundanceObject, AbundanceObject)",
     "returns": "AbundanceObject"
   },
   "GetBounds": {
     "type": "function",
     "requiredParams": ["AbundanceObject"],
     "optionalParams": [],
-    "usage": "GetBounds(AbundanceObject)",
+    "usage": "await GetBounds(AbundanceObject)",
     "returns": "AbundanceObject"
   },
   "Fillet": {
     "type": "function",
     "requiredParams": ["AbundanceObject", "radius"],
     "optionalParams": [],
-    "usage": "Fillet(AbundanceObject, radius)",
+    "usage": "await Fillet(AbundanceObject, radius)",
     "returns": "AbundanceObject"
   },
   "Chamfer": {
     "type": "function",
     "requiredParams": ["AbundanceObject", "size"],
     "optionalParams": [],
-    "usage": "Chamfer(AbundanceObject, size)",
+    "usage": "await Chamfer(AbundanceObject, size)",
     "returns": "AbundanceObject"
   }
 }

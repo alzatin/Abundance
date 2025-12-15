@@ -25,6 +25,8 @@ type ApiDef = {
   optionalParams?: string[];
   usage?: string;
   returns?: string;
+  detail?: string;
+  properties?: string[];
 };
 
 type ApiJson = Record<string, ApiDef> | null | undefined;
@@ -545,7 +547,55 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       else {
         for (const k of topLevelKeys) {
           const def = api[k];
+
           if (def) {
+            if (
+              k === "AbundanceObject" &&
+              def.type === "object" &&
+              Array.isArray(def.properties)
+            ) {
+              options.push({
+                label: k,
+                type: "object",
+                detail: def.detail || "AbundanceObject structure",
+                info: () => {
+                  const el = document.createElement("div");
+                  el.textContent = def.detail || "AbundanceObject structure";
+                  return el;
+                },
+                apply: (view, completion, fromPos, toPos) => {
+                  // Build the object template
+                  const propLines = def.properties.map((prop: string) => {
+                    const [propName, propType] = prop
+                      .split(":")
+                      .map((s: string) => s.trim());
+                    let example = "";
+                    if (propName === "geometry") example = "[createdShape]";
+                    else if (propName === "dimension") example = '"3D"';
+                    else if (propName === "tags") example = '["createdShape"]';
+                    else if (propName === "color") example = "'#A3CE5B'";
+                    else if (propName === "plane") example = "newPlane";
+                    else if (propName === "bom") example = "[]";
+                    else
+                      example =
+                        propType === "String"
+                          ? '""'
+                          : propType === "Array"
+                          ? "[]"
+                          : "null";
+                    return `  ${propName}: ${example},`;
+                  });
+                  const objectText = `{\n${propLines.join("\n")}\n}`;
+                  view.dispatch({
+                    changes: { from: fromPos, to: toPos, insert: objectText },
+                    selection: { anchor: fromPos + objectText.length },
+                  });
+                  view.focus();
+                },
+                boost: 100,
+              });
+              continue;
+            }
             options.push({
               ...makeCompletion(k, def, false),
               label: k,
@@ -557,11 +607,19 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
                 let insertText;
 
                 if (isReplicad) {
+                  // add replicad. prefix
                   insertText = `replicad.${k}(${
                     paramsPreview ? paramsPreview : ""
                   })`;
                 } else {
-                  insertText = `${k}(${paramsPreview ? paramsPreview : ""})`;
+                  // add await for abundance functions
+                  if (def.type === "function") {
+                    insertText = `await ${k}(${
+                      paramsPreview ? paramsPreview : ""
+                    })`;
+                  } else {
+                    insertText = `${k}(${paramsPreview ? paramsPreview : ""})`;
+                  }
                 }
                 const anchor = fromPos + insertText.indexOf("(") + 1;
                 view.dispatch({
