@@ -9,3 +9,5 @@ Puppet/images/*.png
 Puppet/temp-error-*.html
 # Vitest test screenshots (generated during tests)
 tests/__screenshots__/
+# Test HTML files
+test-*.html
