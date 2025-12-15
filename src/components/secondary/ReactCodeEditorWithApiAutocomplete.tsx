@@ -9,6 +9,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { keymap } from "@codemirror/view";
 import { linter } from "@codemirror/lint";
 import { lintGutter } from "@codemirror/lint";
+import type { EditorView } from "@codemirror/view";
 
 import { andromeda, andromedaInit } from "@uiw/codemirror-theme-andromeda";
 
@@ -57,7 +58,6 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
 }) {
   const { value, onChange, apiJson, activeAtom } = props;
 
-  // Provide a tiny set of common js completions
   const commonJsCompletions = useMemo(
     () => [
       { label: "console.log", type: "function", detail: "Console log" },
@@ -75,22 +75,82 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       { label: "Math.sin", type: "function", detail: "Math.sin(x)" },
       { label: "Math.cos", type: "function", detail: "Math.cos(x)" },
       { label: "Math.tan", type: "function", detail: "Math.tan(x)" },
-      // Array methods
-      { label: "Array.prototype.map", type: "method", detail: "Array map" },
+      // Array methods with custom apply for callback
+      {
+        label: "Array.prototype.map",
+        type: "method",
+        detail: "Array map",
+        apply(
+          view: EditorView,
+          completion: Completion,
+          from: number,
+          to: number
+        ) {
+          const insert = "map((item) => item)";
+          const anchor = from + insert.indexOf("item)");
+          view.dispatch({
+            changes: { from, to, insert },
+            selection: { anchor },
+          });
+          view.focus();
+        },
+      },
       {
         label: "Array.prototype.filter",
         type: "method",
         detail: "Array filter",
+        apply(
+          view: EditorView,
+          completion: Completion,
+          from: number,
+          to: number
+        ) {
+          const insert = "filter((item) => true)";
+          const anchor = from + insert.indexOf("true");
+          view.dispatch({
+            changes: { from, to, insert },
+            selection: { anchor },
+          });
+          view.focus();
+        },
       },
       {
         label: "Array.prototype.reduce",
         type: "method",
         detail: "Array reduce",
+        apply(
+          view: EditorView,
+          completion: Completion,
+          from: number,
+          to: number
+        ) {
+          const insert = "reduce((acc, item) => acc, initialValue)";
+          const anchor = from + insert.indexOf("acc, initialValue");
+          view.dispatch({
+            changes: { from, to, insert },
+            selection: { anchor },
+          });
+          view.focus();
+        },
       },
       {
         label: "Array.prototype.forEach",
         type: "method",
         detail: "Array forEach",
+        apply(
+          view: EditorView,
+          completion: Completion,
+          from: number,
+          to: number
+        ) {
+          const insert = "forEach((item) => {})";
+          const anchor = from + insert.indexOf("item");
+          view.dispatch({
+            changes: { from, to, insert },
+            selection: { anchor },
+          });
+          view.focus();
+        },
       },
       { label: "Array.prototype.find", type: "method", detail: "Array find" },
       { label: "Array.prototype.some", type: "method", detail: "Array some" },
@@ -546,6 +606,9 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       return null;
     }
   }, [lintCtor]);
+
+  const fruits = useMemo(() => ["apple", "banana", "cherry"], []);
+  fruits.map((f) => f.toUpperCase());
 
   const extensions = useMemo(() => {
     const exts: any[] = [
