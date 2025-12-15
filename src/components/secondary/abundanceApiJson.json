@@ -12,5 +12,47 @@
     "optionalParams": [],
     "usage": "Rotate(geometry, x, y, z)",
     "returns": "AbundanceObject"
+  },
+  "Scale": {
+    "type": "function",
+    "requiredParams": ["geometry", "factor"],
+    "optionalParams": [],
+    "usage": "Scale(geometry, factor)",
+    "returns": "AbundanceObject"
+  },
+  "Assembly": {
+    "type": "function",
+    "requiredParams": ["shapes"],
+    "optionalParams": [],
+    "usage": "Assembly([shapes])",
+    "returns": "AbundanceObject"
+  },
+  "Intersect": {
+    "type": "function",
+    "requiredParams": ["shape1", "shape2"],
+    "optionalParams": [],
+    "usage": "Intersect(shape1, shape2)",
+    "returns": "AbundanceObject"
+  },
+  "GetBounds": {
+    "type": "function",
+    "requiredParams": ["geometry"],
+    "optionalParams": [],
+    "usage": "GetBounds(geometry)",
+    "returns": "AbundanceObject"
+  },
+  "Fillet": {
+    "type": "function",
+    "requiredParams": ["geometry", "radius"],
+    "optionalParams": [],
+    "usage": "Fillet(geometry, radius)",
+    "returns": "AbundanceObject"
+  },
+  "Chamfer": {
+    "type": "function",
+    "requiredParams": ["geometry", "size"],
+    "optionalParams": [],
+    "usage": "Chamfer(geometry, size)",
+    "returns": "AbundanceObject"
   }
 }
