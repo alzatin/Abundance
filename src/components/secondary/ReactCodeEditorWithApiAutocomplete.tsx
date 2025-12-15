@@ -454,7 +454,6 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       const code = context.state.doc.toString();
       // Find all variable declarations and their assigned types (if replicad)
       const variableTypes = inferVariableTypes(code, api);
-      console.log("Inferred variable types:", variableTypes);
       // Collect all variable names for completion
       const allVarRegex = /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)/g;
       const variableNames: string[] = [];
@@ -474,11 +473,8 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
         const chainExpression = chainMatch[1]; // e.g., "replicad.drawCircle(5)"
         const partialMethod = chainMatch[2]; // partially typed method name after the last dot
         
-        console.log("Detected chain:", chainExpression, "partial:", partialMethod);
-        
         // Infer the type of the chain expression
         const chainType = inferChainType(chainExpression, api, variableTypes);
-        console.log("Chain type inferred:", chainType);
         
         if (chainType) {
           // Find all instance methods for this type
@@ -540,7 +536,8 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
           }
           
           // Adjust the 'from' position to be after the last dot
-          const lastDotPos = extendedWord ? extendedWord.from + chainMatch.index + chainMatch[1].length + 1 : from;
+          const matchIndex = extendedText.indexOf(chainMatch[0]);
+          const lastDotPos = extendedWord ? extendedWord.from + matchIndex + chainMatch[1].length + 1 : from;
           from = lastDotPos;
           
           if (!options.length) return null;
