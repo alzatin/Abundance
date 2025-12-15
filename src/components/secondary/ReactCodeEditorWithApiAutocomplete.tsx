@@ -607,9 +607,6 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
     }
   }, [lintCtor]);
 
-  const fruits = useMemo(() => ["apple", "banana", "cherry"], []);
-  fruits.map((f) => f.toUpperCase());
-
   const extensions = useMemo(() => {
     const exts: any[] = [
       keymap.of([
