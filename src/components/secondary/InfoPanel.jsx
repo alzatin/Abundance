@@ -22,8 +22,8 @@ export default function InfoPanel({ title, isExpanded, onToggle, methods }) {
           <div className="info-panel-body">
             {methods && methods.length > 0 ? (
               <div className="methods-list">
-                {methods.map((method, index) => (
-                  <div key={index} className="method-item">
+                {methods.map((method) => (
+                  <div key={method.name} className="method-item">
                     <div className="method-name">{method.name}</div>
                     {method.usage && (
                       <div className="method-usage">
