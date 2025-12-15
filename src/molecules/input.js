@@ -509,7 +509,7 @@ export default class Input extends Atom {
         let sanitizedName = newName.replace(/[\s\-+*/%]+/g, "_");
         sanitizedName = GlobalVariables.incrementVariableName(
           sanitizedName,
-          this.parent
+          this.parent,
           [this]
         );
         if (this.name !== sanitizedName) {
