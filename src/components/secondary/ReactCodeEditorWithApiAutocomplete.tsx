@@ -220,6 +220,27 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
         variableTypes[varName] = api[`${sourceType}.${method}`].returns!;
       }
     }
+    // Infer arrays: let arr = [] or let arr = [1,2,3]
+    const arrayAssignRegex =
+      /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*\[.*?\]/g;
+    while ((match = arrayAssignRegex.exec(code))) {
+      const varName = match[1];
+      variableTypes[varName] = "Array";
+    }
+    // Infer objects: let obj = {}
+    const objectAssignRegex =
+      /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*\{.*?\}/g;
+    while ((match = objectAssignRegex.exec(code))) {
+      const varName = match[1];
+      variableTypes[varName] = "Object";
+    }
+    // Infer strings: let str = "..." or '...'
+    const stringAssignRegex =
+      /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*(["']).*?\2/g;
+    while ((match = stringAssignRegex.exec(code))) {
+      const varName = match[1];
+      variableTypes[varName] = "String";
+    }
     return variableTypes;
   }
 
@@ -406,6 +427,27 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
                 });
               }
             }
+          }
+          // Add JS built-in completions for Array, Object, String
+          if (typeList.includes("Array")) {
+            for (const c of commonJsCompletions) {
+              if (c.label.startsWith("Array.prototype.")) {
+                options.push({
+                  ...c,
+                  label: c.label.replace("Array.prototype.", ""),
+                });
+              }
+            }
+          }
+          if (typeList.includes("Object")) {
+            for (const c of commonJsCompletions) {
+              if (c.label.startsWith("Object.")) {
+                options.push({ ...c });
+              }
+            }
+          }
+          if (typeList.includes("String")) {
+            // You can add String.prototype methods to commonJsCompletions and handle here if desired
           }
           const dotIdx = text.indexOf(".");
           from =
