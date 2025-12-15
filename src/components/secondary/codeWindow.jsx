@@ -13,7 +13,7 @@ import { linter, lintGutter } from "@codemirror/lint";
 //import { andromeda, andromedaInit } from "@uiw/codemirror-theme-andromeda";
 
 import apiJson from "./methodsreplicad.json"; // static import of the JSON file
-
+import abundanceJson from "./abundanceApiJson.json";
 import ReactCodeEditorWithApiAutocomplete from "./ReactCodeEditorWithApiAutocomplete";
 
 /*
@@ -57,6 +57,7 @@ export default function CodeWindow(props) {
         value={docvalue}
         onChange={setdocValue}
         apiJson={apiJson}
+        abundanceJson={abundanceJson}
         activeAtom={props.activeAtom}
       />
       <button

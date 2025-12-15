@@ -1,0 +1,16 @@
+{
+  "Move": {
+    "type": "function",
+    "requiredParams": ["geometry", "x", "y", "z"],
+    "optionalParams": [],
+    "usage": "Move(geometry, x, y, z)",
+    "returns": "AbundanceObject"
+  },
+  "Rotate": {
+    "type": "function",
+    "requiredParams": ["geometry", "x", "y", "z"],
+    "optionalParams": [],
+    "usage": "Rotate(geometry, x, y, z)",
+    "returns": "AbundanceObject"
+  }
+}
