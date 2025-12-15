@@ -9,6 +9,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { keymap } from "@codemirror/view";
 import { linter } from "@codemirror/lint";
 import { lintGutter } from "@codemirror/lint";
+import type { EditorView } from "@codemirror/view";
 
 import { andromeda, andromedaInit } from "@uiw/codemirror-theme-andromeda";
 
@@ -57,18 +58,127 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
 }) {
   const { value, onChange, apiJson, activeAtom } = props;
 
-  // Provide a tiny set of common js completions
   const commonJsCompletions = useMemo(
     () => [
       { label: "console.log", type: "function", detail: "Console log" },
+      // Math methods
       { label: "Math.max", type: "function", detail: "Math.max(...values)" },
       { label: "Math.min", type: "function", detail: "Math.min(...values)" },
-      { label: "Array.prototype.map", type: "method", detail: "Array map" },
+      { label: "Math.abs", type: "function", detail: "Math.abs(x)" },
+      { label: "Math.round", type: "function", detail: "Math.round(x)" },
+      { label: "Math.floor", type: "function", detail: "Math.floor(x)" },
+      { label: "Math.ceil", type: "function", detail: "Math.ceil(x)" },
+      { label: "Math.pow", type: "function", detail: "Math.pow(base, exp)" },
+      { label: "Math.sqrt", type: "function", detail: "Math.sqrt(x)" },
+      { label: "Math.random", type: "function", detail: "Math.random()" },
+      { label: "Math.PI", type: "constant", detail: "Math.PI (π)" },
+      { label: "Math.sin", type: "function", detail: "Math.sin(x)" },
+      { label: "Math.cos", type: "function", detail: "Math.cos(x)" },
+      { label: "Math.tan", type: "function", detail: "Math.tan(x)" },
+      // Array methods with custom apply for callback
+      {
+        label: "Array.prototype.map",
+        type: "method",
+        detail: "Array map",
+        apply(
+          view: EditorView,
+          completion: Completion,
+          from: number,
+          to: number
+        ) {
+          const insert = "map((item) => item)";
+          const anchor = from + insert.indexOf("item)");
+          view.dispatch({
+            changes: { from, to, insert },
+            selection: { anchor },
+          });
+          view.focus();
+        },
+      },
       {
         label: "Array.prototype.filter",
         type: "method",
         detail: "Array filter",
+        apply(
+          view: EditorView,
+          completion: Completion,
+          from: number,
+          to: number
+        ) {
+          const insert = "filter((item) => true)";
+          const anchor = from + insert.indexOf("true");
+          view.dispatch({
+            changes: { from, to, insert },
+            selection: { anchor },
+          });
+          view.focus();
+        },
       },
+      {
+        label: "Array.prototype.reduce",
+        type: "method",
+        detail: "Array reduce",
+        apply(
+          view: EditorView,
+          completion: Completion,
+          from: number,
+          to: number
+        ) {
+          const insert = "reduce((acc, item) => acc, initialValue)";
+          const anchor = from + insert.indexOf("acc, initialValue");
+          view.dispatch({
+            changes: { from, to, insert },
+            selection: { anchor },
+          });
+          view.focus();
+        },
+      },
+      {
+        label: "Array.prototype.forEach",
+        type: "method",
+        detail: "Array forEach",
+        apply(
+          view: EditorView,
+          completion: Completion,
+          from: number,
+          to: number
+        ) {
+          const insert = "forEach((item) => {})";
+          const anchor = from + insert.indexOf("item");
+          view.dispatch({
+            changes: { from, to, insert },
+            selection: { anchor },
+          });
+          view.focus();
+        },
+      },
+      { label: "Array.prototype.find", type: "method", detail: "Array find" },
+      { label: "Array.prototype.some", type: "method", detail: "Array some" },
+      { label: "Array.prototype.every", type: "method", detail: "Array every" },
+      {
+        label: "Array.prototype.includes",
+        type: "method",
+        detail: "Array includes",
+      },
+      { label: "Array.prototype.slice", type: "method", detail: "Array slice" },
+      {
+        label: "Array.prototype.concat",
+        type: "method",
+        detail: "Array concat",
+      },
+      // Object/utility
+      { label: "Object.keys", type: "function", detail: "Object.keys(obj)" },
+      {
+        label: "Object.values",
+        type: "function",
+        detail: "Object.values(obj)",
+      },
+      {
+        label: "JSON.stringify",
+        type: "function",
+        detail: "JSON.stringify(obj)",
+      },
+      { label: "JSON.parse", type: "function", detail: "JSON.parse(str)" },
     ],
     []
   );
@@ -169,6 +279,27 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       ) {
         variableTypes[varName] = api[`${sourceType}.${method}`].returns!;
       }
+    }
+    // Infer arrays: let arr = [] or let arr = [1,2,3]
+    const arrayAssignRegex =
+      /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*\[.*?\]/g;
+    while ((match = arrayAssignRegex.exec(code))) {
+      const varName = match[1];
+      variableTypes[varName] = "Array";
+    }
+    // Infer objects: let obj = {}
+    const objectAssignRegex =
+      /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*\{.*?\}/g;
+    while ((match = objectAssignRegex.exec(code))) {
+      const varName = match[1];
+      variableTypes[varName] = "Object";
+    }
+    // Infer strings: let str = "..." or '...'
+    const stringAssignRegex =
+      /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*(["']).*?\2/g;
+    while ((match = stringAssignRegex.exec(code))) {
+      const varName = match[1];
+      variableTypes[varName] = "String";
     }
     return variableTypes;
   }
@@ -356,6 +487,27 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
                 });
               }
             }
+          }
+          // Add JS built-in completions for Array, Object, String
+          if (typeList.includes("Array")) {
+            for (const c of commonJsCompletions) {
+              if (c.label.startsWith("Array.prototype.")) {
+                options.push({
+                  ...c,
+                  label: c.label.replace("Array.prototype.", ""),
+                });
+              }
+            }
+          }
+          if (typeList.includes("Object")) {
+            for (const c of commonJsCompletions) {
+              if (c.label.startsWith("Object.")) {
+                options.push({ ...c });
+              }
+            }
+          }
+          if (typeList.includes("String")) {
+            // You can add String.prototype methods to commonJsCompletions and handle here if desired
           }
           const dotIdx = text.indexOf(".");
           from =
