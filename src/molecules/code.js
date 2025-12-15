@@ -33,87 +33,87 @@ export default class Code extends Atom {
      * @type {string}
      */
     this.code = `
-      const Inputs = [
-       {inputName: "shape", type: "geometry", defaultValue: null},
-      {inputName: "dist", type: "number", defaultValue: 5},
-        {inputName: "height", type: "number", defaultValue: 10}
-      ]
-      //This defines the molecules inputs and creates variables with the same names which can be referenced in the code
+const Inputs = [
+  {inputName: "shape", type: "geometry", defaultValue: null},
+  {inputName: "dist", type: "number", defaultValue: 5},
+  {inputName: "height", type: "number", defaultValue: 10}
+]
+//This defines the molecules inputs and creates variables with the same names which can be referenced in the code
 
-      //Gets the shape from the library - no need to clone or access geometry directly
-      let importedShape = library[shape]
+//Gets the shape from the library - no need to clone or access geometry directly
+let importedShape = library[shape]
 
-      //Use the built-in Move function to move the shape in the X direction
-      let movedShape = await Move(importedShape, dist, 0, 0)
+//Use the built-in Move function to move the shape in the X direction
+let movedShape = await Move(importedShape, dist, 0, 0)
 
-      //Use the built-in Rotate function to rotate the shape
-      let rotatedShape = await Rotate(importedShape, 0, 45, 0)
+//Use the built-in Rotate function to rotate the shape
+let rotatedShape = await Rotate(importedShape, 0, 45, 0)
 
-      //Use the built-in Scale function to make the shape smaller
-      let scaledShape = await Scale(importedShape, 0.8)
+//Use the built-in Scale function to make the shape smaller
+let scaledShape = await Scale(importedShape, 0.8)
 
-      //Console.log works for debugging to better see what is happening under the hood
-      console.log("Original shape bounds:", GetBounds(importedShape))
-      console.log("Moved shape bounds:", GetBounds(movedShape))
+//Console.log works for debugging to better see what is happening under the hood
+console.log("Original shape bounds:", GetBounds(importedShape))
+console.log("Moved shape bounds:", GetBounds(movedShape))
 
-      //Create a new shape from scratch using replicad
-      let createdRectangle = replicad.drawRectangle(5, 7)
-      const newPlane = new replicad.Plane().pivot(0, 'Y')
-      let createdShape = createdRectangle.sketchOnPlane(newPlane).extrude(height)
+//Create a new shape from scratch using replicad
+let createdRectangle = replicad.drawRectangle(5, 7)
+const newPlane = new replicad.Plane().pivot(0, 'Y')
+let createdShape = createdRectangle.sketchOnPlane(newPlane).extrude(height)
 
-      //Wrap the raw replicad geometry in our assembly format
-      let shape2 = {
-          geometry: [createdShape],
-          dimension: "3D",
-          tags: ["createdShape"],
-          color: '#A3CE5B',
-          plane: newPlane,
-          bom: []
-      }
+//Wrap the raw replicad geometry as an Abundance Object
+let shape2 = {
+  geometry: [createdShape],
+  dimension: "3D",
+  tags: ["createdShape"],
+  color: '#A3CE5B',
+  plane: newPlane,
+  bom: []
+}
 
-      //Use the built-in Fillet function to round the edges
-      let filletedShape = await Fillet(shape2, 0.5)
+//Use the built-in Fillet function to round the edges
+let filletedShape = await Fillet(shape2, 0.5)
 
-      //Use the built-in Chamfer function to bevel the edges  
-      let chamferedShape = await Chamfer(movedShape, 0.3)
+//Use the built-in Chamfer function to bevel the edges  
+let chamferedShape = await Chamfer(movedShape, 0.3)
 
-      //Use the built-in Assembly function to combine multiple shapes
-      let finalAssembly = await Assembly([rotatedShape, scaledShape, filletedShape, chamferedShape])
+//Use the built-in Assembly function to combine multiple shapes
+let finalAssembly = await Assembly([rotatedShape, scaledShape, filletedShape, chamferedShape])
 
-      //You can also create boolean operations using Intersect
-      //let intersection = await Intersect(movedShape, rotatedShape)
+//You can also create boolean operations using Intersect
+//let intersection = await Intersect(movedShape, rotatedShape)
 
-      return finalAssembly
+return finalAssembly
 
-      /**
-      Built-in Functions Available:
-      - Move(geometry, x, y, z) - Move a shape in 3D space
-      - Rotate(geometry, x, y, z) - Rotate a shape around X, Y, Z axes (degrees)
-      - Scale(geometry, factor) - Scale a shape by a factor
-      - Assembly([shapes]) - Combine multiple shapes into an assembly
-      - Intersect(shape1, shape2) - Boolean intersection of two shapes
-      - GetBounds(geometry) - Get the bounding box of a shape
-      - Fillet(geometry, radius) - Round edges with specified radius
-      - Chamfer(geometry, size) - Bevel edges with specified size
+/**
+Built-in Functions Available:
+- Move(geometry, x, y, z) - Move a shape in 3D space
+- Rotate(geometry, x, y, z) - Rotate a shape around X, Y, Z axes (degrees)
+- Scale(geometry, factor) - Scale a shape by a factor
+- Assembly([shapes]) - Combine multiple shapes into an assembly
+- Intersect(shape1, shape2) - Boolean intersection of two shapes
+- GetBounds(geometry) - Get the bounding box of a shape
+- Fillet(geometry, radius) - Round edges with specified radius
+- Chamfer(geometry, size) - Bevel edges with specified size
 
-      To Use the Code Atom, enter your inputs to the input list as an object array:
-      const Inputs = [
-        {inputName: "shape", type: "geometry", defaultValue: null},
-        {inputName: "dist", type: "number", defaultValue: 5},
-        {inputName: "height", type: "number", defaultValue: 10}
-      ]
+To Use the Code Atom, enter your inputs to the input list as an object array:
+const Inputs = [
+  {inputName: "shape", type: "geometry", defaultValue: null},
+  {inputName: "dist", type: "number", defaultValue: 5},
+  {inputName: "height", type: "number", defaultValue: 10}
+]
 
-      Access imported geometry using library[inputName] - the built-in functions handle 
-      the complexity of accessing geometry arrays and maintaining metadata automatically.
+Access imported geometry using library[inputName] - the built-in functions handle 
+the complexity of accessing geometry arrays and maintaining metadata automatically.
 
-      Simple Example - Move a shape:
-         const Inputs = [
-          {inputName: "shape", type: "geometry", defaultValue: null},
-          {inputName: "x", type: "number", defaultValue: 5}
-        ]
-        let movedShape = await Move(library[shape], x, 0, 0)
-        return movedShape
-      */
+Simple Example - Move a shape:
+   const Inputs = [
+    {inputName: "shape", type: "geometry", defaultValue: null},
+    {inputName: "x", type: "number", defaultValue: 5}
+  ]
+  let movedShape = await Move(library[shape], x, 0, 0)
+  return movedShape
+*/
       `;
 
     //This loads any inputs which this atom had when last saved.
@@ -232,7 +232,11 @@ export default class Code extends Atom {
    * Grab the code as a text string and execute it.
    */
   compute(argumentsArray) {
-    return GlobalVariables.cad.code(this.code, argumentsArray, this.getContext());
+    return GlobalVariables.cad.code(
+      this.code,
+      argumentsArray,
+      this.getContext()
+    );
   }
 
   /**
@@ -408,7 +412,7 @@ export default class Code extends Atom {
 
     valuesObj.codeVersion = 1;
     // Use safe serialization to prevent large code from bloating the save file
-    Atom.safeSerializeValue(valuesObj, 'code', this.code, this.name || 'Code');
+    Atom.safeSerializeValue(valuesObj, "code", this.code, this.name || "Code");
 
     return valuesObj;
   }
