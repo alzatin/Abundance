@@ -16,6 +16,7 @@ import { andromeda, andromedaInit } from "@uiw/codemirror-theme-andromeda";
 import ReactCodeEditor from "@uiw/react-codemirror";
 // Uses linter.mjs
 import * as esLint from "eslint-linter-browserify";
+import { is } from "@react-three/fiber/dist/declarations/src/core/utils";
 // NOTE: adjust imports to match your project structure & packages
 
 type ApiDef = {
@@ -24,6 +25,8 @@ type ApiDef = {
   optionalParams?: string[];
   usage?: string;
   returns?: string;
+  detail?: string;
+  properties?: string[];
 };
 
 type ApiJson = Record<string, ApiDef> | null | undefined;
@@ -54,9 +57,10 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
   value: string;
   onChange: (v: string) => void;
   apiJson?: ApiJson;
+  abundanceJson?: ApiJson;
   activeAtom?: { saveCode: () => void } | null;
 }) {
-  const { value, onChange, apiJson, activeAtom } = props;
+  const { value, onChange, apiJson, abundanceJson, activeAtom } = props;
 
   const commonJsCompletions = useMemo(
     () => [
@@ -301,6 +305,26 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       const varName = match[1];
       variableTypes[varName] = "String";
     }
+    const abundanceMethodNames = [
+      "Move",
+      "Rotate",
+      "Scale",
+      "Assembly",
+      "Intersect",
+      "GetBounds",
+      "Fillet",
+      "Chamfer",
+    ];
+    const abundanceAssignRegex = new RegExp(
+      `\\b(?:let|const|var)\\s+([a-zA-Z_$][\\w$]*)\\s*=\\s*(?:await\\s*)?(${abundanceMethodNames.join(
+        "|"
+      )})\\s*\\(`,
+      "g"
+    );
+    while ((match = abundanceAssignRegex.exec(code))) {
+      const varName = match[1];
+      variableTypes[varName] = "AbundanceObject";
+    }
     return variableTypes;
   }
 
@@ -308,7 +332,8 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
    * Build a completion source. If api is null/undefined, return a no-op source that returns null.
    * This prevents Object.keys(undefined) errors.
    */
-  function apiCompletionSource(api?: ApiJson) {
+  function apiCompletionSource(api?: ApiJson, opts?: { isReplicad?: boolean }) {
+    const isReplicad = opts?.isReplicad ?? true;
     if (!api) {
       return (_context: any): CompletionResult | null => null;
     }
@@ -348,7 +373,7 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       }
 
       // Replicad top-level completions
-      if (/^replicad\.?[\w]*$/.test(text)) {
+      if (isReplicad && /^replicad\.?[\w]*$/.test(text)) {
         for (const k of topLevelKeys) {
           const def = api[k];
           if (def) {
@@ -522,7 +547,55 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       else {
         for (const k of topLevelKeys) {
           const def = api[k];
+
           if (def) {
+            if (
+              k === "AbundanceObject" &&
+              def.type === "object" &&
+              Array.isArray(def.properties)
+            ) {
+              options.push({
+                label: k,
+                type: "object",
+                detail: def.detail || "AbundanceObject structure",
+                info: () => {
+                  const el = document.createElement("div");
+                  el.textContent = def.detail || "AbundanceObject structure";
+                  return el;
+                },
+                apply: (view, completion, fromPos, toPos) => {
+                  // Build the object template
+                  const propLines = def.properties.map((prop: string) => {
+                    const [propName, propType] = prop
+                      .split(":")
+                      .map((s: string) => s.trim());
+                    let example = "";
+                    if (propName === "geometry") example = "[createdShape]";
+                    else if (propName === "dimension") example = '"3D"';
+                    else if (propName === "tags") example = '["createdShape"]';
+                    else if (propName === "color") example = "'#A3CE5B'";
+                    else if (propName === "plane") example = "newPlane";
+                    else if (propName === "bom") example = "[]";
+                    else
+                      example =
+                        propType === "String"
+                          ? '""'
+                          : propType === "Array"
+                          ? "[]"
+                          : "null";
+                    return `  ${propName}: ${example},`;
+                  });
+                  const objectText = `{\n${propLines.join("\n")}\n}`;
+                  view.dispatch({
+                    changes: { from: fromPos, to: toPos, insert: objectText },
+                    selection: { anchor: fromPos + objectText.length },
+                  });
+                  view.focus();
+                },
+                boost: 100,
+              });
+              continue;
+            }
             options.push({
               ...makeCompletion(k, def, false),
               label: k,
@@ -531,9 +604,23 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
                   def.optionalParams || []
                 );
                 const paramsPreview = params.join(", ");
-                const insertText = `replicad.${k}(${
-                  paramsPreview ? paramsPreview : ""
-                })`;
+                let insertText;
+
+                if (isReplicad) {
+                  // add replicad. prefix
+                  insertText = `replicad.${k}(${
+                    paramsPreview ? paramsPreview : ""
+                  })`;
+                } else {
+                  // add await for abundance functions
+                  if (def.type === "function") {
+                    insertText = `await ${k}(${
+                      paramsPreview ? paramsPreview : ""
+                    })`;
+                  } else {
+                    insertText = `${k}(${paramsPreview ? paramsPreview : ""})`;
+                  }
+                }
                 const anchor = fromPos + insertText.indexOf("(") + 1;
                 view.dispatch({
                   changes: { from: fromPos, to: toPos, insert: insertText },
@@ -578,11 +665,16 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
 
   const completionExtension = useMemo(() => {
     const apiSource = apiCompletionSource(apiJson);
+    const abundanceSource = apiCompletionSource(abundanceJson);
     return autocompletion({
-      override: [apiSource, completeFromList(commonJsCompletions)],
+      override: [
+        apiCompletionSource(apiJson, { isReplicad: true }),
+        apiCompletionSource(abundanceJson, { isReplicad: false }),
+        completeFromList(commonJsCompletions),
+      ],
       activateOnTyping: true,
     });
-  }, [apiJson, commonJsCompletions]);
+  }, [apiJson, commonJsCompletions, abundanceJson]);
 
   // Find an ESLint Linter constructor safely and only enable linting if we have it.
   const lintCtor = useMemo(() => findEslintLinterCtor(), []);
