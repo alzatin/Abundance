@@ -61,14 +61,64 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
   const commonJsCompletions = useMemo(
     () => [
       { label: "console.log", type: "function", detail: "Console log" },
+      // Math methods
       { label: "Math.max", type: "function", detail: "Math.max(...values)" },
       { label: "Math.min", type: "function", detail: "Math.min(...values)" },
+      { label: "Math.abs", type: "function", detail: "Math.abs(x)" },
+      { label: "Math.round", type: "function", detail: "Math.round(x)" },
+      { label: "Math.floor", type: "function", detail: "Math.floor(x)" },
+      { label: "Math.ceil", type: "function", detail: "Math.ceil(x)" },
+      { label: "Math.pow", type: "function", detail: "Math.pow(base, exp)" },
+      { label: "Math.sqrt", type: "function", detail: "Math.sqrt(x)" },
+      { label: "Math.random", type: "function", detail: "Math.random()" },
+      { label: "Math.PI", type: "constant", detail: "Math.PI (π)" },
+      { label: "Math.sin", type: "function", detail: "Math.sin(x)" },
+      { label: "Math.cos", type: "function", detail: "Math.cos(x)" },
+      { label: "Math.tan", type: "function", detail: "Math.tan(x)" },
+      // Array methods
       { label: "Array.prototype.map", type: "method", detail: "Array map" },
       {
         label: "Array.prototype.filter",
         type: "method",
         detail: "Array filter",
       },
+      {
+        label: "Array.prototype.reduce",
+        type: "method",
+        detail: "Array reduce",
+      },
+      {
+        label: "Array.prototype.forEach",
+        type: "method",
+        detail: "Array forEach",
+      },
+      { label: "Array.prototype.find", type: "method", detail: "Array find" },
+      { label: "Array.prototype.some", type: "method", detail: "Array some" },
+      { label: "Array.prototype.every", type: "method", detail: "Array every" },
+      {
+        label: "Array.prototype.includes",
+        type: "method",
+        detail: "Array includes",
+      },
+      { label: "Array.prototype.slice", type: "method", detail: "Array slice" },
+      {
+        label: "Array.prototype.concat",
+        type: "method",
+        detail: "Array concat",
+      },
+      // Object/utility
+      { label: "Object.keys", type: "function", detail: "Object.keys(obj)" },
+      {
+        label: "Object.values",
+        type: "function",
+        detail: "Object.values(obj)",
+      },
+      {
+        label: "JSON.stringify",
+        type: "function",
+        detail: "JSON.stringify(obj)",
+      },
+      { label: "JSON.parse", type: "function", detail: "JSON.parse(str)" },
     ],
     []
   );
