@@ -96,7 +96,8 @@ const COMMON_JS_METHODS = [
     usage: "array.map((item) => newItem)",
     params: ["callback"],
     returns: "Array",
-    detail: "Creates a new array with the results of calling a function for every element",
+    detail:
+      "Creates a new array with the results of calling a function for every element",
   },
   {
     name: "Array.prototype.filter",
@@ -110,7 +111,8 @@ const COMMON_JS_METHODS = [
     usage: "array.reduce((acc, item) => acc, initial)",
     params: ["callback", "initialValue"],
     returns: "any",
-    detail: "Executes a reducer function on each element, resulting in a single output value",
+    detail:
+      "Executes a reducer function on each element, resulting in a single output value",
   },
   {
     name: "Object.keys",
@@ -138,7 +140,8 @@ const COMMON_JS_METHODS = [
     usage: "JSON.parse(str)",
     params: ["str"],
     returns: "any",
-    detail: "Parses a JSON string and returns the corresponding JavaScript value",
+    detail:
+      "Parses a JSON string and returns the corresponding JavaScript value",
   },
 ];
 
@@ -181,6 +184,15 @@ export default function CodeWindow(props) {
   /**
    * Process API JSON to extract method information
    */
+  /**
+   * Process API JSON to extract method information (Replicad style)
+   * Each entry: {
+   *   type: "method",
+   *   requiredParams: [],
+   *   optionalParams: ["position"],
+   *   returns: "Vector"
+   * }
+   */
   const replicadMethods = useMemo(() => {
     if (!apiJson) return [];
     return Object.keys(apiJson)
@@ -190,16 +202,35 @@ export default function CodeWindow(props) {
         const params = (def.requiredParams || []).concat(
           def.optionalParams || []
         );
+        let usage;
+        if (key.includes(".")) {
+          // Instance method: e.g. Shape.move(x, y)
+          const [typeName, methodName] = key.split(".");
+          usage = `${typeName}.${methodName}(${params.join(", ")})`;
+        } else {
+          // Top-level: e.g. replicad.Box(x, y, z)
+          usage = `replicad.${key}(${params.join(", ")})`;
+        }
         return {
           name: key,
-          usage: def.usage,
-          params: params,
+          usage,
+          params,
           returns: def.returns,
-          detail: def.detail,
+          detail: def.type || "method",
         };
       });
   }, []);
 
+  /**
+   * Process Abundance API JSON to extract method information (Abundance style)
+   * Each entry: {
+   *   type: "function",
+   *   requiredParams: ["AbundanceObject", "x", "y", "z"],
+   *   optionalParams: [],
+   *   usage: "await Move(AbundanceObject, x, y, z)",
+   *   returns: "AbundanceObject"
+   * }
+   */
   const abundanceMethods = useMemo(() => {
     if (!abundanceJson) return [];
     return Object.keys(abundanceJson)
@@ -209,12 +240,14 @@ export default function CodeWindow(props) {
         const params = (def.requiredParams || []).concat(
           def.optionalParams || []
         );
+        // Always prepend 'await' for abundance methods
+        const usage = `await ${key}(${params.join(", ")})`;
         return {
           name: key,
-          usage: def.usage,
-          params: params,
+          usage,
+          params,
           returns: def.returns,
-          detail: def.detail,
+          detail: def.type || "function",
         };
       });
   }, []);
@@ -243,7 +276,7 @@ export default function CodeWindow(props) {
             methods={replicadMethods}
           />
           <InfoPanel
-            title="Abundance API"
+            title="Abundance Methods"
             isExpanded={expandedPanel === "abundance"}
             onToggle={() => togglePanel("abundance")}
             methods={abundanceMethods}
