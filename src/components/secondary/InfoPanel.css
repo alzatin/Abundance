@@ -10,8 +10,7 @@
 }
 
 .info-panel.expanded {
-  width: 40%;
-  min-width: 300px;
+  width: 300px;
 }
 
 .info-panel-tab {
