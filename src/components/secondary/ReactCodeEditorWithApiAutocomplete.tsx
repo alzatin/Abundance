@@ -257,10 +257,15 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
     api: ApiJson,
     variableTypes: Record<string, string>
   ): string | null {
-    if (!api) return null;
+    console.log("[inferChainType] Input chain:", chain);
+    if (!api) {
+      console.log("[inferChainType] No API provided");
+      return null;
+    }
 
     // Remove any trailing dots
     chain = chain.trim().replace(/\.$/, "");
+    console.log("[inferChainType] Cleaned chain:", chain);
 
     // Split the chain into segments (e.g., ["replicad.drawCircle(5)", "sketchOnPlane()"])
     // We need to handle nested parentheses carefully
@@ -291,11 +296,13 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
     if (currentSegment) {
       segments.push(currentSegment);
     }
+    console.log("[inferChainType] Segments:", segments);
 
     // Now process each segment to infer the final type
     let currentType: string | null = null;
 
     for (const segment of segments) {
+      console.log("[inferChainType] Processing segment:", segment, "current type:", currentType);
       // Extract method name from segment (e.g., "drawCircle(5)" -> "drawCircle")
       const methodMatch = segment.match(/^([a-zA-Z_$][\w$]*)\(/);
       if (!methodMatch) {
@@ -305,12 +312,16 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
           const varName = varMatch[1];
           if (varName === "replicad") {
             currentType = "replicad";
+            console.log("[inferChainType] Set type to 'replicad' for variable:", varName);
           } else if (variableTypes[varName]) {
             currentType = variableTypes[varName];
+            console.log("[inferChainType] Found variable type:", currentType, "for:", varName);
           } else {
+            console.log("[inferChainType] Unknown variable:", varName);
             return null;
           }
         } else {
+          console.log("[inferChainType] Segment doesn't match method or variable pattern:", segment);
           return null;
         }
       } else {
@@ -326,16 +337,20 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
           apiKey = `${currentType}.${methodName}`;
         }
 
+        console.log("[inferChainType] Looking up API key:", apiKey);
         // Look up the return type
         if (api[apiKey] && api[apiKey].returns) {
           currentType = api[apiKey].returns!;
+          console.log("[inferChainType] Found return type:", currentType, "for:", apiKey);
         } else {
           // Method not found in API
+          console.log("[inferChainType] Method not found in API:", apiKey);
           return null;
         }
       }
     }
 
+    console.log("[inferChainType] Final inferred type:", currentType);
     return currentType;
   }
 
@@ -441,10 +456,15 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
     }
 
     return (context: any): CompletionResult | null => {
+      console.log("=== [Autocomplete] Triggered at position:", context.pos);
       // Match a longer pattern that includes method calls with parentheses
       const extendedWord = context.matchBefore(/[$\w.()\s,'"]*\.?[\w]*$/);
       const word = context.matchBefore(/[$\w.]+/);
-      if (!word && !context.explicit) return null;
+      console.log("[Autocomplete] word:", word, "explicit:", context.explicit);
+      if (!word && !context.explicit) {
+        console.log("[Autocomplete] No word and not explicit, returning null");
+        return null;
+      }
 
       const text = word ? word.text : "";
       let from = word ? word.from : context.pos;
@@ -465,16 +485,24 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       // --- Check for chained method calls (e.g., "replicad.drawCircle(5).") ---
       // Match patterns like: replicad.method(...). or variable.method(...).method(...).
       const extendedText = extendedWord ? extendedWord.text : text;
+      console.log("[Chain Detection] text:", text);
+      console.log("[Chain Detection] extendedText:", extendedText);
+      console.log("[Chain Detection] extendedWord:", extendedWord);
       const chainPattern = /([a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*\([^)]*\))+)\.([\w]*)$/;
       const chainMatch = extendedText.match(chainPattern);
+      console.log("[Chain Detection] chainMatch:", chainMatch);
+      console.log("[Chain Detection] isReplicad:", isReplicad);
       
       if (chainMatch && isReplicad) {
         // We have a chained method call
         const chainExpression = chainMatch[1]; // e.g., "replicad.drawCircle(5)"
         const partialMethod = chainMatch[2]; // partially typed method name after the last dot
+        console.log("[Chain Processing] chainExpression:", chainExpression);
+        console.log("[Chain Processing] partialMethod:", partialMethod);
         
         // Infer the type of the chain expression
         const chainType = inferChainType(chainExpression, api, variableTypes);
+        console.log("[Chain Processing] inferred chainType:", chainType);
         
         if (chainType) {
           // Find all instance methods for this type
@@ -503,9 +531,11 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
             typeList = chainType.split("|").map((t) => t.trim());
           }
           
+          console.log("[Chain Processing] typeList:", typeList);
           const seen = new Set();
           for (const t of typeList) {
             const instanceMethods = keys.filter((k) => k.startsWith(t + "."));
+            console.log("[Chain Processing] For type", t, "found methods:", instanceMethods.length);
             for (const k of instanceMethods) {
               if (seen.has(k)) continue;
               seen.add(k);
@@ -540,13 +570,29 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
           const lastDotPos = extendedWord ? extendedWord.from + matchIndex + chainMatch[1].length + 1 : from;
           from = lastDotPos;
           
-          if (!options.length) return null;
+          console.log("[Chain Processing] Total options found:", options.length);
+          console.log("[Chain Processing] From position:", from);
           
+          if (!options.length) {
+            console.log("[Chain Processing] No options found, returning null");
+            return null;
+          }
+          
+          console.log("[Chain Processing] Returning", options.length, "completions");
           return {
             from,
             options,
             validFor: /^[$\w]*$/,
           };
+        } else {
+          console.log("[Chain Processing] chainType is null, not providing completions");
+        }
+      } else {
+        if (!chainMatch) {
+          console.log("[Chain Detection] No chain pattern matched");
+        }
+        if (!isReplicad) {
+          console.log("[Chain Detection] Not in replicad mode");
         }
       }
 
