@@ -1,5 +1,5 @@
 import React from "react";
-import "./InfoPanel.css";
+import "../../styles/InfoPanel.css";
 
 /**
  * InfoPanel component - A collapsible panel that shows method information
