@@ -149,7 +149,7 @@ export default function CodeWindow(props) {
         const usage = `await ${key}(${params.join(", ")})`;
         return {
           name: key,
-          usage,
+          usage: def.usage || usage,
           params,
           returns: def.returns,
           detail: def.type || "function",
