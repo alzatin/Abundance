@@ -10,7 +10,7 @@
 }
 
 .info-panel.expanded {
-  width: 300px;
+  width: 400px;
 }
 
 .info-panel-tab {
@@ -34,7 +34,7 @@
 
 .tab-arrow {
   font-size: 14px;
-  color: var(--control-text-muted, #888);
+  color: var(--control-text-muted, #b262b7);
   margin-bottom: 8px;
   writing-mode: horizontal-tb;
   transform: rotate(0deg);
@@ -111,7 +111,7 @@
   font-family: "Courier New", monospace;
   font-size: 13px;
   font-weight: 700;
-  color: var(--method-name-color, #4ec9b0);
+  color: var(--method-name-color, #e39ef1);
   margin-bottom: 8px;
 }
 

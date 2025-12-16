@@ -20,128 +20,33 @@ import InfoPanel from "./InfoPanel";
 /**
  * Common JavaScript methods for reference panel
  */
-const COMMON_JS_METHODS = [
+// User Quick Guide for the Code Window
+const CODE_WINDOW_GUIDE = [
   {
-    name: "console.log",
-    usage: "console.log(...values)",
-    params: ["...values"],
-    returns: "void",
-    detail: "Outputs messages to the console",
-  },
-  {
-    name: "Math.max",
-    usage: "Math.max(...values)",
-    params: ["...values"],
-    returns: "number",
-    detail: "Returns the largest of the given numbers",
-  },
-  {
-    name: "Math.min",
-    usage: "Math.min(...values)",
-    params: ["...values"],
-    returns: "number",
-    detail: "Returns the smallest of the given numbers",
-  },
-  {
-    name: "Math.abs",
-    usage: "Math.abs(x)",
-    params: ["x"],
-    returns: "number",
-    detail: "Returns the absolute value of a number",
-  },
-  {
-    name: "Math.round",
-    usage: "Math.round(x)",
-    params: ["x"],
-    returns: "number",
-    detail: "Returns the value of a number rounded to the nearest integer",
-  },
-  {
-    name: "Math.floor",
-    usage: "Math.floor(x)",
-    params: ["x"],
-    returns: "number",
-    detail: "Returns the largest integer less than or equal to a number",
-  },
-  {
-    name: "Math.ceil",
-    usage: "Math.ceil(x)",
-    params: ["x"],
-    returns: "number",
-    detail: "Returns the smallest integer greater than or equal to a number",
-  },
-  {
-    name: "Math.pow",
-    usage: "Math.pow(base, exp)",
-    params: ["base", "exp"],
-    returns: "number",
-    detail: "Returns base to the exponent power",
-  },
-  {
-    name: "Math.sqrt",
-    usage: "Math.sqrt(x)",
-    params: ["x"],
-    returns: "number",
-    detail: "Returns the square root of a number",
-  },
-  {
-    name: "Math.random",
-    usage: "Math.random()",
+    name: "Code Window Quick Guide",
+    usage: null,
     params: [],
-    returns: "number",
-    detail: "Returns a random number between 0 and 1",
-  },
-  {
-    name: "Array.prototype.map",
-    usage: "array.map((item) => newItem)",
-    params: ["callback"],
-    returns: "Array",
+    returns: null,
     detail:
-      "Creates a new array with the results of calling a function for every element",
-  },
-  {
-    name: "Array.prototype.filter",
-    usage: "array.filter((item) => boolean)",
-    params: ["callback"],
-    returns: "Array",
-    detail: "Creates a new array with elements that pass a test",
-  },
-  {
-    name: "Array.prototype.reduce",
-    usage: "array.reduce((acc, item) => acc, initial)",
-    params: ["callback", "initialValue"],
-    returns: "any",
-    detail:
-      "Executes a reducer function on each element, resulting in a single output value",
-  },
-  {
-    name: "Object.keys",
-    usage: "Object.keys(obj)",
-    params: ["obj"],
-    returns: "Array",
-    detail: "Returns an array of a given object's property names",
-  },
-  {
-    name: "Object.values",
-    usage: "Object.values(obj)",
-    params: ["obj"],
-    returns: "Array",
-    detail: "Returns an array of a given object's property values",
-  },
-  {
-    name: "JSON.stringify",
-    usage: "JSON.stringify(obj)",
-    params: ["obj"],
-    returns: "string",
-    detail: "Converts a JavaScript value to a JSON string",
-  },
-  {
-    name: "JSON.parse",
-    usage: "JSON.parse(str)",
-    params: ["str"],
-    returns: "any",
-    detail:
-      "Parses a JSON string and returns the corresponding JavaScript value",
+      `• Define your inputs at the top using the Inputs array.\n\n` +
+      `  Example:\n  const Inputs = [\n    { inputName: "shape", type: "geometry", defaultValue: null },\n    { inputName: "dist", type: "number", defaultValue: 5 },\n    { inputName: "height", type: "number", defaultValue: 10 }\n  ];\n\n` +
+      `• Access imported geometry using: library[shape]\n` +
+      `• Use built-in async functions (always with await):\n` +
+      `  let moved = await Move(importedShape, dist, 0, 0);\n  let rotated = await Rotate(importedShape, 0, 45, 0);\n  let scaled = await Scale(importedShape, 0.8);\n  let filleted = await Fillet(moved, 0.5);\n  let chamfered = await Chamfer(moved, 0.3);\n  let assembly = await Assembly([rotated, scaled, filleted, chamfered]);\n\n` +
+      `• Create new geometry with Replicad:\n` +
+      `  let rect = replicad.drawRectangle(5, 7);\n  let plane = new replicad.Plane().pivot(0, 'Y');\n  let shape = rect.sketchOnPlane(plane).extrude(height);\n\n` +
+      `• Wrap raw geometry as an Abundance Object:\n` +
+      `  let shapeObj = {\n    geometry: [shape],\n    dimension: "3D",\n    tags: ["createdShape"],\n    color: "#A3CE5B",\n    plane: plane,\n    bom: []\n  };\n\n` +
+      `• Use console.log for debugging:\n` +
+      `  console.log("Bounds:", GetBounds(moved));\n\n` +
+      `• Return your result at the end:\n` +
+      `  return assembly;\n\n` +
+      `• Built-in Functions:\n` +
+      `  Move, Rotate, Scale, Assembly, Intersect, GetBounds, Fillet, Chamfer\n\n` +
+      `• Tips:\n` +
+      `  - Use the Replicad and Abundance panels to browse all available methods.\n` +
+      `  - Hover over suggestions for parameter and return type info.\n` +
+      `  - Save and close your code using the buttons below the editor.\n`,
   },
 ];
 
@@ -281,12 +186,123 @@ export default function CodeWindow(props) {
             onToggle={() => togglePanel("abundance")}
             methods={abundanceMethods}
           />
-          <InfoPanel
-            title="Common JS"
-            isExpanded={expandedPanel === "common"}
-            onToggle={() => togglePanel("common")}
-            methods={COMMON_JS_METHODS}
-          />
+          <div
+            className={`info-panel ${
+              expandedPanel === "common" ? "expanded" : "collapsed"
+            }`}
+          >
+            {expandedPanel === "common" ? (
+              <div className="info-panel-content">
+                <div className="info-panel-header">
+                  <h3>Code Window Quick Guide</h3>
+                  <button
+                    className="collapse-btn"
+                    onClick={() => togglePanel("common")}
+                  >
+                    ▶
+                  </button>
+                </div>
+                <div
+                  className="info-panel-body"
+                  style={{
+                    fontSize: ".8em",
+                    lineHeight: 1.3,
+                    whiteSpace: "pre-line",
+                    padding: "10px 18px",
+                    color: "#a8a5a5ff",
+                    fontFamily: "Courier New, monospace",
+                    fontWeight: 700,
+                  }}
+                >
+                  {`
+Welcome to the Code Window!
+
+How to Use:
+
+• Define your inputs at the top using the Inputs array:`}
+                  <div className="method-item">
+                    {`
+  const Inputs = [
+    { inputName: "shape", type: "geometry", defaultValue: null },
+    { inputName: "dist", type: "number", defaultValue: 5 },
+    { inputName: "height", type: "number", defaultValue: 10 }
+  ]; `}{" "}
+                  </div>{" "}
+                  {`
+
+• Access imported geometry using: library[shape] `}
+                  <div className="method-item">
+                    {`
+ let importedShape = library[shape]; `}{" "}
+                  </div>
+                  {`
+
+• Use built-in async functions (always with await): `}
+                  <div className="method-item">
+                    {`
+  let moved = await Move(importedShape, dist, 0, 0);
+  let rotated = await Rotate(importedShape, 0, 45, 0);
+  let scaled = await Scale(importedShape, 0.8);
+  let filleted = await Fillet(moved, 0.5);
+  let chamfered = await Chamfer(moved, 0.3);
+  let assembly = await Assembly([rotated, scaled, filleted, chamfered]);
+`}{" "}
+                  </div>
+                  {`
+• Create new geometry with Replicad:  `}
+                  <div className="method-item">
+                    {`
+  let rect = replicad.drawRectangle(5, 7);
+  let plane = new replicad.Plane().pivot(0, 'Y');
+  let shape = rect.sketchOnPlane(plane).extrude(height);
+
+`}
+                  </div>
+                  {`
+• Wrap raw geometry as an Abundance Object: `}
+                  <div className="method-item">
+                    {`
+  let shapeObj = {
+    geometry: [shape],
+    dimension: "3D",
+    tags: ["createdShape"],
+    color: "#A3CE5B",
+    plane: plane,
+    bom: []
+  };  `}{" "}
+                  </div>
+                  {`
+• Use console.log for debugging: `}
+                  <div className="method-item">
+                    {`
+  console.log("Bounds:", GetBounds(moved)); `}{" "}
+                  </div>
+                  {`
+• Return your result at the end. If you intent to continue using the result in further steps as a geometry, make sure to return an Abundance Object.
+  `}{" "}
+                  <div className="method-item">
+                    {`
+  return assembly;
+`}{" "}
+                  </div>{" "}
+                  {`
+Tips:
+- Use the Replicad and Abundance panels to browse all available methods.
+- Hover over autocomplete suggestions for parameter and return type info.
+- Save and close your code using the buttons below the editor.
+`}
+                </div>
+              </div>
+            ) : (
+              <div
+                className="info-panel-tab"
+                onClick={() => togglePanel("common")}
+              >
+                <span className="tab-arrow">◀</span>
+                <span className="tab-label">Code Window Guide</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <button
