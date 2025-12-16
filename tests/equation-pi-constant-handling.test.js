@@ -4,12 +4,14 @@ import { parse, create, all } from "mathjs";
 describe("Equation atom pi and constant handling", () => {
   const math = create(all);
   
+  // Built-in mathematical constants that should not be treated as variables.
+  // This matches Equation.BUILTIN_CONSTS in src/molecules/equation.js
+  const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
+  
   /**
    * Mock version of _extractVariablesFromEquation that matches the fixed implementation
    */
   function extractVariablesFromEquation(currentEquation) {
-    // Built-in mathematical constants that should not be treated as variables
-    const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
     
     let variables = [];
     try {
@@ -75,8 +77,6 @@ describe("Equation atom pi and constant handling", () => {
    * Mock version of _extractVariablesFromPart
    */
   function extractVariablesFromPart(part, variables) {
-    const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
-    
     const matches = part.match(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g) || [];
     const filtered = matches.filter(m => !BUILTIN_CONSTS.has(m));
     variables.push(...filtered);

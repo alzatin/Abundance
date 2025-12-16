@@ -8,6 +8,13 @@ import { Status } from "../prototypes/observableEntity.js";
  */
 export default class Equation extends Atom {
   /**
+   * Built-in mathematical constants that should not be treated as variables.
+   * These are recognized by mathjs and should not create input attachment points.
+   * @type {Set<string>}
+   */
+  static BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
+
+  /**
    * The constructor function.
    * @param {object} values An array of values passed in which will be assigned to the class as this.x
    */
@@ -94,9 +101,6 @@ export default class Equation extends Atom {
    * @returns {string[]} Array of variable names
    */
   _extractVariablesFromEquation() {
-    // Built-in mathematical constants that should not be treated as variables
-    const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
-    
     let variables = [];
     try {
       const node = parse(this.currentEquation);
@@ -114,7 +118,7 @@ export default class Equation extends Atom {
         }
       });
       // Remove duplicates and built-in constants
-      variables = [...new Set(variables)].filter(v => !BUILTIN_CONSTS.has(v));
+      variables = [...new Set(variables)].filter(v => !Equation.BUILTIN_CONSTS.has(v));
     } catch (e) {
       // Fallback for string expressions that mathjs can't parse
       // Need to extract variables while respecting quote boundaries
@@ -172,13 +176,10 @@ export default class Equation extends Atom {
    * @param {string[]} variables - Array to add extracted variables to
    */
   _extractVariablesFromPart(part, variables) {
-    // Built-in mathematical constants that should not be treated as variables
-    const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
-    
     // Extract identifiers from non-quoted parts
     const matches = part.match(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g) || [];
     // Filter out built-in constants
-    const filtered = matches.filter(m => !BUILTIN_CONSTS.has(m));
+    const filtered = matches.filter(m => !Equation.BUILTIN_CONSTS.has(m));
     variables.push(...filtered);
   }
 
