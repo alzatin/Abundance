@@ -12,7 +12,6 @@ describe("Equation atom pi and constant handling", () => {
    * Mock version of _extractVariablesFromEquation that matches the fixed implementation
    */
   function extractVariablesFromEquation(currentEquation) {
-    
     let variables = [];
     try {
       const node = parse(currentEquation);
