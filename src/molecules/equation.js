@@ -90,10 +90,13 @@ export default class Equation extends Atom {
 
   /**
    * Extracts variable names from the current equation using mathjs AST parsing.
-   * Only true variables (not function names) are returned.
+   * Only true variables (not function names or built-in constants) are returned.
    * @returns {string[]} Array of variable names
    */
   _extractVariablesFromEquation() {
+    // Built-in mathematical constants that should not be treated as variables
+    const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
+    
     let variables = [];
     try {
       const node = parse(this.currentEquation);
@@ -110,8 +113,8 @@ export default class Equation extends Atom {
           variables.push(n.name);
         }
       });
-      // Remove duplicates
-      variables = [...new Set(variables)];
+      // Remove duplicates and built-in constants
+      variables = [...new Set(variables)].filter(v => !BUILTIN_CONSTS.has(v));
     } catch (e) {
       // Fallback for string expressions that mathjs can't parse
       // Need to extract variables while respecting quote boundaries
@@ -169,9 +172,14 @@ export default class Equation extends Atom {
    * @param {string[]} variables - Array to add extracted variables to
    */
   _extractVariablesFromPart(part, variables) {
+    // Built-in mathematical constants that should not be treated as variables
+    const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
+    
     // Extract identifiers from non-quoted parts
     const matches = part.match(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g) || [];
-    variables.push(...matches);
+    // Filter out built-in constants
+    const filtered = matches.filter(m => !BUILTIN_CONSTS.has(m));
+    variables.push(...filtered);
   }
 
   /**
