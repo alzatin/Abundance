@@ -992,11 +992,15 @@ export default class AttachmentPoint extends ObservableEntity {
     if (this.type == "input") {
       this.valueType = type; // TODO: do we need to force a propagation if this changed?
       if (this.valueType == "geometry") {
-        // This should only be called when deserializing. For geometries we'll allow the
-        // id to be stored in this.value, but status stays "WAITING" until it's overwritten
-        // by the onUpstreamChange callback subscribed a connector
+        // For geometries, if the value is explicitly null (e.g., from defaultValue: null),
+        // set status to READY so code atoms can execute with null inputs.
+        // Otherwise, set status to WAITING until a geometry connection is made.
         this.value = newValue;
-        this.setWaiting();
+        if (newValue === null) {
+          this.setStatus(Status.READY, null);
+        } else {
+          this.setWaiting();
+        }
         // No name-based subscription for geometry types
         this.unsubscribeAllNameSubscriptions();
       } else {
