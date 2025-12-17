@@ -1,5 +1,10 @@
 import React from "react";
-import { OrbitControls, GizmoHelper, GizmoViewport } from "@react-three/drei";
+import {
+  OrbitControls,
+  GizmoHelper,
+  GizmoViewport,
+  TrackballControls,
+} from "@react-three/drei";
 import * as THREE from "three";
 import { useRendering } from "../../contexts";
 import { useRef, useEffect, useState } from "react";
@@ -62,19 +67,27 @@ const Controls = React.memo(
 
     return (
       <>
+        {/*
         <OrbitControls
           ref={controlsRef}
           panSpeed={1.5}
           zoomSpeed={0.5}
           enableDamping={enableDamping}
         />
-
+        */}
+        <TrackballControls
+          ref={controlsRef}
+          rotateSpeed={4.0}
+          panSpeed={3.5}
+          zoomSpeed={1.2}
+          staticMoving={true}
+          enableDamping={enableDamping}
+        />
         {/* Mark the origin with a small sphere */}
         <mesh position={[0, 0, 0]}>
           <sphereGeometry args={[0.1, 32, 32]} />
           <meshBasicMaterial color="gray" />
         </mesh>
-
         {/* Add a visible ground plane under the origin */}
         {plane && extraPlane && geometryType == "2D" ? (
           <mesh ref={planeRef}>
@@ -87,7 +100,6 @@ const Controls = React.memo(
             />
           </mesh>
         ) : null}
-
         {axesParam && (
           <>
             <GizmoHelper alignment="bottom-right" margin={[80, 100]}>
