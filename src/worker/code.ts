@@ -172,7 +172,7 @@ async function executeCode(
         argumentsArray[key] = newKey;
         argsSignature.push(JSON.stringify(value));
       } else {
-        argsSignature.push(value.toString());
+        argsSignature.push(String(value));
       }
     }
 
