@@ -250,6 +250,95 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
     };
   }
 
+  // Helper function to infer the type of a chained expression
+  // e.g., "replicad.drawCircle(5).sketchOnPlane()" -> infers type as "Sketches"
+  function inferChainType(
+    chain: string,
+    api: ApiJson,
+    variableTypes: Record<string, string>
+  ): string | null {
+    if (!api) return null;
+
+    // Remove any trailing dots
+    chain = chain.trim().replace(/\.$/, "");
+
+    // Split the chain into segments (e.g., ["replicad.drawCircle(5)", "sketchOnPlane()"])
+    // We need to handle nested parentheses carefully
+    const segments: string[] = [];
+    let currentSegment = "";
+    let parenDepth = 0;
+    let i = 0;
+
+    while (i < chain.length) {
+      const char = chain[i];
+      if (char === "(") {
+        parenDepth++;
+        currentSegment += char;
+      } else if (char === ")") {
+        parenDepth--;
+        currentSegment += char;
+      } else if (char === "." && parenDepth === 0) {
+        // This is a method chaining dot, not a dot inside parameters
+        if (currentSegment) {
+          segments.push(currentSegment);
+          currentSegment = "";
+        }
+      } else {
+        currentSegment += char;
+      }
+      i++;
+    }
+    if (currentSegment) {
+      segments.push(currentSegment);
+    }
+
+    // Now process each segment to infer the final type
+    let currentType: string | null = null;
+
+    for (const segment of segments) {
+      // Extract method name from segment (e.g., "drawCircle(5)" -> "drawCircle")
+      const methodMatch = segment.match(/^([a-zA-Z_$][\w$]*)\(/);
+      if (!methodMatch) {
+        // Check if it's a variable or property access
+        const varMatch = segment.match(/^([a-zA-Z_$][\w$]*)$/);
+        if (varMatch) {
+          const varName = varMatch[1];
+          if (varName === "replicad") {
+            currentType = "replicad";
+          } else if (variableTypes[varName]) {
+            currentType = variableTypes[varName];
+          } else {
+            return null;
+          }
+        } else {
+          return null;
+        }
+      } else {
+        const methodName = methodMatch[1];
+
+        // Determine the full API key
+        let apiKey: string;
+        if (currentType === null || currentType === "replicad") {
+          // Top-level method
+          apiKey = methodName;
+        } else {
+          // Instance method
+          apiKey = `${currentType}.${methodName}`;
+        }
+
+        // Look up the return type
+        if (api[apiKey] && api[apiKey].returns) {
+          currentType = api[apiKey].returns!;
+        } else {
+          // Method not found in API
+          return null;
+        }
+      }
+    }
+
+    return currentType;
+  }
+
   // Enhanced variable type inference for method chains
   function inferVariableTypes(
     code: string,
@@ -352,6 +441,8 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
     }
 
     return (context: any): CompletionResult | null => {
+      // Match a longer pattern that includes method calls with parentheses
+      const extendedWord = context.matchBefore(/[$\w.()\s,'"]*\.?[\w]*$/);
       const word = context.matchBefore(/[$\w.]+/);
       if (!word && !context.explicit) return null;
 
@@ -363,13 +454,100 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
       const code = context.state.doc.toString();
       // Find all variable declarations and their assigned types (if replicad)
       const variableTypes = inferVariableTypes(code, api);
-      console.log("Inferred variable types:", variableTypes);
       // Collect all variable names for completion
       const allVarRegex = /\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)/g;
       const variableNames: string[] = [];
       let allVarMatch;
       while ((allVarMatch = allVarRegex.exec(code))) {
         variableNames.push(allVarMatch[1]);
+      }
+
+      // --- Check for chained method calls (e.g., "replicad.drawCircle(5).") ---
+      // Match patterns like: replicad.method(...). or variable.method(...).method(...).
+      const extendedText = extendedWord ? extendedWord.text : text;
+      const chainPattern = /([a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*\([^)]*\))+)\.([\w]*)$/;
+      const chainMatch = extendedText.match(chainPattern);
+      
+      if (chainMatch && isReplicad) {
+        // We have a chained method call
+        const chainExpression = chainMatch[1]; // e.g., "replicad.drawCircle(5)"
+        const partialMethod = chainMatch[2]; // partially typed method name after the last dot
+        
+        // Infer the type of the chain expression
+        const chainType = inferChainType(chainExpression, api, variableTypes);
+        
+        if (chainType) {
+          // Find all instance methods for this type
+          let typeList: string[];
+          if (chainType.includes("AnyShape")) {
+            // Collect all unique type prefixes for instance methods
+            const shapeTypes = Array.from(
+              new Set(
+                keys
+                  .filter(
+                    (k) =>
+                      k.includes(".") &&
+                      (k.startsWith("Shape.") ||
+                        k.startsWith("Shape3D.") ||
+                        k.startsWith("Sketch.") ||
+                        k.startsWith("Sketches.") ||
+                        k.startsWith("Wire.") ||
+                        k.startsWith("Face.") ||
+                        k.startsWith("Solid."))
+                  )
+                  .map((k) => k.split(".")[0])
+              )
+            );
+            typeList = shapeTypes;
+          } else {
+            typeList = chainType.split("|").map((t) => t.trim());
+          }
+          
+          const seen = new Set();
+          for (const t of typeList) {
+            const instanceMethods = keys.filter((k) => k.startsWith(t + "."));
+            for (const k of instanceMethods) {
+              if (seen.has(k)) continue;
+              seen.add(k);
+              const def = api[k];
+              if (def) {
+                const methodName = k.split(".")[1];
+                options.push({
+                  ...makeCompletion(k, def, true),
+                  label: methodName,
+                  apply: (view, completion, fromPos, toPos) => {
+                    const params = (def.requiredParams || []).concat(
+                      def.optionalParams || []
+                    );
+                    const paramsPreview = params.join(", ");
+                    const insertText = `${methodName}(${
+                      paramsPreview ? paramsPreview : ""
+                    })`;
+                    const anchor = fromPos + insertText.indexOf("(") + 1;
+                    view.dispatch({
+                      changes: { from: fromPos, to: toPos, insert: insertText },
+                      selection: { anchor },
+                    });
+                    view.focus();
+                  },
+                });
+              }
+            }
+          }
+          
+          // Adjust the 'from' position to be after the last dot
+          const matchIndex = extendedText.indexOf(chainMatch[0]);
+          const lastDotPos = extendedWord ? extendedWord.from + matchIndex + chainMatch[1].length + 1 : from;
+          from = lastDotPos;
+          
+          if (!options.length) return null;
+          
+          return {
+            from,
+            options,
+            validFor: /^[$\w]*$/,
+          };
+        }
       }
 
       // Replicad top-level completions
