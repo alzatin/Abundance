@@ -7,12 +7,14 @@ import {
 } from "@react-three/drei";
 import * as THREE from "three";
 import { useRendering } from "../../contexts";
+//import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { useRef, useEffect, useState } from "react";
 
 const Controls = React.memo(
   React.forwardRef(function Controls(
     { axesParam, enableDamping },
-    controlsRef
+    controlsRef,
+    cameraRef
   ) {
     const { plane, geometryType } = useRendering();
     const [extraPlane, setExtraPlane] = useState(false);
@@ -77,11 +79,12 @@ const Controls = React.memo(
         */}
         <TrackballControls
           ref={controlsRef}
-          rotateSpeed={4.0}
+          makeDefault={true}
+          minZoom={0.5}
+          maxZoom={10000}
+          rotateSpeed={5}
           panSpeed={3.5}
-          zoomSpeed={1.2}
-          staticMoving={true}
-          enableDamping={enableDamping}
+          zoomSpeed={0.5}
         />
         {/* Mark the origin with a small sphere */}
         <mesh position={[0, 0, 0]}>

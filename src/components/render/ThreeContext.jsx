@@ -6,6 +6,7 @@ import Controls from "./ThreeControls.jsx";
 import BackgroundModel from "./BackgroundModel.jsx";
 import globalvariables from "../../js/globalvariables.js";
 import { useRendering, useAuth } from "../../contexts/index.js";
+import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 
 // We change the default orientation - threejs tends to use Y are the height,
 // while replicad uses Z. This is mostly a representation default.
@@ -43,9 +44,19 @@ export default function ext({ children, cameraZoom, ...otherProps }) {
   }, [gridScale, cameraZoom]);
 
   let previousZoomLevel = cameraZoom;
+
+  useEffect(() => {
+    if (cameraRef.current) {
+      cameraRef.current.position.set(3000, 3000, 5000);
+      cameraRef.current.lookAt(0, 0, 0);
+      cameraRef.current.updateProjectionMatrix();
+    }
+  }, []);
+
   window.addEventListener("wheel", (e) => {
     if (cameraRef.current) {
-      // Check if the zoom level change is greater than 5 points
+      console.log("Zoom level:", cameraRef.current.zoom);
+
       if (Math.abs(cameraRef.current.zoom - previousZoomLevel) > 3) {
         previousZoomLevel = cameraRef.current.zoom; // Update the previous zoom level
         setGridScale(50 / cameraRef.current.zoom);
@@ -69,13 +80,14 @@ export default function ext({ children, cameraZoom, ...otherProps }) {
       >
         <OrthographicCamera
           ref={cameraRef}
-          makeDefault={true}
+          //makeDefault={true}
           near={0.1}
           pov={1000}
           far={90000}
-          zoom={cameraZoom}
+          //zoom={cameraZoom}
           position={[3000, 3000, 5000]}
         />
+
         {gridParam ? (
           <Grid
             position={[0, 0, 0]}
@@ -91,7 +103,11 @@ export default function ext({ children, cameraZoom, ...otherProps }) {
             sectionSize={cellSection * 10}
           />
         ) : null}
-        <Controls axesParam={axesParam} enableDamping={false}></Controls>
+        <Controls
+          axesParam={axesParam}
+          cameraRef={cameraRef}
+          enableDamping={false}
+        ></Controls>
 
         {!outdatedMesh ? (
           <ambientLight intensity={0.9} />
