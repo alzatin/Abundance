@@ -571,7 +571,7 @@ export default class Molecule extends Atom {
     if (remappedData?.allAtoms) {
       const atomPromises = [];
       remappedData.allAtoms.forEach((atomData) => {
-        const promise = targetMolecule.placeAtom(atomData, true);
+        const promise = targetMolecule.placeAtom(atomData, true, undefined, true); // skipAutoConnect = true
         atomPromises.push(promise);
       });
 
@@ -1446,8 +1446,10 @@ export default class Molecule extends Atom {
    * @param {array} moleculeList - Only passed if we are placing an instance of Molecule.
    * @param {object} typesList - A dictionary of all of the available types with references to their constructors
    * @param {boolean} unlock - A flag to indicate if this atom should spawn in the unlocked state.
+   * @param {object} values - Optional values to overwrite in the loaded atom
+   * @param {boolean} skipAutoConnect - If true, skip automatic connection creation (used for paste operations)
    */
-  async placeAtom(newAtomObj, unlock, values) {
+  async placeAtom(newAtomObj, unlock, values, skipAutoConnect = false) {
     try {
       //If the input has a name and is a copy, we need to make sure it is unique so that the constructors adds IO
       if (
@@ -1530,7 +1532,10 @@ export default class Molecule extends Atom {
               console.warn("Flow canvas element not found");
               return;
             }
-            this.autoCreateConnector(atom);
+            // Only auto-create connectors for manual atom creation, not for paste operations
+            if (!skipAutoConnect) {
+              this.autoCreateConnector(atom);
+            }
             atom.selected = true; // TODO: this feels hacky. probably should forward to it's children?
             atom.enable(); // Enable the atom after placing it
             this.makeActiveAtom(flowCanvas, atom);

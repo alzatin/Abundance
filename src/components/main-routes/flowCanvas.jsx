@@ -303,7 +303,9 @@ export default memo(function FlowCanvas({
             remappedData.allAtoms.forEach((atomData) => {
               const promise = GlobalVariables.currentMolecule.placeAtom(
                 atomData,
-                true
+                true,
+                undefined,
+                true // skipAutoConnect = true for paste operations
               );
               atomPromises.push(promise);
             });
@@ -330,7 +332,7 @@ export default memo(function FlowCanvas({
               // For simple atoms, just assign a new unique ID
               item.uniqueID = GlobalVariables.generateUniqueID();
             }
-            GlobalVariables.currentMolecule.placeAtom(item, true);
+            GlobalVariables.currentMolecule.placeAtom(item, true, undefined, true); // skipAutoConnect = true for paste
           });
         }
       }
