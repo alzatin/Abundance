@@ -879,10 +879,17 @@ export default class Atom extends ObservableEntity {
       return;
     }
 
+    console.log("[onUpstreamChange] Atom:", this.name, "Type:", this.atomType);
+    console.log("[onUpstreamChange] this.inputs.length:", this.inputs.length);
+    console.log("[onUpstreamChange] this.inputs:", this.inputs.map(i => ({name: i.name, status: i.status, value: i.value})));
+    console.log("[onUpstreamChange] inputsAreReady:", this.inputsAreReady());
+
     if (this.inputsAreReady()) {
       const argsDict = Object.fromEntries(
         this.inputs.map((input) => [input.name, input.getState().value])
       );
+
+      console.log("[onUpstreamChange] argsDict:", argsDict);
 
       // const inputVals = this.inputs.map((input) => {input.getValue());
       this.setProcessing();
