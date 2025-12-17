@@ -6,6 +6,10 @@ import { AbundanceObject } from "./util";
 import * as replicad from "replicad";
 import { RequestContext } from "./geometryProvider";
 
+// Import NO_GEOMETRY sentinel from attachmentpoint
+// Use Symbol.for to get the same symbol instance
+const NO_GEOMETRY = Symbol.for("NO_GEOMETRY");
+
 /**
  * For backward compatibility reasons we allow users to call functions with
  * any of the UserGeometryObj types.
@@ -170,13 +174,19 @@ async function executeCode(
     let i = 0;
     const argsSignature: string[] = [];
     for (const [key, value] of Object.entries(argumentsArray)) {
-      if (util.isAbundanceObject(value)) {
+      // Convert NO_GEOMETRY sentinel back to null for user code
+      const actualValue = value === NO_GEOMETRY ? null : value;
+      
+      if (util.isAbundanceObject(actualValue)) {
         const newKey = `userlib_${i++}`;
-        userLib[newKey] = await realizeAssembly(value, context);
+        userLib[newKey] = await realizeAssembly(actualValue, context);
         argumentsArray[key] = newKey;
-        argsSignature.push(JSON.stringify(value));
+        argsSignature.push(JSON.stringify(actualValue));
       } else {
+        // Use original value for signature (NO_GEOMETRY is fine here)
         argsSignature.push(String(value));
+        // But replace in argumentsArray with null for user code
+        argumentsArray[key] = actualValue;
       }
     }
 

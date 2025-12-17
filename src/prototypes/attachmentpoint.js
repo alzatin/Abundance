@@ -5,6 +5,13 @@ import { Global } from "@emotion/react";
 import { ObservableEntity, Status } from "./observableEntity.js";
 
 /**
+ * Sentinel value to represent an optional geometry input that has no connection.
+ * This allows geometry inputs with defaultValue: null to be marked as READY
+ * (since READY status requires a non-null value).
+ */
+export const NO_GEOMETRY = Symbol.for("NO_GEOMETRY");
+
+/**
  * This class creates a new attachmentPoint which are the input and output blobs on Atoms
  */
 export default class AttachmentPoint extends ObservableEntity {
@@ -993,12 +1000,13 @@ export default class AttachmentPoint extends ObservableEntity {
       this.valueType = type; // TODO: do we need to force a propagation if this changed?
       if (this.valueType == "geometry") {
         // For geometries, if the value is explicitly null (e.g., from defaultValue: null),
-        // set status to READY so code atoms can execute with null inputs.
+        // use NO_GEOMETRY sentinel and set status to READY so code atoms can execute with optional inputs.
         // Otherwise, set status to WAITING until a geometry connection is made.
-        this.value = newValue;
         if (newValue === null) {
-          this.setStatus(Status.READY, null);
+          this.value = NO_GEOMETRY;
+          this.setStatus(Status.READY, NO_GEOMETRY);
         } else {
+          this.value = newValue;
           this.setWaiting();
         }
         // No name-based subscription for geometry types
