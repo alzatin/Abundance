@@ -135,7 +135,7 @@ describe("getBounds function", () => {
       let B_maxZ = 0;
       if(B){
           let boundsB = await GetBounds(B);
-          B_maxZ  = boundsB.max[2];
+          B_maxZ = boundsB.max[2];
       }
 
       let translationZ = B_maxZ - A_minZ;
