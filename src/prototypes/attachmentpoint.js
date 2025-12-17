@@ -5,6 +5,14 @@ import { Global } from "@emotion/react";
 import { ObservableEntity, Status } from "./observableEntity.js";
 
 /**
+ * Sentinel value to represent an optional geometry input that has no connection.
+ * This allows geometry inputs with defaultValue: null to be marked as READY
+ * (since READY status requires a non-null value).
+ * Uses a frozen object instead of Symbol to be structured-cloneable for Worker messages.
+ */
+export const NO_GEOMETRY = Object.freeze({ __NO_GEOMETRY__: true });
+
+/**
  * This class creates a new attachmentPoint which are the input and output blobs on Atoms
  */
 export default class AttachmentPoint extends ObservableEntity {
@@ -992,11 +1000,16 @@ export default class AttachmentPoint extends ObservableEntity {
     if (this.type == "input") {
       this.valueType = type; // TODO: do we need to force a propagation if this changed?
       if (this.valueType == "geometry") {
-        // This should only be called when deserializing. For geometries we'll allow the
-        // id to be stored in this.value, but status stays "WAITING" until it's overwritten
-        // by the onUpstreamChange callback subscribed a connector
-        this.value = newValue;
-        this.setWaiting();
+        // For geometries, if the value is explicitly null (e.g., from defaultValue: null),
+        // use NO_GEOMETRY sentinel and set status to READY so code atoms can execute with optional inputs.
+        // Otherwise, set status to WAITING until a geometry connection is made.
+        if (newValue === null) {
+          this.value = NO_GEOMETRY;
+          this.setStatus(Status.READY, NO_GEOMETRY);
+        } else {
+          this.value = newValue;
+          this.setWaiting();
+        }
         // No name-based subscription for geometry types
         this.unsubscribeAllNameSubscriptions();
       } else {

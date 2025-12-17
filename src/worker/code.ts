@@ -7,6 +7,15 @@ import * as replicad from "replicad";
 import { RequestContext } from "./geometryProvider";
 
 /**
+ * Helper function to check if a value is the NO_GEOMETRY sentinel.
+ * Uses object shape detection since we can't import the actual NO_GEOMETRY object
+ * (it would create a circular dependency).
+ */
+function isNoGeometry(value: any): boolean {
+  return value && typeof value === "object" && value.__NO_GEOMETRY__ === true;
+}
+
+/**
  * For backward compatibility reasons we allow users to call functions with
  * any of the UserGeometryObj types.
  */
@@ -166,13 +175,19 @@ async function executeCode(
     let i = 0;
     const argsSignature: string[] = [];
     for (const [key, value] of Object.entries(argumentsArray)) {
-      if (util.isAbundanceObject(value)) {
+      // Convert NO_GEOMETRY sentinel back to null for user code
+      const actualValue = isNoGeometry(value) ? null : value;
+      
+      if (util.isAbundanceObject(actualValue)) {
         const newKey = `userlib_${i++}`;
-        userLib[newKey] = await realizeAssembly(value, context);
+        userLib[newKey] = await realizeAssembly(actualValue, context);
         argumentsArray[key] = newKey;
-        argsSignature.push(JSON.stringify(value));
+        argsSignature.push(JSON.stringify(actualValue));
       } else {
-        argsSignature.push(value.toString());
+        // Use original value for signature (NO_GEOMETRY object or primitive)
+        argsSignature.push(String(value));
+        // But replace in argumentsArray with null for user code if it's NO_GEOMETRY
+        argumentsArray[key] = actualValue;
       }
     }
 
@@ -359,6 +374,7 @@ async function executeCode(
       keys1.push(key);
       inputValues.push(value);
     }
+    
     // Use Function constructor instead of eval - still allows code execution but safer than eval
     const userFunction = new Function(
       ...keys1,

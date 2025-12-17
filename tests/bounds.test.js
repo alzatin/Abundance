@@ -2,7 +2,7 @@
 import { beforeAll, describe, it, expect } from "vitest";
 import { init, getBounds } from "../src/worker/util.ts";
 import { rectangle } from "../src/worker/shapes.ts";
-import { extrude } from "../src/worker/actions.ts";
+import { extrude, move } from "../src/worker/actions.ts";
 import { executeCode } from "../src/worker/code.ts";
 
 describe("getBounds function", () => {
@@ -118,5 +118,77 @@ describe("getBounds function", () => {
     expect(result).toBeDefined();
     // The result should be the imported shape
     expect(result.geometry).toBeDefined();
+  });
+
+  it("should handle null geometry input in conditional code (move above B or XY plane)", async () => {
+    // This test exactly matches the user's issue: Move A above B if B exists,
+    // otherwise move A above the XY plane (B_maxZ defaults to 0)
+    const codeString = `
+      Inputs = [
+        {inputName: "A", type: "geometry", defaultValue: null},
+        {inputName: "B", type: "geometry", defaultValue: null}
+      ]
+
+      let boundsA = await GetBounds(A);
+      let A_minZ = boundsA.min[2];
+
+      let B_maxZ = 0;
+      if(B){
+          let boundsB = await GetBounds(B);
+          B_maxZ = boundsB.max[2];
+      }
+
+      let translationZ = B_maxZ - A_minZ;
+      
+      let movedOutput = await Move(A, 0, 0, translationZ);
+
+      return movedOutput;
+    `;
+
+    // Create a test cube that starts at Z=0 and goes to Z=10
+    const rect = await rectangle(10, 10);
+    const cube = await extrude(rect, 10);
+    
+    const library = {
+      test_cube: cube,
+    };
+    
+    // Test case 1: B is null (should move A so bottom is at Z=0)
+    const args1 = {
+      A: "test_cube",
+      B: null,
+    };
+
+    const result1 = await executeCode(codeString, args1, library);
+    
+    expect(result1).toBeDefined();
+    expect(result1.geometry).toBeDefined();
+    
+    // Verify the cube was moved correctly (bottom should be at Z=0)
+    const bounds1 = await getBounds(result1);
+    expect(bounds1.min[2]).toBeCloseTo(0, 1); // Bottom at Z=0
+    expect(bounds1.max[2]).toBeCloseTo(10, 1); // Top at Z=10
+
+    // Test case 2: Both A and B connected (should move A above B)
+    const cube2 = await extrude(await rectangle(8, 8), 5); // 5mm tall cube
+    const library2 = {
+      cubeA: cube,
+      cubeB: cube2,
+    };
+    
+    const args2 = {
+      A: "cubeA",
+      B: "cubeB",
+    };
+
+    const result2 = await executeCode(codeString, args2, library2);
+    
+    expect(result2).toBeDefined();
+    expect(result2.geometry).toBeDefined();
+    
+    // Verify A was moved so its bottom is at B's top (Z=5)
+    const bounds2 = await getBounds(result2);
+    expect(bounds2.min[2]).toBeCloseTo(5, 1); // Bottom at B's top (Z=5)
+    expect(bounds2.max[2]).toBeCloseTo(15, 1); // Top at Z=15
   });
 });
