@@ -6,9 +6,14 @@ import { AbundanceObject } from "./util";
 import * as replicad from "replicad";
 import { RequestContext } from "./geometryProvider";
 
-// Import NO_GEOMETRY sentinel from attachmentpoint
-// Use Symbol.for to get the same symbol instance
-const NO_GEOMETRY = Symbol.for("NO_GEOMETRY");
+/**
+ * Helper function to check if a value is the NO_GEOMETRY sentinel.
+ * Uses object shape detection since we can't import the actual NO_GEOMETRY object
+ * (it would create a circular dependency).
+ */
+function isNoGeometry(value: any): boolean {
+  return value && typeof value === "object" && value.__NO_GEOMETRY__ === true;
+}
 
 /**
  * For backward compatibility reasons we allow users to call functions with
@@ -175,7 +180,7 @@ async function executeCode(
     const argsSignature: string[] = [];
     for (const [key, value] of Object.entries(argumentsArray)) {
       // Convert NO_GEOMETRY sentinel back to null for user code
-      const actualValue = value === NO_GEOMETRY ? null : value;
+      const actualValue = isNoGeometry(value) ? null : value;
       
       if (util.isAbundanceObject(actualValue)) {
         const newKey = `userlib_${i++}`;
@@ -183,9 +188,9 @@ async function executeCode(
         argumentsArray[key] = newKey;
         argsSignature.push(JSON.stringify(actualValue));
       } else {
-        // Use original value for signature (NO_GEOMETRY is fine here)
+        // Use original value for signature (NO_GEOMETRY object or primitive)
         argsSignature.push(String(value));
-        // But replace in argumentsArray with null for user code
+        // But replace in argumentsArray with null for user code if it's NO_GEOMETRY
         argumentsArray[key] = actualValue;
       }
     }

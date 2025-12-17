@@ -8,8 +8,9 @@ import { ObservableEntity, Status } from "./observableEntity.js";
  * Sentinel value to represent an optional geometry input that has no connection.
  * This allows geometry inputs with defaultValue: null to be marked as READY
  * (since READY status requires a non-null value).
+ * Uses a frozen object instead of Symbol to be structured-cloneable for Worker messages.
  */
-export const NO_GEOMETRY = Symbol.for("NO_GEOMETRY");
+export const NO_GEOMETRY = Object.freeze({ __NO_GEOMETRY__: true });
 
 /**
  * This class creates a new attachmentPoint which are the input and output blobs on Atoms
