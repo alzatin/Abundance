@@ -185,9 +185,6 @@ return assembly;
    * This function reads the string of inputs the user specifies and adds them to the atom.
    */
   parseInputs() {
-    console.log("[parseInputs] Starting to parse inputs from code");
-    console.log("[parseInputs] this.code:", this.code);
-    
     // Match Inputs = [{inputName: ..., type: ..., defaultValue: ...}, ...]
     // Try to extract a const Inputs = [...] block
     // Only parse the first Inputs declaration (const Inputs = [...] or Inputs = [...])
@@ -198,19 +195,14 @@ return assembly;
       ...codeNoComments.matchAll(/(?:const\s+)?Inputs\s*=\s*\[(.*?)]\s*;?/gs),
     ];
     
-    console.log("[parseInputs] Found matches:", allInputsMatches.length);
-    
     if (allInputsMatches.length > 0) {
       const firstMatch = allInputsMatches[0];
-      console.log("[parseInputs] First match:", firstMatch[0]);
       
       // If it's a const declaration, use safe eval
       if (/const\s+Inputs\s*=/.test(firstMatch[0])) {
         try {
           const sandboxFn = new Function(firstMatch[0] + "; return Inputs;");
           const inputsArray = sandboxFn();
-          
-          console.log("[parseInputs] Using const path, inputsArray:", inputsArray);
           
           const variableNames = [];
           inputsArray.forEach(({ inputName, type, defaultValue }) => {
@@ -220,7 +212,6 @@ return assembly;
             );
 
             if (!existingInput) {
-              console.log("[parseInputs] Adding new input:", inputName, type, defaultValue);
               this._addIOWithoutSubscribing(
                 inputName,
                 type,
@@ -228,7 +219,6 @@ return assembly;
                 "input"
               );
             } else {
-              console.log("[parseInputs] Updating existing input:", inputName);
               existingInput.valueType = type;
               existingInput.defaultValue = defaultValue;
             }
@@ -246,7 +236,6 @@ return assembly;
         }
       } else {
         // Otherwise, parse as JSON
-        console.log("[parseInputs] Using JSON parse path");
         let arrStr = firstMatch[1];
         arrStr = arrStr.replace(/\n/g, ""); // Remove newlines
         arrStr = arrStr.replace(/\r/g, ""); // Remove carriage returns
@@ -254,12 +243,8 @@ return assembly;
         arrStr = arrStr.replace(/(\w+)\s*:/g, '"$1":');
         arrStr = arrStr.replace(/'/g, '"');
         
-        console.log("[parseInputs] Array string to parse:", `[${arrStr}]`);
-        
         try {
           const inputsArray = JSON.parse(`[${arrStr}]`);
-          
-          console.log("[parseInputs] Parsed inputsArray:", inputsArray);
           
           const variableNames = [];
           inputsArray.forEach(({ inputName, type, defaultValue }) => {
@@ -268,7 +253,6 @@ return assembly;
               (input) => input.name === inputName
             );
             if (!existingInput) {
-              console.log("[parseInputs] Adding new input:", inputName, type, defaultValue);
               this._addIOWithoutSubscribing(
                 inputName,
                 type,
@@ -276,7 +260,6 @@ return assembly;
                 "input"
               );
             } else {
-              console.log("[parseInputs] Updating existing input:", inputName);
               existingInput.valueType = type;
               existingInput.defaultValue = defaultValue;
             }
@@ -315,9 +298,6 @@ return assembly;
         }
       });
     }
-    
-    console.log("[parseInputs] Finished. Final this.inputs.length:", this.inputs.length);
-    console.log("[parseInputs] Final this.inputs:", this.inputs.map(i => ({name: i.name, type: i.type, valueType: i.valueType, defaultValue: i.defaultValue})));
   }
 
   /**

@@ -160,10 +160,6 @@ async function executeCode(
   context: RequestContext
 ): Promise<AbundanceObject | number | string | boolean | null | undefined> {
   try {
-    // Debug logging to understand what's being passed
-    console.log("[executeCode] argumentsArray:", argumentsArray);
-    console.log("[executeCode] argumentsArray keys:", Object.keys(argumentsArray));
-    
     // Validate input parameters
     if (typeof code !== "string") {
       throw new Error("Code must be a string");
@@ -378,10 +374,6 @@ async function executeCode(
       keys1.push(key);
       inputValues.push(value);
     }
-    
-    // Debug logging
-    console.log("[executeCode] Final keys:", keys1);
-    console.log("[executeCode] Final values:", inputValues);
     
     // Use Function constructor instead of eval - still allows code execution but safer than eval
     const userFunction = new Function(
