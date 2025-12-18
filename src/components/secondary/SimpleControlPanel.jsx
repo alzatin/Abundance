@@ -87,6 +87,8 @@ const panelTitleStyle = {
   fontSize: 15,
   letterSpacing: "0.5px",
   color: "var(--abundance-color-mainPurple)",
+  width: "100%",
+  overflowX: "hidden",
 };
 
 const collapsedStyle = {
