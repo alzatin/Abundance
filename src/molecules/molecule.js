@@ -571,7 +571,12 @@ export default class Molecule extends Atom {
     if (remappedData?.allAtoms) {
       const atomPromises = [];
       remappedData.allAtoms.forEach((atomData) => {
-        const promise = targetMolecule.placeAtom(atomData, true, undefined, true); // skipAutoConnect = true
+        const promise = targetMolecule.placeAtom(
+          atomData,
+          true,
+          undefined,
+          true
+        ); // skipAutoConnect = true
         atomPromises.push(promise);
       });
 
@@ -1168,7 +1173,7 @@ export default class Molecule extends Atom {
   deepGeomList() {
     let geomList = [];
     this.nodesOnTheScreen.forEach((atom) => {
-      if (atom.status === Status.READY) {
+      if (atom.status !== Status.DISABLED) {
         if (
           atom.atomType === "Molecule" ||
           atom.atomType === "GitHubMolecule"
