@@ -10,7 +10,7 @@ import { useRendering, useAuth } from "../../contexts/index.js";
 // We change the default orientation - threejs tends to use Y are the height,
 // while replicad uses Z. This is mostly a representation default.
 
-THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
+THREE.Object3D.DEFAULT_UP.set(0, 1, 0);
 
 export default function ext({ children, cameraZoom, ...otherProps }) {
   const {
