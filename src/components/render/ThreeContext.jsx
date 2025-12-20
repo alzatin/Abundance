@@ -6,11 +6,12 @@ import Controls from "./ThreeControls.jsx";
 import BackgroundModel from "./BackgroundModel.jsx";
 import globalvariables from "../../js/globalvariables.js";
 import { useRendering, useAuth } from "../../contexts/index.js";
+import { OrbitControls, GizmoHelper, GizmoViewport } from "@react-three/drei";
 
 // We change the default orientation - threejs tends to use Y are the height,
 // while replicad uses Z. This is mostly a representation default.
 
-THREE.Object3D.DEFAULT_UP.set(0, 1, 0);
+THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
 
 export default function ext({ children, cameraZoom, ...otherProps }) {
   const {
@@ -91,6 +92,7 @@ export default function ext({ children, cameraZoom, ...otherProps }) {
             sectionSize={cellSection * 10}
           />
         ) : null}
+
         <Controls axesParam={axesParam} enableDamping={false}></Controls>
 
         {!outdatedMesh ? (
