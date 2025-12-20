@@ -78,13 +78,12 @@ const Controls = React.memo(
         />
         */}
         <TrackballControls
-          ref={controlsRef}
           makeDefault={true}
-          minZoom={0.5}
+          minZoom={10}
           maxZoom={10000}
-          rotateSpeed={5}
-          panSpeed={3.5}
-          zoomSpeed={0.5}
+          rotateSpeed={3}
+          panSpeed={2.0}
+          zoomSpeed={1.5}
         />
         {/* Mark the origin with a small sphere */}
         <mesh position={[0, 0, 0]}>
