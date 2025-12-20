@@ -194,13 +194,16 @@ return assembly;
     const allInputsMatches = [
       ...codeNoComments.matchAll(/(?:const\s+)?Inputs\s*=\s*\[(.*?)]\s*;?/gs),
     ];
+    
     if (allInputsMatches.length > 0) {
       const firstMatch = allInputsMatches[0];
+      
       // If it's a const declaration, use safe eval
       if (/const\s+Inputs\s*=/.test(firstMatch[0])) {
         try {
           const sandboxFn = new Function(firstMatch[0] + "; return Inputs;");
           const inputsArray = sandboxFn();
+          
           const variableNames = [];
           inputsArray.forEach(({ inputName, type, defaultValue }) => {
             variableNames.push(inputName);
@@ -239,8 +242,10 @@ return assembly;
         arrStr = arrStr.replace(/,\s*$/, ""); // Remove trailing comma at end
         arrStr = arrStr.replace(/(\w+)\s*:/g, '"$1":');
         arrStr = arrStr.replace(/'/g, '"');
+        
         try {
           const inputsArray = JSON.parse(`[${arrStr}]`);
+          
           const variableNames = [];
           inputsArray.forEach(({ inputName, type, defaultValue }) => {
             variableNames.push(inputName);

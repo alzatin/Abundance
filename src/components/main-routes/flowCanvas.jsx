@@ -48,18 +48,24 @@ export default memo(function FlowCanvas({
     if (
       !GlobalVariables.loadedRepo ||
       GlobalVariables.currentAWSnode.repoName !==
-        GlobalVariables.loadedRepo.name  // GitHub API uses 'name', not 'repoName'
+        GlobalVariables.loadedRepo.name // GitHub API uses 'name', not 'repoName'
     ) {
       // Clean up any stale localStorage entries for the previously loaded project
       // This prevents accumulation of saved states when switching between projects
       // Only clean up if we're actually loading a DIFFERENT project
-      if (GlobalVariables.loadedRepo?.owner?.login && GlobalVariables.loadedRepo?.name &&
-          GlobalVariables.loadedRepo.name !== GlobalVariables.currentAWSnode.repoName) {
+      if (
+        GlobalVariables.loadedRepo?.owner?.login &&
+        GlobalVariables.loadedRepo?.name &&
+        GlobalVariables.loadedRepo.name !==
+          GlobalVariables.currentAWSnode.repoName
+      ) {
         const previousProjectKey = `unsavedProject_${GlobalVariables.loadedRepo.owner.login}_${GlobalVariables.loadedRepo.name}`;
         localStorage.removeItem(previousProjectKey);
-        console.log(`Cleared localStorage for previous project: ${previousProjectKey}`);
+        console.log(
+          `Cleared localStorage for previous project: ${previousProjectKey}`
+        );
       }
-      
+
       GlobalVariables.resetView();
       //Load a blank project
       GlobalVariables.topLevelMolecule = new Molecule({
@@ -83,23 +89,27 @@ export default memo(function FlowCanvas({
           let rawFile = JSON.parse(pendingProject);
           // Reset ID counter to avoid collisions with existing IDs
           GlobalVariables.resetIdCounter(rawFile);
-          if (rawFile.filetypeVersion == 1) {
-            GlobalVariables.topLevelMolecule.deserialize(rawFile);
-          } else {
-            // For older file versions, try to deserialize directly for now
-            GlobalVariables.topLevelMolecule.deserialize(rawFile);
+          let deserializedMolecule;
+
+          // For older file versions, try to deserialize directly for now
+          async function loadAndDeserialize() {
+            deserializedMolecule =
+              await GlobalVariables.topLevelMolecule.deserialize(rawFile);
+
+            setActiveAtom(GlobalVariables.currentMolecule);
+            GlobalVariables.currentMolecule.selected = true;
+            GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
+            //trigger a save to clear the pending project
+            //
+            setSavePopUp(true);
+            saveProject(setSaveState, "auto-save after reauthentication").then(
+              () => {
+                localStorage.removeItem("pendingProjectSave");
+                setSavePopUp(false);
+              }
+            );
           }
-          setActiveAtom(GlobalVariables.currentMolecule);
-          GlobalVariables.currentMolecule.selected = true;
-          GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
-          //trigger a save to clear the pending project
-          setSavePopUp(true);
-          saveProject(setSaveState, "auto-save after reauthentication").then(
-            () => {
-              localStorage.removeItem("pendingProjectSave");
-              setSavePopUp(false);
-            }
-          );
+          loadAndDeserialize();
         } else {
           console.warn("No pending project found in local storage.");
           // If no pending project found, just load the current project
@@ -111,7 +121,7 @@ export default memo(function FlowCanvas({
         // so they are safe to use in the localStorage key
         const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
         const unsavedProject = localStorage.getItem(projectKey);
-        
+
         if (unsavedProject) {
           console.log("Loading unsaved project state from localStorage...");
           try {
@@ -136,12 +146,15 @@ export default memo(function FlowCanvas({
                 .then(async (response) => {
                   GlobalVariables.loadedRepo = response.data;
                   GlobalVariables.currentRepo = response.data;
-                  GlobalVariables.currentRepoName = GlobalVariables.currentAWSnode.repoName;
+                  GlobalVariables.currentRepoName =
+                    GlobalVariables.currentAWSnode.repoName;
                 })
                 .catch((e) => {
                   console.error("Error loading repo metadata:", e);
                   if (setErrorNotification) {
-                    setErrorNotification("Error loading project metadata: " + e.message);
+                    setErrorNotification(
+                      "Error loading project metadata: " + e.message
+                    );
                     setTimeout(() => setErrorNotification(null), 5000);
                   }
                 });
@@ -303,7 +316,9 @@ export default memo(function FlowCanvas({
             remappedData.allAtoms.forEach((atomData) => {
               const promise = GlobalVariables.currentMolecule.placeAtom(
                 atomData,
-                true
+                true,
+                undefined,
+                true // skipAutoConnect = true for paste operations
               );
               atomPromises.push(promise);
             });
@@ -330,7 +345,12 @@ export default memo(function FlowCanvas({
               // For simple atoms, just assign a new unique ID
               item.uniqueID = GlobalVariables.generateUniqueID();
             }
-            GlobalVariables.currentMolecule.placeAtom(item, true);
+            GlobalVariables.currentMolecule.placeAtom(
+              item,
+              true,
+              undefined,
+              true
+            ); // skipAutoConnect = true for paste
           });
         }
       }
@@ -598,7 +618,7 @@ export default memo(function FlowCanvas({
   }, [draw]);
 
   useEffect(() => {
-    createCMenu(circleMenu, setExpandedMenu);
+    createCMenu(circleMenu, setExpandedMenu, shortCuts);
   }, []);
 
   let parentLinkPath = [];
