@@ -4,9 +4,7 @@ import { Wireframe, Grid, OrthographicCamera } from "@react-three/drei";
 import * as THREE from "three";
 import Controls from "./ThreeControls.jsx";
 import BackgroundModel from "./BackgroundModel.jsx";
-import globalvariables from "../../js/globalvariables.js";
 import { useRendering, useAuth } from "../../contexts/index.js";
-import { OrbitControls, GizmoHelper, GizmoViewport } from "@react-three/drei";
 
 // We change the default orientation - threejs tends to use Y are the height,
 // while replicad uses Z. This is mostly a representation default.
