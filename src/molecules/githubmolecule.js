@@ -46,16 +46,40 @@ export default class GitHubMolecule extends Molecule {
   }
 
   /**
-     * This replaces the default Molecule double click behavior to prevent you from being able to double click into a github molecule
+     * Handle double clicks on GitHub molecules
+     * If the user owns the molecule (based on parentRepo.owner), allow navigation with confirmation
      * @param {number} x - The x coordinate of the click
      * @param {number} y - The y coordinate of the click
      // */
   doubleClick(x, y) {
+    //returns true if something was done with the click
+    x = GlobalVariables.pixelsToWidth(x);
+    y = GlobalVariables.pixelsToHeight(y);
+
     var clickProcessed = false;
+
     var distFromClick = GlobalVariables.distBetweenPoints(x, this.x, y, this.y);
-    if (distFromClick < this.radius) {
+
+    if (distFromClick < this.radius * 2) {
+      // Check if the user owns this GitHub molecule
+      if (
+        this.parentRepo &&
+        this.parentRepo.owner === GlobalVariables.currentUser
+      ) {
+        // User owns this GitHub molecule - allow navigation with confirmation
+        const moleculeName = this.name || this.parentRepo.repoName;
+        const confirmMessage = `Navigate to ${moleculeName}?\n\nThis will take you to the project "${this.parentRepo.owner}/${this.parentRepo.repoName}" and leave your current project.\n\nDo you want to continue?`;
+
+        if (window.confirm(confirmMessage)) {
+          // User confirmed - navigate to the owned molecule's project
+          window.location.href = `/${this.parentRepo.owner}/${this.parentRepo.repoName}`;
+        }
+      }
+      // else: User doesn't own this molecule - do nothing (can't navigate into it)
+
       clickProcessed = true;
     }
+
     return clickProcessed;
   }
 
