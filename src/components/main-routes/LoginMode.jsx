@@ -486,6 +486,15 @@ const ProjectDiv = ({
     if (dateCreated == "Invalid Date") {
       dateCreated = "Date Created";
     }
+    
+    // Get first 3 tags, excluding 'abundance-tool' tag
+    const displayTags = node.node.topics 
+      ? node.node.topics
+          .filter(tag => tag !== "abundance-tool")
+          .slice(0, 3)
+          .join(", ")
+      : "";
+    
     return (
       <div
         className="project_list"
@@ -507,6 +516,9 @@ const ProjectDiv = ({
             : null}
         </p>
         <p className="project_name_list">{dateCreated}</p>
+        <p className="project_name_list" style={{ fontSize: "0.9em", fontStyle: displayTags ? "normal" : "italic", opacity: displayTags ? 1 : 0.6 }}>
+          {displayTags || "No tags"}
+        </p>
 
         <div
           style={{
@@ -564,6 +576,7 @@ const ProjectDiv = ({
     dateCreated: "Date Created",
     owner: "Creator",
     repoName: "Name",
+    topics: ["Tags"],
   };
 
   // Add effect to close context menu on outside click
