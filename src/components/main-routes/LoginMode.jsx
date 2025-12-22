@@ -433,7 +433,6 @@ const ProjectDiv = ({
           GlobalVariables.currentAWSnode = node;
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node)}
-        ref={thumbItemRef}
       >
         <p className="project_name">{convertToDisplayName(node.repoName)}</p>
         <div style={{ position: "relative" }}>
