@@ -1072,7 +1072,17 @@
   box-shadow: 0 4px 16px rgba(62, 61, 61, 0.3);
   left: 110%;
   top: 0;
-  pointer-events: none;
+  pointer-events: auto;
+  user-select: text;
+}
+
+/* Responsive positioning for smaller screens */
+@media (max-width: 768px) {
+  .thumb-quick-view-panel {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+  }
 }
 
 .thumb-quick-view-panel .GitInfoLeft {

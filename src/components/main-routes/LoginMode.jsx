@@ -388,31 +388,33 @@ const ProjectDiv = ({
 
   const ThumbItem = ({ node, svgCacheBuster }) => {
     const [showQuickView, setShowQuickView] = useState(false);
-    const [hoverTimer, setHoverTimer] = useState(null);
-    const thumbItemRef = useRef(null);
+    const hoverTimerRef = useRef(null);
 
     // Cleanup timer on component unmount to prevent memory leaks
     useEffect(() => {
       return () => {
-        if (hoverTimer) {
-          clearTimeout(hoverTimer);
+        if (hoverTimerRef.current) {
+          clearTimeout(hoverTimerRef.current);
         }
       };
-    }, [hoverTimer]);
+    }, []);
 
     const handleEyeMouseEnter = () => {
+      // Clear any existing timer before starting a new one
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+      }
       // Start a timer to show quick view after 2 seconds
-      const timer = setTimeout(() => {
+      hoverTimerRef.current = setTimeout(() => {
         setShowQuickView(true);
       }, 2000);
-      setHoverTimer(timer);
     };
 
     const handleEyeMouseLeave = () => {
       // Clear the timer if user stops hovering before 2 seconds
-      if (hoverTimer) {
-        clearTimeout(hoverTimer);
-        setHoverTimer(null);
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
       }
       setShowQuickView(false);
     };
@@ -475,7 +477,18 @@ const ProjectDiv = ({
           </div>
           {/* Quick view panel */}
           {showQuickView && (
-            <div className="thumb-quick-view-panel">
+            <div
+              className="thumb-quick-view-panel"
+              onMouseEnter={() => {
+                // Keep panel open when hovering over it
+                if (hoverTimerRef.current) {
+                  clearTimeout(hoverTimerRef.current);
+                  hoverTimerRef.current = null;
+                }
+              }}
+              onMouseLeave={handleEyeMouseLeave}
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="GitInfoLeft">
                 <img
                   src={
