@@ -14,6 +14,7 @@ import { licenses } from "../../js/licenseOptions.js";
 import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 import RenameProjectDialog from "../secondary/RenameProjectDialog.jsx";
 import { convertToDisplayName } from "../../js/projectNameUtils.js";
+import FilterPanel from "../secondary/FilterPanel.jsx";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -97,6 +98,12 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
   const [browseType, setBrowseType] = useState("thumb");
   let nodes = projectsLoaded ? projectsLoaded["repos"] : [];
   const [showForks, setShowForks] = useState(true);
+  const [filters, setFilters] = useState({
+    users: new Set(),
+    tags: new Set(),
+    years: new Set(),
+  });
+  
   let initialOrder =
     projectToShow == "featured"
       ? "byStars"
@@ -129,6 +136,40 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
     // filter out forks
     nodes = nodes.filter((node) => node.parentRepo === null);
   }
+
+  // Apply filters
+  const hasActiveFilters = filters.users.size > 0 || filters.tags.size > 0 || filters.years.size > 0;
+  
+  if (hasActiveFilters) {
+    nodes = nodes.filter((node) => {
+      // User filter
+      if (filters.users.size > 0 && !filters.users.has(node.owner)) {
+        return false;
+      }
+      
+      // Tag filter
+      if (filters.tags.size > 0) {
+        const hasMatchingTag = node.topics && node.topics.some(tag => filters.tags.has(tag));
+        if (!hasMatchingTag) {
+          return false;
+        }
+      }
+      
+      // Year filter
+      if (filters.years.size > 0) {
+        const projectYear = new Date(node.dateCreated).getFullYear();
+        if (!filters.years.has(projectYear)) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
 
   return (
     <>
@@ -220,28 +261,36 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
           />
         </label>
       </div>
-      <div className="project-items-div">
-        {projectToShow == "featured" &&
-        highestRankingNode &&
-        highestRankingToolNode ? (
-          <FeaturedHighlight
-            highestRankingNode={highestRankingNode}
-            highestRankingToolNode={highestRankingToolNode}
-          />
-        ) : null}
-        {nodes.length > 0 ? (
-          <ProjectDiv
-            {...{
-              nodes,
-              browseType,
-              orderType,
-              authorizedUserOcto,
-              svgCacheBuster,
-            }}
-          />
-        ) : (
-          <p>No projects match your search</p>
-        )}
+      <div className="projects-and-filters-container">
+        <div className="project-items-wrapper">
+          <div className="project-items-div">
+            {projectToShow == "featured" &&
+            highestRankingNode &&
+            highestRankingToolNode ? (
+              <FeaturedHighlight
+                highestRankingNode={highestRankingNode}
+                highestRankingToolNode={highestRankingToolNode}
+              />
+            ) : null}
+            {nodes.length > 0 ? (
+              <ProjectDiv
+                {...{
+                  nodes,
+                  browseType,
+                  orderType,
+                  authorizedUserOcto,
+                  svgCacheBuster,
+                }}
+              />
+            ) : (
+              <p>No projects match your search</p>
+            )}
+          </div>
+        </div>
+        <FilterPanel 
+          projects={projectsLoaded ? projectsLoaded["repos"] : []} 
+          onFilterChange={handleFilterChange}
+        />
       </div>
     </>
   );
