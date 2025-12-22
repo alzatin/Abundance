@@ -391,6 +391,15 @@ const ProjectDiv = ({
     const [hoverTimer, setHoverTimer] = useState(null);
     const thumbItemRef = useRef(null);
 
+    // Cleanup timer on component unmount to prevent memory leaks
+    useEffect(() => {
+      return () => {
+        if (hoverTimer) {
+          clearTimeout(hoverTimer);
+        }
+      };
+    }, [hoverTimer]);
+
     const handleEyeMouseEnter = () => {
       // Start a timer to show quick view after 2 seconds
       const timer = setTimeout(() => {
@@ -469,7 +478,12 @@ const ProjectDiv = ({
             <div className="thumb-quick-view-panel">
               <div className="GitInfoLeft">
                 <img
-                  src={node.svgURL}
+                  src={
+                    node.svgURL +
+                    (node.svgURL.includes("?") ? "&" : "?") +
+                    "cb=" +
+                    svgCacheBuster
+                  }
                   onError={({ currentTarget }) => {
                     currentTarget.onerror = null;
                     currentTarget.src =
