@@ -63,7 +63,7 @@ const Controls = React.memo(
     return (
       <>
         <OrbitControls
-          ref={controlsRef}
+          makeDefault
           panSpeed={1.5}
           zoomSpeed={0.5}
           enableDamping={enableDamping}
