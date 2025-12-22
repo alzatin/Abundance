@@ -108,7 +108,10 @@ const FilterPanel = ({ projects, onFilterChange }) => {
   };
 
   const hasActiveFilters =
-    selectedUsers.size > 0 || selectedTags.size > 0 || selectedYears.size > 0 || !showForks;
+    selectedUsers.size > 0 ||
+    selectedTags.size > 0 ||
+    selectedYears.size > 0 ||
+    !showForks;
 
   return (
     <div className="filter-panel">
@@ -120,7 +123,28 @@ const FilterPanel = ({ projects, onFilterChange }) => {
           </button>
         )}
       </div>
-
+      {/* Forks Filter */}
+      <div className="filter-section">
+        <div
+          className="filter-section-header"
+          onClick={() => toggleSection("forks")}
+        >
+          <span className="filter-section-title">Forks</span>
+          <span className="filter-toggle">{collapsed.forks ? "▼" : "▲"}</span>
+        </div>
+        {!collapsed.forks && (
+          <div className="filter-options">
+            <label className="filter-checkbox-label">
+              <input
+                type="checkbox"
+                checked={showForks}
+                onChange={(e) => setShowForks(e.target.checked)}
+              />
+              <span className="filter-label-text">Show Forks</span>
+            </label>
+          </div>
+        )}
+      </div>
       {/* Users Filter */}
       {uniqueValues.users.length > 0 && (
         <div className="filter-section">
@@ -207,29 +231,6 @@ const FilterPanel = ({ projects, onFilterChange }) => {
           )}
         </div>
       )}
-
-      {/* Forks Filter */}
-      <div className="filter-section">
-        <div
-          className="filter-section-header"
-          onClick={() => toggleSection("forks")}
-        >
-          <span className="filter-section-title">Forks</span>
-          <span className="filter-toggle">{collapsed.forks ? "▼" : "▲"}</span>
-        </div>
-        {!collapsed.forks && (
-          <div className="filter-options">
-            <label className="filter-checkbox-label">
-              <input
-                type="checkbox"
-                checked={showForks}
-                onChange={(e) => setShowForks(e.target.checked)}
-              />
-              <span className="filter-label-text">Show Forks</span>
-            </label>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
