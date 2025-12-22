@@ -103,7 +103,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
     tags: new Set(),
     years: new Set(),
   });
-  
+
   let initialOrder =
     projectToShow == "featured"
       ? "byStars"
@@ -138,23 +138,25 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
   }
 
   // Apply filters
-  const hasActiveFilters = filters.users.size > 0 || filters.tags.size > 0 || filters.years.size > 0;
-  
+  const hasActiveFilters =
+    filters.users.size > 0 || filters.tags.size > 0 || filters.years.size > 0;
+
   if (hasActiveFilters) {
     nodes = nodes.filter((node) => {
       // User filter
       if (filters.users.size > 0 && !filters.users.has(node.owner)) {
         return false;
       }
-      
+
       // Tag filter
       if (filters.tags.size > 0) {
-        const hasMatchingTag = node.topics && node.topics.some(tag => filters.tags.has(tag));
+        const hasMatchingTag =
+          node.topics && node.topics.some((tag) => filters.tags.has(tag));
         if (!hasMatchingTag) {
           return false;
         }
       }
-      
+
       // Year filter
       if (filters.years.size > 0) {
         const projectYear = new Date(node.dateCreated).getFullYear();
@@ -162,7 +164,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
           return false;
         }
       }
-      
+
       return true;
     });
   }
@@ -287,8 +289,8 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
             )}
           </div>
         </div>
-        <FilterPanel 
-          projects={projectsLoaded ? projectsLoaded["repos"] : []} 
+        <FilterPanel
+          projects={projectsLoaded ? projectsLoaded["repos"] : []}
           onFilterChange={handleFilterChange}
         />
       </div>
@@ -535,15 +537,15 @@ const ProjectDiv = ({
     if (dateCreated == "Invalid Date") {
       dateCreated = "Date Created";
     }
-    
+
     // Get first 3 tags, excluding 'abundance-tool' tag
-    const displayTags = node.node.topics 
+    const displayTags = node.node.topics
       ? node.node.topics
-          .filter(tag => tag !== "abundance-tool")
+          .filter((tag) => tag !== "abundance-tool")
           .slice(0, 3)
           .join(", ")
       : "";
-    
+
     return (
       <div
         className="project_list"
@@ -565,7 +567,14 @@ const ProjectDiv = ({
             : null}
         </p>
         <p className="project_name_list">{dateCreated}</p>
-        <p className="project_name_list" style={{ fontSize: "0.9em", fontStyle: displayTags ? "normal" : "italic", opacity: displayTags ? 1 : 0.6 }}>
+        <p
+          className="project_name_list"
+          style={{
+            fontSize: "0.9em",
+            fontStyle: displayTags ? "normal" : "italic",
+            opacity: displayTags ? 1 : 0.6,
+          }}
+        >
           {displayTags || "No tags"}
         </p>
 
@@ -1351,7 +1360,7 @@ function LoginMode() {
           </button>
         ) : null}
       </div>
-      <div className="top-banner" style={{ margin: "35px 0 0 30px" }}>
+      <div className="top-banner" style={{ margin: "10px 0px 30px 30px" }}>
         <div id="welcome-logo">
           <img
             src={

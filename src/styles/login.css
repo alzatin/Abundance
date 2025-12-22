@@ -944,19 +944,16 @@
   .left-login-div {
     display: block;
     padding: 1%;
-    margin: 5% 0 0 5%;
+    margin: 5% 0 0 3%;
     align-items: center;
     justify-content: center;
-    width: 15%;
+    width: 12%;
     height: 100%;
   }
   .right-login-div {
-    margin: 0% 5% 0 0;
-    width: 75%;
+    margin: 0% 0% 0 0;
+    width: 80%;
     height: 100%;
-  }
-  .project-item-div {
-    height: 400px;
   }
   #sorting-button-div {
     display: flex;
