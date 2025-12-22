@@ -4,7 +4,6 @@ import { Wireframe, Grid, OrthographicCamera } from "@react-three/drei";
 import * as THREE from "three";
 import Controls from "./ThreeControls.jsx";
 import BackgroundModel from "./BackgroundModel.jsx";
-import globalvariables from "../../js/globalvariables.js";
 import { useRendering, useAuth } from "../../contexts/index.js";
 
 // We change the default orientation - threejs tends to use Y are the height,
@@ -91,6 +90,7 @@ export default function ext({ children, cameraZoom, ...otherProps }) {
             sectionSize={cellSection * 10}
           />
         ) : null}
+
         <Controls axesParam={axesParam} enableDamping={false}></Controls>
 
         {!outdatedMesh ? (
