@@ -28,7 +28,7 @@ const FilterPanel = ({ projects, onFilterChange }) => {
         if (project.topics && Array.isArray(project.topics)) {
           project.topics.forEach((tag) => {
             // Filter out the abundance-tool tag as it's already shown separately
-            if (tag && tag !== "abundance-tool") {
+            if (tag) {
               tags.add(tag);
             }
           });
@@ -127,9 +127,7 @@ const FilterPanel = ({ projects, onFilterChange }) => {
             <span className="filter-section-title">
               Users ({selectedUsers.size}/{uniqueValues.users.length})
             </span>
-            <span className="filter-toggle">
-              {collapsed.users ? "▼" : "▲"}
-            </span>
+            <span className="filter-toggle">{collapsed.users ? "▼" : "▲"}</span>
           </div>
           {!collapsed.users && (
             <div className="filter-options">
@@ -158,9 +156,7 @@ const FilterPanel = ({ projects, onFilterChange }) => {
             <span className="filter-section-title">
               Tags ({selectedTags.size}/{uniqueValues.tags.length})
             </span>
-            <span className="filter-toggle">
-              {collapsed.tags ? "▼" : "▲"}
-            </span>
+            <span className="filter-toggle">{collapsed.tags ? "▼" : "▲"}</span>
           </div>
           {!collapsed.tags && (
             <div className="filter-options">
@@ -189,9 +185,7 @@ const FilterPanel = ({ projects, onFilterChange }) => {
             <span className="filter-section-title">
               Years ({selectedYears.size}/{uniqueValues.years.length})
             </span>
-            <span className="filter-toggle">
-              {collapsed.years ? "▼" : "▲"}
-            </span>
+            <span className="filter-toggle">{collapsed.years ? "▼" : "▲"}</span>
           </div>
           {!collapsed.years && (
             <div className="filter-options">
