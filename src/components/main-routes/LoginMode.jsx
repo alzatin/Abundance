@@ -97,11 +97,11 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
   const [svgCacheBuster, setSvgCacheBuster] = useState(Date.now());
   const [browseType, setBrowseType] = useState("thumb");
   let nodes = projectsLoaded ? projectsLoaded["repos"] : [];
-  const [showForks, setShowForks] = useState(true);
   const [filters, setFilters] = useState({
     users: new Set(),
     tags: new Set(),
     years: new Set(),
+    showForks: true,
   });
 
   let initialOrder =
@@ -132,7 +132,9 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
     const sortedToolNodes = toolNodes.sort((a, b) => b.ranking - a.ranking);
     highestRankingToolNode = sortedToolNodes[0];
   }
-  if (!showForks) {
+  
+  // Apply fork filter
+  if (!filters.showForks) {
     // filter out forks
     nodes = nodes.filter((node) => node.parentRepo === null);
   }
@@ -238,29 +240,6 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
               Date Modified
             </option>
           </select>
-        </label>
-        <label
-          style={{ display: "flex", alignItems: "center", marginLeft: "10px" }}
-        >
-          <img
-            src={import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/fork.svg"}
-            alt="Show/Hide Forks"
-            style={{
-              width: "25px",
-              opacity: "0.8",
-              marginRight: "0px",
-            }}
-          />
-          <input
-            type="checkbox"
-            id="show-hide-forks"
-            defaultChecked={true}
-            onChange={(e) => {
-              const showForks = e.target.checked;
-              setShowForks(showForks);
-            }}
-            style={{ marginLeft: "-3px" }}
-          />
         </label>
       </div>
       <div className="projects-and-filters-container">

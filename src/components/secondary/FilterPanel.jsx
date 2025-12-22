@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from "react";
 
 /**
- * FilterPanel component for filtering projects by users, tags, and years
+ * FilterPanel component for filtering projects by users, tags, years, and forks
  * Displays checkboxes on the right side of the project display
  */
 const FilterPanel = ({ projects, onFilterChange }) => {
   const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [selectedTags, setSelectedTags] = useState(new Set());
   const [selectedYears, setSelectedYears] = useState(new Set());
+  const [showForks, setShowForks] = useState(true);
   const [collapsed, setCollapsed] = useState({
     users: false,
     tags: false,
     years: false,
+    forks: false,
   });
 
   // Extract unique users, tags, and years from projects
@@ -57,8 +59,9 @@ const FilterPanel = ({ projects, onFilterChange }) => {
       users: selectedUsers,
       tags: selectedTags,
       years: selectedYears,
+      showForks: showForks,
     });
-  }, [selectedUsers, selectedTags, selectedYears]);
+  }, [selectedUsers, selectedTags, selectedYears, showForks]);
 
   const handleUserToggle = (user) => {
     const newSelected = new Set(selectedUsers);
@@ -101,10 +104,11 @@ const FilterPanel = ({ projects, onFilterChange }) => {
     setSelectedUsers(new Set());
     setSelectedTags(new Set());
     setSelectedYears(new Set());
+    setShowForks(true);
   };
 
   const hasActiveFilters =
-    selectedUsers.size > 0 || selectedTags.size > 0 || selectedYears.size > 0;
+    selectedUsers.size > 0 || selectedTags.size > 0 || selectedYears.size > 0 || !showForks;
 
   return (
     <div className="filter-panel">
@@ -203,6 +207,29 @@ const FilterPanel = ({ projects, onFilterChange }) => {
           )}
         </div>
       )}
+
+      {/* Forks Filter */}
+      <div className="filter-section">
+        <div
+          className="filter-section-header"
+          onClick={() => toggleSection("forks")}
+        >
+          <span className="filter-section-title">Forks</span>
+          <span className="filter-toggle">{collapsed.forks ? "▼" : "▲"}</span>
+        </div>
+        {!collapsed.forks && (
+          <div className="filter-options">
+            <label className="filter-checkbox-label">
+              <input
+                type="checkbox"
+                checked={showForks}
+                onChange={(e) => setShowForks(e.target.checked)}
+              />
+              <span className="filter-label-text">Show Forks</span>
+            </label>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

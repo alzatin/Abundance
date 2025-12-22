@@ -205,6 +205,19 @@
           </div>
           <div class="filter-options" id="yearsOptions"></div>
         </div>
+
+        <div class="filter-section">
+          <div class="filter-section-header" onclick="toggleSection('forks')">
+            <span class="filter-section-title">Forks</span>
+            <span class="filter-toggle" id="forksToggle">▲</span>
+          </div>
+          <div class="filter-options" id="forksOptions">
+            <label class="filter-checkbox-label">
+              <input type="checkbox" id="showForksCheckbox" checked onchange="toggleForks()">
+              <span class="filter-label-text">Show Forks</span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -216,42 +229,49 @@
           repoName: "Wall-Anchor",
           topics: ["hardware", "diy"],
           dateCreated: "2023-05-10",
+          parentRepo: null,
         },
         {
           owner: "BarbourSmith",
           repoName: "Parametric-Box",
           topics: ["container", "storage"],
           dateCreated: "2023-08-22",
+          parentRepo: null,
         },
         {
           owner: "JohnDoe",
           repoName: "Gear-Generator",
           topics: ["mechanical", "tool"],
           dateCreated: "2024-01-15",
+          parentRepo: null,
         },
         {
           owner: "JaneSmith",
           repoName: "Bracket-Mount",
           topics: ["hardware", "mounting"],
           dateCreated: "2024-03-08",
+          parentRepo: null,
         },
         {
           owner: "BarbourSmith",
           repoName: "Custom-Knob",
           topics: ["hardware", "ergonomic"],
           dateCreated: "2024-06-20",
+          parentRepo: null,
         },
         {
           owner: "JohnDoe",
           repoName: "Hinge-Design",
           topics: ["mechanical", "diy"],
           dateCreated: "2023-11-30",
+          parentRepo: "BarbourSmith/Wall-Anchor",
         },
         {
           owner: "JaneSmith",
           repoName: "Cable-Organizer",
           topics: ["organization", "storage"],
           dateCreated: "2024-02-14",
+          parentRepo: null,
         },
       ];
 
@@ -259,6 +279,7 @@
         users: new Set(),
         tags: new Set(),
         years: new Set(),
+        showForks: true,
       };
 
       function renderProjects() {
@@ -271,8 +292,9 @@
 
           const card = document.createElement("div");
           card.className = "project-card" + (visible ? "" : " hidden");
+          const isFork = project.parentRepo ? " (Fork)" : "";
           card.innerHTML = `
-                    <div class="project-title">${project.repoName}</div>
+                    <div class="project-title">${project.repoName}${isFork}</div>
                     <div class="project-meta">
                         By ${
                           project.owner
@@ -284,6 +306,10 @@
       }
 
       function checkFilters(project) {
+        // Fork filter
+        if (!filters.showForks && project.parentRepo) {
+          return false;
+        }
         if (filters.users.size > 0 && !filters.users.has(project.owner)) {
           return false;
         }
@@ -385,6 +411,12 @@
         renderProjects();
       }
 
+      function toggleForks() {
+        filters.showForks = document.getElementById("showForksCheckbox").checked;
+        updateClearButton();
+        renderProjects();
+      }
+
       function toggleSection(section) {
         const options = document.getElementById(section + "Options");
         const toggle = document.getElementById(section + "Toggle");
@@ -398,6 +430,8 @@
         filters.users.clear();
         filters.tags.clear();
         filters.years.clear();
+        filters.showForks = true;
+        document.getElementById("showForksCheckbox").checked = true;
         renderFilters();
         renderProjects();
       }
@@ -406,7 +440,8 @@
         const hasFilters =
           filters.users.size > 0 ||
           filters.tags.size > 0 ||
-          filters.years.size > 0;
+          filters.years.size > 0 ||
+          !filters.showForks;
         document.getElementById("clearBtn").style.display = hasFilters
           ? "block"
           : "none";
