@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Filter Panel Demo</title>
+    <style>
+      :root {
+        --loginPopup-background: #f5f3f7;
+        --loginPopup-text: #333;
+        --loginPopup-border: #d3d3d3;
+        --loginPopup-projectColorHover: #e9ddf2;
+        --abundance-color-brightPurple: #c069f7;
+      }
+
+      body {
+        font-family: "Roboto", sans-serif;
+        padding: 20px;
+        background-color: #fff;
+      }
+
+      .demo-container {
+        display: flex;
+        gap: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .projects-area {
+        flex: 1;
+        background-color: var(--loginPopup-background);
+        padding: 20px;
+        border-radius: 5px;
+      }
+
+      .project-card {
+        background: white;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        border: 1px solid var(--loginPopup-border);
+      }
+
+      .project-card.hidden {
+        display: none;
+      }
+
+      .project-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .project-meta {
+        font-size: 0.9em;
+        color: #666;
+      }
+
+      /* Filter Panel Styles */
+      .filter-panel {
+        background-color: var(--loginPopup-background);
+
+        border-radius: 5px;
+        padding: 10px;
+        width: 200px;
+        max-height: 600px;
+        overflow-y: auto;
+        font-family: "Roboto", sans-serif;
+        flex-shrink: 0;
+      }
+
+      .filter-panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--loginPopup-border);
+      }
+
+      .filter-panel-header h3 {
+        margin: 0;
+        font-size: 1em;
+        color: var(--loginPopup-text);
+        font-weight: 600;
+      }
+
+      .clear-filters-btn {
+        background: none;
+        border: none;
+        color: var(--abundance-color-brightPurple);
+        cursor: pointer;
+        font-size: 0.75em;
+        text-decoration: underline;
+        padding: 0;
+      }
+
+      .clear-filters-btn:hover {
+        opacity: 0.8;
+      }
+
+      .filter-section {
+        margin-bottom: 12px;
+      }
+
+      .filter-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px 0;
+        user-select: none;
+      }
+
+      .filter-section-header:hover {
+        background-color: var(--loginPopup-projectColorHover);
+      }
+
+      .filter-section-title {
+        font-size: 0.9em;
+        font-weight: 500;
+        color: var(--loginPopup-text);
+      }
+
+      .filter-toggle {
+        font-size: 0.7em;
+        color: var(--loginPopup-text);
+      }
+
+      .filter-options {
+        max-height: 150px;
+        overflow-y: auto;
+        margin-top: 5px;
+        padding-left: 5px;
+      }
+
+      .filter-options.collapsed {
+        display: none;
+      }
+
+      .filter-checkbox-label {
+        display: flex;
+        align-items: center;
+        padding: 3px 0;
+        cursor: pointer;
+        font-size: 0.85em;
+        color: var(--loginPopup-text);
+      }
+
+      .filter-checkbox-label:hover {
+        background-color: var(--loginPopup-projectColorHover);
+      }
+
+      .filter-checkbox-label input[type="checkbox"] {
+        margin-right: 8px;
+        cursor: pointer;
+      }
+
+      .filter-label-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 140px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Filter Panel Demo - Abundance Projects</h1>
+    <div class="demo-container">
+      <div class="projects-area">
+        <h2>Projects</h2>
+        <div id="projects"></div>
+      </div>
+      <div class="filter-panel">
+        <div class="filter-panel-header">
+          <h3>Filters</h3>
+          <button class="clear-filters-btn" id="clearBtn" style="display: none">
+            Clear All
+          </button>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-section-header" onclick="toggleSection('users')">
+            <span class="filter-section-title" id="usersTitle"
+              >Users (0/0)</span
+            >
+            <span class="filter-toggle" id="usersToggle">▲</span>
+          </div>
+          <div class="filter-options" id="usersOptions"></div>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-section-header" onclick="toggleSection('tags')">
+            <span class="filter-section-title" id="tagsTitle">Tags (0/0)</span>
+            <span class="filter-toggle" id="tagsToggle">▲</span>
+          </div>
+          <div class="filter-options" id="tagsOptions"></div>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-section-header" onclick="toggleSection('years')">
+            <span class="filter-section-title" id="yearsTitle"
+              >Years (0/0)</span
+            >
+            <span class="filter-toggle" id="yearsToggle">▲</span>
+          </div>
+          <div class="filter-options" id="yearsOptions"></div>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-section-header" onclick="toggleSection('forks')">
+            <span class="filter-section-title">Forks</span>
+            <span class="filter-toggle" id="forksToggle">▲</span>
+          </div>
+          <div class="filter-options" id="forksOptions">
+            <label class="filter-checkbox-label">
+              <input type="checkbox" id="showForksCheckbox" checked onchange="toggleForks()">
+              <span class="filter-label-text">Show Forks</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Mock project data
+      const projects = [
+        {
+          owner: "BarbourSmith",
+          repoName: "Wall-Anchor",
+          topics: ["hardware", "diy"],
+          dateCreated: "2023-05-10",
+          parentRepo: null,
+        },
+        {
+          owner: "BarbourSmith",
+          repoName: "Parametric-Box",
+          topics: ["container", "storage"],
+          dateCreated: "2023-08-22",
+          parentRepo: null,
+        },
+        {
+          owner: "JohnDoe",
+          repoName: "Gear-Generator",
+          topics: ["mechanical", "tool"],
+          dateCreated: "2024-01-15",
+          parentRepo: null,
+        },
+        {
+          owner: "JaneSmith",
+          repoName: "Bracket-Mount",
+          topics: ["hardware", "mounting"],
+          dateCreated: "2024-03-08",
+          parentRepo: null,
+        },
+        {
+          owner: "BarbourSmith",
+          repoName: "Custom-Knob",
+          topics: ["hardware", "ergonomic"],
+          dateCreated: "2024-06-20",
+          parentRepo: null,
+        },
+        {
+          owner: "JohnDoe",
+          repoName: "Hinge-Design",
+          topics: ["mechanical", "diy"],
+          dateCreated: "2023-11-30",
+          parentRepo: "BarbourSmith/Wall-Anchor",
+        },
+        {
+          owner: "JaneSmith",
+          repoName: "Cable-Organizer",
+          topics: ["organization", "storage"],
+          dateCreated: "2024-02-14",
+          parentRepo: null,
+        },
+      ];
+
+      const filters = {
+        users: new Set(),
+        tags: new Set(),
+        years: new Set(),
+        showForks: true,
+      };
+
+      function renderProjects() {
+        const container = document.getElementById("projects");
+        container.innerHTML = "";
+
+        projects.forEach((project, index) => {
+          const year = new Date(project.dateCreated).getFullYear();
+          const visible = checkFilters(project);
+
+          const card = document.createElement("div");
+          card.className = "project-card" + (visible ? "" : " hidden");
+          const isFork = project.parentRepo ? " (Fork)" : "";
+          card.innerHTML = `
+                    <div class="project-title">${project.repoName}${isFork}</div>
+                    <div class="project-meta">
+                        By ${
+                          project.owner
+                        } | ${year} | Tags: ${project.topics.join(", ")}
+                    </div>
+                `;
+          container.appendChild(card);
+        });
+      }
+
+      function checkFilters(project) {
+        // Fork filter
+        if (!filters.showForks && project.parentRepo) {
+          return false;
+        }
+        if (filters.users.size > 0 && !filters.users.has(project.owner)) {
+          return false;
+        }
+        if (filters.tags.size > 0) {
+          const hasMatchingTag = project.topics.some((tag) =>
+            filters.tags.has(tag)
+          );
+          if (!hasMatchingTag) return false;
+        }
+        if (filters.years.size > 0) {
+          const year = new Date(project.dateCreated).getFullYear();
+          if (!filters.years.has(year)) return false;
+        }
+        return true;
+      }
+
+      function getUniqueValues() {
+        const users = new Set();
+        const tags = new Set();
+        const years = new Set();
+
+        projects.forEach((p) => {
+          users.add(p.owner);
+          p.topics.forEach((t) => tags.add(t));
+          years.add(new Date(p.dateCreated).getFullYear());
+        });
+
+        return {
+          users: Array.from(users).sort(),
+          tags: Array.from(tags).sort(),
+          years: Array.from(years).sort((a, b) => b - a),
+        };
+      }
+
+      function renderFilters() {
+        const unique = getUniqueValues();
+
+        // Render users
+        const usersDiv = document.getElementById("usersOptions");
+        usersDiv.innerHTML = "";
+        unique.users.forEach((user) => {
+          const label = document.createElement("label");
+          label.className = "filter-checkbox-label";
+          label.innerHTML = `
+                    <input type="checkbox" onchange="toggleFilter('users', '${user}')">
+                    <span class="filter-label-text">${user}</span>
+                `;
+          usersDiv.appendChild(label);
+        });
+        document.getElementById(
+          "usersTitle"
+        ).textContent = `Users (${filters.users.size}/${unique.users.length})`;
+
+        // Render tags
+        const tagsDiv = document.getElementById("tagsOptions");
+        tagsDiv.innerHTML = "";
+        unique.tags.forEach((tag) => {
+          const label = document.createElement("label");
+          label.className = "filter-checkbox-label";
+          label.innerHTML = `
+                    <input type="checkbox" onchange="toggleFilter('tags', '${tag}')">
+                    <span class="filter-label-text">${tag}</span>
+                `;
+          tagsDiv.appendChild(label);
+        });
+        document.getElementById(
+          "tagsTitle"
+        ).textContent = `Tags (${filters.tags.size}/${unique.tags.length})`;
+
+        // Render years
+        const yearsDiv = document.getElementById("yearsOptions");
+        yearsDiv.innerHTML = "";
+        unique.years.forEach((year) => {
+          const label = document.createElement("label");
+          label.className = "filter-checkbox-label";
+          label.innerHTML = `
+                    <input type="checkbox" onchange="toggleFilter('years', ${year})">
+                    <span class="filter-label-text">${year}</span>
+                `;
+          yearsDiv.appendChild(label);
+        });
+        document.getElementById(
+          "yearsTitle"
+        ).textContent = `Years (${filters.years.size}/${unique.years.length})`;
+
+        updateClearButton();
+      }
+
+      function toggleFilter(type, value) {
+        if (type === "years") value = parseInt(value);
+
+        if (filters[type].has(value)) {
+          filters[type].delete(value);
+        } else {
+          filters[type].add(value);
+        }
+
+        renderFilters();
+        renderProjects();
+      }
+
+      function toggleForks() {
+        filters.showForks = document.getElementById("showForksCheckbox").checked;
+        updateClearButton();
+        renderProjects();
+      }
+
+      function toggleSection(section) {
+        const options = document.getElementById(section + "Options");
+        const toggle = document.getElementById(section + "Toggle");
+        options.classList.toggle("collapsed");
+        toggle.textContent = options.classList.contains("collapsed")
+          ? "▼"
+          : "▲";
+      }
+
+      function clearAllFilters() {
+        filters.users.clear();
+        filters.tags.clear();
+        filters.years.clear();
+        filters.showForks = true;
+        document.getElementById("showForksCheckbox").checked = true;
+        renderFilters();
+        renderProjects();
+      }
+
+      function updateClearButton() {
+        const hasFilters =
+          filters.users.size > 0 ||
+          filters.tags.size > 0 ||
+          filters.years.size > 0 ||
+          !filters.showForks;
+        document.getElementById("clearBtn").style.display = hasFilters
+          ? "block"
+          : "none";
+      }
+
+      document.getElementById("clearBtn").onclick = clearAllFilters;
+
+      // Initialize
+      renderFilters();
+      renderProjects();
+    </script>
+  </body>
+</html>
