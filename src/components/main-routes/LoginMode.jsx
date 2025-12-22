@@ -387,6 +387,27 @@ const ProjectDiv = ({
   };
 
   const ThumbItem = ({ node, svgCacheBuster }) => {
+    const [showQuickView, setShowQuickView] = useState(false);
+    const [hoverTimer, setHoverTimer] = useState(null);
+    const thumbItemRef = useRef(null);
+
+    const handleEyeMouseEnter = () => {
+      // Start a timer to show quick view after 2 seconds
+      const timer = setTimeout(() => {
+        setShowQuickView(true);
+      }, 2000);
+      setHoverTimer(timer);
+    };
+
+    const handleEyeMouseLeave = () => {
+      // Clear the timer if user stops hovering before 2 seconds
+      if (hoverTimer) {
+        clearTimeout(hoverTimer);
+        setHoverTimer(null);
+      }
+      setShowQuickView(false);
+    };
+
     return (
       <div
         className="project"
@@ -401,24 +422,103 @@ const ProjectDiv = ({
           GlobalVariables.currentAWSnode = node;
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node)}
+        ref={thumbItemRef}
       >
         <p className="project_name">{convertToDisplayName(node.repoName)}</p>
-        <img
-          className="project_image"
-          src={
-            node.svgURL +
-            (node.svgURL.includes("?") ? "&" : "?") +
-            "cb=" +
-            svgCacheBuster
-          }
-          onError={({ currentTarget }) => {
-            currentTarget.onerror = null;
-            currentTarget.src =
-              import.meta.env.VITE_APP_PATH_FOR_PICS +
-              "/imgs/defaultThumbnail.svg";
-          }}
-          alt={node.repoName}
-        />
+        <div style={{ position: "relative" }}>
+          <img
+            className="project_image"
+            src={
+              node.svgURL +
+              (node.svgURL.includes("?") ? "&" : "?") +
+              "cb=" +
+              svgCacheBuster
+            }
+            onError={({ currentTarget }) => {
+              currentTarget.onerror = null;
+              currentTarget.src =
+                import.meta.env.VITE_APP_PATH_FOR_PICS +
+                "/imgs/defaultThumbnail.svg";
+            }}
+            alt={node.repoName}
+          />
+          {/* Eye icon overlay */}
+          <div
+            className="thumb-eye-icon"
+            onMouseEnter={handleEyeMouseEnter}
+            onMouseLeave={handleEyeMouseLeave}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </div>
+          {/* Quick view panel */}
+          {showQuickView && (
+            <div className="thumb-quick-view-panel">
+              <div className="GitInfoLeft">
+                <img
+                  src={node.svgURL}
+                  onError={({ currentTarget }) => {
+                    currentTarget.onerror = null;
+                    currentTarget.src =
+                      import.meta.env.VITE_APP_PATH_FOR_PICS +
+                      "/imgs/defaultThumbnail.svg";
+                  }}
+                  alt={node.repoName}
+                />
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ transform: "scale(.7)" }}
+                    width="16"
+                    height="16"
+                  >
+                    <path d="M8 .2l4.9 15.2L0 6h16L3.1 15.4z" />
+                  </svg>
+                  <p style={{ fontSize: "0.5em" }}>{node.ranking}</p>
+                </div>
+              </div>
+              <div className="GitInfo">
+                <div>
+                  <strong>Project Name: </strong>
+                  <span>{convertToDisplayName(node.repoName)}</span>
+                </div>
+                <div>
+                  <strong>Creator: </strong>
+                  <span>{node.owner}</span>
+                </div>
+                <div>
+                  <strong>Description: </strong>
+                  <span>{node.description || "No description"}</span>
+                </div>
+                <div>
+                  <strong>Topics: </strong>
+                  <span>
+                    {node.topics && node.topics.length > 0
+                      ? node.topics.join(", ")
+                      : "None"}
+                  </span>
+                </div>
+                <div>
+                  <strong>Created: </strong>
+                  <span>{new Date(node.dateCreated).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
         <div
           style={{
             height: "30px",
