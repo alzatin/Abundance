@@ -655,6 +655,8 @@
   padding: 10px;
   height: calc(100vh - 300px);
   margin-left: -10px;
+  scrollbar-color: rgb(86, 86, 86) rgb(229, 142, 242);
+  scrollbar-width: thin;
 }
 
 .project-items-div {
@@ -1030,15 +1032,17 @@
 /* Filter Panel Styles */
 .filter-panel {
   background-color: var(--loginPopup-background);
-  border: 1px solid var(--loginPopup-border);
   border-radius: 5px;
-  padding: 10px;
+  padding: 20px;
   margin-left: 15px;
-  width: 200px;
+  width: 175px;
   max-height: 400px;
   overflow-y: auto;
   font-family: "Roboto", sans-serif;
   flex-shrink: 0;
+  overflow: scroll;
+  scrollbar-color: rgb(80, 79, 79) rgb(212, 157, 250);
+  scrollbar-width: thin;
 }
 
 .filter-panel-header {
