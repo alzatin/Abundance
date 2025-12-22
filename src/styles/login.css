@@ -673,8 +673,11 @@
 .project_name_list {
   font-family: "Roboto", sans-serif;
   color: var(--loginPopup-text);
-  width: 20%;
+  width: 16%;
   text-decoration: none;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .list_thumb_button {
