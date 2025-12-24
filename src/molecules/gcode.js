@@ -119,13 +119,15 @@ export default class Gcode extends Atom {
 
     this.center = [0, 0, 0]; //Used to correctly position the gcode
 
+    this.setValues(values);
+
     /**
      * Direction to sort parts in assemblies
      * @type {string}
      */
-    this.sortDirection = "Left";
-
-    this.setValues(values);
+    if (!this.sortDirection) {
+      this.sortDirection = "Left";
+    }
   }
 
   /**
