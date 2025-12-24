@@ -146,6 +146,11 @@ export default class AddBOMTag extends Atom {
             order: 2,
             onChange: (value) => {
               this.BOMitem.numberNeeded = value;
+              // Also update the attachment point value so findIOValue returns the correct value
+              const numberNeededInput = this.inputs.find(input => input.name === "Number Needed");
+              if (numberNeededInput) {
+                numberNeededInput.setValue(value);
+              }
               console.log("Number Needed changed to:", value);
               this.onUpstreamChange(); //Recompute to update the tag in the 3D view
             },
@@ -160,6 +165,11 @@ export default class AddBOMTag extends Atom {
             order: 3,
             onChange: (value) => {
               this.BOMitem.costUSD = value;
+              // Also update the attachment point value so findIOValue returns the correct value
+              const costInput = this.inputs.find(input => input.name === "Cost (USD)");
+              if (costInput) {
+                costInput.setValue(value);
+              }
               this.onUpstreamChange(); //Recompute to update the tag in the 3D view
             },
           };
@@ -171,6 +181,11 @@ export default class AddBOMTag extends Atom {
             order: 4,
             onChange: (value) => {
               this.BOMitem.source = value;
+              // Also update the attachment point value so findIOValue returns the correct value
+              const sourceInput = this.inputs.find(input => input.name === "Source Link");
+              if (sourceInput) {
+                sourceInput.setValue(value);
+              }
               this.onUpstreamChange(); //Recompute to update the tag in the 3D view
             },
           };
