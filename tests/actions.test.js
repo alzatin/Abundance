@@ -1,6 +1,6 @@
-import { extrude, move, rotate } from "../src/worker/actions.js";
-import { rectangle } from "../src/worker/shapes.js";
-import { init, is3D, defaultColor } from "../src/worker/util.js";
+import { extrude, move, rotate } from "../src/worker/actions.ts";
+import { rectangle } from "../src/worker/shapes.ts";
+import { init, is3D, defaultColor } from "../src/worker/util.ts";
 
 function vectorEquals(vector, x, y, z) {
   expect(vector.x).toEqual(x);

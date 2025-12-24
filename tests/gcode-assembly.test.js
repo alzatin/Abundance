@@ -1,7 +1,7 @@
 import { expect, test, describe } from "vitest";
-import { init, isAssembly } from "../src/worker/util.js";
-import { circle } from "../src/worker/shapes.js";
-import { assembly } from "../src/worker/interaction.js";
+import { init, isAssembly } from "../src/worker/util.ts";
+import { circle } from "../src/worker/shapes.ts";
+import { assembly } from "../src/worker/interaction.ts";
 
 describe("G-code assembly processing", () => {
   beforeAll(async () => {

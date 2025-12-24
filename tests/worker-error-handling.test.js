@@ -1,6 +1,6 @@
 // Test file for worker error handling
 import { beforeAll, describe, it, expect, vi } from "vitest";
-import { init } from "../src/worker/util.js";
+import { init } from "../src/worker/util.ts";
 import { 
   circle, 
   rectangle, 
@@ -14,7 +14,7 @@ import {
   extractTag,
   isAssembly,
   extractParts
-} from "../src/worker/worker.js";
+} from "../src/worker/worker.ts";
 
 describe("Worker error handling", () => {
   beforeAll(async () => {

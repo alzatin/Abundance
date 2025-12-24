@@ -1,8 +1,8 @@
 // Test file for code.js - code execution functionality
-import { init } from "../src/worker/util.js";
-import { executeCode } from "../src/worker/code.js";
-import { rectangle } from "../src/worker/shapes.js";
-import { extrude } from "../src/worker/actions.js";
+import { init } from "../src/worker/util.ts";
+import { executeCode } from "../src/worker/code.ts";
+import { rectangle } from "../src/worker/shapes.ts";
+import { extrude } from "../src/worker/actions.ts";
 
 describe("code.js", () => {
   beforeAll(async () => {
