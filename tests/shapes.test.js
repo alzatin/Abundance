@@ -3,8 +3,8 @@ import {
   circle,
   regularPolygon,
   text,
-} from "../src/worker/shapes.js";
-import { init, is3D, defaultColor } from "../src/worker/util.js";
+} from "../src/worker/shapes.ts";
+import { init, is3D, defaultColor } from "../src/worker/util.ts";
 
 function degreesToRadians(degrees) {
   return (degrees * Math.PI) / 180;

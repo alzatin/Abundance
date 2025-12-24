@@ -5,8 +5,8 @@ import {
   circle,
   rectangle,
   extrude,
-} from "../src/worker/worker.js";
-import { is3D } from "../src/worker/util.js";
+} from "../src/worker/worker.ts";
+import { is3D } from "../src/worker/util.ts";
 
 describe("extrude", () => {
   beforeAll(async () => {

@@ -1,5 +1,5 @@
 // Test file for cutlayout.js - default placement functionality
-import { createDefaultPlacements, displayLayoutWithRotatedAssembly } from "../src/worker/cutlayout.js";
+import { createDefaultPlacements, displayLayoutWithRotatedAssembly } from "../src/worker/cutlayout.ts";
 
 describe("cutlayout.js", () => {
   describe("createDefaultPlacements", () => {
