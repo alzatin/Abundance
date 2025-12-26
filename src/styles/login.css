@@ -790,10 +790,12 @@
 
 .project_image {
   display: block;
-  margin: auto;
+  position: absolute;
   padding: 0;
-  width: 60px;
-  height: 60px;
+  width: 70px;
+  height: 50px;
+  left: 20px;
+  top: 10px;
 }
 
 .browseDiv {
@@ -1029,12 +1031,113 @@
   cursor: pointer;
 }
 
+/* Eye icon overlay on thumbnail */
+.ranking-icon {
+  border-radius: 50%;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+}
+
+/* Eye icon overlay on thumbnail */
+.thumb-eye-icon {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  z-index: 2;
+}
+
+.thumb-eye-icon:hover {
+  background-color: rgba(192, 105, 247, 0.9);
+  transform: scale(1.1);
+}
+
+.thumb-eye-icon svg {
+  color: #5a0562;
+  display: block;
+}
+
+.thumb-eye-icon:hover svg {
+  color: white;
+}
+
+/* Quick view panel */
+.thumb-quick-view-panel {
+  position: absolute;
+  padding: 10px;
+  display: flex;
+  background-color: var(--gitsearch-Panel-background);
+  border: 2px solid #c4a3d5;
+  color: rgb(10, 9, 10);
+  width: 300px;
+  min-height: 200px;
+  z-index: 1000;
+  border-radius: 5px;
+  box-shadow: 0 4px 16px rgba(62, 61, 61, 0.3);
+  left: 110%;
+  top: 0;
+  pointer-events: auto;
+  user-select: text;
+  white-space: normal;
+
+  z-index: 10;
+}
+
+/* Responsive positioning for smaller screens */
+@media (max-width: 768px) {
+  .thumb-quick-view-panel {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+  }
+}
+
+.thumb-quick-view-panel .GitInfoLeft {
+  align-self: flex-start;
+  margin-right: 10px;
+}
+
+.thumb-quick-view-panel .GitInfoLeft img {
+  width: 80px;
+  height: 80px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.thumb-quick-view-panel .GitInfo {
+  display: flex;
+  gap: 8px;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.thumb-quick-view-panel .GitInfo div {
+  line-height: 1.4;
+}
+
+.thumb-quick-view-panel .GitInfo strong {
+  font-weight: 600;
+  color: #333;
+}
+
+.thumb-quick-view-panel .GitInfo span {
+  color: #555;
+}
+
 /* Filter Panel Styles */
 .filter-panel {
   background-color: var(--loginPopup-background);
   border-radius: 5px;
   padding: 20px;
-  margin-left: 15px;
+  margin-left: 5px;
   width: 175px;
   max-height: 400px;
   overflow-y: auto;
