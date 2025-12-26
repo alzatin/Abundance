@@ -132,7 +132,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
     const sortedToolNodes = toolNodes.sort((a, b) => b.ranking - a.ranking);
     highestRankingToolNode = sortedToolNodes[0];
   }
-  
+
   // Apply fork filter
   if (!filters.showForks) {
     // filter out forks
@@ -299,7 +299,6 @@ const FeaturedHighlight = ({ highestRankingNode, highestRankingToolNode }) => (
         <p className="project_name">By {highestRankingNode.owner}</p>
       </div>
       <img
-        style={{ flexBasis: "10%" }}
         className="project_image"
         src={highestRankingNode.svgURL}
         onError={({ currentTarget }) => {
@@ -437,7 +436,7 @@ const ProjectDiv = ({
       // Start a timer to show quick view after 2 seconds
       hoverTimerRef.current = setTimeout(() => {
         setShowQuickView(true);
-      }, 2000);
+      }, 1000);
     };
 
     const handleEyeMouseLeave = () => {
@@ -465,160 +464,85 @@ const ProjectDiv = ({
         onContextMenu={(e) => handleProjectRightClick(e, node)}
       >
         <p className="project_name">{convertToDisplayName(node.repoName)}</p>
+
         <div style={{ position: "relative" }}>
-          <img
-            className="project_image"
-            src={
-              node.svgURL +
-              (node.svgURL.includes("?") ? "&" : "?") +
-              "cb=" +
-              svgCacheBuster
-            }
-            onError={({ currentTarget }) => {
-              currentTarget.onerror = null;
-              currentTarget.src =
-                import.meta.env.VITE_APP_PATH_FOR_PICS +
-                "/imgs/defaultThumbnail.svg";
-            }}
-            alt={node.repoName}
-          />
-          {/* Eye icon overlay */}
-          <div
-            className="thumb-eye-icon"
-            onMouseEnter={handleEyeMouseEnter}
-            onMouseLeave={handleEyeMouseLeave}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-          </div>
-          {/* Quick view panel */}
-          {showQuickView && (
+          <div style={{ display: "flex", flexDirection: "row" }}>
+            <img
+              className="project_image"
+              src={
+                node.svgURL +
+                (node.svgURL.includes("?") ? "&" : "?") +
+                "cb=" +
+                svgCacheBuster
+              }
+              onError={({ currentTarget }) => {
+                currentTarget.onerror = null;
+                currentTarget.src =
+                  import.meta.env.VITE_APP_PATH_FOR_PICS +
+                  "/imgs/defaultThumbnail.svg";
+              }}
+              alt={node.repoName}
+            />
             <div
-              className="thumb-quick-view-panel"
-              onMouseEnter={() => {
-                // Keep panel open when hovering over it
-                if (hoverTimerRef.current) {
-                  clearTimeout(hoverTimerRef.current);
-                  hoverTimerRef.current = null;
-                }
-              }}
-              onMouseLeave={handleEyeMouseLeave}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="GitInfoLeft">
-                <img
-                  src={
-                    node.svgURL +
-                    (node.svgURL.includes("?") ? "&" : "?") +
-                    "cb=" +
-                    svgCacheBuster
-                  }
-                  onError={({ currentTarget }) => {
-                    currentTarget.onerror = null;
-                    currentTarget.src =
-                      import.meta.env.VITE_APP_PATH_FOR_PICS +
-                      "/imgs/defaultThumbnail.svg";
-                  }}
-                  alt={node.repoName}
-                />
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    style={{ transform: "scale(.7)" }}
-                    width="16"
-                    height="16"
-                  >
-                    <path d="M8 .2l4.9 15.2L0 6h16L3.1 15.4z" />
-                  </svg>
-                  <p style={{ fontSize: "0.5em" }}>{node.ranking}</p>
-                </div>
-              </div>
-              <div className="GitInfo">
-                <div>
-                  <strong>Project Name: </strong>
-                  <span>{convertToDisplayName(node.repoName)}</span>
-                </div>
-                <div>
-                  <strong>Creator: </strong>
-                  <span>{node.owner}</span>
-                </div>
-                <div>
-                  <strong>Description: </strong>
-                  <span>{node.description || "No description"}</span>
-                </div>
-                <div>
-                  <strong>Topics: </strong>
-                  <span>
-                    {node.topics && node.topics.length > 0
-                      ? node.topics.join(", ")
-                      : "None"}
-                  </span>
-                </div>
-                <div>
-                  <strong>Created: </strong>
-                  <span>{new Date(node.dateCreated).toLocaleDateString()}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        <div
-          style={{
-            height: "30px",
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ transform: "scale(.7)", alignSelf: "center" }}
-              width="16"
-              height="16"
-            >
-              <path d="M8 .2l4.9 15.2L0 6h16L3.1 15.4z" />
-            </svg>
-            <p
+              className="symbol-div"
               style={{
-                fontSize: ".7em",
-                display: "inline",
-                alignSelf: "center",
+                display: "flex",
+                height: "100%",
+                position: "absolute",
+                top: "-10px",
+                right: "2px",
+                flexDirection: "column",
               }}
             >
-              {node.ranking}
-            </p>
-          </div>
-          <div style={{ alignSelf: "center" }}>
-            {node.topics && node.topics.includes("abundance-tool") ? (
-              <p> {"\u{1F528} "} </p>
-            ) : null}
-          </div>
-          {node.parentRepo ? (
-            <div style={{ alignSelf: "center" }}>
-              <svg
-                fill="#000000"
-                width="14"
-                height="14"
-                viewBox="0 0 33.627 33.628"
-                style={{ verticalAlign: "middle" }}
-                xmlns="http://www.w3.org/2000/svg"
+              {/* Ranking */}
+              <div
+                className="ranking-icon"
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-start",
+                }}
               >
-                <g>
-                  <path
-                    d="M27.131,8.383c0-2.092-1.701-3.794-3.794-3.794s-3.793,1.702-3.793,3.794c0,0.99,0.39,1.885,1.013,2.561
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{
+                    transform: "scale(.7)",
+                    fill: "#5a0562",
+                    alignSelf: "center",
+                  }}
+                  width="16"
+                  height="16"
+                >
+                  <path d="M8 .2l4.9 15.2L0 6h16L3.1 15.4z" />
+                </svg>
+                <p
+                  style={{
+                    fontSize: ".7em",
+                    display: "inline",
+                    alignSelf: "center",
+                  }}
+                >
+                  {node.ranking}
+                </p>
+              </div>
+              {/* Forked repo icon */}
+              <div
+                style={{ opacity: 1, marginTop: "5px" }}
+                className="ranking-icon"
+              >
+                {node.parentRepo ? (
+                  <div style={{ alignSelf: "center" }}>
+                    <svg
+                      fill="#5a0562"
+                      fillOpacity={1}
+                      width="17"
+                      height="17"
+                      viewBox="0 0 33.627 33.628"
+                      style={{ verticalAlign: "middle" }}
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <g>
+                        <path
+                          d="M27.131,8.383c0-2.092-1.701-3.794-3.794-3.794s-3.793,1.702-3.793,3.794c0,0.99,0.39,1.885,1.013,2.561
       c-0.474,2.004-1.639,2.393-4.167,3.029c-1.279,0.322-2.753,0.7-4.099,1.501V7.003c1.072-0.671,1.793-1.854,1.793-3.209
       C14.084,1.702,12.382,0,10.292,0C8.199,0,6.497,1.702,6.497,3.794c0,1.356,0.722,2.539,1.795,3.21v19.62
       c-1.073,0.671-1.795,1.854-1.795,3.21c0,2.092,1.702,3.794,3.795,3.794c2.092,0,3.793-1.702,3.793-3.794
@@ -628,11 +552,109 @@ const ProjectDiv = ({
       c0-0.989,0.806-1.793,1.795-1.793c0.988,0,1.793,0.806,1.793,1.793C12.085,30.824,11.28,31.627,10.292,31.627z M23.337,10.177
       c-0.989,0-1.793-0.805-1.793-1.793c0-0.989,0.806-1.794,1.793-1.794c0.988,0,1.794,0.805,1.794,1.794
       C25.131,9.373,24.327,10.177,23.337,10.177z"
-                  />
-                </g>
-              </svg>
+                        />
+                      </g>
+                    </svg>
+                  </div>
+                ) : null}
+              </div>
+              {/* Eye icon overlay */}
+              <div
+                className="thumb-eye-icon"
+                onMouseEnter={handleEyeMouseEnter}
+                onMouseLeave={handleEyeMouseLeave}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </div>
+
+              {/* Quick view panel */}
+              {showQuickView && (
+                <div
+                  className="thumb-quick-view-panel"
+                  onMouseEnter={() => {
+                    // Keep panel open when hovering over it
+                    if (hoverTimerRef.current) {
+                      clearTimeout(hoverTimerRef.current);
+                      hoverTimerRef.current = null;
+                    }
+                  }}
+                  onMouseLeave={handleEyeMouseLeave}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="GitInfoLeft">
+                    <img
+                      src={
+                        node.svgURL +
+                        (node.svgURL.includes("?") ? "&" : "?") +
+                        "cb=" +
+                        svgCacheBuster
+                      }
+                      onError={({ currentTarget }) => {
+                        currentTarget.onerror = null;
+                        currentTarget.src =
+                          import.meta.env.VITE_APP_PATH_FOR_PICS +
+                          "/imgs/defaultThumbnail.svg";
+                      }}
+                      alt={node.repoName}
+                    />
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{ transform: "scale(.7)" }}
+                        width="16"
+                        height="16"
+                      >
+                        <path d="M8 .2l4.9 15.2L0 6h16L3.1 15.4z" />
+                      </svg>
+                      <p style={{ fontSize: "0.5em" }}>{node.ranking}</p>
+                    </div>
+                  </div>
+                  <div className="GitInfo">
+                    <div>
+                      <strong>Project Name: </strong>
+                      <span>{convertToDisplayName(node.repoName)}</span>
+                    </div>
+                    <div>
+                      <strong>Creator: </strong>
+                      <span>{node.owner}</span>
+                    </div>
+                    <div>
+                      <strong>Description: </strong>
+                      <span>{node.description || "No description"}</span>
+                    </div>
+                    <div>
+                      <strong>Topics: </strong>
+                      <span>
+                        {node.topics && node.topics.length > 0
+                          ? node.topics.join(", ")
+                          : "None"}
+                      </span>
+                    </div>
+                    <div>
+                      <strong>Created: </strong>
+                      <span>
+                        {new Date(node.dateCreated).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          ) : null}
+          </div>
         </div>
       </div>
     );

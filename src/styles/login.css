@@ -790,10 +790,12 @@
 
 .project_image {
   display: block;
-  margin: auto;
+  position: absolute;
   padding: 0;
-  width: 60px;
-  height: 60px;
+  width: 70px;
+  height: 50px;
+  left: 20px;
+  top: 10px;
 }
 
 .browseDiv {
@@ -1030,10 +1032,18 @@
 }
 
 /* Eye icon overlay on thumbnail */
+.ranking-icon {
+  border-radius: 50%;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+}
+
+/* Eye icon overlay on thumbnail */
 .thumb-eye-icon {
-  position: absolute;
-  bottom: 5px;
-  right: 5px;
   background-color: rgba(255, 255, 255, 0.8);
   border-radius: 50%;
   padding: 5px;
