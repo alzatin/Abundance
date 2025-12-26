@@ -1086,6 +1086,9 @@
   top: 0;
   pointer-events: auto;
   user-select: text;
+  white-space: normal;
+
+  z-index: 10;
 }
 
 /* Responsive positioning for smaller screens */
@@ -1134,7 +1137,7 @@
   background-color: var(--loginPopup-background);
   border-radius: 5px;
   padding: 20px;
-  margin-left: 15px;
+  margin-left: 5px;
   width: 175px;
   max-height: 400px;
   overflow-y: auto;
