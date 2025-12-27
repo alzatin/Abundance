@@ -1,7 +1,13 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { Octokit } from "octokit";
 import GlobalVariables from "../js/globalvariables.js";
 
 const AuthContext = createContext();
+
+// Token storage keys
+const TOKEN_STORAGE_KEY = "gh_access_token";
+const TOKEN_TIMESTAMP_KEY = "gh_token_timestamp";
+const TOKEN_EXPIRY_DAYS = 60; // GitHub tokens typically expire after 60 days
 
 /**
  * Context provider for authentication and GitHub integration.
@@ -11,6 +17,104 @@ export function AuthProvider({ children }) {
   const [isloggedIn, setIsLoggedIn] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authorizedUserOcto, setAuthorizedUserOcto] = useState(null);
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
+
+  /**
+   * Store access token in localStorage
+   */
+  const storeToken = (token) => {
+    try {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      localStorage.setItem(TOKEN_TIMESTAMP_KEY, Date.now().toString());
+    } catch (error) {
+      console.error("Failed to store token:", error);
+    }
+  };
+
+  /**
+   * Retrieve access token from localStorage
+   */
+  const getStoredToken = () => {
+    try {
+      const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+      const timestamp = localStorage.getItem(TOKEN_TIMESTAMP_KEY);
+      
+      if (!token || !timestamp) {
+        return null;
+      }
+
+      // Check if token is expired (older than TOKEN_EXPIRY_DAYS)
+      const tokenAge = Date.now() - parseInt(timestamp, 10);
+      const maxAge = TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000; // Convert days to milliseconds
+      
+      if (tokenAge > maxAge) {
+        console.log("Token expired, clearing storage");
+        clearStoredToken();
+        return null;
+      }
+
+      return token;
+    } catch (error) {
+      console.error("Failed to retrieve token:", error);
+      return null;
+    }
+  };
+
+  /**
+   * Clear stored token from localStorage
+   */
+  const clearStoredToken = () => {
+    try {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(TOKEN_TIMESTAMP_KEY);
+    } catch (error) {
+      console.error("Failed to clear token:", error);
+    }
+  };
+
+  /**
+   * Validate the access token by making a test API call
+   */
+  const validateToken = async (token) => {
+    try {
+      const octokit = new Octokit({ auth: token });
+      const { data } = await octokit.request("GET /user");
+      return { valid: true, user: data };
+    } catch (error) {
+      console.error("Token validation failed:", error);
+      return { valid: false, user: null };
+    }
+  };
+
+  /**
+   * Attempt to restore session from stored token
+   */
+  const restoreSession = async () => {
+    setIsRestoringSession(true);
+    const token = getStoredToken();
+    
+    if (!token) {
+      setIsRestoringSession(false);
+      return false;
+    }
+
+    const { valid, user } = await validateToken(token);
+    
+    if (valid && user) {
+      const octokit = new Octokit({ auth: token });
+      GlobalVariables.currentUser = user.login;
+      setIsLoggedIn(true);
+      setIsAuthorized(true);
+      setAuthorizedUserOcto(octokit);
+      setIsRestoringSession(false);
+      return true;
+    } else {
+      // Token is invalid, clear it
+      clearStoredToken();
+      setIsRestoringSession(false);
+      return false;
+    }
+  };
 
   /**
    * Unified handler for login and re-authentication.
@@ -69,6 +173,11 @@ export function AuthProvider({ children }) {
     window.location.assign(link);
   };
 
+  // Attempt to restore session on mount
+  useEffect(() => {
+    restoreSession();
+  }, []);
+
   const value = {
     isloggedIn,
     setIsLoggedIn,
@@ -77,6 +186,10 @@ export function AuthProvider({ children }) {
     authorizedUserOcto,
     setAuthorizedUserOcto,
     authRedirectHandler,
+    isRestoringSession,
+    storeToken,
+    clearStoredToken,
+    restoreSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
