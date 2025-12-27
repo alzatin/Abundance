@@ -161,10 +161,6 @@ export default class ExtractTag extends Atom {
           this.setProcessing();
           this.compute({ input: geomId })
             .then((value) => {
-              console.log(
-                `Extracted tag ${this.tag} from geometry ${geomId}, result:`,
-                value
-              );
               this.setReady(value);
             })
             .catch(this.alertingErrorHandler());

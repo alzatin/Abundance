@@ -126,13 +126,13 @@ const generateGcode = (
       // single pass needs a cutthrough to generate correctly
       const camZThru = passes <= 1 && !cutThrough ? 0.01 : CUT_THROUGH;
       const roughingStepOver = 0.6;
-
+      /*
       console.log("Down per pass:", down);
       console.log("CAM Z Bottom:", camZBottom);
       console.log("CAM Z Thru:", camZThru);
       console.log("Tool Size:", toolSize);
       console.log("Roughing step over:", roughingStepOver);
-
+*/
       return eng.setProcess({
         camOriginTop: true,
         camOriginCenter: false,

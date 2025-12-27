@@ -758,11 +758,6 @@ export default class AttachmentPoint extends ObservableEntity {
 
     // Extract variables from the equation
     const variables = this.extractVariablesFromEquation(equation);
-    console.log(
-      `[Name Subscription] AP "${this.name}" (${
-        this.uniqueID
-      }) found variables in equation "${equation}": [${variables.join(", ")}]`
-    );
 
     if (variables.length === 0) {
       return;
@@ -773,10 +768,6 @@ export default class AttachmentPoint extends ObservableEntity {
     for (const varName of variables) {
       const inputAtom = this.findInputAtomByName(varName);
       if (inputAtom) {
-        console.log(
-          `[Name Subscription] AP "${this.name}" (${this.uniqueID}) subscribing to Input atom "${inputAtom.name}" (${inputAtom.uniqueID}) for variable "${varName}"`
-        );
-
         this._nameSubscribedAtoms.set(varName, inputAtom);
 
         // Subscribe with a callback that re-evaluates the equation
@@ -789,10 +780,6 @@ export default class AttachmentPoint extends ObservableEntity {
         ); // Don't use immediateCallback - we'll trigger evaluation once after all subscriptions
 
         subscribedCount++;
-      } else {
-        console.log(
-          `[Name Subscription] AP "${this.name}" (${this.uniqueID}) could not find Input atom for variable "${varName}"`
-        );
       }
     }
 

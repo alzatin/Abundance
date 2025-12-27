@@ -849,7 +849,7 @@ const ProjectDiv = ({
       )}
       {/* Rename progress bar */}
       {renamingProject && (
-        <div className="save-bar">
+        <div className="rename-bar">
           <div className="progress">
             <div
               className="progress-done"
