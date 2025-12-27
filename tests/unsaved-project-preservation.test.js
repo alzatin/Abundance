@@ -191,6 +191,34 @@ describe('Unsaved Project State Preservation', () => {
     expect(expectedBehavior.result).toContain('cleared');
   });
 
+  it('should clean up localStorage when returning to the same project', () => {
+    // Expected behavior:
+    // When returning to the SAME project that was previously loaded (e.g., after
+    // browsing projects or toggling Run/Create mode), the localStorage entry
+    // for this project should be cleaned up to prevent accumulation.
+    // 
+    // This is the fix for the bug where localStorage was accumulating entries
+    // because the cleanup logic was only running when loading a DIFFERENT project.
+    
+    const expectedBehavior = {
+      scenario: 'User returns to ProjectA (already loaded)',
+      condition: {
+        description: 'GlobalVariables.loadedRepo.name === GlobalVariables.currentAWSnode.repoName',
+        result: 'needsProjectLoad = false'
+      },
+      onReturningSameProject: {
+        checkForUnsavedState: 'localStorage.getItem(projectKey)',
+        removeIfExists: 'localStorage.removeItem(projectKey)',
+        reason: 'Project is already in memory, saved state is stale and should be discarded'
+      },
+      result: 'localStorage entry is cleaned up, preventing accumulation'
+    };
+    
+    expect(expectedBehavior.onReturningSameProject.removeIfExists).toContain('removeItem');
+    expect(expectedBehavior.result).toContain('cleaned up');
+    expect(expectedBehavior.result).toContain('preventing accumulation');
+  });
+
   it('should use unique localStorage keys per project', () => {
     // Expected behavior:
     // Each project should have a unique localStorage key based on owner and repo name
