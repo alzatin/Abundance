@@ -19,7 +19,6 @@ const Controls = React.memo(
       normal: [0, 0, 1],
     };
     const planeDef = plane || examplePlane;
-    console.log(plane);
     // Compare plane and examplePlane, set extraPlane if different
     useEffect(() => {
       function arraysEqual(a, b) {

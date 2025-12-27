@@ -893,6 +893,23 @@
   transition: 1s ease 0.3s;
 }
 
+ {
+  /*Rename Bar Styling*/
+}
+/*Save bar styling*/
+.rename-bar {
+  font-family: "Montserrat", sans-serif;
+  font-size: 10px;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  position: absolute;
+  top: 5%;
+  border-radius: 5px;
+  width: 200px;
+  z-index: 5;
+}
+
 .login-logo {
   width: 80%;
 }

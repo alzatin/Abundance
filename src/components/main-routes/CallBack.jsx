@@ -65,7 +65,7 @@ const Callback = ({ setRedirectType }) => {
       try {
         const stateParam = params.get("state");
         const state = stateParam ? JSON.parse(stateParam) : {};
-        console.log(state);
+
         setRedirectType(state.authType);
         if (state.authType === "fork" || state.authType === "like") {
           navigate(`/run/${state.currentRepo.owner}/${state.currentRepo.repo}`);

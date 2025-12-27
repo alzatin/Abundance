@@ -150,7 +150,7 @@ function generateCameraPosition(meshArray: ReplicadObject[]): number {
   if (zoom == 0) {
     throw new Error("Calculated zoom level is zero");
   }
-  console.log("Generated camera zoom:", zoom);
+  /*console.log("Generated camera zoom:", zoom);*/
   return zoom;
 }
 /**
