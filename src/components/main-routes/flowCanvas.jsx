@@ -44,12 +44,13 @@ export default memo(function FlowCanvas({
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;
     GlobalVariables.c = canvasRef.current.getContext("2d");
-    /** Only run loadproject() if the project is different from what is already loaded  */
-    if (
+    
+    // Check if we need to load a project (first load or different project)
+    const needsProjectLoad = 
       !GlobalVariables.loadedRepo ||
-      GlobalVariables.currentAWSnode.repoName !==
-        GlobalVariables.loadedRepo.name // GitHub API uses 'name', not 'repoName'
-    ) {
+      GlobalVariables.currentAWSnode.repoName !== GlobalVariables.loadedRepo.name;
+
+    if (needsProjectLoad) {
       // Clean up any stale localStorage entries for the previously loaded project
       // This prevents accumulation of saved states when switching between projects
       // Only clean up if we're actually loading a DIFFERENT project
@@ -169,7 +170,20 @@ export default memo(function FlowCanvas({
           loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto);
         }
       }
+    } else {
+      // Same project is being accessed again (e.g., after toggling Run/Create mode)
+      // Check if there's an unsaved state for this project and clean it up
+      const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
+      const unsavedProject = localStorage.getItem(projectKey);
+      
+      if (unsavedProject) {
+        console.log(`Cleaning up localStorage for same project: ${projectKey}`);
+        // Remove the entry to prevent accumulation
+        // We don't restore it because the project is already loaded in memory
+        localStorage.removeItem(projectKey);
+      }
     }
+    
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
       atom.update();
     });

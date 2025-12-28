@@ -79,12 +79,35 @@ if (unsavedProject) {
 ```javascript
 // Clean up any stale localStorage entries for the previously loaded project
 // This prevents accumulation of saved states when switching between projects
-if (GlobalVariables.loadedRepo?.owner && GlobalVariables.loadedRepo?.name) {
+// Only clean up if we're actually loading a DIFFERENT project
+if (
+  GlobalVariables.loadedRepo?.owner?.login &&
+  GlobalVariables.loadedRepo?.name &&
+  GlobalVariables.loadedRepo.name !== GlobalVariables.currentAWSnode.repoName
+) {
   const previousProjectKey = `unsavedProject_${GlobalVariables.loadedRepo.owner.login}_${GlobalVariables.loadedRepo.name}`;
   localStorage.removeItem(previousProjectKey);
   console.log(`Cleared localStorage for previous project: ${previousProjectKey}`);
 }
 ```
+
+### 4. Cleanup When Returning to Same Project
+**Location: flowCanvas.jsx - useEffect on mount (else block)**
+```javascript
+// Same project is being accessed again (e.g., after toggling Run/Create mode)
+// Check if there's an unsaved state for this project and clean it up
+const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
+const unsavedProject = localStorage.getItem(projectKey);
+
+if (unsavedProject) {
+  console.log(`Cleaning up localStorage for same project: ${projectKey}`);
+  // Remove the entry to prevent accumulation
+  // We don't restore it because the project is already loaded in memory
+  localStorage.removeItem(projectKey);
+}
+```
+**Note:** This cleanup is critical to prevent localStorage accumulation. When a user returns to a project that's already loaded (e.g., toggling between Create and Run modes, or clicking "Return to project"), we need to clean up any stale saved state because the project is already in memory. Without this cleanup, localStorage entries accumulate indefinitely.
+
 
 ## Key Features
 
