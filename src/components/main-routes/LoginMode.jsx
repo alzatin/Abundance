@@ -1392,6 +1392,8 @@ function LoginMode() {
     isAuthorized,
     authorizedUserOcto,
     setAuthorizedUserOcto,
+    clearStoredToken,
+    isRestoringSession,
   } = useAuth();
   const { exportPopUp, setExportPopUp } = useAppState();
   const navigate = useNavigate();
@@ -1407,11 +1409,43 @@ function LoginMode() {
 
   const logoutHandler = () => {
     localStorage.removeItem("latestCSRFToken");
+    clearStoredToken(); // Clear the stored access token
     window.location.assign("/");
   };
 
   let popUpContent;
-  if (exportPopUp && authorizedUserOcto) {
+  if (isRestoringSession) {
+    // Show loading state while checking for cached token
+    popUpContent = (
+      <div className="login-page">
+        <div className="form animate fadeInUp one">
+          <div id="gitSide" className="logindiv">
+            <img
+              className="logo"
+              src={
+                import.meta.env.VITE_APP_PATH_FOR_PICS +
+                "/imgs/abundance_logo.png"
+              }
+              alt="logo"
+            />
+            <div id="welcome">
+              <img
+                src={
+                  import.meta.env.VITE_APP_PATH_FOR_PICS +
+                  "/imgs/abundance_lettering.png"
+                }
+                alt="logo"
+                className="login-logo"
+              />
+            </div>
+            <p style={{ padding: "0 20px" }}>
+              Restoring your session...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  } else if (exportPopUp && authorizedUserOcto) {
     popUpContent = (
       <NewProjectPopUp
         {...{ setExportPopUp, authorizedUserOcto, exporting: false }}

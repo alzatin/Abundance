@@ -14,6 +14,7 @@ const Callback = ({ setRedirectType }) => {
     setIsLoggedIn,
     authorizedUserOcto,
     setAuthorizedUserOcto,
+    storeToken,
   } = useAuth();
 
   useEffect(() => {
@@ -43,6 +44,9 @@ const Callback = ({ setRedirectType }) => {
 
         const result = await response.json();
         const access_token = result.message;
+
+        // Store the token for future use
+        storeToken(access_token);
 
         const authorizedUser = new Octokit({
           auth: access_token,
