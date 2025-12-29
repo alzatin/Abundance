@@ -695,6 +695,10 @@ export function ProjectProvider({ children, cad, loadProject }) {
       // Update global variables
       GlobalVariables.currentAWSnode = updatedAWSnode;
       GlobalVariables.currentRepoName = newName;
+      // Update the in-memory top molecule name to reflect the rename
+      if (GlobalVariables.topLevelMolecule) {
+        GlobalVariables.topLevelMolecule.name = newName;
+      }
       /*if (GlobalVariables.currentRepo) {
           GlobalVariables.currentRepo.name = newName;
         }*/
