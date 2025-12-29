@@ -15,6 +15,7 @@ import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 import RenameProjectDialog from "../secondary/RenameProjectDialog.jsx";
 import { convertToDisplayName } from "../../js/projectNameUtils.js";
 import FilterPanel from "../secondary/FilterPanel.jsx";
+import DropdownSectionDisplay from "./DropdownSectionDisplay.jsx";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -1128,7 +1129,7 @@ const ShowProjects = ({
       </div>
       <div
         className="login-nav-item"
-        onClick={() => setProjectsToShow("tutorials")}
+        onClick={() => setProjectsToShow("getting_started")}
       >
         {" "}
         {/**fetchFirst()*/}
@@ -1281,19 +1282,62 @@ const ShowProjects = ({
       loading: isLoadingLiked,
       error: isErrorLiked,
     },
-    tutorials: {
-      label: "Available Tutorials",
-      tutorials: [
-        { label: "Abundance Basics", value: "gettingStarted" },
+    getting_started: {
+      label: "Getting Started",
+      sections: [
         {
-          label: "Input Atoms (Coming Soon)",
-          value: "inputsSteps",
+          label: "Tutorials",
+          value: [
+            {
+              label: "Abundance Basics",
+              value: "gettingStarted",
+              onClick: () => {
+                fetchFirstOrCreateAndStartTutorial({
+                  name: "Abundance Basics",
+                  value: "gettingStarted",
+                });
+              },
+            },
+            {
+              label: "Input Atoms (Coming Soon)",
+              value: "inputsSteps",
+              onClick: () => {
+                fetchFirstOrCreateAndStartTutorial({
+                  name: "Input Atoms (Coming Soon)",
+                  value: "inputsSteps",
+                });
+              },
+            },
+            {
+              label: "Molecules and GitHub Molecules (Coming Soon)",
+              value: "moleculesAndGithubMolecules",
+              onClick: () => {
+                fetchFirstOrCreateAndStartTutorial({
+                  name: "Molecules and GitHub Molecules (Coming Soon)",
+                  value: "moleculesAndGithubMolecules",
+                });
+              },
+            },
+            //{ label: "Assemblies and Fusions", value: "assembliesAndFusions" },
+          ],
         },
         {
-          label: "Molecules and GitHub Molecules (Coming Soon)",
-          value: "moleculesAndGithubMolecules",
+          label: "User Guide",
+          value: "Documentation",
+          onClick: () => {
+            window.open("/user-guide", "_blank");
+          },
         },
-        //{ label: "Assemblies and Fusions", value: "assembliesAndFusions" },
+        {
+          label: "Forums",
+          value: "Maslow Forums - Abundance Questions",
+          onClick: () => {
+            window.open(
+              "https://forums.maslowcnc.com/t/abundance-molecule-questions/25315",
+              "_blank"
+            );
+          },
+        },
       ],
     },
   };
@@ -1346,20 +1390,16 @@ const ShowProjects = ({
           {showDict[projectToShow]["error"] ? (
             <p> There was an error: please try again </p>
           ) : null}
-          {showDict[projectToShow]["tutorials"] ? (
-            <div className="tutorials-list">
-              {showDict[projectToShow]["tutorials"].map((tutorial, index) => (
-                <div
-                  key={index}
-                  className="login-nav-item"
-                  onClick={() => fetchFirstOrCreateAndStartTutorial(tutorial)}
-                >
-                  {" "}
-                  {/**fetchFirst()*/}
-                  <p>{tutorial.label}</p>
-                </div>
-              ))}
-            </div>
+          {showDict[projectToShow]["sections"] ? (
+            <>
+              <DropdownSectionDisplay
+                fetchFirstOrCreateAndStartTutorial={
+                  fetchFirstOrCreateAndStartTutorial
+                }
+                authorizedUserOcto={authorizedUserOcto}
+                sections={showDict[projectToShow]["sections"]}
+              />
+            </>
           ) : null}
           {loadingTutorial ? (
             <RenderProgressBar
@@ -1438,9 +1478,7 @@ function LoginMode() {
                 className="login-logo"
               />
             </div>
-            <p style={{ padding: "0 20px" }}>
-              Restoring your session...
-            </p>
+            <p style={{ padding: "0 20px" }}>Restoring your session...</p>
           </div>
         </div>
       </div>
