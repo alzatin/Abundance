@@ -422,7 +422,7 @@ const ProjectDiv = ({
     }
   };
 
-  const ThumbItem = ({ node, svgCacheBuster }) => {
+  const ThumbItem = React.memo(({ node, svgCacheBuster }) => {
     const [showQuickView, setShowQuickView] = useState(false);
     const hoverTimerRef = useRef(null);
 
@@ -644,12 +644,16 @@ const ProjectDiv = ({
                       <span>{node.description || "No description"}</span>
                     </div>
                     <div>
-                      <strong>Topics: </strong>
-                      <span>
-                        {node.topics && node.topics.length > 0
-                          ? node.topics.join(", ")
-                          : "None"}
-                      </span>
+                      <strong>Tags: </strong>
+                      {node.topics && node.topics.length > 0 ? (
+                        node.topics.map((tag, idx) => (
+                          <span key={tag + idx} className="bubble-tag">
+                            {tag}
+                          </span>
+                        ))
+                      ) : (
+                        <span>None</span>
+                      )}
                     </div>
                     <div>
                       <strong>Created: </strong>
@@ -665,7 +669,7 @@ const ProjectDiv = ({
         </div>
       </div>
     );
-  };
+  });
   const ListItem = (node) => {
     let dateCreated = new Date(node.node.dateCreated).toDateString(); //converts date to string
     if (dateCreated == "Invalid Date") {
@@ -673,12 +677,9 @@ const ProjectDiv = ({
     }
 
     // Get first 3 tags, excluding 'abundance-tool' tag
-    const displayTags = node.node.topics
-      ? node.node.topics
-          .filter((tag) => tag !== "abundance-tool")
-          .slice(0, 3)
-          .join(", ")
-      : "";
+    const displayTagsArr = node.node.topics
+      ? node.node.topics.filter((tag) => tag !== "abundance-tool").slice(0, 3)
+      : [];
 
     return (
       <div
@@ -698,17 +699,29 @@ const ProjectDiv = ({
         <p className="project_name_list">{node.node.owner}</p>
 
         <p className="project_name_list">{dateCreated}</p>
-        <p
+        <div
           className="project_name_list"
           style={{
             fontSize: "0.9em",
             width: "30%",
-            fontStyle: displayTags ? "normal" : "italic",
-            opacity: displayTags ? 1 : 0.6,
+            display: "flex",
+            gap: "4px",
+            alignItems: "center",
+            flexWrap: "wrap",
+            fontStyle: displayTagsArr.length ? "normal" : "italic",
+            opacity: displayTagsArr.length ? 1 : 0.6,
           }}
         >
-          {displayTags || "No tags"}
-        </p>
+          {displayTagsArr.length > 0 ? (
+            displayTagsArr.map((tag, idx) => (
+              <span key={tag + idx} className="bubble-tag">
+                {tag}
+              </span>
+            ))
+          ) : (
+            <span>No tags</span>
+          )}
+        </div>
 
         <div
           style={{
