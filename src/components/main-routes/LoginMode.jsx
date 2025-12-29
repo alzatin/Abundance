@@ -7,7 +7,7 @@ import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-import { useAuth, useAppState } from "../../contexts/index.js";
+import { useAuth, useAppState, useBrowseSettings } from "../../contexts/index.js";
 import { useTutorial } from "../../tutorial/TutorialManager";
 import { useProject } from "../../contexts/index.js";
 import { licenses } from "../../js/licenseOptions.js";
@@ -95,14 +95,8 @@ const InitialLog = ({ setNoUserBrowsing }) => {
 // adds individual projects after API call
 const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
   const [svgCacheBuster, setSvgCacheBuster] = useState(Date.now());
-  const [browseType, setBrowseType] = useState("thumb");
+  const { browseType, updateBrowseType, orderType, updateOrderType, filters, updateFilters } = useBrowseSettings();
   let nodes = projectsLoaded ? projectsLoaded["repos"] : [];
-  const [filters, setFilters] = useState({
-    users: new Set(),
-    tags: new Set(),
-    years: new Set(),
-    showForks: true,
-  });
 
   let initialOrder =
     projectToShow == "featured"
@@ -113,7 +107,13 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
       ? "byDateModified"
       : "byName";
 
-  const [orderType, setOrderType] = useState(initialOrder);
+  // Initialize orderType from context or use initialOrder for first time
+  useEffect(() => {
+    // Only set the initial order if we don't have a persisted value yet
+    if (!orderType || orderType === "byDateModified") {
+      updateOrderType(initialOrder);
+    }
+  }, [projectToShow]);
 
   //looking for highest ranking project and tool
   let highestRankingNode = null;
@@ -172,7 +172,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
   }
 
   const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
+    updateFilters(newFilters);
   };
 
   return (
@@ -184,7 +184,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
         <button
           className="list_thumb_button"
           key="list-filter-button"
-          onClick={() => setBrowseType("list")}
+          onClick={() => updateBrowseType("list")}
         >
           <img
             src={import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/list.svg"}
@@ -199,7 +199,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
         <button
           className="list_thumb_button"
           key="thumb-filter-button"
-          onClick={() => setBrowseType("thumb")}
+          onClick={() => updateBrowseType("thumb")}
         >
           <img
             src={import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/thumbnail.svg"}
@@ -218,8 +218,8 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
           <select
             className="order_dropdown"
             id="order-by"
-            defaultValue={orderType}
-            onChange={(e) => setOrderType(e.target.value)}
+            value={orderType}
+            onChange={(e) => updateOrderType(e.target.value)}
           >
             <option key={"name_order"} value={"byName"}>
               Name
@@ -1396,6 +1396,7 @@ function LoginMode() {
     isRestoringSession,
   } = useAuth();
   const { exportPopUp, setExportPopUp } = useAppState();
+  const { projectTab, updateProjectTab, resetSettings } = useBrowseSettings();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -1405,11 +1406,17 @@ function LoginMode() {
   const fromRunMode = location.state?.fromRunMode;
 
   const [noUserBrowsing, setNoUserBrowsing] = useState(fromRunMode || false);
-  const [projectToShow, setProjectsToShow] = useState("all");
+  
+  // Use persistent projectTab from context, fallback to "all" for first time
+  const projectToShow = projectTab || "all";
+  const setProjectsToShow = (tab) => {
+    updateProjectTab(tab);
+  };
 
   const logoutHandler = () => {
     localStorage.removeItem("latestCSRFToken");
     clearStoredToken(); // Clear the stored access token
+    resetSettings(); // Reset browse settings on logout
     window.location.assign("/");
   };
 
