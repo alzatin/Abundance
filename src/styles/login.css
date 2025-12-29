@@ -681,11 +681,26 @@
 .project_name_list {
   font-family: "Roboto", sans-serif;
   color: var(--loginPopup-text);
-  width: 16%;
+  width: 23%;
   text-decoration: none;
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
+}
+
+.bubble-tag {
+  display: inline-block;
+  background: #f1f8ff;
+  color: #0366d6;
+  border: 1px solid #c8e1ff;
+  border-radius: 2em;
+  padding: 2px 12px;
+  margin-right: 6px;
+  font-size: 0.85em;
+  font-weight: 500;
+  line-height: 1.8;
+  white-space: nowrap;
+  margin-bottom: 2px;
 }
 
 .list_thumb_button {
@@ -788,7 +803,8 @@
   background-color: var(--loginPopup-projectColor);
   margin: 10px;
   font-size: 13px;
-  justify-content: flex-start;
+  justify-content: space-evenly;
+  align-items: center;
 }
 .project_list:hover {
   background-color: var(--loginPopup-projectColorHover);
@@ -1102,7 +1118,6 @@
   color: rgb(10, 9, 10);
   width: 300px;
   min-height: 200px;
-  z-index: 1000;
   border-radius: 5px;
   box-shadow: 0 4px 16px rgba(62, 61, 61, 0.3);
   left: 110%;
@@ -1110,8 +1125,7 @@
   pointer-events: auto;
   user-select: text;
   white-space: normal;
-
-  z-index: 10;
+  z-index: 5;
 }
 
 /* Responsive positioning for smaller screens */
@@ -1169,6 +1183,7 @@
   overflow: scroll;
   scrollbar-color: rgb(80, 79, 79) rgb(212, 157, 250);
   scrollbar-width: thin;
+  z-index: 2;
 }
 
 .filter-panel-header {

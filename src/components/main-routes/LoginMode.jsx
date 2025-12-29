@@ -7,7 +7,11 @@ import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-import { useAuth, useAppState, useBrowseSettings } from "../../contexts/index.js";
+import {
+  useAuth,
+  useAppState,
+  useBrowseSettings,
+} from "../../contexts/index.js";
 import { useTutorial } from "../../tutorial/TutorialManager";
 import { useProject } from "../../contexts/index.js";
 import { licenses } from "../../js/licenseOptions.js";
@@ -98,7 +102,14 @@ const InitialLog = ({ setNoUserBrowsing }) => {
 // adds individual projects after API call
 const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
   const [svgCacheBuster, setSvgCacheBuster] = useState(Date.now());
-  const { browseType, updateBrowseType, orderType, updateOrderType, filters, updateFilters } = useBrowseSettings();
+  const {
+    browseType,
+    updateBrowseType,
+    orderType,
+    updateOrderType,
+    filters,
+    updateFilters,
+  } = useBrowseSettings();
   let nodes = projectsLoaded ? projectsLoaded["repos"] : [];
 
   let initialOrder =
@@ -411,7 +422,7 @@ const ProjectDiv = ({
     }
   };
 
-  const ThumbItem = ({ node, svgCacheBuster }) => {
+  const ThumbItem = React.memo(({ node, svgCacheBuster }) => {
     const [showQuickView, setShowQuickView] = useState(false);
     const hoverTimerRef = useRef(null);
 
@@ -633,12 +644,16 @@ const ProjectDiv = ({
                       <span>{node.description || "No description"}</span>
                     </div>
                     <div>
-                      <strong>Topics: </strong>
-                      <span>
-                        {node.topics && node.topics.length > 0
-                          ? node.topics.join(", ")
-                          : "None"}
-                      </span>
+                      <strong>Tags: </strong>
+                      {node.topics && node.topics.length > 0 ? (
+                        node.topics.map((tag, idx) => (
+                          <span key={tag + idx} className="bubble-tag">
+                            {tag}
+                          </span>
+                        ))
+                      ) : (
+                        <span>None</span>
+                      )}
                     </div>
                     <div>
                       <strong>Created: </strong>
@@ -654,7 +669,7 @@ const ProjectDiv = ({
         </div>
       </div>
     );
-  };
+  });
   const ListItem = (node) => {
     let dateCreated = new Date(node.node.dateCreated).toDateString(); //converts date to string
     if (dateCreated == "Invalid Date") {
@@ -662,16 +677,14 @@ const ProjectDiv = ({
     }
 
     // Get first 3 tags, excluding 'abundance-tool' tag
-    const displayTags = node.node.topics
-      ? node.node.topics
-          .filter((tag) => tag !== "abundance-tool")
-          .slice(0, 3)
-          .join(", ")
-      : "";
+    const displayTagsArr = node.node.topics
+      ? node.node.topics.filter((tag) => tag !== "abundance-tool").slice(0, 3)
+      : [];
 
     return (
       <div
         className="project_list"
+        style={{ textDecoration: "none" }}
         key={node.node.id}
         id={node.node.id}
         onClick={() => {
@@ -684,26 +697,35 @@ const ProjectDiv = ({
         </p>
 
         <p className="project_name_list">{node.node.owner}</p>
-        <p style={{ width: "20%", display: "block" }}>
-          {node.node.topics && node.node.topics.includes("abundance-tool")
-            ? "\u{1F528} "
-            : null}
-        </p>
+
         <p className="project_name_list">{dateCreated}</p>
-        <p
+        <div
           className="project_name_list"
           style={{
             fontSize: "0.9em",
-            fontStyle: displayTags ? "normal" : "italic",
-            opacity: displayTags ? 1 : 0.6,
+            width: "30%",
+            display: "flex",
+            gap: "4px",
+            alignItems: "center",
+            flexWrap: "wrap",
+            fontStyle: displayTagsArr.length ? "normal" : "italic",
+            opacity: displayTagsArr.length ? 1 : 0.6,
           }}
         >
-          {displayTags || "No tags"}
-        </p>
+          {displayTagsArr.length > 0 ? (
+            displayTagsArr.map((tag, idx) => (
+              <span key={tag + idx} className="bubble-tag">
+                {tag}
+              </span>
+            ))
+          ) : (
+            <span>No tags</span>
+          )}
+        </div>
 
         <div
           style={{
-            width: "10%",
+            width: "15%",
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
@@ -717,7 +739,19 @@ const ProjectDiv = ({
           >
             <path d="M8 .2l4.9 15.2L0 6h16L3.1 15.4z" />
           </svg>
-          <p className="project_name_list">{node.node.ranking}</p>
+          <p
+            style={{
+              fontFamily: "Roboto, sans-serif",
+              color: "var(--loginPopup-text)",
+              width: "23%",
+              marginLeft: "5px",
+              textDecoration: "none",
+            }}
+          >
+            {typeof node.node.ranking === "number"
+              ? node.node.ranking.toFixed(2)
+              : node.node.ranking}
+          </p>
         </div>
       </div>
     );
@@ -753,10 +787,10 @@ const ProjectDiv = ({
   };
   const dummyNode = {
     forks: "Forks",
-    ranking: "#",
+    ranking: "",
     dateCreated: "Date Created",
     owner: "Creator",
-    repoName: "Name",
+    repoName: "Project Name",
     topics: ["Tags"],
   };
 
@@ -901,6 +935,7 @@ const ShowProjects = ({
     )
       .then((res) => res.json())
       .then((data) => {
+        console.log("Fetched all repos:", data);
         return data;
       });
   };
@@ -1466,7 +1501,7 @@ function LoginMode() {
   const fromRunMode = location.state?.fromRunMode;
 
   const [noUserBrowsing, setNoUserBrowsing] = useState(fromRunMode || false);
-  
+
   // Use persistent projectTab from context
   const projectToShow = projectTab;
   const setProjectsToShow = (tab) => {
