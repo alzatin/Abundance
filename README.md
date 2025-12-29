@@ -376,6 +376,10 @@ Variables in equations automatically become inputs to the atom. For example, if 
 
 #### Gcode
 
+The Gcode atom generates Maslow CNC gcode from input geometry. It can process both single parts and assemblies, automatically extracting and sorting parts in the specified direction. The atom provides configuration options for tool size, number of passes, cutting speed, and cut-through depth. Once generated, the gcode can be downloaded using the built-in download button.
+
+For assemblies, the Gcode atom extracts individual parts, sorts them based on the selected direction (Left, Right, Top, or Bottom) using bounding boxes, and generates sequential gcode for each part. It also ensures that interior parts are cut before their containing exterior parts to prevent collision issues.
+
 #### Import
 
 The Import atom allows you to upload a STL, SVG, or STEP file. Complex models might take a long time to compute. 
