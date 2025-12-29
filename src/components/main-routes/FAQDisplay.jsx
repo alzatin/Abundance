@@ -3,6 +3,11 @@ const FAQ_DISPLAY_STYLES = `
 .faq-list-container {
   max-width: 80%;
   margin: 60px 30px;
+  padding-right: 30px;
+  overflow-y: auto;
+  height: 90%;
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
 }
 .faq-list-item {
   margin-bottom: 12px;
@@ -42,7 +47,7 @@ const FAQ_LIST = [
   {
     question: "What is Abundance?",
     answer:
-      "Abundance is a collaborative, web-based 3D CAD platform that runs in your browser. It focuses on programmable design and seamless GitHub integration for storing and managing your projects.",
+      'Abundance is a modern, browser-based 3D CAD application built with React and the replicad CAD library. It provides a node-based visual programming interface where designs are composed of interconnected "Atoms" (basic operations) and "Molecules" (reusable components). Projects are automatically version-controlled through GitHub, making collaboration natural and integrated.',
   },
   {
     question: "Where are my designs and projects stored?",
@@ -57,12 +62,12 @@ const FAQ_LIST = [
   {
     question: "Can I collaborate with others on my designs?",
     answer:
-      "Yes! Anyone you invite (by giving them access to your project’s GitHub repository) can collaborate with you in real time or asynchronously.",
+      "Yes! Others can fork your project repository and make their own changes. We haven't yet added pull request built in features or branching but we will in the future.",
   },
   {
     question: "How does saving work? Do I need to save my work manually?",
     answer:
-      "Your work is synced with your connected GitHub repository. Saving might happen automatically, or you may see a 'Save' or 'Sync' button—make sure to use this before leaving your session to ensure your latest changes are stored.",
+      "Your work is synced with your connected GitHub repository. There is an auto-save feature that saves every 5 minutes, or you can manually save your work using the 'Save' button or Ctrl+S.",
   },
   {
     question: "How can I access my designs later or on another device?",
@@ -72,7 +77,7 @@ const FAQ_LIST = [
   {
     question: "Can I import files or export my designs?",
     answer:
-      "You can import or export designs using the 'Import' or 'Export' options in the interface. Supported formats typically include STL and project JSON.",
+      "You can import or export designs using the 'Import' or 'Export' options in the interface. Supported formats are SVG, STL, and STEP for import, and STL and SVG for export.",
   },
   {
     question: "Are there templates or sample projects to learn from?",
@@ -80,20 +85,14 @@ const FAQ_LIST = [
       "Yes! Look for a 'Gallery,' 'Templates,' or 'Examples' section after you log in, where you can browse public projects or clone them to your own account.",
   },
   {
-    question: "Who can see my designs?",
-    answer:
-      "If your project repository is public on GitHub, anyone can view it. If it is private, only collaborators you invite can see and edit it. You control project visibility through GitHub’s repo settings.",
-  },
-  {
     question: "How do I report a bug or make a feature request?",
-    answer:
-      "Open an issue on the Abundance GitHub repository or use the in-app feedback tools if available.",
+    answer: "Open an issue on the Abundance GitHub repository",
   },
   {
     question:
       "Why does the app seem slow when loading or rendering complex designs?",
     answer:
-      "Abundance uses advanced 3D geometry calculations in the browser, which can be resource-intensive. Very complex models or slow devices may result in longer load or processing times.",
+      "Abundance uses advanced 3D geometry calculations in the browser, which can be resource-intensive. Very complex models or slow devices may result in longer load or processing times. We are working to make it faster and more reliable.",
   },
   {
     question:
@@ -107,14 +106,9 @@ const FAQ_LIST = [
       "No manual updates are needed—Abundance deploys updates automatically. If you see unexpected behavior, try clearing your browser cache or reloading the page.",
   },
   {
-    question: "Is there a cost to using Abundance?",
-    answer:
-      "Abundance is open-source and free to use. Standard GitHub usage applies (private repositories may require a paid GitHub plan).",
-  },
-  {
     question: "Where can I go for more help?",
     answer:
-      "Use the in-app help, documentation, or tutorials. You can also visit the Abundance GitHub repository or community forums if available.",
+      "Use the user-guide documentation, or tutorials. You can also visit the Abundance GitHub repository or community forums if available. Go to the Abundance Questions forum to ask questions and get support.",
   },
 ];
 

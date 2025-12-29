@@ -47,7 +47,7 @@ export default function DropdownSectionDisplay({ sections }) {
                     return (
                       <div
                         onClick={hasOnClick ? item.onClick : undefined}
-                        className="login-nav-item"
+                        className="login-nav-item dropdown-section-value"
                       >
                         <p
                           key={i}
@@ -71,7 +71,7 @@ export default function DropdownSectionDisplay({ sections }) {
               ) : (
                 <div
                   onClick={section.onClick ? section.onClick : undefined}
-                  className="login-nav-item"
+                  className="login-nav-item dropdown-section-value"
                 >
                   <p
                     key={section.label}

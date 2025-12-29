@@ -1348,13 +1348,17 @@ const ShowProjects = ({
         },
         {
           label: "Forums",
-          value: "Maslow Forums - Abundance Questions",
-          onClick: () => {
-            window.open(
-              "https://forums.maslowcnc.com/t/abundance-molecule-questions/25315",
-              "_blank"
-            );
-          },
+          value: [
+            {
+              label: "Maslow Forums - Abundance Questions",
+              onClick: () => {
+                window.open(
+                  "https://forums.maslowcnc.com/c/abundance/25",
+                  "_blank"
+                );
+              },
+            },
+          ],
         },
       ],
     },
