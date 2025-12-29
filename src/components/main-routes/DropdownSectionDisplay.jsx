@@ -35,7 +35,7 @@ export default function DropdownSectionDisplay({ sections }) {
                 background: "#f6f6f6",
                 borderRadius: 4,
               }}
-              onClick={() => section.onClick()}
+              //onClick={() => section.onClick()}
             >
               {Array.isArray(section.value) ? (
                 <div style={{ margin: 0, paddingLeft: 0 }}>

@@ -16,6 +16,8 @@ import RenameProjectDialog from "../secondary/RenameProjectDialog.jsx";
 import { convertToDisplayName } from "../../js/projectNameUtils.js";
 import FilterPanel from "../secondary/FilterPanel.jsx";
 import DropdownSectionDisplay from "./DropdownSectionDisplay.jsx";
+import FAQDisplay from "./FAQDisplay.jsx";
+import on from "../../js/circular-menu/src/on.js";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -1282,6 +1284,10 @@ const ShowProjects = ({
       loading: isLoadingLiked,
       error: isErrorLiked,
     },
+    faq: {
+      label: "Frequently Asked Questions",
+      faq: true,
+    },
     getting_started: {
       label: "Getting Started",
       sections: [
@@ -1323,10 +1329,22 @@ const ShowProjects = ({
         },
         {
           label: "User Guide",
-          value: "Documentation",
-          onClick: () => {
-            window.open("/user-guide", "_blank");
-          },
+          value: [
+            {
+              label: "User Guide",
+              value: "userGuide",
+              onClick: () => {
+                window.open("/user-guide", "_blank");
+              },
+            },
+            {
+              label: "FAQ",
+              value: "faq",
+              onClick: () => {
+                setProjectsToShow("faq");
+              },
+            },
+          ],
         },
         {
           label: "Forums",
@@ -1399,6 +1417,11 @@ const ShowProjects = ({
                 authorizedUserOcto={authorizedUserOcto}
                 sections={showDict[projectToShow]["sections"]}
               />
+            </>
+          ) : null}
+          {showDict[projectToShow]["faq"] ? (
+            <>
+              <FAQDisplay />
             </>
           ) : null}
           {loadingTutorial ? (
