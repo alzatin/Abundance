@@ -27,6 +27,7 @@ import {
   AuthProvider,
   AppStateProvider,
   ProjectProvider,
+  BrowseSettingsProvider,
   useRendering,
   useAuth,
   useAppState,
@@ -478,13 +479,15 @@ export default function ReplicadApp() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AppStateProvider>
-          <TutorialProvider>
-            <RenderingProvider>
-              <ProgressBarProvider>
-                <AppContent />
-              </ProgressBarProvider>
-            </RenderingProvider>
-          </TutorialProvider>
+          <BrowseSettingsProvider>
+            <TutorialProvider>
+              <RenderingProvider>
+                <ProgressBarProvider>
+                  <AppContent />
+                </ProgressBarProvider>
+              </RenderingProvider>
+            </TutorialProvider>
+          </BrowseSettingsProvider>
         </AppStateProvider>
       </AuthProvider>
     </QueryClientProvider>

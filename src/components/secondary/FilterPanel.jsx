@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from "react";
+import { useBrowseSettings } from "../../contexts/index.js";
 
 /**
  * FilterPanel component for filtering projects by users, tags, years, and forks
  * Displays checkboxes on the right side of the project display
  */
 const FilterPanel = ({ projects, onFilterChange }) => {
-  const [selectedUsers, setSelectedUsers] = useState(new Set());
-  const [selectedTags, setSelectedTags] = useState(new Set());
-  const [selectedYears, setSelectedYears] = useState(new Set());
-  const [showForks, setShowForks] = useState(true);
+  const { filters: persistentFilters } = useBrowseSettings();
+  
+  // Initialize from persistent filters
+  const [selectedUsers, setSelectedUsers] = useState(persistentFilters.users);
+  const [selectedTags, setSelectedTags] = useState(persistentFilters.tags);
+  const [selectedYears, setSelectedYears] = useState(persistentFilters.years);
+  const [showForks, setShowForks] = useState(persistentFilters.showForks);
   const [collapsed, setCollapsed] = useState({
     users: false,
     tags: false,
