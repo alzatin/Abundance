@@ -107,13 +107,8 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
       ? "byDateModified"
       : "byName";
 
-  // Initialize orderType from context or use initialOrder for first time
-  useEffect(() => {
-    // Only set the initial order if we don't have a persisted value yet
-    if (!orderType || orderType === "byDateModified") {
-      updateOrderType(initialOrder);
-    }
-  }, [projectToShow]);
+  // No need for useEffect - just use the persisted orderType
+  // The user's preference is maintained across tab switches
 
   //looking for highest ranking project and tool
   let highestRankingNode = null;
@@ -1407,8 +1402,8 @@ function LoginMode() {
 
   const [noUserBrowsing, setNoUserBrowsing] = useState(fromRunMode || false);
   
-  // Use persistent projectTab from context, fallback to "all" for first time
-  const projectToShow = projectTab || "all";
+  // Use persistent projectTab from context
+  const projectToShow = projectTab;
   const setProjectsToShow = (tab) => {
     updateProjectTab(tab);
   };
