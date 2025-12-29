@@ -107,9 +107,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
       ? "byDateModified"
       : "byName";
 
-  // No need for useEffect - just use the persisted orderType
-  // The user's preference is maintained across tab switches
-
+  // Use persistent settings from context
   //looking for highest ranking project and tool
   let highestRankingNode = null;
   let highestRankingToolNode = null;
