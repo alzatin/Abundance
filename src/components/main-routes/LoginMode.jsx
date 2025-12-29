@@ -19,6 +19,9 @@ import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 import RenameProjectDialog from "../secondary/RenameProjectDialog.jsx";
 import { convertToDisplayName } from "../../js/projectNameUtils.js";
 import FilterPanel from "../secondary/FilterPanel.jsx";
+import DropdownSectionDisplay from "./DropdownSectionDisplay.jsx";
+import FAQDisplay from "./FAQDisplay.jsx";
+import on from "../../js/circular-menu/src/on.js";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -1143,7 +1146,7 @@ const ShowProjects = ({
       </div>
       <div
         className="login-nav-item"
-        onClick={() => setProjectsToShow("tutorials")}
+        onClick={() => setProjectsToShow("getting_started")}
       >
         {" "}
         {/**fetchFirst()*/}
@@ -1296,19 +1299,82 @@ const ShowProjects = ({
       loading: isLoadingLiked,
       error: isErrorLiked,
     },
-    tutorials: {
-      label: "Available Tutorials",
-      tutorials: [
-        { label: "Abundance Basics", value: "gettingStarted" },
+    faq: {
+      label: "Frequently Asked Questions",
+      faq: true,
+    },
+    getting_started: {
+      label: "Getting Started",
+      sections: [
         {
-          label: "Input Atoms (Coming Soon)",
-          value: "inputsSteps",
+          label: "Tutorials",
+          value: [
+            {
+              label: "Abundance Basics",
+              value: "gettingStarted",
+              onClick: () => {
+                fetchFirstOrCreateAndStartTutorial({
+                  name: "Abundance Basics",
+                  value: "gettingStarted",
+                });
+              },
+            },
+            {
+              label: "Input Atoms (Coming Soon)",
+              value: "inputsSteps",
+              onClick: () => {
+                fetchFirstOrCreateAndStartTutorial({
+                  name: "Input Atoms (Coming Soon)",
+                  value: "inputsSteps",
+                });
+              },
+            },
+            {
+              label: "Molecules and GitHub Molecules (Coming Soon)",
+              value: "moleculesAndGithubMolecules",
+              onClick: () => {
+                fetchFirstOrCreateAndStartTutorial({
+                  name: "Molecules and GitHub Molecules (Coming Soon)",
+                  value: "moleculesAndGithubMolecules",
+                });
+              },
+            },
+            //{ label: "Assemblies and Fusions", value: "assembliesAndFusions" },
+          ],
         },
         {
-          label: "Molecules and GitHub Molecules (Coming Soon)",
-          value: "moleculesAndGithubMolecules",
+          label: "User Guide",
+          value: [
+            {
+              label: "User Guide",
+              value: "userGuide",
+              onClick: () => {
+                window.open("/user-guide", "_blank");
+              },
+            },
+            {
+              label: "FAQ",
+              value: "faq",
+              onClick: () => {
+                setProjectsToShow("faq");
+              },
+            },
+          ],
         },
-        //{ label: "Assemblies and Fusions", value: "assembliesAndFusions" },
+        {
+          label: "Forums",
+          value: [
+            {
+              label: "Maslow Forums - Abundance Questions",
+              onClick: () => {
+                window.open(
+                  "https://forums.maslowcnc.com/c/abundance/25",
+                  "_blank"
+                );
+              },
+            },
+          ],
+        },
       ],
     },
   };
@@ -1361,20 +1427,21 @@ const ShowProjects = ({
           {showDict[projectToShow]["error"] ? (
             <p> There was an error: please try again </p>
           ) : null}
-          {showDict[projectToShow]["tutorials"] ? (
-            <div className="tutorials-list">
-              {showDict[projectToShow]["tutorials"].map((tutorial, index) => (
-                <div
-                  key={index}
-                  className="login-nav-item"
-                  onClick={() => fetchFirstOrCreateAndStartTutorial(tutorial)}
-                >
-                  {" "}
-                  {/**fetchFirst()*/}
-                  <p>{tutorial.label}</p>
-                </div>
-              ))}
-            </div>
+          {showDict[projectToShow]["sections"] ? (
+            <>
+              <DropdownSectionDisplay
+                fetchFirstOrCreateAndStartTutorial={
+                  fetchFirstOrCreateAndStartTutorial
+                }
+                authorizedUserOcto={authorizedUserOcto}
+                sections={showDict[projectToShow]["sections"]}
+              />
+            </>
+          ) : null}
+          {showDict[projectToShow]["faq"] ? (
+            <>
+              <FAQDisplay />
+            </>
           ) : null}
           {loadingTutorial ? (
             <RenderProgressBar

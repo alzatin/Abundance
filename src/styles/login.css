@@ -62,6 +62,12 @@
   padding: 0 0;
 }
 
+.dropdown-section-value {
+  background-color: #f8effd;
+  margin: 10px;
+  font-size: 16px;
+}
+
 .logo {
   width: 100px;
   height: 100px;
