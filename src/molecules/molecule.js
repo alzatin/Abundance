@@ -1134,9 +1134,10 @@ export default class Molecule extends Atom {
       if (GlobalVariables.currentMolecule === this || forceEnable) {
         this.enable(); // Enable self and all child nodes upstream of output.
       }
-      if (GlobalVariables.currentMolecule === this) {
-        this.enableAllChildren(); // For the currently rendered molecule, also
-        // enable all children visible on the screen
+      // Enable all children if this is the current molecule OR if forceEnable is true
+      // forceEnable=true happens when pasting molecules, and we need all internal atoms enabled
+      if (GlobalVariables.currentMolecule === this || forceEnable) {
+        this.enableAllChildren(); // Enable all children visible in this molecule
       }
 
       return this;
