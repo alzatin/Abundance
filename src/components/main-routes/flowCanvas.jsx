@@ -329,12 +329,12 @@ export default memo(function FlowCanvas({
           if (remappedData?.allAtoms) {
             remappedData.allAtoms.forEach((atomData) => {
               if (atomData.atomType === "GitHubMolecule") {
-                // For GitHub molecules, reload from GitHub with stored values
-                console.log(`[Paste with connectors] Reloading GitHub molecule "${atomData.name}" from GitHub`);
+                // For GitHub molecules, reload from GitHub as a completely fresh molecule
+                console.log(`[Paste with connectors] Loading fresh GitHub molecule "${atomData.name}" from GitHub`);
                 const position = { x: atomData.x || 0.5, y: atomData.y || 0.6 };
                 const promise = GlobalVariables.currentMolecule.loadGithubMoleculeByName(
                   atomData.parentRepo,
-                  atomData, // Pass the serialized item as oldObject to preserve ioValues
+                  {}, // Pass empty object - load with default values, no stored ioValues
                   remappedData.allConnectors.filter(c => c.ap1ID === atomData.uniqueID || c.ap2ID === atomData.uniqueID),
                   position
                 );
@@ -370,13 +370,13 @@ export default memo(function FlowCanvas({
           // Regular paste without connectors
           GlobalVariables.atomsSelected.forEach((item) => {
             if (item.atomType == "GitHubMolecule") {
-              // For GitHub molecules, reload from GitHub with stored values
-              // This ensures atoms are properly initialized and enabled
-              console.log(`[Paste] Reloading GitHub molecule "${item.name}" from GitHub with stored values`);
+              // For GitHub molecules, reload from GitHub as a completely fresh molecule
+              // This ensures atoms are properly initialized and enabled with default values
+              console.log(`[Paste] Loading fresh GitHub molecule "${item.name}" from GitHub`);
               const position = { x: item.x || 0.5, y: item.y || 0.6 };
               GlobalVariables.currentMolecule.loadGithubMoleculeByName(
                 item.parentRepo,
-                item, // Pass the serialized item as oldObject to preserve ioValues
+                {}, // Pass empty object - load with default values, no stored ioValues
                 [], // No connectors to restore for simple paste
                 position
               );
