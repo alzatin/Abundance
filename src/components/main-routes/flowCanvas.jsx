@@ -328,13 +328,26 @@ export default memo(function FlowCanvas({
           const atomPromises = [];
           if (remappedData?.allAtoms) {
             remappedData.allAtoms.forEach((atomData) => {
-              const promise = GlobalVariables.currentMolecule.placeAtom(
-                atomData,
-                true,
-                undefined,
-                true // skipAutoConnect = true for paste operations
-              );
-              atomPromises.push(promise);
+              if (atomData.atomType === "GitHubMolecule") {
+                // For GitHub molecules, reload from GitHub as a completely fresh molecule
+                console.log(`[Paste with connectors] Loading fresh GitHub molecule "${atomData.name}" from GitHub`);
+                const position = { x: atomData.x || 0.5, y: atomData.y || 0.6 };
+                const promise = GlobalVariables.currentMolecule.loadGithubMoleculeByName(
+                  atomData.parentRepo,
+                  {}, // Pass empty object - load with default values, no stored ioValues
+                  remappedData.allConnectors.filter(c => c.ap1ID === atomData.uniqueID || c.ap2ID === atomData.uniqueID),
+                  position
+                );
+                atomPromises.push(promise);
+              } else {
+                const promise = GlobalVariables.currentMolecule.placeAtom(
+                  atomData,
+                  true,
+                  undefined,
+                  true // skipAutoConnect = true for paste operations
+                );
+                atomPromises.push(promise);
+              }
             });
           }
 
@@ -342,29 +355,50 @@ export default memo(function FlowCanvas({
           Promise.all(atomPromises).then(() => {
             if (remappedData?.allConnectors) {
               remappedData.allConnectors.forEach((connectorData) => {
-                GlobalVariables.currentMolecule.placeConnector(connectorData);
+                // Skip connectors that were already handled by loadGithubMoleculeByName
+                const isGitHubMoleculeConnector = remappedData.allAtoms.some(
+                  atom => atom.atomType === "GitHubMolecule" && 
+                         (atom.uniqueID === connectorData.ap1ID || atom.uniqueID === connectorData.ap2ID)
+                );
+                if (!isGitHubMoleculeConnector) {
+                  GlobalVariables.currentMolecule.placeConnector(connectorData);
+                }
               });
             }
           });
         } else {
           // Regular paste without connectors
           GlobalVariables.atomsSelected.forEach((item) => {
-            if (
-              item.atomType == "Molecule" ||
-              item.atomType == "GitHubMolecule"
-            ) {
-              // For molecules, use comprehensive ID remapping that handles nested atoms
+            if (item.atomType == "GitHubMolecule") {
+              // For GitHub molecules, reload from GitHub as a completely fresh molecule
+              // This ensures atoms are properly initialized and enabled with default values
+              console.log(`[Paste] Loading fresh GitHub molecule "${item.name}" from GitHub`);
+              const position = { x: item.x || 0.5, y: item.y || 0.6 };
+              GlobalVariables.currentMolecule.loadGithubMoleculeByName(
+                item.parentRepo,
+                {}, // Pass empty object - load with default values, no stored ioValues
+                [], // No connectors to restore for simple paste
+                position
+              );
+            } else if (item.atomType == "Molecule") {
+              // For regular molecules, use comprehensive ID remapping that handles nested atoms
               item = GlobalVariables.currentMolecule.remapIDs(item);
+              GlobalVariables.currentMolecule.placeAtom(
+                item,
+                true,
+                undefined,
+                true
+              ); // skipAutoConnect = true for paste
             } else {
               // For simple atoms, just assign a new unique ID
               item.uniqueID = GlobalVariables.generateUniqueID();
+              GlobalVariables.currentMolecule.placeAtom(
+                item,
+                true,
+                undefined,
+                true
+              ); // skipAutoConnect = true for paste
             }
-            GlobalVariables.currentMolecule.placeAtom(
-              item,
-              true,
-              undefined,
-              true
-            ); // skipAutoConnect = true for paste
           });
         }
       }

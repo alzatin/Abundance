@@ -1253,10 +1253,14 @@ export default class Molecule extends Atom {
 
           //If there are stored io values to recover
           if (oldObject.ioValues != undefined) {
+            // Use position parameter if provided, otherwise use oldObject position, otherwise use this position
+            let xPos = position ? position.x : (oldObject.x !== undefined ? oldObject.x : this.x);
+            let yPos = position ? position.y : (oldObject.y !== undefined ? oldObject.y : this.y);
+            
             valuesToOverwriteInLoadedVersion = {
               uniqueID: newMoleculeUniqueID,
-              x: this.x,
-              y: this.y,
+              x: xPos,
+              y: yPos,
               parentRepo: gitObj,
               topLevel: false,
               ioValues: oldObject.ioValues,
