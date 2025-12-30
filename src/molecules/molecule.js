@@ -1134,10 +1134,9 @@ export default class Molecule extends Atom {
       if (GlobalVariables.currentMolecule === this || forceEnable) {
         this.enable(); // Enable self and all child nodes upstream of output.
       }
-      // Enable all children if this is the current molecule OR if forceEnable is true
-      // forceEnable=true happens when pasting molecules, and we need all internal atoms enabled
-      if (GlobalVariables.currentMolecule === this || forceEnable) {
-        this.enableAllChildren(); // Enable all children visible in this molecule
+      if (GlobalVariables.currentMolecule === this) {
+        this.enableAllChildren(); // For the currently rendered molecule, also
+        // enable all children visible on the screen
       }
 
       return this;
@@ -1254,10 +1253,14 @@ export default class Molecule extends Atom {
 
           //If there are stored io values to recover
           if (oldObject.ioValues != undefined) {
+            // Use position parameter if provided, otherwise use oldObject position, otherwise use this position
+            let xPos = position ? position.x : (oldObject.x !== undefined ? oldObject.x : this.x);
+            let yPos = position ? position.y : (oldObject.y !== undefined ? oldObject.y : this.y);
+            
             valuesToOverwriteInLoadedVersion = {
               uniqueID: newMoleculeUniqueID,
-              x: this.x,
-              y: this.y,
+              x: xPos,
+              y: yPos,
               parentRepo: gitObj,
               topLevel: false,
               ioValues: oldObject.ioValues,

@@ -219,13 +219,8 @@ return assembly;
                 "input"
               );
             } else {
-              // Update the attachment point's properties
               existingInput.valueType = type;
               existingInput.defaultValue = defaultValue;
-              // Reinitialize the attachment point with the new default value
-              // This is crucial for geometry inputs with defaultValue: null
-              // to ensure they're properly set to READY status with NO_GEOMETRY
-              existingInput.setValue(defaultValue, type);
             }
           });
           // Remove any inputs not in the new array
@@ -265,13 +260,8 @@ return assembly;
                 "input"
               );
             } else {
-              // Update the attachment point's properties
               existingInput.valueType = type;
               existingInput.defaultValue = defaultValue;
-              // Reinitialize the attachment point with the new default value
-              // This is crucial for geometry inputs with defaultValue: null
-              // to ensure they're properly set to READY status with NO_GEOMETRY
-              existingInput.setValue(defaultValue, type);
             }
           });
           // Remove any inputs not in the new array

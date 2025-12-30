@@ -114,95 +114,6 @@ export default class GitHubMolecule extends Molecule {
     this.setError("An unknown error occurred in a child atom.");
   }
 
-  /**
-   * Override onUpstreamChange to add logging for debugging
-   */
-  onUpstreamChange() {
-    const oldStatus = this.status;
-    super.onUpstreamChange();
-    const newStatus = this.status;
-    
-    // Log when molecule changes to or stays in WAITING status
-    if (newStatus === Status.WAITING && this.nodesOnTheScreen && this.nodesOnTheScreen.length > 0) {
-      console.warn(`⚠️ GitHub Molecule "${this.name}" is in WAITING status (was: ${oldStatus})`);
-      console.log('Automatically logging atom statuses for debugging:');
-      this.logAtomStatuses();
-    }
-  }
-
-  /**
-   * Log the status of all atoms inside this GitHub molecule to the console
-   * for debugging purposes
-   */
-  logAtomStatuses() {
-    console.group(`📊 GitHub Molecule Status Report: ${this.name} (${this.uniqueID})`);
-    console.log(`Molecule Status: ${this.status}`);
-    console.log(`Total atoms: ${this.nodesOnTheScreen.length}`);
-    console.log('');
-    
-    // Log each atom's status
-    this.nodesOnTheScreen.forEach((atom, index) => {
-      const state = atom.getState();
-      const statusEmoji = {
-        'disabled': '⚫',
-        'waiting': '⏳',
-        'processing': '⚙️',
-        'ready': '✅',
-        'error': '❌',
-        'upstream_error': '⚠️'
-      }[state.status] || '❓';
-      
-      console.log(`${statusEmoji} [${index}] ${atom.atomType} "${atom.name}" (${atom.uniqueID})`);
-      console.log(`   Status: ${state.status}`);
-      
-      // Log input statuses
-      if (atom.inputs && atom.inputs.length > 0) {
-        console.log(`   Inputs (${atom.inputs.length}):`);
-        atom.inputs.forEach((input) => {
-          const inputState = input.getState();
-          const inputEmoji = {
-            'disabled': '⚫',
-            'waiting': '⏳',
-            'processing': '⚙️',
-            'ready': '✅',
-            'error': '❌',
-            'upstream_error': '⚠️'
-          }[inputState.status] || '❓';
-          
-          const hasConnector = input.connectors && input.connectors.length > 0;
-          const connectorInfo = hasConnector ? ` (connected to ${input.connectors[0].attachmentPoint1.parentMolecule.name})` : ' (no connection)';
-          
-          console.log(`     ${inputEmoji} "${input.name}" [${input.valueType}]: ${inputState.status}${connectorInfo}`);
-          if (input.valueType === 'geometry' && inputState.value) {
-            console.log(`        Value: ${JSON.stringify(inputState.value)}`);
-          }
-        });
-      }
-      
-      // Log output status if exists
-      if (atom.output) {
-        const outputState = atom.output.getState();
-        const outputEmoji = {
-          'disabled': '⚫',
-          'waiting': '⏳',
-          'processing': '⚙️',
-          'ready': '✅',
-          'error': '❌',
-          'upstream_error': '⚠️'
-        }[outputState.status] || '❓';
-        
-        const hasConnectors = atom.output.connectors && atom.output.connectors.length > 0;
-        const connectorCount = hasConnectors ? atom.output.connectors.length : 0;
-        
-        console.log(`   Output: ${outputEmoji} ${outputState.status} (${connectorCount} connections)`);
-      }
-      
-      console.log('');
-    });
-    
-    console.groupEnd();
-  }
-
   createInputParams() {
     let inputParams = {};
     inputParams = super.createInputParams();
@@ -210,11 +121,6 @@ export default class GitHubMolecule extends Molecule {
       type: "button",
       label: "Reload From Github",
       onClick: () => this.reloadMoleculeFromGithub(),
-    };
-    inputParams["Log Atom Statuses"] = {
-      type: "button",
-      label: "Log Atom Statuses",
-      onClick: () => this.logAtomStatuses(),
     };
     return inputParams;
   }
