@@ -1,23 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Status } from '../src/prototypes/observableEntity.js';
+import AttachmentPoint from '../src/prototypes/attachmentpoint.js';
+import GlobalVariables from '../src/js/globalvariables.js';
 
 describe('GitHub Molecule Geometry Input Copy/Paste Issue', () => {
-  let mockGlobalVariables;
   let idCounter = 1000;
 
   beforeEach(() => {
     // Reset ID counter
     idCounter = 1000;
-
-    // Mock GlobalVariables
-    mockGlobalVariables = {
-      generateUniqueID: () => `test-id-${idCounter++}`,
-      cad: {
-        deleteFromLibrary: vi.fn().mockResolvedValue(undefined),
-        code: vi.fn().mockResolvedValue({ geometry: [], dimension: '3D' })
-      },
-      currentMolecule: null
-    };
   });
 
   /**
