@@ -1073,6 +1073,7 @@ export default class Molecule extends Atom {
    * @param {object} values - An array of values to apply to this molecule before de-serializing it's contents. Used by githubmolecules to set top level correctly
    */
   deserialize(json, values = {}, forceEnable = false) {
+    console.log(`[Deserialize START] Molecule ${json.name || 'unnamed'}, atomType: ${json.atomType}, forceEnable: ${forceEnable}, currentMolecule: ${GlobalVariables.currentMolecule?.name}, this.name will be: ${this.name}`);
     //Find the target molecule in the list
     let promiseArray = [];
 
@@ -1132,12 +1133,18 @@ export default class Molecule extends Atom {
         false
       );
       if (GlobalVariables.currentMolecule === this || forceEnable) {
+        console.log(`[Deserialize] Calling enable() on molecule ${this.name} (${this.uniqueID}), forceEnable=${forceEnable}, currentMolecule=${GlobalVariables.currentMolecule === this}`);
         this.enable(); // Enable self and all child nodes upstream of output.
       }
       // Enable all children if this is the current molecule OR if forceEnable is true
       // forceEnable=true happens when pasting molecules, and we need all internal atoms enabled
       if (GlobalVariables.currentMolecule === this || forceEnable) {
+        console.log(`[Deserialize] Calling enableAllChildren() on molecule ${this.name} (${this.uniqueID}), internal atoms count: ${this.nodesOnTheScreen.length}`);
         this.enableAllChildren(); // Enable all children visible in this molecule
+        console.log(`[Deserialize] After enableAllChildren(), checking status of internal atoms:`);
+        this.nodesOnTheScreen.forEach((atom, i) => {
+          console.log(`  [${i}] ${atom.atomType} "${atom.name}": ${atom.status}`);
+        });
       }
 
       return this;
@@ -1537,7 +1544,15 @@ export default class Molecule extends Atom {
               this.autoCreateConnector(atom);
             }
             atom.selected = true; // TODO: this feels hacky. probably should forward to it's children?
+            console.log(`[PlaceAtom] Calling enable() on ${atom.atomType} "${atom.name}" (${atom.uniqueID}) after placement, current status: ${atom.status}`);
             atom.enable(); // Enable the atom after placing it
+            console.log(`[PlaceAtom] After enable(), status: ${atom.status}`);
+            if (atom.atomType === "Molecule" || atom.atomType === "GitHubMolecule") {
+              console.log(`[PlaceAtom] Internal atoms status after enable():`);
+              atom.nodesOnTheScreen.forEach((child, i) => {
+                console.log(`  [${i}] ${child.atomType} "${child.name}": ${child.status}`);
+              });
+            }
             this.makeActiveAtom(flowCanvas, atom);
           }
         }
