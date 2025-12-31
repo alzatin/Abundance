@@ -44,6 +44,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
   ) => {
     if (molecule !== undefined && exporting) {
       GlobalVariables.topLevelMolecule = molecule;
+      GlobalVariables.topLevelMolecule.enableAllChildren();
       molecule.topLevel = true;
     } else {
       GlobalVariables.topLevelMolecule = new Molecule({
@@ -683,8 +684,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
           content: updatedContent,
           sha: projectFileResponse.data.sha,
         });
-
-        console.log(`Updated top molecule name to ${newName} in renamed project`);
       } catch (err) {
         console.error("Error updating top molecule name:", err);
         // Continue even if this fails - project is still functional
