@@ -391,26 +391,26 @@ const ProjectDiv = ({
 
     // Clear the notFound flag in AWS
     try {
-      await fetch(
-        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-abundance-item",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            owner: notFoundProject.owner,
-            repoName: notFoundProject.repoName,
-            attributeUpdates: {
-              notFound: false,
-            },
-          }),
-          headers: {
-            "Content-type": "application/json; charset=UTF-8",
+      const apiUpdateUrl =
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
+
+      await fetch(apiUpdateUrl, {
+        method: "POST",
+        body: JSON.stringify({
+          owner: notFoundProject.owner,
+          repoName: notFoundProject.repoName,
+          attributeUpdates: {
+            notFound: false,
           },
-        }
-      );
+        }),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      });
 
       // Update the local node to remove the notFound flag
       notFoundProject.notFound = false;
-      
+
       // Navigate to the project
       GlobalVariables.currentAWSnode = notFoundProject;
       if (notFoundProject.owner === GlobalVariables.currentUser) {
@@ -738,7 +738,9 @@ const ProjectDiv = ({
 
     return (
       <div
-        className={`project_list ${node.node.notFound ? "project-not-found" : ""}`}
+        className={`project_list ${
+          node.node.notFound ? "project-not-found" : ""
+        }`}
         style={{ textDecoration: "none" }}
         key={node.node.id}
         id={node.node.id}
