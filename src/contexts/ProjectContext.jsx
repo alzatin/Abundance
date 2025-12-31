@@ -818,6 +818,14 @@ export function ProjectProvider({ children, cad, loadProject }) {
       return null;
     }
 
+    // Check if meshRef and meshRef.current are available
+    if (!meshRef || !meshRef.current) {
+      console.warn(
+        "meshRef is not available for thumbnail generation."
+      );
+      return null;
+    }
+
     return GlobalVariables.pool
       .proxy()
       .then((worker) => {
