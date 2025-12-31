@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useRef } from "react";
 import GlobalVariables from "../js/globalvariables.js";
 import Molecule from "../molecules/molecule.js";
 import { licenses } from "../js/licenseOptions.js";
 import { re } from "mathjs";
+import { useAuth } from "./AuthContext.jsx";
 
 const ProjectContext = createContext();
 
@@ -12,6 +13,10 @@ const ProjectContext = createContext();
  */
 export function ProjectProvider({ children, cad, loadProject }) {
   const [size, setSize] = useState(5);
+  const { authorizedUserOcto, authRedirectHandler } = useAuth();
+  
+  // Track last saved data to avoid unnecessary saves
+  const lastSaveData = useRef({});
 
   /**
    * The text to display at the top of the bill of materials.
@@ -760,6 +765,405 @@ export function ProjectProvider({ children, cad, loadProject }) {
     }
   };
 
+  /**
+   * Validates if the current GitHub token is still valid
+   */
+  const validateGitHubToken = async (octokit) => {
+    try {
+      await octokit.request("GET /user");
+      return true;
+    } catch (error) {
+      console.warn("GitHub token validation failed:", error.message);
+      return false;
+    }
+  };
+
+  /**
+   * Handles authentication errors by redirecting to re-authentication
+   */
+  const handleAuthenticationError = (error, saveType, currentProjectRep, setErrorNotification) => {
+    console.error("Authentication error during save:", error);
+
+    // Show user-friendly error message
+    if (setErrorNotification) {
+      setErrorNotification(
+        `Save failed due to expired login. You will be redirected to re-authenticate.`
+      );
+      setTimeout(() => {
+        setErrorNotification(null);
+        authRedirectHandler({
+          authType: "save",
+          currentProjectRep,
+          returnTo: `/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`,
+        });
+      }, 2000);
+    } else {
+      authRedirectHandler({
+        authType: "save",
+        currentProjectRep,
+        returnTo: `/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`,
+      });
+    }
+  };
+
+  /**
+   * Generate a thumbnail for the project
+   */
+  const generateProjectThumbnail = async (meshRef) => {
+    //Generate a thumbnail for the project
+    if (GlobalVariables.topLevelMolecule.value == null) {
+      console.warn(
+        "No top level molecule value found for thumbnail generation."
+      );
+      return null;
+    }
+
+    // Check if meshRef and meshRef.current are available
+    if (!meshRef || !meshRef.current) {
+      console.warn(
+        "meshRef is not available for thumbnail generation."
+      );
+      return null;
+    }
+
+    return GlobalVariables.pool
+      .proxy()
+      .then((worker) => {
+        return worker.generateDisplayMesh(
+          GlobalVariables.topLevelMolecule.value,
+          GlobalVariables.topLevelMolecule.getContext()
+        );
+      })
+      .then(async (m) => {
+        const svg = await meshRef.current.buildThumbnail(m.mesh);
+        console.log("Project thumbnail generated.");
+        return svg;
+      });
+  };
+
+  /**
+   * Create a commit as part of the saving process.
+   */
+  const createCommit = async function (
+    octokit,
+    { owner, repo, base, changes },
+    setSaveProgress,
+    saveType = "Auto Save",
+    setErrorNotification
+  ) {
+    try {
+      setSaveProgress(35);
+      if (!base) {
+        const repoResponse = await octokit.request(
+          "GET /repos/{owner}/{repo}",
+          {
+            owner: owner,
+            repo: repo,
+          }
+        );
+
+        let htmlURL = repoResponse.data.html_url;
+        const privateRepo = repoResponse.data.private;
+        setSaveProgress(40);
+
+        base = repoResponse.data.default_branch;
+
+        const commitsResponse = await octokit.rest.repos.listCommits({
+          owner,
+          repo,
+          sha: base,
+          per_page: 1,
+        });
+
+        setSaveProgress(50);
+        let latestCommitSha = commitsResponse.data[0].sha;
+        const treeSha = commitsResponse.data[0].commit.tree.sha;
+
+        const treeResponse = await octokit.rest.git.createTree({
+          owner,
+          repo,
+          base_tree: treeSha,
+          tree: Object.keys(changes.files).map((path) => {
+            if (changes.files[path] != null) {
+              return {
+                path,
+                mode: "100644",
+                content: changes.files[path],
+              };
+            } else {
+              return {
+                path,
+                mode: "100644",
+                sha: null,
+              };
+            }
+          }),
+        });
+
+        setSaveProgress(60);
+        const newTreeSha = treeResponse.data.sha;
+
+        const commitResponse = await octokit.rest.git.createCommit({
+          owner,
+          repo,
+          message: changes.commit,
+          tree: newTreeSha,
+          parents: [latestCommitSha],
+        });
+
+        setSaveProgress(70);
+        latestCommitSha = commitResponse.data.sha;
+
+        await octokit.rest.git.updateRef({
+          owner,
+          repo,
+          sha: latestCommitSha,
+          ref: "heads/" + base,
+          force: true,
+        });
+
+        setSaveProgress(80);
+
+        const githubMoleculeUsedList = await searchGithubMolecules(
+          GlobalVariables.topLevelMolecule
+        );
+
+        /*aws dynamo update-item lambda, also updates dateModified on aws side*/
+        const apiUpdateUrl =
+          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
+        let topicString = GlobalVariables.currentAWSnode.topics.join(" ");
+        let searchField = (
+          repo +
+          " " +
+          owner +
+          " " +
+          GlobalVariables.currentAWSnode.description +
+          " " +
+          topicString
+        ).toLowerCase();
+
+        await fetch(apiUpdateUrl, {
+          method: "POST",
+          body: JSON.stringify({
+            owner: owner,
+            repoName: repo,
+            attributeUpdates: {
+              ranking: 0,
+              privateRepo: privateRepo,
+              html_url: htmlURL,
+              searchField: searchField,
+              githubMoleculesUsed: githubMoleculeUsedList,
+              description: GlobalVariables.currentAWSnode.description,
+              topics: GlobalVariables.currentAWSnode.topics,
+            },
+          }),
+          headers: {
+            "Content-type": "application/json; charset=UTF-8",
+          },
+        });
+
+        console.warn("Project saved on git and aws updated");
+      }
+    } catch (error) {
+      console.error("Error during commit creation:", error);
+
+      // Check if this is an authentication error
+      if (error.status === 401 || error.message.includes("Bad credentials")) {
+        handleAuthenticationError(error, saveType, null, setErrorNotification);
+      } else {
+        // Handle other errors
+        if (setErrorNotification) {
+          setErrorNotification(
+            `Save failed: ${error.message || "Unknown error occurred"}`
+          );
+          setTimeout(() => setErrorNotification(null), 5000);
+        }
+        setSaveProgress(0); // Reset save progress
+      }
+
+      throw error; // Re-throw to let calling function handle it
+    }
+  };
+
+  /**
+   * Saves project by making a commit to the Github repository.
+   * @param {Function} setSaveProgress - Function to update save progress
+   * @param {string} typeSave - Type of save operation
+   * @param {boolean} forceSave - If true, bypasses the "no changes" check
+   * @param {object} meshRef - Reference to the mesh for thumbnail generation (optional)
+   * @param {Function} setErrorNotification - Function to set error notifications (optional)
+   */
+  const saveProject = async (
+    setSaveProgress,
+    typeSave,
+    forceSave = false,
+    meshRef = null,
+    setErrorNotification = null
+  ) => {
+    try {
+      //We only want to save if something has actually changed since the last save
+      var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
+
+      //Don't save again if nothing has changed (unless forceSave is true)
+      if (
+        !forceSave &&
+        JSON.stringify(jsonRepOfProject) == JSON.stringify(lastSaveData.current)
+      ) {
+        return;
+      }
+
+      // First validate the GitHub token
+      if (authorizedUserOcto) {
+        const isTokenValid = await validateGitHubToken(authorizedUserOcto);
+        if (!isTokenValid) {
+          handleAuthenticationError(
+            new Error("GitHub token has expired"),
+            typeSave,
+            JSON.stringify(jsonRepOfProject),
+            setErrorNotification
+          );
+          return;
+        }
+      }
+
+      lastSaveData.current = jsonRepOfProject; //Save the data so we can compare it next time
+
+      setSaveProgress(5); //Set the state to 5% to show the progress bar
+
+      let finalSVG;
+      // Only generate thumbnail for user-triggered saves, not auto saves
+      if (typeSave !== "Auto Save" && meshRef) {
+        finalSVG = await generateProjectThumbnail(meshRef).catch((error) => {
+          console.error("Error generating final project thumbnail: ", error);
+        });
+      }
+
+      setSaveProgress(10);
+      // Reuse the already serialized project data instead of serializing again
+      jsonRepOfProject.filetypeVersion = 1;
+      const projectContent = JSON.stringify(jsonRepOfProject, null, 2);
+      // format and compile the BOM
+      let bomContent = GlobalVariables.topLevelMolecule.formatBom();
+      var readmeHeader =
+        "###### Note: Do not edit this file directly, it is automatically generated from the CAD model";
+
+      var readmeContent =
+        readmeHeader +
+        "\n\n" +
+        "# " +
+        GlobalVariables.currentAWSnode.repoName +
+        "\n\n![](/project.svg)\n\n";
+
+      setSaveProgress(20);
+
+      let readMeRequestResult =
+        await GlobalVariables.topLevelMolecule.requestReadme();
+
+      let readMeTextArray = " ";
+
+      readMeRequestResult.forEach((item) => {
+        readMeTextArray = readMeTextArray.concat(item["readMeText"]) + "\n\n";
+      });
+      readmeContent = readmeContent + "\n\n" + readMeTextArray + "\n\n";
+
+      /** File object to commit */
+      let filesObject = {
+        "BillOfMaterials.md": bomContent,
+        "README.md": readmeContent,
+        "project.abundance": projectContent,
+      };
+
+      /* add any new SVGs to the project change files*/
+      const readmeSVGs = readMeRequestResult;
+      let backupProjectSVG;
+      if (readmeSVGs) {
+        readmeSVGs.forEach((item) => {
+          if (item.svg != null) {
+            filesObject["readme" + item.uniqueID + ".svg"] = item.svg;
+            backupProjectSVG = item.svg;
+          }
+        });
+      }
+
+      // Helper function to check if an SVG is valid and has content
+      const isValidSVG = (svg) => {
+        if (!svg) return false;
+        // Check if SVG is empty (has no paths or other content between svg tags)
+        // An empty SVG looks like: <svg viewBox="..." xmlns="..."></svg>
+        const hasContent =
+          svg.includes("<path") ||
+          svg.includes("<circle") ||
+          svg.includes("<rect") ||
+          svg.includes("<line") ||
+          svg.includes("<polygon") ||
+          svg.includes("<polyline");
+        return hasContent;
+      };
+
+      // Only update project thumbnail if a valid one has been generated
+      // Prioritize finalSVG from main output, but fall back to readme SVG if main output is empty
+      const thumbnailToUse =
+        finalSVG && isValidSVG(finalSVG)
+          ? finalSVG
+          : backupProjectSVG && isValidSVG(backupProjectSVG)
+          ? backupProjectSVG
+          : null;
+      if (thumbnailToUse) {
+        filesObject["project.svg"] = thumbnailToUse;
+      }
+      // If no valid thumbnail was generated, don't include project.svg in the commit
+      // This preserves the existing thumbnail in the repository
+
+      setSaveProgress(30);
+
+      await createCommit(
+        authorizedUserOcto,
+        {
+          owner: GlobalVariables.currentUser,
+          repo: GlobalVariables.currentAWSnode.repoName,
+          changes: {
+            files: filesObject,
+            commit: typeSave ? typeSave : "Auto Save",
+          },
+        },
+        setSaveProgress,
+        typeSave,
+        setErrorNotification
+      );
+
+      if (typeSave !== "Auto Save") {
+        const geomIds = GlobalVariables.topLevelMolecule.deepGeomList();
+        // Sweep is best-effort and can take a long time (up to a minute). Don't await, just let it run
+        // in the background and mark save as completed.
+        GlobalVariables.cad
+          .sweepCache(geomIds, GlobalVariables.topLevelMolecule.getContext())
+          .then((count) => {
+            console.log("cache sweep complete, removed: " + count + " items");
+          })
+          .catch((error) => {
+            console.error("Error during cache sweep:", error);
+          });
+      }
+
+      setSaveProgress(100);
+    } catch (error) {
+      console.error("Error during project save:", error);
+
+      // The createCommit function already handles authentication errors,
+      // so we only need to handle other types of errors here
+      if (!error.message.includes("Bad credentials") && error.status !== 401) {
+        if (setErrorNotification) {
+          setErrorNotification(
+            `Save failed: ${error.message || "Unknown error occurred"}`
+          );
+          setTimeout(() => setErrorNotification(null), 5000);
+        }
+      }
+
+      setSaveProgress(0); // Reset save progress
+    }
+  };
+
   const value = {
     size,
     setSize,
@@ -769,6 +1173,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
     duplicateProject,
     renameProject,
     searchGithubMolecules,
+    saveProject,
   };
   return (
     <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>
