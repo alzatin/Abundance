@@ -395,7 +395,7 @@ function AppContent() {
         GlobalVariables.currentMolecule.selected = true;
         setActiveAtom(GlobalVariables.currentMolecule);
       })
-      .catch((e) => {
+      .catch(async (e) => {
         // If error is about bad credentials, trigger re-authentication
         if (
           e?.status === 401 ||
@@ -413,6 +413,35 @@ function AppContent() {
           });
           return;
         }
+
+        // If error is 404 (project not found), mark it in AWS
+        if (e?.status === 404) {
+          console.warn(
+            "Project not found on GitHub, marking as not found in AWS:",
+            project.repoName
+          );
+          try {
+            await fetch(
+              "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-abundance-item",
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  owner: project.owner,
+                  repoName: project.repoName,
+                  attributeUpdates: {
+                    notFound: true,
+                  },
+                }),
+                headers: {
+                  "Content-type": "application/json; charset=UTF-8",
+                },
+              }
+            );
+          } catch (updateError) {
+            console.error("Error updating AWS node:", updateError);
+          }
+        }
+
         setErrorNotification("Can't load/find project: " + (e.message || e));
         setTimeout(() => setErrorNotification(null), 5000);
         // Navigate back to projects page after error

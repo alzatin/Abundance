@@ -17,6 +17,7 @@ import { useProject } from "../../contexts/index.js";
 import { licenses } from "../../js/licenseOptions.js";
 import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 import RenameProjectDialog from "../secondary/RenameProjectDialog.jsx";
+import ProjectNotFoundDialog from "../secondary/ProjectNotFoundDialog.jsx";
 import { convertToDisplayName } from "../../js/projectNameUtils.js";
 import FilterPanel from "../secondary/FilterPanel.jsx";
 import DropdownSectionDisplay from "./DropdownSectionDisplay.jsx";
@@ -373,6 +374,56 @@ const ProjectDiv = ({
   const [renameProgress, setRenameProgress] = useState(0);
   const [projectToRename, setProjectToRename] = useState(null);
 
+  // State for not found dialog
+  const [notFoundDialog, setNotFoundDialog] = useState(false);
+  const [notFoundProject, setNotFoundProject] = useState(null);
+
+  // Handler for clicking on a not-found project
+  const handleNotFoundProjectClick = (event, node) => {
+    event.preventDefault();
+    setNotFoundProject(node);
+    setNotFoundDialog(true);
+  };
+
+  // Handler for retrying to load a not-found project
+  const handleRetryNotFoundProject = async () => {
+    if (!notFoundProject) return;
+
+    // Clear the notFound flag in AWS
+    try {
+      await fetch(
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-abundance-item",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            owner: notFoundProject.owner,
+            repoName: notFoundProject.repoName,
+            attributeUpdates: {
+              notFound: false,
+            },
+          }),
+          headers: {
+            "Content-type": "application/json; charset=UTF-8",
+          },
+        }
+      );
+
+      // Update the local node to remove the notFound flag
+      notFoundProject.notFound = false;
+      
+      // Navigate to the project
+      GlobalVariables.currentAWSnode = notFoundProject;
+      if (notFoundProject.owner === GlobalVariables.currentUser) {
+        navigate(`/${notFoundProject.owner}/${notFoundProject.repoName}`);
+      } else {
+        navigate(`/run/${notFoundProject.owner}/${notFoundProject.repoName}`);
+      }
+    } catch (error) {
+      console.error("Error clearing notFound flag:", error);
+      window.alert("Error retrying project load. Please try again.");
+    }
+  };
+
   // Handler for right-click on a project
   const handleProjectRightClick = (event, node) => {
     event.preventDefault();
@@ -457,7 +508,7 @@ const ProjectDiv = ({
 
     return (
       <div
-        className="project"
+        className={`project ${node.notFound ? "project-not-found" : ""}`}
         style={
           node.owner != GlobalVariables.currentUser
             ? { backgroundColor: "rgb(233 221 242 / 58%)" }
@@ -465,8 +516,12 @@ const ProjectDiv = ({
         }
         key={node.topMoleculeID + node.owner}
         id={node.repoName}
-        onClick={() => {
-          GlobalVariables.currentAWSnode = node;
+        onClick={(e) => {
+          if (node.notFound) {
+            handleNotFoundProjectClick(e, node);
+          } else {
+            GlobalVariables.currentAWSnode = node;
+          }
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node)}
       >
@@ -683,12 +738,16 @@ const ProjectDiv = ({
 
     return (
       <div
-        className="project_list"
+        className={`project_list ${node.node.notFound ? "project-not-found" : ""}`}
         style={{ textDecoration: "none" }}
         key={node.node.id}
         id={node.node.id}
-        onClick={() => {
-          GlobalVariables.currentAWSnode = node.node;
+        onClick={(e) => {
+          if (node.node.notFound) {
+            handleNotFoundProjectClick(e, node.node);
+          } else {
+            GlobalVariables.currentAWSnode = node.node;
+          }
         }}
         onContextMenu={(e) => handleProjectRightClick(e, node.node)} // <-- add right-click handler for list mode
       >
@@ -822,6 +881,12 @@ const ProjectDiv = ({
                 ? `/${node.owner}/${node.repoName}`
                 : `/run/${node.owner}/${node.repoName}`
             }
+            onClick={(e) => {
+              // Prevent navigation if project is not found
+              if (node.notFound) {
+                e.preventDefault();
+              }
+            }}
           >
             {browseType == "list" ? (
               <ListItem {...{ node }} />
@@ -875,6 +940,15 @@ const ProjectDiv = ({
           onClose={() => setRenameDialog(false)}
           onConfirm={executeRename}
           currentName={projectToRename.repoName}
+        />
+      )}
+      {/* Not Found dialog */}
+      {notFoundDialog && notFoundProject && (
+        <ProjectNotFoundDialog
+          isOpen={notFoundDialog}
+          onClose={() => setNotFoundDialog(false)}
+          onRetry={handleRetryNotFoundProject}
+          projectName={convertToDisplayName(notFoundProject.repoName)}
         />
       )}
       {/* Rename progress bar */}
