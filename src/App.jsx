@@ -49,12 +49,12 @@ const queryClient = new QueryClient();
  * @type {object}
  */
 
-const pool = workerpool.pool(RenderURL  , {
-    maxWorkers: 1,
-    workerOpts: {
-        // By default, Vite uses a module worker in dev mode, which can cause your application to fail. Therefore, we need to use a module worker in dev mode and a classic worker in prod mode.
-        type: import.meta.env.PROD ? undefined : "module"
-    }
+const pool = workerpool.pool(RenderURL, {
+  maxWorkers: 1,
+  workerOpts: {
+    // By default, Vite uses a module worker in dev mode, which can cause your application to fail. Therefore, we need to use a module worker in dev mode and a classic worker in prod mode.
+    type: import.meta.env.PROD ? undefined : "module",
+  },
 });
 
 const cad = wrap(new cadWorker());
@@ -120,14 +120,14 @@ function AppContent() {
       const molecule = GlobalVariables.topLevelMolecule;
       if (molecule) {
         console.log("Molecule state:", molecule.getState().status);
-        
+
         // Check if molecule is fully ready first
         if (molecule.getState().status === "ready") {
           setRenderProgress(100);
           clearInterval(interval);
           return;
         }
-        
+
         const [ready, total] = molecule.getCompletionTuple();
         // Apply power scaling to make progress appear more linear
         // Later atoms are more computationally expensive, so we use power > 1
@@ -164,7 +164,7 @@ function AppContent() {
       const moleculeId = molecule.uniqueID;
       const moleculeValue = molecule.value;
       const context = molecule.getContext();
-      
+
       // Check if we've already generated the mesh for this molecule
       if (topLevelMesh.current && topLevelMesh.current.id === moleculeId) {
         // Already generated for this molecule, just ensure it's set
@@ -173,18 +173,22 @@ function AppContent() {
         }
         return;
       }
-      
+
       if (moleculeValue && context) {
         // Mark that we're generating for this molecule
         topLevelMesh.current = { id: moleculeId, mesh: undefined };
-        
-        pool.proxy()
+
+        pool
+          .proxy()
           .then((worker) => {
             return worker.generateDisplayMesh(moleculeValue, context);
           })
           .then((m) => {
             // Check if the molecule ID still matches (avoid race condition)
-            if (topLevelMesh.current && topLevelMesh.current.id === moleculeId) {
+            if (
+              topLevelMesh.current &&
+              topLevelMesh.current.id === moleculeId
+            ) {
               // Store the generated mesh
               topLevelMesh.current.mesh = m.mesh;
               setTopLevelWireMesh(m.mesh);
@@ -228,7 +232,11 @@ function AppContent() {
     setOutdatedMesh(true);
     pool.proxy().then((worker) => {
       // No-op condition
-      if (!targetMesh.current || JSON.stringify(targetMesh.current) === JSON.stringify(inFlightMeshRender.current?.value)) {
+      if (
+        !targetMesh.current ||
+        JSON.stringify(targetMesh.current) ===
+          JSON.stringify(inFlightMeshRender.current?.value)
+      ) {
         console.log("no-op because target is already in-flight or undefined");
         return;
       }
@@ -236,29 +244,29 @@ function AppContent() {
         targetMesh.current,
         GlobalVariables.topLevelMolecule.getContext()
       );
-      inFlightMeshRender.current = {task: genTask, value: targetMesh.current};
+      inFlightMeshRender.current = { task: genTask, value: targetMesh.current };
       genTask
-      .then((m) => {
-        const mesh = m.mesh;
-        const id = m.id;
-        inFlightMeshRender.current = undefined;
-        if (JSON.stringify(id) !== JSON.stringify(targetMesh.current)) {
-          console.debug("discarding outdated mesh for: ", id);
-          return;
-        }
-        setMesh(mesh);
-        setOutdatedMesh(false);
-        /*Set plane and geometry type for ThreeContext*/
-        setPlane(id?.plane);
-        setGeometryType(id?.dimension);
-      })
-      .catch((e) => {
-        console.error("Can't display Mesh " + e);
-        activeAtom.setError("Can't display Mesh " + e);
-      })
-      .finally(() => {
-        createPuppeteerDiv();
-      })
+        .then((m) => {
+          const mesh = m.mesh;
+          const id = m.id;
+          inFlightMeshRender.current = undefined;
+          if (JSON.stringify(id) !== JSON.stringify(targetMesh.current)) {
+            console.debug("discarding outdated mesh for: ", id);
+            return;
+          }
+          setMesh(mesh);
+          setOutdatedMesh(false);
+          /*Set plane and geometry type for ThreeContext*/
+          setPlane(id?.plane);
+          setGeometryType(id?.dimension);
+        })
+        .catch((e) => {
+          console.error("Can't display Mesh " + e);
+          activeAtom.setError("Can't display Mesh " + e);
+        })
+        .finally(() => {
+          createPuppeteerDiv();
+        });
     });
   }
 
@@ -269,36 +277,48 @@ function AppContent() {
       setMesh([]);
       setWireMesh([]);
     };
-    GlobalVariables.writeToDisplay = (moleculeValue, context, backgroundMolecule = false) => {
+    GlobalVariables.writeToDisplay = (
+      moleculeValue,
+      context,
+      backgroundMolecule = false
+    ) => {
       if (!moleculeValue) {
-        moleculeValue = {geometry: []}; // use a non-null structure which still generates the default mesh
+        moleculeValue = { geometry: [] }; // use a non-null structure which still generates the default mesh
       }
       if (backgroundMolecule) {
-        if (backgroundMesh.current && JSON.stringify(backgroundMesh.current.id) === JSON.stringify(moleculeValue)) {
-          setWireMesh(backgroundMesh.current.mesh)
+        if (
+          backgroundMesh.current &&
+          JSON.stringify(backgroundMesh.current.id) ===
+            JSON.stringify(moleculeValue)
+        ) {
+          setWireMesh(backgroundMesh.current.mesh);
         } else {
-          backgroundMesh.current = {id: moleculeValue, mesh: undefined};
+          backgroundMesh.current = { id: moleculeValue, mesh: undefined };
           pool.proxy().then((worker) => {
-            worker.generateDisplayMesh(moleculeValue, context)
-              .then((m) => {
-                backgroundMesh.current.mesh = m.mesh;
-                setWireMesh(m.mesh);
-                setOutdatedMesh(false);
-              });
+            worker.generateDisplayMesh(moleculeValue, context).then((m) => {
+              backgroundMesh.current.mesh = m.mesh;
+              setWireMesh(m.mesh);
+              setOutdatedMesh(false);
+            });
           });
         }
         // We're showing wireframe background
         // Check if we're also viewing this as the main mesh
-        if (targetMesh.current && JSON.stringify(targetMesh.current) === JSON.stringify(moleculeValue)) {
+        if (
+          targetMesh.current &&
+          JSON.stringify(targetMesh.current) === JSON.stringify(moleculeValue)
+        ) {
           setIsViewingOutputMesh(true);
         } else {
           setIsViewingOutputMesh(false);
         }
-      }
-
-      else {
+      } else {
         targetMesh.current = moleculeValue;
-        if (JSON.stringify(targetMesh.current) === JSON.stringify(backgroundMesh.current?.id) && backgroundMesh.current?.mesh) {
+        if (
+          JSON.stringify(targetMesh.current) ===
+            JSON.stringify(backgroundMesh.current?.id) &&
+          backgroundMesh.current?.mesh
+        ) {
           // Special case where we're trying to show the output and have already prepared it as the
           // wireframe background.
           setMesh(backgroundMesh.current.mesh);
@@ -311,14 +331,18 @@ function AppContent() {
           // General case - generate the mesh for selected atom
           makeMesh();
           // Check if we're viewing the same geometry as the wireframe
-          if (backgroundMesh.current?.id && JSON.stringify(targetMesh.current) === JSON.stringify(backgroundMesh.current.id)) {
+          if (
+            backgroundMesh.current?.id &&
+            JSON.stringify(targetMesh.current) ===
+              JSON.stringify(backgroundMesh.current.id)
+          ) {
             setIsViewingOutputMesh(true);
           } else {
             setIsViewingOutputMesh(false);
           }
         }
       }
-    }
+    };
 
     GlobalVariables.cad = cad;
     GlobalVariables.pool = pool;
@@ -395,7 +419,7 @@ function AppContent() {
         GlobalVariables.currentMolecule.selected = true;
         setActiveAtom(GlobalVariables.currentMolecule);
       })
-      .catch((e) => {
+      .catch(async (e) => {
         // If error is about bad credentials, trigger re-authentication
         if (
           e?.status === 401 ||
@@ -413,6 +437,35 @@ function AppContent() {
           });
           return;
         }
+
+        // If error is 404 (project not found), mark it in AWS
+        if (e?.status === 404) {
+          console.warn(
+            "Project not found on GitHub, marking as not found in AWS:",
+            project.repoName
+          );
+          const apiUpdateUrl =
+            "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
+
+          try {
+            await fetch(apiUpdateUrl, {
+              method: "POST",
+              body: JSON.stringify({
+                owner: project.owner,
+                repoName: project.repoName,
+                attributeUpdates: {
+                  notFound: true,
+                },
+              }),
+              headers: {
+                "Content-type": "application/json; charset=UTF-8",
+              },
+            });
+          } catch (updateError) {
+            console.error("Error updating AWS node:", updateError);
+          }
+        }
+
         setErrorNotification("Can't load/find project: " + (e.message || e));
         setTimeout(() => setErrorNotification(null), 5000);
         // Navigate back to projects page after error
@@ -449,10 +502,7 @@ function AppContent() {
             />
           }
         />
-        <Route
-          path="/user-guide"
-          element={<UserGuidePage />}
-        />
+        <Route path="/user-guide" element={<UserGuidePage />} />
         <Route
           path="/run/:owner/:repoName"
           element={
