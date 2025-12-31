@@ -15,6 +15,7 @@ def lambda_handler(event: any, context: any):
     table = dynamodb.Table(table_name)
 
     print(event)
+    newDate = str(datetime.now().toordinal())
 
     try:
         owner = event["owner"]
@@ -32,7 +33,7 @@ def lambda_handler(event: any, context: any):
         parentRepo = event["parentRepo"]
         githubMoleculesUsed = event["githubMoleculesUsed"]
         html_url = event["html_url"]
-        dateModified = datetime.now().strftime('%m/%d/%Y')
+        dateModified = newDate
 
         newYear = datetime.now().year
 
