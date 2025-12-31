@@ -66,7 +66,7 @@ function CreateMode() {
     setShowTopLevelWireframe,
   } = useRendering();
 
-  const { cad, loadProject } = useProject();
+  const { cad, loadProject, searchGithubMolecules } = useProject();
   const meshRef = useRef();
 
   // Make meshRef available globally for thumbnail generation
@@ -453,46 +453,6 @@ function CreateMode() {
     setUserUploadedFile(false);
   }, [GlobalVariables.currentAWSnode]);
 
-  function searchGithubMolecules(molecule) {
-    return new Promise((resolve, reject) => {
-      try {
-        const githubMoleculeUsedList = [];
-
-        function recursiveSearch(molecule) {
-          // Check if the molecule has nodes
-          if (
-            !molecule.nodesOnTheScreen ||
-            !Array.isArray(molecule.nodesOnTheScreen)
-          ) {
-            return;
-          }
-          // Iterate through each node in the molecule
-          molecule.nodesOnTheScreen.forEach((node) => {
-            if (node.atomType === "GitHubMolecule") {
-              // Add to the githubMoleculeUsedList if atomType is "Github molecule"
-              if (node.parentRepo == null) return; // Safety check if parentRepo is null
-              githubMoleculeUsedList.push({
-                owner: node.parentRepo.owner,
-                repoName: node.parentRepo.repoName,
-              });
-            } else if (node.atomType === "Molecule") {
-              // Recursively search inside the nodes of this molecule
-              recursiveSearch(node);
-            }
-          });
-        }
-
-        // Start the recursive search
-        recursiveSearch(molecule);
-
-        // Resolve the promise with the list of Github molecules
-        resolve(githubMoleculeUsedList);
-      } catch (error) {
-        // Reject the promise if an error occurs
-        reject(error);
-      }
-    });
-  }
   /**
    * Create a commit as part of the saving process.
    */

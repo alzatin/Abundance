@@ -42,10 +42,16 @@ export function ProjectProvider({ children, cad, loadProject }) {
     exporting,
     setNewProjectBar
   ) => {
+    let githubMoleculeUsedList = [];
     if (molecule !== undefined && exporting) {
+      githubMoleculeUsedList = await searchGithubMolecules(
+        GlobalVariables.topLevelMolecule
+      );
       GlobalVariables.topLevelMolecule = molecule;
       GlobalVariables.topLevelMolecule.enableAllChildren();
       molecule.topLevel = true;
+      console.log("Exporting existing molecule as new project");
+      console.log(GlobalVariables.topLevelMolecule);
     } else {
       GlobalVariables.topLevelMolecule = new Molecule({
         x: 0,
@@ -126,7 +132,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
         "https://raw.githubusercontent.com/" +
         result.data.full_name +
         "/master/project.abundance?sanitize=true",
-      githubMoleculesUsed: [],
+      githubMoleculesUsed: githubMoleculeUsedList,
       svgURL:
         "https://raw.githubusercontent.com/" +
         result.data.full_name +
@@ -252,6 +258,47 @@ export function ProjectProvider({ children, cad, loadProject }) {
     console.log("Project created");
     console.log(GlobalVariables.currentAWSnode);
     return GlobalVariables.currentAWSnode;
+  };
+
+  const searchGithubMolecules = (molecule) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const githubMoleculeUsedList = [];
+
+        function recursiveSearch(molecule) {
+          // Check if the molecule has nodes
+          if (
+            !molecule.nodesOnTheScreen ||
+            !Array.isArray(molecule.nodesOnTheScreen)
+          ) {
+            return;
+          }
+          // Iterate through each node in the molecule
+          molecule.nodesOnTheScreen.forEach((node) => {
+            if (node.atomType === "GitHubMolecule") {
+              // Add to the githubMoleculeUsedList if atomType is "Github molecule"
+              if (node.parentRepo == null) return; // Safety check if parentRepo is null
+              githubMoleculeUsedList.push({
+                owner: node.parentRepo.owner,
+                repoName: node.parentRepo.repoName,
+              });
+            } else if (node.atomType === "Molecule") {
+              // Recursively search inside the nodes of this molecule
+              recursiveSearch(node);
+            }
+          });
+        }
+
+        // Start the recursive search
+        recursiveSearch(molecule);
+
+        // Resolve the promise with the list of Github molecules
+        resolve(githubMoleculeUsedList);
+      } catch (error) {
+        // Reject the promise if an error occurs
+        reject(error);
+      }
+    });
   };
 
   /**
@@ -721,6 +768,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
     createProject,
     duplicateProject,
     renameProject,
+    searchGithubMolecules,
   };
   return (
     <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>
