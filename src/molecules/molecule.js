@@ -207,6 +207,18 @@ export default class Molecule extends Atom {
       };
     }
 
+    // Add BOM summary if this molecule has a compiled BOM
+    if (this.compiledBom && Array.isArray(this.compiledBom) && this.compiledBom.length > 0) {
+      this.compiledBom.forEach((item) => {
+        inputParams["bom-" + this.uniqueID + "-" + item.BOMitemName] = {
+          type: "number",
+          value: item.numberNeeded,
+          label: item.BOMitemName + " x",
+          disabled: true,
+        };
+      });
+    }
+
     return inputParams;
   }
 
