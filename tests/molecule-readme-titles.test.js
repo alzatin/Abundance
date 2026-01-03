@@ -68,6 +68,7 @@ class MockMolecule extends MockAtom {
     this.atomType = "Molecule";
     this.name = "Molecule";
     this.nodesOnTheScreen = [];
+    this.topLevel = false;
     this.setValues(values);
   }
 
@@ -118,7 +119,8 @@ class MockMolecule extends MockAtom {
     });
 
     // Add heading for this molecule if there are any readme contributions
-    if (finalReadMe.length > 0) {
+    // Skip heading for top-level molecule as project name is already added as H1
+    if (finalReadMe.length > 0 && !this.topLevel) {
       // Insert heading at the beginning
       finalReadMe.unshift({
         uniqueID: this.uniqueID + "-heading",
@@ -182,6 +184,25 @@ describe("Molecule README Title Generation", () => {
     // Should return empty array
     expect(result).toBeDefined();
     expect(result.length).toBe(0);
+  });
+
+  it("should not add heading for top-level molecule", async () => {
+    const molecule = new MockMolecule({ name: "TopLevel", x: 0, y: 0, topLevel: true });
+    
+    const readme = new MockReadme({
+      readMeText: "Top level readme text",
+      x: 0.1,
+      y: 0.1,
+    });
+    
+    molecule.nodesOnTheScreen = [readme];
+    
+    const result = await molecule.requestReadme();
+    
+    // Should have only 1 item (no heading for top-level)
+    expect(result).toBeDefined();
+    expect(result.length).toBe(1);
+    expect(result[0].readMeText).toBe("Top level readme text");
   });
 
   it("should add heading for nested molecule with readme atoms", async () => {
