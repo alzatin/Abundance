@@ -996,6 +996,18 @@ export default class Molecule extends Atom {
         }
       });
     });
+
+    // Add heading for this molecule if there are any readme contributions
+    // Skip heading for top-level molecule as project name is already added as H1
+    if (finalReadMe.length > 0 && !this.topLevel) {
+      // Insert heading at the beginning
+      finalReadMe.unshift({
+        uniqueID: this.uniqueID + "-heading",
+        readMeText: `### ${this.name}`,
+        svg: null,
+      });
+    }
+
     return finalReadMe;
   }
 
