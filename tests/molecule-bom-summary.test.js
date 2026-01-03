@@ -3,8 +3,29 @@
  * Ensures that when a molecule contains a BOM, the summary appears in createInputParams
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { BOMEntry } from '../src/js/BOM.js';
+import { describe, it, expect } from 'vitest';
+
+/**
+ * Helper function to simulate BOM processing logic from molecule.js
+ * @param {object} mockMolecule - Mock molecule object with compiledBom
+ * @returns {object} Input parameters with BOM items
+ */
+function processBomToInputParams(mockMolecule) {
+  let inputParams = {};
+  
+  if (mockMolecule.compiledBom && Array.isArray(mockMolecule.compiledBom) && mockMolecule.compiledBom.length > 0) {
+    mockMolecule.compiledBom.forEach((item) => {
+      inputParams["bom-" + mockMolecule.uniqueID + "-" + item.BOMitemName] = {
+        type: "number",
+        value: item.numberNeeded,
+        label: item.BOMitemName + " x",
+        disabled: true,
+      };
+    });
+  }
+  
+  return inputParams;
+}
 
 describe('Molecule BOM Summary in Inputs Panel', () => {
 
@@ -22,18 +43,7 @@ describe('Molecule BOM Summary in Inputs Panel', () => {
     };
 
     // Simulate the createInputParams logic for BOM items
-    let inputParams = {};
-    
-    if (mockMolecule.compiledBom && Array.isArray(mockMolecule.compiledBom) && mockMolecule.compiledBom.length > 0) {
-      mockMolecule.compiledBom.forEach((item) => {
-        inputParams["bom-" + mockMolecule.uniqueID + "-" + item.BOMitemName] = {
-          type: "number",
-          value: item.numberNeeded,
-          label: item.BOMitemName + " x",
-          disabled: true,
-        };
-      });
-    }
+    const inputParams = processBomToInputParams(mockMolecule);
 
     // Verify BOM items appear in inputParams
     expect(inputParams['bom-test123-Bolt']).toBeDefined();
@@ -56,18 +66,7 @@ describe('Molecule BOM Summary in Inputs Panel', () => {
       compiledBom: []
     };
 
-    let inputParams = {};
-    
-    if (mockMolecule.compiledBom && Array.isArray(mockMolecule.compiledBom) && mockMolecule.compiledBom.length > 0) {
-      mockMolecule.compiledBom.forEach((item) => {
-        inputParams["bom-" + mockMolecule.uniqueID + "-" + item.BOMitemName] = {
-          type: "number",
-          value: item.numberNeeded,
-          label: item.BOMitemName + " x",
-          disabled: true,
-        };
-      });
-    }
+    const inputParams = processBomToInputParams(mockMolecule);
 
     // Verify no BOM items are added
     expect(Object.keys(inputParams).length).toBe(0);
@@ -82,18 +81,7 @@ describe('Molecule BOM Summary in Inputs Panel', () => {
       compiledBom: undefined
     };
 
-    let inputParams = {};
-    
-    if (mockMolecule.compiledBom && Array.isArray(mockMolecule.compiledBom) && mockMolecule.compiledBom.length > 0) {
-      mockMolecule.compiledBom.forEach((item) => {
-        inputParams["bom-" + mockMolecule.uniqueID + "-" + item.BOMitemName] = {
-          type: "number",
-          value: item.numberNeeded,
-          label: item.BOMitemName + " x",
-          disabled: true,
-        };
-      });
-    }
+    const inputParams = processBomToInputParams(mockMolecule);
 
     // Verify no BOM items are added
     expect(Object.keys(inputParams).length).toBe(0);
@@ -112,18 +100,7 @@ describe('Molecule BOM Summary in Inputs Panel', () => {
       ]
     };
 
-    let inputParams = {};
-    
-    if (mockMolecule.compiledBom && Array.isArray(mockMolecule.compiledBom) && mockMolecule.compiledBom.length > 0) {
-      mockMolecule.compiledBom.forEach((item) => {
-        inputParams["bom-" + mockMolecule.uniqueID + "-" + item.BOMitemName] = {
-          type: "number",
-          value: item.numberNeeded,
-          label: item.BOMitemName + " x",
-          disabled: true,
-        };
-      });
-    }
+    const inputParams = processBomToInputParams(mockMolecule);
 
     // Verify all BOM items are present
     expect(Object.keys(inputParams).length).toBe(3);
