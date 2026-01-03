@@ -14,11 +14,22 @@ function processBomToInputParams(mockMolecule) {
   let inputParams = {};
   
   if (mockMolecule.compiledBom && Array.isArray(mockMolecule.compiledBom) && mockMolecule.compiledBom.length > 0) {
+    // Add spacer and heading
+    inputParams["bom-spacer-" + mockMolecule.uniqueID] = {
+      type: "spacer",
+      height: 0,
+    };
+    inputParams["bom-heading-" + mockMolecule.uniqueID] = {
+      type: "string",
+      value: "Bill Of Materials:",
+      disabled: true,
+    };
+    
+    // Add each BOM item
     mockMolecule.compiledBom.forEach((item) => {
       inputParams["bom-" + mockMolecule.uniqueID + "-" + item.BOMitemName] = {
-        type: "number",
-        value: item.numberNeeded,
-        label: item.BOMitemName + " x",
+        type: "string",
+        value: item.BOMitemName + ": " + item.numberNeeded,
         disabled: true,
       };
     });
@@ -45,16 +56,26 @@ describe('Molecule BOM Summary in Inputs Panel', () => {
     // Simulate the createInputParams logic for BOM items
     const inputParams = processBomToInputParams(mockMolecule);
 
-    // Verify BOM items appear in inputParams
+    // Verify heading is present
+    expect(inputParams['bom-heading-test123']).toBeDefined();
+    expect(inputParams['bom-heading-test123'].type).toBe('string');
+    expect(inputParams['bom-heading-test123'].value).toBe('Bill Of Materials:');
+    expect(inputParams['bom-heading-test123'].disabled).toBe(true);
+    
+    // Verify spacer is present
+    expect(inputParams['bom-spacer-test123']).toBeDefined();
+    expect(inputParams['bom-spacer-test123'].type).toBe('spacer');
+
+    // Verify BOM items appear in inputParams with new format
     expect(inputParams['bom-test123-Bolt']).toBeDefined();
-    expect(inputParams['bom-test123-Bolt'].type).toBe('number');
-    expect(inputParams['bom-test123-Bolt'].value).toBe(4);
-    expect(inputParams['bom-test123-Bolt'].label).toBe('Bolt x');
+    expect(inputParams['bom-test123-Bolt'].type).toBe('string');
+    expect(inputParams['bom-test123-Bolt'].value).toBe('Bolt: 4');
     expect(inputParams['bom-test123-Bolt'].disabled).toBe(true);
 
     expect(inputParams['bom-test123-Washer']).toBeDefined();
-    expect(inputParams['bom-test123-Washer'].value).toBe(8);
-    expect(inputParams['bom-test123-Washer'].label).toBe('Washer x');
+    expect(inputParams['bom-test123-Washer'].type).toBe('string');
+    expect(inputParams['bom-test123-Washer'].value).toBe('Washer: 8');
+    expect(inputParams['bom-test123-Washer'].disabled).toBe(true);
   });
 
   it('should not add BOM params when compiledBom is empty', () => {
@@ -87,7 +108,7 @@ describe('Molecule BOM Summary in Inputs Panel', () => {
     expect(Object.keys(inputParams).length).toBe(0);
   });
 
-  it('should handle multiple BOM items with same quantity display format', () => {
+  it('should handle multiple BOM items with correct format', () => {
     const mockMolecule = {
       uniqueID: 'test999',
       name: 'Multi-Item Molecule',
@@ -102,15 +123,15 @@ describe('Molecule BOM Summary in Inputs Panel', () => {
 
     const inputParams = processBomToInputParams(mockMolecule);
 
-    // Verify all BOM items are present
-    expect(Object.keys(inputParams).length).toBe(3);
-    expect(inputParams['bom-test999-Screw'].value).toBe(12);
-    expect(inputParams['bom-test999-Nut'].value).toBe(12);
-    expect(inputParams['bom-test999-Spacer'].value).toBe(6);
+    // Verify heading and spacer (2) plus 3 items = 5 total
+    expect(Object.keys(inputParams).length).toBe(5);
     
-    // Verify label format with " x" suffix
-    expect(inputParams['bom-test999-Screw'].label).toBe('Screw x');
-    expect(inputParams['bom-test999-Nut'].label).toBe('Nut x');
-    expect(inputParams['bom-test999-Spacer'].label).toBe('Spacer x');
+    // Verify all BOM items are present with correct format
+    expect(inputParams['bom-test999-Screw'].type).toBe('string');
+    expect(inputParams['bom-test999-Screw'].value).toBe('Screw: 12');
+    expect(inputParams['bom-test999-Screw'].disabled).toBe(true);
+    
+    expect(inputParams['bom-test999-Nut'].value).toBe('Nut: 12');
+    expect(inputParams['bom-test999-Spacer'].value).toBe('Spacer: 6');
   });
 });
