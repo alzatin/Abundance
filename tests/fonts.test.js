@@ -22,10 +22,10 @@ describe("Font Configuration", () => {
     expect(Fonts.AGUAFINA).toContain(".ttf");
   });
 
-  it("should include the new cursive font DANCING_SCRIPT", () => {
-    expect(Fonts.DANCING_SCRIPT).toBeDefined();
-    expect(Fonts.DANCING_SCRIPT).toContain("dancingscript");
-    expect(Fonts.DANCING_SCRIPT).toContain(".ttf");
+  it("should include the new cursive font KAUSHAN_SCRIPT", () => {
+    expect(Fonts.KAUSHAN_SCRIPT).toBeDefined();
+    expect(Fonts.KAUSHAN_SCRIPT).toContain("kaushanscript");
+    expect(Fonts.KAUSHAN_SCRIPT).toContain(".ttf");
   });
 
   it("should include the new cursive font PACIFICO", () => {
@@ -41,13 +41,13 @@ describe("Font Configuration", () => {
   });
 
   it("should have at least 4 cursive/script style fonts", () => {
-    const cursiveFonts = ["AGUAFINA", "DANCING_SCRIPT", "PACIFICO", "GREAT_VIBES"];
+    const cursiveFonts = ["AGUAFINA", "KAUSHAN_SCRIPT", "PACIFICO", "GREAT_VIBES"];
     const availableCursiveFonts = cursiveFonts.filter((font) => Fonts[font]);
     expect(availableCursiveFonts.length).toBeGreaterThanOrEqual(4);
   });
 
   it("should have valid Google Fonts URLs for all cursive fonts", () => {
-    const cursiveFonts = ["AGUAFINA", "DANCING_SCRIPT", "PACIFICO", "GREAT_VIBES"];
+    const cursiveFonts = ["AGUAFINA", "KAUSHAN_SCRIPT", "PACIFICO", "GREAT_VIBES"];
     cursiveFonts.forEach((font) => {
       expect(Fonts[font]).toMatch(/^https:\/\/fonts\.gstatic\.com/);
     });

@@ -10,11 +10,11 @@ This document showcases the cursive/script style fonts available in Abundance fo
 - **URL:** `https://fonts.gstatic.com/s/aguafinascript/v5/65g7cgMtMGnNlNyq_Z6CvMxLhO8OSNnfAp53LK1_iRs.ttf`
 - **Use Case:** Elegant text, invitations, decorative titles
 
-### 2. DANCING_SCRIPT (NEW)
-- **Font Name:** Dancing Script
-- **Style:** Lively, casual handwriting
-- **URL:** `https://fonts.gstatic.com/s/dancingscript/v25/If2cXTr6YS-zF4S-kcSWSVi_sxjsohD9F50Ruu7BMSo3Sup8.ttf`
-- **Use Case:** Fun, playful designs, casual text, friendly messages
+### 2. KAUSHAN_SCRIPT (NEW)
+- **Font Name:** Kaushan Script
+- **Style:** Bold, lively script with personality
+- **URL:** `https://fonts.gstatic.com/s/kaushanscript/v14/vm8vdRfvXFLG3OLnsO15WYS5DF7_ytN3M48a.ttf`
+- **Use Case:** Bold headings, energetic designs, creative branding
 
 ### 3. PACIFICO (NEW)
 - **Font Name:** Pacifico
@@ -25,7 +25,7 @@ This document showcases the cursive/script style fonts available in Abundance fo
 ### 4. GREAT_VIBES (NEW)
 - **Font Name:** Great Vibes
 - **Style:** Elegant, formal script with flourishes
-- **URL:** `https://fonts.gstatic.com/s/greatvibes/v16/RWmMoKWR9v4ksMfaWd_JN-XCg6UKDXlq.ttf`
+- **URL:** `https://fonts.gstatic.com/s/greatvibes/v15/RWmMoKWR9v4ksMfaWd_JN-XCg6UKDXlq.ttf`
 - **Use Case:** Formal invitations, elegant branding, sophisticated designs
 
 ## How to Use
@@ -34,7 +34,7 @@ This document showcases the cursive/script style fonts available in Abundance fo
 2. In the atom's properties panel, find the **Font Family** dropdown
 3. Select one of the cursive fonts:
    - AGUAFINA
-   - DANCING_SCRIPT
+   - KAUSHAN_SCRIPT
    - PACIFICO
    - GREAT_VIBES
 4. Adjust the font size and text as needed
@@ -53,7 +53,7 @@ Here's how "Abundance" would look in each font:
 
 ```
 AGUAFINA:        𝒜𝒷𝓊𝓃𝒹𝒶𝓃𝒸ℯ (elegant, flowing)
-DANCING_SCRIPT:  Abundance (lively, bouncy)
+KAUSHAN_SCRIPT:  Abundance (bold, energetic)
 PACIFICO:        Abundance (bold, surf-style)
 GREAT_VIBES:     𝒜𝒷𝓊𝓃𝒹𝒶𝓃𝒸𝑒 (formal, flourished)
 ```
