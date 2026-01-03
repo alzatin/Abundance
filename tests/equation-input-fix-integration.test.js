@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { parse } from "mathjs";
 
 describe("Equation Input Fix Integration Test", () => {
   let MockAtom;
@@ -35,7 +36,6 @@ describe("Equation Input Fix Integration Test", () => {
 
       // Include the fixed methods from atom.js
       extractVariablesFromEquation(equation) {
-        const { parse } = require("mathjs");
         let variables = [];
         try {
           const node = parse(equation);
