@@ -44,11 +44,12 @@ export default memo(function FlowCanvas({
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;
     GlobalVariables.c = canvasRef.current.getContext("2d");
-    
+
     // Check if we need to load a project (first load or different project)
-    const needsProjectLoad = 
+    const needsProjectLoad =
       !GlobalVariables.loadedRepo ||
-      GlobalVariables.currentAWSnode.repoName !== GlobalVariables.loadedRepo.name;
+      GlobalVariables.currentAWSnode.repoName !==
+        GlobalVariables.loadedRepo.name;
 
     if (needsProjectLoad) {
       // Clean up any stale localStorage entries for the previously loaded project
@@ -175,7 +176,7 @@ export default memo(function FlowCanvas({
       // Check if there's an unsaved state for this project and clean it up
       const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
       const unsavedProject = localStorage.getItem(projectKey);
-      
+
       if (unsavedProject) {
         console.log(`Cleaning up localStorage for same project: ${projectKey}`);
         // Remove the entry to prevent accumulation
@@ -183,7 +184,7 @@ export default memo(function FlowCanvas({
         localStorage.removeItem(projectKey);
       }
     }
-    
+
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
       atom.update();
     });
@@ -328,26 +329,13 @@ export default memo(function FlowCanvas({
           const atomPromises = [];
           if (remappedData?.allAtoms) {
             remappedData.allAtoms.forEach((atomData) => {
-              if (atomData.atomType === "GitHubMolecule") {
-                // For GitHub molecules, reload from GitHub as a completely fresh molecule
-                console.log(`[Paste with connectors] Loading fresh GitHub molecule "${atomData.name}" from GitHub`);
-                const position = { x: atomData.x || 0.5, y: atomData.y || 0.6 };
-                const promise = GlobalVariables.currentMolecule.loadGithubMoleculeByName(
-                  atomData.parentRepo,
-                  {}, // Pass empty object - load with default values, no stored ioValues
-                  remappedData.allConnectors.filter(c => c.ap1ID === atomData.uniqueID || c.ap2ID === atomData.uniqueID),
-                  position
-                );
-                atomPromises.push(promise);
-              } else {
-                const promise = GlobalVariables.currentMolecule.placeAtom(
-                  atomData,
-                  true,
-                  undefined,
-                  true // skipAutoConnect = true for paste operations
-                );
-                atomPromises.push(promise);
-              }
+              const promise = GlobalVariables.currentMolecule.placeAtom(
+                atomData,
+                true,
+                undefined,
+                true // skipAutoConnect = true for paste operations
+              );
+              atomPromises.push(promise);
             });
           }
 
@@ -357,8 +345,10 @@ export default memo(function FlowCanvas({
               remappedData.allConnectors.forEach((connectorData) => {
                 // Skip connectors that were already handled by loadGithubMoleculeByName
                 const isGitHubMoleculeConnector = remappedData.allAtoms.some(
-                  atom => atom.atomType === "GitHubMolecule" && 
-                         (atom.uniqueID === connectorData.ap1ID || atom.uniqueID === connectorData.ap2ID)
+                  (atom) =>
+                    atom.atomType === "GitHubMolecule" &&
+                    (atom.uniqueID === connectorData.ap1ID ||
+                      atom.uniqueID === connectorData.ap2ID)
                 );
                 if (!isGitHubMoleculeConnector) {
                   GlobalVariables.currentMolecule.placeConnector(connectorData);
@@ -369,18 +359,10 @@ export default memo(function FlowCanvas({
         } else {
           // Regular paste without connectors
           GlobalVariables.atomsSelected.forEach((item) => {
-            if (item.atomType == "GitHubMolecule") {
-              // For GitHub molecules, reload from GitHub as a completely fresh molecule
-              // This ensures atoms are properly initialized and enabled with default values
-              console.log(`[Paste] Loading fresh GitHub molecule "${item.name}" from GitHub`);
-              const position = { x: item.x || 0.5, y: item.y || 0.6 };
-              GlobalVariables.currentMolecule.loadGithubMoleculeByName(
-                item.parentRepo,
-                {}, // Pass empty object - load with default values, no stored ioValues
-                [], // No connectors to restore for simple paste
-                position
-              );
-            } else if (item.atomType == "Molecule") {
+            if (
+              item.atomType == "Molecule" ||
+              item.atomType == "GitHubMolecule"
+            ) {
               // For regular molecules, use comprehensive ID remapping that handles nested atoms
               item = GlobalVariables.currentMolecule.remapIDs(item);
               GlobalVariables.currentMolecule.placeAtom(

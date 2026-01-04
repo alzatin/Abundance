@@ -686,41 +686,53 @@ export default class Atom extends ObservableEntity {
    * @param {string} atomName - Name of the atom for logging
    * @returns {boolean} - True if value was added, false if skipped
    */
-  static safeSerializeValue(target, key, value, atomName = 'unknown') {
+  static safeSerializeValue(target, key, value, atomName = "unknown") {
     const MAX_VALUE_SIZE = 10000; // 10KB limit
-    
+
     // Skip null/undefined
     if (value === null || value === undefined) {
       return false;
     }
-    
+
     // Skip geometry objects
-    if (typeof value === 'object' && value !== null && 
-        (value.geometry || value.dimension || value.tags)) {
-      console.warn(`Skipping serialization of geometry object for ${atomName}.${key}`);
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      (value.geometry || value.dimension || value.tags)
+    ) {
+      console.warn(
+        `Skipping serialization of geometry object for ${atomName}.${key}`
+      );
       return false;
     }
-    
+
     // Check string size
-    if (typeof value === 'string' && value.length > MAX_VALUE_SIZE) {
-      console.warn(`Skipping serialization of large string (${value.length} chars) for ${atomName}.${key}`);
+    if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
+      console.warn(
+        `Skipping serialization of large string (${value.length} chars) for ${atomName}.${key}`
+      );
       return false;
     }
-    
+
     // Check object size when stringified
-    if (typeof value === 'object' && value !== null) {
+    if (typeof value === "object" && value !== null) {
       try {
         const stringified = JSON.stringify(value);
         if (stringified.length > MAX_VALUE_SIZE) {
-          console.warn(`Skipping serialization of large object (${stringified.length} chars) for ${atomName}.${key}`);
+          console.warn(
+            `Skipping serialization of large object (${stringified.length} chars) for ${atomName}.${key}`
+          );
           return false;
         }
       } catch (e) {
-        console.warn(`Skipping serialization of non-serializable object for ${atomName}.${key}:`, e.message);
+        console.warn(
+          `Skipping serialization of non-serializable object for ${atomName}.${key}:`,
+          e.message
+        );
         return false;
       }
     }
-    
+
     // Value is safe to add
     target[key] = value;
     return true;
@@ -734,37 +746,52 @@ export default class Atom extends ObservableEntity {
     var ioValues = [];
     this.inputs.forEach((ap) => {
       // Skip geometry types explicitly, even if value happens to be a string
-      if (ap.valueType === "geometry") {
+      if (ap.valueType === "geometry" && ap.type != "input") {
         return;
       }
-      
+
       if (
         typeof ap.getValue() == "number" ||
-        typeof ap.getValue() == "string"
+        typeof ap.getValue() == "string" ||
+        ap.type == "input"
       ) {
         // Only save values that differ from defaults or have custom equations
         const currentValue = ap.getValue();
-        const hasCustomEquation = ap.currentEquation && ap.currentEquation.trim() !== '';
+        const hasCustomEquation =
+          ap.currentEquation && ap.currentEquation.trim() !== "";
         const isDifferentFromDefault = ap.defaultValue !== currentValue;
-        
+
         // Skip if value is a very large string (likely serialized object data)
         // Normal equations and values should be under 10KB
         const MAX_VALUE_SIZE = 10000;
-        if (typeof currentValue === "string" && currentValue.length > MAX_VALUE_SIZE) {
-          console.warn(`Skipping serialization of large string value (${currentValue.length} chars) for attachment point: ${ap.name}`);
+        if (
+          typeof currentValue === "string" &&
+          currentValue.length > MAX_VALUE_SIZE
+        ) {
+          console.warn(
+            `Skipping serialization of large string value (${currentValue.length} chars) for attachment point: ${ap.name}`
+          );
           return;
         }
-        
+
         // For attachment points that are inputs to molecules (created by Input atoms),
-        // ALWAYS save values (even if they match defaults) because they define 
+        // ALWAYS save values (even if they match defaults) because they define
         // the molecule's interface. Input attachments have type="input".
         const isMoleculeInput = ap.type === "input";
-        
+
         // Debug logging for Input-type attachments
         if (isMoleculeInput || ap.name === "Wood Thickness") {
-          console.log(`[Serialize Debug] AP="${ap.name}", type="${ap.type}", valueType="${ap.valueType}", currentValue=${currentValue}, defaultValue=${ap.defaultValue}, isMoleculeInput=${isMoleculeInput}, willSave=${isDifferentFromDefault || hasCustomEquation || isMoleculeInput}`);
+          console.log(
+            `[Serialize Debug] AP="${ap.name}", type="${ap.type}", valueType="${
+              ap.valueType
+            }", currentValue=${currentValue}, defaultValue=${
+              ap.defaultValue
+            }, isMoleculeInput=${isMoleculeInput}, willSave=${
+              isDifferentFromDefault || hasCustomEquation || isMoleculeInput
+            }`
+          );
         }
-        
+
         // Save if value changed from default OR has custom equation OR is a molecule input
         if (isDifferentFromDefault || hasCustomEquation || isMoleculeInput) {
           var saveIO = {
@@ -774,7 +801,9 @@ export default class Atom extends ObservableEntity {
           // Only include currentEquation if it exists and it's not too large
           if (hasCustomEquation) {
             if (ap.currentEquation.length > MAX_VALUE_SIZE) {
-              console.warn(`Skipping serialization of large equation (${ap.currentEquation.length} chars) for attachment point: ${ap.name}`);
+              console.warn(
+                `Skipping serialization of large equation (${ap.currentEquation.length} chars) for attachment point: ${ap.name}`
+              );
             } else {
               saveIO.currentEquation = ap.currentEquation;
             }
@@ -789,20 +818,21 @@ export default class Atom extends ObservableEntity {
       y: this.y - offset.y,
       uniqueID: this.uniqueID,
     };
-    
+
     // Only save name if it differs from atomType or for special types that can have custom names
-    const needsName = this.atomType === "Molecule" || 
-                      this.atomType === "GitHubMolecule" || 
-                      this.name !== this.atomType;
+    const needsName =
+      this.atomType === "Molecule" ||
+      this.atomType === "GitHubMolecule" ||
+      this.name !== this.atomType;
     if (needsName) {
       object.name = this.name;
     }
-    
+
     // Only save ioValues if not empty
     if (ioValues.length > 0) {
       object.ioValues = ioValues;
     }
-    
+
     return object;
   }
 
@@ -976,7 +1006,7 @@ export default class Atom extends ObservableEntity {
       this.inputs.map((input) => {
         // Check if input has a connector attached
         const hasConnector = input.connectors.length > 0;
-        
+
         /* Makes inputs for Io's other than geometry */
         if (input.valueType === "string") {
           // When connector is attached, show the value from upstream connection
@@ -1011,14 +1041,18 @@ export default class Atom extends ObservableEntity {
               try {
                 // Ensure inputs exist for variables in the equation before evaluating
                 this.ensureInputsForEquation(currentEquation);
-                
+
                 // If the AttachmentPoint has active name-based subscriptions, it will handle
                 // the evaluation and value updates. Skip duplicate evaluation.
-                if (input._nameSubscriptionActive && input._nameSubscribedAtoms && input._nameSubscribedAtoms.size > 0) {
+                if (
+                  input._nameSubscriptionActive &&
+                  input._nameSubscribedAtoms &&
+                  input._nameSubscribedAtoms.size > 0
+                ) {
                   // Subscriptions are handling updates, no need to evaluate here
                   return;
                 }
-                
+
                 const result = this.evaluateEquation(currentEquation);
 
                 if (Number.isFinite(result)) {
@@ -1132,7 +1166,7 @@ export default class Atom extends ObservableEntity {
     // Normalize smart/curly quotes to standard ASCII quotes
     // This handles copy-paste from Word, Google Docs, etc.
     substitutedEquation = substitutedEquation
-      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')  // Various double quote styles
+      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"') // Various double quote styles
       .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'"); // Various single quote styles
 
     // Check if equation contains string literals (quoted text)
