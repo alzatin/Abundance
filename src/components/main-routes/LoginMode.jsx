@@ -276,10 +276,10 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
             )}
           </div>
         </div>
-        <FilterPanel
+        {/*<FilterPanel
           projects={projectsLoaded ? projectsLoaded["repos"] : []}
           onFilterChange={handleFilterChange}
-        />
+        />*/}
       </div>
     </>
   );
