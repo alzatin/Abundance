@@ -243,6 +243,77 @@ export default memo(function FlowCanvas({
     });
   };
 
+  /* Paste function to handle atom and connector pasting logic */
+  const Paste = () => {
+    // Deselect all currently selected atoms before pasting
+    GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
+      atom.selected = false;
+    });
+
+    // If we have connectors to paste, handle the full molecule structure
+    if (
+      GlobalVariables.connectorsSelected &&
+      GlobalVariables.connectorsSelected.length > 0
+    ) {
+      // Create a temporary molecule data structure
+      const moleculeData = {
+        allAtoms: GlobalVariables.atomsSelected,
+        allConnectors: GlobalVariables.connectorsSelected,
+        fileTypeVersion: 1,
+      };
+
+      // Remap IDs to avoid conflicts
+      const remappedData =
+        GlobalVariables.currentMolecule.remapIDs(moleculeData);
+
+      // Place atoms first
+      const atomPromises = [];
+      if (remappedData?.allAtoms) {
+        remappedData.allAtoms.forEach((atomData) => {
+          const promise = GlobalVariables.currentMolecule.placeAtom(
+            atomData,
+            true,
+            undefined,
+            true // skipAutoConnect = true for paste operations
+          );
+          atomPromises.push(promise);
+        });
+      }
+
+      // Wait for all atoms to be placed, then place connectors
+      Promise.all(atomPromises).then(() => {
+        if (remappedData?.allConnectors) {
+          remappedData.allConnectors.forEach((connectorData) => {
+            GlobalVariables.currentMolecule.placeConnector(connectorData);
+          });
+        }
+      });
+    } else {
+      // Regular paste without connectors
+      GlobalVariables.atomsSelected.forEach((item) => {
+        if (item.atomType == "Molecule" || item.atomType == "GitHubMolecule") {
+          // For regular molecules, use comprehensive ID remapping that handles nested atoms
+          item = GlobalVariables.currentMolecule.remapIDs(item);
+          GlobalVariables.currentMolecule.placeAtom(
+            item,
+            true,
+            undefined,
+            true
+          ); // skipAutoConnect = true for paste
+        } else {
+          // For simple atoms, just assign a new unique ID
+          item.uniqueID = GlobalVariables.generateUniqueID();
+          GlobalVariables.currentMolecule.placeAtom(
+            item,
+            true,
+            undefined,
+            true
+          ); // skipAutoConnect = true for paste
+        }
+      });
+    }
+  };
+
   const keyDown = async (e) => {
     if (e.key == "Backspace" || e.key == "Delete") {
       /* Save undo state before deletion */
@@ -304,85 +375,7 @@ export default memo(function FlowCanvas({
         // Ctrl+C: Enhanced copy with connectors
         GlobalVariables.currentMolecule.copyWithConnectors();
       } else if (e.key == "v") {
-        // Deselect all currently selected atoms before pasting
-        GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
-          atom.selected = false;
-        });
-
-        // If we have connectors to paste, handle the full molecule structure
-        if (
-          GlobalVariables.connectorsSelected &&
-          GlobalVariables.connectorsSelected.length > 0
-        ) {
-          // Create a temporary molecule data structure
-          const moleculeData = {
-            allAtoms: GlobalVariables.atomsSelected,
-            allConnectors: GlobalVariables.connectorsSelected,
-            fileTypeVersion: 1,
-          };
-
-          // Remap IDs to avoid conflicts
-          const remappedData =
-            GlobalVariables.currentMolecule.remapIDs(moleculeData);
-
-          // Place atoms first
-          const atomPromises = [];
-          if (remappedData?.allAtoms) {
-            remappedData.allAtoms.forEach((atomData) => {
-              const promise = GlobalVariables.currentMolecule.placeAtom(
-                atomData,
-                true,
-                undefined,
-                true // skipAutoConnect = true for paste operations
-              );
-              atomPromises.push(promise);
-            });
-          }
-
-          // Wait for all atoms to be placed, then place connectors
-          Promise.all(atomPromises).then(() => {
-            if (remappedData?.allConnectors) {
-              remappedData.allConnectors.forEach((connectorData) => {
-                // Skip connectors that were already handled by loadGithubMoleculeByName
-                const isGitHubMoleculeConnector = remappedData.allAtoms.some(
-                  (atom) =>
-                    atom.atomType === "GitHubMolecule" &&
-                    (atom.uniqueID === connectorData.ap1ID ||
-                      atom.uniqueID === connectorData.ap2ID)
-                );
-                if (!isGitHubMoleculeConnector) {
-                  GlobalVariables.currentMolecule.placeConnector(connectorData);
-                }
-              });
-            }
-          });
-        } else {
-          // Regular paste without connectors
-          GlobalVariables.atomsSelected.forEach((item) => {
-            if (
-              item.atomType == "Molecule" ||
-              item.atomType == "GitHubMolecule"
-            ) {
-              // For regular molecules, use comprehensive ID remapping that handles nested atoms
-              item = GlobalVariables.currentMolecule.remapIDs(item);
-              GlobalVariables.currentMolecule.placeAtom(
-                item,
-                true,
-                undefined,
-                true
-              ); // skipAutoConnect = true for paste
-            } else {
-              // For simple atoms, just assign a new unique ID
-              item.uniqueID = GlobalVariables.generateUniqueID();
-              GlobalVariables.currentMolecule.placeAtom(
-                item,
-                true,
-                undefined,
-                true
-              ); // skipAutoConnect = true for paste
-            }
-          });
-        }
+        Paste();
       }
 
       // Move selected atoms to new molecule with connectors

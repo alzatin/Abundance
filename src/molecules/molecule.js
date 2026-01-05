@@ -208,7 +208,11 @@ export default class Molecule extends Atom {
     }
 
     // Add BOM summary if this molecule has a compiled BOM
-    if (this.compiledBom && Array.isArray(this.compiledBom) && this.compiledBom.length > 0) {
+    if (
+      this.compiledBom &&
+      Array.isArray(this.compiledBom) &&
+      this.compiledBom.length > 0
+    ) {
       // Add spacer and heading
       inputParams["bom-spacer-" + this.uniqueID] = {
         type: "spacer",
@@ -219,7 +223,7 @@ export default class Molecule extends Atom {
         value: "Bill Of Materials:",
         disabled: true,
       };
-      
+
       // Add each BOM item
       this.compiledBom.forEach((item) => {
         inputParams["bom-" + this.uniqueID + "-" + item.BOMitemName] = {
@@ -458,21 +462,23 @@ export default class Molecule extends Atom {
       return;
     }
 
-    // Second pass: collect connectors that connect only selected atoms
+    // Second pass: collect connectors for selected atoms
+    const connectorSet = new Set();
     this.nodesOnTheScreen.forEach((atom) => {
-      if (atom.selected && atom.output) {
+      // Check all connectors for this atom's output (outbound)
+      if (atom.output && atom.output.connectors) {
         atom.output.connectors.forEach((connector) => {
-          // Only include connectors where both ends are in selected atoms
-          if (
-            connector.attachmentPoint2 &&
-            selectedAtomIDs.has(
-              connector.attachmentPoint1.parentMolecule.uniqueID
-            ) &&
-            selectedAtomIDs.has(
-              connector.attachmentPoint2.parentMolecule.uniqueID
-            )
-          ) {
-            internalConnectors.push(connector.serialize());
+          const ap1ID = connector.attachmentPoint1?.parentMolecule?.uniqueID;
+          const ap2ID = connector.attachmentPoint2?.parentMolecule?.uniqueID;
+          const ap1Selected = selectedAtomIDs.has(ap1ID);
+          const ap2Selected = selectedAtomIDs.has(ap2ID);
+          // Include if both ends are selected, or if the input is a selected atom (inbound)
+          if ((ap1Selected && ap2Selected) || ap2Selected) {
+            const key = `${ap1ID}->${ap2ID}`;
+            if (!connectorSet.has(key)) {
+              internalConnectors.push(connector.serialize());
+              connectorSet.add(key);
+            }
           }
         });
       }
@@ -1289,9 +1295,17 @@ export default class Molecule extends Atom {
           //If there are stored io values to recover
           if (oldObject.ioValues != undefined) {
             // Use position parameter if provided, otherwise use oldObject position, otherwise use this position
-            let xPos = position ? position.x : (oldObject.x !== undefined ? oldObject.x : this.x);
-            let yPos = position ? position.y : (oldObject.y !== undefined ? oldObject.y : this.y);
-            
+            let xPos = position
+              ? position.x
+              : oldObject.x !== undefined
+              ? oldObject.x
+              : this.x;
+            let yPos = position
+              ? position.y
+              : oldObject.y !== undefined
+              ? oldObject.y
+              : this.y;
+
             valuesToOverwriteInLoadedVersion = {
               uniqueID: newMoleculeUniqueID,
               x: xPos,
