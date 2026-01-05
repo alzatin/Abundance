@@ -284,16 +284,7 @@ export default memo(function FlowCanvas({
       Promise.all(atomPromises).then(() => {
         if (remappedData?.allConnectors) {
           remappedData.allConnectors.forEach((connectorData) => {
-            // Skip connectors that were already handled by loadGithubMoleculeByName
-            const isGitHubMoleculeConnector = remappedData.allAtoms.some(
-              (atom) =>
-                atom.atomType === "GitHubMolecule" &&
-                (atom.uniqueID === connectorData.ap1ID ||
-                  atom.uniqueID === connectorData.ap2ID)
-            );
-            if (!isGitHubMoleculeConnector) {
-              GlobalVariables.currentMolecule.placeConnector(connectorData);
-            }
+            GlobalVariables.currentMolecule.placeConnector(connectorData);
           });
         }
       });
