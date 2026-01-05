@@ -745,15 +745,24 @@ export default class Atom extends ObservableEntity {
     //Offsets are used to make copy and pasted atoms move over a little bit
     var ioValues = [];
     this.inputs.forEach((ap) => {
-      // Skip geometry types explicitly, even if value happens to be a string
-      if (ap.valueType === "geometry" && ap.type != "input") {
-        return;
+      // Skip geometry outputs entirely
+      if (ap.valueType === "geometry") {
+        if (ap.type !== "input") {
+          // Skip non-input geometry
+          return;
+        } else {
+          // For geometry inputs, serialize a placeholder
+          ioValues.push({
+            name: ap.name,
+            ioValue: "__GEOMETRY_INPUT__",
+          });
+          return;
+        }
       }
 
       if (
         typeof ap.getValue() == "number" ||
-        typeof ap.getValue() == "string" ||
-        ap.type == "input"
+        typeof ap.getValue() == "string"
       ) {
         // Only save values that differ from defaults or have custom equations
         const currentValue = ap.getValue();
