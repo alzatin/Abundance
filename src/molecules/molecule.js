@@ -207,6 +207,33 @@ export default class Molecule extends Atom {
       };
     }
 
+    // Add BOM summary if this molecule has a compiled BOM
+    if (
+      this.compiledBom &&
+      Array.isArray(this.compiledBom) &&
+      this.compiledBom.length > 0
+    ) {
+      // Add spacer and heading
+      inputParams["bom-spacer-" + this.uniqueID] = {
+        type: "spacer",
+        height: 0,
+      };
+      inputParams["bom-heading-" + this.uniqueID] = {
+        type: "string",
+        value: "Bill Of Materials:",
+        disabled: true,
+      };
+
+      // Add each BOM item
+      this.compiledBom.forEach((item) => {
+        inputParams["bom-" + this.uniqueID + "-" + item.BOMitemName] = {
+          type: "string",
+          value: item.BOMitemName + ": " + item.numberNeeded,
+          disabled: true,
+        };
+      });
+    }
+
     return inputParams;
   }
 
@@ -435,7 +462,6 @@ export default class Molecule extends Atom {
       return;
     }
 
-    // Second pass: collect connectors that connect only selected atoms
     // Second pass: collect connectors for selected atoms
     const connectorSet = new Set();
     this.nodesOnTheScreen.forEach((atom) => {
@@ -457,7 +483,7 @@ export default class Molecule extends Atom {
         });
       }
     });
-    console.log("internalConnectors:", internalConnectors);
+
     // Store in a structured format that includes both atoms and connectors
     GlobalVariables.atomsSelected = selectedAtoms;
     GlobalVariables.connectorsSelected = internalConnectors;
@@ -976,6 +1002,18 @@ export default class Molecule extends Atom {
         }
       });
     });
+
+    // Add heading for this molecule if there are any readme contributions
+    // Skip heading for top-level molecule as project name is already added as H1
+    if (finalReadMe.length > 0 && !this.topLevel) {
+      // Insert heading at the beginning
+      finalReadMe.unshift({
+        uniqueID: this.uniqueID + "-heading",
+        readMeText: `### ${this.name}`,
+        svg: null,
+      });
+    }
+
     return finalReadMe;
   }
 
