@@ -436,27 +436,7 @@ export default class Molecule extends Atom {
     }
 
     // Second pass: collect connectors that connect only selected atoms
-    // Second pass: collect connectors for selected atoms
-    const connectorSet = new Set();
-    this.nodesOnTheScreen.forEach((atom) => {
-      // Check all connectors for this atom's output (outbound)
-      if (atom.output && atom.output.connectors) {
-        atom.output.connectors.forEach((connector) => {
-          const ap1ID = connector.attachmentPoint1?.parentMolecule?.uniqueID;
-          const ap2ID = connector.attachmentPoint2?.parentMolecule?.uniqueID;
-          const ap1Selected = selectedAtomIDs.has(ap1ID);
-          const ap2Selected = selectedAtomIDs.has(ap2ID);
-          // Include if both ends are selected, or if the input is a selected atom (inbound)
-          if ((ap1Selected && ap2Selected) || ap2Selected) {
-            const key = `${ap1ID}->${ap2ID}`;
-            if (!connectorSet.has(key)) {
-              internalConnectors.push(connector.serialize());
-              connectorSet.add(key);
-            }
-          }
-        });
-      }
-    });
+
     console.log("internalConnectors:", internalConnectors);
     // Store in a structured format that includes both atoms and connectors
     GlobalVariables.atomsSelected = selectedAtoms;
