@@ -139,37 +139,18 @@ jobs:
             } catch (e) {
               console.log('Screenshot directory not found or empty');
             }
+            const s3Bucket = process.env.S3_BUCKET;
+            const s3Folder = process.env.S3_FOLDER;
+            const hasS3 = s3Bucket && s3Folder;
             let comment = '## 📸 Puppeteer Test Screenshots\n\n';
             comment += `Screenshots from commit: ${context.sha.substring(0, 7)}\n\n`;
             if (files.length === 0) {
               comment += 'No screenshots were generated.';
             } else {
               comment += `Generated ${files.length} screenshot(s):\n\n`;
-            }
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const botComment = comments.data.find(comment => 
-              comment.user.type === 'Bot' && comment.body.includes('📸 Puppeteer Test Screenshots')
-            );
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: comment
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: comment
-              });
-            }
-              
+              // Group screenshots by project
+              const projectScreenshots = {};
+              const otherScreenshots = [];
               files.forEach(file => {
                 if (file.includes('-Test.png') || file.includes('-Deployed.png')) {
                   let projectName;
@@ -178,7 +159,6 @@ jobs:
                   } else if (file.includes('-Deployed.png')) {
                     projectName = file.replace('-Deployed.png', '');
                   }
-                  
                   if (!projectScreenshots[projectName]) {
                     projectScreenshots[projectName] = {};
                   }
@@ -191,42 +171,6 @@ jobs:
                   otherScreenshots.push(file);
                 }
               });
-              
-              /*
-              // Uncomment this section if you want to display project comparisons
-              // This section is currently commented out to avoid cluttering the comment with too many images, uncomment when different tests are implemented
-              
-              // Display project comparisons
-              Object.keys(projectScreenshots).forEach(project => {
-                comment += `### ${project}\n\n`;
-                
-                if (hasS3) {
-                  // Display images visually when S3 is available
-                  const baseS3Url = `https://${s3Bucket}.s3.amazonaws.com/${s3Folder}`;
-                  
-                  if (projectScreenshots[project].test && projectScreenshots[project].deployed) {
-                    comment += `| Local Test Version | Deployed Version |\n`;
-                    comment += `|---|---|\n`;
-                    comment += `| ![${project} Test](${baseS3Url}/${projectScreenshots[project].test}) | ![${project} Deployed](${baseS3Url}/${projectScreenshots[project].deployed}) |\n\n`;
-                  } else if (projectScreenshots[project].test) {
-                    comment += `**Local Test Version:**\n\n`;
-                    comment += `![${project} Test](${baseS3Url}/${projectScreenshots[project].test})\n\n`;
-                  } else if (projectScreenshots[project].deployed) {
-                    comment += `**Deployed Version:**\n\n`;
-                    comment += `![${project} Deployed](${baseS3Url}/${projectScreenshots[project].deployed})\n\n`;
-                  }
-                } else {
-                  // Fallback to file names when S3 is not available
-                  if (projectScreenshots[project].test) {
-                    comment += `**Local Test Version:** \`${projectScreenshots[project].test}\`\n\n`;
-                  }
-                  if (projectScreenshots[project].deployed) {
-                    comment += `**Deployed Version:** \`${projectScreenshots[project].deployed}\`\n\n`;
-                  }
-                }
-              });
-              */
-              
               // Display main
               if (otherScreenshots.length > 0) {
                 comment += `### Two Project Comparison\n\n`;
@@ -242,7 +186,6 @@ jobs:
                   comment += '\n';
                 }
               }
-              
               if (hasS3) {
                 comment += `\n**📁 S3 Location:** Screenshots are stored in \`${s3Bucket}/${s3Folder}/\`\n\n`;
               } else {
@@ -250,21 +193,17 @@ jobs:
                 comment += `(https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) `;
                 comment += 'for this workflow run. Click "Summary" then download the "puppeteer-screenshots" artifact.\n\n';
               }
-              
               comment += '*Note: S3 images are automatically cleaned up after 30 days. Workflow artifacts are cleaned up after 90 days by GitHub.*';
             }
-
-            // Find existing comment to update or create new one
+            // Now update or create the comment (must be last)
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-
             const botComment = comments.data.find(comment => 
               comment.user.type === 'Bot' && comment.body.includes('📸 Puppeteer Test Screenshots')
             );
-
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
@@ -273,7 +212,6 @@ jobs:
                 body: comment
               });
             } else {
-             console.log('Creating new comment for Puppeteer screenshots');
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
