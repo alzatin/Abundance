@@ -132,9 +132,6 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const path = require('path');
-
-            // Get list of screenshot files
             const screenshotDir = 'Puppet/images';
             let files = [];
             try {
@@ -142,33 +139,24 @@ jobs:
             } catch (e) {
               console.log('Screenshot directory not found or empty');
             }
-
-            // Check if S3 is configured
             const s3Bucket = process.env.S3_BUCKET;
             const s3Folder = process.env.S3_FOLDER;
             const hasS3 = s3Bucket && s3Folder;
-
             let comment = '## 📸 Puppeteer Test Screenshots\n\n';
             comment += `Screenshots from commit: ${context.sha.substring(0, 7)}\n\n`;
-
             if (files.length === 0) {
               comment += 'No screenshots were generated.';
             } else {
               comment += `Generated ${files.length} screenshot(s):\n\n`;
-              // ...existing code...
             }
-
-            // Find existing comment to update or create new one
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-
             const botComment = comments.data.find(comment => 
               comment.user.type === 'Bot' && comment.body.includes('📸 Puppeteer Test Screenshots')
             );
-
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
@@ -177,7 +165,6 @@ jobs:
                 body: comment
               });
             } else {
-             console.log('Creating new comment for Puppeteer screenshots');
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
