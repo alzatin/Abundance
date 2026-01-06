@@ -483,6 +483,8 @@ export default class Molecule extends Atom {
         });
       }
     });
+    console.log("Selected Atom IDs:", selectedAtomIDs);
+    console.log("Internal Connectors:", internalConnectors);
 
     // Store in a structured format that includes both atoms and connectors
     GlobalVariables.atomsSelected = selectedAtoms;
