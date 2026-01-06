@@ -56,10 +56,18 @@ jobs:
   test:
     runs-on: ubuntu-latest
     if: github.event.action != 'closed'
-
+    strategy:
+      matrix:
+        include:
+          - branch_name: base
+            ref: ${{ github.event.pull_request.base.ref }}
+          - branch_name: pr
+            ref: ${{ github.head_ref }}
     steps:
-      - name: Checkout
+      - name: Checkout ${{ matrix.branch_name }} branch
         uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ matrix.ref }}
       - name: Configure Git Safe Directory
         run: |
           git config --global --add safe.directory /github/workspace
@@ -94,8 +102,8 @@ jobs:
       - name: Upload screenshots to S3
         if: always() && env.AWS_ACCESS_KEY_ID != ''
         run: |
-          # Create unique folder for this PR and run
-          S3_FOLDER="pr-${{ github.event.number }}/run-${{ github.run_number }}"
+          # Create unique folder for this PR, branch, and run
+          S3_FOLDER="pr-${{ github.event.number }}/${{ matrix.branch_name }}-run-${{ github.run_number }}"
           S3_BUCKET="${{ secrets.S3_BUCKET_NAME }}"
 
           # Upload all screenshot files to S3
@@ -116,11 +124,11 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: puppeteer-screenshots
+          name: puppeteer-screenshots-${{ matrix.branch_name }}
           path: Puppet/images/*.png
       - name: Create screenshot comparison comment
         uses: actions/github-script@v7
-        if: github.event_name == 'pull_request_target'
+        if: github.event_name == 'pull_request_target' && matrix.branch_name == 'pr'
         with:
           script: |
             const fs = require('fs');
@@ -147,10 +155,36 @@ jobs:
               comment += 'No screenshots were generated.';
             } else {
               comment += `Generated ${files.length} screenshot(s):\n\n`;
-              
-              // Group screenshots by project
-              const projectScreenshots = {};
-              const otherScreenshots = [];
+              // ...existing code...
+            }
+
+            // Find existing comment to update or create new one
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('📸 Puppeteer Test Screenshots')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+             console.log('Creating new comment for Puppeteer screenshots');
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
               
               files.forEach(file => {
                 if (file.includes('-Test.png') || file.includes('-Deployed.png')) {
