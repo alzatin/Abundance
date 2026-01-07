@@ -5,6 +5,7 @@ import React, {
   useImperativeHandle,
 } from "react";
 import { useControls } from "../../hooks/useControls";
+import ReactMarkdown from "react-markdown";
 
 // SVG icons (Settings, X, CaretDown)
 const SettingsIcon = ({ size = 14 }) => (
@@ -1497,6 +1498,67 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             {btn.icon ? btn.icon : btn.label || "Button"}
                           </button>
                         ))}
+                      </div>
+                    );
+                  case "markdown":
+                    return (
+                      <div key={key} style={{
+                        ...labelStyle,
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                      }}>
+                        <div
+                          style={{
+                            width: "100%",
+                            padding: "8px 12px",
+                            fontSize: 14,
+                            borderRadius: 4,
+                            border: "1px solid #333741",
+                            background: "#242834",
+                            color: "#e0e5ef",
+                            maxHeight: config.maxHeight || "300px",
+                            overflowY: "auto",
+                            lineHeight: "1.6",
+                          }}
+                        >
+                          <ReactMarkdown
+                            components={{
+                              h1: ({...props}) => <h1 style={{ fontSize: "1.5em", fontWeight: 600, marginTop: "16px", marginBottom: "8px", color: "#c4a3d5" }} {...props} />,
+                              h2: ({...props}) => <h2 style={{ fontSize: "1.3em", fontWeight: 600, marginTop: "14px", marginBottom: "8px", color: "#dec9e0" }} {...props} />,
+                              h3: ({...props}) => <h3 style={{ fontSize: "1.15em", fontWeight: 600, marginTop: "12px", marginBottom: "6px", color: "#dec9e0" }} {...props} />,
+                              p: ({...props}) => <p style={{ marginTop: 0, marginBottom: "12px" }} {...props} />,
+                              ul: ({...props}) => <ul style={{ paddingLeft: "1.5em", marginTop: 0, marginBottom: "12px" }} {...props} />,
+                              ol: ({...props}) => <ol style={{ paddingLeft: "1.5em", marginTop: 0, marginBottom: "12px" }} {...props} />,
+                              li: ({...props}) => <li style={{ marginTop: "0.25em" }} {...props} />,
+                              code: ({inline, ...props}) => 
+                                inline ? (
+                                  <code style={{ 
+                                    padding: "0.2em 0.4em", 
+                                    fontSize: "85%", 
+                                    backgroundColor: "rgba(196, 163, 213, 0.2)", 
+                                    borderRadius: "3px",
+                                    color: "#c4a3d5" 
+                                  }} {...props} />
+                                ) : (
+                                  <code style={{ 
+                                    display: "block",
+                                    padding: "12px", 
+                                    fontSize: "85%", 
+                                    backgroundColor: "#3f4243", 
+                                    borderRadius: "4px",
+                                    marginBottom: "12px",
+                                    color: "#e0e5ef",
+                                    overflowX: "auto"
+                                  }} {...props} />
+                                ),
+                              strong: ({...props}) => <strong style={{ fontWeight: 600, color: "#c4a3d5" }} {...props} />,
+                              em: ({...props}) => <em style={{ fontStyle: "italic", color: "#dec9e0" }} {...props} />,
+                              a: ({...props}) => <a style={{ color: "#be3fe5", textDecoration: "none" }} {...props} />,
+                            }}
+                          >
+                            {currentValue || ""}
+                          </ReactMarkdown>
+                        </div>
                       </div>
                     );
                   default:
