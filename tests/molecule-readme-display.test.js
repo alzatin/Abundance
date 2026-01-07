@@ -31,10 +31,9 @@ function processReadmeToInputParams(mockMolecule) {
       .join("\n\n");
 
     inputParams["readme-text-" + mockMolecule.uniqueID] = {
-      type: "string",
+      type: "markdown",
       value: combinedReadmeText,
-      multiline: true,
-      rows: 10,
+      maxHeight: "300px",
       disabled: true,
     };
   }
@@ -70,13 +69,12 @@ describe('Molecule README Display in Inputs Panel', () => {
     expect(inputParams['readme-spacer-test123']).toBeDefined();
     expect(inputParams['readme-spacer-test123'].type).toBe('spacer');
 
-    // Verify README text appears in inputParams as multiline text
+    // Verify README text appears in inputParams as markdown type
     expect(inputParams['readme-text-test123']).toBeDefined();
-    expect(inputParams['readme-text-test123'].type).toBe('string');
+    expect(inputParams['readme-text-test123'].type).toBe('markdown');
     expect(inputParams['readme-text-test123'].value).toBe('This is the first README section\n\nThis is the second README section');
     expect(inputParams['readme-text-test123'].disabled).toBe(true);
-    expect(inputParams['readme-text-test123'].multiline).toBe(true);
-    expect(inputParams['readme-text-test123'].rows).toBe(10);
+    expect(inputParams['readme-text-test123'].maxHeight).toBe('300px');
   });
 
   it('should not add README params when compiledReadme is empty', () => {

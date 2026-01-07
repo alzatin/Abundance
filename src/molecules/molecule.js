@@ -263,10 +263,9 @@ export default class Molecule extends Atom {
         .join("\n\n");
 
       inputParams["readme-text-" + this.uniqueID] = {
-        type: "string",
+        type: "markdown",
         value: combinedReadmeText,
-        multiline: true,
-        rows: 10,
+        maxHeight: "300px",
         disabled: true,
       };
     }
