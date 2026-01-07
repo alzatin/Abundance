@@ -916,7 +916,7 @@ export default class Molecule extends Atom {
             // Note: setInputChanged is not called for README as it's only used for BOM updates
           })
           .catch((err) => {
-            console.warn("Error compiling README:", err);
+            console.warn("Error loading README:", err);
           });
       } else {
         if (this.inputs.every((input) => input.status == Status.READY)) {
