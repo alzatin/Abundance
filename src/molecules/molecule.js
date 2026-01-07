@@ -92,6 +92,12 @@ export default class Molecule extends Atom {
 
     this.compiledBom = {};
 
+    /**
+     * Compiled README content from child atoms.
+     * @type {array}
+     */
+    this.compiledReadme = [];
+
     this.partToExport = null;
 
     /**
@@ -232,6 +238,38 @@ export default class Molecule extends Atom {
           disabled: true,
         };
       });
+    }
+
+    // Add README text if this molecule has compiled README content
+    if (
+      this.compiledReadme &&
+      Array.isArray(this.compiledReadme) &&
+      this.compiledReadme.length > 0
+    ) {
+      // Add spacer and heading
+      inputParams["readme-spacer-" + this.uniqueID] = {
+        type: "spacer",
+        height: 0,
+      };
+      inputParams["readme-heading-" + this.uniqueID] = {
+        type: "string",
+        value: "README:",
+        disabled: true,
+      };
+
+      // Combine all readme text into a single display
+      const combinedReadmeText = this.compiledReadme
+        .map((item) => item.readMeText)
+        .join("\n\n");
+
+      inputParams["readme-text-" + this.uniqueID] = {
+        type: "string",
+        value: combinedReadmeText,
+        label: "README",
+        multiline: true,
+        rows: 10,
+        disabled: true,
+      };
     }
 
     return inputParams;
@@ -871,6 +909,17 @@ export default class Molecule extends Atom {
             }
           })
           .catch(this.alertingErrorHandler);
+        // Compile README as well
+        this.requestReadme()
+          .then((readme) => {
+            this.compiledReadme = readme;
+            if (this.setInputChanged) {
+              this.setInputChanged(readme);
+            }
+          })
+          .catch((err) => {
+            console.warn("Error compiling README:", err);
+          });
       } else {
         if (this.inputs.every((input) => input.status == Status.READY)) {
           // All inputs are ready but our output isn't yet. check for an internal error
