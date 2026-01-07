@@ -1523,14 +1523,14 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         >
                           <ReactMarkdown
                             components={{
-                              h1: ({node, ...props}) => <h1 style={{ fontSize: "1.5em", fontWeight: 600, marginTop: "16px", marginBottom: "8px", color: "#c4a3d5" }} {...props} />,
-                              h2: ({node, ...props}) => <h2 style={{ fontSize: "1.3em", fontWeight: 600, marginTop: "14px", marginBottom: "8px", color: "#dec9e0" }} {...props} />,
-                              h3: ({node, ...props}) => <h3 style={{ fontSize: "1.15em", fontWeight: 600, marginTop: "12px", marginBottom: "6px", color: "#dec9e0" }} {...props} />,
-                              p: ({node, ...props}) => <p style={{ marginTop: 0, marginBottom: "12px" }} {...props} />,
-                              ul: ({node, ...props}) => <ul style={{ paddingLeft: "1.5em", marginTop: 0, marginBottom: "12px" }} {...props} />,
-                              ol: ({node, ...props}) => <ol style={{ paddingLeft: "1.5em", marginTop: 0, marginBottom: "12px" }} {...props} />,
-                              li: ({node, ...props}) => <li style={{ marginTop: "0.25em" }} {...props} />,
-                              code: ({node, inline, ...props}) => 
+                              h1: ({...props}) => <h1 style={{ fontSize: "1.5em", fontWeight: 600, marginTop: "16px", marginBottom: "8px", color: "#c4a3d5" }} {...props} />,
+                              h2: ({...props}) => <h2 style={{ fontSize: "1.3em", fontWeight: 600, marginTop: "14px", marginBottom: "8px", color: "#dec9e0" }} {...props} />,
+                              h3: ({...props}) => <h3 style={{ fontSize: "1.15em", fontWeight: 600, marginTop: "12px", marginBottom: "6px", color: "#dec9e0" }} {...props} />,
+                              p: ({...props}) => <p style={{ marginTop: 0, marginBottom: "12px" }} {...props} />,
+                              ul: ({...props}) => <ul style={{ paddingLeft: "1.5em", marginTop: 0, marginBottom: "12px" }} {...props} />,
+                              ol: ({...props}) => <ol style={{ paddingLeft: "1.5em", marginTop: 0, marginBottom: "12px" }} {...props} />,
+                              li: ({...props}) => <li style={{ marginTop: "0.25em" }} {...props} />,
+                              code: ({inline, ...props}) => 
                                 inline ? (
                                   <code style={{ 
                                     padding: "0.2em 0.4em", 
@@ -1551,9 +1551,9 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                     overflowX: "auto"
                                   }} {...props} />
                                 ),
-                              strong: ({node, ...props}) => <strong style={{ fontWeight: 600, color: "#c4a3d5" }} {...props} />,
-                              em: ({node, ...props}) => <em style={{ fontStyle: "italic", color: "#dec9e0" }} {...props} />,
-                              a: ({node, ...props}) => <a style={{ color: "#be3fe5", textDecoration: "none" }} {...props} />,
+                              strong: ({...props}) => <strong style={{ fontWeight: 600, color: "#c4a3d5" }} {...props} />,
+                              em: ({...props}) => <em style={{ fontStyle: "italic", color: "#dec9e0" }} {...props} />,
+                              a: ({...props}) => <a style={{ color: "#be3fe5", textDecoration: "none" }} {...props} />,
                             }}
                           >
                             {currentValue || ""}
