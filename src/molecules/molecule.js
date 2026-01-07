@@ -265,7 +265,6 @@ export default class Molecule extends Atom {
       inputParams["readme-text-" + this.uniqueID] = {
         type: "string",
         value: combinedReadmeText,
-        label: "README",
         multiline: true,
         rows: 10,
         disabled: true,

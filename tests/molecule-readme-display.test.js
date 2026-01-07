@@ -33,7 +33,6 @@ function processReadmeToInputParams(mockMolecule) {
     inputParams["readme-text-" + mockMolecule.uniqueID] = {
       type: "string",
       value: combinedReadmeText,
-      label: "README",
       multiline: true,
       rows: 10,
       disabled: true,
