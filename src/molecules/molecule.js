@@ -913,9 +913,7 @@ export default class Molecule extends Atom {
         this.requestReadme()
           .then((readme) => {
             this.compiledReadme = readme;
-            if (this.setInputChanged) {
-              this.setInputChanged(readme);
-            }
+            // Note: setInputChanged is not called for README as it's only used for BOM updates
           })
           .catch((err) => {
             console.warn("Error compiling README:", err);
