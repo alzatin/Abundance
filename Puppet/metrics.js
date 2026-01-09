@@ -2,7 +2,6 @@ import puppeteer from "puppeteer";
 import projects_to_test from "./projects_to_test.js";
 
 const projectUser = "moatmaslow";
-const CACHE_WAIT_TIME_MS = 3000; // Wait time for cache operations to complete
 
 /**
  * Get the size of IndexedDB database storage
@@ -14,55 +13,57 @@ async function getIndexedDBSize(page, dbName) {
   return await page.evaluate(async (dbName) => {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(dbName);
-      
-      request.onsuccess = function(event) {
+
+      request.onsuccess = function (event) {
         const db = event.target.result;
         let totalSize = 0;
-        
+        let entryCount = 0;
+
         // Get all object stores
         const storeNames = Array.from(db.objectStoreNames);
-        
+
         if (storeNames.length === 0) {
           db.close();
-          resolve(0);
+          resolve({ totalSize: 0, entryCount: 0 });
           return;
         }
-        
+
         try {
-          const transaction = db.transaction(storeNames, 'readonly');
+          const transaction = db.transaction(storeNames, "readonly");
           let processedStores = 0;
-          
-          transaction.onerror = function() {
+
+          transaction.onerror = function () {
             db.close();
-            reject(new Error('Transaction error: ' + transaction.error));
+            reject(new Error("Transaction error: " + transaction.error));
           };
-          
-          storeNames.forEach(storeName => {
+
+          storeNames.forEach((storeName) => {
             const objectStore = transaction.objectStore(storeName);
             const getAllRequest = objectStore.getAll();
-            
-            getAllRequest.onsuccess = function() {
+
+            getAllRequest.onsuccess = function () {
               const records = getAllRequest.result;
-              
+
               // Calculate size of all records in this store
-              records.forEach(record => {
+              records.forEach((record) => {
                 const recordString = JSON.stringify(record);
                 // Use Blob size for more accurate byte count
                 const blob = new Blob([recordString]);
                 totalSize += blob.size;
+                entryCount++;
               });
-              
+
               processedStores++;
-              
+
               if (processedStores === storeNames.length) {
                 db.close();
-                resolve(totalSize);
+                resolve({ totalSize, entryCount });
               }
             };
-            
-            getAllRequest.onerror = function() {
+
+            getAllRequest.onerror = function () {
               db.close();
-              reject(new Error('ObjectStore error: ' + getAllRequest.error));
+              reject(new Error("ObjectStore error: " + getAllRequest.error));
             };
           });
         } catch (err) {
@@ -70,9 +71,9 @@ async function getIndexedDBSize(page, dbName) {
           reject(err);
         }
       };
-      
-      request.onerror = function() {
-        reject(new Error('Database open error: ' + request.error));
+
+      request.onerror = function () {
+        reject(new Error("Database open error: " + request.error));
       };
     });
   }, dbName);
@@ -85,26 +86,60 @@ async function getIndexedDBSize(page, dbName) {
 async function clearIndexedDBCache(browser) {
   const page = await browser.newPage();
   try {
-    await page.goto('http://localhost:4444', { timeout: 30000, waitUntil: 'domcontentloaded' });
+    await page.goto("http://localhost:4444", {
+      timeout: 30000,
+      waitUntil: "load",
+    });
     await page.evaluate(() => {
       return new Promise((resolve, reject) => {
-        const request = indexedDB.deleteDatabase('AbundanceProjectCaches');
-        request.onsuccess = () => resolve();
+        const request = indexedDB.deleteDatabase("AbundanceProjectCaches");
+        request.onsuccess = () => {
+          console.log("got a success response from db deletion");
+          resolve();
+        };
         request.onerror = () => reject(request.error);
         request.onblocked = () => {
-          console.log('IndexedDB deletion blocked');
-          resolve(); // Continue anyway
+          console.log("IndexedDB deletion blocked");
+          reject("Indexdb deletion was blocked");
         };
       });
     });
-    console.log('✓ IndexedDB cache cleared');
+    console.log("✓ IndexedDB cache cleared");
   } catch (error) {
-    console.log('⚠ Could not clear IndexedDB cache:', error.message);
-  } finally {
-    await page.close();
+    console.log("⚠ Could not clear IndexedDB cache:", error.message);
   }
 }
+/**
+ * Gets size of the serialized top level molecule in the project
+ * @param {} page
+ * @returns
+ */
+async function getProjectFileSize(page) {
+  return await page.evaluate(() => {
+    try {
+      // Access the global variable (adjust path if needed)
+      if (!window.GlobalVarsForPuppeteer?.topLevelMolecule) {
+        throw new Error("window.GlobalVarsForPuppeteer not found");
+      }
 
+      // Call serialize on the molecule
+      const serialized =
+        window.GlobalVarsForPuppeteer.topLevelMolecule.serialize();
+      console.log("Serialized project:", serialized);
+      // Convert to JSON string and measure size
+      const jsonString = JSON.stringify(serialized);
+      const blob = new Blob([jsonString]);
+
+      return {
+        size: blob.size,
+        jsonLength: jsonString.length,
+      };
+    } catch (error) {
+      console.error("Error getting project file size:", error);
+      return { size: 0, jsonLength: 0, error: error.message };
+    }
+  });
+}
 /**
  * Run metrics test for a single project
  * @param {Object} browser - Puppeteer browser instance
@@ -117,9 +152,13 @@ async function runMetricsTest(browser, projectName) {
     projectName,
     timestamp: new Date().toISOString(),
     coldLoadTimeMs: null,
+    warmLoadTimeMs: null,
     cacheSize: null,
     cacheSizeFormatted: null,
-    error: null
+    cacheEntryCount: null,
+    projectFileSize: null,
+    projectFileSizeFormatted: null,
+    error: null,
   };
 
   try {
@@ -129,39 +168,47 @@ async function runMetricsTest(browser, projectName) {
     const navigationUrl = `http://localhost:4444/run/${projectUser}/${projectName}`;
     console.log(`\nTesting metrics for: ${projectName}`);
     console.log(`URL: ${navigationUrl}`);
-
-    // Start timing
-    const startTime = Date.now();
+    const projectReadySelector = "#molecule-fully-render-puppeteer";
+    const canvasSelector = "#flow-canvas";
 
     // Navigate to the project
-    await page.goto(navigationUrl, { 
+    await page.goto(navigationUrl, {
       timeout: 120000,
-      waitUntil: 'domcontentloaded' 
+      waitUntil: "load",
     });
 
+    await page.waitForSelector(canvasSelector, { timeout: 120000 });
     // Wait for the project to fully render
-    const selector = "#molecule-fully-render-puppeteer";
-    await page.waitForFunction(
-      (selector) => !!document.querySelector(selector),
-      { timeout: 120000 },
-      selector
-    );
-
-    // Wait a bit more to ensure all caching is complete
-    await new Promise((resolve) => setTimeout(resolve, CACHE_WAIT_TIME_MS));
+    const startTime = Date.now();
+    await page.waitForSelector(projectReadySelector, { timeout: 120000 });
 
     // Calculate cold load time
     const endTime = Date.now();
     metrics.coldLoadTimeMs = endTime - startTime;
 
     // Measure IndexedDB cache size
-    const cacheSize = await getIndexedDBSize(page, 'AbundanceProjectCaches');
-    metrics.cacheSize = cacheSize;
-    metrics.cacheSizeFormatted = formatBytes(cacheSize);
+    const cacheMetrics = await getIndexedDBSize(page, "AbundanceProjectCaches");
+    metrics.cacheSize = cacheMetrics.totalSize;
+    metrics.cacheSizeFormatted = formatBytes(cacheMetrics.totalSize);
+    metrics.cacheEntryCount = cacheMetrics.entryCount;
 
-    console.log(`✓ Cold load time: ${metrics.coldLoadTimeMs}ms`);
-    console.log(`✓ Cache size: ${metrics.cacheSizeFormatted} (${metrics.cacheSize} bytes)`);
+    // Warm load
+    await page.reload({ waitUntil: "load", timeout: 120000 });
+    await page.waitForSelector(canvasSelector, { timeout: 120000 });
+    const warmStartTime = Date.now();
+    await page.waitForSelector(projectReadySelector, { timeout: 120000 });
+    const warmEndTime = Date.now();
+    metrics.warmLoadTimeMs = warmEndTime - warmStartTime;
 
+    // Project save size
+    const projectFileMetrics = await getProjectFileSize(page);
+    if (projectFileMetrics.error) {
+      throw new Error(
+        `Error getting project file size: ${projectFileMetrics.error}`
+      );
+    }
+    metrics.projectFileSize = projectFileMetrics.size;
+    metrics.projectFileSizeFormatted = formatBytes(projectFileMetrics.size);
   } catch (error) {
     metrics.error = error.message;
     console.error(`✗ Error testing ${projectName}: ${error.message}`);
@@ -178,11 +225,14 @@ async function runMetricsTest(browser, projectName) {
  * @returns {string} Formatted string
  */
 function formatBytes(bytes) {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0 Bytes";
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+  const i = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(k)),
+    sizes.length - 1
+  );
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 /**
@@ -203,14 +253,14 @@ function formatBytes(bytes) {
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
-    // Clear IndexedDB cache before starting tests for cold load measurement
-    await clearIndexedDBCache(browser);
-
     // Run metrics test for each project
     for (const projectName of projects_to_test) {
+      // Clear IndexedDB cache before starting tests for cold load measurement
+      await clearIndexedDBCache(browser);
+
       const metrics = await runMetricsTest(browser, projectName);
       allMetrics.push(metrics);
-      
+
       if (metrics.error) {
         hasErrors = true;
       }
@@ -220,15 +270,17 @@ function formatBytes(bytes) {
     console.log("\n" + "=".repeat(60));
     console.log("METRICS SUMMARY");
     console.log("=".repeat(60));
-    
-    allMetrics.forEach(m => {
+
+    allMetrics.forEach((m) => {
       if (m.error) {
         console.log(`\n${m.projectName}: FAILED`);
         console.log(`  Error: ${m.error}`);
       } else {
         console.log(`\n${m.projectName}:`);
         console.log(`  Cold Load Time: ${m.coldLoadTimeMs}ms`);
-        console.log(`  Cache Size: ${m.cacheSizeFormatted} (${m.cacheSize} bytes)`);
+        console.log(
+          `  Cache Size: ${m.cacheSizeFormatted} (${m.cacheSize} bytes)`
+        );
       }
     });
 
@@ -237,7 +289,6 @@ function formatBytes(bytes) {
     console.log("JSON OUTPUT");
     console.log("=".repeat(60));
     console.log(JSON.stringify(allMetrics, null, 2));
-
   } catch (error) {
     console.error(`Fatal error: ${error.message}`);
     hasErrors = true;
@@ -248,7 +299,11 @@ function formatBytes(bytes) {
   }
 
   console.log("\n" + "=".repeat(60));
-  console.log(hasErrors ? "METRICS TEST COMPLETED WITH ERRORS" : "METRICS TEST COMPLETED SUCCESSFULLY");
+  console.log(
+    hasErrors
+      ? "METRICS TEST COMPLETED WITH ERRORS"
+      : "METRICS TEST COMPLETED SUCCESSFULLY"
+  );
   console.log("=".repeat(60));
 
   // Exit with error code if there were failures

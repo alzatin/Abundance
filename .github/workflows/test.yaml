@@ -88,6 +88,15 @@ jobs:
         run: |
           echo "Waiting for server to start..."
           timeout 30 bash -c 'until curl -s http://localhost:4444 > /dev/null; do sleep 1; done'
+      - name: Run performance metrics
+        run: node Puppet/metrics.js > metrics-${{ matrix.branch_name }}.json
+        timeout-minutes: 5
+      - name: Upload metrics as artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-metrics-${{ matrix.branch_name }}
+          path: metrics-${{ matrix.branch_name }}.json
       - name: Run Tests
         run: npm test
       - name: Configure AWS credentials
@@ -217,5 +226,133 @@ jobs:
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
                 body: comment
+              });
+            }
+  compare-and-comment:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download base metrics
+        uses: actions/download-artifact@v4
+        with:
+          name: performance-metrics-base
+          path: ./base
+      - name: Download PR metrics
+        uses: actions/download-artifact@v4
+        with:
+          name: performance-metrics-pr
+          path: ./pr
+      - name: Compare metrics and comment
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+
+            const prOutput = fs.readFileSync('pr/metrics-pr.json', 'utf8');
+            const baseOutput = fs.readFileSync('base/metrics-base.json', 'utf8');
+
+            const extractJson = (text) => {
+              const jsonStart = text.indexOf('[');
+              const jsonEnd = text.lastIndexOf(']') + 1;
+              if (jsonStart === -1 || jsonEnd === 0) return [];
+              return JSON.parse(text.slice(jsonStart, jsonEnd));
+            };
+
+            const keyByName = (metricsArray) => {
+              const result = {};
+              metricsArray.forEach((m) => {
+                result[m.projectName] = m;
+              });
+              return result;
+            };
+
+            const formatBytes = (bytes) => {
+              if (bytes === 0) return "0 Bytes";
+              const k = 1024;
+              const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+              const i = Math.min(
+                Math.floor(Math.log(bytes) / Math.log(k)),
+                sizes.length - 1
+              );
+              return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+            }
+
+            const safePercent = (pr, base) => {
+              if (base === 0) return 'N/A';
+              return (((pr - base) / base) * 100).toFixed(1);
+            }
+
+            const baseMetrics = keyByName(extractJson(baseOutput));
+            const prMetrics = keyByName(extractJson(prOutput));
+
+            const metricsAllowList = [
+              'coldLoadTimeMs',
+              'warmLoadTimeMs',
+              'cacheSize',
+              'cacheEntryCount',
+              'projectFileSize',
+            ];
+
+            let markdown = '## ⚡ Performance Metrics Comparison\n\n';
+            markdown += `| ProjectName | ${metricsAllowList.join(" | ")} |\n`;
+            markdown += `| --- | ${metricsAllowList.map(() => '------------').join(' | ')} |\n`;
+
+
+            Object.keys(prMetrics).forEach((projectName) => {
+              const prM = prMetrics[projectName];
+              const baseM = baseMetrics[projectName];
+              if (!baseM) return;
+
+              markdown += `| ${projectName} `;
+              metricsAllowList.forEach((key) => {
+                const prValue = prM[key];
+                const baseValue = baseM[key];
+                const diff = prValue - baseValue;
+                const pct = safePercent(prValue, baseValue);
+                const emoji = key.endsWith("TimeMs") ?
+                  (pct != 'N/A' && pct < 20 ? '✅' : '⚠️') :
+                  (diff <= 0 ? '✅' : '⚠️');
+                if (key.endsWith("Size")) {
+                  markdown += `| ${formatBytes(baseValue)} → ${formatBytes(prValue)}<br> ${emoji} ${diff >= 0 ? '+' : '-'}${formatBytes(Math.abs(diff))} (${pct}%) `;
+                } else {
+                  markdown += `| ${baseValue} → ${prValue}<br> ${emoji} ${diff > 0 ? '+' : ''}${diff} (${pct}%) `;
+                }
+              });
+              markdown += '|\n';
+            });
+            markdown += '\n---\n';
+
+            console.log(markdown);
+
+            const prNumber = context.issue.number;
+            if (!prNumber) {
+              console.log("No PR number found in context, skipping comment.");
+              return;
+            }
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Performance Metrics Comparison')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: markdown
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: markdown
               });
             }
