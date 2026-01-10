@@ -231,7 +231,7 @@ jobs:
   compare-and-comment:
     needs: test
     runs-on: ubuntu-latest
-    if: always()
+    if: github.event.action != 'closed'
     steps:
       - name: Download base metrics
         uses: actions/download-artifact@v4
@@ -243,12 +243,15 @@ jobs:
         with:
           name: performance-metrics-pr
           path: ./pr
+      - name: install compare dependencies
+        run: npm install jest-diff
       - name: Compare metrics and comment
         uses: actions/github-script@v7
         if: always()
         with:
           script: |
             const fs = require('fs');
+            const { diff } = require('jest-diff');
 
             const prOutput = fs.readFileSync('pr/metrics-pr.json', 'utf8');
             const baseOutput = fs.readFileSync('base/metrics-base.json', 'utf8');
@@ -294,6 +297,7 @@ jobs:
               'cacheEntryCount',
               'projectFileSize',
             ];
+            const withDiffs = [];
 
             let markdown = '## ⚡ Performance Metrics Comparison\n\n';
             markdown += `| ProjectName | ${metricsAllowList.join(" | ")} |\n`;
@@ -319,10 +323,37 @@ jobs:
                 } else {
                   markdown += `| ${baseValue} → ${prValue}<br> ${emoji} ${diff > 0 ? '+' : ''}${diff} (${pct}%) `;
                 }
+                if (diff != 0) {
+                  withDiffs.push(key)
+                }
               });
               markdown += '|\n';
             });
             markdown += '\n---\n';
+
+            console.log(withDiffs);
+            if (withDiffs.indexOf("cacheSize") !== -1) {
+              markdown += '### Detailed Cache entry diff (key: size)\n\n';
+              markdown += "```"
+              markdown += diff(
+                JSON.stringify(baseMetrics.cacheKeyedSizes, null, 2),
+                JSON.stringify(prMetrics.cacheKeyedSizes, null, 2),
+                { expand: false, aAnnotation: 'Base branch', bAnnotation: 'PR branch' }
+              );
+              markdown += "```"
+            }
+            markdown += '\n\n';
+
+            if (withDiffs.indexOf("projectFileSize") !== -1) {
+              markdown += '### Detailed Project File contents diff\n\n';
+              markdown += "```"
+              markdown += diff(
+                JSON.stringify(baseMetrics.projectFileRawJson, null, 2),
+                JSON.stringify(prMetrics.projectFileRawJson, null, 2),
+                { expand: false, aAnnotation: 'Base branch', bAnnotation: 'PR branch' }
+              );
+              markdown += "```"
+            }
 
             console.log(markdown);
 
