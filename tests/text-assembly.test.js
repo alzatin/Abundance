@@ -88,4 +88,18 @@ describe("text as assembly", () => {
     expect(leaves[0]).toBeDefined();
     expect(leaves[1]).toBeDefined();
   });
+
+  it("should handle Unicode characters correctly (emojis, accented)", async () => {
+    const testText = "Café☕";
+    const fontSize = 10;
+    const fontFamily = "ROBOTO";
+    const context = { project: "test-unicode" };
+
+    const result = await text(testText, fontSize, fontFamily, context);
+
+    // Should have one leaf per Unicode character (not code unit)
+    const leaves = flattenAssembly(result);
+    // "Café☕" has 5 characters: C, a, f, é, ☕
+    expect(leaves.length).toBe(5);
+  });
 });

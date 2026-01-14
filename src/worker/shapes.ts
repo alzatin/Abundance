@@ -124,11 +124,13 @@ async function textGeom(
     fontFamily: fontFamily,
   };
 
-  // Split text into individual characters
-  const characters = text.split('');
+  // Split text into individual characters (using Array.from for proper Unicode handling)
+  const characters = Array.from(text);
   const letterGeometries: AbundanceLeaf[] = [];
 
   // Process each character
+  // Note: This algorithm creates O(n²) geometry calls for n characters, but the
+  // GeometryProvider caches all geometries, so we only compute each unique substring once.
   for (let i = 0; i < characters.length; i++) {
     const char = characters[i];
     
