@@ -58,6 +58,7 @@ export default function CodeWindow(props) {
   const [docvalue, setdocValue] = useState("");
   const extensions = [keymap.of(defaultKeymap)];
   const [expandedPanel, setExpandedPanel] = useState(null); // null, 'replicad', 'abundance', or 'common'
+  const [copyButtonText, setCopyButtonText] = useState("Copy AI Prompt");
 
   useEffect(() => {
     if (props.activeAtom != null) {
@@ -169,13 +170,19 @@ export default function CodeWindow(props) {
     const prompt = generateCodeAtomPrompt();
     navigator.clipboard.writeText(prompt).then(
       () => {
-        // Success feedback
-        alert("AI prompt copied to clipboard! You can now paste it into your AI assistant.");
+        // Success feedback - update button text
+        setCopyButtonText("✓ Copied!");
+        setTimeout(() => {
+          setCopyButtonText("Copy AI Prompt");
+        }, 2000);
       },
       (err) => {
         // Fallback for older browsers
         console.error("Failed to copy prompt:", err);
-        alert("Failed to copy to clipboard. Please try again.");
+        setCopyButtonText("Copy Failed");
+        setTimeout(() => {
+          setCopyButtonText("Copy AI Prompt");
+        }, 2000);
       }
     );
   };
@@ -329,7 +336,7 @@ Tips:
               style={{ cursor: "pointer" }}
             >
               <span className="tab-arrow">🤖</span>
-              <span className="tab-label">Copy AI Prompt</span>
+              <span className="tab-label">{copyButtonText}</span>
             </div>
           </div>
         </div>
