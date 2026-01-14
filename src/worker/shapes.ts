@@ -110,7 +110,6 @@ async function textGeom(
   if (!text || text.length === 0) {
     return {
       geometry: [],
-      dimension: "2D",
       tags: [],
       plane: util.XYPlane,
       color: util.defaultColor,
@@ -192,7 +191,6 @@ async function textGeom(
   // Return as assembly (branch) with each letter as a separate leaf
   return {
     geometry: letterGeometries,
-    dimension: "2D",
     tags: [],
     plane: util.XYPlane,
     color: util.defaultColor,
