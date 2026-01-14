@@ -16,6 +16,7 @@ import apiJson from "./methodsreplicad.json"; // static import of the JSON file
 import abundanceJson from "./abundanceApiJson.json";
 import ReactCodeEditorWithApiAutocomplete from "./ReactCodeEditorWithApiAutocomplete";
 import InfoPanel from "./InfoPanel";
+import { generateCodeAtomPrompt } from "../../js/codeAtomPromptGenerator";
 
 /**
  * Common JavaScript methods for reference panel
@@ -161,6 +162,24 @@ export default function CodeWindow(props) {
     setExpandedPanel(expandedPanel === panel ? null : panel);
   };
 
+  /**
+   * Copies the AI prompt to clipboard
+   */
+  const copyAIPrompt = () => {
+    const prompt = generateCodeAtomPrompt();
+    navigator.clipboard.writeText(prompt).then(
+      () => {
+        // Success feedback
+        alert("AI prompt copied to clipboard! You can now paste it into your AI assistant.");
+      },
+      (err) => {
+        // Fallback for older browsers
+        console.error("Failed to copy prompt:", err);
+        alert("Failed to copy to clipboard. Please try again.");
+      }
+    );
+  };
+
   return (
     <div id="code-window" className="code-off login-page code-window-div">
       <div className="code-window-container">
@@ -302,6 +321,16 @@ Tips:
                 <span className="tab-label">Code Window Guide</span>
               </div>
             )}
+          </div>
+          <div className="info-panel collapsed ai-helper-panel">
+            <div
+              className="info-panel-tab ai-helper-tab"
+              onClick={copyAIPrompt}
+              style={{ cursor: "pointer" }}
+            >
+              <span className="tab-arrow">🤖</span>
+              <span className="tab-label">Copy AI Prompt</span>
+            </div>
           </div>
         </div>
       </div>
