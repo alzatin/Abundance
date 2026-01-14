@@ -88,10 +88,13 @@ async function regularPolygon(
  * This prevents issues with overlapping letters in cursive fonts and allows proper handling
  * of each character independently.
  * 
+ * Spaces are handled specially: they don't create geometry but do affect the positioning
+ * of subsequent characters.
+ * 
  * @param {string} text - The text content to be rendered
  * @param {number} fontSize - The size of the font
  * @param {string} fontFamily - The font family to use for rendering the text
- * @returns {Promise<AbundanceObject>} Promise of an Assembly containing one leaf per character
+ * @returns {Promise<AbundanceBranch>} Promise of an Assembly containing one leaf per character
  * @throws {Error} Throws an error if the font fails to load
  */
 async function textGeom(
@@ -99,7 +102,7 @@ async function textGeom(
   fontSize: number,
   fontFamily: string,
   context: RequestContext
-): Promise<AbundanceObject> {
+): Promise<AbundanceBranch> {
   await util.init();
   await util.replicad.loadFont(
     Fonts[fontFamily as keyof typeof Fonts],
@@ -135,6 +138,8 @@ async function textGeom(
     const char = characters[i];
     
     // Skip spaces - they don't create geometry but affect positioning
+    // The space is still included in the substring calculation (line below) so that
+    // subsequent characters are positioned correctly with the space taken into account.
     if (char === ' ') {
       continue;
     }
