@@ -59,12 +59,22 @@ export default function CodeWindow(props) {
   const extensions = [keymap.of(defaultKeymap)];
   const [expandedPanel, setExpandedPanel] = useState(null); // null, 'replicad', 'abundance', or 'common'
   const [copyButtonText, setCopyButtonText] = useState("Copy AI Prompt");
+  const copyTimeoutRef = React.useRef(null);
 
   useEffect(() => {
     if (props.activeAtom != null) {
       setdocValue(props.activeAtom.code);
     }
   }, [props.activeAtom]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   /**
    * Closes the code editor window.
@@ -167,21 +177,28 @@ export default function CodeWindow(props) {
    * Copies the AI prompt to clipboard
    */
   const copyAIPrompt = () => {
+    // Clear any existing timeout
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+
     const prompt = generateCodeAtomPrompt();
     navigator.clipboard.writeText(prompt).then(
       () => {
         // Success feedback - update button text
         setCopyButtonText("✓ Copied!");
-        setTimeout(() => {
+        copyTimeoutRef.current = setTimeout(() => {
           setCopyButtonText("Copy AI Prompt");
+          copyTimeoutRef.current = null;
         }, 2000);
       },
       (err) => {
         // Fallback for older browsers
         console.error("Failed to copy prompt:", err);
         setCopyButtonText("Copy Failed");
-        setTimeout(() => {
+        copyTimeoutRef.current = setTimeout(() => {
           setCopyButtonText("Copy AI Prompt");
+          copyTimeoutRef.current = null;
         }, 2000);
       }
     );
