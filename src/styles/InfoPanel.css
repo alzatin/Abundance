@@ -162,32 +162,3 @@
 .info-panel-body::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover, #666);
 }
-
-/* AI Helper Panel Styling */
-.ai-helper-panel {
-  min-height: 60px;
-  margin-top: 8px;
-}
-
-.ai-helper-tab {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: 1px solid #5a67d8;
-  transition: all 0.2s ease;
-}
-
-.ai-helper-tab:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-  transform: translateX(-2px);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-}
-
-.ai-helper-tab .tab-arrow {
-  font-size: 18px;
-  color: #fff;
-  margin-bottom: 8px;
-}
-
-.ai-helper-tab .tab-label {
-  color: #fff;
-  font-weight: 700;
-}

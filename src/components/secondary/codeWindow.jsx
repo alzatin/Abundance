@@ -16,7 +16,6 @@ import apiJson from "./methodsreplicad.json"; // static import of the JSON file
 import abundanceJson from "./abundanceApiJson.json";
 import ReactCodeEditorWithApiAutocomplete from "./ReactCodeEditorWithApiAutocomplete";
 import InfoPanel from "./InfoPanel";
-import { generateCodeAtomPrompt } from "../../js/codeAtomPromptGenerator";
 
 /**
  * Common JavaScript methods for reference panel
@@ -58,23 +57,12 @@ export default function CodeWindow(props) {
   const [docvalue, setdocValue] = useState("");
   const extensions = [keymap.of(defaultKeymap)];
   const [expandedPanel, setExpandedPanel] = useState(null); // null, 'replicad', 'abundance', or 'common'
-  const [copyButtonText, setCopyButtonText] = useState("Copy AI Prompt");
-  const copyTimeoutRef = React.useRef(null);
 
   useEffect(() => {
     if (props.activeAtom != null) {
       setdocValue(props.activeAtom.code);
     }
   }, [props.activeAtom]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (copyTimeoutRef.current) {
-        clearTimeout(copyTimeoutRef.current);
-      }
-    };
-  }, []);
 
   /**
    * Closes the code editor window.
@@ -171,37 +159,6 @@ export default function CodeWindow(props) {
 
   const togglePanel = (panel) => {
     setExpandedPanel(expandedPanel === panel ? null : panel);
-  };
-
-  /**
-   * Copies the AI prompt to clipboard
-   */
-  const copyAIPrompt = () => {
-    // Clear any existing timeout
-    if (copyTimeoutRef.current) {
-      clearTimeout(copyTimeoutRef.current);
-    }
-
-    const prompt = generateCodeAtomPrompt();
-    navigator.clipboard.writeText(prompt).then(
-      () => {
-        // Success feedback - update button text
-        setCopyButtonText("✓ Copied!");
-        copyTimeoutRef.current = setTimeout(() => {
-          setCopyButtonText("Copy AI Prompt");
-          copyTimeoutRef.current = null;
-        }, 2000);
-      },
-      (err) => {
-        // Fallback for older browsers
-        console.error("Failed to copy prompt:", err);
-        setCopyButtonText("Copy Failed");
-        copyTimeoutRef.current = setTimeout(() => {
-          setCopyButtonText("Copy AI Prompt");
-          copyTimeoutRef.current = null;
-        }, 2000);
-      }
-    );
   };
 
   return (
@@ -345,16 +302,6 @@ Tips:
                 <span className="tab-label">Code Window Guide</span>
               </div>
             )}
-          </div>
-          <div className="info-panel collapsed ai-helper-panel">
-            <div
-              className="info-panel-tab ai-helper-tab"
-              onClick={copyAIPrompt}
-              style={{ cursor: "pointer" }}
-            >
-              <span className="tab-arrow">🤖</span>
-              <span className="tab-label">{copyButtonText}</span>
-            </div>
           </div>
         </div>
       </div>
