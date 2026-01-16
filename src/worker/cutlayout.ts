@@ -14,6 +14,7 @@ type LayoutConfig = {
   height: number;
   partPadding: number;
   units?: string;
+  rotations: number;
 };
 
 type Placement = {
@@ -49,6 +50,8 @@ async function layout(
   context: RequestContext,
   previousPlacements: Placement[][] | undefined = undefined
 ): Promise<[AbundanceObject, Placement[][]]> {
+  checkConfig(layoutConfig);
+
   var [rotatedAssembly, shapesForLayout] = await rotateForLayout(
     assembly,
     layoutConfig,
@@ -477,6 +480,15 @@ async function applyLayout(
   return result;
 }
 
+function checkConfig(layoutConfig: LayoutConfig) {
+  if (layoutConfig.width <= 0 || layoutConfig.height <= 0) {
+    throw new Error("Sheet width and height must be greater than zero.");
+  }
+  if (layoutConfig.rotations < 1 || !Number.isInteger(layoutConfig.rotations)) {
+    throw new Error("Orientations must be an integer of 1 or more.");
+  }
+}
+
 /**
  * Converts a shape array of {x, y} points to a Float64Array format for polygon packing.
  * @param {Array} shape - Array of point objects with x and y properties
@@ -535,7 +547,7 @@ function computePositions(
   const config = {
     curveTolerance: 0.1,
     spacing: layoutConfig.partPadding + tolerance * 2,
-    rotations: 12,
+    rotations: layoutConfig.rotations,
     populationSize: 8,
     mutationRate: 50,
     useHoles: false,
