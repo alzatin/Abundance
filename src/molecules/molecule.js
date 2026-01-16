@@ -1035,8 +1035,19 @@ export default class Molecule extends Atom {
         } else {
           text = value.readMeText;
           if (value.svg) {
+            // Generate a simple hash from the SVG content for cache-busting
+            // This ensures the image URL changes when the SVG content changes
+            const svgHash = value.svg
+              .split('')
+              .reduce((hash, char) => {
+                const charCode = char.charCodeAt(0);
+                return ((hash << 5) - hash + charCode) | 0;
+              }, 0)
+              .toString(36)
+              .replace('-', 'n'); // Replace negative sign with 'n'
+            
             text = text.concat(
-              " \n\n![readme](/readme" + value.uniqueID + ".svg)\n\n"
+              " \n\n![readme](/readme" + value.uniqueID + ".svg?v=" + svgHash + ")\n\n"
             );
           }
           finalReadMe.push({

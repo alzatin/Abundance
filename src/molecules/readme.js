@@ -112,27 +112,43 @@ export default class Readme extends Atom {
   async generateProjectThumbnail() {
     try {
       const value = this.findIOValue("value");
+      
       // Generate a thumbnail only if value is geometry (object but not null or array)
-      if (value != null && typeof value === 'object' && !Array.isArray(value) && this.parent) {
-        // Use the new thumbnail generation method
-        // First generate the display mesh from the geometry
-        const mesh = await GlobalVariables.cad.generateDisplayMesh(
-          value,
-          this.parent.getContext()
-        );
-        
-        // Then convert the mesh to SVG using the meshRef
-        if (GlobalVariables.meshRef && GlobalVariables.meshRef.current) {
-          const svg = await GlobalVariables.meshRef.current.buildThumbnail(mesh);
-          return svg;
-        } else {
-          console.warn("meshRef not available for thumbnail generation");
+      if (value != null && typeof value === 'object' && !Array.isArray(value)) {
+        // Check if pool is available (same as global thumbnail generation)
+        if (!GlobalVariables.pool) {
+          console.error("[README THUMBNAIL] GlobalVariables.pool is not available");
           return null;
         }
+        
+        // Check if meshRef is available
+        if (!GlobalVariables.meshRef || !GlobalVariables.meshRef.current) {
+          console.warn("[README THUMBNAIL] meshRef is not available for thumbnail generation");
+          return null;
+        }
+        
+        // Use the same approach as global thumbnail generation in ProjectContext.jsx
+        return GlobalVariables.pool
+          .proxy()
+          .then((worker) => {
+            return worker.generateDisplayMesh(
+              value,
+              this.getContext()
+            );
+          })
+          .then(async (m) => {
+            const svg = await GlobalVariables.meshRef.current.buildThumbnail(m.mesh);
+            return svg;
+          })
+          .catch((error) => {
+            console.error("[README THUMBNAIL] Error in worker/mesh generation:", error);
+            return null;
+          });
       }
+      
       return null;
     } catch (error) {
-      console.error("Error generating project thumbnail:", error);
+      console.error("[README THUMBNAIL] Error generating readme thumbnail:", error);
       return null;
     }
   }
