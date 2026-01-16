@@ -14,6 +14,7 @@ import ExportMenu from "../secondary/ExportMenu.jsx";
 import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
 import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
+import ReadmePanel from "../secondary/ReadmePanel.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -261,6 +262,18 @@ function runMode() {
           position: { top: 120, left: screenWidth - 365 },
         }}
         collapsedOffset={[45, -90]}
+      />
+
+      {/* ReadmePanel below BomMenu, collapsed by default */}
+      <ReadmePanel
+        readme={GlobalVariables.currentRepo?.readme || ""}
+        id="atom-run-readme-panel"
+        position={{ top: 165, left: screenWidth - 365 }}
+        initialCollapsed={true}
+        contentCollapsed={expandedMenu !== "readme"}
+        setContentCollapsed={() => setExpandedMenu("readme")}
+        closeMenu={() => setExpandedMenu("none")}
+        collapsedOffset={[45, -135]}
       />
       <div id="headerBarRun">
         <img

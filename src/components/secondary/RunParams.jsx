@@ -71,7 +71,7 @@ export default function RunParams({
   }
 
   const inputParamsConfig = useMemo(() => {
-    return { ...inputParams, ...exportParams };
+    return { ...exportParams, ...inputParams };
   }, [inputParams, exportParams]);
 
   const [
