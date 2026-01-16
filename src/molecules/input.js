@@ -85,7 +85,8 @@ export default class Input extends Atom {
         this.name,
         this.type,
         this.value,
-        "input"
+        "input",
+        this.options
       );
       // We also subscribe directly to the parent ap.
       this.parentAP.subscribe(() => {
@@ -539,6 +540,23 @@ export default class Input extends Atom {
         }
       },
     };
+
+    // If type is array, add a control to input options
+    if (this.type === "array") {
+      inputParams[this.uniqueID + "arrayOptions"] = {
+        type: "string",
+        value: Array.isArray(this.options) ? this.options.join(", ") : "",
+        label: "Array Options (comma separated)",
+        disabled: false,
+        onChange: (val) => {
+          // Split by comma and trim whitespace
+          this.options = val
+            .split(",")
+            .map((v) => v.trim())
+            .filter((v) => v.length > 0);
+        },
+      };
+    }
     return inputParams;
   }
 
@@ -557,6 +575,7 @@ export default class Input extends Atom {
 
     //Write the current color selection to the serialized object
     superSerialObject.type = this.type;
+    superSerialObject.options = this.options;
 
     return superSerialObject;
   }

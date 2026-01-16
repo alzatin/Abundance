@@ -1506,8 +1506,20 @@ export default class Molecule extends Atom {
    * Constructs a new AP and returns it, does not subscribe to changes.
    * The caller is responsible for calling updateIO and removeIO on `this` as needed.
    */
-  addIO(name, valueType, defaultValue = undefined, type = "input") {
-    return this._addIOWithoutSubscribing(name, valueType, defaultValue, type);
+  addIO(
+    name,
+    valueType,
+    defaultValue = undefined,
+    type = "input",
+    options = {}
+  ) {
+    return this._addIOWithoutSubscribing(
+      name,
+      valueType,
+      defaultValue,
+      type,
+      options
+    );
   }
 
   /**
