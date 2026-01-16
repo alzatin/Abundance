@@ -313,7 +313,8 @@ export default class Atom extends ObservableEntity {
     name,
     valueType,
     defaultValue = undefined,
-    type = "input"
+    type = "input",
+    options = {}
   ) {
     const prior = this.inputs.find((o) => o.name === name && o.type === type);
     if (prior == undefined) {
@@ -334,6 +335,7 @@ export default class Atom extends ObservableEntity {
         defaultValue: defaultValue,
         uniqueID: GlobalVariables.generateUniqueID(),
         atomType: "AttachmentPoint",
+        options: options,
       });
       if (type == "input") {
         this.inputs.push(newAp);
@@ -1029,6 +1031,17 @@ export default class Atom extends ObservableEntity {
               if (input.value !== value) {
                 input.setValue(value);
               }
+            },
+          };
+        } else if (input.valueType === "array") {
+          // Handle select controls for array inputs
+          inputParams[this.uniqueID + input.name] = {
+            type: "select",
+            value: input.value,
+            label: input.name,
+            options: Array.isArray(input.options) ? input.options : [],
+            onChange: (value) => {
+              input.setValue(value);
             },
           };
         } else if (input.valueType !== "geometry") {
