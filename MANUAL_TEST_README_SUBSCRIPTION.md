@@ -122,12 +122,15 @@ this.nodesOnTheScreen.forEach((atom) => {
         this.requestReadme()
           .then((readme) => {
             this.compiledReadme = readme;
-            if (this.setInputChanged) {
-              this.setInputChanged(readme);
-            }
+            // Note: setInputChanged is not called here as it's only used for BOM updates
+            // README changes are reflected automatically in the properties panel
+            // through the compiledReadme property
           })
           .catch((err) => {
-            console.warn("Error updating README after atom change:", err);
+            console.warn(
+              `Error updating README after atom change in molecule ${this.uniqueID}, README atom ${atom.uniqueID}:`,
+              err
+            );
           });
       },
       `readme-subscription-${this.uniqueID}-${atom.uniqueID}`,
