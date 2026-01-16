@@ -113,12 +113,12 @@ export default class Readme extends Atom {
     try {
       const value = this.findIOValue("value");
       // Generate a thumbnail only if value is geometry (object but not null or array)
-      if (value != null && typeof value === 'object' && !Array.isArray(value) && this.parent) {
+      if (value != null && typeof value === 'object' && !Array.isArray(value)) {
         // Use the new thumbnail generation method
         // First generate the display mesh from the geometry
         const mesh = await GlobalVariables.cad.generateDisplayMesh(
           value,
-          this.parent.getContext()
+          this.getContext()
         );
         
         // Then convert the mesh to SVG using the meshRef
