@@ -1229,18 +1229,21 @@ export default class Molecule extends Atom {
         false
       );
 
-      // Subscribe output atom to all README atoms so that when README text changes,
-      // the molecule recompiles its README content
+      // Subscribe molecule to README atom changes for automatic README recompilation
+      // Issue: README atoms were not part of molecule's propagation chain
+      // Solution: When a README atom's text changes (via setReady()), propagate that change
+      // to trigger the molecule's requestReadme() and update compiledReadme.
+      // This ensures that the README content in the molecule's input panel and saved README
+      // files stays in sync with the actual README atom values.
       this.nodesOnTheScreen.forEach((atom) => {
         if (atom.atomType === "Readme") {
           atom.subscribe(
             () => {
-              // When a README atom changes, trigger molecule's onUpstreamChange
-              // to recompile the README content
+              // Recompile README content when any README atom changes
               this.requestReadme()
                 .then((readme) => {
                   this.compiledReadme = readme;
-                  // Optionally update the input panel if this molecule is selected
+                  // Update the input panel if this molecule is currently selected
                   if (this.setInputChanged) {
                     this.setInputChanged(readme);
                   }
