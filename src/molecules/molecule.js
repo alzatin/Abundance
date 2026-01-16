@@ -1228,6 +1228,38 @@ export default class Molecule extends Atom {
         this.uniqueID,
         false
       );
+
+      // Subscribe molecule to README atom changes for automatic README recompilation
+      // Issue: README atoms were not part of molecule's propagation chain
+      // Solution: When a README atom's text changes (via setReady()), propagate that change
+      // to trigger the molecule's requestReadme() and update compiledReadme.
+      // This ensures that the README content in the molecule's input panel and saved README
+      // files stays in sync with the actual README atom values.
+      this.nodesOnTheScreen.forEach((atom) => {
+        if (atom.atomType === "Readme") {
+          atom.subscribe(
+            () => {
+              // Recompile README content when any README atom changes
+              this.requestReadme()
+                .then((readme) => {
+                  this.compiledReadme = readme;
+                  // Note: setInputChanged is not called here as it's only used for BOM updates
+                  // README changes are reflected automatically in the properties panel
+                  // through the compiledReadme property
+                })
+                .catch((err) => {
+                  console.warn(
+                    `Error updating README after atom change in molecule ${this.uniqueID}, README atom ${atom.uniqueID}:`,
+                    err
+                  );
+                });
+            },
+            `readme-subscription-${this.uniqueID}-${atom.uniqueID}`,
+            false
+          );
+        }
+      });
+
       if (GlobalVariables.currentMolecule === this || forceEnable) {
         this.enable(); // Enable self and all child nodes upstream of output.
       }
