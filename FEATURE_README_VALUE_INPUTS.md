@@ -69,7 +69,18 @@ Part identifier
 **Value:** WHEEL-001
 ```
 
-### Example 3: Documenting Geometry (Unchanged)
+### Example 3: Documenting an Array of Values
+```
+ReadMe text: "Available sizes"
+Connected value: [10, 20, 30, 40]
+
+Result in README:
+Available sizes
+
+**Value:** 10,20,30,40
+```
+
+### Example 4: Documenting Geometry (Unchanged)
 ```
 ReadMe text: "The wheel assembly"
 Connected value: [Circle geometry]
@@ -104,11 +115,12 @@ Non-geometry values are formatted as:
 The "**Value:**" label is bold in markdown format and clearly separates the input value from the readme text.
 
 ## Testing
-A comprehensive test suite was added in `tests/readme-value-inputs.test.js` with 15 test cases covering:
+A comprehensive test suite was added in `tests/readme-value-inputs.test.js` with 16 test cases covering:
 - Geometry input with thumbnail generation
 - Number inputs (positive, negative, zero, decimals)
 - String inputs (single-line, multi-line, empty, special characters)
 - Boolean inputs
+- Array inputs (displayed as comma-separated text)
 - Null and undefined inputs
 - Edge cases and error handling
 
@@ -124,5 +136,5 @@ This change is fully backward compatible:
 Possible future improvements could include:
 - Custom label text instead of hardcoded "**Value:**"
 - Formatting options for numbers (decimal places, units)
-- Support for arrays of values
 - Custom styling for different value types
+- Rich formatting for complex data structures
