@@ -44,11 +44,26 @@ export default function ReadmePanel({
   collapsedOffset = [0, 0],
   collapsedIcon,
   title = "Project Readme",
+  activeAtom,
 }) {
   console.log(
     "Current top level molecule in ReadmePanel:",
     GlobalVariables.topLevelMolecule
   );
+
+  // Add README text if this molecule has compiled README content
+  if (
+    activeAtom &&
+    activeAtom.compiledReadme &&
+    Array.isArray(activeAtom.compiledReadme) &&
+    activeAtom.compiledReadme.length > 0
+  ) {
+    // Combine all readme text into a single display
+    readme = activeAtom.compiledReadme
+      .map((item) => item.readMeText)
+      .join("\n\n");
+  }
+
   // Only one control: the readme as markdown
   const controls = useMemo(
     () => ({

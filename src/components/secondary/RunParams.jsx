@@ -14,6 +14,7 @@ export default function RunParams({
   closeMenu,
   initialCollapsed = false,
   collapsedOffset = [0, 0],
+  setReadMe,
 }) {
   // Molecule icon: large circle with a smaller center circle
   const AtomIcon = ({ size = 20 }) => (
@@ -63,11 +64,21 @@ export default function RunParams({
       },
       ...Object.fromEntries(
         Object.entries(activeAtom.createInputParams(setInputChanged)).filter(
-          ([key, param]) => param.label !== "Molecule Name"
+          ([key, param]) =>
+            param.label !== "Molecule Name" && param.label !== "Molecule Readme"
         )
       ),
     };
     exportParams = activeAtom?.createExportMenuInputs();
+    // Add a button at the end to see the project readme
+    inputParams.seeProjectReadme = {
+      type: "button",
+      label: "See Project Readme",
+      order: 9999,
+      onClick: () => {
+        setReadMe();
+      },
+    };
   }
 
   const inputParamsConfig = useMemo(() => {
