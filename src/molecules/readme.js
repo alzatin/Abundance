@@ -111,16 +111,10 @@ export default class Readme extends Atom {
 
   async generateProjectThumbnail() {
     try {
-      console.log("[README THUMBNAIL] Starting thumbnail generation for readme:", this.uniqueID);
-      
       const value = this.findIOValue("value");
-      console.log("[README THUMBNAIL] Found input value:", value != null ? "YES" : "NO", 
-                  value != null ? `(type: ${typeof value}, isArray: ${Array.isArray(value)})` : "");
       
       // Generate a thumbnail only if value is geometry (object but not null or array)
       if (value != null && typeof value === 'object' && !Array.isArray(value)) {
-        console.log("[README THUMBNAIL] Value is valid geometry object, proceeding with mesh generation");
-        
         // Check if pool is available (same as global thumbnail generation)
         if (!GlobalVariables.pool) {
           console.error("[README THUMBNAIL] GlobalVariables.pool is not available");
@@ -133,22 +127,17 @@ export default class Readme extends Atom {
           return null;
         }
         
-        console.log("[README THUMBNAIL] Using worker pool to generate display mesh (matching global thumbnail generation)");
-        
         // Use the same approach as global thumbnail generation in ProjectContext.jsx
         return GlobalVariables.pool
           .proxy()
           .then((worker) => {
-            console.log("[README THUMBNAIL] Worker proxy obtained, calling generateDisplayMesh");
             return worker.generateDisplayMesh(
               value,
               this.getContext()
             );
           })
           .then(async (m) => {
-            console.log("[README THUMBNAIL] Display mesh generated:", m);
             const svg = await GlobalVariables.meshRef.current.buildThumbnail(m.mesh);
-            console.log("[README THUMBNAIL] SVG thumbnail generated successfully, length:", svg ? svg.length : 0);
             return svg;
           })
           .catch((error) => {
@@ -157,7 +146,6 @@ export default class Readme extends Atom {
           });
       }
       
-      console.log("[README THUMBNAIL] Value is not geometry, skipping thumbnail generation");
       return null;
     } catch (error) {
       console.error("[README THUMBNAIL] Error generating readme thumbnail:", error);

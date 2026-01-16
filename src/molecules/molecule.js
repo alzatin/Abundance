@@ -1046,8 +1046,6 @@ export default class Molecule extends Atom {
               .toString(36)
               .replace('-', 'n'); // Replace negative sign with 'n'
             
-            console.log(`[README] Adding SVG reference for ${value.uniqueID} with cache-busting hash: ${svgHash}`);
-            
             text = text.concat(
               " \n\n![readme](/readme" + value.uniqueID + ".svg?v=" + svgHash + ")\n\n"
             );
