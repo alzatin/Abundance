@@ -191,8 +191,8 @@ export default class Equation extends Atom {
     let variables = this._extractVariablesFromEquation();
     // Only add inputs for variables NOT present in parent molecule's inputs
     let moleculeInputs = [];
-    if (this.parentMolecule && this.parentMolecule.inputs) {
-      moleculeInputs = this.parentMolecule.inputs.map((input) => input.name);
+    if (this.parent && this.parent.inputs) {
+      moleculeInputs = this.parent.inputs.map((input) => input.name);
     }
 
     //Remove any inputs which are not needed
