@@ -69,8 +69,8 @@ class ReadmeWithValueInputs extends MockAtom {
 
   async generateProjectThumbnail() {
     const value = this.findIOValue("value");
-    // Generate a thumbnail only if value is geometry
-    if (value != null && this.parent && typeof value === 'object') {
+    // Generate a thumbnail only if value is geometry (object but not null or array)
+    if (value != null && typeof value === 'object' && !Array.isArray(value) && this.parent) {
       const mesh = await mockGlobalVariables.cad.generateDisplayMesh(
         value,
         this.parent.getContext()
@@ -91,7 +91,8 @@ class ReadmeWithValueInputs extends MockAtom {
       let readMeTextWithValue = this.readMeText;
       
       // If there's a non-geometry input value, append it to the readme text
-      if (inputValue != null && typeof inputValue !== 'object') {
+      // Geometry is an object but not an array; primitives (numbers, strings, booleans) should be displayed as text
+      if (inputValue != null && (typeof inputValue !== 'object' || Array.isArray(inputValue))) {
         const valueStr = String(inputValue);
         readMeTextWithValue = this.readMeText + '\n\n**Value:** ' + valueStr;
       }
@@ -333,5 +334,18 @@ describe("README Atom Value Inputs", () => {
 
     expect(result).toBeDefined();
     expect(result.readMeText).toBe("Boolean test\n\n**Value:** true");
+  });
+
+  it("should handle array input as text value", async () => {
+    const readme = new ReadmeWithValueInputs({
+      readMeText: "Array test",
+    });
+    readme._testInputValue = [1, 2, 3];
+
+    const result = await readme.requestReadme();
+
+    expect(result).toBeDefined();
+    expect(result.readMeText).toBe("Array test\n\n**Value:** 1,2,3");
+    expect(result.svg).toBe(null); // Arrays should not generate thumbnails
   });
 });

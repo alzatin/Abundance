@@ -112,8 +112,8 @@ export default class Readme extends Atom {
   async generateProjectThumbnail() {
     try {
       const value = this.findIOValue("value");
-      // Generate a thumbnail only if value is geometry
-      if (value != null && this.parent && typeof value === 'object') {
+      // Generate a thumbnail only if value is geometry (object but not null or array)
+      if (value != null && typeof value === 'object' && !Array.isArray(value) && this.parent) {
         // Use the new thumbnail generation method
         // First generate the display mesh from the geometry
         const mesh = await GlobalVariables.cad.generateDisplayMesh(
@@ -147,7 +147,8 @@ export default class Readme extends Atom {
       let readMeTextWithValue = this.readMeText;
       
       // If there's a non-geometry input value, append it to the readme text
-      if (inputValue != null && typeof inputValue !== 'object') {
+      // Geometry is an object but not an array; primitives (numbers, strings, booleans) should be displayed as text
+      if (inputValue != null && (typeof inputValue !== 'object' || Array.isArray(inputValue))) {
         const valueStr = String(inputValue);
         readMeTextWithValue = this.readMeText + '\n\n**Value:** ' + valueStr;
       }
