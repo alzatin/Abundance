@@ -9,6 +9,7 @@ import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
 import RunNavigation from "../secondary/RunNavigation.jsx";
 import Molecule from "../../molecules/molecule.js";
 import ParamsMenu from "../secondary/ParamsMenu.jsx";
+import RunParams from "../secondary/RunParams.jsx";
 import ExportMenu from "../secondary/ExportMenu.jsx";
 import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
@@ -220,7 +221,7 @@ function runMode() {
 
   return (
     <>
-      <ParamsMenu
+      <RunParams
         activeAtom={activeAtom}
         position={{ top: 30, left: screenWidth - 365 }}
         id={"atom-run-params-panel"}
@@ -249,15 +250,7 @@ function runMode() {
         }}
         id={"atom-run-render-panel"}
       />
-      <ExportMenu
-        activeAtom={activeAtom}
-        position={{ top: 120, left: screenWidth - 365 }}
-        id={"atom-run-export-panel"}
-        contentCollapsed={expandedMenu !== "export"}
-        setContentCollapsed={() => setExpandedMenu("export")}
-        closeMenu={() => setExpandedMenu("none")}
-        collapsedOffset={[45, -90]}
-      />
+
       <BomMenu
         {...{
           activeAtom,
@@ -265,9 +258,9 @@ function runMode() {
           contentCollapsed: expandedMenu !== "bom",
           setContentCollapsed: () => setExpandedMenu("bom"),
           closeMenu: () => setExpandedMenu("none"),
-          position: { top: 165, left: screenWidth - 365 },
+          position: { top: 120, left: screenWidth - 365 },
         }}
-        collapsedOffset={[45, -135]}
+        collapsedOffset={[45, -90]}
       />
       <div id="headerBarRun">
         <img
