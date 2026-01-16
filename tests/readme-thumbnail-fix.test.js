@@ -7,6 +7,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 describe("Readme Thumbnail Generation Fix", () => {
   let mockGlobalVariables;
   let mockMeshRef;
+  let mockWorker;
+  let mockPool;
 
   beforeEach(() => {
     // Mock meshRef
@@ -16,12 +18,20 @@ describe("Readme Thumbnail Generation Fix", () => {
       }
     };
 
+    // Mock worker
+    mockWorker = {
+      generateDisplayMesh: vi.fn().mockResolvedValue({ mesh: 'mock-mesh-data' })
+    };
+
+    // Mock pool
+    mockPool = {
+      proxy: vi.fn().mockResolvedValue(mockWorker)
+    };
+
     // Mock GlobalVariables
     mockGlobalVariables = {
       generateUniqueID: () => "test-id-" + Math.random().toString(36).substring(2, 11),
-      cad: {
-        generateDisplayMesh: vi.fn().mockResolvedValue({ mesh: 'mock-mesh-data' }),
-      },
+      pool: mockPool,
       meshRef: mockMeshRef,
     };
 
@@ -71,31 +81,45 @@ describe("Readme Thumbnail Generation Fix", () => {
       return input ? input.getValue() : null;
     }
 
-    // Fixed version - no parent check, uses this.getContext()
+    // Fixed version - uses worker pool like global thumbnail generation
     async generateProjectThumbnail() {
       try {
         const value = this.findIOValue("value");
         // Generate a thumbnail only if value is geometry (object but not null or array)
         if (value != null && typeof value === 'object' && !Array.isArray(value)) {
-          // Use the new thumbnail generation method
-          // First generate the display mesh from the geometry
-          const mesh = await GlobalVariables.cad.generateDisplayMesh(
-            value,
-            this.getContext()
-          );
-          
-          // Then convert the mesh to SVG using the meshRef
-          if (GlobalVariables.meshRef && GlobalVariables.meshRef.current) {
-            const svg = await GlobalVariables.meshRef.current.buildThumbnail(mesh);
-            return svg;
-          } else {
-            console.warn("meshRef not available for thumbnail generation");
+          // Check if pool is available (same as global thumbnail generation)
+          if (!GlobalVariables.pool) {
+            console.error("GlobalVariables.pool is not available");
             return null;
           }
+          
+          // Check if meshRef is available
+          if (!GlobalVariables.meshRef || !GlobalVariables.meshRef.current) {
+            console.warn("meshRef is not available for thumbnail generation");
+            return null;
+          }
+          
+          // Use the same approach as global thumbnail generation in ProjectContext.jsx
+          return GlobalVariables.pool
+            .proxy()
+            .then((worker) => {
+              return worker.generateDisplayMesh(
+                value,
+                this.getContext()
+              );
+            })
+            .then(async (m) => {
+              const svg = await GlobalVariables.meshRef.current.buildThumbnail(m.mesh);
+              return svg;
+            })
+            .catch((error) => {
+              console.error("Error in worker/mesh generation:", error);
+              return null;
+            });
         }
         return null;
       } catch (error) {
-        console.error("Error generating project thumbnail:", error);
+        console.error("Error generating readme thumbnail:", error);
         return null;
       }
     }
@@ -116,12 +140,14 @@ describe("Readme Thumbnail Generation Fix", () => {
 
     // Verify thumbnail was generated
     expect(result).toBe('<svg>mock thumbnail</svg>');
-    expect(mockGlobalVariables.cad.generateDisplayMesh).toHaveBeenCalledTimes(1);
-    expect(mockGlobalVariables.cad.generateDisplayMesh).toHaveBeenCalledWith(
+    expect(mockPool.proxy).toHaveBeenCalledTimes(1);
+    expect(mockWorker.generateDisplayMesh).toHaveBeenCalledTimes(1);
+    expect(mockWorker.generateDisplayMesh).toHaveBeenCalledWith(
       mockGeometry,
       expect.objectContaining({ project: readme.uniqueID })
     );
     expect(mockMeshRef.current.buildThumbnail).toHaveBeenCalledTimes(1);
+    expect(mockMeshRef.current.buildThumbnail).toHaveBeenCalledWith('mock-mesh-data');
   });
 
   it("should generate thumbnail when parent is set", async () => {
@@ -146,8 +172,9 @@ describe("Readme Thumbnail Generation Fix", () => {
 
     // Verify thumbnail was generated using parent context
     expect(result).toBe('<svg>mock thumbnail</svg>');
-    expect(mockGlobalVariables.cad.generateDisplayMesh).toHaveBeenCalledTimes(1);
-    expect(mockGlobalVariables.cad.generateDisplayMesh).toHaveBeenCalledWith(
+    expect(mockPool.proxy).toHaveBeenCalledTimes(1);
+    expect(mockWorker.generateDisplayMesh).toHaveBeenCalledTimes(1);
+    expect(mockWorker.generateDisplayMesh).toHaveBeenCalledWith(
       mockGeometry,
       expect.objectContaining({ project: "parent-123" })
     );
@@ -166,7 +193,8 @@ describe("Readme Thumbnail Generation Fix", () => {
 
     // Verify no thumbnail was generated
     expect(result).toBeNull();
-    expect(mockGlobalVariables.cad.generateDisplayMesh).not.toHaveBeenCalled();
+    expect(mockPool.proxy).not.toHaveBeenCalled();
+    expect(mockWorker.generateDisplayMesh).not.toHaveBeenCalled();
   });
 
   it("should return null when value is an array", async () => {
@@ -182,7 +210,8 @@ describe("Readme Thumbnail Generation Fix", () => {
 
     // Verify no thumbnail was generated
     expect(result).toBeNull();
-    expect(mockGlobalVariables.cad.generateDisplayMesh).not.toHaveBeenCalled();
+    expect(mockPool.proxy).not.toHaveBeenCalled();
+    expect(mockWorker.generateDisplayMesh).not.toHaveBeenCalled();
   });
 
   it("should return null when value is null", async () => {
@@ -198,7 +227,8 @@ describe("Readme Thumbnail Generation Fix", () => {
 
     // Verify no thumbnail was generated
     expect(result).toBeNull();
-    expect(mockGlobalVariables.cad.generateDisplayMesh).not.toHaveBeenCalled();
+    expect(mockPool.proxy).not.toHaveBeenCalled();
+    expect(mockWorker.generateDisplayMesh).not.toHaveBeenCalled();
   });
 
   it("should handle meshRef not available gracefully", async () => {
@@ -216,14 +246,15 @@ describe("Readme Thumbnail Generation Fix", () => {
     // Generate thumbnail
     const result = await readme.generateProjectThumbnail();
 
-    // Verify mesh was generated but thumbnail returned null
+    // Verify thumbnail returned null without calling pool
     expect(result).toBeNull();
-    expect(mockGlobalVariables.cad.generateDisplayMesh).toHaveBeenCalledTimes(1);
+    expect(mockPool.proxy).not.toHaveBeenCalled();
+    expect(mockWorker.generateDisplayMesh).not.toHaveBeenCalled();
   });
 
   it("should handle generateDisplayMesh error gracefully", async () => {
     // Mock generateDisplayMesh to throw error
-    mockGlobalVariables.cad.generateDisplayMesh.mockRejectedValue(
+    mockWorker.generateDisplayMesh.mockRejectedValue(
       new Error("Mesh generation failed")
     );
 
@@ -240,7 +271,8 @@ describe("Readme Thumbnail Generation Fix", () => {
 
     // Verify error was caught and null returned
     expect(result).toBeNull();
-    expect(mockGlobalVariables.cad.generateDisplayMesh).toHaveBeenCalledTimes(1);
+    expect(mockPool.proxy).toHaveBeenCalledTimes(1);
+    expect(mockWorker.generateDisplayMesh).toHaveBeenCalledTimes(1);
   });
 
   it("should use correct context based on parent hierarchy", async () => {
@@ -269,7 +301,7 @@ describe("Readme Thumbnail Generation Fix", () => {
 
     // Verify thumbnail was generated using top-level context
     expect(result).toBe('<svg>mock thumbnail</svg>');
-    expect(mockGlobalVariables.cad.generateDisplayMesh).toHaveBeenCalledWith(
+    expect(mockWorker.generateDisplayMesh).toHaveBeenCalledWith(
       mockGeometry,
       expect.objectContaining({ project: "top-level-123" })
     );
