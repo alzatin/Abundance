@@ -57,7 +57,7 @@ export default class Readme extends Atom {
 
     this.addAllIOs([
       {
-        name: "geometry",
+        name: "value",
         valueType: "geometry",
       },
     ]);
@@ -111,13 +111,13 @@ export default class Readme extends Atom {
 
   async generateProjectThumbnail() {
     try {
-      const geometry = this.findIOValue("geometry");
-      // Generate a thumbnail only if geometry is present
-      if (geometry != null && this.parent) {
+      const value = this.findIOValue("value");
+      // Generate a thumbnail only if value is geometry
+      if (value != null && this.parent && typeof value === 'object') {
         // Use the new thumbnail generation method
         // First generate the display mesh from the geometry
         const mesh = await GlobalVariables.cad.generateDisplayMesh(
-          geometry,
+          value,
           this.parent.getContext()
         );
         
@@ -142,17 +142,27 @@ export default class Readme extends Atom {
    */
   async requestReadme() {
     if (this.global) {
+      // Get the input value (could be geometry, number, or string)
+      const inputValue = this.findIOValue("value");
+      let readMeTextWithValue = this.readMeText;
+      
+      // If there's a non-geometry input value, append it to the readme text
+      if (inputValue != null && typeof inputValue !== 'object') {
+        const valueStr = String(inputValue);
+        readMeTextWithValue = this.readMeText + '\n\n**Value:** ' + valueStr;
+      }
+      
       return this.generateProjectThumbnail()
         .then((res) => {
           if (res !== null) {
             return {
-              readMeText: this.readMeText,
+              readMeText: readMeTextWithValue,
               svg: res,
               uniqueID: this.uniqueID,
             };
           } else {
             return {
-              readMeText: this.readMeText,
+              readMeText: readMeTextWithValue,
               svg: null,
               uniqueID: this.uniqueID,
             };
@@ -161,7 +171,7 @@ export default class Readme extends Atom {
         .catch((error) => {
           console.log(error);
           return {
-            readMeText: this.readMeText,
+            readMeText: readMeTextWithValue,
             svg: null,
             uniqueID: this.uniqueID,
           };
