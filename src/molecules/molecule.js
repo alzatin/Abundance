@@ -246,25 +246,15 @@ export default class Molecule extends Atom {
       Array.isArray(this.compiledReadme) &&
       this.compiledReadme.length > 0
     ) {
-      // Add spacer and heading
-      inputParams["readme-spacer-" + this.uniqueID] = {
-        type: "spacer",
-        height: 0,
-      };
-      inputParams["readme-heading-" + this.uniqueID] = {
-        type: "string",
-        value: "README:",
-        disabled: true,
-      };
-
       // Combine all readme text into a single display
       const combinedReadmeText = this.compiledReadme
         .map((item) => item.readMeText)
         .join("\n\n");
 
       inputParams["readme-text-" + this.uniqueID] = {
+        label: "Molecule Readme",
         type: "markdown",
-        value: combinedReadmeText,
+        value: "README\n\n" + combinedReadmeText,
         maxHeight: "300px",
         disabled: true,
       };
@@ -1038,16 +1028,20 @@ export default class Molecule extends Atom {
             // Generate a simple hash from the SVG content for cache-busting
             // This ensures the image URL changes when the SVG content changes
             const svgHash = value.svg
-              .split('')
+              .split("")
               .reduce((hash, char) => {
                 const charCode = char.charCodeAt(0);
                 return ((hash << 5) - hash + charCode) | 0;
               }, 0)
               .toString(36)
-              .replace('-', 'n'); // Replace negative sign with 'n'
-            
+              .replace("-", "n"); // Replace negative sign with 'n'
+
             text = text.concat(
-              " \n\n![readme](/readme" + value.uniqueID + ".svg?v=" + svgHash + ")\n\n"
+              " \n\n![readme](/readme" +
+                value.uniqueID +
+                ".svg?v=" +
+                svgHash +
+                ")\n\n"
             );
           }
           finalReadMe.push({

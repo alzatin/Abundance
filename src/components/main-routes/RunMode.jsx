@@ -231,6 +231,7 @@ function runMode() {
         closeMenu={() => setExpandedMenu("none")}
         initialCollapsed={true}
         collapsedOffset={[45, 0]}
+        setReadMe={() => setExpandedMenu("readme")}
       />
       <RenderMenu
         {...{
@@ -274,6 +275,7 @@ function runMode() {
         setContentCollapsed={() => setExpandedMenu("readme")}
         closeMenu={() => setExpandedMenu("none")}
         collapsedOffset={[45, -135]}
+        activeAtom={activeAtom}
       />
       <div id="headerBarRun">
         <img
