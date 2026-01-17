@@ -416,10 +416,11 @@ export default class Input extends Atom {
 
     // Delete uploaded file if this is an import type
     if (this.type === "import" && this.fileName && this.fileSha) {
-      var f = document.getElementById("fileDeleteInput");
-      f.value = this.fileName;
-      f.setAttribute("data-sha", this.fileSha);
-      f.click();
+      if (GlobalVariables.deleteFile) {
+        GlobalVariables.deleteFile(this.fileName, this.fileSha);
+      } else {
+        console.warn("deleteFile not available in GlobalVariables");
+      }
     }
 
     //Remove this input from the parent molecule
@@ -615,31 +616,47 @@ export default class Input extends Atom {
   }
 
   /**
-   * Creates an input element to load a file
+   * Trigger file upload using FileImportContext
    */
-  loadFile(type, setInputChanged) {
-    var f = document.getElementById("fileLoaderInput");
-    f.accept = "." + type.toLowerCase();
-    f.onchange = (event) => {
+  loadFile(type, setInputChanged, onSave) {
+    // Use the new FileImportContext approach
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "." + type.toLowerCase();
+    input.style.display = "none";
+    
+    input.onchange = async (event) => {
       const file = event.target.files[0];
       if (file) {
-        // If a previous file exists, delete it
-        if (this.fileName && this.fileSha) {
-          console.log(`Deleting previous file: ${this.fileName}`);
-          const deleteInput = document.getElementById("fileDeleteInput");
-          deleteInput.value = this.fileName;
-          deleteInput.setAttribute("data-sha", this.fileSha);
-          deleteInput.click();
+        // Delete previous file if exists
+        if (this.fileName && this.fileSha && GlobalVariables.deleteFile) {
+          await GlobalVariables.deleteFile(this.fileName, this.fileSha);
         }
 
         this.fileType = type;
-        this.fileName = file.name;
-        if (setInputChanged) {
-          setInputChanged(file.name);
+        
+        // Upload the new file using GlobalVariables.uploadFile
+        if (GlobalVariables.uploadFile) {
+          // If onSave is a function, use it, otherwise onSave is setInputChanged callback
+          const saveCallback = typeof onSave === 'function' ? onSave : null;
+          const inputChangedCallback = typeof setInputChanged === 'function' ? setInputChanged : onSave;
+          
+          GlobalVariables.uploadFile(file, this, saveCallback);
+          
+          // Call input changed callback after file name is set
+          if (inputChangedCallback && typeof inputChangedCallback === 'function') {
+            setTimeout(() => inputChangedCallback(this.fileName), 100);
+          }
+        } else {
+          console.error("uploadFile not available in GlobalVariables");
         }
       }
+      // Clean up
+      document.body.removeChild(input);
     };
-    f.click();
+    
+    document.body.appendChild(input);
+    input.click();
   }
 
   /**

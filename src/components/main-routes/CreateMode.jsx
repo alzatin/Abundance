@@ -71,13 +71,17 @@ function CreateMode() {
   const { uploadFile, deleteFile, importNotification } = useFileImport();
   const meshRef = useRef();
 
-  // Make meshRef available globally for thumbnail generation
+  // Make meshRef and file import functions available globally
   useEffect(() => {
     GlobalVariables.meshRef = meshRef;
+    GlobalVariables.uploadFile = uploadFile;
+    GlobalVariables.deleteFile = deleteFile;
     return () => {
       GlobalVariables.meshRef = null;
+      GlobalVariables.uploadFile = null;
+      GlobalVariables.deleteFile = null;
     };
-  }, []);
+  }, [uploadFile, deleteFile]);
 
   const navigate = useNavigate();
 
