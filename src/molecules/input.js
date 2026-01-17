@@ -547,7 +547,7 @@ export default class Input extends Atom {
    * Load the imported file and propagate the geometry value
    */
   loadAndPropagate() {
-    if (this.type !== "import" || this.fileName == null) {
+    if (this.type !== "import" || this.fileName === null) {
       return Promise.resolve(this.value);
     }
 
@@ -558,15 +558,15 @@ export default class Input extends Atom {
         const fileType = this.fileType;
 
         let funcToCall =
-          fileType == "STL"
+          fileType === "STL"
             ? GlobalVariables.cad.importingSTL
-            : fileType == "SVG"
+            : fileType === "SVG"
             ? GlobalVariables.cad.importingSVG
-            : fileType == "STEP"
+            : fileType === "STEP"
             ? GlobalVariables.cad.importingSTEP
             : null;
 
-        if (funcToCall == null) {
+        if (funcToCall === null) {
           throw new Error("Invalid file type");
         }
 
@@ -589,7 +589,7 @@ export default class Input extends Atom {
     let base64String = result.data.content;
     let binary = atob(base64String);
 
-    if (this.fileType == "SVG") {
+    if (this.fileType === "SVG") {
       return binary;
     }
 
@@ -720,7 +720,7 @@ export default class Input extends Atom {
 
     // If type is import, add controls for file upload
     if (this.type === "import") {
-      if (this.fileName == null) {
+      if (this.fileName === null) {
         inputParams[this.uniqueID + "file_ops"] = {
           type: "select",
           options: this.importOptions,
@@ -741,7 +741,7 @@ export default class Input extends Atom {
           },
         };
       } else {
-        if (this.fileType == "SVG") {
+        if (this.fileType === "SVG") {
           inputParams[this.uniqueID + "Width"] = {
             type: "number",
             value: this.SVGwidth,
