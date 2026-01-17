@@ -92,7 +92,8 @@ export function FileImportProvider({ children }) {
 
     reader.onerror = function (error) {
       console.error("Error reading file:", error);
-      alert("Failed to read the file. Please try again.");
+      setImportNotification("Failed to read the file. Please try again.");
+      setTimeout(() => setImportNotification(null), 3000);
     };
     reader.readAsDataURL(file);
   };
@@ -123,9 +124,10 @@ export function FileImportProvider({ children }) {
       setTimeout(() => setImportNotification(null), 3000);
     } catch (error) {
       console.error("Error deleting file:", error);
-      alert(
+      setImportNotification(
         `Failed to delete file: ${fileName}. The file will remain in your repository.`
       );
+      setTimeout(() => setImportNotification(null), 5000);
     }
   };
 
