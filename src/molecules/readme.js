@@ -1,6 +1,7 @@
 import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
 import { e, re } from "mathjs";
+import { Status } from "../prototypes/observableEntity.js";
 
 /**
  * This class creates the readme atom.
@@ -195,6 +196,49 @@ export default class Readme extends Atom {
         });
     } else {
       return [];
+    }
+  }
+
+  /**
+   * Override onUpstreamChange to handle optional inputs.
+   * The Readme atom's "value" input is optional - it should compute
+   * even when the input is not connected (WAITING state).
+   */
+  onUpstreamChange() {
+    // No-op if this atom isn't enabled
+    if (!this.isEnabled()) {
+      return;
+    }
+
+    // Check for errors in inputs first
+    if (this.inputsHaveErrors()) {
+      this.setUpstreamError();
+      return;
+    }
+
+    // For Readme atom, compute as soon as inputs are either READY or WAITING
+    // The "value" input is optional, so WAITING state is acceptable
+    const inputsReadyOrWaiting = this.inputs.every((input) => {
+      const status = input.getState().status;
+      return status === Status.READY || status === Status.WAITING;
+    });
+
+    if (inputsReadyOrWaiting) {
+      const argsDict = Object.fromEntries(
+        this.inputs.map((input) => [input.name, input.getState().value])
+      );
+
+      this.setProcessing();
+      this.compute(argsDict)
+        .then((value) => {
+          this.setReady(value);
+        })
+        .catch(this.alertingErrorHandler());
+    } else {
+      this.setWaiting();
+      GlobalVariables.cad
+        .deleteFromLibrary(this.uniqueID)
+        .catch(this.alertingErrorHandler());
     }
   }
 
