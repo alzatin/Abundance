@@ -499,6 +499,7 @@ export default class Input extends Atom {
   }
 
   createInputParams(setInputChanged) {
+    this.setInputChanged = setInputChanged;
     let inputParams = {};
     inputParams[this.uniqueID] = {
       type: "string",
@@ -533,6 +534,7 @@ export default class Input extends Atom {
         if (this.type !== newType) {
           this.type = newType;
           this.output.valueType = newType;
+
           //Add a new input to the current molecule
           if (this.parentAP) {
             this.parentAP.valueType = newType;
@@ -554,6 +556,11 @@ export default class Input extends Atom {
             .split(",")
             .map((v) => v.trim())
             .filter((v) => v.length > 0);
+          //Add a new input to the current molecule
+          if (this.parentAP) {
+            this.parentAP.options = this.options;
+          }
+          this.setInputChanged(val);
         },
       };
     }
