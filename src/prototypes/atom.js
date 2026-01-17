@@ -1044,6 +1044,15 @@ export default class Atom extends ObservableEntity {
               input.setValue(value);
             },
           };
+        } else if (input.valueType === "boolean") {
+          inputParams[this.uniqueID + input.name] = {
+            type: "boolean",
+            value: input.value,
+            label: input.name,
+            onChange: (value) => {
+              input.setValue(value);
+            },
+          };
         } else if (input.valueType !== "geometry") {
           // When connector is attached, show the value from upstream connection
           let displayValue;

@@ -529,7 +529,7 @@ export default class Input extends Atom {
       value: this.type,
       label: "Input Type",
       disabled: false,
-      options: ["number", "string", "geometry", "array"],
+      options: ["number", "string", "geometry", "array", "boolean"],
       onChange: (newType) => {
         if (this.type !== newType) {
           this.type = newType;
