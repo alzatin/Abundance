@@ -563,6 +563,8 @@ export default class Input extends Atom {
       return Promise.resolve(this.value);
     }
 
+    this.setProcessing();
+
     return this.getAFile()
       .then((result) => {
         this.fileSha = result.data.sha;
@@ -586,6 +588,7 @@ export default class Input extends Atom {
       })
       .then((result) => {
         this.value = result;
+        this.setReady(result);
         if (this.parentAP) {
           this.parentAP.setValue(result);
         }
