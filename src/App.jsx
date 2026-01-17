@@ -28,6 +28,7 @@ import {
   AppStateProvider,
   ProjectProvider,
   BrowseSettingsProvider,
+  FileImportProvider,
   useRendering,
   useAuth,
   useAppState,
@@ -530,13 +531,15 @@ export default function ReplicadApp() {
       <AuthProvider>
         <AppStateProvider>
           <BrowseSettingsProvider>
-            <TutorialProvider>
-              <RenderingProvider>
-                <ProgressBarProvider>
-                  <AppContent />
-                </ProgressBarProvider>
-              </RenderingProvider>
-            </TutorialProvider>
+            <FileImportProvider>
+              <TutorialProvider>
+                <RenderingProvider>
+                  <ProgressBarProvider>
+                    <AppContent />
+                  </ProgressBarProvider>
+                </RenderingProvider>
+              </TutorialProvider>
+            </FileImportProvider>
           </BrowseSettingsProvider>
         </AppStateProvider>
       </AuthProvider>

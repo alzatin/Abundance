@@ -28,6 +28,7 @@ import {
   useAppState,
   useRendering,
   useProject,
+  useFileImport,
 } from "../../contexts/index.js";
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
@@ -67,6 +68,7 @@ function CreateMode() {
   } = useRendering();
 
   const { cad, loadProject, searchGithubMolecules, saveProject: saveProjectFromContext } = useProject();
+  const { uploadFile, deleteFile, importNotification } = useFileImport();
   const meshRef = useRef();
 
   // Make meshRef available globally for thumbnail generation
@@ -95,9 +97,6 @@ function CreateMode() {
     "Rendering",
     false
   );
-
-  /** State for import notifications */
-  const [importNotification, setImportNotification] = useState(null);
 
   /** State for save progress bar */
   const [saveState, setSaveState] = useState(0);
@@ -423,109 +422,6 @@ function CreateMode() {
     setUserUploadedFile(false);
   }, [GlobalVariables.currentAWSnode]);
 
-  const uploadAFile = async function (file) {
-    var reader = new FileReader();
-
-    reader.onload = function (e) {
-      const base64result = e.target.result.split(",")[1];
-
-      (async () => {
-        try {
-          const existingFiles = await authorizedUserOcto.rest.repos.getContent({
-            owner: GlobalVariables.currentAWSnode.owner,
-            repo: GlobalVariables.currentAWSnode.repoName,
-            path: "",
-          });
-
-          let fileName = file.name;
-          const fileExtension = fileName.substring(fileName.lastIndexOf("."));
-          const baseName = fileName.substring(0, fileName.lastIndexOf("."));
-          let uniqueFileName = fileName;
-          let counter = 1;
-
-          // Incrementally rename the file until a unique name is found
-          while (
-            existingFiles.data.some(
-              (existingFile) => existingFile.name === uniqueFileName
-            )
-          ) {
-            uniqueFileName = `${baseName}_copy${counter}${fileExtension}`;
-            counter++;
-          }
-
-          if (uniqueFileName !== fileName) {
-            console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
-          }
-          const result = await Promise.race([
-            authorizedUserOcto.rest.repos.createOrUpdateFileContents({
-              owner: GlobalVariables.currentAWSnode.owner,
-              repo: GlobalVariables.currentAWSnode.repoName,
-              path: uniqueFileName,
-              message: "Import File",
-              content: base64result,
-            }),
-            new Promise((_, reject) =>
-              setTimeout(
-                () => reject(new Error("File upload timed out")),
-                60000
-              )
-            ),
-          ]);
-          console.log("File uploaded successfully:", result);
-
-          activeAtom.updateFile(
-            { name: uniqueFileName },
-            result.data.content.sha
-          );
-          saveProject(setSaveState, "Upload Save");
-
-          // Show upload notification
-          setImportNotification(`File uploaded: ${uniqueFileName}`);
-          setTimeout(() => setImportNotification(null), 3000);
-        } catch (error) {
-          setImportNotification(
-            `Failed to Upload File: Corrupt or exceeded size limit`
-          );
-          setTimeout(() => setImportNotification(null), 3000);
-          console.error("Error during file upload:", error);
-        }
-      })();
-    };
-
-    reader.onerror = function (error) {
-      console.error("Error reading file:", error);
-      alert("Failed to read the file. Please try again.");
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const deleteAFile = async function (fileName, fileSha) {
-    // If fileName is null or undefined, there's no file to delete
-    if (fileName == null) {
-      return;
-    }
-
-    try {
-      await authorizedUserOcto.rest.repos.deleteFile({
-        owner: GlobalVariables.currentAWSnode.owner,
-        repo: GlobalVariables.currentAWSnode.repoName,
-        path: fileName,
-        message: "Deleted node",
-        sha: fileSha,
-      });
-      console.log("File deleted successfully:", fileName);
-
-      // Show delete notification
-      setImportNotification(`File deleted: ${fileName}`);
-      setTimeout(() => setImportNotification(null), 3000);
-    } catch (error) {
-      console.error("Error deleting file:", error);
-      alert(
-        `Failed to delete file: ${fileName}. The file will remain in your repository.`
-      );
-    }
-  };
-
   /**
    * Upload a 3D background file (GLB/GLTF) to GitHub
    */
@@ -737,7 +633,9 @@ function CreateMode() {
             style={{ display: "none" }}
             onChange={(value) => {
               let file = value.target.files[0];
-              uploadAFile(file);
+              if (file) {
+                uploadFile(file, activeAtom, () => saveProject(setSaveState, "Upload Save"));
+              }
             }}
           />
           <input
@@ -745,7 +643,7 @@ function CreateMode() {
             id="fileDeleteInput"
             style={{ display: "none" }}
             onClick={() => {
-              deleteAFile(activeAtom.fileName, activeAtom.sha);
+              deleteFile(activeAtom.fileName, activeAtom.sha);
             }}
           />
           <input
