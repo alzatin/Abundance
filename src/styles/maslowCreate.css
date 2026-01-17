@@ -944,7 +944,7 @@ Sidebar navigation
   z-index: 4;
   color: var(--run-project-info);
   line-height: 5px;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 /* Loading Lower canvas dots , NOT IN USE LEAVING FOR FUTURE IMPLEMENTATIONS*/
@@ -1320,10 +1320,10 @@ Sidebar navigation
   }
 
   .info_run_div {
-    line-height: 15px;
-    font-size: 18px;
-    left: 30vh;
-    bottom: 13vh;
+    line-height: 10px;
+    font-size: 15px;
+    left: 10vh;
+    bottom: 2vh;
     border: 2px solid var(--run-project-info);
   }
 

@@ -283,6 +283,7 @@ function runMode() {
           src={
             import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/abundance_logo.png"
           }
+          onClick={() => navigate("/")}
           alt="logo"
         />
       </div>
