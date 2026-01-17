@@ -1018,8 +1018,69 @@ export default class Atom extends ObservableEntity {
         // Check if input has a connector attached
         const hasConnector = input.connectors.length > 0;
 
+        // Handle import type inputs
+        if (input.options?.importType) {
+          const inputAtom = input.options.inputAtom;
+          
+          if (!hasConnector && inputAtom) {
+            // Show file upload controls when no connector is attached
+            if (input.options.fileName === null || input.options.fileName === undefined) {
+              inputParams[this.uniqueID + input.name + "_file_type"] = {
+                type: "select",
+                options: input.options.importOptions || ["SVG", "STL", "STEP"],
+                label: input.name + " File Type",
+                onChange: (value) => {
+                  if (inputAtom) {
+                    inputAtom.importIndex = (input.options.importOptions || ["SVG", "STL", "STEP"]).indexOf(value);
+                  }
+                },
+              };
+
+              inputParams[this.uniqueID + input.name + "_load"] = {
+                type: "button",
+                label: "Load " + input.name,
+                onClick: () => {
+                  if (inputAtom) {
+                    const fileType = (input.options.importOptions || ["SVG", "STL", "STEP"])[inputAtom.importIndex || 0];
+                    inputAtom.loadFile(fileType, () => {
+                      // Trigger update after file is loaded
+                      if (typeof inputAtom.setInputChanged === "function") {
+                        inputAtom.setInputChanged(inputAtom.fileName);
+                      }
+                    });
+                  }
+                },
+              };
+            } else {
+              // File is loaded, show SVG width control if applicable
+              if (input.options.fileType === "SVG") {
+                inputParams[this.uniqueID + input.name + "_width"] = {
+                  type: "number",
+                  value: input.options.SVGwidth || 10,
+                  label: input.name + " Width",
+                  step: 1,
+                  onChange: (value) => {
+                    if (inputAtom) {
+                      inputAtom.SVGwidth = value;
+                      inputAtom.updateParentAPOptions();
+                      inputAtom.loadAndPropagate();
+                    }
+                  },
+                };
+              }
+            }
+            
+            // Always show loaded file name
+            inputParams[this.uniqueID + input.name + "_file"] = {
+              type: "string",
+              value: input.options.fileName || "",
+              label: input.name + " File",
+              disabled: true,
+            };
+          }
+        }
         /* Makes inputs for Io's other than geometry */
-        if (input.valueType === "string") {
+        else if (input.valueType === "string") {
           // When connector is attached, show the value from upstream connection
           const displayValue = hasConnector ? input.getValue() : input.value;
           inputParams[this.uniqueID + input.name] = {

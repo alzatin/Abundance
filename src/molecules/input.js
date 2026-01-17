@@ -95,13 +95,24 @@ export default class Input extends Atom {
 
     //Add a new input to the current molecule
     if (typeof this.parent !== "undefined") {
+      // For import type, pass additional metadata through options
+      const inputOptions = this.type === "import" ? {
+        ...this.options,
+        importType: true,
+        importOptions: this.importOptions,
+        fileName: this.fileName,
+        fileType: this.fileType,
+        SVGwidth: this.SVGwidth,
+        inputAtom: this, // Reference to the Input atom for file operations
+      } : this.options;
+
       // parent should subscribe so it can manage it's ready/processing/etc state
       this.parentAP = this.parent.addIO(
         this.name,
-        this.type,
+        this.type === "import" ? "geometry" : this.type,
         this.value,
         "input",
-        this.options
+        inputOptions
       );
       // We also subscribe directly to the parent ap.
       this.parentAP.subscribe(() => {
@@ -646,7 +657,28 @@ export default class Input extends Atom {
     }
     this.repoOwner = GlobalVariables.currentAWSnode.owner;
     this.repoName = GlobalVariables.currentAWSnode.repoName;
+    
+    // Update parent AP options with file metadata
+    this.updateParentAPOptions();
+    
     this.loadAndPropagate();
+  }
+
+  /**
+   * Update the parent attachment point's options with current import metadata
+   */
+  updateParentAPOptions() {
+    if (this.parentAP && this.type === "import") {
+      this.parentAP.options = {
+        ...this.parentAP.options,
+        importType: true,
+        importOptions: this.importOptions,
+        fileName: this.fileName,
+        fileType: this.fileType,
+        SVGwidth: this.SVGwidth,
+        inputAtom: this,
+      };
+    }
   }
 
   createInputParams(setInputChanged) {
@@ -691,6 +723,13 @@ export default class Input extends Atom {
           //Add a new input to the current molecule
           if (this.parentAP) {
             this.parentAP.valueType = outputType;
+            // Update parent AP options if switching to/from import type
+            if (newType === "import") {
+              this.updateParentAPOptions();
+            } else if (this.parentAP.options?.importType) {
+              // Clear import metadata if switching away from import type
+              this.parentAP.options = {};
+            }
           }
         }
       },
