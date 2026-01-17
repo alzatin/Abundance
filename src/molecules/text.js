@@ -30,20 +30,14 @@ export default class Text extends Atom {
     this.description = "Creates a new text sketch.";
 
     this.fontFamily = "ROBOTO";
-
-    /**
-     * The index of the currently selected color option.
-     * @type {number}
-     */
     this.selectedFontIndex = 0;
-
     this.availableFonts = Fonts;
     this.addAllIOs([
       { name: "Font Size", valueType: "number", defaultValue: 10.0 },
       { name: "Text", valueType: "string", defaultValue: "Lorem Ipsum" },
+      { name: "Font Family", valueType: "string", defaultValue: "ROBOTO" },
       { name: "geometry", valueType: "geometry", type: "output" },
     ]);
-
     this.setValues(values);
   }
 
@@ -67,45 +61,62 @@ export default class Text extends Atom {
     GlobalVariables.c.closePath();
   }
 
-  createInputParams() {
+  createInputParams(setInputChanged) {
+    this.setInputChanged = setInputChanged;
     let inputParams = { ...super.createInputParams() };
 
     if (this.inputs) {
+      let fontFamilyHandled = false;
       this.inputs.forEach((input) => {
-        if (input.name !== "Text") return;
-        const checkConnector = () => {
-          return input.connectors.length > 0;
-        };
-
-        inputParams[this.uniqueID + "Text"] = {
-          type: "string",
-          value: input.value,
-          label: input.name,
-          disabled: checkConnector(),
-          onChange: async (value) => {
-            if (input.value !== value) {
-              input.setValue(value);
-            }
-          },
-        };
+        if (input.name === "Text") {
+          const checkConnector = () => input.connectors.length > 0;
+          inputParams[this.uniqueID + "Text"] = {
+            type: "string",
+            value: input.value,
+            label: input.name,
+            disabled: checkConnector(),
+            onChange: async (value) => {
+              if (input.value !== value) {
+                input.setValue(value);
+              }
+            },
+          };
+        }
+        if (input.name === "Font Family" && !fontFamilyHandled) {
+          fontFamilyHandled = true;
+          const checkConnector = () => input.connectors.length > 0;
+          if (checkConnector()) {
+            // If connected, show as string input (disabled)
+            inputParams[this.uniqueID + "FontFamily"] = {
+              type: "string",
+              value: input.value,
+              label: "Font Family",
+              disabled: true,
+              onChange: async (value) => {
+                if (input.value !== value) {
+                  input.setValue(value);
+                }
+              },
+            };
+          } else {
+            // If not connected, show as dropdown
+            inputParams[this.uniqueID + "FontFamily"] = {
+              type: "select",
+              value: input.value,
+              label: "Font Family",
+              options: Object.keys(Fonts),
+              onChange: (value) => {
+                input.setValue(value);
+                this.selectedFontIndex = Object.keys(Fonts).indexOf(value);
+                this.fontFamily = value;
+                this.onUpstreamChange();
+                this.setInputChanged();
+              },
+            };
+          }
+        }
       });
     }
-    const fontOptions = Fonts;
-
-    inputParams[this.uniqueID + "FontFamily"] = {
-      type: "select",
-      value: Object.keys(fontOptions)[this.selectedFontIndex],
-      label: "Font Family",
-      options: Object.keys(fontOptions),
-      onChange: (value) => {
-        if (value != this.fontFamily) {
-          this.selectedFontIndex = Object.keys(fontOptions).indexOf(value);
-          this.fontFamily = Object.keys(fontOptions)[this.selectedFontIndex];
-          this.onUpstreamChange();
-        }
-      },
-    };
-
     return inputParams;
   }
 
@@ -115,7 +126,7 @@ export default class Text extends Atom {
   compute(inputs) {
     const fontSize = inputs["Font Size"];
     const text = inputs.Text;
-    const fontFamily = this.fontFamily;
+    const fontFamily = inputs["Font Family"] || this.fontFamily;
     return GlobalVariables.cad.text(
       text,
       fontSize,
