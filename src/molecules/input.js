@@ -1,6 +1,7 @@
 import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
 import { Status } from "../prototypes/observableEntity.js";
+import { Octokit } from "octokit";
 
 /**
  * This class creates the input atom.
@@ -47,6 +48,18 @@ export default class Input extends Atom {
     this.radius = 1 / 75;
 
     /**
+     * Properties for import type inputs
+     */
+    this.fileName = null;
+    this.fileType = null;
+    this.fileSha = null;
+    this.repoOwner = null;
+    this.repoName = null;
+    this.SVGwidth = 10;
+    this.importOptions = ["SVG", "STL", "STEP"];
+    this.importIndex = 0;
+
+    /**
      * Flag indicating if the name text is currently truncated
      * @type {boolean}
      */
@@ -64,10 +77,12 @@ export default class Input extends Atom {
      */
     this.tooltipElement = null;
 
-    this.addIO("number or geometry", this.type, this.value, "output");
-
-    // Set values first to ensure this.name is correct before creating the parent input
+    // Set values first to ensure type is set correctly
     this.setValues(values);
+
+    // Determine the output valueType (import type outputs geometry)
+    const outputValueType = this.type === "import" ? "geometry" : this.type;
+    this.addIO("number or geometry", outputValueType, this.value, "output");
 
     /**
      * This atom's old name, used during name changes. Set after values are applied.
@@ -96,6 +111,11 @@ export default class Input extends Atom {
       throw new Error(
         "constructed an input with undefined parent. IDK what to do here"
       );
+    }
+
+    // Load import file if this is an import type with file data
+    if (this.type === "import" && this.fileName) {
+      this.loadAndPropagate();
     }
   }
 
@@ -383,6 +403,14 @@ export default class Input extends Atom {
     this.clearTooltipTimer();
     this.hideTooltip();
 
+    // Delete uploaded file if this is an import type
+    if (this.type === "import" && this.fileName && this.fileSha) {
+      var f = document.getElementById("fileDeleteInput");
+      f.value = this.fileName;
+      f.setAttribute("data-sha", this.fileSha);
+      f.click();
+    }
+
     //Remove this input from the parent molecule
     if (typeof this.parent !== "undefined") {
       this.parent.removeIO("input", this.name, this.parent, silent);
@@ -498,6 +526,129 @@ export default class Input extends Atom {
     }
   }
 
+  /**
+   * Get a file from github. Called when loading a saved project with import input.
+   */
+  getAFile = async function () {
+    const octokit = new Octokit();
+    const filePath = this.fileName;
+
+    const repoOwner = this.repoOwner;
+    const repoName = this.repoName;
+    const result = await octokit.rest.repos.getContent({
+      owner: repoOwner,
+      repo: repoName,
+      path: filePath,
+    });
+    return result;
+  };
+
+  /**
+   * Load the imported file and propagate the geometry value
+   */
+  loadAndPropagate() {
+    if (this.type !== "import" || this.fileName == null) {
+      return Promise.resolve(this.value);
+    }
+
+    return this.getAFile()
+      .then((result) => {
+        this.fileSha = result.data.sha;
+        const file = this.newBlobFromBase64(result);
+        const fileType = this.fileType;
+
+        let funcToCall =
+          fileType == "STL"
+            ? GlobalVariables.cad.importingSTL
+            : fileType == "SVG"
+            ? GlobalVariables.cad.importingSVG
+            : fileType == "STEP"
+            ? GlobalVariables.cad.importingSTEP
+            : null;
+
+        if (funcToCall == null) {
+          throw new Error("Invalid file type");
+        }
+
+        return funcToCall(file, this.getContext(), this.SVGwidth);
+      })
+      .then((result) => {
+        this.value = result;
+        if (this.parentAP) {
+          this.parentAP.setValue(result);
+        }
+        return result;
+      })
+      .catch(this.alertingErrorHandler());
+  }
+
+  /**
+   * Make new Blob from Github repo content results
+   */
+  newBlobFromBase64(result) {
+    let base64String = result.data.content;
+    let binary = atob(base64String);
+
+    if (this.fileType == "SVG") {
+      return binary;
+    }
+
+    let array = [];
+    for (let i = 0; i < binary.length; i++) {
+      array.push(binary.charCodeAt(i));
+    }
+
+    return new Blob([new Uint8Array(array)], {
+      type: "application/octet-stream",
+    });
+  }
+
+  /**
+   * Creates an input element to load a file
+   */
+  loadFile(type, setInputChanged) {
+    var f = document.getElementById("fileLoaderInput");
+    f.accept = "." + type.toLowerCase();
+    f.onchange = (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        // If a previous file exists, delete it
+        if (this.fileName && this.fileSha) {
+          console.log(`Deleting previous file: ${this.fileName}`);
+          const deleteInput = document.getElementById("fileDeleteInput");
+          deleteInput.value = this.fileName;
+          deleteInput.setAttribute("data-sha", this.fileSha);
+          deleteInput.click();
+        }
+
+        this.fileType = type;
+        this.fileName = file.name;
+        if (setInputChanged) {
+          setInputChanged(file.name);
+        }
+      }
+    };
+    f.click();
+  }
+
+  /**
+   * Update the file, filename and sha of the input
+   */
+  updateFile(file, sha) {
+    this.fileName = file.name;
+    this.fileSha = sha;
+    if (
+      !GlobalVariables.currentAWSnode?.owner ||
+      !GlobalVariables.currentAWSnode?.repoName
+    ) {
+      console.warn("Repository information not available");
+      return;
+    }
+    this.repoOwner = GlobalVariables.currentAWSnode.owner;
+    this.repoName = GlobalVariables.currentAWSnode.repoName;
+    this.loadAndPropagate();
+  }
+
   createInputParams(setInputChanged) {
     this.setInputChanged = setInputChanged;
     let inputParams = {};
@@ -529,15 +680,17 @@ export default class Input extends Atom {
       value: this.type,
       label: "Input Type",
       disabled: false,
-      options: ["number", "string", "geometry", "array", "boolean"],
+      options: ["number", "string", "geometry", "array", "boolean", "import"],
       onChange: (newType) => {
         if (this.type !== newType) {
           this.type = newType;
-          this.output.valueType = newType;
+          // Import type should output geometry
+          const outputType = newType === "import" ? "geometry" : newType;
+          this.output.valueType = outputType;
 
           //Add a new input to the current molecule
           if (this.parentAP) {
-            this.parentAP.valueType = newType;
+            this.parentAP.valueType = outputType;
           }
         }
       },
@@ -564,6 +717,50 @@ export default class Input extends Atom {
         },
       };
     }
+
+    // If type is import, add controls for file upload
+    if (this.type === "import") {
+      if (this.fileName == null) {
+        inputParams[this.uniqueID + "file_ops"] = {
+          type: "select",
+          options: this.importOptions,
+          label: "File Type",
+          onChange: (value) => {
+            if (!value) {
+              value = this.importOptions[0];
+            }
+            this.importIndex = this.importOptions.indexOf(value);
+          },
+        };
+
+        inputParams[this.uniqueID + "Load File"] = {
+          type: "button",
+          label: "Load File",
+          onClick: () => {
+            this.loadFile(this.importOptions[this.importIndex], setInputChanged);
+          },
+        };
+      } else {
+        if (this.fileType == "SVG") {
+          inputParams[this.uniqueID + "Width"] = {
+            type: "number",
+            value: this.SVGwidth,
+            label: "Width",
+            step: 1,
+            onChange: (value) => {
+              this.SVGwidth = value;
+              this.loadAndPropagate();
+            },
+          };
+        }
+      }
+      inputParams[this.uniqueID + "Loaded File"] = {
+        type: "string",
+        value: this.fileName ? this.fileName : "",
+        label: "Loaded File",
+        disabled: true,
+      };
+    }
     return inputParams;
   }
 
@@ -583,6 +780,15 @@ export default class Input extends Atom {
     //Write the current color selection to the serialized object
     superSerialObject.type = this.type;
     superSerialObject.options = this.options;
+
+    // Save import-related properties if type is import
+    if (this.type === "import") {
+      superSerialObject.fileName = this.fileName;
+      superSerialObject.fileType = this.fileType;
+      superSerialObject.repoOwner = this.repoOwner;
+      superSerialObject.repoName = this.repoName;
+      superSerialObject.SVGwidth = this.SVGwidth;
+    }
 
     return superSerialObject;
   }
