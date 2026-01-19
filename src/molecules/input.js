@@ -279,6 +279,18 @@ export default class Input extends Atom {
     // We need to update the value of this input atom
     if (this.parentAP) {
       const parentState = this.parentAP.getState();
+      
+      // For import type inputs with cached geometry, maintain READY state
+      // Don't sync with parent AP status changes that might temporarily set to WAITING
+      if (this.type === "import" && this.value && typeof this.value === 'object') {
+        // Keep the cached geometry and stay READY
+        // Parent AP status changes shouldn't affect import inputs with loaded files
+        if (this.status !== Status.READY) {
+          this.setReady(this.value);
+        }
+        return;
+      }
+      
       this.setStatus(parentState.status, parentState.value);
 
       // Update our internal value if status is READY
