@@ -829,6 +829,9 @@ export default class Input extends Atom {
         value: this.fileName ? this.fileName : "",
         label: "Loaded File",
         disabled: true,
+        onRemove: () => {
+          console.log("remove file called");
+        },
       };
     }
     return inputParams;

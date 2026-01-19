@@ -6,6 +6,7 @@ import React, {
 } from "react";
 import { useControls } from "../../hooks/useControls";
 import ReactMarkdown from "react-markdown";
+import TrashCanIcon from "../icons/TrashCanIcon";
 
 // SVG icons (Settings, X, CaretDown)
 const SettingsIcon = ({ size = 14 }) => (
@@ -1306,6 +1307,35 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   </button>
                                 </div>
                               )}
+                            {/* Trash can button appended to the right (optional) */}
+                            {typeof config.onRemove === "function" && (
+                              <button
+                                type="button"
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  marginLeft: 6,
+                                  padding: 0,
+                                  border: "none",
+                                  background: "transparent",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  //cursor: isDisabled
+                                  //</div>  ? "not-allowed"
+                                  //  : "pointer",
+                                  //opacity: isDisabled ? 0.5 : 1,
+                                }}
+                                disabled={false}
+                                tabIndex={isDisabled ? -1 : 0}
+                                aria-label="Remove"
+                                onClick={() => {
+                                  config.onRemove(key);
+                                }}
+                              >
+                                <TrashCanIcon size={16} />
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
