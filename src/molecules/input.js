@@ -795,8 +795,9 @@ export default class Input extends Atom {
         this.fileType = type;
 
         // Check if we should process locally (unauthenticated or no upload function)
-        // or if we're in a context where GitHub upload isn't needed
-        const shouldProcessLocally = !GlobalVariables.uploadFile || !onSave;
+        // Use GlobalVariables.saveProject if onSave is not provided
+        const saveCallback = onSave || GlobalVariables.saveProject;
+        const shouldProcessLocally = !GlobalVariables.uploadFile || !saveCallback;
 
         if (shouldProcessLocally) {
           // Process file locally without GitHub upload
@@ -812,19 +813,14 @@ export default class Input extends Atom {
           }
         } else {
           // Upload the file to GitHub using GlobalVariables.uploadFile
-          // If onSave is a function, use it, otherwise onSave is setInputChanged callback
-          const saveCallback = typeof onSave === "function" ? onSave : null;
           const inputChangedCallback =
-            typeof setInputChanged === "function" ? setInputChanged : onSave;
+            typeof setInputChanged === "function" ? setInputChanged : null;
 
           this.isLocalFile = false; // Mark as GitHub file
           GlobalVariables.uploadFile(file, this, saveCallback);
 
           // Call input changed callback after file name is set
-          if (
-            inputChangedCallback &&
-            typeof inputChangedCallback === "function"
-          ) {
+          if (inputChangedCallback) {
             setTimeout(() => inputChangedCallback(this.fileName), 100);
           }
         }

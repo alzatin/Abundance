@@ -71,17 +71,22 @@ function CreateMode() {
   const { uploadFile, deleteFile, importNotification } = useFileImport();
   const meshRef = useRef();
 
-  // Make meshRef and file import functions available globally
+  // Make meshRef, file import functions, and save function available globally
   useEffect(() => {
     GlobalVariables.meshRef = meshRef;
     GlobalVariables.uploadFile = uploadFile;
     GlobalVariables.deleteFile = deleteFile;
+    // Make a simple save wrapper available that doesn't require state management
+    GlobalVariables.saveProject = () => {
+      saveProject(() => {}, "Upload Save");
+    };
     return () => {
       GlobalVariables.meshRef = null;
       GlobalVariables.uploadFile = null;
       GlobalVariables.deleteFile = null;
+      GlobalVariables.saveProject = null;
     };
-  }, [uploadFile, deleteFile]);
+  }, [uploadFile, deleteFile, saveProject]);
 
   const navigate = useNavigate();
 
