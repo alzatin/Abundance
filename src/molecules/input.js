@@ -417,14 +417,7 @@ export default class Input extends Atom {
     this.clearTooltipTimer();
     this.hideTooltip();
 
-    // Delete uploaded file if this is an import type
-    if (this.type === "import" && this.fileName && this.fileSha) {
-      if (GlobalVariables.deleteFile) {
-        GlobalVariables.deleteFile(this.fileName, this.fileSha);
-      } else {
-        console.warn("deleteFile not available in GlobalVariables");
-      }
-    }
+    this.deleteFile();
 
     //Remove this input from the parent molecule
     if (typeof this.parent !== "undefined") {
@@ -432,6 +425,28 @@ export default class Input extends Atom {
     }
 
     super.deleteNode(backgroundClickAfter, deletePath, silent);
+  }
+
+  deleteFile() {
+    console.log("delete file called from input atom");
+    // Delete uploaded file if this is an import type
+    console.log(this.type, this.fileName);
+    if (this.type === "import" && this.fileName) {
+      if (GlobalVariables.deleteFile) {
+        GlobalVariables.deleteFile(this.fileName, this.fileSha);
+        this.fileName = null;
+        this.fileSha = null;
+        this.repoOwner = null;
+        this.repoName = null;
+        this.fileType = null;
+        this.value = null;
+        this.updateParentAPOptions();
+        this.setWaiting();
+      } else {
+        console.warn("deleteFile not available in GlobalVariables");
+      }
+      this.setInputChanged(this.name);
+    }
   }
 
   /**
@@ -831,6 +846,7 @@ export default class Input extends Atom {
         disabled: true,
         onRemove: () => {
           console.log("remove file called");
+          this.deleteFile();
         },
       };
     }
