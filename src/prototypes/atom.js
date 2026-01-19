@@ -1086,7 +1086,7 @@ export default class Atom extends ObservableEntity {
               label: input.name + " File",
               disabled: true,
               onRemove: () => {
-                console.log("input.options:", input.options);
+                inputAtom.deleteFile();
               },
             };
           }
