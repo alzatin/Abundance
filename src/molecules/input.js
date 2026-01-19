@@ -968,16 +968,27 @@ export default class Input extends Atom {
             );
           },
         };
+      } else {
+        // File is loaded, show SVG width control if applicable
+        if (this.fileType === "SVG") {
+          inputParams[this.uniqueID + "Width"] = {
+            type: "number",
+            value: this.SVGwidth,
+            label: "Width",
+            step: 1,
+            onChange: (value) => {
+              this.SVGwidth = value;
+              this.loadAndPropagate();
+            },
+          };
+        }
       }
-      inputParams[this.uniqueID + "Width"] = {
-        type: "number",
-        value: this.SVGwidth,
-        label: "Width",
-        step: 1,
-        onChange: (value) => {
-          this.SVGwidth = value;
-          this.loadAndPropagate();
-        },
+      // Always show loaded file name
+      inputParams[this.uniqueID + "Loaded File"] = {
+        type: "string",
+        value: this.fileName ? this.fileName : "",
+        label: "Loaded File",
+        disabled: true,
       };
     }
     return inputParams;
