@@ -237,8 +237,18 @@ export default class Input extends Atom {
       }
     }
     if (!didPropagateUpstream) {
-      // For import type inputs with file data, load and propagate the geometry
+      // For import type inputs with file data
       if (this.type === "import" && this.fileName) {
+        // If we already have the geometry value, just set to ready
+        // No need to reload from GitHub/memory every time
+        if (this.value && typeof this.value === 'object') {
+          this.setReady(this.value);
+          if (this.parentAP) {
+            this.parentAP.setValue(this.value);
+          }
+          return true;
+        }
+        // Otherwise, load and propagate the geometry
         this.loadAndPropagate();
         return true;
       }
