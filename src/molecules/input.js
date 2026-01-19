@@ -703,7 +703,7 @@ export default class Input extends Atom {
    */
   async processLocalFileContent() {
     if (!this.localFileContent || !this.fileType) {
-      return;
+      return Promise.resolve(this.value);
     }
 
     this.setProcessing();
@@ -754,9 +754,12 @@ export default class Input extends Atom {
 
       // Update parent AP options with file metadata
       this.updateParentAPOptions();
+      
+      return result;
     } catch (error) {
       console.error("Error processing local file content:", error);
       this.alertingErrorHandler()(error);
+      throw error;
     }
   }
 
@@ -834,6 +837,10 @@ export default class Input extends Atom {
   updateFile(file, sha) {
     this.fileName = file.name;
     this.fileSha = sha;
+    // This is a GitHub file, not a local file
+    this.isLocalFile = false;
+    this.localFileContent = null;
+    
     if (
       !GlobalVariables.currentAWSnode?.owner ||
       !GlobalVariables.currentAWSnode?.repoName
