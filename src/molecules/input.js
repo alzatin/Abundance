@@ -58,6 +58,13 @@ export default class Input extends Atom {
     this.SVGwidth = 10;
     this.importOptions = ["SVG", "STL", "STEP"];
     this.importIndex = 0;
+    
+    /**
+     * Properties for local file processing (not saved to GitHub)
+     * Used for unauthenticated users or temporary imports
+     */
+    this.isLocalFile = false;
+    this.localFileContent = null;
 
     /**
      * Flag indicating if the name text is currently truncated
@@ -581,6 +588,12 @@ export default class Input extends Atom {
       return Promise.resolve(this.value);
     }
 
+    // If this is a local file (not stored in GitHub), process from memory
+    if (this.isLocalFile && this.localFileContent) {
+      return this.processLocalFileContent();
+    }
+
+    // Otherwise, load from GitHub
     this.setProcessing();
 
     return this.getAFile()
@@ -638,6 +651,112 @@ export default class Input extends Atom {
   }
 
   /**
+   * Process a file locally without uploading to GitHub
+   * Used for unauthenticated users or temporary imports
+   */
+  async processFileLocally(file, type) {
+    this.fileName = file.name;
+    this.fileType = type;
+    this.fileSha = null; // No SHA for local files
+    this.isLocalFile = true; // Flag to indicate this is a local file
+    
+    // Store the file data as a data URL for later processing
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          // Store the data URL or raw content
+          if (type === "SVG") {
+            // For SVG, store as text
+            const text = e.target.result;
+            this.localFileContent = text;
+          } else {
+            // For binary files (STL, STEP), store as data URL
+            this.localFileContent = e.target.result;
+          }
+          
+          // Process the file immediately
+          await this.processLocalFileContent();
+          resolve();
+        } catch (error) {
+          console.error("Error processing local file:", error);
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => {
+        reject(new Error("Failed to read file"));
+      };
+      
+      // Read as text for SVG, as data URL for binary formats
+      if (type === "SVG") {
+        reader.readAsText(file);
+      } else {
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  /**
+   * Process the locally stored file content into geometry
+   */
+  async processLocalFileContent() {
+    if (!this.localFileContent || !this.fileType) {
+      return;
+    }
+
+    this.setProcessing();
+
+    try {
+      let fileData;
+      
+      if (this.fileType === "SVG") {
+        // SVG is already text
+        fileData = this.localFileContent;
+      } else {
+        // Convert data URL to Blob for STL/STEP
+        const base64String = this.localFileContent.split(",")[1];
+        const binary = atob(base64String);
+        const array = [];
+        for (let i = 0; i < binary.length; i++) {
+          array.push(binary.charCodeAt(i));
+        }
+        fileData = new Blob([new Uint8Array(array)], {
+          type: "application/octet-stream",
+        });
+      }
+
+      let funcToCall =
+        this.fileType === "STL"
+          ? GlobalVariables.cad.importingSTL
+          : this.fileType === "SVG"
+          ? GlobalVariables.cad.importingSVG
+          : this.fileType === "STEP"
+          ? GlobalVariables.cad.importingSTEP
+          : null;
+
+      if (funcToCall === null) {
+        throw new Error("Invalid file type");
+      }
+
+      const result = await funcToCall(fileData, this.getContext(), this.SVGwidth);
+      
+      this.value = result;
+      this.setReady(result);
+      if (this.parentAP) {
+        this.parentAP.setValue(result);
+      }
+      
+      // Update parent AP options with file metadata
+      this.updateParentAPOptions();
+    } catch (error) {
+      console.error("Error processing local file content:", error);
+      this.alertingErrorHandler()(error);
+    }
+  }
+
+  /**
    * Trigger file upload using FileImportContext
    */
   loadFile(type, setInputChanged, onSave) {
@@ -650,20 +769,37 @@ export default class Input extends Atom {
     input.onchange = async (event) => {
       const file = event.target.files[0];
       if (file) {
-        // Delete previous file if exists
-        if (this.fileName && this.fileSha && GlobalVariables.deleteFile) {
+        // Delete previous file if exists (only if it was uploaded to GitHub)
+        if (this.fileName && this.fileSha && GlobalVariables.deleteFile && !this.isLocalFile) {
           await GlobalVariables.deleteFile(this.fileName, this.fileSha);
         }
 
         this.fileType = type;
 
-        // Upload the new file using GlobalVariables.uploadFile
-        if (GlobalVariables.uploadFile) {
+        // Check if we should process locally (unauthenticated or no upload function)
+        // or if we're in a context where GitHub upload isn't needed
+        const shouldProcessLocally = !GlobalVariables.uploadFile || !onSave;
+
+        if (shouldProcessLocally) {
+          // Process file locally without GitHub upload
+          try {
+            await this.processFileLocally(file, type);
+            
+            // Call input changed callback
+            if (setInputChanged && typeof setInputChanged === "function") {
+              setInputChanged(file.name);
+            }
+          } catch (error) {
+            console.error("Failed to process file locally:", error);
+          }
+        } else {
+          // Upload the file to GitHub using GlobalVariables.uploadFile
           // If onSave is a function, use it, otherwise onSave is setInputChanged callback
           const saveCallback = typeof onSave === "function" ? onSave : null;
           const inputChangedCallback =
             typeof setInputChanged === "function" ? setInputChanged : onSave;
 
+          this.isLocalFile = false; // Mark as GitHub file
           GlobalVariables.uploadFile(file, this, saveCallback);
 
           // Call input changed callback after file name is set
@@ -673,8 +809,6 @@ export default class Input extends Atom {
           ) {
             setTimeout(() => inputChangedCallback(this.fileName), 100);
           }
-        } else {
-          console.error("uploadFile not available in GlobalVariables");
         }
       }
       // Clean up
