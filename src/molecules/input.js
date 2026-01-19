@@ -58,7 +58,7 @@ export default class Input extends Atom {
     this.SVGwidth = 10;
     this.importOptions = ["SVG", "STL", "STEP"];
     this.importIndex = 0;
-    
+
     /**
      * Properties for local file processing (not saved to GitHub)
      * Used for unauthenticated users or temporary imports
@@ -659,11 +659,11 @@ export default class Input extends Atom {
     this.fileType = type;
     this.fileSha = null; // No SHA for local files
     this.isLocalFile = true; // Flag to indicate this is a local file
-    
+
     // Store the file data as a data URL for later processing
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onload = async (e) => {
         try {
           // Store the data URL or raw content
@@ -675,7 +675,7 @@ export default class Input extends Atom {
             // For binary files (STL, STEP), store as data URL
             this.localFileContent = e.target.result;
           }
-          
+
           // Process the file immediately
           await this.processLocalFileContent();
           resolve();
@@ -684,11 +684,11 @@ export default class Input extends Atom {
           reject(error);
         }
       };
-      
+
       reader.onerror = () => {
         reject(new Error("Failed to read file"));
       };
-      
+
       // Read as text for SVG, as data URL for binary formats
       if (type === "SVG") {
         reader.readAsText(file);
@@ -710,7 +710,7 @@ export default class Input extends Atom {
 
     try {
       let fileData;
-      
+
       if (this.fileType === "SVG") {
         // SVG is already text
         fileData = this.localFileContent;
@@ -740,14 +740,18 @@ export default class Input extends Atom {
         throw new Error("Invalid file type");
       }
 
-      const result = await funcToCall(fileData, this.getContext(), this.SVGwidth);
-      
+      const result = await funcToCall(
+        fileData,
+        this.getContext(),
+        this.SVGwidth
+      );
+
       this.value = result;
       this.setReady(result);
       if (this.parentAP) {
         this.parentAP.setValue(result);
       }
-      
+
       // Update parent AP options with file metadata
       this.updateParentAPOptions();
     } catch (error) {
@@ -770,7 +774,12 @@ export default class Input extends Atom {
       const file = event.target.files[0];
       if (file) {
         // Delete previous file if exists (only if it was uploaded to GitHub)
-        if (this.fileName && this.fileSha && GlobalVariables.deleteFile && !this.isLocalFile) {
+        if (
+          this.fileName &&
+          this.fileSha &&
+          GlobalVariables.deleteFile &&
+          !this.isLocalFile
+        ) {
           await GlobalVariables.deleteFile(this.fileName, this.fileSha);
         }
 
@@ -784,7 +793,7 @@ export default class Input extends Atom {
           // Process file locally without GitHub upload
           try {
             await this.processFileLocally(file, type);
-            
+
             // Call input changed callback
             if (setInputChanged && typeof setInputChanged === "function") {
               setInputChanged(file.name);
@@ -959,28 +968,15 @@ export default class Input extends Atom {
             );
           },
         };
-      } else {
-        if (this.fileType === "SVG") {
-          inputParams[this.uniqueID + "Width"] = {
-            type: "number",
-            value: this.SVGwidth,
-            label: "Width",
-            step: 1,
-            onChange: (value) => {
-              this.SVGwidth = value;
-              this.loadAndPropagate();
-            },
-          };
-        }
       }
-      inputParams[this.uniqueID + "Loaded File"] = {
-        type: "string",
-        value: this.fileName ? this.fileName : "",
-        label: "Loaded File",
-        disabled: true,
-        onRemove: () => {
-          console.log("remove file called");
-          this.deleteFile();
+      inputParams[this.uniqueID + "Width"] = {
+        type: "number",
+        value: this.SVGwidth,
+        label: "Width",
+        step: 1,
+        onChange: (value) => {
+          this.SVGwidth = value;
+          this.loadAndPropagate();
         },
       };
     }

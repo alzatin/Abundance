@@ -1028,22 +1028,9 @@ export default class Atom extends ObservableEntity {
               input.options.fileName === null ||
               input.options.fileName === undefined
             ) {
-              inputParams[this.uniqueID + input.name + "_file_type"] = {
-                type: "select",
-                options: input.options.importOptions || ["SVG", "STL", "STEP"],
-                label: input.name + " File Type",
-                onChange: (value) => {
-                  if (inputAtom) {
-                    inputAtom.importIndex = (
-                      input.options.importOptions || ["SVG", "STL", "STEP"]
-                    ).indexOf(value);
-                  }
-                },
-              };
-
-              inputParams[this.uniqueID + input.name + "_loadmmmm"] = {
+              inputParams[this.uniqueID + input.name + "_load"] = {
                 type: "button",
-                label: "Load " + input.name,
+                label: "Import " + input.name,
                 onClick: () => {
                   if (inputAtom) {
                     const fileType = (input.options.importOptions || [
@@ -1060,35 +1047,7 @@ export default class Atom extends ObservableEntity {
                   }
                 },
               };
-            } else {
-              // File is loaded, show SVG width control if applicable
-              if (input.options.fileType === "SVG") {
-                inputParams[this.uniqueID + input.name + "_width"] = {
-                  type: "number",
-                  value: input.options.SVGwidth || 10,
-                  label: input.name + " Width",
-                  step: 1,
-                  onChange: (value) => {
-                    if (inputAtom) {
-                      inputAtom.SVGwidth = value;
-                      inputAtom.updateParentAPOptions();
-                      inputAtom.loadAndPropagate();
-                    }
-                  },
-                };
-              }
             }
-
-            // Always show loaded file name
-            inputParams[this.uniqueID + input.name + "_file"] = {
-              type: "string",
-              value: input.options.fileName || "",
-              label: input.name + " File",
-              disabled: true,
-              onRemove: () => {
-                inputAtom.deleteFile();
-              },
-            };
           }
         } else if (input.valueType === "string") {
           /* Makes inputs for Io's other than geometry */
