@@ -237,6 +237,12 @@ export default class Input extends Atom {
       }
     }
     if (!didPropagateUpstream) {
+      // For import type inputs with file data, load and propagate the geometry
+      if (this.type === "import" && this.fileName) {
+        this.loadAndPropagate();
+        return true;
+      }
+      
       if (this.parentAP) {
         const apState = this.parentAP.getState();
         if (apState.value !== null && apState.value !== undefined) {
