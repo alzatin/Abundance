@@ -96,15 +96,18 @@ export default class Input extends Atom {
     //Add a new input to the current molecule
     if (typeof this.parent !== "undefined") {
       // For import type, pass additional metadata through options
-      const inputOptions = this.type === "import" ? {
-        ...this.options,
-        importType: true,
-        importOptions: this.importOptions,
-        fileName: this.fileName,
-        fileType: this.fileType,
-        SVGwidth: this.SVGwidth,
-        inputAtom: this, // Reference to the Input atom for file operations
-      } : this.options;
+      const inputOptions =
+        this.type === "import"
+          ? {
+              ...this.options,
+              importType: true,
+              importOptions: this.importOptions,
+              fileName: this.fileName,
+              fileType: this.fileType,
+              SVGwidth: this.SVGwidth,
+              inputAtom: this, // Reference to the Input atom for file operations
+            }
+          : this.options;
 
       // parent should subscribe so it can manage it's ready/processing/etc state
       this.parentAP = this.parent.addIO(
@@ -589,6 +592,7 @@ export default class Input extends Atom {
       .then((result) => {
         this.value = result;
         this.setReady(result);
+        //this.setInputChanged(result);
         if (this.parentAP) {
           this.parentAP.setValue(result);
         }
@@ -627,7 +631,7 @@ export default class Input extends Atom {
     input.type = "file";
     input.accept = "." + type.toLowerCase();
     input.style.display = "none";
-    
+
     input.onchange = async (event) => {
       const file = event.target.files[0];
       if (file) {
@@ -637,17 +641,21 @@ export default class Input extends Atom {
         }
 
         this.fileType = type;
-        
+
         // Upload the new file using GlobalVariables.uploadFile
         if (GlobalVariables.uploadFile) {
           // If onSave is a function, use it, otherwise onSave is setInputChanged callback
-          const saveCallback = typeof onSave === 'function' ? onSave : null;
-          const inputChangedCallback = typeof setInputChanged === 'function' ? setInputChanged : onSave;
-          
+          const saveCallback = typeof onSave === "function" ? onSave : null;
+          const inputChangedCallback =
+            typeof setInputChanged === "function" ? setInputChanged : onSave;
+
           GlobalVariables.uploadFile(file, this, saveCallback);
-          
+
           // Call input changed callback after file name is set
-          if (inputChangedCallback && typeof inputChangedCallback === 'function') {
+          if (
+            inputChangedCallback &&
+            typeof inputChangedCallback === "function"
+          ) {
             setTimeout(() => inputChangedCallback(this.fileName), 100);
           }
         } else {
@@ -657,7 +665,7 @@ export default class Input extends Atom {
       // Clean up
       document.body.removeChild(input);
     };
-    
+
     document.body.appendChild(input);
     input.click();
   }
@@ -677,10 +685,10 @@ export default class Input extends Atom {
     }
     this.repoOwner = GlobalVariables.currentAWSnode.owner;
     this.repoName = GlobalVariables.currentAWSnode.repoName;
-    
+
     // Update parent AP options with file metadata
     this.updateParentAPOptions();
-    
+
     this.loadAndPropagate();
   }
 
@@ -791,12 +799,15 @@ export default class Input extends Atom {
             this.importIndex = this.importOptions.indexOf(value);
           },
         };
-
+        console.log("inputParams in input before load file");
         inputParams[this.uniqueID + "Load File"] = {
           type: "button",
           label: "Load File",
           onClick: () => {
-            this.loadFile(this.importOptions[this.importIndex], setInputChanged);
+            this.loadFile(
+              this.importOptions[this.importIndex],
+              this.setInputChanged
+            );
           },
         };
       } else {
