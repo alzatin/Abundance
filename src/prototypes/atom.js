@@ -1021,27 +1021,36 @@ export default class Atom extends ObservableEntity {
         // Handle import type inputs
         if (input.options?.importType) {
           const inputAtom = input.options.inputAtom;
-          
+          console.log("inputAtom:", inputAtom);
           if (!hasConnector && inputAtom) {
             // Show file upload controls when no connector is attached
-            if (input.options.fileName === null || input.options.fileName === undefined) {
+            if (
+              input.options.fileName === null ||
+              input.options.fileName === undefined
+            ) {
               inputParams[this.uniqueID + input.name + "_file_type"] = {
                 type: "select",
                 options: input.options.importOptions || ["SVG", "STL", "STEP"],
                 label: input.name + " File Type",
                 onChange: (value) => {
                   if (inputAtom) {
-                    inputAtom.importIndex = (input.options.importOptions || ["SVG", "STL", "STEP"]).indexOf(value);
+                    inputAtom.importIndex = (
+                      input.options.importOptions || ["SVG", "STL", "STEP"]
+                    ).indexOf(value);
                   }
                 },
               };
 
-              inputParams[this.uniqueID + input.name + "_load"] = {
+              inputParams[this.uniqueID + input.name + "_loadmmmm"] = {
                 type: "button",
                 label: "Load " + input.name,
                 onClick: () => {
                   if (inputAtom) {
-                    const fileType = (input.options.importOptions || ["SVG", "STL", "STEP"])[inputAtom.importIndex || 0];
+                    const fileType = (input.options.importOptions || [
+                      "SVG",
+                      "STL",
+                      "STEP",
+                    ])[inputAtom.importIndex || 0];
                     inputAtom.loadFile(fileType, () => {
                       // Trigger update after file is loaded
                       if (typeof inputAtom.setInputChanged === "function") {
@@ -1069,18 +1078,20 @@ export default class Atom extends ObservableEntity {
                 };
               }
             }
-            
+
             // Always show loaded file name
             inputParams[this.uniqueID + input.name + "_file"] = {
               type: "string",
               value: input.options.fileName || "",
               label: input.name + " File",
               disabled: true,
+              onRemove: () => {
+                console.log("input.options:", input.options);
+              },
             };
           }
-        }
-        /* Makes inputs for Io's other than geometry */
-        else if (input.valueType === "string") {
+        } else if (input.valueType === "string") {
+          /* Makes inputs for Io's other than geometry */
           // When connector is attached, show the value from upstream connection
           const displayValue = hasConnector ? input.getValue() : input.value;
           inputParams[this.uniqueID + input.name] = {

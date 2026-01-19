@@ -7,6 +7,7 @@ import React, {
 import { useControls } from "../../hooks/useControls";
 import ReactMarkdown from "react-markdown";
 import TrashCanIcon from "../icons/TrashCanIcon";
+import { max } from "mathjs";
 
 // SVG icons (Settings, X, CaretDown)
 const SettingsIcon = ({ size = 14 }) => (
@@ -717,7 +718,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                     );
                   case "number":
                     return (
-                      <div key={key} style={labelStyle}>
+                      <div key={key} style={{ ...labelStyle }}>
                         <span
                           style={{
                             width: inputFullWidth ? 0 : 90,
@@ -1165,13 +1166,19 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                     );
                   case "string":
                     return (
-                      <div key={key} style={labelStyle}>
+                      <div
+                        key={key}
+                        style={{
+                          ...labelStyle,
+                        }}
+                      >
                         <span
                           style={{
-                            width: inputFullWidth ? 0 : 90,
+                            width: inputFullWidth ? 0 : 70,
                             color: isDisabled
                               ? inputDisabledStyle.color
                               : undefined,
+                            overflow: "clip",
                           }}
                         >
                           {label}
@@ -1227,7 +1234,10 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                               {...commonProps}
                               style={{
                                 ...inputStyle,
-                                width: 120,
+                                width:
+                                  typeof config.onRemove === "function"
+                                    ? 50
+                                    : 70,
                                 marginRight: 4,
                                 ...(isDisabled ? inputDisabledStyle : {}),
                               }}
@@ -1379,10 +1389,11 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                       <div key={key} style={labelStyle}>
                         <span
                           style={{
-                            width: 90,
+                            width: inputFullWidth ? 0 : 70,
                             color: isDisabled
                               ? inputDisabledStyle.color
                               : undefined,
+                            overflow: "clip",
                           }}
                         >
                           {label}:
