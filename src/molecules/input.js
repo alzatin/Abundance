@@ -979,6 +979,13 @@ export default class Input extends Atom {
           this.loadAndPropagate();
         },
       };
+      inputParams[this.uniqueID + "file_info"] = {
+        type: "string",
+        label: `Loaded File: ${this.fileName} (${this.fileType})`,
+        onRemove: () => {
+          this.deleteFile();
+        },
+      };
     }
     return inputParams;
   }
