@@ -168,6 +168,15 @@ function runMode() {
     }
   }, [wireMesh, mesh]);
 
+  useEffect(() => {
+    const handler = (e) => {
+      setErrorNotification(e.detail.message);
+      setTimeout(() => setErrorNotification(null), 5000);
+    };
+    window.addEventListener("download-error", handler);
+    return () => window.removeEventListener("download-error", handler);
+  }, []);
+
   /** State for menu content collapsing */
   // Which menu is expanded: "params", "render", "bom", or "none"
   const [expandedMenu, setExpandedMenu] = useState(

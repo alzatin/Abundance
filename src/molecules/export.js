@@ -172,28 +172,32 @@ export default class Export extends Atom {
   /**
    * The function which is called when you press the download button.
    */
-  exportFile() {
+  async exportFile() {
     let fileType = this.findIOValue("File Type");
     let resolution = this.findIOValue("Resolution (dpi)");
     let partName = this.findIOValue("Part Name");
     let geometry = this.findIOValue("geometry");
 
-    console.log(this);
-    GlobalVariables.cad
-      .downExport(
+    try {
+      const result = await GlobalVariables.cad.downExport(
         geometry,
         fileType,
         resolution,
         GlobalVariables.topLevelMolecule.unitsKey,
         this.getContext()
-      )
-      .then((result) => {
-        console.log("Export result");
-        console.log(result);
-        console.log("File type");
-        saveAs(result, partName + "." + fileType.toLowerCase());
-      })
-      .catch(this.alertingErrorHandler);
+      );
+      saveAs(result, partName + "." + fileType.toLowerCase());
+    } catch (err) {
+      console.error("Export error:", err);
+      if (typeof this.alertingErrorHandler === "function") {
+        this.alertingErrorHandler(err);
+      }
+      // Dispatch a custom event for error notification
+      const event = new CustomEvent("download-error", {
+        detail: { message: err.message || String(err) },
+      });
+      window.dispatchEvent(event);
+    }
   }
   /**
    * Add the file name to the object which is saved for this molecule
