@@ -719,10 +719,15 @@ export default class Gcode extends Atom {
   //Function to download G-code from a G-code string
   downloadGcode(gcode, filename = "output.gcode") {
     if (this.gcodeGenerated && !gcode) {
-      gcode = this.gcodeString; // Use the stored G-code string if not provided
+      gcode = this.gcodeString;
     }
     if (!gcode) {
       console.error("No G-code available to download.");
+      // Dispatch a custom event
+      const event = new CustomEvent("download-error", {
+        detail: { message: "No G-code available to download." },
+      });
+      window.dispatchEvent(event);
       return;
     }
 
