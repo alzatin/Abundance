@@ -241,7 +241,7 @@ export default class Input extends Atom {
       if (this.type === "import" && this.fileName) {
         // If we already have the geometry value, just set to ready
         // No need to reload from GitHub/memory every time
-        if (this.value && typeof this.value === 'object') {
+        if (this.value && typeof this.value === "object") {
           this.setReady(this.value);
           if (this.parentAP) {
             this.parentAP.setValue(this.value);
@@ -252,7 +252,7 @@ export default class Input extends Atom {
         this.loadAndPropagate();
         return true;
       }
-      
+
       if (this.parentAP) {
         const apState = this.parentAP.getState();
         if (apState.value !== null && apState.value !== undefined) {
@@ -279,10 +279,14 @@ export default class Input extends Atom {
     // We need to update the value of this input atom
     if (this.parentAP) {
       const parentState = this.parentAP.getState();
-      
+
       // For import type inputs with cached geometry, maintain READY state
       // Don't sync with parent AP status changes that might temporarily set to WAITING
-      if (this.type === "import" && this.value && typeof this.value === 'object') {
+      if (
+        this.type === "import" &&
+        this.value &&
+        typeof this.value === "object"
+      ) {
         // Keep the cached geometry and stay READY
         // Parent AP status changes shouldn't affect import inputs with loaded files
         if (this.status !== Status.READY) {
@@ -290,7 +294,7 @@ export default class Input extends Atom {
         }
         return;
       }
-      
+
       this.setStatus(parentState.status, parentState.value);
 
       // Update our internal value if status is READY
@@ -782,7 +786,7 @@ export default class Input extends Atom {
 
       // Update parent AP options with file metadata
       this.updateParentAPOptions();
-      
+
       return result;
     } catch (error) {
       console.error("Error processing local file content:", error);
@@ -819,7 +823,8 @@ export default class Input extends Atom {
         // Check if we should process locally (unauthenticated or no upload function)
         // Use GlobalVariables.saveProject if onSave is not provided
         const saveCallback = onSave || GlobalVariables.saveProject;
-        const shouldProcessLocally = !GlobalVariables.uploadFile || !saveCallback;
+        const shouldProcessLocally =
+          !GlobalVariables.uploadFile || !saveCallback;
 
         if (shouldProcessLocally) {
           // Process file locally without GitHub upload
@@ -864,7 +869,7 @@ export default class Input extends Atom {
     // This is a GitHub file, not a local file
     this.isLocalFile = false;
     this.localFileContent = null;
-    
+
     if (
       !GlobalVariables.currentAWSnode?.owner ||
       !GlobalVariables.currentAWSnode?.repoName
@@ -988,7 +993,6 @@ export default class Input extends Atom {
             this.importIndex = this.importOptions.indexOf(value);
           },
         };
-        console.log("inputParams in input before load file");
         inputParams[this.uniqueID + "Load File"] = {
           type: "button",
           label: "Load File",
@@ -1014,16 +1018,10 @@ export default class Input extends Atom {
           };
         }
       }
-      // Always show loaded file name
-      inputParams[this.uniqueID + "Loaded File"] = {
-        type: "string",
-        value: this.fileName ? this.fileName : "",
-        label: "Loaded File",
-        disabled: true,
-      };
       inputParams[this.uniqueID + "file_info"] = {
         type: "string",
-        label: `Loaded File: ${this.fileName} (${this.fileType})`,
+        label: `Loaded File`,
+        value: `${this.fileName}`,
         onRemove: () => {
           this.deleteFile();
         },

@@ -1021,33 +1021,26 @@ export default class Atom extends ObservableEntity {
         // Handle import type inputs
         if (input.options?.importType) {
           const inputAtom = input.options.inputAtom;
-          console.log("inputAtom:", inputAtom);
           if (!hasConnector && inputAtom) {
-            // Show file upload controls when no connector is attached
-            if (
-              input.options.fileName === null ||
-              input.options.fileName === undefined
-            ) {
-              inputParams[this.uniqueID + input.name + "_load"] = {
-                type: "button",
-                label: "Import " + input.name,
-                onClick: () => {
-                  if (inputAtom) {
-                    const fileType = (input.options.importOptions || [
-                      "SVG",
-                      "STL",
-                      "STEP",
-                    ])[inputAtom.importIndex || 0];
-                    inputAtom.loadFile(fileType, () => {
-                      // Trigger update after file is loaded
-                      if (typeof inputAtom.setInputChanged === "function") {
-                        inputAtom.setInputChanged(inputAtom.fileName);
-                      }
-                    });
-                  }
-                },
-              };
-            }
+            inputParams[this.uniqueID + input.name + "_load"] = {
+              type: "button",
+              label: "Import " + input.name,
+              onClick: () => {
+                if (inputAtom) {
+                  const fileType = (input.options.importOptions || [
+                    "SVG",
+                    "STL",
+                    "STEP",
+                  ])[inputAtom.importIndex || 0];
+                  inputAtom.loadFile(fileType, () => {
+                    // Trigger update after file is loaded
+                    if (typeof inputAtom.setInputChanged === "function") {
+                      inputAtom.setInputChanged(inputAtom.fileName);
+                    }
+                  });
+                }
+              },
+            };
           }
         } else if (input.valueType === "string") {
           /* Makes inputs for Io's other than geometry */
