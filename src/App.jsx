@@ -120,13 +120,11 @@ function AppContent() {
   useEffect(() => {
     setRenderProgress(0);
     setRenderBarVisible(true);
-    setRenderStage("Building"); // Start with Building stage by default
-    
+    setRenderStage("Waiting for input"); // Start with Building stage by default
+
     let interval = setInterval(() => {
       const molecule = GlobalVariables.topLevelMolecule;
       if (molecule) {
-        console.log("Molecule state:", molecule.getState().status);
-
         // Check if molecule is fully ready first
         if (molecule.getState().status === "ready") {
           setRenderProgress(100);
@@ -137,28 +135,34 @@ function AppContent() {
 
         // Determine which stage we're in based on the 3-stage system
         const moleculeStatus = molecule.getState().status;
-        
+
         // Stage 1: Check if any top-level Input atoms are in WAITING state
-        const hasWaitingInputs = molecule.nodesOnTheScreen.some(
-          (atom) => atom.atomType === "Input" && atom.getState().status === "waiting"
-        );
-        
+        const hasWaitingInputs = molecule.nodesOnTheScreen.some((atom) => {
+          if (atom.atomType === "Input") {
+            return (
+              atom.getState().status === "waiting" ||
+              atom.value === "__GEOMETRY_INPUT__"
+            );
+          }
+          return false;
+        });
+
         if (hasWaitingInputs) {
-          setRenderStage("Waiting for user input");
-          setRenderProgress(33); // First third
+          setRenderStage("Waiting for input");
+          setRenderProgress(0); // First third
           return;
         }
-        
+
         // Stage 2: Check if top-level molecule is in WAITING or PROCESSING state
         if (moleculeStatus === "waiting" || moleculeStatus === "processing") {
           setRenderStage("Building");
-          setRenderProgress(66); // Second third
+          setRenderProgress(30); // Second third
           return;
         }
-        
+
         // Stage 3: Rendering - mesh is being made and sent to render
         setRenderStage("Rendering");
-        setRenderProgress(99); // Almost complete, will go to 100 when ready
+        setRenderProgress(80); // Almost complete, will go to 100 when ready
       }
     }, 500); // Poll every 500ms
 
