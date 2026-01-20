@@ -81,15 +81,11 @@ function CreateMode() {
     GlobalVariables.meshRef = meshRef;
     GlobalVariables.uploadFile = uploadFile;
     GlobalVariables.deleteFile = deleteFile;
-    // Make a simple save wrapper available that doesn't require state management
-    GlobalVariables.saveProject = () => {
-      saveProject(() => {}, "Upload Save");
-    };
+
     return () => {
       GlobalVariables.meshRef = null;
       GlobalVariables.uploadFile = null;
       GlobalVariables.deleteFile = null;
-      GlobalVariables.saveProject = null;
     };
   }, [uploadFile, deleteFile]);
 
