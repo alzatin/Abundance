@@ -46,11 +46,6 @@ export default function ReadmePanel({
   title = "Project Readme",
   activeAtom,
 }) {
-  console.log(
-    "Current top level molecule in ReadmePanel:",
-    GlobalVariables.topLevelMolecule
-  );
-
   // Add README text if this molecule has compiled README content
   if (
     activeAtom &&
