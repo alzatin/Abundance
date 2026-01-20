@@ -27,7 +27,7 @@ import { SVGRenderer } from "three/examples/jsm/renderers/SVGRenderer.js";
 import globalvariables from "../../js/globalvariables.js";
 
 export default React.memo(
-  forwardRef(function ShapeMeshes({ isSolid, cameraZoom }, ref) {
+  forwardRef(function ShapeMeshes({ isSolid, cameraZoom, setProcessing }, ref) {
     const { mesh, setOutdatedMesh, plane } = useRendering();
     const { invalidate } = useThree();
 
