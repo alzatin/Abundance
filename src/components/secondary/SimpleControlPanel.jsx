@@ -471,7 +471,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
             justifyContent: "center",
           }}
           onClick={() => (setCollapsed(false), setContentCollapsed())}
-          title="Open Panel"
+          title={`Open ${title}`}
         >
           {React.createElement(collapsedIcon, { size: 18 })}
         </div>
