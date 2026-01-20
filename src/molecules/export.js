@@ -177,8 +177,12 @@ export default class Export extends Atom {
     let resolution = this.findIOValue("Resolution (dpi)");
     let partName = this.findIOValue("Part Name");
     let geometry = this.findIOValue("geometry");
-
     try {
+      if (geometry == null) {
+        throw new Error(
+          "No geometry to export. Please make sure the geometry is ready."
+        );
+      }
       const result = await GlobalVariables.cad.downExport(
         geometry,
         fileType,
