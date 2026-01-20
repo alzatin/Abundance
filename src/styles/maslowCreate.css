@@ -1225,8 +1225,7 @@ Sidebar navigation
     line-height: 15px;
     font-size: 18px;
     left: 30vh;
-    bottom: 13vh;
-    border: 2px solid var(--run-project-info);
+    bottom: 10vh;
   }
 
   /* Top Nav Menu */
@@ -1323,8 +1322,7 @@ Sidebar navigation
     line-height: 10px;
     font-size: 15px;
     left: 10vh;
-    bottom: 2vh;
-    border: 2px solid var(--run-project-info);
+    bottom: 1vh;
   }
 
   /* Top Nav Menu */

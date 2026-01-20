@@ -9,8 +9,8 @@ import { useProgressBar } from "./ProgressBarManager.jsx";
 let shareSvg = (
   <svg
     fill="#c4a3d5"
-    height="30px"
-    width="30px"
+    height="20px"
+    width="20px"
     version="1.1"
     id="Capa_1"
     xmlns="http://www.w3.org/2000/svg"
@@ -35,8 +35,8 @@ C203.759,199.715,191.26,212.216,175.897,212.216z"
 );
 let starSvg = (
   <svg
-    width="35px"
-    height="35px"
+    width="20px"
+    height="20px"
     viewBox="0 0 23 23"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
@@ -52,8 +52,8 @@ let starSvg = (
 );
 let forkSvg = (
   <svg
-    width="45px"
-    height="45px"
+    width="22px"
+    height="22px"
     viewBox="0 0 20 24"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
@@ -61,72 +61,6 @@ let forkSvg = (
     <path
       d="M7 5C7 3.89543 7.89543 3 9 3C10.1046 3 11 3.89543 11 5C11 5.74028 10.5978 6.38663 10 6.73244V14.0396H11.7915C12.8961 14.0396 13.7915 13.1441 13.7915 12.0396V10.7838C13.1823 10.4411 12.7708 9.78837 12.7708 9.03955C12.7708 7.93498 13.6662 7.03955 14.7708 7.03955C15.8753 7.03955 16.7708 7.93498 16.7708 9.03955C16.7708 9.77123 16.3778 10.4111 15.7915 10.7598V12.0396C15.7915 14.2487 14.0006 16.0396 11.7915 16.0396H10V17.2676C10.5978 17.6134 11 18.2597 11 19C11 20.1046 10.1046 21 9 21C7.89543 21 7 20.1046 7 19C7 18.2597 7.4022 17.6134 8 17.2676V6.73244C7.4022 6.38663 7 5.74028 7 5Z"
       fill="#c4a3d5"
-    />
-  </svg>
-);
-let billSvg = (
-  <svg
-    width="30px"
-    height="30px"
-    viewBox="0 0 23 23"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M10.5 11L17 11"
-      stroke="#c4a3d5"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-    <path
-      d="M7 11H7.5"
-      stroke="#c4a3d5"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-    <path
-      d="M7 7.5H7.5"
-      stroke="#c4a3d5"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-    <path
-      d="M7 14.5H7.5"
-      stroke="#c4a3d5"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-    <path
-      d="M17 14.5H16M10.5 14.5H13.5"
-      stroke="#c4a3d5"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-    <path
-      d="M17 7.5H14M10.5 7.5H11.5"
-      stroke="#c4a3d5"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-    <path
-      d="M21 7V6.37006C21 5.17705 21 4.58055 20.842 4.09946C20.5425 3.18719 19.8468 2.47096 18.9606 2.16261C18.4933 2 17.9139 2 16.755 2H7.24502C6.08614 2 5.50671 2 5.03939 2.16261C4.15322 2.47096 3.45748 3.18719 3.15795 4.09946C3 4.58055 3 5.17705 3 6.37006V15M21 11V20.3742C21 21.2324 20.015 21.6878 19.3919 21.1176C19.0258 20.7826 18.4742 20.7826 18.1081 21.1176L17.625 21.5597C16.9834 22.1468 16.0166 22.1468 15.375 21.5597C14.7334 20.9726 13.7666 20.9726 13.125 21.5597C12.4834 22.1468 11.5166 22.1468 10.875 21.5597C10.2334 20.9726 9.26659 20.9726 8.625 21.5597C7.98341 22.1468 7.01659 22.1468 6.375 21.5597L5.8919 21.1176C5.52583 20.7826 4.97417 20.7826 4.6081 21.1176C3.985 21.6878 3 21.2324 3 20.3742V19"
-      stroke="#c4a3d5"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    />
-  </svg>
-);
-let exportSvg = (
-  <svg
-    width="30px"
-    height="30px"
-    fill="none"
-    viewBox="0 0 23 23"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      fill="#c4a3d5"
-      d="M8.71,7.71,11,5.41V15a1,1,0,0,0,2,0V5.41l2.29,2.3a1,1,0,0,0,1.42,0,1,1,0,0,0,0-1.42l-4-4a1,1,0,0,0-.33-.21,1,1,0,0,0-.76,0,1,1,0,0,0-.33.21l-4,4A1,1,0,1,0,8.71,7.71ZM21,14a1,1,0,0,0-1,1v4a1,1,0,0,1-1,1H5a1,1,0,0,1-1-1V15a1,1,0,0,0-2,0v4a3,3,0,0,0,3,3H19a3,3,0,0,0,3-3V15A1,1,0,0,0,21,14Z"
     />
   </svg>
 );
@@ -148,7 +82,7 @@ function RunNavigation({
   const [forkBarVisible, setForkBarVisible] = useState(false);
 
   // Register fork progress bar with the stacking system
-  useProgressBar('fork-run', forkBarVisible, forkProgress, 'Forking', true);
+  useProgressBar("fork-run", forkBarVisible, forkProgress, "Forking", true);
 
   // Tooltip state for each button
   const [showTooltip, setShowTooltip] = useState({});
@@ -158,8 +92,6 @@ function RunNavigation({
     Share: "Share this project",
     Fork: "Fork this project",
     Star: starredState ? "Unlike this project" : "Like this project",
-    Export: "Export this project",
-    Bill: "View Bill of Materials",
   };
 
   // Helper to show/hide tooltip for a button
@@ -399,119 +331,121 @@ function RunNavigation({
           {...{ shareDialog, setShareDialog, dialogContent, activeAtom }}
         />
       ) : null}
-      <div className="run-navigation">
+      <div className="run-navigation" style={{ display: "flex", gap: 10 }}>
         {/* Share Button */}
-        <div style={{ position: "relative", display: "inline-block" }}>
-          <button
-            onClick={() => {
-              setDialog("share");
-              setShareDialog(true);
-            }}
-            className=" run-navigation-button"
-            id="Share-button"
-            onMouseEnter={() => handleTooltip("Share", true)}
-            onMouseLeave={() => handleTooltip("Share", false)}
-          >
-            {shareSvg}
-          </button>
-          {showTooltip["Share"] && (
-            <div className="run-navigation-tooltip">
-              {tooltipMessages.Share}
-            </div>
-          )}
-        </div>
-
+        <button
+          onClick={() => {
+            setDialog("share");
+            setShareDialog(true);
+          }}
+          id="Share-button"
+          style={{
+            position: "fixed",
+            right: 10,
+            top: 210,
+            background: "var(--abundance-color-background)",
+            border: "1px solid var(--panel-border)",
+            boxShadow: "0 4px 16px rgba(20,24,31,0.16)",
+            borderRadius: 4,
+            width: 40,
+            height: 40,
+            minWidth: 0,
+            minHeight: 0,
+            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transition: "box-shadow 0.2s",
+            fontFamily: "JetBrains Mono, monospace",
+            outline: "none",
+          }}
+          title={tooltipMessages.Share}
+        >
+          {shareSvg}
+        </button>
         {/* Fork Button */}
-        <div style={{ position: "relative", display: "inline-block" }}>
-          <button
-            className=" run-navigation-button"
-            id="Fork-button"
-            onClick={() => {
-              authorizedUserOcto
-                ? forkProject(authorizedUserOcto)
-                : authRedirectHandler({
-                    authType: "fork",
-                  });
-            }}
-            onMouseEnter={() => handleTooltip("Fork", true)}
-            onMouseLeave={() => handleTooltip("Fork", false)}
-          >
-            {forkSvg}
-          </button>
-          {showTooltip["Fork"] && (
-            <div className="run-navigation-tooltip">{tooltipMessages.Fork}</div>
-          )}
-        </div>
-
+        <button
+          id="Fork-button"
+          style={{
+            position: "fixed",
+            right: 10,
+            top: 300,
+            background: "var(--abundance-color-background)",
+            border: "1px solid var(--panel-border)",
+            boxShadow: "0 4px 16px rgba(20,24,31,0.16)",
+            borderRadius: 4,
+            width: 40,
+            height: 40,
+            minWidth: 0,
+            minHeight: 0,
+            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transition: "box-shadow 0.2s",
+            fontFamily: "JetBrains Mono, monospace",
+            outline: "none",
+          }}
+          onClick={() => {
+            authorizedUserOcto
+              ? forkProject(authorizedUserOcto)
+              : authRedirectHandler({ authType: "fork" });
+          }}
+          title={tooltipMessages.Fork}
+        >
+          {forkSvg}
+        </button>
         {/* Star Button */}
-        <div style={{ position: "relative", display: "inline-block" }}>
-          <button
-            className={
-              starredState
-                ? "starred run-navigation-button"
-                : "run-navigation-button"
-            }
-            id="Star-button"
-            onClick={() => {
-              authorizedUserOcto && !starredState
-                ? likeProject(authorizedUserOcto)
-                : authorizedUserOcto && starredState
-                ? unlikeProject(authorizedUserOcto)
-                : authRedirectHandler({
-                    authType: "like",
-                  });
-            }}
-            onMouseEnter={() => handleTooltip("Star", true)}
-            onMouseLeave={() => handleTooltip("Star", false)}
-          >
-            {starSvg}
-          </button>
-          {showTooltip["Star"] && (
-            <div className="run-navigation-tooltip">{tooltipMessages.Star}</div>
-          )}
-        </div>
-
-        {/* Export Button */}
-        <div style={{ position: "relative", display: "inline-block" }}>
-          <button
-            onClick={() => {
-              setDialog("export");
-              setShareDialog(true);
-            }}
-            className=" run-navigation-button"
-            id="Export-button"
-            onMouseEnter={() => handleTooltip("Export", true)}
-            onMouseLeave={() => handleTooltip("Export", false)}
-          >
-            {exportSvg}
-          </button>
-          {showTooltip["Export"] && (
-            <div className="run-navigation-tooltip">
-              {tooltipMessages.Export}
-            </div>
-          )}
-        </div>
-
-        {/* Bill Button */}
-        <div style={{ position: "relative", display: "inline-block" }}>
-          <button
-            className=" run-navigation-button"
-            id="Bill-button"
-            onClick={() => {
-              var url =
-                GlobalVariables.currentRepo.html_url +
-                "/blob/master/BillOfMaterials.md";
-              window.open(url);
-            }}
-            onMouseEnter={() => handleTooltip("Bill", true)}
-            onMouseLeave={() => handleTooltip("Bill", false)}
-          >
-            {billSvg}
-          </button>
-          {showTooltip["Bill"] && (
-            <div className="run-navigation-tooltip">{tooltipMessages.Bill}</div>
-          )}
-        </div>
+        <button
+          id="Star-button"
+          style={{
+            position: "fixed",
+            right: 10,
+            top: 255,
+            border: "1px solid var(--panel-border)",
+            boxShadow: "0 4px 16px rgba(20,24,31,0.16)",
+            borderRadius: 4,
+            width: 40,
+            height: 40,
+            minWidth: 0,
+            minHeight: 0,
+            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transition: "box-shadow 0.2s",
+            fontFamily: "JetBrains Mono, monospace",
+            outline: "none",
+            ...(starredState
+              ? {
+                  background: "var(--abundance-color-fontLightGrey)",
+                }
+              : { background: "var(--abundance-color-background)" }),
+          }}
+          onClick={() => {
+            authorizedUserOcto && !starredState
+              ? likeProject(authorizedUserOcto)
+              : authorizedUserOcto && starredState
+              ? unlikeProject(authorizedUserOcto)
+              : authRedirectHandler({ authType: "like" });
+          }}
+          title={tooltipMessages.Star}
+        >
+          {starSvg}
+        </button>
+        {/* Tooltips (optional, can be removed if using title) */}
+        {showTooltip["Share"] && (
+          <div className="run-navigation-tooltip">{tooltipMessages.Share}</div>
+        )}
+        {showTooltip["Fork"] && (
+          <div className="run-navigation-tooltip">{tooltipMessages.Fork}</div>
+        )}
+        {showTooltip["Star"] && (
+          <div className="run-navigation-tooltip">{tooltipMessages.Star}</div>
+        )}
       </div>
     </>
   );
