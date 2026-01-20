@@ -57,7 +57,7 @@ function useWindowSize() {
   return windowSize;
 }
 
-function runMode() {
+function runMode({ processing, setProcessing }) {
   // Get context values
   const { isloggedIn, authorizedUserOcto, authRedirectHandler } = useAuth();
   const {
@@ -74,6 +74,7 @@ function runMode() {
     setOutdatedMesh,
     renderProgress,
     renderBarVisible,
+    renderStage,
     gridParam,
     setGrid,
     axesParam,
@@ -103,7 +104,7 @@ function runMode() {
     "render-run",
     renderBarVisible,
     renderProgress,
-    "Rendering",
+    renderStage || "Rendering",
     true
   );
 
@@ -242,8 +243,10 @@ function runMode() {
   /* Since we can't see current atoms processing status, set outdated mesh when active atom goes to waiting */
   if (activeAtom) {
     activeAtom.onStatusChange = (status) => {
+      console.log("Active atom status changed to:", status);
       if (status === "waiting") {
         setOutdatedMesh(true);
+        setProcessing(true);
       }
     };
   }
@@ -364,7 +367,12 @@ function runMode() {
                 {wireParam ? <WireframeMesh mesh={wireMesh} /> : null}
 
                 <ReplicadMesh
-                  {...{ mesh, isSolid: solidParam, setOutdatedMesh }}
+                  {...{
+                    mesh,
+                    isSolid: solidParam,
+                    setOutdatedMesh,
+                    setProcessing,
+                  }}
                 />
               </ThreeContext>
             ) : (

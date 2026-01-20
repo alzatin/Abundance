@@ -53,6 +53,7 @@ function CreateMode() {
     setWireMesh,
     renderProgress,
     renderBarVisible,
+    renderStage,
     backgroundUsdzFile,
     setBackgroundUsdzFile,
     backgroundUsdzSha,
@@ -110,7 +111,7 @@ function CreateMode() {
     "render",
     renderBarVisible,
     renderProgress,
-    "Rendering",
+    renderStage || "Rendering",
     false
   );
 
