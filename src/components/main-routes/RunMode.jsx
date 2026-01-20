@@ -342,8 +342,12 @@ function runMode({ processing, setProcessing }) {
       ) : null}
       {GlobalVariables.currentAWSnode ? (
         <div className="info_run_div">
-          <p>{"Project Name: " + GlobalVariables.currentAWSnode.repoName}</p>
-          <p>{"Repo Owner: " + GlobalVariables.currentAWSnode.owner}</p>
+          <p>
+            {"Project Name: " +
+              GlobalVariables.currentAWSnode.repoName +
+              "  /  Project Owner: " +
+              GlobalVariables.currentAWSnode.owner}{" "}
+          </p>
         </div>
       ) : null}
       <div className="runContainer">
