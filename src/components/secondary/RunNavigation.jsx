@@ -404,7 +404,6 @@ function RunNavigation({
             position: "fixed",
             right: 10,
             top: 255,
-            background: "var(--abundance-color-background)",
             border: "1px solid var(--panel-border)",
             boxShadow: "0 4px 16px rgba(20,24,31,0.16)",
             borderRadius: 4,
@@ -420,7 +419,11 @@ function RunNavigation({
             transition: "box-shadow 0.2s",
             fontFamily: "JetBrains Mono, monospace",
             outline: "none",
-            ...(starredState ? { boxShadow: "0 0 0 2px #c4a3d5" } : {}),
+            ...(starredState
+              ? {
+                  background: "var(--abundance-color-fontLightGrey)",
+                }
+              : { background: "var(--abundance-color-background)" }),
           }}
           onClick={() => {
             authorizedUserOcto && !starredState
