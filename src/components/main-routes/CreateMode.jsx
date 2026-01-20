@@ -67,7 +67,12 @@ function CreateMode() {
     setShowTopLevelWireframe,
   } = useRendering();
 
-  const { cad, loadProject, searchGithubMolecules, saveProject: saveProjectFromContext } = useProject();
+  const {
+    cad,
+    loadProject,
+    searchGithubMolecules,
+    saveProject: saveProjectFromContext,
+  } = useProject();
   const { uploadFile, deleteFile, importNotification } = useFileImport();
   const meshRef = useRef();
 
@@ -86,7 +91,7 @@ function CreateMode() {
       GlobalVariables.deleteFile = null;
       GlobalVariables.saveProject = null;
     };
-  }, [uploadFile, deleteFile, saveProject]);
+  }, [uploadFile, deleteFile]);
 
   const navigate = useNavigate();
 
@@ -95,7 +100,13 @@ function CreateMode() {
 
   // Wrapper function that calls saveProject with CreateMode-specific parameters
   const saveProject = (setSaveProgress, typeSave, forceSave = false) => {
-    return saveProjectFromContext(setSaveProgress, typeSave, forceSave, meshRef, setErrorNotification);
+    return saveProjectFromContext(
+      setSaveProgress,
+      typeSave,
+      forceSave,
+      meshRef,
+      setErrorNotification
+    );
   };
 
   // Register render progress bar
@@ -643,7 +654,9 @@ function CreateMode() {
             onChange={(value) => {
               let file = value.target.files[0];
               if (file) {
-                uploadFile(file, activeAtom, () => saveProject(setSaveState, "Upload Save"));
+                uploadFile(file, activeAtom, () =>
+                  saveProject(setSaveState, "Upload Save")
+                );
               }
             }}
           />
