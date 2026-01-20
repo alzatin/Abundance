@@ -62,12 +62,14 @@ export default function RunParams({
         order: 0,
         disabled: true,
       },
+      /* Exclude certain parameters from the run molecule's input params */
       ...Object.fromEntries(
         Object.entries(activeAtom.createInputParams(setInputChanged)).filter(
           ([key, param]) =>
             param.label !== "Molecule Name" &&
             param.label !== "Molecule Readme" &&
-            param.label !== "Molecule BOM"
+            param.label !== "Molecule BOM" &&
+            param.label !== "Reload from Github"
         )
       ),
     };
