@@ -255,13 +255,13 @@ function runMode({ processing, setProcessing }) {
     <>
       <RunParams
         activeAtom={activeAtom}
-        position={{ top: 30, left: screenWidth - 365 }}
+        position={{ top: 30, left: screenWidth - 50 }}
         id={"atom-run-params-panel"}
         contentCollapsed={expandedMenu !== "params"}
         setContentCollapsed={() => setExpandedMenu("params")}
         closeMenu={() => setExpandedMenu("none")}
         initialCollapsed={true}
-        collapsedOffset={[45, 0]}
+        collapsedOffset={[-315, 0]}
         setReadMe={() => setExpandedMenu("readme")}
         setBillOfMaterials={() => setExpandedMenu("bom")}
       />
@@ -279,8 +279,8 @@ function runMode({ processing, setProcessing }) {
           contentCollapsed: expandedMenu !== "render",
           setContentCollapsed: () => setExpandedMenu("render"),
           closeMenu: () => setExpandedMenu("none"),
-          position: { top: 75, left: screenWidth - 365 },
-          collapsedOffset: [45, -45],
+          position: { top: 75, left: screenWidth - 50 },
+          collapsedOffset: [-315, -45],
         }}
         id={"atom-run-render-panel"}
       />
@@ -292,21 +292,22 @@ function runMode({ processing, setProcessing }) {
           contentCollapsed: expandedMenu !== "bom",
           setContentCollapsed: () => setExpandedMenu("bom"),
           closeMenu: () => setExpandedMenu("none"),
-          position: { top: 120, left: screenWidth - 365 },
+          position: { top: 120, left: screenWidth - 50 },
+          collapsedOffset: [-315, -90],
         }}
-        collapsedOffset={[45, -90]}
+        c
       />
 
       {/* ReadmePanel below BomMenu, collapsed by default */}
       <ReadmePanel
         readme={GlobalVariables.currentRepo?.readme || ""}
         id="atom-run-readme-panel"
-        position={{ top: 165, left: screenWidth - 365 }}
+        position={{ top: 165, left: screenWidth - 50 }}
         initialCollapsed={true}
         contentCollapsed={expandedMenu !== "readme"}
         setContentCollapsed={() => setExpandedMenu("readme")}
         closeMenu={() => setExpandedMenu("none")}
-        collapsedOffset={[45, -135]}
+        collapsedOffset={[-315, -135]}
         activeAtom={activeAtom}
       />
       <div id="headerBarRun">

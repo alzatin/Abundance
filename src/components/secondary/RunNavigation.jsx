@@ -148,7 +148,7 @@ function RunNavigation({
   const [forkBarVisible, setForkBarVisible] = useState(false);
 
   // Register fork progress bar with the stacking system
-  useProgressBar('fork-run', forkBarVisible, forkProgress, 'Forking', true);
+  useProgressBar("fork-run", forkBarVisible, forkProgress, "Forking", true);
 
   // Tooltip state for each button
   const [showTooltip, setShowTooltip] = useState({});
@@ -399,119 +399,124 @@ function RunNavigation({
           {...{ shareDialog, setShareDialog, dialogContent, activeAtom }}
         />
       ) : null}
-      <div className="run-navigation">
+      <div className="run-navigation" style={{ display: "flex", gap: 10 }}>
         {/* Share Button */}
-        <div style={{ position: "relative", display: "inline-block" }}>
-          <button
-            onClick={() => {
-              setDialog("share");
-              setShareDialog(true);
-            }}
-            className=" run-navigation-button"
-            id="Share-button"
-            onMouseEnter={() => handleTooltip("Share", true)}
-            onMouseLeave={() => handleTooltip("Share", false)}
-          >
-            {shareSvg}
-          </button>
-          {showTooltip["Share"] && (
-            <div className="run-navigation-tooltip">
-              {tooltipMessages.Share}
-            </div>
-          )}
-        </div>
-
+        <button
+          onClick={() => {
+            setDialog("share");
+            setShareDialog(true);
+          }}
+          id="Share-button"
+          style={{
+            position: "fixed",
+            right: 10,
+            top: 210,
+            background: "var(--abundance-color-background)",
+            border: "1px solid var(--panel-border)",
+            boxShadow: "0 4px 16px rgba(20,24,31,0.16)",
+            borderRadius: 4,
+            width: 40,
+            height: 40,
+            minWidth: 0,
+            minHeight: 0,
+            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transition: "box-shadow 0.2s",
+            fontFamily: "JetBrains Mono, monospace",
+            outline: "none",
+          }}
+          onMouseEnter={() => handleTooltip("Share", true)}
+          onMouseLeave={() => handleTooltip("Share", false)}
+          title={tooltipMessages.Share}
+        >
+          {shareSvg}
+        </button>
         {/* Fork Button */}
-        <div style={{ position: "relative", display: "inline-block" }}>
-          <button
-            className=" run-navigation-button"
-            id="Fork-button"
-            onClick={() => {
-              authorizedUserOcto
-                ? forkProject(authorizedUserOcto)
-                : authRedirectHandler({
-                    authType: "fork",
-                  });
-            }}
-            onMouseEnter={() => handleTooltip("Fork", true)}
-            onMouseLeave={() => handleTooltip("Fork", false)}
-          >
-            {forkSvg}
-          </button>
-          {showTooltip["Fork"] && (
-            <div className="run-navigation-tooltip">{tooltipMessages.Fork}</div>
-          )}
-        </div>
-
+        <button
+          id="Fork-button"
+          style={{
+            position: "fixed",
+            right: 10,
+            top: 310,
+            background: "var(--abundance-color-background)",
+            border: "1px solid var(--panel-border)",
+            boxShadow: "0 4px 16px rgba(20,24,31,0.16)",
+            borderRadius: 4,
+            width: 40,
+            height: 40,
+            minWidth: 0,
+            minHeight: 0,
+            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transition: "box-shadow 0.2s",
+            fontFamily: "JetBrains Mono, monospace",
+            outline: "none",
+          }}
+          onClick={() => {
+            authorizedUserOcto
+              ? forkProject(authorizedUserOcto)
+              : authRedirectHandler({ authType: "fork" });
+          }}
+          onMouseEnter={() => handleTooltip("Fork", true)}
+          onMouseLeave={() => handleTooltip("Fork", false)}
+          title={tooltipMessages.Fork}
+        >
+          {forkSvg}
+        </button>
         {/* Star Button */}
-        <div style={{ position: "relative", display: "inline-block" }}>
-          <button
-            className={
-              starredState
-                ? "starred run-navigation-button"
-                : "run-navigation-button"
-            }
-            id="Star-button"
-            onClick={() => {
-              authorizedUserOcto && !starredState
-                ? likeProject(authorizedUserOcto)
-                : authorizedUserOcto && starredState
-                ? unlikeProject(authorizedUserOcto)
-                : authRedirectHandler({
-                    authType: "like",
-                  });
-            }}
-            onMouseEnter={() => handleTooltip("Star", true)}
-            onMouseLeave={() => handleTooltip("Star", false)}
-          >
-            {starSvg}
-          </button>
-          {showTooltip["Star"] && (
-            <div className="run-navigation-tooltip">{tooltipMessages.Star}</div>
-          )}
-        </div>
-
-        {/* Export Button */}
-        <div style={{ position: "relative", display: "inline-block" }}>
-          <button
-            onClick={() => {
-              setDialog("export");
-              setShareDialog(true);
-            }}
-            className=" run-navigation-button"
-            id="Export-button"
-            onMouseEnter={() => handleTooltip("Export", true)}
-            onMouseLeave={() => handleTooltip("Export", false)}
-          >
-            {exportSvg}
-          </button>
-          {showTooltip["Export"] && (
-            <div className="run-navigation-tooltip">
-              {tooltipMessages.Export}
-            </div>
-          )}
-        </div>
-
-        {/* Bill Button */}
-        <div style={{ position: "relative", display: "inline-block" }}>
-          <button
-            className=" run-navigation-button"
-            id="Bill-button"
-            onClick={() => {
-              var url =
-                GlobalVariables.currentRepo.html_url +
-                "/blob/master/BillOfMaterials.md";
-              window.open(url);
-            }}
-            onMouseEnter={() => handleTooltip("Bill", true)}
-            onMouseLeave={() => handleTooltip("Bill", false)}
-          >
-            {billSvg}
-          </button>
-          {showTooltip["Bill"] && (
-            <div className="run-navigation-tooltip">{tooltipMessages.Bill}</div>
-          )}
-        </div>
+        <button
+          id="Star-button"
+          style={{
+            position: "fixed",
+            right: 10,
+            top: 255,
+            background: "var(--abundance-color-background)",
+            border: "1px solid var(--panel-border)",
+            boxShadow: "0 4px 16px rgba(20,24,31,0.16)",
+            borderRadius: 4,
+            width: 40,
+            height: 40,
+            minWidth: 0,
+            minHeight: 0,
+            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transition: "box-shadow 0.2s",
+            fontFamily: "JetBrains Mono, monospace",
+            outline: "none",
+            ...(starredState ? { boxShadow: "0 0 0 2px #c4a3d5" } : {}),
+          }}
+          onClick={() => {
+            authorizedUserOcto && !starredState
+              ? likeProject(authorizedUserOcto)
+              : authorizedUserOcto && starredState
+              ? unlikeProject(authorizedUserOcto)
+              : authRedirectHandler({ authType: "like" });
+          }}
+          onMouseEnter={() => handleTooltip("Star", true)}
+          onMouseLeave={() => handleTooltip("Star", false)}
+          title={tooltipMessages.Star}
+        >
+          {starSvg}
+        </button>
+        {/* Tooltips (optional, can be removed if using title) */}
+        {showTooltip["Share"] && (
+          <div className="run-navigation-tooltip">{tooltipMessages.Share}</div>
+        )}
+        {showTooltip["Fork"] && (
+          <div className="run-navigation-tooltip">{tooltipMessages.Fork}</div>
+        )}
+        {showTooltip["Star"] && (
+          <div className="run-navigation-tooltip">{tooltipMessages.Star}</div>
+        )}
       </div>
     </>
   );
