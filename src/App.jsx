@@ -6,6 +6,7 @@ import {
   Routes,
   Route,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 
 import { wrap } from "comlink";
@@ -475,11 +476,17 @@ function AppContent() {
       });
   };
 
+  const location = useLocation();
+  let errorClass = "error-notification";
+  if (location.pathname.includes("/run")) {
+    errorClass = "error-notification-run";
+  }
+
   return (
     <main>
       {/* Error notification */}
       {errorNotification && (
-        <div className="error-notification">{errorNotification}</div>
+        <div className={errorClass}>{errorNotification}</div>
       )}
       <Routes>
         <Route
