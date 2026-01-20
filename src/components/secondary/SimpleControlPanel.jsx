@@ -1174,12 +1174,13 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                       >
                         <span
                           style={{
-                            width: inputFullWidth ? 0 : 70,
+                            width: inputFullWidth ? 0 : 100,
                             color: isDisabled
                               ? inputDisabledStyle.color
                               : undefined,
                             overflow: "clip",
                           }}
+                          title={label}
                         >
                           {label}
                           {label ? ":" : ""}
