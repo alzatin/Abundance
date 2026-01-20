@@ -1,6 +1,7 @@
 import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
 import { Status } from "../prototypes/observableEntity.js";
+import { Octokit } from "octokit";
 
 /**
  * This class creates the input atom.
@@ -47,6 +48,25 @@ export default class Input extends Atom {
     this.radius = 1 / 75;
 
     /**
+     * Properties for import type inputs
+     */
+    this.fileName = null;
+    this.fileType = null;
+    this.fileSha = null;
+    this.repoOwner = null;
+    this.repoName = null;
+    this.SVGwidth = 10;
+    this.importOptions = ["SVG", "STL", "STEP"];
+    this.importIndex = 0;
+
+    /**
+     * Properties for local file processing (not saved to GitHub)
+     * Used for unauthenticated users or temporary imports
+     */
+    this.isLocalFile = false;
+    this.localFileContent = null;
+
+    /**
      * Flag indicating if the name text is currently truncated
      * @type {boolean}
      */
@@ -64,10 +84,12 @@ export default class Input extends Atom {
      */
     this.tooltipElement = null;
 
-    this.addIO("number or geometry", this.type, this.value, "output");
-
-    // Set values first to ensure this.name is correct before creating the parent input
+    // Set values first to ensure type is set correctly
     this.setValues(values);
+
+    // Determine the output valueType (import type outputs geometry)
+    const outputValueType = this.type === "import" ? "geometry" : this.type;
+    this.addIO("number or geometry", outputValueType, this.value, "output");
 
     /**
      * This atom's old name, used during name changes. Set after values are applied.
@@ -80,13 +102,27 @@ export default class Input extends Atom {
 
     //Add a new input to the current molecule
     if (typeof this.parent !== "undefined") {
+      // For import type, pass additional metadata through options
+      const inputOptions =
+        this.type === "import"
+          ? {
+              ...this.options,
+              importType: true,
+              importOptions: this.importOptions,
+              fileName: this.fileName,
+              fileType: this.fileType,
+              SVGwidth: this.SVGwidth,
+              inputAtom: this, // Reference to the Input atom for file operations
+            }
+          : this.options;
+
       // parent should subscribe so it can manage it's ready/processing/etc state
       this.parentAP = this.parent.addIO(
         this.name,
-        this.type,
+        this.type === "import" ? "geometry" : this.type,
         this.value,
         "input",
-        this.options
+        inputOptions
       );
       // We also subscribe directly to the parent ap.
       this.parentAP.subscribe(() => {
@@ -96,6 +132,11 @@ export default class Input extends Atom {
       throw new Error(
         "constructed an input with undefined parent. IDK what to do here"
       );
+    }
+
+    // Load import file if this is an import type with file data
+    if (this.type === "import" && this.fileName) {
+      this.loadAndPropagate();
     }
   }
 
@@ -196,6 +237,22 @@ export default class Input extends Atom {
       }
     }
     if (!didPropagateUpstream) {
+      // For import type inputs with file data
+      if (this.type === "import" && this.fileName) {
+        // If we already have the geometry value, just set to ready
+        // No need to reload from GitHub/memory every time
+        if (this.value && typeof this.value === "object") {
+          this.setReady(this.value);
+          if (this.parentAP) {
+            this.parentAP.setValue(this.value);
+          }
+          return true;
+        }
+        // Otherwise, load and propagate the geometry
+        this.loadAndPropagate();
+        return true;
+      }
+
       if (this.parentAP) {
         const apState = this.parentAP.getState();
         if (apState.value !== null && apState.value !== undefined) {
@@ -222,6 +279,22 @@ export default class Input extends Atom {
     // We need to update the value of this input atom
     if (this.parentAP) {
       const parentState = this.parentAP.getState();
+
+      // For import type inputs with cached geometry, maintain READY state
+      // Don't sync with parent AP status changes that might temporarily set to WAITING
+      if (
+        this.type === "import" &&
+        this.value &&
+        typeof this.value === "object"
+      ) {
+        // Keep the cached geometry and stay READY
+        // Parent AP status changes shouldn't affect import inputs with loaded files
+        if (this.status !== Status.READY) {
+          this.setReady(this.value);
+        }
+        return;
+      }
+
       this.setStatus(parentState.status, parentState.value);
 
       // Update our internal value if status is READY
@@ -383,12 +456,36 @@ export default class Input extends Atom {
     this.clearTooltipTimer();
     this.hideTooltip();
 
+    this.deleteFile();
+
     //Remove this input from the parent molecule
     if (typeof this.parent !== "undefined") {
       this.parent.removeIO("input", this.name, this.parent, silent);
     }
 
     super.deleteNode(backgroundClickAfter, deletePath, silent);
+  }
+
+  deleteFile() {
+    console.log("delete file called from input atom");
+    // Delete uploaded file if this is an import type
+    console.log(this.type, this.fileName);
+    if (this.type === "import" && this.fileName) {
+      if (GlobalVariables.deleteFile) {
+        GlobalVariables.deleteFile(this.fileName, this.fileSha);
+        this.fileName = null;
+        this.fileSha = null;
+        this.repoOwner = null;
+        this.repoName = null;
+        this.fileType = null;
+        this.value = null;
+        this.updateParentAPOptions();
+        this.setWaiting();
+      } else {
+        console.warn("deleteFile not available in GlobalVariables");
+      }
+      this.setInputChanged(this.name);
+    }
   }
 
   /**
@@ -498,6 +595,314 @@ export default class Input extends Atom {
     }
   }
 
+  /**
+   * Get a file from github. Called when loading a saved project with import input.
+   */
+  getAFile = async function () {
+    const octokit = new Octokit();
+    const filePath = this.fileName;
+
+    const repoOwner = this.repoOwner;
+    const repoName = this.repoName;
+    const result = await octokit.rest.repos.getContent({
+      owner: repoOwner,
+      repo: repoName,
+      path: filePath,
+    });
+    return result;
+  };
+
+  /**
+   * Load the imported file and propagate the geometry value
+   */
+  loadAndPropagate() {
+    if (this.type !== "import" || this.fileName === null) {
+      return Promise.resolve(this.value);
+    }
+
+    // If this is a local file (not stored in GitHub), process from memory
+    if (this.isLocalFile && this.localFileContent) {
+      return this.processLocalFileContent();
+    }
+
+    // Otherwise, load from GitHub
+    this.setProcessing();
+
+    return this.getAFile()
+      .then((result) => {
+        this.fileSha = result.data.sha;
+        const file = this.newBlobFromBase64(result);
+        const fileType = this.fileType;
+
+        let funcToCall =
+          fileType === "STL"
+            ? GlobalVariables.cad.importingSTL
+            : fileType === "SVG"
+            ? GlobalVariables.cad.importingSVG
+            : fileType === "STEP"
+            ? GlobalVariables.cad.importingSTEP
+            : null;
+
+        if (funcToCall === null) {
+          throw new Error("Invalid file type");
+        }
+
+        return funcToCall(file, this.getContext(), this.SVGwidth);
+      })
+      .then((result) => {
+        this.value = result;
+        this.setReady(result);
+        //this.setInputChanged(result);
+        if (this.parentAP) {
+          this.parentAP.setValue(result);
+        }
+        return result;
+      })
+      .catch(this.alertingErrorHandler());
+  }
+
+  /**
+   * Make new Blob from Github repo content results
+   */
+  newBlobFromBase64(result) {
+    let base64String = result.data.content;
+    let binary = atob(base64String);
+
+    if (this.fileType === "SVG") {
+      return binary;
+    }
+
+    let array = [];
+    for (let i = 0; i < binary.length; i++) {
+      array.push(binary.charCodeAt(i));
+    }
+
+    return new Blob([new Uint8Array(array)], {
+      type: "application/octet-stream",
+    });
+  }
+
+  /**
+   * Process a file locally without uploading to GitHub
+   * Used for unauthenticated users or temporary imports
+   */
+  async processFileLocally(file, type) {
+    this.fileName = file.name;
+    this.fileType = type;
+    this.fileSha = null; // No SHA for local files
+    this.isLocalFile = true; // Flag to indicate this is a local file
+
+    // Store the file data as a data URL for later processing
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = async (e) => {
+        try {
+          // Store the data URL or raw content
+          if (type === "SVG") {
+            // For SVG, store as text
+            const text = e.target.result;
+            this.localFileContent = text;
+          } else {
+            // For binary files (STL, STEP), store as data URL
+            this.localFileContent = e.target.result;
+          }
+
+          // Process the file immediately
+          await this.processLocalFileContent();
+          resolve();
+        } catch (error) {
+          console.error("Error processing local file:", error);
+          reject(error);
+        }
+      };
+
+      reader.onerror = () => {
+        reject(new Error("Failed to read file"));
+      };
+
+      // Read as text for SVG, as data URL for binary formats
+      if (type === "SVG") {
+        reader.readAsText(file);
+      } else {
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  /**
+   * Process the locally stored file content into geometry
+   */
+  async processLocalFileContent() {
+    if (!this.localFileContent || !this.fileType) {
+      return Promise.resolve(this.value);
+    }
+
+    this.setProcessing();
+
+    try {
+      let fileData;
+
+      if (this.fileType === "SVG") {
+        // SVG is already text
+        fileData = this.localFileContent;
+      } else {
+        // Convert data URL to Blob for STL/STEP
+        const base64String = this.localFileContent.split(",")[1];
+        const binary = atob(base64String);
+        const array = [];
+        for (let i = 0; i < binary.length; i++) {
+          array.push(binary.charCodeAt(i));
+        }
+        fileData = new Blob([new Uint8Array(array)], {
+          type: "application/octet-stream",
+        });
+      }
+
+      let funcToCall =
+        this.fileType === "STL"
+          ? GlobalVariables.cad.importingSTL
+          : this.fileType === "SVG"
+          ? GlobalVariables.cad.importingSVG
+          : this.fileType === "STEP"
+          ? GlobalVariables.cad.importingSTEP
+          : null;
+
+      if (funcToCall === null) {
+        throw new Error("Invalid file type");
+      }
+
+      const result = await funcToCall(
+        fileData,
+        this.getContext(),
+        this.SVGwidth
+      );
+
+      this.value = result;
+      this.setReady(result);
+      if (this.parentAP) {
+        this.parentAP.setValue(result);
+      }
+
+      // Update parent AP options with file metadata
+      this.updateParentAPOptions();
+
+      return result;
+    } catch (error) {
+      console.error("Error processing local file content:", error);
+      this.alertingErrorHandler()(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Trigger file upload using FileImportContext
+   */
+  loadFile(type, setInputChanged, onSave) {
+    // Use the new FileImportContext approach
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "." + type.toLowerCase();
+    input.style.display = "none";
+
+    input.onchange = async (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        // Delete previous file if exists (only if it was uploaded to GitHub)
+        if (
+          this.fileName &&
+          this.fileSha &&
+          GlobalVariables.deleteFile &&
+          !this.isLocalFile
+        ) {
+          await GlobalVariables.deleteFile(this.fileName, this.fileSha);
+        }
+
+        this.fileType = type;
+
+        // Check if we should process locally (unauthenticated or no upload function)
+        // Use GlobalVariables.saveProject if onSave is not provided
+        const saveCallback = onSave || GlobalVariables.saveProject;
+        const shouldProcessLocally =
+          !GlobalVariables.uploadFile || !saveCallback;
+
+        if (shouldProcessLocally) {
+          // Process file locally without GitHub upload
+          try {
+            await this.processFileLocally(file, type);
+
+            // Call input changed callback
+            if (setInputChanged && typeof setInputChanged === "function") {
+              setInputChanged(file.name);
+            }
+          } catch (error) {
+            console.error("Failed to process file locally:", error);
+          }
+        } else {
+          // Upload the file to GitHub using GlobalVariables.uploadFile
+          const inputChangedCallback =
+            typeof setInputChanged === "function" ? setInputChanged : null;
+
+          this.isLocalFile = false; // Mark as GitHub file
+          GlobalVariables.uploadFile(file, this, saveCallback);
+
+          // Call input changed callback after file name is set
+          if (inputChangedCallback) {
+            setTimeout(() => inputChangedCallback(this.fileName), 100);
+          }
+        }
+      }
+      // Clean up
+      document.body.removeChild(input);
+    };
+
+    document.body.appendChild(input);
+    input.click();
+  }
+
+  /**
+   * Update the file, filename and sha of the input
+   */
+  updateFile(file, sha) {
+    this.fileName = file.name;
+    this.fileSha = sha;
+    // This is a GitHub file, not a local file
+    this.isLocalFile = false;
+    this.localFileContent = null;
+
+    if (
+      !GlobalVariables.currentAWSnode?.owner ||
+      !GlobalVariables.currentAWSnode?.repoName
+    ) {
+      console.warn("Repository information not available");
+      return;
+    }
+    this.repoOwner = GlobalVariables.currentAWSnode.owner;
+    this.repoName = GlobalVariables.currentAWSnode.repoName;
+
+    // Update parent AP options with file metadata
+    this.updateParentAPOptions();
+
+    this.loadAndPropagate();
+  }
+
+  /**
+   * Update the parent attachment point's options with current import metadata
+   */
+  updateParentAPOptions() {
+    if (this.parentAP && this.type === "import") {
+      this.parentAP.options = {
+        ...this.parentAP.options,
+        importType: true,
+        importOptions: this.importOptions,
+        fileName: this.fileName,
+        fileType: this.fileType,
+        SVGwidth: this.SVGwidth,
+        inputAtom: this,
+      };
+    }
+  }
+
   createInputParams(setInputChanged) {
     this.setInputChanged = setInputChanged;
     let inputParams = {};
@@ -529,15 +934,24 @@ export default class Input extends Atom {
       value: this.type,
       label: "Input Type",
       disabled: false,
-      options: ["number", "string", "geometry", "array", "boolean"],
+      options: ["number", "string", "geometry", "array", "boolean", "import"],
       onChange: (newType) => {
         if (this.type !== newType) {
           this.type = newType;
-          this.output.valueType = newType;
+          // Import type should output geometry
+          const outputType = newType === "import" ? "geometry" : newType;
+          this.output.valueType = outputType;
 
           //Add a new input to the current molecule
           if (this.parentAP) {
-            this.parentAP.valueType = newType;
+            this.parentAP.valueType = outputType;
+            // Update parent AP options if switching to/from import type
+            if (newType === "import") {
+              this.updateParentAPOptions();
+            } else if (this.parentAP.options?.importType) {
+              // Clear import metadata if switching away from import type
+              this.parentAP.options = {};
+            }
           }
         }
       },
@@ -564,6 +978,55 @@ export default class Input extends Atom {
         },
       };
     }
+
+    // If type is import, add controls for file upload
+    if (this.type === "import") {
+      if (this.fileName === null) {
+        inputParams[this.uniqueID + "file_ops"] = {
+          type: "select",
+          options: this.importOptions,
+          label: "File Type",
+          onChange: (value) => {
+            if (!value) {
+              value = this.importOptions[0];
+            }
+            this.importIndex = this.importOptions.indexOf(value);
+          },
+        };
+        inputParams[this.uniqueID + "Load File"] = {
+          type: "button",
+          label: "Load File",
+          onClick: () => {
+            this.loadFile(
+              this.importOptions[this.importIndex],
+              this.setInputChanged
+            );
+          },
+        };
+      } else {
+        // File is loaded, show SVG width control if applicable
+        if (this.fileType === "SVG") {
+          inputParams[this.uniqueID + "Width"] = {
+            type: "number",
+            value: this.SVGwidth,
+            label: "Width",
+            step: 1,
+            onChange: (value) => {
+              this.SVGwidth = value;
+              this.loadAndPropagate();
+            },
+          };
+        }
+      }
+      inputParams[this.uniqueID + "file_info"] = {
+        type: "string",
+        label: `Loaded File`,
+        value: `${this.fileName}`,
+        onRemove: () => {
+          this.deleteFile();
+        },
+      };
+    }
     return inputParams;
   }
 
@@ -583,6 +1046,15 @@ export default class Input extends Atom {
     //Write the current color selection to the serialized object
     superSerialObject.type = this.type;
     superSerialObject.options = this.options;
+
+    // Save import-related properties if type is import
+    if (this.type === "import") {
+      superSerialObject.fileName = this.fileName;
+      superSerialObject.fileType = this.fileType;
+      superSerialObject.repoOwner = this.repoOwner;
+      superSerialObject.repoName = this.repoName;
+      superSerialObject.SVGwidth = this.SVGwidth;
+    }
 
     return superSerialObject;
   }

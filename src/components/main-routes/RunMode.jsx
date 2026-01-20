@@ -25,6 +25,7 @@ import {
   useAppState,
   useRendering,
   useProject,
+  useFileImport,
 } from "../../contexts/index.js";
 import { useTutorial } from "../../tutorial/TutorialManager";
 import { TutorialOverlay } from "../../tutorial/TutorialOverlay";
@@ -83,8 +84,19 @@ function runMode() {
     setSolid,
   } = useRendering();
   const { loadProject } = useProject();
+  const { uploadFile, deleteFile, importNotification } = useFileImport();
 
   const navigate = useNavigate();
+
+  // Make file import functions available globally for atoms
+  useEffect(() => {
+    GlobalVariables.uploadFile = uploadFile;
+    GlobalVariables.deleteFile = deleteFile;
+    return () => {
+      GlobalVariables.uploadFile = null;
+      GlobalVariables.deleteFile = null;
+    };
+  }, [uploadFile, deleteFile]);
 
   // Register render progress bar
   useProgressBar(

@@ -1018,8 +1018,32 @@ export default class Atom extends ObservableEntity {
         // Check if input has a connector attached
         const hasConnector = input.connectors.length > 0;
 
-        /* Makes inputs for Io's other than geometry */
-        if (input.valueType === "string") {
+        // Handle import type inputs
+        if (input.options?.importType) {
+          const inputAtom = input.options.inputAtom;
+          if (!hasConnector && inputAtom) {
+            inputParams[this.uniqueID + input.name + "_load"] = {
+              type: "button",
+              label: "Import " + input.name,
+              onClick: () => {
+                if (inputAtom) {
+                  const fileType = (input.options.importOptions || [
+                    "SVG",
+                    "STL",
+                    "STEP",
+                  ])[inputAtom.importIndex || 0];
+                  inputAtom.loadFile(fileType, () => {
+                    // Trigger update after file is loaded
+                    if (typeof inputAtom.setInputChanged === "function") {
+                      inputAtom.setInputChanged(inputAtom.fileName);
+                    }
+                  });
+                }
+              },
+            };
+          }
+        } else if (input.valueType === "string") {
+          /* Makes inputs for Io's other than geometry */
           // When connector is attached, show the value from upstream connection
           const displayValue = hasConnector ? input.getValue() : input.value;
           inputParams[this.uniqueID + input.name] = {
