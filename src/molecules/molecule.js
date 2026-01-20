@@ -896,6 +896,8 @@ export default class Molecule extends Atom {
           // Else set status to waiting since some of our inputs are not ready.
           this.setWaiting();
         }
+        // Notify UI of status change
+        if (this.onStatusChange) this.onStatusChange(this.getState().status);
       }
     } else {
       console.trace("Undefined output atom in onUpstreamChange");

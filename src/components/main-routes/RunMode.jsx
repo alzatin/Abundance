@@ -239,6 +239,15 @@ function runMode() {
   const screenHeight = window.innerHeight;
   const screenWidth = window.innerWidth;
 
+  /* Since we can't see current atoms processing status, set outdated mesh when active atom goes to waiting */
+  if (activeAtom) {
+    activeAtom.onStatusChange = (status) => {
+      if (status === "waiting") {
+        setOutdatedMesh(true);
+      }
+    };
+  }
+
   return (
     <>
       <RunParams
