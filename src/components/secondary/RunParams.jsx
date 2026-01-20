@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel.jsx";
 import { useControls } from "../../hooks/useControls";
 import { useAppState } from "../../contexts/index.js";
-import { Global } from "@emotion/react";
 import GlobalVariables from "../../js/globalvariables.js";
 
 export default function RunParams({
@@ -15,6 +14,7 @@ export default function RunParams({
   initialCollapsed = false,
   collapsedOffset = [0, 0],
   setReadMe,
+  setBillOfMaterials,
 }) {
   // Molecule icon: large circle with a smaller center circle
   const AtomIcon = ({ size = 20 }) => (
@@ -65,7 +65,9 @@ export default function RunParams({
       ...Object.fromEntries(
         Object.entries(activeAtom.createInputParams(setInputChanged)).filter(
           ([key, param]) =>
-            param.label !== "Molecule Name" && param.label !== "Molecule Readme"
+            param.label !== "Molecule Name" &&
+            param.label !== "Molecule Readme" &&
+            param.label !== "Molecule BOM"
         )
       ),
     };
@@ -77,6 +79,15 @@ export default function RunParams({
       order: 9999,
       onClick: () => {
         setReadMe();
+      },
+    };
+
+    inputParams.seeBillOfMaterials = {
+      type: "button",
+      label: "See Bill of Materials",
+      order: 10000,
+      onClick: () => {
+        setBillOfMaterials();
       },
     };
   }

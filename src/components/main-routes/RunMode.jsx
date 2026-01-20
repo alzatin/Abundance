@@ -251,6 +251,7 @@ function runMode() {
         initialCollapsed={true}
         collapsedOffset={[45, 0]}
         setReadMe={() => setExpandedMenu("readme")}
+        setBillOfMaterials={() => setExpandedMenu("bom")}
       />
       <RenderMenu
         {...{
