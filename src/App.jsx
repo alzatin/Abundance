@@ -120,7 +120,7 @@ function AppContent() {
   useEffect(() => {
     setRenderProgress(0);
     setRenderBarVisible(true);
-    setRenderStage("");
+    setRenderStage("Building"); // Start with Building stage by default
     
     let interval = setInterval(() => {
       const molecule = GlobalVariables.topLevelMolecule;
@@ -144,7 +144,7 @@ function AppContent() {
         );
         
         if (hasWaitingInputs) {
-          setRenderStage("Waiting for user Input");
+          setRenderStage("Waiting for user input");
           setRenderProgress(33); // First third
           return;
         }
