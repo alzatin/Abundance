@@ -74,6 +74,7 @@ function runMode() {
     setOutdatedMesh,
     renderProgress,
     renderBarVisible,
+    renderStage,
     gridParam,
     setGrid,
     axesParam,
@@ -103,7 +104,7 @@ function runMode() {
     "render-run",
     renderBarVisible,
     renderProgress,
-    "Rendering",
+    renderStage || "Rendering",
     true
   );
 

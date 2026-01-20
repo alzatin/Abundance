@@ -72,6 +72,8 @@ function AppContent() {
     renderProgress,
     setRenderProgress,
     setRenderBarVisible,
+    renderStage,
+    setRenderStage,
     setTopLevelWireMesh,
     setPlane,
     setGeometryType,
@@ -118,6 +120,8 @@ function AppContent() {
   useEffect(() => {
     setRenderProgress(0);
     setRenderBarVisible(true);
+    setRenderStage("");
+    
     let interval = setInterval(() => {
       const molecule = GlobalVariables.topLevelMolecule;
       if (molecule) {
@@ -126,20 +130,35 @@ function AppContent() {
         // Check if molecule is fully ready first
         if (molecule.getState().status === "ready") {
           setRenderProgress(100);
+          setRenderStage("Rendering");
           clearInterval(interval);
           return;
         }
 
-        const [ready, total] = molecule.getCompletionTuple();
-        // Apply power scaling to make progress appear more linear
-        // Later atoms are more computationally expensive, so we use power > 1
-        // to compress early progress and leave more visual space for later work
-        const linearProgress = ready / total;
-        // Power of 5 means: 50% atoms ready → 3.1% displayed, 70% → 16.8%, 90% → 59%
-        // This gives more visual progress space to the expensive later computations
-        const scaledProgress = Math.pow(linearProgress, 5);
-        const progress = Math.min(99, Math.floor(scaledProgress * 100));
-        setRenderProgress(progress);
+        // Determine which stage we're in based on the 3-stage system
+        const moleculeStatus = molecule.getState().status;
+        
+        // Stage 1: Check if any top-level Input atoms are in WAITING state
+        const hasWaitingInputs = molecule.nodesOnTheScreen.some(
+          (atom) => atom.atomType === "Input" && atom.getState().status === "waiting"
+        );
+        
+        if (hasWaitingInputs) {
+          setRenderStage("Waiting for user Input");
+          setRenderProgress(33); // First third
+          return;
+        }
+        
+        // Stage 2: Check if top-level molecule is in WAITING or PROCESSING state
+        if (moleculeStatus === "waiting" || moleculeStatus === "processing") {
+          setRenderStage("Building");
+          setRenderProgress(66); // Second third
+          return;
+        }
+        
+        // Stage 3: Rendering - mesh is being made and sent to render
+        setRenderStage("Rendering");
+        setRenderProgress(99); // Almost complete, will go to 100 when ready
       }
     }, 500); // Poll every 500ms
 
@@ -148,6 +167,7 @@ function AppContent() {
     GlobalVariables.topLevelMolecule,
     setRenderProgress,
     setRenderBarVisible,
+    setRenderStage,
   ]);
 
   useEffect(() => {
