@@ -896,7 +896,7 @@ export default class Molecule extends Atom {
           // Else set status to waiting since some of our inputs are not ready.
           this.setWaiting();
         }
-        // Notify UI of status change
+        // Notify UI of status change to waiting
         if (this.onStatusChange) this.onStatusChange(this.getState().status);
       }
     } else {

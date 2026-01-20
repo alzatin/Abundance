@@ -117,6 +117,8 @@ function AppContent() {
     }
   }, []);
 
+  const [processing, setProcessing] = useState(false);
+
   useEffect(() => {
     setRenderProgress(0);
     setRenderBarVisible(true);
@@ -172,6 +174,7 @@ function AppContent() {
     setRenderProgress,
     setRenderBarVisible,
     setRenderStage,
+    processing,
   ]);
 
   useEffect(() => {
@@ -282,6 +285,7 @@ function AppContent() {
           }
           setMesh(mesh);
           setOutdatedMesh(false);
+          setProcessing(false);
           /*Set plane and geometry type for ThreeContext*/
           setPlane(id?.plane);
           setGeometryType(id?.dimension);
@@ -539,7 +543,7 @@ function AppContent() {
           path="/run/:owner/:repoName"
           element={
             <ProjectProvider cad={cad} loadProject={loadProject}>
-              <RunMode />
+              <RunMode processing={processing} setProcessing={setProcessing} />
             </ProjectProvider>
           }
         />
