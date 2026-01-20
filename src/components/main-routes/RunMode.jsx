@@ -295,7 +295,6 @@ function runMode({ processing, setProcessing }) {
           position: { top: 120, left: screenWidth - 50 },
           collapsedOffset: [-315, -90],
         }}
-        c
       />
 
       {/* ReadmePanel below BomMenu, collapsed by default */}
