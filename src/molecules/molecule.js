@@ -235,6 +235,35 @@ export default class Molecule extends Atom {
     return inputParams;
   }
 
+  previewHandler(gcodeAtom) {
+    // Track preview state on the atom
+    if (!gcodeAtom._isPreviewing) {
+      if (gcodeAtom.gcodeString) {
+        gcodeAtom.sendToRender();
+        gcodeAtom._isPreviewing = true;
+        console.log(`Previewing Gcode: ${gcodeAtom.partName}`);
+      } else {
+        console.error("G-code is not available yet");
+        // Dispatch a custom event
+        const event = new CustomEvent("download-error", {
+          detail: { message: "G-code is not available yet" },
+        });
+        window.dispatchEvent(event);
+        return;
+      }
+    } else {
+      // Send the top-level molecule to render and reset preview state
+      if (
+        GlobalVariables.topLevelMolecule &&
+        typeof GlobalVariables.topLevelMolecule.sendToRender === "function"
+      ) {
+        GlobalVariables.topLevelMolecule.sendToRender();
+        console.log("Previewing top-level molecule");
+      }
+      gcodeAtom._isPreviewing = false;
+    }
+  }
+
   createExportMenuInputs() {
     let exportParams = {};
     const exportAtoms = this.nodesOnTheScreen.filter(
@@ -267,6 +296,7 @@ export default class Molecule extends Atom {
           atom.downloadGcode();
           console.log(`Downloading Gcode: ${atom.partName}`);
         },
+        eyeIcon: () => this.previewHandler(atom),
       };
     });
 
