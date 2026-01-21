@@ -235,6 +235,30 @@ export default class Molecule extends Atom {
     return inputParams;
   }
 
+  previewHandler(gcodeAtom) {
+    // Track preview state on the atom
+    if (!gcodeAtom._isPreviewing) {
+      console.log(gcodeAtom);
+      if (gcodeAtom.gcodeString) {
+        gcodeAtom.sendToRender();
+        gcodeAtom._isPreviewing = true;
+        console.log(`Previewing Gcode: ${gcodeAtom.partName}`);
+      } else {
+        console.log("Wait for project to generate...");
+      }
+    } else {
+      // Send the top-level molecule to render and reset preview state
+      if (
+        GlobalVariables.topLevelMolecule &&
+        typeof GlobalVariables.topLevelMolecule.sendToRender === "function"
+      ) {
+        GlobalVariables.topLevelMolecule.sendToRender();
+        console.log("Previewing top-level molecule");
+      }
+      gcodeAtom._isPreviewing = false;
+    }
+  }
+
   createExportMenuInputs() {
     let exportParams = {};
     const exportAtoms = this.nodesOnTheScreen.filter(
@@ -266,6 +290,13 @@ export default class Molecule extends Atom {
         onClick: () => {
           atom.downloadGcode();
           console.log(`Downloading Gcode: ${atom.partName}`);
+        },
+      };
+      exportParams[`Preview Gcode – ${atom.partName}`] = {
+        type: "button",
+        label: `Preview Gcode – ${atom.partName}`,
+        onClick: () => {
+          this.previewHandler(atom);
         },
       };
     });
