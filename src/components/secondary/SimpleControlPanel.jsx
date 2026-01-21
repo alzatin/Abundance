@@ -280,6 +280,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 ) {
   // Collapsed panel state
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const [activeEye, setActiveEye] = useState({});
   // Sync collapsed state with contentCollapsed if initialCollapsed is true
   useEffect(() => {
     if (initialCollapsed) {
@@ -1535,8 +1536,14 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                 height: 24,
                                 marginLeft: 6,
                                 padding: 0,
-                                border: "none",
-                                background: "transparent",
+                                border: `2px solid ${
+                                  activeEye[key] ? "#1850bef1" : "transparent"
+                                }`,
+
+                                background: activeEye[key]
+                                  ? "#e0e5ef"
+                                  : "transparent", // Example: highlight when active
+                                borderRadius: "20%",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -1547,6 +1554,10 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                               tabIndex={isDisabled ? -1 : 0}
                               aria-label="Preview"
                               onClick={() => {
+                                setActiveEye((prev) => ({
+                                  ...prev,
+                                  [key]: !prev[key],
+                                }));
                                 if (typeof config.eyeIcon === "function") {
                                   config.eyeIcon(key);
                                 }
