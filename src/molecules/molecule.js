@@ -243,7 +243,13 @@ export default class Molecule extends Atom {
         gcodeAtom._isPreviewing = true;
         console.log(`Previewing Gcode: ${gcodeAtom.partName}`);
       } else {
-        console.log("Wait for project to generate...");
+        console.error("G-code is not available yet");
+        // Dispatch a custom event
+        const event = new CustomEvent("download-error", {
+          detail: { message: "G-code is not available yet" },
+        });
+        window.dispatchEvent(event);
+        return;
       }
     } else {
       // Send the top-level molecule to render and reset preview state
