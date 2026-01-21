@@ -238,7 +238,6 @@ export default class Molecule extends Atom {
   previewHandler(gcodeAtom) {
     // Track preview state on the atom
     if (!gcodeAtom._isPreviewing) {
-      console.log(gcodeAtom);
       if (gcodeAtom.gcodeString) {
         gcodeAtom.sendToRender();
         gcodeAtom._isPreviewing = true;
@@ -291,13 +290,7 @@ export default class Molecule extends Atom {
           atom.downloadGcode();
           console.log(`Downloading Gcode: ${atom.partName}`);
         },
-      };
-      exportParams[`Preview Gcode – ${atom.partName}`] = {
-        type: "button",
-        label: `Preview Gcode – ${atom.partName}`,
-        onClick: () => {
-          this.previewHandler(atom);
-        },
+        eyeIcon: () => this.previewHandler(atom),
       };
     });
 

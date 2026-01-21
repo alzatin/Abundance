@@ -1,3 +1,24 @@
+// Eye icon for button controls
+const EyeIcon = ({ size = 16 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 20 20"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <ellipse
+      cx="10"
+      cy="10"
+      rx="8"
+      ry="5"
+      stroke="#8ea9ff"
+      strokeWidth="2"
+      fill="none"
+    />
+    <circle cx="10" cy="10" r="2.5" fill="#8ea9ff" />
+  </svg>
+);
 import React, {
   useState,
   useEffect,
@@ -1440,62 +1461,102 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                   case "button":
                     return (
                       <div key={key} style={labelStyle}>
-                        <button
+                        <div
                           style={{
-                            ...(isDisabled
-                              ? {
-                                  ...inputStyle,
-                                  ...inputDisabledStyle,
-                                  cursor: "not-allowed",
-                                  fontWeight: 600,
-                                  background: "#3e7aff",
-                                  color: "#fff",
-                                  border: "none",
-                                  padding: "6px 16px",
-                                }
-                              : isFocused
-                              ? {
-                                  ...inputStyle,
-                                  ...inputFocusedStyle,
-                                  cursor: "pointer",
-                                  fontWeight: 600,
-                                  background: "#3e7aff",
-                                  color: "#fff",
-                                  padding: "6px 16px",
-                                }
-                              : {
-                                  ...inputStyle,
-                                  cursor: "pointer",
-                                  fontWeight: 600,
-                                  background: "#3e7aff",
-                                  color: "#fff",
-                                  border: "none",
-                                  padding: "6px 16px",
-                                }),
-                            ...(config.lowOpacity ? { opacity: 0.5 } : {}),
+                            display: "flex",
+                            alignItems: "center",
+                            width: "100%",
                           }}
-                          title={
-                            label ||
-                            (typeof config.label === "string"
-                              ? config.label
-                              : undefined) ||
-                            "Button"
-                          }
-                          onClick={() => {
-                            if (typeof config.onClick === "function") {
-                              config.onClick(key);
-                            }
-                          }}
-                          ref={(el) => (inputRefs.current[idx] = el)}
-                          tabIndex={isDisabled ? -1 : 0}
-                          onFocus={
-                            isDisabled ? undefined : () => setFocusedIndex(idx)
-                          }
-                          onBlur={() => {}}
-                          disabled={isDisabled}
                         >
-                          {config.icon ? config.icon : label || "Button"}
-                        </button>
+                          <button
+                            style={{
+                              ...(isDisabled
+                                ? {
+                                    ...inputStyle,
+                                    ...inputDisabledStyle,
+                                    cursor: "not-allowed",
+                                    fontWeight: 600,
+                                    background: "#3e7aff",
+                                    color: "#fff",
+                                    border: "none",
+                                    padding: "6px 16px",
+                                  }
+                                : isFocused
+                                ? {
+                                    ...inputStyle,
+                                    ...inputFocusedStyle,
+                                    cursor: "pointer",
+                                    fontWeight: 600,
+                                    background: "#3e7aff",
+                                    color: "#fff",
+                                    padding: "6px 16px",
+                                  }
+                                : {
+                                    ...inputStyle,
+                                    cursor: "pointer",
+                                    fontWeight: 600,
+                                    background: "#3e7aff",
+                                    color: "#fff",
+                                    border: "none",
+                                    padding: "6px 16px",
+                                  }),
+                              ...(config.lowOpacity ? { opacity: 0.5 } : {}),
+                            }}
+                            title={
+                              label ||
+                              (typeof config.label === "string"
+                                ? config.label
+                                : undefined) ||
+                              "Button"
+                            }
+                            onClick={() => {
+                              if (typeof config.onClick === "function") {
+                                config.onClick(key);
+                              }
+                            }}
+                            ref={(el) => (inputRefs.current[idx] = el)}
+                            tabIndex={isDisabled ? -1 : 0}
+                            onFocus={
+                              isDisabled
+                                ? undefined
+                                : () => setFocusedIndex(idx)
+                            }
+                            onBlur={() => {}}
+                            disabled={isDisabled}
+                          >
+                            {config.icon ? config.icon : label || "Button"}
+                          </button>
+                          {/* Eye icon appended to the right (optional) */}
+                          {config.eyeIcon && (
+                            <button
+                              type="button"
+                              style={{
+                                width: 24,
+                                height: 24,
+                                marginLeft: 6,
+                                padding: 0,
+                                border: "none",
+                                background: "transparent",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor: isDisabled ? "not-allowed" : "pointer",
+                                opacity: isDisabled ? 0.5 : 1,
+                              }}
+                              disabled={isDisabled}
+                              tabIndex={isDisabled ? -1 : 0}
+                              aria-label="Preview"
+                              onClick={() => {
+                                if (typeof config.eyeIcon === "function") {
+                                  config.eyeIcon(key);
+                                }
+                              }}
+                              title={`Preview ${label}`}
+                            >
+                              <EyeIcon size={16} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   case "buttongroup":
