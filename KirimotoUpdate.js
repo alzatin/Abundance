@@ -13,7 +13,7 @@ const generateGcode = (
   gcodeCallback,
   progressCallback,
   partProgressCallback,
-  tool
+  tool,
 ) => {
   const CUT_THROUGH = cutThrough;
 
@@ -38,7 +38,7 @@ const generateGcode = (
       // This creates a more realistic progress feel during slicing
       const timeBasedProgress = Math.min(
         0.18,
-        0.18 * (1 - Math.exp(-elapsed / 10000))
+        0.18 * (1 - Math.exp(-elapsed / 10000)),
       ); // Exponential approach to 0.18 (80%-60%)
       currentProgress = slicingProgressStart + timeBasedProgress;
 
@@ -90,7 +90,7 @@ const generateGcode = (
         x: 3,
         y: 3,
         z: 0.1,
-      })
+      }),
     )
     .then((eng) => {
       // Determine if project uses metric units
@@ -162,7 +162,6 @@ const generateGcode = (
         camSpindleSpeed: speed,
         camFastFeed: 6000,
         camFastFeedZ: speed, // Match Z feed to speed to maintain feedrate during ramp down
-        cutThruBypass: true,
         ops: [
           {
             type: "rough",
