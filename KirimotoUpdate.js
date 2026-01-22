@@ -75,16 +75,6 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.1); // 10% - STL loaded
       return eng.setMode("CAM");
     })
-    .then((eng) => {
-      if (progressCallback) progressCallback(0.15); // 15% - Mode set
-      const bounds = eng.widget.getBoundingBox();
-      const z = bounds.max.z - bounds.min.z;
-      if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
-        eng.widget.scale(25.4, 25.4, 25.4); // Scale from mm to inches (1 inch = 25.4 mm)
-        return eng.setOrigin(-centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0 (negate X to match coordinate systems)
-      }
-      return eng.setOrigin(-centerPos[0], centerPos[1], 0); // move part so top is at Z=0 (negate X to match coordinate systems)
-    })
     .then((eng) =>
       eng.setStock({
         x: 3,
@@ -115,62 +105,45 @@ const generateGcode = (
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
-      const bounds = eng.widget.getBoundingBox();
-      const z = bounds.max.z - bounds.min.z;
-      const zBottom = z; // ensure cut through stock bottom
 
-      // camCutthrough by pass for 1 pass, sets down to large value to avoid cutthrough extra pass/ extra pass is added for multi pass
-      const down = passes > 1 ? (zBottom + CUT_THROUGH) / passes : 10000;
-      // -1 to account for topZ -1 hack
-      const camZBottom = -zBottom - CUT_THROUGH - 1;
-      // single pass needs a cutthrough to generate correctly
-      const camZThru = passes <= 1 && !cutThrough ? 0.01 : CUT_THROUGH;
-      const roughingStepOver = 0.6;
-      /*
-      console.log("Down per pass:", down);
-      console.log("CAM Z Bottom:", camZBottom);
-      console.log("CAM Z Thru:", camZThru);
-      console.log("Tool Size:", toolSize);
-      console.log("Roughing step over:", roughingStepOver);
-*/
       return eng.setProcess({
-        camOriginTop: true,
-        camOriginCenter: false,
-        camRoughAll: false,
-        camZOffset: 0,
-        camZTop: -1, //top of stock hack has to be set to negative
-        camRoughDown: 2,
-        camRoughFlat: true,
-        camRoughIn: true,
-        camRoughOmitThru: false,
-        camRoughOmitVoid: false,
-        camRoughOn: true,
-        camRoughTop: false,
-        camRoughVoid: false,
-        camStockZ: 0,
-        camEaseAngle: 10,
+        camEaseAngle: 40,
         camEaseDown: true,
+        camOffsetStock: true,
         camZAnchor: "bottom",
         camDepthFirst: true,
-        camZThru: camZThru,
-        camZClearance: 3,
-        camStockOffset: true,
-        camZBottom: camZBottom, //-zBottom, // temp hack to get around setTopZ bug
+        camZThru: 1.524,
+        camZBottom: -25, // temp hack to get around setTopZ bug
         camToolInit: true,
-        camOutlineSpeed: speed,
-        camRetractFeed: 300,
-        camSpindleSpeed: speed,
-        camFastFeed: 6000,
-        camFastFeedZ: speed, // Match Z feed to speed to maintain feedrate during ramp down
         ops: [
+          {
+            type: "outline",
+            tool: 1000,
+            spindle: 13000,
+            step: 0.4,
+            steps: 1,
+            down: 5.08,
+            rate: 635,
+            plunge: 51,
+            dogbones: false,
+            omitvoid: false,
+            omitthru: false,
+            outside: true,
+            inside: false,
+            wide: false,
+            top: false,
+            ov_topz: 0,
+            ov_botz: 0,
+            ov_conv: true,
+          },
           {
             type: "rough",
             tool: 1000,
-            spindle: 1000,
-            down: down,
-            step: roughingStepOver,
-            rate: speed,
-            plunge: speed,
+            spindle: 13000,
+            down: 5.08,
+            step: 0.4,
+            rate: 635,
+            plunge: 1500,
             leave: 0,
             leavez: 0,
             all: false,
@@ -181,46 +154,6 @@ const generateGcode = (
             ov_topz: 0,
             ov_botz: 0,
             ov_conv: false,
-          },
-          {
-            type: "outline",
-            tool: 1000,
-            spindle: 1000,
-            step: 0.4,
-            steps: 1,
-            down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
-            rate: speed,
-            plunge: speed, // Match plunge rate to XY feedrate for consistent speed during ramp down
-            dogbones: false,
-            omitvoid: false,
-            omitthru: false,
-            outside: false,
-            inside: true,
-            wide: false,
-            top: false,
-            ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: true,
-          },
-          {
-            type: "outline",
-            tool: 1000,
-            spindle: 1000,
-            step: 0.4,
-            steps: 1,
-            down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
-            rate: speed,
-            plunge: speed, // Match plunge rate to XY feedrate for consistent speed during ramp down
-            dogbones: false,
-            omitvoid: false,
-            omitthru: true,
-            outside: false,
-            inside: false,
-            wide: false,
-            top: false,
-            ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: true,
           },
         ],
       });

@@ -691,3 +691,16 @@ new Engine()
 .then(eng => eng.prepare())
 .then(eng => eng.export())
 .then(display_gcode); */
+
+///ERASED SETORIGIN CODE CAUSING GCODE TO BREAK . SAVE JIC
+/*
+    .then((eng) => {
+      if (progressCallback) progressCallback(0.15); // 15% - Mode set
+      const bounds = eng.widget.getBoundingBox();
+      const z = bounds.max.z - bounds.min.z;
+      if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
+        eng.widget.scale(25.4, 25.4, 25.4); // Scale from mm to inches (1 inch = 25.4 mm)
+        return eng.setOrigin(-centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0 (negate X to match coordinate systems)
+      }
+      return eng.setOrigin(-centerPos[0], centerPos[1], 0); // move part so top is at Z=0 (negate X to match coordinate systems)
+    })*/
