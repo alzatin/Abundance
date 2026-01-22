@@ -68,8 +68,9 @@ const generateGcode = (
         }
       }
     })
-    .load(stlUrl)
-    // should to call widget.setTopZ here ideally
+    .load(
+      "https://raw.githubusercontent.com/alzatin/A-Test-project-6/refs/heads/main/A-Test-project-6-STL.stl",
+    )
     .then((eng) => {
       eng.widget.boundingBoxNeedsUpdate = true; // Ensure bounding box is updated
       if (progressCallback) progressCallback(0.1); // 10% - STL loaded
@@ -82,6 +83,7 @@ const generateGcode = (
         z: 0.1,
       }),
     )
+    .then((eng) => eng.moveTo(50, 0, 0))
     .then((eng) => {
       // Determine if project uses metric units
       const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
@@ -105,28 +107,36 @@ const generateGcode = (
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
+      let CUT_THROUGH = cutThrough;
+      const bounds = eng.widget.getBoundingBox();
+      const z = bounds.max.z - bounds.min.z;
+      const zBottom = z; // ensure cut through stock bottom
 
+      const down = (zBottom + CUT_THROUGH) / passes;
+      const camZBottom = -zBottom - CUT_THROUGH;
+      const roughingStepOver = 0.6;
+      console.log(down);
       return eng.setProcess({
         camEaseAngle: 40,
         camEaseDown: true,
         camOffsetStock: true,
         camZAnchor: "bottom",
         camDepthFirst: true,
-        camZThru: 1.524,
-        camZBottom: -25, // temp hack to get around setTopZ bug
+        camZThru: CUT_THROUGH,
+        camZBottom: camZBottom, // temp hack to get around setTopZ bug
         camToolInit: true,
         ops: [
           {
             type: "outline",
             tool: 1000,
-            spindle: 13000,
-            step: 0.4,
+            spindle: 1000,
+            step: roughingStepOver,
             steps: 1,
-            down: 5.08,
-            rate: 635,
-            plunge: 51,
+            down: down,
+            rate: speed,
+            plunge: speed,
             dogbones: false,
-            omitvoid: false,
+            omitvoid: true,
             omitthru: false,
             outside: true,
             inside: false,
@@ -139,16 +149,16 @@ const generateGcode = (
           {
             type: "rough",
             tool: 1000,
-            spindle: 13000,
-            down: 5.08,
-            step: 0.4,
-            rate: 635,
-            plunge: 1500,
+            spindle: 1000,
+            down: down,
+            step: roughingStepOver,
+            rate: speed,
+            plunge: speed,
             leave: 0,
             leavez: 0,
             all: false,
             voids: false,
-            flats: true,
+            flats: false,
             inside: true,
             omitthru: true,
             ov_topz: 0,
