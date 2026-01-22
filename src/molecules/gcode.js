@@ -2,6 +2,7 @@ import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 
 import { saveAs } from "file-saver";
+import { Status } from "../prototypes/observableEntity.js";
 
 /**
  * This class creates the circle atom.
@@ -184,6 +185,7 @@ export default class Gcode extends Atom {
           this.getContext(),
         ),
       );
+      this.setInputChanged?.();
     };
   }
 
@@ -669,7 +671,8 @@ export default class Gcode extends Atom {
     }
   }
 
-  createInputParams() {
+  createInputParams(setInputChanged) {
+    this.setInputChanged = setInputChanged;
     let inputParams = super.createInputParams();
 
     //Temporarily disable the "Cut Through" input parameter
@@ -700,6 +703,7 @@ export default class Gcode extends Atom {
     inputParams[`Download Gcode - ${partName}`] = {
       type: "button",
       label: `Download Gcode - ${partName}`,
+      disabled: this.status !== Status.READY,
       onClick: () => {
         if (this.gcodeGenerated && this.gcodeString) {
           // Get the current part name dynamically when button is clicked
