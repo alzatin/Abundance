@@ -162,7 +162,7 @@ export default class Gcode extends Atom {
         radiusInPixels / 1.5,
         0,
         this.progress * Math.PI * 2,
-        false
+        false,
       );
       GlobalVariables.c.closePath();
       GlobalVariables.c.fill();
@@ -181,8 +181,8 @@ export default class Gcode extends Atom {
       this.setReady(
         GlobalVariables.cad.visualizeGcodeIncremental(
           [gcode],
-          this.getContext()
-        )
+          this.getContext(),
+        ),
       );
     };
   }
@@ -197,7 +197,7 @@ export default class Gcode extends Atom {
       // If a run is in progress, queue a pending run
       this.pendingGeneration = true;
       console.warn(
-        "G-code generation already in progress, queuing pending run"
+        "G-code generation already in progress, queuing pending run",
       );
       return;
     }
@@ -377,7 +377,7 @@ export default class Gcode extends Atom {
           if (
             this._isBoundsInsideBounds(
               partsWithBounds[j].bounds,
-              partsWithBounds[i].bounds
+              partsWithBounds[i].bounds,
             )
           ) {
             contains[i].push(j);
@@ -424,7 +424,7 @@ export default class Gcode extends Atom {
       try {
         const bounds = await GlobalVariables.cad.getBoundingBox(
           part,
-          this.getContext()
+          this.getContext(),
         );
         const centerX = (bounds.max[0] + bounds.min[0]) / 2;
         const centerY = (bounds.max[1] + bounds.min[1]) / 2;
@@ -491,7 +491,7 @@ export default class Gcode extends Atom {
         const visExported = await GlobalVariables.cad.visExport(
           partID,
           "STL",
-          this.getContext()
+          this.getContext(),
         );
         const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         const stlBlob = await GlobalVariables.cad.downExport(
@@ -499,7 +499,7 @@ export default class Gcode extends Atom {
           "STL",
           null,
           units,
-          this.getContext()
+          this.getContext(),
         );
 
         const stlURL = URL.createObjectURL(stlBlob);
@@ -507,7 +507,7 @@ export default class Gcode extends Atom {
         // Get part bounds for centering
         const bounds = await GlobalVariables.cad.getBoundingBox(
           visExported,
-          this.getContext()
+          this.getContext(),
         );
         const center = [
           (bounds.max[0] + bounds.min[0]) / 2,
@@ -519,7 +519,7 @@ export default class Gcode extends Atom {
         const partGcode = await this._generateGcodeForPart(
           stlURL,
           center,
-          i + 1
+          i + 1,
         );
         allGcode.push(partGcode);
 
@@ -538,10 +538,12 @@ export default class Gcode extends Atom {
     // Use the incremental visualization method
     const gcodeWire = await GlobalVariables.cad.visualizeGcodeIncremental(
       allGcode,
-      this.getContext()
+      this.getContext(),
     );
     this.setReady(gcodeWire);
     this.progress = 1.0;
+    this.setInputChanged?.();
+
     return gcodeWire;
   }
 
@@ -587,7 +589,7 @@ export default class Gcode extends Atom {
             partGcodeCallback(gcode);
           },
           partProgressCallback,
-          selectedToolObj // Pass the selected tool object/ disabled currently
+          selectedToolObj, // Pass the selected tool object/ disabled currently
         );
       } catch (err) {
         clearTimeout(timeout);
