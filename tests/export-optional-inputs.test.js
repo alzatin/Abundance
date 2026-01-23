@@ -3,7 +3,7 @@
  * non-essential inputs (Part Name, Resolution) are not connected.
  * 
  * Issue: Export atom stays in WAITING status if the PartName IO does not have a connection,
- * even though PartName can be assigned in the paramMenu and is not essential for computation.
+ * even though PartName can be assigned in the parameter menu and is not essential for computation.
  * 
  * Solution: Override inputsAreReady() to only check essential inputs: "geometry" and "File Type"
  */
