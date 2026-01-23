@@ -3,8 +3,6 @@ import GlobalVariables from "../js/globalvariables.js";
 import { saveAs } from "file-saver";
 import { Status } from "../prototypes/observableEntity.js";
 
-import { Status } from "../prototypes/observableEntity.js";
-
 /**
  * This class creates an atom which supports uploading a .svg file
  */
@@ -95,7 +93,7 @@ export default class Export extends Atom {
    */
   inputsAreReady() {
     const essentialInputs = this.inputs.filter(
-      (input) => input.name === "geometry" || input.name === "File Type"
+      (input) => input.name === "geometry" || input.name === "File Type",
     );
     return essentialInputs.every((input) => {
       return input.getState().status === Status.READY;
@@ -176,7 +174,6 @@ export default class Export extends Atom {
         }
       });
     }
-    console.log(this.status);
     inputParams["Download File"] = {
       type: "button",
       label: "Download File",
