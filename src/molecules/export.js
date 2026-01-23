@@ -1,6 +1,7 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import { saveAs } from "file-saver";
+import { Status } from "../prototypes/observableEntity.js";
 
 import { Status } from "../prototypes/observableEntity.js";
 
@@ -84,6 +85,21 @@ export default class Export extends Atom {
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
+  }
+
+  /**
+   * Override the logic for determining if inputs are ready.
+   * Only check the essential inputs needed for compute() - "geometry" and "File Type".
+   * "Part Name" and "Resolution (dpi)" are only used during download and can be set
+   * via the parameter menu without connections.
+   */
+  inputsAreReady() {
+    const essentialInputs = this.inputs.filter(
+      (input) => input.name === "geometry" || input.name === "File Type"
+    );
+    return essentialInputs.every((input) => {
+      return input.getState().status === Status.READY;
+    });
   }
 
   /**
