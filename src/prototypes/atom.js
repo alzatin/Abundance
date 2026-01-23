@@ -211,14 +211,14 @@ export default class Atom extends ObservableEntity {
         xInPixels - radiusInPixels * 1.25,
         yInPixels - this.height / 1.5,
         2.5 * radiusInPixels,
-        this.height * 1.25
+        this.height * 1.25,
       );
     } else if (drawType == "square") {
       GlobalVariables.c.rect(
         xInPixels - radiusInPixels,
         yInPixels - radiusInPixels,
         2 * radiusInPixels,
-        2 * radiusInPixels
+        2 * radiusInPixels,
       );
     } else {
       GlobalVariables.c.arc(
@@ -227,7 +227,7 @@ export default class Atom extends ObservableEntity {
         radiusInPixels,
         0,
         Math.PI * 2,
-        false
+        false,
       );
     }
     GlobalVariables.c.textAlign = "start";
@@ -242,7 +242,7 @@ export default class Atom extends ObservableEntity {
     GlobalVariables.c.fillText(
       this.name,
       xInPixels + radiusInPixels,
-      yInPixels - radiusInPixels
+      yInPixels - radiusInPixels,
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.strokeStyle = strokeColor;
@@ -274,7 +274,7 @@ export default class Atom extends ObservableEntity {
           yInPixels - radiusInPixels + padding / 2,
           GlobalVariables.c.measureText(prefix + this.alert.message).width +
             padding,
-          -(parseInt(GlobalVariables.c.font) + padding)
+          -(parseInt(GlobalVariables.c.font) + padding),
         );
         GlobalVariables.c.fill();
         GlobalVariables.c.strokeStyle = "black";
@@ -287,7 +287,7 @@ export default class Atom extends ObservableEntity {
         GlobalVariables.c.fillText(
           prefix + this.alert.message,
           xInPixels + radiusInPixels,
-          yInPixels - radiusInPixels
+          yInPixels - radiusInPixels,
         );
         GlobalVariables.c.closePath();
       }
@@ -301,7 +301,7 @@ export default class Atom extends ObservableEntity {
           this.onUpstreamChange();
         },
         this.uniqueID,
-        false // Force no immediate callback
+        false, // Force no immediate callback
       );
     });
     if (this.inputs.length > 0) {
@@ -314,7 +314,7 @@ export default class Atom extends ObservableEntity {
     valueType,
     defaultValue = undefined,
     type = "input",
-    options = {}
+    options = {},
   ) {
     const prior = this.inputs.find((o) => o.name === name && o.type === type);
     if (prior == undefined) {
@@ -359,7 +359,7 @@ export default class Atom extends ObservableEntity {
         io.name,
         io.valueType,
         io.defaultValue,
-        io.type
+        io.type,
       );
     });
     this._subscribeToInputs();
@@ -378,7 +378,7 @@ export default class Atom extends ObservableEntity {
       name,
       valueType,
       defaultValue,
-      type
+      type,
     );
     this._subscribeToInputs();
     return io;
@@ -468,7 +468,7 @@ export default class Atom extends ObservableEntity {
 
     // Check if this atom has input connections
     const hasUpstreamConnections = this.inputs.some(
-      (input) => input.connectors && input.connectors.length > 0
+      (input) => input.connectors && input.connectors.length > 0,
     );
 
     if (hasUpstreamConnections) {
@@ -571,7 +571,7 @@ export default class Atom extends ObservableEntity {
       x,
       xInPixels,
       y,
-      yInPixels
+      yInPixels,
     );
 
     if (distFromClick < xInPixels) {
@@ -624,7 +624,7 @@ export default class Atom extends ObservableEntity {
       x,
       xInPixels,
       y,
-      yInPixels
+      yInPixels,
     );
 
     //If we are close to the attachment point move it to it's hover location to make it accessible
@@ -661,7 +661,7 @@ export default class Atom extends ObservableEntity {
 
     this.parent.nodesOnTheScreen.splice(
       this.parent.nodesOnTheScreen.indexOf(this),
-      1
+      1,
     );
   }
 
@@ -703,7 +703,7 @@ export default class Atom extends ObservableEntity {
       (value.geometry || value.dimension || value.tags)
     ) {
       console.warn(
-        `Skipping serialization of geometry object for ${atomName}.${key}`
+        `Skipping serialization of geometry object for ${atomName}.${key}`,
       );
       return false;
     }
@@ -711,7 +711,7 @@ export default class Atom extends ObservableEntity {
     // Check string size
     if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
       console.warn(
-        `Skipping serialization of large string (${value.length} chars) for ${atomName}.${key}`
+        `Skipping serialization of large string (${value.length} chars) for ${atomName}.${key}`,
       );
       return false;
     }
@@ -722,14 +722,14 @@ export default class Atom extends ObservableEntity {
         const stringified = JSON.stringify(value);
         if (stringified.length > MAX_VALUE_SIZE) {
           console.warn(
-            `Skipping serialization of large object (${stringified.length} chars) for ${atomName}.${key}`
+            `Skipping serialization of large object (${stringified.length} chars) for ${atomName}.${key}`,
           );
           return false;
         }
       } catch (e) {
         console.warn(
           `Skipping serialization of non-serializable object for ${atomName}.${key}:`,
-          e.message
+          e.message,
         );
         return false;
       }
@@ -780,7 +780,7 @@ export default class Atom extends ObservableEntity {
           currentValue.length > MAX_VALUE_SIZE
         ) {
           console.warn(
-            `Skipping serialization of large string value (${currentValue.length} chars) for attachment point: ${ap.name}`
+            `Skipping serialization of large string value (${currentValue.length} chars) for attachment point: ${ap.name}`,
           );
           return;
         }
@@ -799,7 +799,7 @@ export default class Atom extends ObservableEntity {
               ap.defaultValue
             }, isMoleculeInput=${isMoleculeInput}, willSave=${
               isDifferentFromDefault || hasCustomEquation || isMoleculeInput
-            }`
+            }`,
           );
         }
 
@@ -813,7 +813,7 @@ export default class Atom extends ObservableEntity {
           if (hasCustomEquation) {
             if (ap.currentEquation.length > MAX_VALUE_SIZE) {
               console.warn(
-                `Skipping serialization of large equation (${ap.currentEquation.length} chars) for attachment point: ${ap.name}`
+                `Skipping serialization of large equation (${ap.currentEquation.length} chars) for attachment point: ${ap.name}`,
               );
             } else {
               saveIO.currentEquation = ap.currentEquation;
@@ -866,7 +866,7 @@ export default class Atom extends ObservableEntity {
   compute(...args) {
     throw new Error(
       "compute method must be overwritten. Missing in subclass: " +
-        this.constructor.name
+        this.constructor.name,
     );
   }
 
@@ -922,7 +922,7 @@ export default class Atom extends ObservableEntity {
 
     if (this.inputsAreReady()) {
       const argsDict = Object.fromEntries(
-        this.inputs.map((input) => [input.name, input.getState().value])
+        this.inputs.map((input) => [input.name, input.getState().value]),
       );
 
       // const inputVals = this.inputs.map((input) => {input.getValue());
@@ -930,6 +930,12 @@ export default class Atom extends ObservableEntity {
       this.compute(argsDict)
         .then((value) => {
           this.setReady(value);
+          if (
+            this.setInputChanged &&
+            typeof this.setInputChanged === "function"
+          ) {
+            this.setInputChanged(this.status);
+          }
         })
         .catch(this.alertingErrorHandler());
     } else {
@@ -971,7 +977,7 @@ export default class Atom extends ObservableEntity {
           GlobalVariables.availableTypes &&
           Object.prototype.hasOwnProperty.call(
             GlobalVariables.availableTypes,
-            atom.toLowerCase()
+            atom.toLowerCase(),
           );
         return {
           icon: hasIcon
@@ -999,7 +1005,7 @@ export default class Atom extends ObservableEntity {
                 atomType: atom,
                 uniqueID: GlobalVariables.generateUniqueID(),
               },
-              true
+              true,
             );
           },
         };
@@ -1184,7 +1190,7 @@ export default class Atom extends ObservableEntity {
 
       // Check if variable already exists as an input on this atom
       const existsAsInput = this.inputs.some(
-        (input) => input.name === variable
+        (input) => input.name === variable,
       );
 
       // Check if variable exists as a parent input
@@ -1344,7 +1350,7 @@ export default class Atom extends ObservableEntity {
     }
     if (unresolved.length) {
       const msg = `Variable(s) not found: ${unresolved.join(
-        ", "
+        ", ",
       )}. Make sure the variables you are using exist as inputs`;
       console.warn(msg);
       throw new Error(msg);
@@ -1356,7 +1362,7 @@ export default class Atom extends ObservableEntity {
         const variablePattern = new RegExp(`\\b${safeVar}\\b`, "gu");
         substitutedEquation = substitutedEquation.replace(
           variablePattern,
-          String(resolvedValues[variable])
+          String(resolvedValues[variable]),
         );
       }
 

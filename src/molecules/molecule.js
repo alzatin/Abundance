@@ -279,6 +279,11 @@ export default class Molecule extends Atom {
         label: `Export ${partName}`,
         onClick: () => {
           atom.exportFile();
+          // Dispatch a custom event
+          const event = new CustomEvent("download-error", {
+            detail: { message: "Preparing your export." },
+          });
+          window.dispatchEvent(event);
           console.log(`Exporting: ${partName}`);
         },
       };
