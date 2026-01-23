@@ -95,6 +95,15 @@ function CreateMode() {
   /** State for error notification */
   const [errorNotification, setErrorNotification] = useState(null);
 
+  useEffect(() => {
+    const handler = (e) => {
+      setErrorNotification(e.detail.message);
+      setTimeout(() => setErrorNotification(null), 5000);
+    };
+    window.addEventListener("download-error", handler);
+    return () => window.removeEventListener("download-error", handler);
+  }, []);
+
   // Wrapper function that calls saveProject with CreateMode-specific parameters
   const saveProject = (setSaveProgress, typeSave, forceSave = false) => {
     return saveProjectFromContext(
@@ -102,7 +111,7 @@ function CreateMode() {
       typeSave,
       forceSave,
       meshRef,
-      setErrorNotification
+      setErrorNotification,
     );
   };
 
@@ -112,7 +121,7 @@ function CreateMode() {
     renderBarVisible,
     renderProgress,
     renderStage || "Rendering",
-    false
+    false,
   );
 
   /** State for save progress bar */
@@ -157,7 +166,7 @@ function CreateMode() {
   /** State for menu content collapsing */
   // Which menu is expanded: "params", "render", "bom", or "none"
   const [expandedMenu, setExpandedMenu] = useState(
-    GlobalVariables.isMobile() ? "none" : "params"
+    GlobalVariables.isMobile() ? "none" : "params",
   );
 
   /**
@@ -298,7 +307,7 @@ function CreateMode() {
     ) {
       // Trigger GitSearch Panel when Option/Alt is pressed
       setExpandedMenu(
-        expandedMenuRef.current === "git-search" ? "params" : "git-search"
+        expandedMenuRef.current === "git-search" ? "params" : "git-search",
       );
     } else {
       if (expandedMenuRef.current === "git-search") {
@@ -394,7 +403,7 @@ function CreateMode() {
         (file) =>
           file.type === "file" &&
           (file.name.toLowerCase().endsWith(".glb") ||
-            file.name.toLowerCase().endsWith(".gltf"))
+            file.name.toLowerCase().endsWith(".gltf")),
       );
 
       if (backgroundFiles.length > 0) {
@@ -477,7 +486,7 @@ function CreateMode() {
 
       saveProject(setSaveState, "Background 3D Model Upload Save");
       setImportNotification(
-        `Background 3D model uploaded: ${backgroundFileName}`
+        `Background 3D model uploaded: ${backgroundFileName}`,
       );
       setTimeout(() => setImportNotification(null), 3000);
     } catch (error) {
@@ -516,7 +525,7 @@ function CreateMode() {
     } catch (error) {
       console.error("Error deleting background 3D model file:", error);
       alert(
-        `Failed to delete 3D model file. The file will remain in your repository.`
+        `Failed to delete 3D model file. The file will remain in your repository.`,
       );
     }
   };
@@ -652,7 +661,7 @@ function CreateMode() {
               let file = value.target.files[0];
               if (file) {
                 uploadFile(file, activeAtom, () =>
-                  saveProject(setSaveState, "Upload Save")
+                  saveProject(setSaveState, "Upload Save"),
                 );
               }
             }}

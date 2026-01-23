@@ -69,11 +69,11 @@ export default function RunParams({
             param.label !== "Molecule Name" &&
             param.label !== "Molecule Readme" &&
             param.label !== "Molecule BOM" &&
-            param.label !== "Reload from Github"
-        )
+            param.label !== "Reload from Github",
+        ),
       ),
     };
-    exportParams = activeAtom?.createExportMenuInputs();
+    exportParams = activeAtom?.createExportMenuInputs(setInputChanged);
     // Add a button at the end to see the project readme
     inputParams.seeProjectReadme = {
       type: "button",
