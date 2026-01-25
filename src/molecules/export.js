@@ -74,12 +74,12 @@ export default class Export extends Atom {
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#484848";
     GlobalVariables.c.font = `${GlobalVariables.widthToPixels(
-      this.radius
+      this.radius,
     )}px Work Sans Bold`;
     GlobalVariables.c.fillText(
       "G",
       GlobalVariables.widthToPixels(this.x - this.radius / 3),
-      GlobalVariables.heightToPixels(this.y) + this.height / 3
+      GlobalVariables.heightToPixels(this.y) + this.height / 3,
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
@@ -93,7 +93,7 @@ export default class Export extends Atom {
    */
   inputsAreReady() {
     const essentialInputs = this.inputs.filter(
-      (input) => input.name === "geometry" || input.name === "File Type"
+      (input) => input.name === "geometry" || input.name === "File Type",
     );
     return essentialInputs.every((input) => {
       return input.getState().status === Status.READY;
@@ -107,12 +107,13 @@ export default class Export extends Atom {
     return GlobalVariables.cad.visExport(
       inputs.geometry,
       inputs["File Type"],
-      this.getContext()
+      this.getContext(),
     );
   }
 
   createInputParams(setInputChanged) {
     let inputParams = {};
+    this.setInputChanged = setInputChanged;
     const exportOptions = ["STL", "SVG", "STEP"];
 
     /** Runs through active atom inputs and adds IO parameters to default param*/
@@ -173,12 +174,17 @@ export default class Export extends Atom {
         }
       });
     }
-
     inputParams["Download File"] = {
       type: "button",
       label: "Download File",
+      disabled: this.status !== Status.READY,
       onClick: () => {
         this.exportFile();
+        // Dispatch a custom event for error notification
+        const event = new CustomEvent("download-error", {
+          detail: { message: "Preparing your export." || String(err) },
+        });
+        window.dispatchEvent(event);
       },
     };
 
@@ -196,7 +202,7 @@ export default class Export extends Atom {
     try {
       if (geometry == null) {
         throw new Error(
-          "No geometry to export. Please make sure the geometry is ready."
+          "No geometry to export. Please make sure the geometry is ready.",
         );
       }
       const result = await GlobalVariables.cad.downExport(
@@ -204,8 +210,9 @@ export default class Export extends Atom {
         fileType,
         resolution,
         GlobalVariables.topLevelMolecule.unitsKey,
-        this.getContext()
+        this.getContext(),
       );
+
       saveAs(result, partName + "." + fileType.toLowerCase());
     } catch (err) {
       console.error("Export error:", err);
