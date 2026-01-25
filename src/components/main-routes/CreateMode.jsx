@@ -202,29 +202,19 @@ function CreateMode() {
   useEffect(() => {
     // Handler to call on window resize
     function handleResize() {
-      let height;
-      if (window.visualViewport) {
-        height = window.visualViewport.height;
-      } else if (GlobalVariables.isMobile()) {
-        height = window.screen.height;
-      } else {
-        height = window.innerHeight;
-      }
+      // Always use window.innerHeight instead of visualViewport.height
+      // This prevents the 3D view from shrinking when mobile keyboard opens
+      // visualViewport.height changes when keyboard appears, but we want the
+      // full layout viewport for the 3D canvas
       setWindowSize({
         width: window.innerWidth,
-        height,
+        height: window.innerHeight,
       });
     }
     window.addEventListener("resize", handleResize);
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", handleResize);
-    }
     handleResize();
     return () => {
       window.removeEventListener("resize", handleResize);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", handleResize);
-      }
     };
   }, []); // Empty array ensures that effect is only run on mount
 
