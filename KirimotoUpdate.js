@@ -16,6 +16,12 @@ const generateGcode = (
   tool,
 ) => {
   const CUT_THROUGH = cutThrough;
+  const stock_offset = {
+    x: 0,
+    y: 0,
+    z: 0,
+  };
+  const plunge = speed;
 
   if (!stlUrl) {
     console.error("STL URL is not available.");
@@ -68,28 +74,18 @@ const generateGcode = (
         }
       }
     })
-    .load(
-      "https://raw.githubusercontent.com/alzatin/A-Test-project-6/refs/heads/main/A-Test-project-6-STL.stl",
-    )
+    .load(stlUrl)
     .then((eng) => {
       eng.widget.boundingBoxNeedsUpdate = true; // Ensure bounding box is updated
       if (progressCallback) progressCallback(0.1); // 10% - STL loaded
-      return eng.setMode("CAM");
-    })
-    .then((eng) =>
-      eng.setStock({
-        x: 3,
-        y: 3,
-        z: 0.1,
-      }),
-    )
-    .then((eng) => eng.moveTo(50, 0, 0))
-    .then((eng) => {
+
+      eng.setMode("CAM");
+      eng.moveTo(50, 0, 0);
       // Determine if project uses metric units
       const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
       const isMetric = projectUnits === "MM";
 
-      return eng.setTools([
+      eng.setTools([
         {
           id: 1000,
           number: 1,
@@ -104,39 +100,45 @@ const generateGcode = (
           order: 5,
         },
       ]);
-    })
-    .then((eng) => {
+
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
-      let CUT_THROUGH = cutThrough;
+
       const bounds = eng.widget.getBoundingBox();
       const z = bounds.max.z - bounds.min.z;
       const zBottom = z; // ensure cut through stock bottom
-
       const down = (zBottom + CUT_THROUGH) / passes;
       const camZBottom = -zBottom - CUT_THROUGH;
       const roughingStepOver = 0.6;
-      console.log(down);
-      return eng.setProcess({
+
+      // camZAnchor is only for UI
+      eng.setOrigin(bounds.mid.x, bounds.mid.y, bounds.max.z);
+
+      // camStockOffset is only reliable in UI
+      eng.setStock({
+        x: bounds.dim.x + stock_offset.x,
+        y: bounds.dim.y + stock_offset.y,
+        z: bounds.dim.z + stock_offset.z,
+      });
+      eng.setProcess({
+        camDepthFirst: true,
         camEaseAngle: 40,
         camEaseDown: true,
-        camOffsetStock: true,
-        camZAnchor: "bottom",
-        camDepthFirst: true,
-        camZThru: CUT_THROUGH,
-        camZBottom: camZBottom, // temp hack to get around setTopZ bug
+        camOriginTop: true,
+        camOriginCenter: true,
+        camStockOffset: false,
         camToolInit: true,
         ops: [
           {
             type: "outline",
             tool: 1000,
-            spindle: 1000,
+            spindle: 13000,
             step: roughingStepOver,
             steps: 1,
             down: down,
             rate: speed,
-            plunge: speed,
+            plunge: plunge,
             dogbones: false,
-            omitvoid: true,
+            omitvoid: false,
             omitthru: false,
             outside: true,
             inside: false,
@@ -145,20 +147,21 @@ const generateGcode = (
             ov_topz: 0,
             ov_botz: 0,
             ov_conv: true,
+            disabled: false,
           },
           {
             type: "rough",
             tool: 1000,
-            spindle: 1000,
+            spindle: 13000,
             down: down,
             step: roughingStepOver,
             rate: speed,
-            plunge: speed,
+            plunge: plunge,
             leave: 0,
             leavez: 0,
             all: false,
             voids: false,
-            flats: false,
+            flats: true,
             inside: true,
             omitthru: true,
             ov_topz: 0,
@@ -167,10 +170,7 @@ const generateGcode = (
           },
         ],
       });
-    })
-    .then((eng) => {
-      // Determine G-code units command based on project units
-      const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
+
       const unitsCommand =
         projectUnits === "MM"
           ? "G21 ; set units to MM (required)"
@@ -183,14 +183,8 @@ const generateGcode = (
         bedWidth: 678.18,
         bedDepth: 1524,
         maxHeight: 150,
-        originCenter: false,
         spindleMax: 24000,
-        gcodePre: [
-          unitsCommand,
-          "G90 ; absolute position mode (required)",
-          "G0 F3000 ; set default rapid move feedrate",
-          "G1 F1000 ; set default cutting feedrate",
-        ],
+        gcodePre: [unitsCommand, "G90 ; absolute position mode (required)"],
         gcodePost: ["M05 ; spindle off", "M30 ; program end"],
         gcodeDwell: ["G4 P{time} ; dwell for {time}ms"],
         gcodeSpindle: ["M3 S{speed} ; spindle on at {spindle} rpm"],
@@ -208,7 +202,7 @@ const generateGcode = (
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.5); // 50% - Process set
-      // console.log(kiriEngine);
+      console.log(kiriEngine);
       startSlicingProgress();
       return eng.slice();
     })
