@@ -1,7 +1,40 @@
 import puppeteer from "puppeteer";
 import projects_to_test from "./projects_to_test.js";
 
+/**
+ * Abundance Performance Metrics Test
+ * 
+ * This script measures various performance metrics for Abundance projects:
+ * 
+ * 1. Load Time Metrics:
+ *    - Cold load time: Time to fully render project on first load
+ *    - Warm load time: Time to render project with cache available
+ * 
+ * 2. Cache Metrics:
+ *    - IndexedDB cache size and entry count
+ *    - Per-key cache sizes for detailed analysis
+ * 
+ * 3. Project File Metrics:
+ *    - Serialized project file size
+ *    - Project structure and content
+ * 
+ * 4. GCode Generation Metrics (NEW):
+ *    - GCode generation time per atom
+ *    - GCode output size (lines and commands)
+ *    - Visualization performance
+ *    - Support for both single parts and assemblies
+ * 
+ * Usage:
+ *   node Puppet/metrics.js > metrics.json
+ * 
+ * The script outputs both human-readable summaries and JSON for automated comparisons.
+ */
+
 const projectUser = "moatmaslow";
+
+// GCode generation timeout and polling configuration
+const GCODE_GENERATION_TIMEOUT_MS = 60000; // 60 seconds max for GCode generation
+const GCODE_POLLING_INTERVAL_MS = 100; // Check generation status every 100ms
 
 /**
  * Get the size of IndexedDB database storage
@@ -140,6 +173,165 @@ async function getProjectFileSize(page) {
   });
 }
 /**
+ * Get GCode generation and visualization metrics
+ * 
+ * This function measures performance metrics for GCode generation and visualization:
+ * - Detects all GCode atoms in the project
+ * - Triggers GCode generation if not already generated
+ * - Measures the time taken to generate GCode
+ * - Measures the time taken to visualize GCode (via visualizeGcodeIncremental)
+ * - Counts GCode lines and commands
+ * - Tracks the size of the generated GCode
+ * 
+ * The metrics help identify:
+ * - Performance regressions in GCode generation
+ * - Performance regressions in GCode visualization
+ * - Changes in GCode output size/complexity
+ * - Visualization performance for different GCode sizes
+ * 
+ * @param {Object} page - Puppeteer page object
+ * @returns {Promise<Object>} GCode metrics object containing:
+ *   - hasGcodeAtom: boolean - whether the project has any GCode atoms
+ *   - gcodeAtomCount: number - count of GCode atoms found
+ *   - atoms: array - metrics for each GCode atom including:
+ *     - atomName: string - name of the atom
+ *     - gcodeGenerated: boolean - whether GCode was generated
+ *     - gcodeLength: number - length of GCode string in characters
+ *     - gcodeLineCount: number - number of lines in GCode
+ *     - gcodeCommandCount: number - number of G/M commands
+ *     - generationTimeMs: number - time to generate GCode in milliseconds
+ *     - visualizationTimeMs: number - time to visualize GCode in milliseconds
+ *     - generationError: string - error message if generation failed
+ *     - visualizationError: string - error message if visualization failed
+ */
+async function getGcodeMetrics(page) {
+  return await page.evaluate(async () => {
+    try {
+      // Access the global variable to get the top-level molecule
+      if (!window.GlobalVarsForPuppeteer?.topLevelMolecule) {
+        return {
+          hasGcodeAtom: false,
+          error: "GlobalVarsForPuppeteer.topLevelMolecule not found",
+        };
+      }
+
+      const molecule = window.GlobalVarsForPuppeteer.topLevelMolecule;
+
+      // Find all Gcode atoms in the project
+      const gcodeAtoms = molecule.nodesOnTheScreen.filter(
+        (atom) => atom.atomType === "Gcode"
+      );
+
+      if (gcodeAtoms.length === 0) {
+        return {
+          hasGcodeAtom: false,
+          gcodeAtomCount: 0,
+        };
+      }
+
+      // Collect metrics from all GCode atoms
+      const gcodeMetrics = [];
+
+      for (const gcodeAtom of gcodeAtoms) {
+        const atomMetrics = {
+          atomName: gcodeAtom.name || "Gcode",
+          gcodeGenerated: gcodeAtom.gcodeGenerated || false,
+          gcodeLength: gcodeAtom.gcodeString
+            ? gcodeAtom.gcodeString.length
+            : 0,
+          isGenerating: gcodeAtom.isGenerating || false,
+          progress: gcodeAtom.progress || 0,
+        };
+
+        // If the GCode hasn't been generated yet, try to generate it and measure
+        if (!gcodeAtom.gcodeGenerated) {
+          try {
+            // Trigger GCode generation and measure time
+            const genStartTime = performance.now();
+
+            // Create a promise that resolves when generation completes
+            const generationPromise = new Promise((resolve, reject) => {
+              const timeout = setTimeout(
+                () => reject(new Error("GCode generation timeout")),
+                GCODE_GENERATION_TIMEOUT_MS
+              );
+
+              // Check if generation completes by polling the gcodeGenerated flag
+              const checkInterval = setInterval(() => {
+                if (gcodeAtom.gcodeGenerated) {
+                  clearInterval(checkInterval);
+                  clearTimeout(timeout);
+                  resolve();
+                }
+              }, GCODE_POLLING_INTERVAL_MS);
+            });
+
+            // Trigger generation - both methods might be async, so we await the promise instead
+            if (typeof gcodeAtom._generateGcode === "function") {
+              gcodeAtom._generateGcode(); // Fire and forget - promise handles completion
+            } else if (typeof gcodeAtom.onUpstreamChange === "function") {
+              gcodeAtom.onUpstreamChange(); // Fire and forget - promise handles completion
+            }
+
+            // Wait for generation to complete
+            await generationPromise;
+
+            const genEndTime = performance.now();
+            atomMetrics.generationTimeMs = genEndTime - genStartTime;
+            atomMetrics.gcodeLength = gcodeAtom.gcodeString
+              ? gcodeAtom.gcodeString.length
+              : 0;
+          } catch (error) {
+            atomMetrics.generationError = error.message;
+          }
+        }
+
+        // Measure visualization time by triggering visualizeGcodeIncremental
+        if (gcodeAtom.gcodeGenerated && gcodeAtom.gcodeString) {
+          try {
+            const vizStartTime = performance.now();
+            
+            // Call visualizeGcodeIncremental to measure visualization performance
+            const gcodeWire = await window.GlobalVarsForPuppeteer.cad.visualizeGcodeIncremental(
+              [gcodeAtom.gcodeString],
+              { project: "metrics-test" }
+            );
+            
+            const vizEndTime = performance.now();
+            atomMetrics.visualizationTimeMs = vizEndTime - vizStartTime;
+          } catch (error) {
+            atomMetrics.visualizationError = error.message;
+          }
+        }
+
+        // Count number of gcode lines
+        if (gcodeAtom.gcodeString) {
+          const lines = gcodeAtom.gcodeString.split("\n");
+          atomMetrics.gcodeLineCount = lines.length;
+          // Count G-code commands (lines starting with G or M)
+          atomMetrics.gcodeCommandCount = lines.filter((line) =>
+            /^\s*[GM]\d/.test(line)
+          ).length;
+        }
+
+        gcodeMetrics.push(atomMetrics);
+      }
+
+      return {
+        hasGcodeAtom: true,
+        gcodeAtomCount: gcodeAtoms.length,
+        atoms: gcodeMetrics,
+      };
+    } catch (error) {
+      return {
+        hasGcodeAtom: false,
+        error: error.message,
+      };
+    }
+  });
+}
+
+/**
  * Run metrics test for a single project
  * @param {Object} browser - Puppeteer browser instance
  * @param {string} projectName - Project name to test
@@ -157,6 +349,7 @@ async function runMetricsTest(browser, projectName) {
     cacheEntryCount: null,
     projectFileSize: null,
     projectFileSizeFormatted: null,
+    gcodeMetrics: null,
     error: null,
   };
 
@@ -210,6 +403,41 @@ async function runMetricsTest(browser, projectName) {
     metrics.projectFileSize = projectFileMetrics.size;
     metrics.projectFileSizeFormatted = formatBytes(projectFileMetrics.size);
     metrics.projectFileRawJson = projectFileMetrics.rawJson;
+
+    // GCode generation and visualization performance metrics
+    console.log("  Measuring GCode metrics...");
+    const gcodeMetrics = await getGcodeMetrics(page);
+    metrics.gcodeMetrics = gcodeMetrics;
+
+    // Log GCode metrics summary
+    if (gcodeMetrics.hasGcodeAtom) {
+      console.log(
+        `  Found ${gcodeMetrics.gcodeAtomCount} GCode atom(s) in project`
+      );
+      if (gcodeMetrics.atoms) {
+        gcodeMetrics.atoms.forEach((atom, idx) => {
+          console.log(`  GCode Atom ${idx + 1}:`);
+          if (atom.generationTimeMs) {
+            console.log(`    Generation Time: ${atom.generationTimeMs.toFixed(2)}ms`);
+          }
+          if (atom.visualizationTimeMs) {
+            console.log(`    Visualization Time: ${atom.visualizationTimeMs.toFixed(2)}ms`);
+          }
+          if (atom.gcodeLineCount) {
+            console.log(`    GCode Lines: ${atom.gcodeLineCount}`);
+            console.log(`    GCode Commands: ${atom.gcodeCommandCount}`);
+          }
+          if (atom.generationError) {
+            console.log(`    Generation Error: ${atom.generationError}`);
+          }
+          if (atom.visualizationError) {
+            console.log(`    Visualization Error: ${atom.visualizationError}`);
+          }
+        });
+      }
+    } else {
+      console.log("  No GCode atoms found in project");
+    }
   } catch (error) {
     metrics.error = error.message;
     console.error(`✗ Error testing ${projectName}: ${error.message}`);
@@ -285,6 +513,32 @@ function formatBytes(bytes) {
         console.log(
           `  Cache Size: ${m.cacheSizeFormatted} (${m.cacheSize} bytes)`
         );
+
+        // Display GCode metrics if available
+        if (m.gcodeMetrics && m.gcodeMetrics.hasGcodeAtom) {
+          console.log(
+            `  GCode Atoms: ${m.gcodeMetrics.gcodeAtomCount} found`
+          );
+          if (m.gcodeMetrics.atoms) {
+            m.gcodeMetrics.atoms.forEach((atom, idx) => {
+              if (atom.generationTimeMs) {
+                console.log(
+                  `    Atom ${idx + 1} Generation: ${atom.generationTimeMs.toFixed(2)}ms`
+                );
+              }
+              if (atom.visualizationTimeMs) {
+                console.log(
+                  `    Atom ${idx + 1} Visualization: ${atom.visualizationTimeMs.toFixed(2)}ms`
+                );
+              }
+              if (atom.gcodeLineCount) {
+                console.log(
+                  `    Atom ${idx + 1} Lines: ${atom.gcodeLineCount} (${atom.gcodeCommandCount} commands)`
+                );
+              }
+            });
+          }
+        }
       }
     });
 
