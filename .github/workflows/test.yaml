@@ -330,6 +330,78 @@ jobs:
               markdown += '|\n';
             });
             markdown += '\n---\n';
+            
+            // Add GCode metrics section if any project has GCode atoms
+            let hasAnyGcodeMetrics = false;
+            Object.keys(prMetrics).forEach((projectName) => {
+              const prM = prMetrics[projectName];
+              const baseM = baseMetrics[projectName];
+              if (!baseM) return;
+              
+              if (prM.gcodeMetrics?.hasGcodeAtom || baseM.gcodeMetrics?.hasGcodeAtom) {
+                hasAnyGcodeMetrics = true;
+              }
+            });
+            
+            if (hasAnyGcodeMetrics) {
+              markdown += '\n### 🔧 GCode Generation & Visualization Metrics\n\n';
+              markdown += '| Project | GCode Atoms | Generation Time | Lines | Commands |\n';
+              markdown += '| --- | --- | --- | --- | --- |\n';
+              
+              Object.keys(prMetrics).forEach((projectName) => {
+                const prM = prMetrics[projectName];
+                const baseM = baseMetrics[projectName];
+                if (!baseM) return;
+                
+                const prGcode = prM.gcodeMetrics;
+                const baseGcode = baseM.gcodeMetrics;
+                
+                if (prGcode?.hasGcodeAtom || baseGcode?.hasGcodeAtom) {
+                  markdown += `| ${projectName} `;
+                  
+                  // Atom count
+                  const prAtomCount = prGcode?.gcodeAtomCount || 0;
+                  const baseAtomCount = baseGcode?.gcodeAtomCount || 0;
+                  markdown += `| ${baseAtomCount} → ${prAtomCount} `;
+                  
+                  // Generation time (sum across all atoms)
+                  const prGenTime = prGcode?.atoms?.reduce((sum, atom) => sum + (atom.generationTimeMs || 0), 0) || 0;
+                  const baseGenTime = baseGcode?.atoms?.reduce((sum, atom) => sum + (atom.generationTimeMs || 0), 0) || 0;
+                  if (prGenTime > 0 || baseGenTime > 0) {
+                    const genTimeDiff = prGenTime - baseGenTime;
+                    const genTimePct = safePercent(prGenTime, baseGenTime);
+                    const emoji = genTimePct !== 'N/A' && Math.abs(parseFloat(genTimePct)) < 20 ? '✅' : '⚠️';
+                    markdown += `| ${baseGenTime.toFixed(0)}ms → ${prGenTime.toFixed(0)}ms<br> ${emoji} ${genTimeDiff > 0 ? '+' : ''}${genTimeDiff.toFixed(0)}ms (${genTimePct}%) `;
+                  } else {
+                    markdown += `| N/A `;
+                  }
+                  
+                  // Line count
+                  const prLines = prGcode?.atoms?.reduce((sum, atom) => sum + (atom.gcodeLineCount || 0), 0) || 0;
+                  const baseLines = baseGcode?.atoms?.reduce((sum, atom) => sum + (atom.gcodeLineCount || 0), 0) || 0;
+                  if (prLines > 0 || baseLines > 0) {
+                    const linesDiff = prLines - baseLines;
+                    markdown += `| ${baseLines} → ${prLines}<br> ${linesDiff > 0 ? '+' : ''}${linesDiff} `;
+                  } else {
+                    markdown += `| N/A `;
+                  }
+                  
+                  // Command count
+                  const prCommands = prGcode?.atoms?.reduce((sum, atom) => sum + (atom.gcodeCommandCount || 0), 0) || 0;
+                  const baseCommands = baseGcode?.atoms?.reduce((sum, atom) => sum + (atom.gcodeCommandCount || 0), 0) || 0;
+                  if (prCommands > 0 || baseCommands > 0) {
+                    const cmdDiff = prCommands - baseCommands;
+                    markdown += `| ${baseCommands} → ${prCommands}<br> ${cmdDiff > 0 ? '+' : ''}${cmdDiff} `;
+                  } else {
+                    markdown += `| N/A `;
+                  }
+                  
+                  markdown += '|\n';
+                }
+              });
+              markdown += '\n';
+            }
+            
             console.log(withDiffs);
 
             Object.keys(withDiffs).forEach((projectName) => {
