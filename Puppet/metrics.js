@@ -1,6 +1,35 @@
 import puppeteer from "puppeteer";
 import projects_to_test from "./projects_to_test.js";
 
+/**
+ * Abundance Performance Metrics Test
+ * 
+ * This script measures various performance metrics for Abundance projects:
+ * 
+ * 1. Load Time Metrics:
+ *    - Cold load time: Time to fully render project on first load
+ *    - Warm load time: Time to render project with cache available
+ * 
+ * 2. Cache Metrics:
+ *    - IndexedDB cache size and entry count
+ *    - Per-key cache sizes for detailed analysis
+ * 
+ * 3. Project File Metrics:
+ *    - Serialized project file size
+ *    - Project structure and content
+ * 
+ * 4. GCode Generation Metrics (NEW):
+ *    - GCode generation time per atom
+ *    - GCode output size (lines and commands)
+ *    - Visualization performance
+ *    - Support for both single parts and assemblies
+ * 
+ * Usage:
+ *   node Puppet/metrics.js > metrics.json
+ * 
+ * The script outputs both human-readable summaries and JSON for automated comparisons.
+ */
+
 const projectUser = "moatmaslow";
 
 /**
@@ -141,8 +170,31 @@ async function getProjectFileSize(page) {
 }
 /**
  * Get GCode generation and visualization metrics
+ * 
+ * This function measures performance metrics for GCode generation and visualization:
+ * - Detects all GCode atoms in the project
+ * - Triggers GCode generation if not already generated
+ * - Measures the time taken to generate GCode
+ * - Counts GCode lines and commands
+ * - Tracks the size of the generated GCode
+ * 
+ * The metrics help identify:
+ * - Performance regressions in GCode generation
+ * - Changes in GCode output size/complexity
+ * - Visualization performance for different GCode sizes
+ * 
  * @param {Object} page - Puppeteer page object
- * @returns {Promise<Object>} GCode metrics object
+ * @returns {Promise<Object>} GCode metrics object containing:
+ *   - hasGcodeAtom: boolean - whether the project has any GCode atoms
+ *   - gcodeAtomCount: number - count of GCode atoms found
+ *   - atoms: array - metrics for each GCode atom including:
+ *     - atomName: string - name of the atom
+ *     - gcodeGenerated: boolean - whether GCode was generated
+ *     - gcodeLength: number - length of GCode string in characters
+ *     - gcodeLineCount: number - number of lines in GCode
+ *     - gcodeCommandCount: number - number of G/M commands
+ *     - generationTimeMs: number - time to generate GCode in milliseconds
+ *     - generationError: string - error message if generation failed
  */
 async function getGcodeMetrics(page) {
   return await page.evaluate(async () => {

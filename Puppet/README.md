@@ -19,14 +19,24 @@ npm test
 ### metrics.js
 Performance metrics test that measures:
 - **Cold Load Time**: Time from navigation start to full project render (measured in milliseconds)
+- **Warm Load Time**: Time to reload the project with cache available
 - **Cache Size**: IndexedDB cache size after project load completes (in bytes/KB/MB)
+- **Cache Entry Count**: Number of entries stored in IndexedDB
+- **Project File Size**: Size of the serialized project file
+- **GCode Generation Metrics** (NEW):
+  - GCode generation time per atom
+  - GCode output size (lines and G/M commands)
+  - Number of GCode atoms in the project
+  - Visualization performance tracking
 
 The test:
 1. Clears the IndexedDB cache before testing to ensure cold load measurement
 2. Navigates to each project in `projects_to_test.js`
 3. Waits for the project to fully render
 4. Measures the total time and cache size
-5. Outputs results in both human-readable and JSON formats
+5. Detects and measures GCode generation performance
+6. Reloads the project to measure warm load time
+7. Outputs results in both human-readable and JSON formats
 
 **Usage:**
 ```bash
@@ -60,7 +70,9 @@ Both tests run automatically in GitHub Actions on pull requests:
 2. **Metrics Tests** (from `metrics.js`):
    - Measures performance metrics
    - Posts metrics table as PR comment
-   - Tracks load time and cache size trends
+   - Tracks load time, cache size, and GCode generation trends
+   - Compares base branch vs PR branch performance
+   - Displays GCode generation metrics when applicable
 
 ## Local Development
 
@@ -82,10 +94,16 @@ To run tests locally:
 
 ## Future Enhancements
 
-Potential improvements mentioned in the issue:
+Completed improvements:
 1. ✅ Cold load time measurement
 2. ✅ Cache size measurement
-3. ⏳ Test multiple projects with different cache profiles
-4. ⏳ Warm-load time measurement (reload after cache populated)
-5. ⏳ Regression detection (alert on significant performance degradation)
-6. ⏳ Multiple cold load runs with average/statistical analysis
+3. ✅ Warm-load time measurement (reload after cache populated)
+4. ✅ GCode generation performance tracking
+5. ✅ GCode visualization metrics
+
+Potential future improvements:
+1. ⏳ Test multiple projects with different cache profiles
+2. ⏳ Regression detection (alert on significant performance degradation)
+3. ⏳ Multiple cold load runs with average/statistical analysis
+4. ⏳ Memory usage tracking
+5. ⏳ 3D rendering performance metrics
