@@ -252,6 +252,9 @@ jobs:
           script: |
             const fs = require('fs');
             const { diff } = require('jest-diff');
+            
+            // Performance comparison threshold (20% change triggers warning emoji)
+            const PERF_CHANGE_WARNING_THRESHOLD = 20;
 
             const prOutput = fs.readFileSync('pr/metrics-pr.json', 'utf8');
             const baseOutput = fs.readFileSync('base/metrics-base.json', 'utf8');
@@ -316,7 +319,7 @@ jobs:
                 const diff = prValue - baseValue;
                 const pct = safePercent(prValue, baseValue);
                 const emoji = key.endsWith("TimeMs") ?
-                  (pct != 'N/A' && pct < 20 ? '✅' : '⚠️') :
+                  (pct != 'N/A' && pct < PERF_CHANGE_WARNING_THRESHOLD ? '✅' : '⚠️') :
                   (diff <= 0 ? '✅' : '⚠️');
                 if (key.endsWith("Size")) {
                   markdown += `| ${formatBytes(baseValue)} → ${formatBytes(prValue)}<br> ${emoji} ${diff >= 0 ? '+' : '-'}${formatBytes(Math.abs(diff))} (${pct}%) `;
@@ -370,7 +373,7 @@ jobs:
                   if (prGenTime > 0 || baseGenTime > 0) {
                     const genTimeDiff = prGenTime - baseGenTime;
                     const genTimePct = safePercent(prGenTime, baseGenTime);
-                    const emoji = genTimePct !== 'N/A' && Math.abs(parseFloat(genTimePct)) < 20 ? '✅' : '⚠️';
+                    const emoji = genTimePct !== 'N/A' && Math.abs(parseFloat(genTimePct)) < PERF_CHANGE_WARNING_THRESHOLD ? '✅' : '⚠️';
                     markdown += `| ${baseGenTime.toFixed(0)}ms → ${prGenTime.toFixed(0)}ms<br> ${emoji} ${genTimeDiff > 0 ? '+' : ''}${genTimeDiff.toFixed(0)}ms (${genTimePct}%) `;
                   } else {
                     markdown += `| N/A `;

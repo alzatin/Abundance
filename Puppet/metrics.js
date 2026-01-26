@@ -32,6 +32,10 @@ import projects_to_test from "./projects_to_test.js";
 
 const projectUser = "moatmaslow";
 
+// GCode generation timeout and polling configuration
+const GCODE_GENERATION_TIMEOUT_MS = 60000; // 60 seconds max for GCode generation
+const GCODE_POLLING_INTERVAL_MS = 100; // Check generation status every 100ms
+
 /**
  * Get the size of IndexedDB database storage
  * @param {Object} page - Puppeteer page object
@@ -245,8 +249,8 @@ async function getGcodeMetrics(page) {
             const generationPromise = new Promise((resolve, reject) => {
               const timeout = setTimeout(
                 () => reject(new Error("GCode generation timeout")),
-                60000
-              ); // 60 second timeout
+                GCODE_GENERATION_TIMEOUT_MS
+              );
 
               // Check if generation completes by polling the gcodeGenerated flag
               const checkInterval = setInterval(() => {
@@ -255,14 +259,14 @@ async function getGcodeMetrics(page) {
                   clearTimeout(timeout);
                   resolve();
                 }
-              }, 100);
+              }, GCODE_POLLING_INTERVAL_MS);
             });
 
-            // Trigger generation
+            // Trigger generation - both methods might be async, so we await the promise instead
             if (typeof gcodeAtom._generateGcode === "function") {
-              await gcodeAtom._generateGcode();
+              gcodeAtom._generateGcode(); // Fire and forget - promise handles completion
             } else if (typeof gcodeAtom.onUpstreamChange === "function") {
-              gcodeAtom.onUpstreamChange();
+              gcodeAtom.onUpstreamChange(); // Fire and forget - promise handles completion
             }
 
             // Wait for generation to complete
