@@ -25,6 +25,7 @@ Performance metrics test that measures:
 - **Project File Size**: Size of the serialized project file
 - **GCode Generation Metrics** (NEW):
   - GCode generation time per atom
+  - GCode visualization time per atom (visualizeGcodeIncremental)
   - GCode output size (lines and G/M commands)
   - Number of GCode atoms in the project
   - Visualization performance tracking

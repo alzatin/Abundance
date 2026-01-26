@@ -348,8 +348,8 @@ jobs:
             
             if (hasAnyGcodeMetrics) {
               markdown += '\n### 🔧 GCode Generation & Visualization Metrics\n\n';
-              markdown += '| Project | GCode Atoms | Generation Time | Lines | Commands |\n';
-              markdown += '| --- | --- | --- | --- | --- |\n';
+              markdown += '| Project | GCode Atoms | Generation Time | Visualization Time | Lines | Commands |\n';
+              markdown += '| --- | --- | --- | --- | --- | --- |\n';
               
               Object.keys(prMetrics).forEach((projectName) => {
                 const prM = prMetrics[projectName];
@@ -375,6 +375,18 @@ jobs:
                     const genTimePct = safePercent(prGenTime, baseGenTime);
                     const emoji = genTimePct !== 'N/A' && Math.abs(parseFloat(genTimePct)) < PERF_CHANGE_WARNING_THRESHOLD ? '✅' : '⚠️';
                     markdown += `| ${baseGenTime.toFixed(0)}ms → ${prGenTime.toFixed(0)}ms<br> ${emoji} ${genTimeDiff > 0 ? '+' : ''}${genTimeDiff.toFixed(0)}ms (${genTimePct}%) `;
+                  } else {
+                    markdown += `| N/A `;
+                  }
+                  
+                  // Visualization time (sum across all atoms)
+                  const prVizTime = prGcode?.atoms?.reduce((sum, atom) => sum + (atom.visualizationTimeMs || 0), 0) || 0;
+                  const baseVizTime = baseGcode?.atoms?.reduce((sum, atom) => sum + (atom.visualizationTimeMs || 0), 0) || 0;
+                  if (prVizTime > 0 || baseVizTime > 0) {
+                    const vizTimeDiff = prVizTime - baseVizTime;
+                    const vizTimePct = safePercent(prVizTime, baseVizTime);
+                    const emoji = vizTimePct !== 'N/A' && Math.abs(parseFloat(vizTimePct)) < PERF_CHANGE_WARNING_THRESHOLD ? '✅' : '⚠️';
+                    markdown += `| ${baseVizTime.toFixed(0)}ms → ${prVizTime.toFixed(0)}ms<br> ${emoji} ${vizTimeDiff > 0 ? '+' : ''}${vizTimeDiff.toFixed(0)}ms (${vizTimePct}%) `;
                   } else {
                     markdown += `| N/A `;
                   }

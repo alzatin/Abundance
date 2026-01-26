@@ -179,11 +179,13 @@ async function getProjectFileSize(page) {
  * - Detects all GCode atoms in the project
  * - Triggers GCode generation if not already generated
  * - Measures the time taken to generate GCode
+ * - Measures the time taken to visualize GCode (via visualizeGcodeIncremental)
  * - Counts GCode lines and commands
  * - Tracks the size of the generated GCode
  * 
  * The metrics help identify:
  * - Performance regressions in GCode generation
+ * - Performance regressions in GCode visualization
  * - Changes in GCode output size/complexity
  * - Visualization performance for different GCode sizes
  * 
@@ -198,7 +200,9 @@ async function getProjectFileSize(page) {
  *     - gcodeLineCount: number - number of lines in GCode
  *     - gcodeCommandCount: number - number of G/M commands
  *     - generationTimeMs: number - time to generate GCode in milliseconds
+ *     - visualizationTimeMs: number - time to visualize GCode in milliseconds
  *     - generationError: string - error message if generation failed
+ *     - visualizationError: string - error message if visualization failed
  */
 async function getGcodeMetrics(page) {
   return await page.evaluate(async () => {
@@ -279,6 +283,24 @@ async function getGcodeMetrics(page) {
               : 0;
           } catch (error) {
             atomMetrics.generationError = error.message;
+          }
+        }
+
+        // Measure visualization time by triggering visualizeGcodeIncremental
+        if (gcodeAtom.gcodeGenerated && gcodeAtom.gcodeString) {
+          try {
+            const vizStartTime = performance.now();
+            
+            // Call visualizeGcodeIncremental to measure visualization performance
+            const gcodeWire = await window.GlobalVarsForPuppeteer.cad.visualizeGcodeIncremental(
+              [gcodeAtom.gcodeString],
+              { project: "metrics-test" }
+            );
+            
+            const vizEndTime = performance.now();
+            atomMetrics.visualizationTimeMs = vizEndTime - vizStartTime;
+          } catch (error) {
+            atomMetrics.visualizationError = error.message;
           }
         }
 
@@ -398,12 +420,18 @@ async function runMetricsTest(browser, projectName) {
           if (atom.generationTimeMs) {
             console.log(`    Generation Time: ${atom.generationTimeMs.toFixed(2)}ms`);
           }
+          if (atom.visualizationTimeMs) {
+            console.log(`    Visualization Time: ${atom.visualizationTimeMs.toFixed(2)}ms`);
+          }
           if (atom.gcodeLineCount) {
             console.log(`    GCode Lines: ${atom.gcodeLineCount}`);
             console.log(`    GCode Commands: ${atom.gcodeCommandCount}`);
           }
           if (atom.generationError) {
             console.log(`    Generation Error: ${atom.generationError}`);
+          }
+          if (atom.visualizationError) {
+            console.log(`    Visualization Error: ${atom.visualizationError}`);
           }
         });
       }
@@ -496,6 +524,11 @@ function formatBytes(bytes) {
               if (atom.generationTimeMs) {
                 console.log(
                   `    Atom ${idx + 1} Generation: ${atom.generationTimeMs.toFixed(2)}ms`
+                );
+              }
+              if (atom.visualizationTimeMs) {
+                console.log(
+                  `    Atom ${idx + 1} Visualization: ${atom.visualizationTimeMs.toFixed(2)}ms`
                 );
               }
               if (atom.gcodeLineCount) {
