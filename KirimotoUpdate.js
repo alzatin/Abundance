@@ -19,7 +19,7 @@ const generateGcode = (
   const stock_offset = {
     x: 0,
     y: 0,
-    z: 0,
+    z: 1,
   };
   const plunge = speed;
 
@@ -80,7 +80,7 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.1); // 10% - STL loaded
 
       eng.setMode("CAM");
-      eng.moveTo(50, 0, 0);
+      eng.moveTo(0, 0, 0);
       // Determine if project uses metric units
       const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
       const isMetric = projectUnits === "MM";
@@ -104,12 +104,8 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
 
       const bounds = eng.widget.getBoundingBox();
-      const z = bounds.max.z - bounds.min.z;
-      const zBottom = z; // ensure cut through stock bottom
-      const down = (zBottom + CUT_THROUGH) / passes;
-      const camZBottom = -zBottom - CUT_THROUGH;
-      const roughingStepOver = 0.6;
-
+      const down = bounds.max.z / (passes - 1);
+      const stepOver = 0.8;
       // camZAnchor is only for UI
       eng.setOrigin(bounds.mid.x, bounds.mid.y, bounds.max.z);
 
@@ -119,6 +115,9 @@ const generateGcode = (
         y: bounds.dim.y + stock_offset.y,
         z: bounds.dim.z + stock_offset.z,
       });
+      console.log(bounds.dim.z);
+      console.log(bounds.max.z);
+
       eng.setProcess({
         camDepthFirst: true,
         camEaseAngle: 40,
@@ -128,45 +127,64 @@ const generateGcode = (
         camStockOffset: false,
         camToolInit: true,
         ops: [
-          {
-            type: "outline",
-            tool: 1000,
-            spindle: 13000,
-            step: roughingStepOver,
-            steps: 1,
-            down: down,
-            rate: speed,
-            plunge: plunge,
-            dogbones: false,
-            omitvoid: false,
-            omitthru: false,
-            outside: true,
-            inside: false,
-            wide: false,
-            top: false,
-            ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: true,
+          /*{
+            all: false,
             disabled: false,
-          },
-          {
-            type: "rough",
-            tool: 1000,
-            spindle: 13000,
             down: down,
-            step: roughingStepOver,
-            rate: speed,
-            plunge: plunge,
+            flats: false,
+            inside: true,
             leave: 0,
             leavez: 0,
-            all: false,
-            voids: false,
-            flats: true,
-            inside: true,
             omitthru: true,
-            ov_topz: 0,
             ov_botz: 0,
             ov_conv: false,
+            ov_topz: 0,
+            plunge: plunge,
+            rate: speed,
+            spindle: 13000,
+            step: stepOver,
+            tool: 1000,
+            type: "rough",
+            voids: false,
+          },*/
+          {
+            disabled: false,
+            down: 0,
+            flats: [10],
+            leave: 0,
+            leavez: 0,
+            mode: "clear",
+            ov_botz: 0,
+            ov_conv: false,
+            ov_topz: bounds.max.z,
+            plunge: plunge,
+            rate: speed,
+            shadow: true,
+            spindle: 13000,
+            step: stepOver,
+            tool: 1000,
+            type: "area",
+          },
+          {
+            disabled: false,
+            dogbones: false,
+            down: down,
+            inside: false,
+            omitthru: false,
+            omitvoid: false,
+            outside: true,
+            ov_botz: -CUT_THROUGH,
+            ov_conv: true,
+            ov_topz: 0,
+            plunge: plunge,
+            rate: speed,
+            spindle: 13000,
+            step: stepOver,
+            steps: 1,
+            tool: 1000,
+            top: false,
+            type: "outline",
+            wide: false,
           },
         ],
       });
