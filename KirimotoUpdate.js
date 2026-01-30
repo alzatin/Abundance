@@ -17,8 +17,8 @@ const generateGcode = (
 ) => {
   const CUT_THROUGH = cutThrough;
   const stock_offset = {
-    x: 0,
-    y: 0,
+    x: 3,
+    y: 3,
     z: 1,
   };
   const plunge = speed;
@@ -104,7 +104,7 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
 
       const bounds = eng.widget.getBoundingBox();
-      const down = bounds.max.z / (passes - 1);
+      const down = (bounds.dim.z + CUT_THROUGH) / passes;
       const stepOver = 0.8;
       // camZAnchor is only for UI
       eng.setOrigin(bounds.mid.x, bounds.mid.y, bounds.max.z);
@@ -115,8 +115,22 @@ const generateGcode = (
         y: bounds.dim.y + stock_offset.y,
         z: bounds.dim.z + stock_offset.z,
       });
-      console.log(bounds.dim.z);
-      console.log(bounds.max.z);
+
+      console.log("Widget");
+      console.log(eng.widget);
+      // mesh.geometry is a THREE.BufferGeometry
+      const position = eng.widget.mesh.geometry.attributes.position;
+      const zValues = [];
+      for (
+        let i = 2;
+        i < position.count * position.itemSize;
+        i += position.itemSize
+      ) {
+        zValues.push(position.array[i]);
+      }
+      // To get unique Z values:
+      const uniqueFlats = [...new Set(zValues)];
+      console.log("Unique Z values (flats):", uniqueFlats);
 
       eng.setProcess({
         camDepthFirst: true,
@@ -127,7 +141,7 @@ const generateGcode = (
         camStockOffset: false,
         camToolInit: true,
         ops: [
-          /*{
+          {
             all: false,
             disabled: false,
             down: down,
@@ -146,11 +160,11 @@ const generateGcode = (
             tool: 1000,
             type: "rough",
             voids: false,
-          },*/
+          },
           {
             disabled: false,
             down: 0,
-            flats: [10],
+            flats: [uniqueFlats[2]], //uniqueFlats need multiple ops
             leave: 0,
             leavez: 0,
             mode: "clear",
@@ -173,7 +187,7 @@ const generateGcode = (
             omitthru: false,
             omitvoid: false,
             outside: true,
-            ov_botz: -CUT_THROUGH,
+            ov_botz: 0, //-CUT_THROUGH,
             ov_conv: true,
             ov_topz: 0,
             plunge: plunge,
@@ -220,7 +234,7 @@ const generateGcode = (
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.5); // 50% - Process set
-      console.log(kiriEngine);
+
       startSlicingProgress();
       return eng.slice();
     })
