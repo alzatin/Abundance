@@ -1,25 +1,19 @@
 import { useEffect } from "react";
 
 function ForkConfirmDialog({ isOpen, onClose, onConfirm, projectName, projectOwner }) {
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.stopPropagation();
-      onConfirm();
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      onClose();
-    }
-  };
-
   // Add document-level keyboard event listener with priority
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e) => {
-      if (e.key === "Enter" || e.key === "Escape") {
-        handleKeyPress(e);
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        onConfirm();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
       }
     };
 
@@ -29,7 +23,7 @@ function ForkConfirmDialog({ isOpen, onClose, onConfirm, projectName, projectOwn
     return () => {
       document.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [isOpen]);
+  }, [isOpen, onConfirm, onClose]);
 
   if (!isOpen) return null;
 
@@ -89,13 +83,14 @@ function ForkConfirmDialog({ isOpen, onClose, onConfirm, projectName, projectOwn
         </button>
       </div>
 
-      <a
+      <button
         className="closeButton"
         onClick={onClose}
         style={{ cursor: "pointer" }}
+        aria-label="Close dialog"
       >
         {"\u00D7"}
-      </a>
+      </button>
     </dialog>
   );
 }

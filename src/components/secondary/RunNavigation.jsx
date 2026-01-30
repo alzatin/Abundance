@@ -339,7 +339,9 @@ function RunNavigation({
       // User is logged in, proceed with fork
       forkProject(authorizedUserOcto);
     } else {
-      // User needs to log in first
+      // User needs to log in first, clear redirectType temporarily
+      // It will be set again after auth when the dialog shows
+      setRedirectType(null);
       authRedirectHandler({ authType: "fork" });
     }
   };
