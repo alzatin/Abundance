@@ -9,6 +9,27 @@
 import { describe, it, expect } from 'vitest';
 
 describe('Gcode Nested Detection', () => {
+  // Shared helper function - same implementation as in Puppet/metrics.js
+  const findAllGcodeAtoms = (mol) => {
+    let gcodeAtoms = [];
+    
+    if (!mol.nodesOnTheScreen || !Array.isArray(mol.nodesOnTheScreen)) {
+      return gcodeAtoms;
+    }
+    
+    mol.nodesOnTheScreen.forEach((atom) => {
+      if (atom.atomType === 'Gcode') {
+        gcodeAtoms.push(atom);
+      }
+      // Recursively search inside Molecule and GitHubMolecule atoms
+      if (atom.atomType === 'Molecule' || atom.atomType === 'GitHubMolecule') {
+        const nestedGcodeAtoms = findAllGcodeAtoms(atom);
+        gcodeAtoms = gcodeAtoms.concat(nestedGcodeAtoms);
+      }
+    });
+    
+    return gcodeAtoms;
+  };
   
   it('should demonstrate the recursive search function for Gcode atoms', () => {
     // Mock a top-level molecule with nested structure
@@ -61,28 +82,6 @@ describe('Gcode Nested Detection', () => {
       ],
     };
 
-    // Recursive function to find all Gcode atoms (same logic as in metrics.js)
-    const findAllGcodeAtoms = (mol) => {
-      let gcodeAtoms = [];
-      
-      if (!mol.nodesOnTheScreen || !Array.isArray(mol.nodesOnTheScreen)) {
-        return gcodeAtoms;
-      }
-      
-      mol.nodesOnTheScreen.forEach((atom) => {
-        if (atom.atomType === 'Gcode') {
-          gcodeAtoms.push(atom);
-        }
-        // Recursively search inside Molecule and GitHubMolecule atoms
-        if (atom.atomType === 'Molecule' || atom.atomType === 'GitHubMolecule') {
-          const nestedGcodeAtoms = findAllGcodeAtoms(atom);
-          gcodeAtoms = gcodeAtoms.concat(nestedGcodeAtoms);
-        }
-      });
-      
-      return gcodeAtoms;
-    };
-
     // Test the recursive search
     const gcodeAtoms = findAllGcodeAtoms(mockTopLevelMolecule);
 
@@ -95,26 +94,6 @@ describe('Gcode Nested Detection', () => {
   });
 
   it('should handle molecules without nodesOnTheScreen', () => {
-    const findAllGcodeAtoms = (mol) => {
-      let gcodeAtoms = [];
-      
-      if (!mol.nodesOnTheScreen || !Array.isArray(mol.nodesOnTheScreen)) {
-        return gcodeAtoms;
-      }
-      
-      mol.nodesOnTheScreen.forEach((atom) => {
-        if (atom.atomType === 'Gcode') {
-          gcodeAtoms.push(atom);
-        }
-        if (atom.atomType === 'Molecule' || atom.atomType === 'GitHubMolecule') {
-          const nestedGcodeAtoms = findAllGcodeAtoms(atom);
-          gcodeAtoms = gcodeAtoms.concat(nestedGcodeAtoms);
-        }
-      });
-      
-      return gcodeAtoms;
-    };
-
     // Test with a molecule that has no nodesOnTheScreen
     const emptyMolecule = {
       atomType: 'Molecule',
@@ -126,26 +105,6 @@ describe('Gcode Nested Detection', () => {
   });
 
   it('should handle molecules with only non-Gcode atoms', () => {
-    const findAllGcodeAtoms = (mol) => {
-      let gcodeAtoms = [];
-      
-      if (!mol.nodesOnTheScreen || !Array.isArray(mol.nodesOnTheScreen)) {
-        return gcodeAtoms;
-      }
-      
-      mol.nodesOnTheScreen.forEach((atom) => {
-        if (atom.atomType === 'Gcode') {
-          gcodeAtoms.push(atom);
-        }
-        if (atom.atomType === 'Molecule' || atom.atomType === 'GitHubMolecule') {
-          const nestedGcodeAtoms = findAllGcodeAtoms(atom);
-          gcodeAtoms = gcodeAtoms.concat(nestedGcodeAtoms);
-        }
-      });
-      
-      return gcodeAtoms;
-    };
-
     const moleculeWithNoGcode = {
       atomType: 'Molecule',
       name: 'NoGcode',
@@ -196,26 +155,6 @@ describe('Gcode Nested Detection', () => {
     expect(oldResult[0].name).toBe('TopGcode');
 
     // New recursive implementation finds all 2 Gcode atoms
-    const findAllGcodeAtoms = (mol) => {
-      let gcodeAtoms = [];
-      
-      if (!mol.nodesOnTheScreen || !Array.isArray(mol.nodesOnTheScreen)) {
-        return gcodeAtoms;
-      }
-      
-      mol.nodesOnTheScreen.forEach((atom) => {
-        if (atom.atomType === 'Gcode') {
-          gcodeAtoms.push(atom);
-        }
-        if (atom.atomType === 'Molecule' || atom.atomType === 'GitHubMolecule') {
-          const nestedGcodeAtoms = findAllGcodeAtoms(atom);
-          gcodeAtoms = gcodeAtoms.concat(nestedGcodeAtoms);
-        }
-      });
-      
-      return gcodeAtoms;
-    };
-
     const newResult = findAllGcodeAtoms(mockMolecule);
     expect(newResult.length).toBe(2);
     expect(newResult[0].name).toBe('TopGcode');
