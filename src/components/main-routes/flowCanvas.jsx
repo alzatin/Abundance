@@ -210,6 +210,22 @@ export default memo(function FlowCanvas({
     });
   };
 
+  /**
+   * Helper function to convert viewport coordinates to canvas-relative coordinates
+   * This is necessary because when the on-screen keyboard appears, the page can scroll
+   * and touch coordinates (clientX/clientY) are relative to the viewport, not the canvas
+   */
+  const getCanvasCoordinates = (clientX, clientY) => {
+    if (!canvasRef.current) {
+      return { x: clientX, y: clientY };
+    }
+    const rect = canvasRef.current.getBoundingClientRect();
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
+  };
+
   const mouseMove = (e) => {
     if (e.touches && e.touches.length > 0) {
       // Set touchInterface flag to true when touch is detected
@@ -238,8 +254,11 @@ export default memo(function FlowCanvas({
       return;
     }
 
+    // Convert viewport coordinates to canvas-relative coordinates
+    const canvasCoords = getCanvasCoordinates(e.clientX, e.clientY);
+
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
-      molecule.mouseMove(e.clientX, e.clientY);
+      molecule.mouseMove(canvasCoords.x, canvasCoords.y);
     });
   };
 
@@ -490,6 +509,9 @@ export default memo(function FlowCanvas({
       setIsHovering(false);
       setSearch("");
 
+      // Convert viewport coordinates to canvas-relative coordinates
+      const canvasCoords = getCanvasCoordinates(event.clientX, event.clientY);
+
       var clickHandledByMolecule = false;
       var activeAtom = null;
       /*Run through all the atoms on the screen and decide if one was clicked*/
@@ -503,8 +525,8 @@ export default memo(function FlowCanvas({
         let atomClicked;
 
         atomClicked = molecule.clickDown(
-          event.clientX,
-          event.clientY,
+          canvasCoords.x,
+          canvasCoords.y,
           clickHandledByMolecule
         );
         if (atomClicked !== undefined && !clickHandledByMolecule) {
@@ -536,8 +558,8 @@ export default memo(function FlowCanvas({
           .placeAtom(
             {
               parentMolecule: GlobalVariables.currentMolecule,
-              x: GlobalVariables.pixelsToWidth(event.clientX),
-              y: GlobalVariables.pixelsToHeight(event.clientY),
+              x: GlobalVariables.pixelsToWidth(canvasCoords.x),
+              y: GlobalVariables.pixelsToHeight(canvasCoords.y),
               parent: GlobalVariables.currentMolecule,
               name: "Box",
               atomType: "Box",
@@ -576,6 +598,9 @@ export default memo(function FlowCanvas({
       event.clientY = event.changedTouches[0].clientY;
     }
 
+    // Convert viewport coordinates to canvas-relative coordinates
+    const canvasCoords = getCanvasCoordinates(event.clientX, event.clientY);
+
     // Iterate in reverse order to give priority to newer atoms
     for (
       let i = GlobalVariables.currentMolecule.nodesOnTheScreen.length - 1;
@@ -583,7 +608,7 @@ export default memo(function FlowCanvas({
       i--
     ) {
       const molecule = GlobalVariables.currentMolecule.nodesOnTheScreen[i];
-      const handled = molecule?.doubleClick(event.clientX, event.clientY);
+      const handled = molecule?.doubleClick(canvasCoords.x, canvasCoords.y);
     }
   };
 
@@ -615,11 +640,14 @@ export default memo(function FlowCanvas({
       return;
     }
 
+    // Convert viewport coordinates to canvas-relative coordinates
+    const canvasCoords = getCanvasCoordinates(event.clientX, event.clientY);
+
     //every time the mouse button goes up
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
-      molecule.clickUp(event.clientX, event.clientY);
+      molecule.clickUp(canvasCoords.x, canvasCoords.y);
     });
-    GlobalVariables.currentMolecule.clickUp(event.clientX, event.clientY);
+    GlobalVariables.currentMolecule.clickUp(canvasCoords.x, canvasCoords.y);
   };
 
   useEffect(() => {
