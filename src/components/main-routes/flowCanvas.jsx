@@ -219,6 +219,9 @@ export default memo(function FlowCanvas({
     if (!canvasRef.current) {
       return { x: clientX, y: clientY };
     }
+    // Trigger layout reflow to ensure getBoundingClientRect returns current values
+    void canvasRef.current.offsetHeight;
+    
     const rect = canvasRef.current.getBoundingClientRect();
     return {
       x: clientX - rect.left,
