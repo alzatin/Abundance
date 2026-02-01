@@ -480,7 +480,12 @@ export default memo(function FlowCanvas({
       // Start a long press timer for touch events (700ms is a common duration for long press)
       longPressTimer.current = setTimeout(() => {
         // When timer completes, show the circular menu at touch position
-        cmenu.show([touchStartPos.current.x, touchStartPos.current.y], false);
+        // Convert viewport coordinates to canvas-relative coordinates for correct positioning
+        const canvasCoords = getCanvasCoordinates(
+          touchStartPos.current.x,
+          touchStartPos.current.y
+        );
+        cmenu.show([canvasCoords.x, canvasCoords.y], false);
         longPressTimer.current = null;
       }, 500);
     } else {
@@ -500,7 +505,9 @@ export default memo(function FlowCanvas({
     // if it's a right click show the circular menu
     if (isRightMB) {
       var doubleClick = false;
-      cmenu.show([event.clientX, event.clientY], doubleClick);
+      // Convert viewport coordinates to canvas-relative coordinates for correct positioning
+      const canvasCoords = getCanvasCoordinates(event.clientX, event.clientY);
+      cmenu.show([canvasCoords.x, canvasCoords.y], doubleClick);
       return;
     } else {
       cmenu.hide();
