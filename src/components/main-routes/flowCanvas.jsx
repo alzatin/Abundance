@@ -219,9 +219,7 @@ export default memo(function FlowCanvas({
     if (!canvasRef.current) {
       return { x: clientX, y: clientY };
     }
-    // Force a layout recalculation to ensure getBoundingClientRect returns current values
-    // This is especially important on mobile after keyboard appearance/dismissal
-    // The offsetHeight access triggers a reflow if needed
+    // Trigger layout reflow to ensure getBoundingClientRect returns current values
     void canvasRef.current.offsetHeight;
     
     const rect = canvasRef.current.getBoundingClientRect();

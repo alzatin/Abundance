@@ -518,8 +518,7 @@ export default class Input extends Atom {
 
     // Get canvas position to properly position tooltip
     const canvas = GlobalVariables.canvas.current;
-    // Force a layout recalculation to ensure getBoundingClientRect returns current values
-    // This is especially important on mobile after keyboard appearance/dismissal
+    // Trigger layout reflow to ensure getBoundingClientRect returns current values
     void canvas.offsetHeight;
     
     const canvasRect = canvas.getBoundingClientRect();

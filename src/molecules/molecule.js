@@ -1710,8 +1710,7 @@ export default class Molecule extends Atom {
   }
   /** Force mouse events for activeAtom selection that triggers menu */
   makeActiveAtom(flowCanvas, atom) {
-    // Force a layout recalculation to ensure getBoundingClientRect returns current values
-    // This is especially important on mobile after keyboard appearance/dismissal
+    // Trigger layout reflow to ensure getBoundingClientRect returns current values
     void flowCanvas.offsetHeight;
     
     const rect = flowCanvas.getBoundingClientRect();
