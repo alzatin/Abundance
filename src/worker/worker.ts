@@ -27,6 +27,7 @@ import {
 } from "./tags";
 import type { AbundanceObject, AbundanceLeaf } from "./util";
 import * as util from "./util";
+import { re } from "mathjs";
 
 // --- Type Definitions ---
 const started: Promise<boolean> = util.init();
@@ -50,6 +51,72 @@ function createMesh(thickness: number): Promise<any[]> {
   });
 }
 
+function findFlatFaces(
+  input: AbundanceObject,
+  context: RequestContext,
+): Promise<number[]> {
+  return started.then(async () => {
+    const zValues: number[] = [];
+    let geometryToExport = extractKeepOut(input);
+    if (!geometryToExport) {
+      throw new Error(
+        "Geometry To Export has no geometry after keepout is applied",
+      );
+    }
+    //// Algo overview:
+    // collect all prospective horizonal flats to pass to area operation
+
+    const geomfaces = await util.actOnLeafs(
+      geometryToExport,
+      async (leaf: AbundanceLeaf) => {
+        let geom = await util.geometryProvider!.get(leaf.geometry, context);
+        if (!("faces" in geom)) {
+          // geom is a 2D object.
+          return leaf;
+          // TODO: add a warning here
+        } else if (geom.faces.length == 0) {
+          // unexpectedly no faces on this geometry. TODO: add a warning here.
+          return leaf;
+        }
+        geom = geom as Shape3D; // Safe to cast b/c we checked for faces above.
+
+        // In order to be considered, a face must be...
+        //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
+
+        const threshold = 0.01;
+        const isHorizontal = (normal) =>
+          Math.abs(normal.x) < threshold &&
+          Math.abs(normal.y) < threshold &&
+          Math.abs(Math.abs(normal.z) - 1) < threshold;
+
+        console.log("Checking faces for horizontality:", geom.faces.length);
+        const horizontalFaces = geom.faces.filter((face, idx) => {
+          const normal = face.normalAt ? face.normalAt() : null;
+          const center = face.center;
+          console.log(`Face #${idx}: normal=`, normal, "center=", center);
+          const result = normal && isHorizontal(normal);
+          if (result) {
+            console.log(
+              `--> Face #${idx} is horizontal, center z:`,
+              center[2] ?? center.z,
+            );
+          }
+          return result;
+        });
+
+        console.log("Horizontal faces found:", horizontalFaces.length);
+        horizontalFaces.forEach((face, idx) => {
+          const center = face.center;
+          const zVal = center[2] ?? center.z;
+          console.log(`Extracting z from horizontal face #${idx}:`, zVal);
+          zValues.push(zVal);
+        });
+      },
+    );
+    return zValues;
+  });
+}
+
 /**
  * Prepares geometry for visualization export in various file formats (STL, STEP, SVG).
  * @param {AbundanceObject} input - The geometry to export
@@ -59,13 +126,13 @@ function createMesh(thickness: number): Promise<any[]> {
 function visExport(
   input: AbundanceObject,
   fileType: string,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   return started.then(async () => {
     let geometryToExport = extractKeepOut(input);
     if (!geometryToExport) {
       throw new Error(
-        "Geometry To Export has no geometry after keepout is applied"
+        "Geometry To Export has no geometry after keepout is applied",
       );
     }
     let fusedGeometry = await fuseAssembly(geometryToExport, context);
@@ -73,25 +140,25 @@ function visExport(
       fileType == "STL"
         ? "#91C8D5"
         : fileType == "STEP"
-        ? "#ACAFDD"
-        : "#5A5A5A";
+          ? "#ACAFDD"
+          : "#5A5A5A";
     let finalGeometry = fusedGeometry;
     if (fileType == "SVG") {
       /** Fuses input geometry, draws a top view projection*/
       if (util.is3D(input)) {
         const shape3d = (await util.geometryProvider!.get(
           fusedGeometry.geometry,
-          context
+          context,
         )) as AnyShape;
         const drawingResult = util.replicad.drawProjection(
           shape3d,
-          "top"
+          "top",
         ).visible;
         const cachedGeom = await util.geometryProvider!.addSingularToCache(
           drawingResult,
           context,
           "export",
-          [fileType, input]
+          [fileType, input],
         );
         finalGeometry = {
           ...fusedGeometry,
@@ -120,20 +187,20 @@ async function downExport(
   fileType: string,
   svgResolution: number,
   units: string,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<Blob> {
   await started;
   // as with visexport, fuse the result before exporting.
   let geometryToExport = extractKeepOut(input);
   if (!geometryToExport) {
     throw new Error(
-      "Geometry To Export has no geometry after keepout is applied"
+      "Geometry To Export has no geometry after keepout is applied",
     );
   }
   let fusedGeometry = await fuseAssembly(geometryToExport, context);
   const geom = await util.geometryProvider!.get(
     fusedGeometry.geometry,
-    context
+    context,
   );
   let scaleUnit = units == "Inches" ? 1 : units == "MM" ? 25.4 : 1;
   let scaling = svgResolution / scaleUnit;
@@ -164,7 +231,7 @@ async function downExport(
  */
 async function importingSTEP(
   file: File,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   await started;
   let STEPresult = await util.replicad.importSTEP(file);
@@ -172,7 +239,7 @@ async function importingSTEP(
     throw new Error(
       "Imported STEP file describes a " +
         typeof STEPresult +
-        ". Must be a Solid, Shell, Compound, or CompSolid."
+        ". Must be a Solid, Shell, Compound, or CompSolid.",
     );
   }
 
@@ -181,7 +248,7 @@ async function importingSTEP(
       STEPresult,
       context,
       "import-step",
-      [await util.hashFileContents(file)]
+      [await util.hashFileContents(file)],
     ),
     tags: [],
     color: util.defaultColor,
@@ -197,7 +264,7 @@ async function importingSTEP(
  */
 async function importingSTL(
   file: File,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   await started;
   let STLresult = await util.replicad.importSTL(file);
@@ -205,7 +272,7 @@ async function importingSTL(
     throw new Error(
       "Imported STL file describes a " +
         typeof STLresult +
-        ". Must be a Solid, Shell, Compound, or CompSolid."
+        ". Must be a Solid, Shell, Compound, or CompSolid.",
     );
   }
   return {
@@ -213,7 +280,7 @@ async function importingSTL(
       STLresult,
       context,
       "import-stl",
-      [await util.hashFileContents(file)]
+      [await util.hashFileContents(file)],
     ),
     tags: [],
     color: util.defaultColor,
@@ -232,7 +299,7 @@ async function importingSTL(
 async function importingSVG(
   svg: string,
   context: RequestContext,
-  width: number
+  width: number,
 ): Promise<AbundanceObject> {
   await started;
   const baseWidth = width + width * 0.05;
@@ -258,7 +325,7 @@ async function importingSVG(
         drawnSVG.clone().translate(-center[0], -center[1]),
         context,
         "import-svg",
-        [await util.hashString(svg), width]
+        [await util.hashString(svg), width],
       ),
       tags: [],
       plane: util.XYPlane,
@@ -286,11 +353,11 @@ async function importingSVG(
  */
 function parseGcodeToEdges(
   gcode: string,
-  currentPosition: [number, number, number]
+  currentPosition: [number, number, number],
 ): Edge[] {
   const edges: Edge[] = [];
   const lines = gcode.split("\n");
-  
+
   lines.forEach((line) => {
     const cmd = line.trim().toUpperCase();
     if (cmd.startsWith("G0") || cmd.startsWith("G1")) {
@@ -317,7 +384,7 @@ function parseGcodeToEdges(
       currentPosition[2] = z;
     }
   });
-  
+
   return edges;
 }
 
@@ -330,65 +397,65 @@ function parseGcodeToEdges(
  */
 async function visualizeGcodeIncremental(
   gcodeArray: string[],
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   console.log(`\n=== Gcode Visualization with Individual Wire Assembly ===`);
   console.log(`Processing ${gcodeArray.length} gcode parts`);
-  
+
   // Create a generation-specific ID by hashing all gcode content together
   // This ensures each unique set of gcode strings gets a unique generation ID
-  const generationId = util.hashString(gcodeArray.join('|||'));
-  
+  const generationId = util.hashString(gcodeArray.join("|||"));
+
   const overallStart = performance.now();
-  
+
   // Maintain position across all parts to avoid phantom lines back to origin
   const currentPosition: [number, number, number] = [0, 0, 0];
-  
+
   // Collect edges per part for individual wire assembly
   const edgesPerPart: Edge[][] = [];
-  
+
   // Process each gcode part separately to create edges
   const parseStart = performance.now();
   for (let i = 0; i < gcodeArray.length; i++) {
     const gcode = gcodeArray[i];
     const partEdges = parseGcodeToEdges(gcode, currentPosition);
-    
+
     if (partEdges.length > 0) {
       edgesPerPart.push(partEdges);
     }
   }
   const parseTime = performance.now() - parseStart;
-  
+
   console.log(`Parsed gcode in ${parseTime.toFixed(2)}ms`);
   console.log(`Parts with edges: ${edgesPerPart.length}`);
-  
+
   if (edgesPerPart.length === 0) {
     throw new Error("No valid gcode movements found to visualize");
   }
-  
+
   // Assemble individual wires and create separate AbundanceObjects
   console.log(`\n--- Assembling Individual Wires ---`);
   const assemblyStart = performance.now();
   const wireObjects: AbundanceObject[] = [];
-  
+
   for (let i = 0; i < edgesPerPart.length; i++) {
     try {
       const wireStart = performance.now();
       const wire = util.replicad.assembleWire(edgesPerPart[i]);
       const wireTime = performance.now() - wireStart;
-      
+
       // Create a unique hash for this part using generation ID, index, and gcode content
       // The generationId (hash of all gcode) ensures different generations don't collide in cache
       const partHash = util.hashString(
-        `gcode-part-${generationId}-${i}-${gcodeArray[i]}`
+        `gcode-part-${generationId}-${i}-${gcodeArray[i]}`,
       );
-      
+
       wireObjects.push({
         geometry: await util.geometryProvider!.addSingularToCache(
           wire,
           context,
           `gcode-part-${i}`,
-          [partHash]
+          [partHash],
         ),
         tags: [],
         plane: util.XYPlane,
@@ -396,37 +463,44 @@ async function visualizeGcodeIncremental(
         bom: [],
         dimension: "3D",
       });
-      
+
       // Log progress: first 5 parts, every 10th part, and last part
-      const shouldLog = i < 5 || i === edgesPerPart.length - 1 || (i + 1) % 10 === 0;
+      const shouldLog =
+        i < 5 || i === edgesPerPart.length - 1 || (i + 1) % 10 === 0;
       if (shouldLog) {
-        console.log(`  Part ${i + 1}/${edgesPerPart.length}: ${edgesPerPart[i].length} edges in ${wireTime.toFixed(2)}ms`);
+        console.log(
+          `  Part ${i + 1}/${edgesPerPart.length}: ${edgesPerPart[i].length} edges in ${wireTime.toFixed(2)}ms`,
+        );
       }
     } catch (err) {
       console.warn(`Failed to create wire for part ${i + 1}:`, err);
       // Continue processing other parts even if one fails
     }
   }
-  
+
   const assemblyTime = performance.now() - assemblyStart;
-  console.log(`\nAssembled ${wireObjects.length} wires in ${assemblyTime.toFixed(2)}ms`);
+  console.log(
+    `\nAssembled ${wireObjects.length} wires in ${assemblyTime.toFixed(2)}ms`,
+  );
   if (wireObjects.length > 0) {
-    console.log(`Average per wire: ${(assemblyTime / wireObjects.length).toFixed(2)}ms`);
+    console.log(
+      `Average per wire: ${(assemblyTime / wireObjects.length).toFixed(2)}ms`,
+    );
   }
-  
+
   const overallTime = performance.now() - overallStart;
   console.log(`Total visualization time: ${overallTime.toFixed(2)}ms`);
   console.log(`===========================================\n`);
-  
+
   // Return as an assembly if multiple wires, single wire if only one
   if (wireObjects.length === 0) {
     throw new Error("No valid wires could be created");
   }
-  
+
   if (wireObjects.length === 1) {
     return wireObjects[0];
   }
-  
+
   // Use the assembly function to combine multiple wires
   console.log(`Creating assembly of ${wireObjects.length} wire objects...`);
   return await assembly(wireObjects, context);
@@ -441,36 +515,36 @@ async function visualizeGcodeIncremental(
  */
 async function visualizeGcodeAsAssembly(
   gcodeArray: string[],
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   console.log(`\n=== Experimental: Gcode as Assembly ===`);
   const startTime = performance.now();
-  
+
   // Create a generation-specific ID by hashing all gcode content together
-  const generationId = util.hashString(gcodeArray.join('|||'));
-  
+  const generationId = util.hashString(gcodeArray.join("|||"));
+
   const currentPosition: [number, number, number] = [0, 0, 0];
   const wireObjects: AbundanceObject[] = [];
-  
+
   // Process each gcode part and create a separate AbundanceObject for each wire
   for (let i = 0; i < gcodeArray.length; i++) {
     const gcode = gcodeArray[i];
     const partEdges = parseGcodeToEdges(gcode, currentPosition);
-    
+
     if (partEdges.length > 0) {
       try {
         const wire = util.replicad.assembleWire(partEdges);
         // Use generationId to prevent cache collisions between different generations
         const partHash = util.hashString(
-          `gcode-exp-${generationId}-${i}-${gcode}`
+          `gcode-exp-${generationId}-${i}-${gcode}`,
         );
-        
+
         wireObjects.push({
           geometry: await util.geometryProvider!.addSingularToCache(
             wire,
             context,
             `gcode-part-${i}`,
-            [partHash]
+            [partHash],
           ),
           tags: [],
           plane: util.XYPlane,
@@ -483,21 +557,23 @@ async function visualizeGcodeAsAssembly(
       }
     }
   }
-  
+
   const assemblyTime = performance.now() - startTime;
-  console.log(`Created assembly with ${wireObjects.length} wires in ${assemblyTime.toFixed(2)}ms`);
+  console.log(
+    `Created assembly with ${wireObjects.length} wires in ${assemblyTime.toFixed(2)}ms`,
+  );
   console.log(`Note: This approach may show wires as disconnected in the UI`);
   console.log(`=======================================\n`);
-  
+
   // Return as an assembly
   if (wireObjects.length === 0) {
     throw new Error("No valid wires could be created");
   }
-  
+
   if (wireObjects.length === 1) {
     return wireObjects[0];
   }
-  
+
   // Use the assembly function to combine them
   return await assembly(wireObjects, context);
 }
@@ -529,13 +605,13 @@ const prettyProjection = (shape: Shape3D | replicad.Wire) => {
  */
 async function generateThumbnail(
   input: AbundanceObject,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<string> {
   return started.then(async () => {
     const fusedAssembly = await fuseAssembly(input, context);
     const fusedGeometry = await util.geometryProvider!.get(
       fusedAssembly.geometry,
-      context
+      context,
     );
     let projectionShape;
     let svg;
@@ -548,7 +624,7 @@ async function generateThumbnail(
     } else {
       projectionShape = util.replicad.drawProjection(
         fusedGeometry.sketchOnPlane("XY").extrude(0.0001),
-        "top"
+        "top",
       ).visible;
       svg = projectionShape.toSVG();
     }
@@ -559,7 +635,7 @@ async function generateThumbnail(
 
 function getBoundingBox(
   geometry: AbundanceObject,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<{ min: number[]; max: number[] }> {
   return util.getBounds(geometry, context);
 }
@@ -578,7 +654,7 @@ async function isAssembly(geometry: AbundanceObject): Promise<boolean> {
  * Extract individual parts from an assembly. Returns a list of leaf nodes.
  */
 async function extractParts(
-  assembly: AbundanceObject
+  assembly: AbundanceObject,
 ): Promise<AbundanceLeaf[]> {
   await started;
   return util.flattenAssembly(assembly);
@@ -627,7 +703,7 @@ async function clearCache(context: RequestContext): Promise<boolean> {
 
 async function sweepCache(
   shapesToRetain: Set<AbundanceObject>,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<number> {
   await started;
 
@@ -670,6 +746,7 @@ if (
     rotate,
     scale,
     fillet,
+    findFlatFaces,
     chamfer,
     difference,
     tag,
@@ -711,6 +788,7 @@ export {
   extractTag,
   extrude,
   fillet,
+  findFlatFaces,
   generateThumbnail,
   getBoundingBox,
   importingSTEP,
