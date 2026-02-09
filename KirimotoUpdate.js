@@ -1,8 +1,6 @@
 import { Engine } from "./engine.js";
 import GlobalVariables from "./src/js/globalvariables.js";
 
-const kiriEngine = new Engine({ workURL: "/worker.js" });
-
 const generateGcode = (
   stlUrl,
   centerPos,
@@ -12,9 +10,10 @@ const generateGcode = (
   cutThrough,
   gcodeCallback,
   progressCallback,
-  partProgressCallback,
   tool,
+  flats,
 ) => {
+  const kiriEngine = new Engine({ workURL: "/worker.js" });
   const CUT_THROUGH = cutThrough;
   const stock_offset = {
     x: 3,
@@ -104,7 +103,7 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.25); // 25% - Tools set
 
       const bounds = eng.widget.getBoundingBox();
-      const down = (bounds.dim.z + CUT_THROUGH) / passes;
+      const down = (bounds.dim.z + CUT_THROUGH) / (passes - 1);
       const stepOver = 0.8;
       // camZAnchor is only for UI
       eng.setOrigin(bounds.mid.x, bounds.mid.y, bounds.max.z);
@@ -116,22 +115,6 @@ const generateGcode = (
         z: bounds.dim.z + stock_offset.z,
       });
 
-      console.log("Widget");
-      console.log(eng.widget);
-      // mesh.geometry is a THREE.BufferGeometry
-      const position = eng.widget.mesh.geometry.attributes.position;
-      const zValues = [];
-      for (
-        let i = 2;
-        i < position.count * position.itemSize;
-        i += position.itemSize
-      ) {
-        zValues.push(position.array[i]);
-      }
-      // To get unique Z values:
-      const uniqueFlats = [...new Set(zValues)];
-      console.log("Unique Z values (flats):", uniqueFlats);
-
       eng.setProcess({
         camDepthFirst: true,
         camEaseAngle: 40,
@@ -140,6 +123,7 @@ const generateGcode = (
         camOriginCenter: true,
         camStockOffset: false,
         camToolInit: true,
+        //zBottom: -bounds.max.z - CUT_THROUGH,
         ops: [
           {
             all: false,
@@ -164,7 +148,7 @@ const generateGcode = (
           {
             disabled: false,
             down: 0,
-            flats: [uniqueFlats[2]], //uniqueFlats need multiple ops
+            flats: flats,
             leave: 0,
             leavez: 0,
             mode: "clear",
@@ -187,7 +171,7 @@ const generateGcode = (
             omitthru: false,
             omitvoid: false,
             outside: true,
-            ov_botz: 0, //-CUT_THROUGH,
+            ov_botz: -CUT_THROUGH,
             ov_conv: true,
             ov_topz: 0,
             plunge: plunge,

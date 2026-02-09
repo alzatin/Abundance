@@ -51,23 +51,28 @@ function createMesh(thickness: number): Promise<any[]> {
   });
 }
 
+/**
+ * Returns the z-values of flat faces in the geometry, which can be used for area operations in gcode generation.
+ * @param {AbundanceObject} input - The geometry to export
+ * @returns {Promise<number>} A promise that resolves to an array of z-values corresponding to flat faces in the geometry
+ */
 function findFlatFaces(
   input: AbundanceObject,
   context: RequestContext,
 ): Promise<number[]> {
   return started.then(async () => {
     const zValues: number[] = [];
-    let geometryToExport = extractKeepOut(input);
-    if (!geometryToExport) {
+    let geometryToFilter = extractKeepOut(input);
+    if (!geometryToFilter) {
       throw new Error(
         "Geometry To Export has no geometry after keepout is applied",
       );
     }
     //// Algo overview:
     // collect all prospective horizonal flats to pass to area operation
-
+    const threshold = 0.01;
     const geomfaces = await util.actOnLeafs(
-      geometryToExport,
+      geometryToFilter,
       async (leaf: AbundanceLeaf) => {
         let geom = await util.geometryProvider!.get(leaf.geometry, context);
         if (!("faces" in geom)) {
@@ -83,37 +88,37 @@ function findFlatFaces(
         // In order to be considered, a face must be...
         //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
 
-        const threshold = 0.01;
         const isHorizontal = (normal) =>
           Math.abs(normal.x) < threshold &&
           Math.abs(normal.y) < threshold &&
           Math.abs(Math.abs(normal.z) - 1) < threshold;
 
-        console.log("Checking faces for horizontality:", geom.faces.length);
         const horizontalFaces = geom.faces.filter((face, idx) => {
           const normal = face.normalAt ? face.normalAt() : null;
           const center = face.center;
-          console.log(`Face #${idx}: normal=`, normal, "center=", center);
           const result = normal && isHorizontal(normal);
-          if (result) {
-            console.log(
-              `--> Face #${idx} is horizontal, center z:`,
-              center[2] ?? center.z,
-            );
-          }
+
           return result;
         });
 
-        console.log("Horizontal faces found:", horizontalFaces.length);
         horizontalFaces.forEach((face, idx) => {
           const center = face.center;
           const zVal = center[2] ?? center.z;
-          console.log(`Extracting z from horizontal face #${idx}:`, zVal);
           zValues.push(zVal);
         });
       },
     );
-    return zValues;
+    // Remove duplicate z values
+    const uniqueZValues = Array.from(new Set(zValues));
+    //Exclude the smallest and the largest z values as those are likely the floor and ceiling, and return the rest as potential flat faces for area operations.
+    let filteredZValues = uniqueZValues.filter((z) => {
+      return (
+        z > Math.min(...uniqueZValues) + threshold &&
+        z < Math.max(...uniqueZValues) - threshold
+      );
+    });
+
+    return filteredZValues;
   });
 }
 
