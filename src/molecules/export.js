@@ -206,7 +206,7 @@ export default class Export extends Atom {
         );
       }
       const result = await GlobalVariables.cad.downExport(
-        geometry,
+        this.value,
         fileType,
         resolution,
         GlobalVariables.topLevelMolecule.unitsKey,
