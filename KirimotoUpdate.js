@@ -79,7 +79,8 @@ const generateGcode = (
       if (progressCallback) progressCallback(0.1); // 10% - STL loaded
 
       eng.setMode("CAM");
-      eng.moveTo(0, 0, 0);
+
+      eng.moveTo(-centerPos[0], centerPos[1], 0);
       // Determine if project uses metric units
       const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
       const isMetric = projectUnits === "MM";
