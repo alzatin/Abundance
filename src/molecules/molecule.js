@@ -1710,6 +1710,9 @@ export default class Molecule extends Atom {
   }
   /** Force mouse events for activeAtom selection that triggers menu */
   makeActiveAtom(flowCanvas, atom) {
+    // Trigger layout reflow to ensure getBoundingClientRect returns current values
+    void flowCanvas.offsetHeight;
+    
     const rect = flowCanvas.getBoundingClientRect();
     const clientX = rect.left + GlobalVariables.widthToPixels(atom.x);
     const clientY = rect.top + GlobalVariables.heightToPixels(atom.y);

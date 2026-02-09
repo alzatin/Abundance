@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ShareDialog from "./ShareDialog.jsx";
+import ForkConfirmDialog from "./ForkConfirmDialog.jsx";
 import { useNavigate } from "react-router-dom";
 import GlobalVariables from "../../js/globalvariables.js";
 import { re } from "mathjs";
@@ -73,6 +74,7 @@ function RunNavigation({
   authRedirectHandler,
 }) {
   let [shareDialog, setShareDialog] = useState(false);
+  let [showForkDialog, setShowForkDialog] = useState(false);
 
   let [starredState, setStarred] = useState(false);
   let [dialogContent, setDialog] = useState("");
@@ -114,7 +116,8 @@ function RunNavigation({
         setStarred(isLiked);
         // now handle the redirect action that was requested
         if (redirectType === "fork") {
-          forkProject(authorizedUserOcto);
+          // Show confirmation dialog after authentication
+          setShowForkDialog(true);
         }
         if (redirectType === "like") {
           // Use fresh isLiked value instead of potentially stale starredState
@@ -324,6 +327,34 @@ function RunNavigation({
     }
   };
 
+  // Handler for fork button click - show confirmation dialog
+  const handleForkClick = () => {
+    setShowForkDialog(true);
+  };
+
+  // Handler when user confirms fork
+  const handleForkConfirm = () => {
+    setShowForkDialog(false);
+    if (authorizedUserOcto) {
+      // User is logged in, proceed with fork
+      forkProject(authorizedUserOcto);
+    } else {
+      // User needs to log in first, clear redirectType temporarily
+      // It will be set again after auth when the dialog shows
+      setRedirectType(null);
+      authRedirectHandler({ authType: "fork" });
+    }
+  };
+
+  // Handler when user cancels fork
+  const handleForkCancel = () => {
+    setShowForkDialog(false);
+    // Clear redirect type if it was set
+    if (redirectType === "fork") {
+      setRedirectType(null);
+    }
+  };
+
   return (
     <>
       {shareDialog ? (
@@ -331,6 +362,13 @@ function RunNavigation({
           {...{ shareDialog, setShareDialog, dialogContent, activeAtom }}
         />
       ) : null}
+      <ForkConfirmDialog
+        isOpen={showForkDialog}
+        onClose={handleForkCancel}
+        onConfirm={handleForkConfirm}
+        projectName={GlobalVariables.currentAWSnode?.repoName || ""}
+        projectOwner={GlobalVariables.currentAWSnode?.owner || ""}
+      />
       <div className="run-navigation" style={{ display: "flex", gap: 10 }}>
         {/* Share Button */}
         <button
@@ -388,11 +426,7 @@ function RunNavigation({
             fontFamily: "JetBrains Mono, monospace",
             outline: "none",
           }}
-          onClick={() => {
-            authorizedUserOcto
-              ? forkProject(authorizedUserOcto)
-              : authRedirectHandler({ authType: "fork" });
-          }}
+          onClick={handleForkClick}
           title={tooltipMessages.Fork}
         >
           {forkSvg}
