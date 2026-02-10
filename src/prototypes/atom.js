@@ -1074,6 +1074,23 @@ export default class Atom extends ObservableEntity {
               input.setValue(value);
             },
           };
+        } else if (input.valueType === "range") {
+          // Handle range slider for range inputs
+          const min = input.options?.min ?? 0;
+          const max = input.options?.max ?? 100;
+          const step = input.options?.step ?? 1;
+          inputParams[this.uniqueID + input.name] = {
+            type: "rangeSlider",
+            value: input.value ?? min,
+            label: input.name,
+            min: min,
+            max: max,
+            step: step,
+            disabled: hasConnector,
+            onChange: (value) => {
+              input.setValue(value);
+            },
+          };
         } else if (input.valueType === "boolean") {
           inputParams[this.uniqueID + input.name] = {
             type: "boolean",

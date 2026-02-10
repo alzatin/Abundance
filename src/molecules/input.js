@@ -937,7 +937,7 @@ export default class Input extends Atom {
       value: this.type,
       label: "Input Type",
       disabled: false,
-      options: ["number", "string", "geometry", "array", "boolean", "import"],
+      options: ["number", "string", "geometry", "array", "boolean", "range", "import"],
       onChange: (newType) => {
         if (this.type !== newType) {
           this.type = newType;
@@ -976,6 +976,53 @@ export default class Input extends Atom {
           //Add a new input to the current molecule
           if (this.parentAP) {
             this.parentAP.options = this.options;
+          }
+          this.setInputChanged(val);
+        },
+      };
+    }
+
+    // If type is range, add controls for min and max values
+    if (this.type === "range") {
+      // Initialize min/max if not set
+      if (this.min === undefined) {
+        this.min = 0;
+      }
+      if (this.max === undefined) {
+        this.max = 100;
+      }
+
+      inputParams[this.uniqueID + "rangeMin"] = {
+        type: "number",
+        value: this.min,
+        label: "Min Value",
+        disabled: false,
+        onChange: (val) => {
+          this.min = val;
+          // Update parent AP options with min/max
+          if (this.parentAP) {
+            this.parentAP.options = {
+              min: this.min,
+              max: this.max,
+            };
+          }
+          this.setInputChanged(val);
+        },
+      };
+
+      inputParams[this.uniqueID + "rangeMax"] = {
+        type: "number",
+        value: this.max,
+        label: "Max Value",
+        disabled: false,
+        onChange: (val) => {
+          this.max = val;
+          // Update parent AP options with min/max
+          if (this.parentAP) {
+            this.parentAP.options = {
+              min: this.min,
+              max: this.max,
+            };
           }
           this.setInputChanged(val);
         },
@@ -1049,6 +1096,12 @@ export default class Input extends Atom {
     //Write the current color selection to the serialized object
     superSerialObject.type = this.type;
     superSerialObject.options = this.options;
+
+    // Save range min/max if type is range
+    if (this.type === "range") {
+      superSerialObject.min = this.min;
+      superSerialObject.max = this.max;
+    }
 
     // Save import-related properties if type is import
     if (this.type === "import") {
