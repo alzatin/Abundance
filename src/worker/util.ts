@@ -321,7 +321,7 @@ async function withTimeout<T>(
   timeoutMs: number,
   errorMessage: string = "Operation timed out"
 ): Promise<T> {
-  let timeoutId: NodeJS.Timeout | number;
+  let timeoutId: ReturnType<typeof setTimeout>;
   
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
@@ -331,10 +331,10 @@ async function withTimeout<T>(
 
   try {
     const result = await Promise.race([promise, timeoutPromise]);
-    clearTimeout(timeoutId as NodeJS.Timeout);
+    clearTimeout(timeoutId);
     return result;
   } catch (error) {
-    clearTimeout(timeoutId as NodeJS.Timeout);
+    clearTimeout(timeoutId);
     throw error;
   }
 }
