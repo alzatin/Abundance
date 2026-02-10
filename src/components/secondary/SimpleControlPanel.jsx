@@ -431,6 +431,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
       );
       if (next < controlKeys.length) {
         setFocusedIndex(next);
+        setShouldFocus(true); // Ensure focus is applied
       }
       e.preventDefault();
     } else if (e.key === "ArrowUp") {
@@ -443,6 +444,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
       );
       if (prev >= 0) {
         setFocusedIndex(prev);
+        setShouldFocus(true); // Ensure focus is applied
       }
       e.preventDefault();
     }
