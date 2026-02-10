@@ -391,7 +391,14 @@ async function visualizeGcodeIncremental(
   for (let i = 0; i < edgesPerPart.length; i++) {
     try {
       const wireStart = performance.now();
-      const wire = util.replicad.assembleWire(edgesPerPart[i]);
+      
+      // Wrap assembleWire with a timeout to prevent hanging on faulty gcode
+      const wire = await util.withTimeout(
+        Promise.resolve(util.replicad.assembleWire(edgesPerPart[i])),
+        30000, // 30 second timeout
+        `Wire assembly timeout for gcode part ${i + 1}/${edgesPerPart.length} (took longer than 30 seconds)`
+      );
+      
       const wireTime = performance.now() - wireStart;
 
       // Create a unique hash for this part using generation ID, index, and gcode content
@@ -483,7 +490,13 @@ async function visualizeGcodeAsAssembly(
 
     if (partEdges.length > 0) {
       try {
-        const wire = util.replicad.assembleWire(partEdges);
+        // Wrap assembleWire with a timeout to prevent hanging on faulty gcode
+        const wire = await util.withTimeout(
+          Promise.resolve(util.replicad.assembleWire(partEdges)),
+          30000, // 30 second timeout
+          `Wire assembly timeout for experimental gcode part ${i + 1}/${gcodeArray.length} (took longer than 30 seconds)`
+        );
+        
         // Use generationId to prevent cache collisions between different generations
         const partHash = util.hashString(
           `gcode-exp-${generationId}-${i}-${gcode}`,
