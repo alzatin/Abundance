@@ -3,6 +3,10 @@ import GlobalVariables from "../js/globalvariables.js";
 import { Status } from "../prototypes/observableEntity.js";
 import { Octokit } from "octokit";
 
+// Default values for range type inputs
+const DEFAULT_RANGE_MIN = 0;
+const DEFAULT_RANGE_MAX = 100;
+
 /**
  * This class creates the input atom.
  */
@@ -906,6 +910,18 @@ export default class Input extends Atom {
     }
   }
 
+  /**
+   * Helper method to update parent attachment point options with current min/max values
+   */
+  updateParentAPRangeOptions() {
+    if (this.parentAP) {
+      this.parentAP.options = {
+        min: this.min,
+        max: this.max,
+      };
+    }
+  }
+
   createInputParams(setInputChanged) {
     this.setInputChanged = setInputChanged;
     let inputParams = {};
@@ -986,10 +1002,10 @@ export default class Input extends Atom {
     if (this.type === "range") {
       // Initialize min/max if not set
       if (this.min === undefined) {
-        this.min = 0;
+        this.min = DEFAULT_RANGE_MIN;
       }
       if (this.max === undefined) {
-        this.max = 100;
+        this.max = DEFAULT_RANGE_MAX;
       }
 
       inputParams[this.uniqueID + "rangeMin"] = {
@@ -999,13 +1015,7 @@ export default class Input extends Atom {
         disabled: false,
         onChange: (val) => {
           this.min = val;
-          // Update parent AP options with min/max
-          if (this.parentAP) {
-            this.parentAP.options = {
-              min: this.min,
-              max: this.max,
-            };
-          }
+          this.updateParentAPRangeOptions();
           this.setInputChanged(val);
         },
       };
@@ -1017,13 +1027,7 @@ export default class Input extends Atom {
         disabled: false,
         onChange: (val) => {
           this.max = val;
-          // Update parent AP options with min/max
-          if (this.parentAP) {
-            this.parentAP.options = {
-              min: this.min,
-              max: this.max,
-            };
-          }
+          this.updateParentAPRangeOptions();
           this.setInputChanged(val);
         },
       };
