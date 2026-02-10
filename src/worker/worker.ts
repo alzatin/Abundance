@@ -1,5 +1,5 @@
 import { expose } from "comlink";
-import type { AnyShape, Edge, Shape3D, ShapeMesh } from "replicad";
+import type { AnyShape, Drawing, Edge, Shape3D, ShapeMesh } from "replicad";
 import * as replicad from "replicad";
 import { drawSVG } from "replicad-decorate";
 import { chamfer, extrude, fillet, move, rotate, scale } from "./actions";
@@ -541,7 +541,7 @@ async function visualizeGcodeAsAssembly(
  * @param {Drawing} drawing - The 2D drawing to flip
  * @returns {Drawing} The flipped drawing
  */
-function flipDrawingForSvg(drawing: any) {
+function flipDrawingForSvg(drawing: Drawing): Drawing {
   const center = drawing.boundingBox.center;
   return drawing
     .clone()
