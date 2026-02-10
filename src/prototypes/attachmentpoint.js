@@ -612,6 +612,11 @@ export default class AttachmentPoint extends ObservableEntity {
       return true;
     }
 
+    // "any" type is compatible with all types (used by Equation atom)
+    if (outputAP.valueType === "any" || inputAP.valueType === "any") {
+      return true;
+    }
+
     // Same types are always compatible
     if (outputAP.valueType === inputAP.valueType) {
       return true;
