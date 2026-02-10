@@ -19,6 +19,11 @@ describe("Connection Replacement with Type Compatibility", () => {
         return true;
       }
       
+      // "any" type is compatible with all types (used by Equation atom)
+      if (outputAP.valueType === "any" || inputAP.valueType === "any") {
+        return true;
+      }
+      
       // Same types are always compatible
       if (outputAP.valueType === inputAP.valueType) {
         return true;
@@ -115,6 +120,34 @@ describe("Connection Replacement with Type Compatibility", () => {
       
       expect(MockAttachmentPoint.areTypesCompatible(outputAP, inputAP)).toBe(false);
     });
+
+    it('should allow "any" type output to connect to number inputs', () => {
+      const outputAP = new MockAttachmentPoint("any");
+      const inputAP = new MockAttachmentPoint("number");
+      
+      expect(MockAttachmentPoint.areTypesCompatible(outputAP, inputAP)).toBe(true);
+    });
+
+    it('should allow "any" type output to connect to geometry inputs', () => {
+      const outputAP = new MockAttachmentPoint("any");
+      const inputAP = new MockAttachmentPoint("geometry");
+      
+      expect(MockAttachmentPoint.areTypesCompatible(outputAP, inputAP)).toBe(true);
+    });
+
+    it('should allow "any" type output to connect to array inputs', () => {
+      const outputAP = new MockAttachmentPoint("any");
+      const inputAP = new MockAttachmentPoint("array");
+      
+      expect(MockAttachmentPoint.areTypesCompatible(outputAP, inputAP)).toBe(true);
+    });
+
+    it('should allow number output to connect to "any" type inputs', () => {
+      const outputAP = new MockAttachmentPoint("number");
+      const inputAP = new MockAttachmentPoint("any");
+      
+      expect(MockAttachmentPoint.areTypesCompatible(outputAP, inputAP)).toBe(true);
+    });
   });
 
   describe("AttachmentPoint.wasConnectionMade with replacement support", () => {
@@ -198,6 +231,29 @@ describe("Connection Replacement with Type Compatibility", () => {
       
       // Test that constant2 can replace constant1 (compatible types)
       expect(circleDiameterInput.wasConnectionMade(100, 100, constant2Output)).toBe(true);
+    });
+
+    it('should allow equation output ("any" type) to replace number connections', () => {
+      // This simulates the reported issue:
+      // constant → circle.diameter (existing connection)
+      // equation → circle.diameter (should replace constant)
+      
+      const constantOutput = new MockAttachmentPoint("number");
+      const equationOutput = new MockAttachmentPoint("any");
+      const circleDiameterInput = new MockAttachmentPoint("number");
+      
+      // Mock the required methods
+      circleDiameterInput.isCloseEnoughToTarget = () => true;
+      circleDiameterInput.connectors = [];
+      
+      // Test initial connection from constant
+      expect(circleDiameterInput.wasConnectionMade(100, 100, constantOutput)).toBe(true);
+      
+      // Simulate existing connection from constant
+      circleDiameterInput.connectors = [{}];
+      
+      // Test that equation can replace constant (any → number is compatible)
+      expect(circleDiameterInput.wasConnectionMade(100, 100, equationOutput)).toBe(true);
     });
 
     it("should demonstrate the blocked use case: incompatible geometry to number", () => {
