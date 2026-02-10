@@ -276,7 +276,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     setContentCollapsed,
     closeMenu,
   },
-  ref
+  ref,
 ) {
   // Collapsed panel state
   const [collapsed, setCollapsed] = useState(initialCollapsed);
@@ -325,7 +325,11 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   // Commit changes to actual control values
   const commitChange = (key, value, config) => {
     // For number types, validate that the value is not NaN
-    if (config.type === "number" || config.type === "range" || config.type === "rangeSlider") {
+    if (
+      config.type === "number" ||
+      config.type === "range" ||
+      config.type === "rangeSlider"
+    ) {
       if (isNaN(value) || value === null || value === undefined) {
         // Invalid number - revert to previous valid value
         setLocalValues((prev) => {
@@ -453,7 +457,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 
   // Only show values for existing controls
   const filteredControlValues = Object.fromEntries(
-    Object.entries(controlValues).filter(([key]) => key in controls)
+    Object.entries(controlValues).filter(([key]) => key in controls),
   );
 
   return (
@@ -521,7 +525,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                   if (contentCollapsed) {
                     // Make this the active panel
                     console.log(
-                      "uncollapsing and making this the active panel"
+                      "uncollapsing and making this the active panel",
                     );
                     setContentCollapsed();
                     if (initialCollapsed) setCollapsed(false);
@@ -536,8 +540,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                   contentCollapsed
                     ? "Open controls"
                     : initialCollapsed
-                    ? "Collapse panel"
-                    : "Active"
+                      ? "Collapse panel"
+                      : "Active"
                 }
               >
                 <CaretDownIcon size={14} collapsed={contentCollapsed} />
@@ -572,7 +576,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                 // Get the current value - use local value if editing, otherwise committed value
                 const currentValue = localValues.hasOwnProperty(key)
                   ? localValues[key]
-                  : controlValues[key] ?? config.value;
+                  : (controlValues[key] ?? config.value);
                 const isFocused = focusedIndex === idx && !config.disabled;
                 const isDisabled = config.disabled;
                 const commonProps = {
@@ -592,8 +596,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                   style: isDisabled
                     ? { ...inputStyle, ...inputDisabledStyle }
                     : isFocused
-                    ? { ...inputStyle, ...inputFocusedStyle }
-                    : inputStyle,
+                      ? { ...inputStyle, ...inputFocusedStyle }
+                      : inputStyle,
                   disabled: isDisabled,
                 };
                 switch (config.type) {
@@ -636,12 +640,12 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         </span>
                         {["X", "Y", "Z"].map((axis, axisIdx) => {
                           const currentArrayValue = localValues.hasOwnProperty(
-                            key
+                            key,
                           )
                             ? localValues[key]
                             : Array.isArray(controlValues[key])
-                            ? controlValues[key]
-                            : [0, 0, 0];
+                              ? controlValues[key]
+                              : [0, 0, 0];
 
                           return (
                             <input
@@ -678,7 +682,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   } else {
                                     // Get the committed value from controlValues as fallback
                                     const committedValue = Array.isArray(
-                                      controlValues[key]
+                                      controlValues[key],
                                     )
                                       ? controlValues[key][i]
                                       : 0;
@@ -717,13 +721,17 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                       marginRight: 4,
                                     }
                                   : focusedAxis[key] === axisIdx && isFocused
-                                  ? {
-                                      ...inputStyle,
-                                      ...inputFocusedStyle,
-                                      width: 50,
-                                      marginRight: 4,
-                                    }
-                                  : { ...inputStyle, width: 50, marginRight: 4 }
+                                    ? {
+                                        ...inputStyle,
+                                        ...inputFocusedStyle,
+                                        width: 50,
+                                        marginRight: 4,
+                                      }
+                                    : {
+                                        ...inputStyle,
+                                        width: 50,
+                                        marginRight: 4,
+                                      }
                               }
                               ref={(el) => {
                                 if (!inputRefs.current[idx])
@@ -1036,7 +1044,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                       "keydown item",
                                       item,
                                       itemIdx,
-                                      e.key
+                                      e.key,
                                     );
                                   }}
                                   onBlur={() =>
@@ -1058,7 +1066,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                       </div>
                     );
 
-                  case "range":
                     return (
                       <div key={key} style={labelStyle}>
                         <span
@@ -1109,61 +1116,72 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                       <div key={key} style={labelStyle}>
                         <span
                           style={{
-                            width: 90,
+                            width: inputFullWidth ? 0 : "100px",
                             color: isDisabled
                               ? inputDisabledStyle.color
                               : undefined,
+                            overflow: "clip",
                           }}
+                          title={label}
                         >
                           {label}:
                         </span>
                         <div
                           style={{
                             display: "flex",
-                            flexDirection: "column",
-                            flex: 1,
-                            gap: 4,
+                            alignItems: "center",
+                            width: "90%",
                           }}
                         >
-                          <input
-                            type="range"
-                            value={currentValue ?? config.min ?? 0}
-                            min={config.min ?? 0}
-                            max={config.max ?? 100}
-                            step={config.step ?? 1}
-                            onChange={(e) => {
-                              const numValue = Number(e.target.value);
-                              handleChange(numValue);
-                            }}
-                            onMouseUp={(e) => {
-                              const numValue = Number(e.target.value);
-                              commitChange(key, numValue, config);
-                            }}
-                            onTouchEnd={(e) => {
-                              const numValue = Number(e.target.value);
-                              commitChange(key, numValue, config);
-                            }}
-                            disabled={isDisabled}
-                            style={{
-                              width: "100%",
-                              cursor: isDisabled ? "not-allowed" : "pointer",
-                              accentColor: "var(--control-accent)",
-                            }}
-                            {...commonProps}
-                          />
                           <div
                             style={{
                               display: "flex",
-                              justifyContent: "space-between",
-                              fontSize: 11,
-                              color: "var(--control-text-muted)",
+                              flexDirection: "column",
+                              flex: 1,
+                              gap: 4,
+                              width: "90%",
                             }}
                           >
-                            <span>{config.min ?? 0}</span>
-                            <span style={{ fontWeight: 600 }}>
-                              {currentValue ?? config.min ?? 0}
-                            </span>
-                            <span>{config.max ?? 100}</span>
+                            <input
+                              type="range"
+                              value={currentValue ?? config.min ?? 0}
+                              min={config.min ?? 0}
+                              max={config.max ?? 100}
+                              step={config.step ?? 1}
+                              onChange={(e) => {
+                                const numValue = Number(e.target.value);
+                                handleChange(numValue);
+                              }}
+                              onMouseUp={(e) => {
+                                const numValue = Number(e.target.value);
+                                commitChange(key, numValue, config);
+                              }}
+                              onTouchEnd={(e) => {
+                                const numValue = Number(e.target.value);
+                                commitChange(key, numValue, config);
+                              }}
+                              disabled={isDisabled}
+                              {...commonProps}
+                              style={{
+                                width: "95%",
+                                cursor: isDisabled ? "not-allowed" : "pointer",
+                                //accentColor: "var(--control-accent)",
+                              }}
+                            />
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                fontSize: 11,
+                                color: "var(--control-text-muted)",
+                              }}
+                            >
+                              <span>{config.min ?? 0}</span>
+                              <span style={{ fontWeight: 600 }}>
+                                {currentValue ?? config.min ?? 0}
+                              </span>
+                              <span>{config.max ?? 100}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1458,8 +1476,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             isDisabled
                               ? { ...colorStyle, ...inputDisabledStyle }
                               : isFocused
-                              ? { ...colorStyle, ...inputFocusedStyle }
-                              : colorStyle
+                                ? { ...colorStyle, ...inputFocusedStyle }
+                                : colorStyle
                           }
                           ref={(el) => (inputRefs.current[idx] = el)}
                           tabIndex={isDisabled ? -1 : 0}
@@ -1518,7 +1536,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   <option key={val} value={val}>
                                     {label}
                                   </option>
-                                )
+                                ),
                               )}
                         </select>
                       </div>
@@ -1547,24 +1565,24 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                     padding: "6px 16px",
                                   }
                                 : isFocused
-                                ? {
-                                    ...inputStyle,
-                                    ...inputFocusedStyle,
-                                    cursor: "pointer",
-                                    fontWeight: 600,
-                                    background: "#3e7aff",
-                                    color: "#fff",
-                                    padding: "6px 16px",
-                                  }
-                                : {
-                                    ...inputStyle,
-                                    cursor: "pointer",
-                                    fontWeight: 600,
-                                    background: "#3e7aff",
-                                    color: "#fff",
-                                    border: "none",
-                                    padding: "6px 16px",
-                                  }),
+                                  ? {
+                                      ...inputStyle,
+                                      ...inputFocusedStyle,
+                                      cursor: "pointer",
+                                      fontWeight: 600,
+                                      background: "#3e7aff",
+                                      color: "#fff",
+                                      padding: "6px 16px",
+                                    }
+                                  : {
+                                      ...inputStyle,
+                                      cursor: "pointer",
+                                      fontWeight: 600,
+                                      background: "#3e7aff",
+                                      color: "#fff",
+                                      border: "none",
+                                      padding: "6px 16px",
+                                    }),
                               ...(config.lowOpacity ? { opacity: 0.5 } : {}),
                             }}
                             title={
