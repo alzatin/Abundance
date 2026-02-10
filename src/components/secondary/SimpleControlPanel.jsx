@@ -409,13 +409,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 
   // Listen for keyboard events on the panel to trigger focus
   const handlePanelKeyDown = (e) => {
-    // Focus if not already focused and key is printable or navigation
-    const isPrintable =
-      e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
-    const isNavigation = ["ArrowDown", "ArrowUp", "Tab"].includes(e.key);
-    if (!shouldFocus && (isPrintable || isNavigation)) {
-      setShouldFocus(true);
-    }
+    // Just pass through to handleKeyDown - it will set shouldFocus as needed
     handleKeyDown(e);
   };
 
