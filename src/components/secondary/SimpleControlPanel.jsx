@@ -419,16 +419,13 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     handleKeyDown(e);
   };
 
-  // Keyboard navigation (skip disabled inputs and non-focusable controls like spacer/markdown)
+  // Keyboard navigation (skip disabled inputs)
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
       let next = focusedIndex;
       do {
         next = next + 1;
-      } while (
-        next < controlKeys.length &&
-        (controls[controlKeys[next]]?.disabled || !inputRefs.current[next])
-      );
+      } while (next < controlKeys.length && controls[controlKeys[next]]?.disabled);
       if (next < controlKeys.length) {
         setFocusedIndex(next);
         setShouldFocus(true); // Ensure focus is applied
@@ -438,10 +435,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
       let prev = focusedIndex;
       do {
         prev = prev - 1;
-      } while (
-        prev >= 0 &&
-        (controls[controlKeys[prev]]?.disabled || !inputRefs.current[prev])
-      );
+      } while (prev >= 0 && controls[controlKeys[prev]]?.disabled);
       if (prev >= 0) {
         setFocusedIndex(prev);
         setShouldFocus(true); // Ensure focus is applied
