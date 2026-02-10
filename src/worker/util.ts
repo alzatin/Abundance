@@ -305,6 +305,12 @@ function hashString(str: string): string {
 
 /**
  * Wraps an async operation with a timeout
+ * 
+ * Note: This function can only interrupt async operations. If the underlying
+ * operation is synchronous and blocking, the timeout will reject the promise
+ * but the operation will continue running in the background. This is still
+ * useful in web workers to prevent the caller from waiting indefinitely.
+ * 
  * @param promise - The promise to execute
  * @param timeoutMs - Timeout in milliseconds
  * @param errorMessage - Custom error message for timeout

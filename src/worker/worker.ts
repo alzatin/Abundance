@@ -393,6 +393,9 @@ async function visualizeGcodeIncremental(
       const wireStart = performance.now();
       
       // Wrap assembleWire with a timeout to prevent hanging on faulty gcode
+      // Note: assembleWire is synchronous, so this won't interrupt execution,
+      // but it will prevent the caller from waiting indefinitely and allows
+      // proper error handling and continuation with other parts
       const wire = await util.withTimeout(
         Promise.resolve(util.replicad.assembleWire(edgesPerPart[i])),
         30000, // 30 second timeout
@@ -491,6 +494,9 @@ async function visualizeGcodeAsAssembly(
     if (partEdges.length > 0) {
       try {
         // Wrap assembleWire with a timeout to prevent hanging on faulty gcode
+        // Note: assembleWire is synchronous, so this won't interrupt execution,
+        // but it will prevent the caller from waiting indefinitely and allows
+        // proper error handling and continuation with other parts
         const wire = await util.withTimeout(
           Promise.resolve(util.replicad.assembleWire(partEdges)),
           30000, // 30 second timeout
