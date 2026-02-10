@@ -84,9 +84,15 @@ function visExport(
           fusedGeometry.geometry,
           context,
         )) as AnyShape;
-        const drawingResult = util.replicad
+        const drawing = util.replicad
           .drawProjection(shape3d, "top")
-          .visible.sketchOnPlane("XY")
+          .visible;
+        // Flip the drawing 180 degrees around X-axis to correct SVG orientation
+        const center = drawing.boundingBox.center;
+        const drawingResult = drawing
+          .clone()
+          .rotate(180, [center[0], center[1], 0], new util.replicad.Vector([1, 0, 0]))
+          .sketchOnPlane("XY")
           .extrude(0.0001);
 
         const cachedGeom = await util.geometryProvider!.addSingularToCache(
@@ -157,7 +163,13 @@ async function downExport(
         throw new Error("SVG export requires 2D geometry");
       }
       console.log("Generating SVG ", drawingResult);
-      let svg = drawingResult.clone().scale(scaling).toSVG(scaling);
+      // Flip the drawing 180 degrees around X-axis to correct SVG orientation
+      const center = drawingResult.boundingBox.center;
+      let svg = drawingResult
+        .clone()
+        .rotate(180, [center[0], center[1], 0], new util.replicad.Vector([1, 0, 0]))
+        .scale(scaling)
+        .toSVG(scaling);
       var blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
 
       return blob;
