@@ -93,3 +93,4 @@ This fix affects all SVG exports from 3D geometry:
 - 2D geometry exports are unaffected (different code path)
 - The rotation is performed on the 2D projection before SVG generation, not on the 3D model itself
 - The fix maintains the existing scaling and other transformations
+- **Code structure note**: `visExport` creates a thin 3D extrusion (0.0001 units) after rotation for preview purposes, while `downExport` keeps the 2D drawing for direct SVG export. Both use the same `flipDrawingForSvg()` helper to ensure consistent orientation.
