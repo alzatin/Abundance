@@ -1,5 +1,5 @@
 import { expose } from "comlink";
-import type { AnyShape, Edge, Shape3D, ShapeMesh } from "replicad";
+import type { AnyShape, Drawing, Edge, Shape3D, ShapeMesh } from "replicad";
 import * as replicad from "replicad";
 import { drawSVG } from "replicad-decorate";
 import { chamfer, extrude, fillet, move, rotate, scale } from "./actions";
@@ -84,13 +84,11 @@ function visExport(
           fusedGeometry.geometry,
           context,
         )) as AnyShape;
-        const drawingResult = util.replicad
-          .drawProjection(shape3d, "top")
-          .visible.sketchOnPlane("XY")
-          .extrude(0.0001);
+
+        const drawing = util.replicad.drawProjection(shape3d, "bottom").visible;
 
         const cachedGeom = await util.geometryProvider!.addSingularToCache(
-          drawingResult,
+          drawing,
           context,
           "export",
           [fileType, input],
@@ -150,14 +148,15 @@ async function downExport(
       )) as AnyShape;
       const drawingResult = util.replicad.drawProjection(
         shape3d,
-        "top",
+        "bottom",
       ).visible;
 
       if ("toSVG" in drawingResult == false) {
         throw new Error("SVG export requires 2D geometry");
       }
       console.log("Generating SVG ", drawingResult);
-      let svg = drawingResult.clone().scale(scaling).toSVG(scaling);
+      // Flip the drawing to correct SVG orientation
+      let svg = drawingResult.scale(scaling).toSVG(scaling);
       var blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
 
       return blob;
