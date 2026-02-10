@@ -13,7 +13,7 @@ Added a 180-degree rotation around the X-axis to flip the projected drawing befo
 
 ### File: `src/worker/worker.ts`
 
-#### 1. `downExport` function (lines 144-164)
+#### 1. `downExport` function
 **Before:**
 ```typescript
 const drawingResult = util.replicad.drawProjection(shape3d, "top").visible;
@@ -32,7 +32,7 @@ let svg = drawingResult
   .toSVG(scaling);
 ```
 
-#### 2. `visExport` function (lines 80-104)
+#### 2. `visExport` function
 **Before:**
 ```typescript
 const drawingResult = util.replicad
@@ -65,7 +65,7 @@ const drawingResult = drawing
 This rotation effectively flips the drawing upside down around its center, correcting the orientation for SVG export.
 
 ### Inspiration
-The solution follows the same pattern used in `cutlayout.ts` (line 836) for flipping faces:
+The solution follows the same pattern used in `cutlayout.ts` in the face orientation logic for flipping faces:
 ```typescript
 .rotate(180, pointOnSurface, new util.replicad.Vector([1, 0, 0]))
 ```
