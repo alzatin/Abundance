@@ -23,11 +23,8 @@ let svg = drawingResult.clone().scale(scaling).toSVG(scaling);
 **After:**
 ```typescript
 const drawingResult = util.replicad.drawProjection(shape3d, "top").visible;
-// Flip the drawing 180 degrees around X-axis to correct SVG orientation
-const center = drawingResult.boundingBox.center;
-let svg = drawingResult
-  .clone()
-  .rotate(180, [center[0], center[1], 0], new util.replicad.Vector([1, 0, 0]))
+// Flip the drawing to correct SVG orientation
+let svg = flipDrawingForSvg(drawingResult)
   .scale(scaling)
   .toSVG(scaling);
 ```
@@ -46,13 +43,22 @@ const drawingResult = util.replicad
 const drawing = util.replicad
   .drawProjection(shape3d, "top")
   .visible;
-// Flip the drawing 180 degrees around X-axis to correct SVG orientation
-const center = drawing.boundingBox.center;
-const drawingResult = drawing
-  .clone()
-  .rotate(180, [center[0], center[1], 0], new util.replicad.Vector([1, 0, 0]))
+// Flip the drawing to correct SVG orientation
+const drawingResult = flipDrawingForSvg(drawing)
   .sketchOnPlane("XY")
   .extrude(0.0001);
+```
+
+### Helper Function Added
+A new helper function `flipDrawingForSvg()` was created to encapsulate the rotation logic and ensure consistency between both export functions:
+
+```typescript
+function flipDrawingForSvg(drawing: any) {
+  const center = drawing.boundingBox.center;
+  return drawing
+    .clone()
+    .rotate(180, [center[0], center[1], 0], new util.replicad.Vector([1, 0, 0]));
+}
 ```
 
 ## Technical Details
