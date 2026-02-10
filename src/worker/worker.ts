@@ -84,16 +84,11 @@ function visExport(
           fusedGeometry.geometry,
           context,
         )) as AnyShape;
-        const drawing = util.replicad
-          .drawProjection(shape3d, "top")
-          .visible;
-        // Flip the drawing to correct SVG orientation
-        const drawingResult = flipDrawingForSvg(drawing)
-          .sketchOnPlane("XY")
-          .extrude(0.0001);
+
+        const drawing = util.replicad.drawProjection(shape3d, "bottom").visible;
 
         const cachedGeom = await util.geometryProvider!.addSingularToCache(
-          drawingResult,
+          drawing,
           context,
           "export",
           [fileType, input],
@@ -153,7 +148,7 @@ async function downExport(
       )) as AnyShape;
       const drawingResult = util.replicad.drawProjection(
         shape3d,
-        "top",
+        "bottom",
       ).visible;
 
       if ("toSVG" in drawingResult == false) {
@@ -161,9 +156,7 @@ async function downExport(
       }
       console.log("Generating SVG ", drawingResult);
       // Flip the drawing to correct SVG orientation
-      let svg = flipDrawingForSvg(drawingResult)
-        .scale(scaling)
-        .toSVG(scaling);
+      let svg = drawingResult.scale(scaling).toSVG(scaling);
       var blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
 
       return blob;
@@ -532,20 +525,6 @@ async function visualizeGcodeAsAssembly(
 
   // Use the assembly function to combine them
   return await assembly(wireObjects, context);
-}
-
-/**
- * Flips a 2D drawing 180 degrees around the X-axis to correct SVG orientation.
- * This is necessary because replicad's drawProjection uses a 3D coordinate system (Y-axis up),
- * but SVG uses screen coordinates (Y-axis down).
- * @param {Drawing} drawing - The 2D drawing to flip
- * @returns {Drawing} The flipped drawing
- */
-function flipDrawingForSvg(drawing: Drawing): Drawing {
-  const center = drawing.boundingBox.center;
-  return drawing
-    .clone()
-    .rotate(180, [center[0], center[1], 0], new util.replicad.Vector([1, 0, 0]));
 }
 
 /**
