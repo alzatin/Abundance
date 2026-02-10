@@ -479,6 +479,10 @@ const ProjectDiv = ({
     const hoverTimerRef = useRef(null);
     const projectRef = useRef(null);
 
+    // Quick view panel dimensions
+    const PANEL_WIDTH = 300;
+    const PANEL_MARGIN = 20;
+
     // Cleanup timer on component unmount to prevent memory leaks
     useEffect(() => {
       return () => {
@@ -498,11 +502,10 @@ const ProjectDiv = ({
         // Check if panel would overflow on the right
         if (projectRef.current) {
           const rect = projectRef.current.getBoundingClientRect();
-          const panelWidth = 300; // Width of the quick view panel
           const spaceOnRight = window.innerWidth - rect.right;
           
           // If not enough space on the right, show panel on the left
-          setPanelOnLeft(spaceOnRight < panelWidth + 20);
+          setPanelOnLeft(spaceOnRight < PANEL_WIDTH + PANEL_MARGIN);
         }
         setShowQuickView(true);
       }, 1000);
