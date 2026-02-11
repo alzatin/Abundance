@@ -392,6 +392,10 @@ async function visualizeGcodeIncremental(
     try {
       const wireStart = performance.now();
       
+      console.log(
+        `  [Timeout Protection] Starting wire assembly for part ${i + 1}/${edgesPerPart.length} (30s timeout)`
+      );
+      
       // Wrap assembleWire with a timeout to prevent hanging on faulty gcode
       // Note: assembleWire is synchronous, so this won't interrupt execution,
       // but it will prevent the caller from waiting indefinitely and allows
@@ -403,6 +407,10 @@ async function visualizeGcodeIncremental(
       );
       
       const wireTime = performance.now() - wireStart;
+
+      console.log(
+        `  [Timeout Protection] ✓ Wire assembly completed for part ${i + 1}/${edgesPerPart.length} in ${wireTime.toFixed(2)}ms`
+      );
 
       // Create a unique hash for this part using generation ID, index, and gcode content
       // The generationId (hash of all gcode) ensures different generations don't collide in cache
@@ -433,7 +441,17 @@ async function visualizeGcodeIncremental(
         );
       }
     } catch (err) {
-      console.warn(`Failed to create wire for part ${i + 1}:`, err);
+      // Check if this is a timeout error by examining the error message
+      const isTimeout = err instanceof Error && err.message.includes('timeout');
+      
+      if (isTimeout) {
+        console.error(
+          `  [Timeout Protection] ⏱️ TIMEOUT: Wire assembly exceeded 30 seconds for part ${i + 1}/${edgesPerPart.length}`
+        );
+        console.error(`  Error details: ${err.message}`);
+      } else {
+        console.warn(`Failed to create wire for part ${i + 1}:`, err);
+      }
       // Continue processing other parts even if one fails
     }
   }
@@ -493,6 +511,12 @@ async function visualizeGcodeAsAssembly(
 
     if (partEdges.length > 0) {
       try {
+        console.log(
+          `  [Timeout Protection] Starting experimental wire assembly for part ${i + 1}/${gcodeArray.length} (30s timeout)`
+        );
+        
+        const wireStart = performance.now();
+        
         // Wrap assembleWire with a timeout to prevent hanging on faulty gcode
         // Note: assembleWire is synchronous, so this won't interrupt execution,
         // but it will prevent the caller from waiting indefinitely and allows
@@ -501,6 +525,12 @@ async function visualizeGcodeAsAssembly(
           Promise.resolve(util.replicad.assembleWire(partEdges)),
           30000, // 30 second timeout
           `Wire assembly timeout for experimental gcode part ${i + 1}/${gcodeArray.length} (took longer than 30 seconds)`
+        );
+        
+        const wireTime = performance.now() - wireStart;
+        
+        console.log(
+          `  [Timeout Protection] ✓ Experimental wire assembly completed for part ${i + 1}/${gcodeArray.length} in ${wireTime.toFixed(2)}ms`
         );
         
         // Use generationId to prevent cache collisions between different generations
@@ -522,7 +552,17 @@ async function visualizeGcodeAsAssembly(
           dimension: "3D",
         });
       } catch (err) {
-        console.warn(`Failed to create wire for part ${i + 1}:`, err);
+        // Check if this is a timeout error by examining the error message
+        const isTimeout = err instanceof Error && err.message.includes('timeout');
+        
+        if (isTimeout) {
+          console.error(
+            `  [Timeout Protection] ⏱️ TIMEOUT: Experimental wire assembly exceeded 30 seconds for part ${i + 1}/${gcodeArray.length}`
+          );
+          console.error(`  Error details: ${err.message}`);
+        } else {
+          console.warn(`Failed to create wire for part ${i + 1}:`, err);
+        }
       }
     }
   }
