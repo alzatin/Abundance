@@ -24,6 +24,7 @@ import React, {
   useEffect,
   forwardRef,
   useImperativeHandle,
+  use,
 } from "react";
 import { useControls } from "../../hooks/useControls";
 import ReactMarkdown from "react-markdown";
@@ -276,7 +277,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     setContentCollapsed,
     closeMenu,
   },
-  ref
+  ref,
 ) {
   // Collapsed panel state
   const [collapsed, setCollapsed] = useState(initialCollapsed);
@@ -298,7 +299,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 
   // Focus management
   const controlKeys = Object.keys(controls);
-  const [focusedIndex, setFocusedIndex] = useState(0);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const [focusedListItem, setFocusedListItem] = useState({});
   const [focusedAxis, setFocusedAxis] = useState({});
   const inputRefs = React.useRef([]);
@@ -373,15 +374,22 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     }
   };
 
-  // Ensure initial values are set when controls prop changes
+  useEffect(() => {
+    console.log("set focused index changed:", focusedIndex);
+  }, [focusedIndex]);
+
+  // Only reset focus if the keys of controls change
+  const prevControlKeys = React.useRef(Object.keys(controls));
   React.useEffect(() => {
-    Object.entries(controls).forEach(([key, config]) => {
-      if (config.value !== undefined) {
-        setControlValue(key, config.value);
-      }
-    });
-    setFocusedIndex(0); // Default focus to first control on controls change
-    setLocalValues({}); // Clear local values when controls change
+    const newKeys = Object.keys(controls);
+    if (
+      newKeys.length !== prevControlKeys.current.length ||
+      newKeys.some((k, i) => k !== prevControlKeys.current[i])
+    ) {
+      setFocusedIndex(-1);
+      prevControlKeys.current = newKeys;
+    }
+    setLocalValues({});
   }, [controls]);
 
   // Only focus input on keyboard event, not on mount/controls change
@@ -409,52 +417,45 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 
   // Listen for keyboard events on the panel to trigger focus
   const handlePanelKeyDown = (e) => {
-    // Focus if not already focused and key is printable or navigation
-    const isPrintable =
-      e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
-    const isNavigation = ["ArrowDown", "ArrowUp", "Tab"].includes(e.key);
-    if (!shouldFocus && (isPrintable || isNavigation)) {
-      setShouldFocus(true);
-    }
+    // Just pass through to handleKeyDown - it will set shouldFocus as needed
+    console.log("Panel key down:", e.key);
     handleKeyDown(e);
   };
 
   // Keyboard navigation (skip disabled inputs)
   const handleKeyDown = (e) => {
+    console.log("Handle key down:", e.key, "Focused index:", focusedIndex);
     if (e.key === "ArrowDown") {
-      let next = focusedIndex;
-      do {
-        next = next + 1;
-      } while (
+      let next = focusedIndex + 1;
+      while (
         next < controlKeys.length &&
-        controls[controlKeys[next]]?.disabled
-      );
+        (controls[controlKeys[next]]?.disabled || !inputRefs.current[next])
+      ) {
+        next++;
+      }
       if (next < controlKeys.length) {
+        console.log("Moving focus down to index:", next);
         setFocusedIndex(next);
+        setShouldFocus(true);
       }
       e.preventDefault();
     } else if (e.key === "ArrowUp") {
-      let prev = focusedIndex;
-      do {
-        prev = prev - 1;
-      } while (prev >= 0 && controls[controlKeys[prev]]?.disabled);
+      let prev = focusedIndex - 1;
+      while (
+        prev >= 0 &&
+        (controls[controlKeys[prev]]?.disabled || !inputRefs.current[prev])
+      ) {
+        prev--;
+        console.log("Checking previous index:", prev);
+      }
       if (prev >= 0) {
         setFocusedIndex(prev);
+        setShouldFocus(true); // Ensure focus is applied
       }
       e.preventDefault();
     }
+    console.log("Focused index after key down:", focusedIndex);
   };
-
-  // Programmatic focus setter
-  const focusControl = (key) => {
-    const idx = controlKeys.indexOf(key);
-    if (idx !== -1) setFocusedIndex(idx);
-  };
-
-  // Only show values for existing controls
-  const filteredControlValues = Object.fromEntries(
-    Object.entries(controlValues).filter(([key]) => key in controls)
-  );
 
   return (
     <div
@@ -480,7 +481,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
             }),
       }}
       tabIndex={-1}
-      onKeyDown={handlePanelKeyDown}
     >
       {/* Collapsed panel */}
       {collapsed && (
@@ -521,7 +521,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                   if (contentCollapsed) {
                     // Make this the active panel
                     console.log(
-                      "uncollapsing and making this the active panel"
+                      "uncollapsing and making this the active panel",
                     );
                     setContentCollapsed();
                     if (initialCollapsed) setCollapsed(false);
@@ -536,8 +536,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                   contentCollapsed
                     ? "Open controls"
                     : initialCollapsed
-                    ? "Collapse panel"
-                    : "Active"
+                      ? "Collapse panel"
+                      : "Active"
                 }
               >
                 <CaretDownIcon size={14} collapsed={contentCollapsed} />
@@ -572,7 +572,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                 // Get the current value - use local value if editing, otherwise committed value
                 const currentValue = localValues.hasOwnProperty(key)
                   ? localValues[key]
-                  : controlValues[key] ?? config.value;
+                  : (controlValues[key] ?? config.value);
                 const isFocused = focusedIndex === idx && !config.disabled;
                 const isDisabled = config.disabled;
                 const commonProps = {
@@ -592,8 +592,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                   style: isDisabled
                     ? { ...inputStyle, ...inputDisabledStyle }
                     : isFocused
-                    ? { ...inputStyle, ...inputFocusedStyle }
-                    : inputStyle,
+                      ? { ...inputStyle, ...inputFocusedStyle }
+                      : inputStyle,
                   disabled: isDisabled,
                 };
                 switch (config.type) {
@@ -636,12 +636,12 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         </span>
                         {["X", "Y", "Z"].map((axis, axisIdx) => {
                           const currentArrayValue = localValues.hasOwnProperty(
-                            key
+                            key,
                           )
                             ? localValues[key]
                             : Array.isArray(controlValues[key])
-                            ? controlValues[key]
-                            : [0, 0, 0];
+                              ? controlValues[key]
+                              : [0, 0, 0];
 
                           return (
                             <input
@@ -678,7 +678,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   } else {
                                     // Get the committed value from controlValues as fallback
                                     const committedValue = Array.isArray(
-                                      controlValues[key]
+                                      controlValues[key],
                                     )
                                       ? controlValues[key][i]
                                       : 0;
@@ -717,13 +717,17 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                       marginRight: 4,
                                     }
                                   : focusedAxis[key] === axisIdx && isFocused
-                                  ? {
-                                      ...inputStyle,
-                                      ...inputFocusedStyle,
-                                      width: 50,
-                                      marginRight: 4,
-                                    }
-                                  : { ...inputStyle, width: 50, marginRight: 4 }
+                                    ? {
+                                        ...inputStyle,
+                                        ...inputFocusedStyle,
+                                        width: 50,
+                                        marginRight: 4,
+                                      }
+                                    : {
+                                        ...inputStyle,
+                                        width: 50,
+                                        marginRight: 4,
+                                      }
                               }
                               ref={(el) => {
                                 if (!inputRefs.current[idx])
@@ -945,6 +949,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           } else {
                             // If no item is focused, ArrowDown moves to first item
                             if (e.key === "ArrowDown" && itemCount > 0) {
+                              console.log("Focusing first list item");
                               setFocusedListItem({
                                 ...focusedListItem,
                                 [key]: 0,
@@ -1036,7 +1041,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                       "keydown item",
                                       item,
                                       itemIdx,
-                                      e.key
+                                      e.key,
                                     );
                                   }}
                                   onBlur={() =>
@@ -1086,17 +1091,24 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             ) {
                               handleLocalChange(key, e.target.value);
                             } else {
-                              handleChange(numValue);
+                              handleLocalChange(key, numValue);
                             }
                           }}
                           onBlur={(e) => {
-                            const numValue = Number(e.target.value);
-                            commitChange(key, numValue, config);
+                            let value = currentValue;
+                            if (typeof value === "string") {
+                              // If user left an empty string or dash, revert to last committed value
+                              value = controlValues[key] ?? config.value ?? 0;
+                            }
+                            commitChange(key, value, config);
                           }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
-                              const numValue = Number(e.target.value);
-                              commitChange(key, numValue, config);
+                              let value = currentValue;
+                              if (typeof value === "string") {
+                                value = controlValues[key] ?? config.value ?? 0;
+                              }
+                              commitChange(key, value, config);
                               e.preventDefault();
                             }
                           }}
@@ -1394,8 +1406,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             isDisabled
                               ? { ...colorStyle, ...inputDisabledStyle }
                               : isFocused
-                              ? { ...colorStyle, ...inputFocusedStyle }
-                              : colorStyle
+                                ? { ...colorStyle, ...inputFocusedStyle }
+                                : colorStyle
                           }
                           ref={(el) => (inputRefs.current[idx] = el)}
                           tabIndex={isDisabled ? -1 : 0}
@@ -1441,6 +1453,10 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             }
                             handleChange(value);
                           }}
+                          onKeyDown={(e) => {
+                            console.log("Select key down:", e.key);
+                          }}
+                          onBlur={() => {}}
                           {...commonProps}
                         >
                           {Array.isArray(config.options)
@@ -1454,7 +1470,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   <option key={val} value={val}>
                                     {label}
                                   </option>
-                                )
+                                ),
                               )}
                         </select>
                       </div>
@@ -1483,24 +1499,24 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                     padding: "6px 16px",
                                   }
                                 : isFocused
-                                ? {
-                                    ...inputStyle,
-                                    ...inputFocusedStyle,
-                                    cursor: "pointer",
-                                    fontWeight: 600,
-                                    background: "#3e7aff",
-                                    color: "#fff",
-                                    padding: "6px 16px",
-                                  }
-                                : {
-                                    ...inputStyle,
-                                    cursor: "pointer",
-                                    fontWeight: 600,
-                                    background: "#3e7aff",
-                                    color: "#fff",
-                                    border: "none",
-                                    padding: "6px 16px",
-                                  }),
+                                  ? {
+                                      ...inputStyle,
+                                      ...inputFocusedStyle,
+                                      cursor: "pointer",
+                                      fontWeight: 600,
+                                      background: "#3e7aff",
+                                      color: "#fff",
+                                      padding: "6px 16px",
+                                    }
+                                  : {
+                                      ...inputStyle,
+                                      cursor: "pointer",
+                                      fontWeight: 600,
+                                      background: "#3e7aff",
+                                      color: "#fff",
+                                      border: "none",
+                                      padding: "6px 16px",
+                                    }),
                               ...(config.lowOpacity ? { opacity: 0.5 } : {}),
                             }}
                             title={
