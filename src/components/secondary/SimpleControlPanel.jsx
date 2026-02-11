@@ -378,15 +378,18 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     console.log("set focused index changed:", focusedIndex);
   }, [focusedIndex]);
 
-  // Ensure initial values are set when controls prop changes
+  // Only reset focus if the keys of controls change
+  const prevControlKeys = React.useRef(Object.keys(controls));
   React.useEffect(() => {
-    Object.entries(controls).forEach(([key, config]) => {
-      if (config.value !== undefined) {
-        setControlValue(key, config.value);
-      }
-    });
-    setFocusedIndex(-1); // Default focus to first control on controls change
-    setLocalValues({}); // Clear local values when controls change
+    const newKeys = Object.keys(controls);
+    if (
+      newKeys.length !== prevControlKeys.current.length ||
+      newKeys.some((k, i) => k !== prevControlKeys.current[i])
+    ) {
+      setFocusedIndex(-1);
+      prevControlKeys.current = newKeys;
+    }
+    setLocalValues({});
   }, [controls]);
 
   // Only focus input on keyboard event, not on mount/controls change
@@ -1088,17 +1091,24 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             ) {
                               handleLocalChange(key, e.target.value);
                             } else {
-                              handleChange(numValue);
+                              handleLocalChange(key, numValue);
                             }
                           }}
                           onBlur={(e) => {
-                            const numValue = Number(e.target.value);
-                            commitChange(key, numValue, config);
+                            let value = currentValue;
+                            if (typeof value === "string") {
+                              // If user left an empty string or dash, revert to last committed value
+                              value = controlValues[key] ?? config.value ?? 0;
+                            }
+                            commitChange(key, value, config);
                           }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
-                              const numValue = Number(e.target.value);
-                              commitChange(key, numValue, config);
+                              let value = currentValue;
+                              if (typeof value === "string") {
+                                value = controlValues[key] ?? config.value ?? 0;
+                              }
+                              commitChange(key, value, config);
                               e.preventDefault();
                             }
                           }}
@@ -1443,6 +1453,10 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             }
                             handleChange(value);
                           }}
+                          onKeyDown={(e) => {
+                            console.log("Select key down:", e.key);
+                          }}
+                          onBlur={() => {}}
                           {...commonProps}
                         >
                           {Array.isArray(config.options)
