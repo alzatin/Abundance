@@ -176,7 +176,7 @@ async function getProjectFileSize(page) {
  * Get GCode generation and visualization metrics
  * 
  * This function measures performance metrics for GCode generation and visualization:
- * - Detects all GCode atoms in the project
+ * - Recursively detects all GCode atoms in the project (including those inside nested molecules and GitHub molecules)
  * - Triggers GCode generation if not already generated
  * - Measures the time taken to generate GCode
  * - Measures the time taken to visualize GCode (via visualizeGcodeIncremental)
@@ -192,7 +192,7 @@ async function getProjectFileSize(page) {
  * @param {Object} page - Puppeteer page object
  * @returns {Promise<Object>} GCode metrics object containing:
  *   - hasGcodeAtom: boolean - whether the project has any GCode atoms
- *   - gcodeAtomCount: number - count of GCode atoms found
+ *   - gcodeAtomCount: number - count of GCode atoms found (including nested ones)
  *   - atoms: array - metrics for each GCode atom including:
  *     - atomName: string - name of the atom
  *     - gcodeGenerated: boolean - whether GCode was generated
@@ -217,10 +217,30 @@ async function getGcodeMetrics(page) {
 
       const molecule = window.GlobalVarsForPuppeteer.topLevelMolecule;
 
-      // Find all Gcode atoms in the project
-      const gcodeAtoms = molecule.nodesOnTheScreen.filter(
-        (atom) => atom.atomType === "Gcode"
-      );
+      // Recursively find all Gcode atoms in the project, including those inside nested molecules and GitHub molecules
+      const findAllGcodeAtoms = (mol) => {
+        let gcodeAtoms = [];
+        
+        if (!mol.nodesOnTheScreen || !Array.isArray(mol.nodesOnTheScreen)) {
+          return gcodeAtoms;
+        }
+        
+        mol.nodesOnTheScreen.forEach((atom) => {
+          if (atom.atomType === "Gcode") {
+            gcodeAtoms.push(atom);
+          }
+          // Recursively search inside Molecule and GitHubMolecule atoms
+          if (atom.atomType === "Molecule" || atom.atomType === "GitHubMolecule") {
+            const nestedGcodeAtoms = findAllGcodeAtoms(atom);
+            gcodeAtoms = gcodeAtoms.concat(nestedGcodeAtoms);
+          }
+        });
+        
+        return gcodeAtoms;
+      };
+
+      // Find all Gcode atoms in the project (including nested ones)
+      const gcodeAtoms = findAllGcodeAtoms(molecule);
 
       if (gcodeAtoms.length === 0) {
         return {

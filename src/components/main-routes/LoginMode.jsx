@@ -475,7 +475,13 @@ const ProjectDiv = ({
 
   const ThumbItem = React.memo(({ node, svgCacheBuster }) => {
     const [showQuickView, setShowQuickView] = useState(false);
+    const [panelOnLeft, setPanelOnLeft] = useState(false);
     const hoverTimerRef = useRef(null);
+    const projectRef = useRef(null);
+
+    // Quick view panel dimensions
+    const PANEL_WIDTH = 300;
+    const PANEL_MARGIN = 20;
 
     // Cleanup timer on component unmount to prevent memory leaks
     useEffect(() => {
@@ -491,14 +497,22 @@ const ProjectDiv = ({
       if (hoverTimerRef.current) {
         clearTimeout(hoverTimerRef.current);
       }
-      // Start a timer to show quick view after 2 seconds
+      // Start a timer to show quick view after 1 second
       hoverTimerRef.current = setTimeout(() => {
+        // Check if panel would overflow on the right
+        if (projectRef.current) {
+          const rect = projectRef.current.getBoundingClientRect();
+          const spaceOnRight = window.innerWidth - rect.right;
+          
+          // If not enough space on the right, show panel on the left
+          setPanelOnLeft(spaceOnRight < PANEL_WIDTH + PANEL_MARGIN);
+        }
         setShowQuickView(true);
       }, 1000);
     };
 
     const handleEyeMouseLeave = () => {
-      // Clear the timer if user stops hovering before 2 seconds
+      // Clear the timer if user stops hovering before 1 second
       if (hoverTimerRef.current) {
         clearTimeout(hoverTimerRef.current);
         hoverTimerRef.current = null;
@@ -508,6 +522,7 @@ const ProjectDiv = ({
 
     return (
       <div
+        ref={projectRef}
         className={`project ${node.notFound ? "project-not-found" : ""}`}
         style={
           node.owner != GlobalVariables.currentUser
@@ -646,7 +661,7 @@ const ProjectDiv = ({
               {/* Quick view panel */}
               {showQuickView && (
                 <div
-                  className="thumb-quick-view-panel"
+                  className={`thumb-quick-view-panel ${panelOnLeft ? 'panel-on-left' : ''}`}
                   onMouseEnter={() => {
                     // Keep panel open when hovering over it
                     if (hoverTimerRef.current) {
