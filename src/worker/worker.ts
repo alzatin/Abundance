@@ -101,7 +101,6 @@ function visExport(
         };
       }
     }
-    console.log(`Final geometry for ${fileType} export:`, finalGeometry);
     return {
       ...finalGeometry,
       color: "#fefffa",
