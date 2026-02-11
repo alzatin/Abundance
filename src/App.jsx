@@ -158,7 +158,11 @@ function AppContent() {
         // Stage 2: Check if top-level molecule is in WAITING or PROCESSING state
         if (moleculeStatus === "waiting" || moleculeStatus === "processing") {
           setRenderStage("Building");
-          setRenderProgress(30); // Second third
+          // Calculate actual progress based on completion of atoms
+          const [ready, total] = molecule.getCompletionTuple();
+          // Map progress from 0-100% of atoms completed to 30-80% of overall progress
+          const buildingProgress = 30 + (ready / total) * 50;
+          setRenderProgress(Math.round(buildingProgress));
           return;
         }
 
