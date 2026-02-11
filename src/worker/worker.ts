@@ -1,5 +1,5 @@
 import { expose } from "comlink";
-import type { AnyShape, Edge, Shape3D, ShapeMesh } from "replicad";
+import type { AnyShape, Drawing, Edge, Shape3D, ShapeMesh } from "replicad";
 import * as replicad from "replicad";
 import { drawSVG } from "replicad-decorate";
 import { chamfer, extrude, fillet, move, rotate, scale } from "./actions";
@@ -155,12 +155,11 @@ function visExport(
           fusedGeometry.geometry,
           context,
         )) as AnyShape;
-        const drawingResult = util.replicad.drawProjection(
-          shape3d,
-          "top",
-        ).visible;
+
+        const drawing = util.replicad.drawProjection(shape3d, "bottom").visible;
+
         const cachedGeom = await util.geometryProvider!.addSingularToCache(
-          drawingResult,
+          drawing,
           context,
           "export",
           [fileType, input],
@@ -168,13 +167,14 @@ function visExport(
         finalGeometry = {
           ...fusedGeometry,
           geometry: cachedGeom,
+          color: "#fefffa",
           dimension: "2D",
         };
       }
     }
     return {
       ...finalGeometry,
-      color: displayColor,
+      color: "#fefffa",
     };
   });
 }
@@ -210,13 +210,27 @@ async function downExport(
   let scaleUnit = units == "Inches" ? 1 : units == "MM" ? 25.4 : 1;
   let scaling = svgResolution / scaleUnit;
   if (fileType == "SVG") {
-    if ("toSVG" in geom == false) {
-      throw new Error("SVG export requires 2D geometry");
-    }
-    let svg = geom.clone().scale(scaling).toSVG(scaling);
-    var blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    /** Fuses input geometry, draws a top view projection*/
+    if (util.is3D(input)) {
+      const shape3d = (await util.geometryProvider!.get(
+        fusedGeometry.geometry,
+        context,
+      )) as AnyShape;
+      const drawingResult = util.replicad.drawProjection(
+        shape3d,
+        "bottom",
+      ).visible;
 
-    return blob;
+      if ("toSVG" in drawingResult == false) {
+        throw new Error("SVG export requires 2D geometry");
+      }
+      console.log("Generating SVG ", drawingResult);
+      // Flip the drawing to correct SVG orientation
+      let svg = drawingResult.scale(scaling).toSVG(scaling);
+      var blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+
+      return blob;
+    }
   } else if (fileType == "STL") {
     if ("blobSTL" in geom == false) {
       throw new Error("STL export requires 3D geometry");
