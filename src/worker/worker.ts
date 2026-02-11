@@ -418,8 +418,39 @@ async function visualizeGcodeIncremental(
   gcodeArray: string[],
   context: RequestContext,
 ): Promise<AbundanceObject> {
+  return visualizeGcodeIncrementalInternal(gcodeArray, context, false);
+}
+
+/**
+ * Visualize gcode incrementally, forcing visualization even with high edge counts
+ * @param gcodeArray - Array of individual gcode strings for each part
+ * @param context - Request context for caching
+ * @returns Promise<AbundanceObject> - The assembled visualization
+ */
+async function visualizeGcodeIncrementalForced(
+  gcodeArray: string[],
+  context: RequestContext,
+): Promise<AbundanceObject> {
+  return visualizeGcodeIncrementalInternal(gcodeArray, context, true);
+}
+
+/**
+ * Internal implementation of gcode visualization
+ * @param gcodeArray - Array of individual gcode strings for each part
+ * @param context - Request context for caching
+ * @param forceVisualization - Skip edge count validation if true
+ * @returns Promise<AbundanceObject> - The assembled visualization
+ */
+async function visualizeGcodeIncrementalInternal(
+  gcodeArray: string[],
+  context: RequestContext,
+  forceVisualization: boolean = false,
+): Promise<AbundanceObject> {
   console.log(`\n=== Gcode Visualization with Individual Wire Assembly ===`);
   console.log(`Processing ${gcodeArray.length} gcode parts`);
+  if (forceVisualization) {
+    console.log(`⚠️ Force mode enabled - skipping edge count validation`);
+  }
 
   // Create a generation-specific ID by hashing all gcode content together
   // This ensures each unique set of gcode strings gets a unique generation ID
@@ -447,6 +478,31 @@ async function visualizeGcodeIncremental(
 
   console.log(`Parsed gcode in ${parseTime.toFixed(2)}ms`);
   console.log(`Parts with edges: ${edgesPerPart.length}`);
+  
+  // Log edge statistics to help diagnose issues
+  if (edgesPerPart.length > 0) {
+    const edgeCounts = edgesPerPart.map(edges => edges.length);
+    const totalEdges = edgeCounts.reduce((sum, count) => sum + count, 0);
+    const minEdges = Math.min(...edgeCounts);
+    const maxEdges = Math.max(...edgeCounts);
+    const avgEdges = (totalEdges / edgeCounts.length).toFixed(1);
+    
+    console.log(`\nEdge Statistics:`);
+    console.log(`  Total edges: ${totalEdges}`);
+    console.log(`  Min edges per part: ${minEdges}`);
+    console.log(`  Max edges per part: ${maxEdges}`);
+    console.log(`  Average edges per part: ${avgEdges}`);
+    
+    // Check if any part has unusually high edge count (unless forced)
+    if (!forceVisualization && maxEdges > 30000) {
+      const error: any = new Error(
+        "HIGH_EDGE_COUNT: Your parts have an unusually high number of edges, continuing might stall the project. Try changing your tool size or number of passes. You can still download the gcode and visualize it elsewhere."
+      );
+      error.type = "HIGH_EDGE_COUNT";
+      error.maxEdges = maxEdges;
+      throw error;
+    }
+  }
 
   if (edgesPerPart.length === 0) {
     throw new Error("No valid gcode movements found to visualize");
@@ -459,9 +515,31 @@ async function visualizeGcodeIncremental(
 
   for (let i = 0; i < edgesPerPart.length; i++) {
     try {
+      const edges = edgesPerPart[i];
+      const edgeCount = edges.length;
+      
+      // Log edge information before wire assembly
+      console.log(
+        `\n  [Wire Assembly] Part ${i + 1}/${edgesPerPart.length}: ${edgeCount} edges`
+      );
+      
+      // Check for potential issues that might cause hanging
+      if (edgeCount === 0) {
+        console.warn(`  ⚠️ Warning: Part ${i + 1} has 0 edges, skipping wire assembly`);
+        continue;
+      }
+      
+      if (edgeCount > 10000) {
+        console.warn(`  ⚠️ Warning: Part ${i + 1} has unusually high edge count (${edgeCount})`);
+      }
+      
       const wireStart = performance.now();
-      const wire = util.replicad.assembleWire(edgesPerPart[i]);
+      const wire = util.replicad.assembleWire(edges);
       const wireTime = performance.now() - wireStart;
+
+      console.log(
+        `  ✓ Wire assembly completed for part ${i + 1} in ${wireTime.toFixed(2)}ms`
+      );
 
       // Create a unique hash for this part using generation ID, index, and gcode content
       // The generationId (hash of all gcode) ensures different generations don't collide in cache
@@ -488,11 +566,11 @@ async function visualizeGcodeIncremental(
         i < 5 || i === edgesPerPart.length - 1 || (i + 1) % 10 === 0;
       if (shouldLog) {
         console.log(
-          `  Part ${i + 1}/${edgesPerPart.length}: ${edgesPerPart[i].length} edges in ${wireTime.toFixed(2)}ms`,
+          `  Part ${i + 1}/${edgesPerPart.length}: ${edgeCount} edges in ${wireTime.toFixed(2)}ms`,
         );
       }
     } catch (err) {
-      console.warn(`Failed to create wire for part ${i + 1}:`, err);
+      console.error(`  ❌ Failed to create wire for part ${i + 1}:`, err);
       // Continue processing other parts even if one fails
     }
   }
@@ -552,7 +630,26 @@ async function visualizeGcodeAsAssembly(
 
     if (partEdges.length > 0) {
       try {
+        const edgeCount = partEdges.length;
+        
+        // Log edge information before wire assembly
+        console.log(
+          `\n  [Wire Assembly] Experimental part ${i + 1}/${gcodeArray.length}: ${edgeCount} edges`
+        );
+        
+        // Check for potential issues
+        if (edgeCount > 10000) {
+          console.warn(`  ⚠️ Warning: Part ${i + 1} has unusually high edge count (${edgeCount})`);
+        }
+        
+        const wireStart = performance.now();
         const wire = util.replicad.assembleWire(partEdges);
+        const wireTime = performance.now() - wireStart;
+        
+        console.log(
+          `  ✓ Experimental wire assembly completed for part ${i + 1} in ${wireTime.toFixed(2)}ms`
+        );
+        
         // Use generationId to prevent cache collisions between different generations
         const partHash = util.hashString(
           `gcode-exp-${generationId}-${i}-${gcode}`,
@@ -572,7 +669,7 @@ async function visualizeGcodeAsAssembly(
           dimension: "3D",
         });
       } catch (err) {
-        console.warn(`Failed to create wire for part ${i + 1}:`, err);
+        console.error(`  ❌ Failed to create wire for part ${i + 1}:`, err);
       }
     }
   }
@@ -780,6 +877,7 @@ if (
     text,
     resetView,
     visualizeGcodeIncremental,
+    visualizeGcodeIncrementalForced,
     visualizeGcodeAsAssembly,
     getBoundingBox,
     isAssembly,
@@ -829,5 +927,6 @@ export {
   text,
   visExport,
   visualizeGcodeIncremental,
+  visualizeGcodeIncrementalForced,
   visualizeGcodeAsAssembly,
 };
