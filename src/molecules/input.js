@@ -3,6 +3,10 @@ import GlobalVariables from "../js/globalvariables.js";
 import { Status } from "../prototypes/observableEntity.js";
 import { Octokit } from "octokit";
 
+// Default values for range type inputs
+const DEFAULT_RANGE_MIN = 0;
+const DEFAULT_RANGE_MAX = 100;
+
 /**
  * This class creates the input atom.
  */
@@ -518,6 +522,9 @@ export default class Input extends Atom {
 
     // Get canvas position to properly position tooltip
     const canvas = GlobalVariables.canvas.current;
+    // Trigger layout reflow to ensure getBoundingClientRect returns current values
+    void canvas.offsetHeight;
+    
     const canvasRect = canvas.getBoundingClientRect();
 
     this.tooltipElement = document.createElement("div");
@@ -903,6 +910,18 @@ export default class Input extends Atom {
     }
   }
 
+  /**
+   * Helper method to update parent attachment point options with current min/max values
+   */
+  updateParentAPRangeOptions() {
+    if (this.parentAP) {
+      this.parentAP.options = {
+        min: this.min,
+        max: this.max,
+      };
+    }
+  }
+
   createInputParams(setInputChanged) {
     this.setInputChanged = setInputChanged;
     let inputParams = {};
@@ -934,7 +953,7 @@ export default class Input extends Atom {
       value: this.type,
       label: "Input Type",
       disabled: false,
-      options: ["number", "string", "geometry", "array", "boolean", "import"],
+      options: ["number", "string", "geometry", "array", "boolean", "range", "import"],
       onChange: (newType) => {
         if (this.type !== newType) {
           this.type = newType;
@@ -974,6 +993,41 @@ export default class Input extends Atom {
           if (this.parentAP) {
             this.parentAP.options = this.options;
           }
+          this.setInputChanged(val);
+        },
+      };
+    }
+
+    // If type is range, add controls for min and max values
+    if (this.type === "range") {
+      // Initialize min/max if not set
+      if (this.min === undefined) {
+        this.min = DEFAULT_RANGE_MIN;
+      }
+      if (this.max === undefined) {
+        this.max = DEFAULT_RANGE_MAX;
+      }
+
+      inputParams[this.uniqueID + "rangeMin"] = {
+        type: "number",
+        value: this.min,
+        label: "Min Value",
+        disabled: false,
+        onChange: (val) => {
+          this.min = val;
+          this.updateParentAPRangeOptions();
+          this.setInputChanged(val);
+        },
+      };
+
+      inputParams[this.uniqueID + "rangeMax"] = {
+        type: "number",
+        value: this.max,
+        label: "Max Value",
+        disabled: false,
+        onChange: (val) => {
+          this.max = val;
+          this.updateParentAPRangeOptions();
           this.setInputChanged(val);
         },
       };
@@ -1046,6 +1100,12 @@ export default class Input extends Atom {
     //Write the current color selection to the serialized object
     superSerialObject.type = this.type;
     superSerialObject.options = this.options;
+
+    // Save range min/max if type is range
+    if (this.type === "range") {
+      superSerialObject.min = this.min;
+      superSerialObject.max = this.max;
+    }
 
     // Save import-related properties if type is import
     if (this.type === "import") {

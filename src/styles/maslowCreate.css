@@ -206,7 +206,9 @@ body {
   border-radius: 12px;
   padding: 15px;
   z-index: 100;
-  font-family: JetBrains Mono, monospace;
+  font-family:
+    JetBrains Mono,
+    monospace;
   color: var(--panel-foreground, #e0e5ef);
   user-select: none;
   transition: box-shadow 0.2s;
@@ -243,7 +245,9 @@ body {
   border-radius: 8px 8px 0 0;
   margin-top: 10px;
   margin-right: 2px;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 .settings-panel-tab.active {
   background: var(--abundance-color-fontLightGrey);
@@ -299,14 +303,19 @@ body {
   color: var(--abundance-color-background);
   border: none;
   border-radius: 6px;
-  font-family: JetBrains Mono, monospace;
+  font-family:
+    JetBrains Mono,
+    monospace;
   font-size: 15px;
   font-weight: 600;
   padding: 10px 24px;
   margin: 0;
   box-shadow: 0 2px 8px rgba(20, 24, 31, 0.1);
   cursor: pointer;
-  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+  transition:
+    background 0.18s,
+    color 0.18s,
+    box-shadow 0.18s;
   outline: none;
   letter-spacing: 0.5px;
   opacity: 0.97;
@@ -331,7 +340,9 @@ body {
   margin-top: 2px;
   margin-bottom: 2px;
   outline: none;
-  transition: border 0.18s, box-shadow 0.18s;
+  transition:
+    border 0.18s,
+    box-shadow 0.18s;
   box-shadow: 0 2px 8px rgba(20, 24, 31, 0.1);
   appearance: none;
 }
@@ -547,15 +558,18 @@ canvas {
 }
 
 .circular-menu {
-  font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB",
-    "STHeitiSC-Light", "Microsoft YaHei", Arial, sans-serif;
+  font-family:
+    "Helvetica Neue", Helvetica, "Hiragino Sans GB", "STHeitiSC-Light",
+    "Microsoft YaHei", Arial, sans-serif;
   z-index: 1040;
   border-radius: 50%;
   background: transparent;
   opacity: 0;
   position: fixed;
   display: none;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
   cursor: default;
   transform: scale(0.1);
   pointer-events: none;
@@ -591,7 +605,9 @@ canvas {
 
 .circular-menu.opened-nav {
   opacity: 1;
-  transition: opacity 0.5s ease, transform 0.3s ease;
+  transition:
+    opacity 0.5s ease,
+    transform 0.3s ease;
   transform: scale(0.5);
   pointer-events: auto;
 }
@@ -751,7 +767,8 @@ Sidebar navigation
 
 .nav-text {
   display: inline;
-  font-family: ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas",
+  font-family:
+    ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas",
     "Liberation Mono", "Courier New", monospace;
   font-weight: 500;
   font-size: 16px;
@@ -1074,7 +1091,8 @@ Sidebar navigation
 
   .nav-text {
     display: inline;
-    font-family: ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas",
+    font-family:
+      ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas",
       "Liberation Mono", "Courier New", monospace;
     font-weight: 500;
     font-size: 16px;
@@ -1134,7 +1152,8 @@ Sidebar navigation
 
   .nav-text {
     display: inline;
-    font-family: ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas",
+    font-family:
+      ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas",
       "Liberation Mono", "Courier New", monospace;
     font-weight: 500;
     font-size: 16px;
@@ -1257,7 +1276,8 @@ Sidebar navigation
   }
   .nav-text {
     display: inline;
-    font-family: ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas",
+    font-family:
+      ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas",
       "Liberation Mono", "Courier New", monospace;
     font-weight: 500;
     font-size: 14px;
@@ -1359,7 +1379,8 @@ Sidebar navigation
   }
   .nav-text {
     display: inline;
-    font-family: ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas",
+    font-family:
+      ui-monospace, "SFMono-Regular", "Menlo", "Monaco", "Consolas",
       "Liberation Mono", "Courier New", monospace;
     font-weight: 500;
     font-size: 14px;
@@ -1490,4 +1511,86 @@ Sidebar navigation
   font-size: 0.95em;
   border: none;
   box-shadow: none;
+}
+
+.gcode-high-edges-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(
+    35,
+    40,
+    50,
+    0.7
+  ); /* var(--abundance-color-background) with opacity */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.gcode-high-edges-dialog-box {
+  background: var(--dialog-background, #fff);
+  color: var(--dialog-text, #232832);
+  padding: 32px;
+  border-radius: 8px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  text-align: center;
+  border: 2px solid var(--dialog-border, #be3fe5);
+}
+
+.gcode-high-edges-dialog-message {
+  white-space: pre-line;
+  margin-bottom: 24px;
+  color: var(--dialog-text, #232832);
+}
+
+.gcode-high-edges-dialog-btn {
+  margin: 0 8px 0 0;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: var(--abundance-color-mainPurple, #c4a3d5);
+  color: var(--abundance-color-background, #232832);
+  cursor: pointer;
+  font-size: 1rem;
+  font-family: inherit;
+  font-weight: 600;
+  transition:
+    background 0.18s,
+    color 0.18s;
+}
+.gcode-high-edges-dialog-btn:hover {
+  background: var(--abundance-color-brightPurple, #be3fe5);
+  color: var(--abundance-color-fontWhite, #f2f0f0);
+}
+
+.gcode-high-edges-dialog-download {
+  background: var(--abundance-color-mainPurple, #c4a3d5);
+  color: var(--abundance-color-background, #232832);
+}
+.gcode-high-edges-dialog-download:hover {
+  background: var(--abundance-color-brightPurple, #be3fe5);
+  color: var(--abundance-color-fontWhite, #f2f0f0);
+}
+
+.gcode-high-edges-dialog-continue {
+  background: var(--abundance-color-brightPurple, #be3fe5);
+  color: var(--abundance-color-fontWhite, #f2f0f0);
+}
+.gcode-high-edges-dialog-continue:hover {
+  background: var(--abundance-color-mainPurple, #c4a3d5);
+  color: var(--abundance-color-background, #232832);
+}
+
+.gcode-high-edges-dialog-cancel {
+  background: var(--abundance-color-mediumGrey, #545252);
+  color: var(--abundance-color-fontWhite, #f2f0f0);
+}
+.gcode-high-edges-dialog-cancel:hover {
+  background: var(--abundance-color-brightPurple, #be3fe5);
+  color: var(--abundance-color-fontWhite, #f2f0f0);
 }
