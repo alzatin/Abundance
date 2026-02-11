@@ -52,6 +52,77 @@ function createMesh(thickness: number): Promise<any[]> {
 }
 
 /**
+ * Returns the z-values of flat faces in the geometry, which can be used for area operations in gcode generation.
+ * @param {AbundanceObject} input - The geometry to export
+ * @returns {Promise<number>} A promise that resolves to an array of z-values corresponding to flat faces in the geometry
+ */
+function findFlatFaces(
+  input: AbundanceObject,
+  context: RequestContext,
+): Promise<number[]> {
+  return started.then(async () => {
+    const zValues: number[] = [];
+    let geometryToFilter = extractKeepOut(input);
+    if (!geometryToFilter) {
+      throw new Error(
+        "Geometry To Export has no geometry after keepout is applied",
+      );
+    }
+    //// Algo overview:
+    // collect all prospective horizonal flats to pass to area operation
+    const threshold = 0.01;
+    const geomfaces = await util.actOnLeafs(
+      geometryToFilter,
+      async (leaf: AbundanceLeaf) => {
+        let geom = await util.geometryProvider!.get(leaf.geometry, context);
+        if (!("faces" in geom)) {
+          // geom is a 2D object.
+          return leaf;
+          // TODO: add a warning here
+        } else if (geom.faces.length == 0) {
+          // unexpectedly no faces on this geometry. TODO: add a warning here.
+          return leaf;
+        }
+        geom = geom as Shape3D; // Safe to cast b/c we checked for faces above.
+
+        // In order to be considered, a face must be...
+        //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
+
+        const isHorizontal = (normal) =>
+          Math.abs(normal.x) < threshold &&
+          Math.abs(normal.y) < threshold &&
+          Math.abs(Math.abs(normal.z) - 1) < threshold;
+
+        const horizontalFaces = geom.faces.filter((face, idx) => {
+          const normal = face.normalAt ? face.normalAt() : null;
+          const center = face.center;
+          const result = normal && isHorizontal(normal);
+
+          return result;
+        });
+
+        horizontalFaces.forEach((face, idx) => {
+          const center = face.center;
+          const zVal = center[2] ?? center.z;
+          zValues.push(zVal);
+        });
+      },
+    );
+    // Remove duplicate z values
+    const uniqueZValues = Array.from(new Set(zValues));
+    //Exclude the smallest and the largest z values as those are likely the floor and ceiling, and return the rest as potential flat faces for area operations.
+    let filteredZValues = uniqueZValues.filter((z) => {
+      return (
+        z > Math.min(...uniqueZValues) + threshold &&
+        z < Math.max(...uniqueZValues) - threshold
+      );
+    });
+
+    return filteredZValues;
+  });
+}
+
+/**
  * Prepares geometry for visualization export in various file formats (STL, STEP, SVG).
  * @param {AbundanceObject} input - The geometry to export
  * @param {string} fileType - The file type for export ("STL", "STEP", or "SVG")
@@ -791,6 +862,7 @@ if (
     rotate,
     scale,
     fillet,
+    findFlatFaces,
     chamfer,
     difference,
     tag,
@@ -833,6 +905,7 @@ export {
   extractTag,
   extrude,
   fillet,
+  findFlatFaces,
   generateThumbnail,
   getBoundingBox,
   importingSTEP,

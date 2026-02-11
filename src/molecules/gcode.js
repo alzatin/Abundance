@@ -318,8 +318,16 @@ export default class Gcode extends Atom {
    * @param {string} inputID - The input geometry ID
    */
   async _processSinglePart(inputID) {
+    console.log("Processing single part for G-code generation:", inputID);
+    /* Find flat faces for area operation */
     GlobalVariables.cad
-      .visExport(inputID, "STL")
+      .findFlatFaces(inputID, this.getContext())
+      .then((flatFaces) => {
+        console.log("Flat faces found:", flatFaces);
+      });
+    // Export the geometry to STL and generate G-code
+    GlobalVariables.cad
+      .visExport(inputID, "STL", this.getContext())
       .then((visExported) => {
         const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         GlobalVariables.cad
@@ -527,6 +535,13 @@ export default class Gcode extends Atom {
         this.progress = partProgress;
         //this.sendToRender();
 
+        /* Find flat faces for area operation */
+
+        const flatFaces = await GlobalVariables.cad.findFlatFaces(
+          partID,
+          this.getContext(),
+        );
+        console.log("Flat faces found:", flatFaces);
         // Generate STL for this part
         const visExported = await GlobalVariables.cad.visExport(
           partID,
@@ -560,6 +575,7 @@ export default class Gcode extends Atom {
           stlURL,
           center,
           i + 1,
+          flatFaces,
         );
         allGcode.push(partGcode);
 
@@ -663,7 +679,7 @@ export default class Gcode extends Atom {
    * @param {number} partNumber - Part number for naming
    * @returns {Promise<string>} Generated G-code
    */
-  _generateGcodeForPart(stlURL, center, partNumber) {
+  _generateGcodeForPart(stlURL, center, partNumber, flats = []) {
     return new Promise((resolve, reject) => {
       const partGcodeCallback = (gcode) => {
         resolve(gcode);
@@ -684,7 +700,6 @@ export default class Gcode extends Atom {
       const timeout = setTimeout(() => {
         reject(new Error(`G-code generation timeout for part ${partNumber}`));
       }, 60000); // 60 second timeout
-
       try {
         window.generateGcode(
           stlURL,
@@ -699,6 +714,7 @@ export default class Gcode extends Atom {
           },
           partProgressCallback,
           selectedToolObj, // Pass the selected tool object/ disabled currently
+          flats, // Pass the flat faces for area operation
         );
       } catch (err) {
         clearTimeout(timeout);
