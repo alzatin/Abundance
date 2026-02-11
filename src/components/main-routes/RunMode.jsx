@@ -142,8 +142,10 @@ function runMode({ processing, setProcessing }) {
 
   useEffect(() => {
     if (cameraZoom == 1 && mesh[0]) {
-      console.log("Setting camera zoom", mesh[0].cameraZoom);
-      setCameraZoom(mesh[0].cameraZoom);
+      // Double the zoom ratio for run mode to make projects appear larger
+      const runModeZoom = mesh[0].cameraZoom * 2;
+      console.log("Setting camera zoom for run mode", runModeZoom);
+      setCameraZoom(runModeZoom);
     }
   }, [mesh]);
 
