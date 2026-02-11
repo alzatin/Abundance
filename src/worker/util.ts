@@ -303,42 +303,6 @@ function hashString(str: string): string {
   return hash.toString(16).padStart(8, "0");
 }
 
-/**
- * Wraps an async operation with a timeout
- * 
- * Note: This function can only interrupt async operations. If the underlying
- * operation is synchronous and blocking, the timeout will reject the promise
- * but the operation will continue running in the background. This is still
- * useful in web workers to prevent the caller from waiting indefinitely.
- * 
- * @param promise - The promise to execute
- * @param timeoutMs - Timeout in milliseconds
- * @param errorMessage - Custom error message for timeout
- * @returns Promise that resolves/rejects with the original promise or times out
- */
-async function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  errorMessage: string = "Operation timed out"
-): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout>;
-  
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(new Error(errorMessage));
-    }, timeoutMs);
-  });
-
-  try {
-    const result = await Promise.race([promise, timeoutPromise]);
-    clearTimeout(timeoutId);
-    return result;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
-  }
-}
-
 export {
   AbundanceLeaf,
   AbundanceObject,
@@ -361,6 +325,5 @@ export {
   isWireGeometry,
   replicad,
   SimplePlane,
-  withTimeout,
   XYPlane,
 };
