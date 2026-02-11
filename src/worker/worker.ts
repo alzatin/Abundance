@@ -348,8 +348,39 @@ async function visualizeGcodeIncremental(
   gcodeArray: string[],
   context: RequestContext,
 ): Promise<AbundanceObject> {
+  return visualizeGcodeIncrementalInternal(gcodeArray, context, false);
+}
+
+/**
+ * Visualize gcode incrementally, forcing visualization even with high edge counts
+ * @param gcodeArray - Array of individual gcode strings for each part
+ * @param context - Request context for caching
+ * @returns Promise<AbundanceObject> - The assembled visualization
+ */
+async function visualizeGcodeIncrementalForced(
+  gcodeArray: string[],
+  context: RequestContext,
+): Promise<AbundanceObject> {
+  return visualizeGcodeIncrementalInternal(gcodeArray, context, true);
+}
+
+/**
+ * Internal implementation of gcode visualization
+ * @param gcodeArray - Array of individual gcode strings for each part
+ * @param context - Request context for caching
+ * @param forceVisualization - Skip edge count validation if true
+ * @returns Promise<AbundanceObject> - The assembled visualization
+ */
+async function visualizeGcodeIncrementalInternal(
+  gcodeArray: string[],
+  context: RequestContext,
+  forceVisualization: boolean = false,
+): Promise<AbundanceObject> {
   console.log(`\n=== Gcode Visualization with Individual Wire Assembly ===`);
   console.log(`Processing ${gcodeArray.length} gcode parts`);
+  if (forceVisualization) {
+    console.log(`⚠️ Force mode enabled - skipping edge count validation`);
+  }
 
   // Create a generation-specific ID by hashing all gcode content together
   // This ensures each unique set of gcode strings gets a unique generation ID
@@ -391,6 +422,16 @@ async function visualizeGcodeIncremental(
     console.log(`  Min edges per part: ${minEdges}`);
     console.log(`  Max edges per part: ${maxEdges}`);
     console.log(`  Average edges per part: ${avgEdges}`);
+    
+    // Check if any part has unusually high edge count (unless forced)
+    if (!forceVisualization && maxEdges > 30000) {
+      const error: any = new Error(
+        "HIGH_EDGE_COUNT: Your parts have an unusually high number of edges, continuing might stall the project. Try changing your tool size or number of passes. You can still download the gcode and visualize it elsewhere."
+      );
+      error.type = "HIGH_EDGE_COUNT";
+      error.maxEdges = maxEdges;
+      throw error;
+    }
   }
 
   if (edgesPerPart.length === 0) {
@@ -765,6 +806,7 @@ if (
     text,
     resetView,
     visualizeGcodeIncremental,
+    visualizeGcodeIncrementalForced,
     visualizeGcodeAsAssembly,
     getBoundingBox,
     isAssembly,
@@ -813,5 +855,6 @@ export {
   text,
   visExport,
   visualizeGcodeIncremental,
+  visualizeGcodeIncrementalForced,
   visualizeGcodeAsAssembly,
 };

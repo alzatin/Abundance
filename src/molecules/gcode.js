@@ -175,16 +175,48 @@ export default class Gcode extends Atom {
    * @returns {Function} The gcode callback function
    */
   _createGcodeCallback() {
-    return (gcode) => {
+    return async (gcode) => {
       this.gcodeString = gcode;
       this.gcodeGenerated = true;
       this.progress = 1.0; // Complete progress
-      this.setReady(
-        GlobalVariables.cad.visualizeGcodeIncremental(
+      
+      try {
+        const visualization = await GlobalVariables.cad.visualizeGcodeIncremental(
           [gcode],
           this.getContext(),
-        ),
-      );
+        );
+        this.setReady(visualization);
+      } catch (error) {
+        // Check if this is a high edge count error
+        if (error.type === "HIGH_EDGE_COUNT" || error.message?.includes("HIGH_EDGE_COUNT")) {
+          // Show confirmation dialog
+          const userConfirmed = window.confirm(
+            "Your parts have an unusually high number of edges, continuing might stall the project. Try changing your tool size or number of passes. You can still download the gcode and visualize it elsewhere.\n\nDo you want to continue with visualization?"
+          );
+          
+          if (userConfirmed) {
+            // User wants to proceed - call visualization with override flag
+            try {
+              const visualization = await GlobalVariables.cad.visualizeGcodeIncrementalForced(
+                [gcode],
+                this.getContext(),
+              );
+              this.setReady(visualization);
+            } catch (innerError) {
+              console.error("Visualization failed:", innerError);
+              this.setReady(Promise.reject(innerError));
+            }
+          } else {
+            // User cancelled - gcode is still generated and downloadable
+            console.log("User cancelled visualization due to high edge count");
+            // Don't set an error state - gcode download should still work
+          }
+        } else {
+          // Other error - propagate it
+          this.setReady(Promise.reject(error));
+        }
+      }
+      
       this.setInputChanged?.();
     };
   }
@@ -537,12 +569,44 @@ export default class Gcode extends Atom {
     this.gcodeString = this._concatenateGcode(allGcode);
     this.gcodeGenerated = true;
 
-    // Use the incremental visualization method
-    const gcodeWire = await GlobalVariables.cad.visualizeGcodeIncremental(
-      allGcode,
-      this.getContext(),
-    );
-    this.setReady(gcodeWire);
+    // Use the incremental visualization method with error handling
+    try {
+      const gcodeWire = await GlobalVariables.cad.visualizeGcodeIncremental(
+        allGcode,
+        this.getContext(),
+      );
+      this.setReady(gcodeWire);
+    } catch (error) {
+      // Check if this is a high edge count error
+      if (error.type === "HIGH_EDGE_COUNT" || error.message?.includes("HIGH_EDGE_COUNT")) {
+        // Show confirmation dialog
+        const userConfirmed = window.confirm(
+          "Your parts have an unusually high number of edges, continuing might stall the project. Try changing your tool size or number of passes. You can still download the gcode and visualize it elsewhere.\n\nDo you want to continue with visualization?"
+        );
+        
+        if (userConfirmed) {
+          // User wants to proceed - call visualization with override flag
+          try {
+            const gcodeWire = await GlobalVariables.cad.visualizeGcodeIncrementalForced(
+              allGcode,
+              this.getContext(),
+            );
+            this.setReady(gcodeWire);
+          } catch (innerError) {
+            console.error("Visualization failed:", innerError);
+            this.setReady(Promise.reject(innerError));
+          }
+        } else {
+          // User cancelled - gcode is still generated and downloadable
+          console.log("User cancelled visualization due to high edge count");
+          // Don't set an error state - gcode download should still work
+        }
+      } else {
+        // Other error - propagate it
+        this.setReady(Promise.reject(error));
+      }
+    }
+    
     this.progress = 1.0;
     this.setInputChanged?.();
 
