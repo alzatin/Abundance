@@ -374,10 +374,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     }
   };
 
-  useEffect(() => {
-    console.log("set focused index changed:", focusedIndex);
-  }, [focusedIndex]);
-
   // Only reset focus if the keys of controls change
   const prevControlKeys = React.useRef(Object.keys(controls));
   React.useEffect(() => {
@@ -418,13 +414,11 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   // Listen for keyboard events on the panel to trigger focus
   const handlePanelKeyDown = (e) => {
     // Just pass through to handleKeyDown - it will set shouldFocus as needed
-    console.log("Panel key down:", e.key);
     handleKeyDown(e);
   };
 
   // Keyboard navigation (skip disabled inputs)
   const handleKeyDown = (e) => {
-    console.log("Handle key down:", e.key, "Focused index:", focusedIndex);
     if (e.key === "ArrowDown") {
       let next = focusedIndex + 1;
       while (
@@ -434,7 +428,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
         next++;
       }
       if (next < controlKeys.length) {
-        console.log("Moving focus down to index:", next);
         setFocusedIndex(next);
         setShouldFocus(true);
       }
@@ -446,7 +439,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
         (controls[controlKeys[prev]]?.disabled || !inputRefs.current[prev])
       ) {
         prev--;
-        console.log("Checking previous index:", prev);
       }
       if (prev >= 0) {
         setFocusedIndex(prev);
@@ -454,7 +446,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
       }
       e.preventDefault();
     }
-    console.log("Focused index after key down:", focusedIndex);
   };
 
   return (
@@ -519,10 +510,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                 style={arrowButtonStyle}
                 onClick={() => {
                   if (contentCollapsed) {
-                    // Make this the active panel
-                    console.log(
-                      "uncollapsing and making this the active panel",
-                    );
                     setContentCollapsed();
                     if (initialCollapsed) setCollapsed(false);
                   } else if (initialCollapsed) {
@@ -941,7 +928,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                               e.preventDefault();
                             } else if (e.key === "Enter") {
                               if (config.onItemClick && itemIdx !== -1) {
-                                console.log("Enter pressed on item", itemIdx);
                                 const item = config.value[itemIdx];
                                 config.onItemClick(item, itemIdx, e);
                               }
@@ -949,7 +935,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           } else {
                             // If no item is focused, ArrowDown moves to first item
                             if (e.key === "ArrowDown" && itemCount > 0) {
-                              console.log("Focusing first list item");
                               setFocusedListItem({
                                 ...focusedListItem,
                                 [key]: 0,
@@ -1037,12 +1022,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   onKeyDown={(e) => {
                                     if (config.onItemKeyDown)
                                       config.onItemKeyDown(item, itemIdx, e);
-                                    console.log(
-                                      "keydown item",
-                                      item,
-                                      itemIdx,
-                                      e.key,
-                                    );
                                   }}
                                   onBlur={() =>
                                     setFocusedListItem({
@@ -1453,9 +1432,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             }
                             handleChange(value);
                           }}
-                          onKeyDown={(e) => {
-                            console.log("Select key down:", e.key);
-                          }}
+                          onKeyDown={(e) => {}}
                           onBlur={() => {}}
                           {...commonProps}
                         >
