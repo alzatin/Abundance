@@ -160,8 +160,10 @@ function AppContent() {
           setRenderStage("Building");
           // Calculate actual progress based on completion of atoms
           const [ready, total] = molecule.getCompletionTuple();
+          // Guard against division by zero (though getCompletionTuple handles this)
+          const progress = total > 0 ? ready / total : 1;
           // Map progress from 0-100% of atoms completed to 30-80% of overall progress
-          const buildingProgress = 30 + (ready / total) * 50;
+          const buildingProgress = 30 + progress * 50;
           setRenderProgress(Math.round(buildingProgress));
           return;
         }

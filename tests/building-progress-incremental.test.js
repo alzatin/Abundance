@@ -1,5 +1,5 @@
 /**
- * Test for building progress bar incremental updates.
+ * Tests for building progress bar incremental updates.
  * 
  * This test ensures that the progress bar shows incremental progress during the "Building" stage
  * rather than staying stuck at a fixed percentage (e.g., 30%).
@@ -115,6 +115,18 @@ describe('Building Progress Incremental Updates', () => {
       // Progress should increase, but only slightly
       expect(progress2).toBeGreaterThan(progress1);
       expect(progress2 - progress1).toBeLessThan(1); // Less than 1% increase per atom
+    });
+
+    it('should handle edge case of zero total atoms (division by zero)', () => {
+      const ready = 0;
+      const total = 0;
+      
+      // Guard against division by zero
+      const progress = total > 0 ? ready / total : 1;
+      const buildingProgress = 30 + progress * 50;
+      
+      // Should default to 80% (100% complete)
+      expect(Math.round(buildingProgress)).toBe(80);
     });
   });
 });
