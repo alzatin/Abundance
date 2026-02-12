@@ -26,7 +26,7 @@ const generateGcode = (
     console.error("STL URL is not available.");
     return;
   }
-
+  console.log(stlUrl);
   // Track slicing progress with a timer
   let slicingTimer = null;
   let slicingStartTime = null;

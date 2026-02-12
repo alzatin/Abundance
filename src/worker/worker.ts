@@ -223,7 +223,6 @@ async function downExport(
       if ("toSVG" in drawingResult == false) {
         throw new Error("SVG export requires 2D geometry");
       }
-      console.log("Generating SVG ", drawingResult);
       // Flip the drawing to correct SVG orientation
       let svg = drawingResult.scale(scaling).toSVG(scaling);
       var blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
@@ -475,27 +474,22 @@ async function visualizeGcodeIncrementalInternal(
   }
   const parseTime = performance.now() - parseStart;
 
-  console.log(`Parsed gcode in ${parseTime.toFixed(2)}ms`);
-  console.log(`Parts with edges: ${edgesPerPart.length}`);
-  
   // Log edge statistics to help diagnose issues
   if (edgesPerPart.length > 0) {
-    const edgeCounts = edgesPerPart.map(edges => edges.length);
+    const edgeCounts = edgesPerPart.map((edges) => edges.length);
     const totalEdges = edgeCounts.reduce((sum, count) => sum + count, 0);
     const minEdges = Math.min(...edgeCounts);
     const maxEdges = Math.max(...edgeCounts);
     const avgEdges = (totalEdges / edgeCounts.length).toFixed(1);
-    
+
     console.log(`\nEdge Statistics:`);
     console.log(`  Total edges: ${totalEdges}`);
-    console.log(`  Min edges per part: ${minEdges}`);
-    console.log(`  Max edges per part: ${maxEdges}`);
     console.log(`  Average edges per part: ${avgEdges}`);
-    
+
     // Check if any part has unusually high edge count (unless forced)
-    if (!forceVisualization && maxEdges > 30000) {
+    if (!forceVisualization && maxEdges > 35000) {
       const error: any = new Error(
-        "HIGH_EDGE_COUNT: Your parts have an unusually high number of edges, continuing might stall the project. Try changing your tool size or number of passes. You can still download the gcode and visualize it elsewhere."
+        "HIGH_EDGE_COUNT: Your parts have an unusually high number of edges, continuing might stall the project. Try changing your tool size or number of passes. You can still download the gcode and visualize it elsewhere.",
       );
       error.type = "HIGH_EDGE_COUNT";
       error.maxEdges = maxEdges;
@@ -516,28 +510,27 @@ async function visualizeGcodeIncrementalInternal(
     try {
       const edges = edgesPerPart[i];
       const edgeCount = edges.length;
-      
-      // Log edge information before wire assembly
-      console.log(
-        `\n  [Wire Assembly] Part ${i + 1}/${edgesPerPart.length}: ${edgeCount} edges`
-      );
-      
+
       // Check for potential issues that might cause hanging
       if (edgeCount === 0) {
-        console.warn(`  ⚠️ Warning: Part ${i + 1} has 0 edges, skipping wire assembly`);
+        console.warn(
+          `  ⚠️ Warning: Part ${i + 1} has 0 edges, skipping wire assembly`,
+        );
         continue;
       }
-      
-      if (edgeCount > 10000) {
-        console.warn(`  ⚠️ Warning: Part ${i + 1} has unusually high edge count (${edgeCount})`);
+
+      if (edgeCount > 20000) {
+        console.warn(
+          `  ⚠️ Warning: Part ${i + 1} has unusually high edge count (${edgeCount})`,
+        );
       }
-      
+
       const wireStart = performance.now();
       const wire = util.replicad.assembleWire(edges);
       const wireTime = performance.now() - wireStart;
 
       console.log(
-        `  ✓ Wire assembly completed for part ${i + 1} in ${wireTime.toFixed(2)}ms`
+        `  ✓ Wire assembly completed for part ${i + 1} in ${wireTime.toFixed(2)}ms`,
       );
 
       // Create a unique hash for this part using generation ID, index, and gcode content
@@ -630,25 +623,27 @@ async function visualizeGcodeAsAssembly(
     if (partEdges.length > 0) {
       try {
         const edgeCount = partEdges.length;
-        
+
         // Log edge information before wire assembly
         console.log(
-          `\n  [Wire Assembly] Experimental part ${i + 1}/${gcodeArray.length}: ${edgeCount} edges`
+          `\n  [Wire Assembly] Experimental part ${i + 1}/${gcodeArray.length}: ${edgeCount} edges`,
         );
-        
+
         // Check for potential issues
         if (edgeCount > 10000) {
-          console.warn(`  ⚠️ Warning: Part ${i + 1} has unusually high edge count (${edgeCount})`);
+          console.warn(
+            `  ⚠️ Warning: Part ${i + 1} has unusually high edge count (${edgeCount})`,
+          );
         }
-        
+
         const wireStart = performance.now();
         const wire = util.replicad.assembleWire(partEdges);
         const wireTime = performance.now() - wireStart;
-        
+
         console.log(
-          `  ✓ Experimental wire assembly completed for part ${i + 1} in ${wireTime.toFixed(2)}ms`
+          `  ✓ Experimental wire assembly completed for part ${i + 1} in ${wireTime.toFixed(2)}ms`,
         );
-        
+
         // Use generationId to prevent cache collisions between different generations
         const partHash = util.hashString(
           `gcode-exp-${generationId}-${i}-${gcode}`,
