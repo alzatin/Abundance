@@ -1,6 +1,5 @@
 //KIRIMOTO API EXAMPLE
 
-const STOCK_MARGIN = 5;
 const CUT_THROUGH = 0; // Default cut-through thickness if not provided
 const passes = 2;
 const speed = 1500;
@@ -18,7 +17,6 @@ new Engine()
   .then((eng) => {
     //if (progressCallback) progressCallback(0.15); // 15% - Mode set
     const bounds = eng.widget.getBoundingBox();
-    const z = bounds.max.z - bounds.min.z;
     return eng.setOrigin(0, 0, 0); // move part so top is at Z=0 (negate X to match coordinate systems)
   })
   .then((eng) =>

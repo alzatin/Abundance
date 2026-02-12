@@ -95,7 +95,6 @@ function findFlatFaces(
 
         const horizontalFaces = geom.faces.filter((face, idx) => {
           const normal = face.normalAt ? face.normalAt() : null;
-          const center = face.center;
           const result = normal && isHorizontal(normal);
 
           return result;
