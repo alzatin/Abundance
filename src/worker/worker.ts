@@ -52,6 +52,73 @@ function createMesh(thickness: number): Promise<any[]> {
 }
 
 /**
+ * Returns the z-values of flat faces in the geometry, which can be used for area operations in gcode generation.
+ * @param {AbundanceObject} input - The geometry to export
+ * @returns {Promise<number[]>} A promise that resolves to an array of z-values corresponding to flat faces in the geometry
+ */
+function findFlatFaces(
+  input: AbundanceObject,
+  context: RequestContext,
+): Promise<number[]> {
+  return started.then(async () => {
+    const zValues: number[] = [];
+    let geometryToFilter = extractKeepOut(input);
+    if (!geometryToFilter) {
+      throw new Error(
+        "Geometry To Export has no geometry after keepout is applied",
+      );
+    }
+    //// Algo overview:
+    // collect all prospective horizontal flats to pass to area operation
+    const threshold = 0.01;
+    await util.actOnLeafs(geometryToFilter, async (leaf: AbundanceLeaf) => {
+      let geom = await util.geometryProvider!.get(leaf.geometry, context);
+      if (!("faces" in geom)) {
+        // geom is a 2D object.
+        return leaf;
+        // TODO: add a warning here
+      } else if (geom.faces.length == 0) {
+        // unexpectedly no faces on this geometry. TODO: add a warning here.
+        return leaf;
+      }
+      geom = geom as Shape3D; // Safe to cast b/c we checked for faces above.
+
+      // In order to be considered, a face must be...
+      //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
+
+      const isHorizontal = (normal) =>
+        Math.abs(normal.x) < threshold &&
+        Math.abs(normal.y) < threshold &&
+        Math.abs(Math.abs(normal.z) - 1) < threshold;
+
+      const horizontalFaces = geom.faces.filter((face, idx) => {
+        const normal = face.normalAt ? face.normalAt() : null;
+        const result = normal && isHorizontal(normal);
+
+        return result;
+      });
+
+      horizontalFaces.forEach((face, idx) => {
+        const center = face.center;
+        const zVal = center[2] ?? center.z;
+        zValues.push(zVal);
+      });
+    });
+    // Remove duplicate z values
+    const uniqueZValues = Array.from(new Set(zValues));
+    //Exclude the smallest and the largest z values as those are likely the floor and ceiling, and return the rest as potential flat faces for area operations.
+    let filteredZValues = uniqueZValues.filter((z) => {
+      return (
+        z > Math.min(...uniqueZValues) + threshold &&
+        z < Math.max(...uniqueZValues) - threshold
+      );
+    });
+
+    return filteredZValues;
+  });
+}
+
+/**
  * Prepares geometry for visualization export in various file formats (STL, STEP, SVG).
  * @param {AbundanceObject} input - The geometry to export
  * @param {string} fileType - The file type for export ("STL", "STEP", or "SVG")
@@ -153,7 +220,6 @@ async function downExport(
       if ("toSVG" in drawingResult == false) {
         throw new Error("SVG export requires 2D geometry");
       }
-      console.log("Generating SVG ", drawingResult);
       // Flip the drawing to correct SVG orientation
       let svg = drawingResult.scale(scaling).toSVG(scaling);
       var blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
@@ -405,27 +471,22 @@ async function visualizeGcodeIncrementalInternal(
   }
   const parseTime = performance.now() - parseStart;
 
-  console.log(`Parsed gcode in ${parseTime.toFixed(2)}ms`);
-  console.log(`Parts with edges: ${edgesPerPart.length}`);
-  
   // Log edge statistics to help diagnose issues
   if (edgesPerPart.length > 0) {
-    const edgeCounts = edgesPerPart.map(edges => edges.length);
+    const edgeCounts = edgesPerPart.map((edges) => edges.length);
     const totalEdges = edgeCounts.reduce((sum, count) => sum + count, 0);
     const minEdges = Math.min(...edgeCounts);
     const maxEdges = Math.max(...edgeCounts);
     const avgEdges = (totalEdges / edgeCounts.length).toFixed(1);
-    
+
     console.log(`\nEdge Statistics:`);
     console.log(`  Total edges: ${totalEdges}`);
-    console.log(`  Min edges per part: ${minEdges}`);
-    console.log(`  Max edges per part: ${maxEdges}`);
     console.log(`  Average edges per part: ${avgEdges}`);
-    
+
     // Check if any part has unusually high edge count (unless forced)
-    if (!forceVisualization && maxEdges > 30000) {
+    if (!forceVisualization && maxEdges > 35000) {
       const error: any = new Error(
-        "HIGH_EDGE_COUNT: Your parts have an unusually high number of edges, continuing might stall the project. Try changing your tool size or number of passes. You can still download the gcode and visualize it elsewhere."
+        "HIGH_EDGE_COUNT: Your parts have an unusually high number of edges, continuing might stall the project. Try changing your tool size or number of passes. You can still download the gcode and visualize it elsewhere.",
       );
       error.type = "HIGH_EDGE_COUNT";
       error.maxEdges = maxEdges;
@@ -446,28 +507,27 @@ async function visualizeGcodeIncrementalInternal(
     try {
       const edges = edgesPerPart[i];
       const edgeCount = edges.length;
-      
-      // Log edge information before wire assembly
-      console.log(
-        `\n  [Wire Assembly] Part ${i + 1}/${edgesPerPart.length}: ${edgeCount} edges`
-      );
-      
+
       // Check for potential issues that might cause hanging
       if (edgeCount === 0) {
-        console.warn(`  ⚠️ Warning: Part ${i + 1} has 0 edges, skipping wire assembly`);
+        console.warn(
+          `  ⚠️ Warning: Part ${i + 1} has 0 edges, skipping wire assembly`,
+        );
         continue;
       }
-      
-      if (edgeCount > 10000) {
-        console.warn(`  ⚠️ Warning: Part ${i + 1} has unusually high edge count (${edgeCount})`);
+
+      if (edgeCount > 20000) {
+        console.warn(
+          `  ⚠️ Warning: Part ${i + 1} has unusually high edge count (${edgeCount})`,
+        );
       }
-      
+
       const wireStart = performance.now();
       const wire = util.replicad.assembleWire(edges);
       const wireTime = performance.now() - wireStart;
 
       console.log(
-        `  ✓ Wire assembly completed for part ${i + 1} in ${wireTime.toFixed(2)}ms`
+        `  ✓ Wire assembly completed for part ${i + 1} in ${wireTime.toFixed(2)}ms`,
       );
 
       // Create a unique hash for this part using generation ID, index, and gcode content
@@ -560,25 +620,27 @@ async function visualizeGcodeAsAssembly(
     if (partEdges.length > 0) {
       try {
         const edgeCount = partEdges.length;
-        
+
         // Log edge information before wire assembly
         console.log(
-          `\n  [Wire Assembly] Experimental part ${i + 1}/${gcodeArray.length}: ${edgeCount} edges`
+          `\n  [Wire Assembly] Experimental part ${i + 1}/${gcodeArray.length}: ${edgeCount} edges`,
         );
-        
+
         // Check for potential issues
         if (edgeCount > 10000) {
-          console.warn(`  ⚠️ Warning: Part ${i + 1} has unusually high edge count (${edgeCount})`);
+          console.warn(
+            `  ⚠️ Warning: Part ${i + 1} has unusually high edge count (${edgeCount})`,
+          );
         }
-        
+
         const wireStart = performance.now();
         const wire = util.replicad.assembleWire(partEdges);
         const wireTime = performance.now() - wireStart;
-        
+
         console.log(
-          `  ✓ Experimental wire assembly completed for part ${i + 1} in ${wireTime.toFixed(2)}ms`
+          `  ✓ Experimental wire assembly completed for part ${i + 1} in ${wireTime.toFixed(2)}ms`,
         );
-        
+
         // Use generationId to prevent cache collisions between different generations
         const partHash = util.hashString(
           `gcode-exp-${generationId}-${i}-${gcode}`,
@@ -791,6 +853,7 @@ if (
     rotate,
     scale,
     fillet,
+    findFlatFaces,
     chamfer,
     difference,
     tag,
@@ -833,6 +896,7 @@ export {
   extractTag,
   extrude,
   fillet,
+  findFlatFaces,
   generateThumbnail,
   getBoundingBox,
   importingSTEP,

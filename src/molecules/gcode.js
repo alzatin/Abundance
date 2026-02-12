@@ -318,8 +318,23 @@ export default class Gcode extends Atom {
    * @param {string} inputID - The input geometry ID
    */
   async _processSinglePart(inputID) {
+    console.log("Processing single part for G-code generation:", inputID);
+
+    /*Because kirimoto defaults to MM units and we want to support both MM and IN, we will scale the geometry before exporting to STL for kirimoto. This is a temporary solution until we can pass units directly to kirimoto.*/
+    const scaledMesh = await GlobalVariables.cad.scale(
+      inputID,
+      GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 1 : 25.4, // Scale to MM if in IN, otherwise keep the same
+      this.getContext(),
+    );
+    /* Find flat faces for area operation */
     GlobalVariables.cad
-      .visExport(inputID, "STL")
+      .findFlatFaces(scaledMesh, this.getContext())
+      .then((flatFaces) => {
+        console.log("Flat faces found:", flatFaces);
+      });
+    // Export the geometry to STL and generate G-code
+    GlobalVariables.cad
+      .visExport(scaledMesh, "STL", this.getContext())
       .then((visExported) => {
         const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         GlobalVariables.cad
@@ -525,11 +540,22 @@ export default class Gcode extends Atom {
       try {
         // Update progress
         this.progress = partProgress;
-        //this.sendToRender();
 
+        /*Because kirimoto defaults to MM units and we want to support both MM and IN, we will scale the geometry before exporting to STL for kirimoto. This is a temporary solution until we can pass units directly to kirimoto.*/
+        const scaledMesh = await GlobalVariables.cad.scale(
+          partID,
+          GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 1 : 25.4, // Scale to MM if in IN, otherwise keep the same
+          this.getContext(),
+        );
+
+        /* Find flat faces for area operation */
+        const flatFaces = await GlobalVariables.cad.findFlatFaces(
+          scaledMesh,
+          this.getContext(),
+        );
         // Generate STL for this part
         const visExported = await GlobalVariables.cad.visExport(
-          partID,
+          scaledMesh,
           "STL",
           this.getContext(),
         );
@@ -560,6 +586,7 @@ export default class Gcode extends Atom {
           stlURL,
           center,
           i + 1,
+          flatFaces,
         );
         allGcode.push(partGcode);
 
@@ -663,7 +690,7 @@ export default class Gcode extends Atom {
    * @param {number} partNumber - Part number for naming
    * @returns {Promise<string>} Generated G-code
    */
-  _generateGcodeForPart(stlURL, center, partNumber) {
+  _generateGcodeForPart(stlURL, center, partNumber, flats = []) {
     return new Promise((resolve, reject) => {
       const partGcodeCallback = (gcode) => {
         resolve(gcode);
@@ -684,7 +711,6 @@ export default class Gcode extends Atom {
       const timeout = setTimeout(() => {
         reject(new Error(`G-code generation timeout for part ${partNumber}`));
       }, 60000); // 60 second timeout
-
       try {
         window.generateGcode(
           stlURL,
@@ -699,6 +725,7 @@ export default class Gcode extends Atom {
           },
           partProgressCallback,
           selectedToolObj, // Pass the selected tool object/ disabled currently
+          flats, // Pass the flat faces for area operation
         );
       } catch (err) {
         clearTimeout(timeout);

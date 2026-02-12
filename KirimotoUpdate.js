@@ -1,8 +1,6 @@
 import { Engine } from "./engine.js";
 import GlobalVariables from "./src/js/globalvariables.js";
 
-const kiriEngine = new Engine({ workURL: "/worker.js" });
-
 const generateGcode = (
   stlUrl,
   centerPos,
@@ -12,16 +10,23 @@ const generateGcode = (
   cutThrough,
   gcodeCallback,
   progressCallback,
-  partProgressCallback,
-  tool
+  tool,
+  flats,
 ) => {
+  const kiriEngine = new Engine({ workURL: "/worker.js" });
   const CUT_THROUGH = cutThrough;
+  const stock_offset = {
+    x: 3,
+    y: 3,
+    z: 1,
+  };
+  const plunge = speed;
 
   if (!stlUrl) {
     console.error("STL URL is not available.");
     return;
   }
-
+  console.log(stlUrl);
   // Track slicing progress with a timer
   let slicingTimer = null;
   let slicingStartTime = null;
@@ -38,7 +43,7 @@ const generateGcode = (
       // This creates a more realistic progress feel during slicing
       const timeBasedProgress = Math.min(
         0.18,
-        0.18 * (1 - Math.exp(-elapsed / 10000))
+        0.18 * (1 - Math.exp(-elapsed / 10000)),
       ); // Exponential approach to 0.18 (80%-60%)
       currentProgress = slicingProgressStart + timeBasedProgress;
 
@@ -69,35 +74,18 @@ const generateGcode = (
       }
     })
     .load(stlUrl)
-    // should to call widget.setTopZ here ideally
     .then((eng) => {
       eng.widget.boundingBoxNeedsUpdate = true; // Ensure bounding box is updated
       if (progressCallback) progressCallback(0.1); // 10% - STL loaded
-      return eng.setMode("CAM");
-    })
-    .then((eng) => {
-      if (progressCallback) progressCallback(0.15); // 15% - Mode set
-      const bounds = eng.widget.getBoundingBox();
-      const z = bounds.max.z - bounds.min.z;
-      if (GlobalVariables.topLevelMolecule?.unitsKey === "Inches") {
-        eng.widget.scale(25.4, 25.4, 25.4); // Scale from mm to inches (1 inch = 25.4 mm)
-        return eng.setOrigin(-centerPos[0] * 25.4, centerPos[1] * 25.4, 0); // move part so top is at Z=0 (negate X to match coordinate systems)
-      }
-      return eng.setOrigin(-centerPos[0], centerPos[1], 0); // move part so top is at Z=0 (negate X to match coordinate systems)
-    })
-    .then((eng) =>
-      eng.setStock({
-        x: 3,
-        y: 3,
-        z: 0.1,
-      })
-    )
-    .then((eng) => {
+
+      eng.setMode("CAM");
+
+      eng.moveTo(-centerPos[0], centerPos[1], 0);
       // Determine if project uses metric units
       const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
       const isMetric = projectUnits === "MM";
 
-      return eng.setTools([
+      eng.setTools([
         {
           id: 1000,
           number: 1,
@@ -112,128 +100,99 @@ const generateGcode = (
           order: 5,
         },
       ]);
-    })
-    .then((eng) => {
-      if (progressCallback) progressCallback(0.25); // 25% - Tools set
-      const bounds = eng.widget.getBoundingBox();
-      const z = bounds.max.z - bounds.min.z;
-      const zBottom = z; // ensure cut through stock bottom
 
-      // camCutthrough by pass for 1 pass, sets down to large value to avoid cutthrough extra pass/ extra pass is added for multi pass
-      const down = passes > 1 ? (zBottom + CUT_THROUGH) / passes : 10000;
-      // -1 to account for topZ -1 hack
-      const camZBottom = -zBottom - CUT_THROUGH - 1;
-      // single pass needs a cutthrough to generate correctly
-      const camZThru = passes <= 1 && !cutThrough ? 0.01 : CUT_THROUGH;
-      const roughingStepOver = 0.6;
-      /*
-      console.log("Down per pass:", down);
-      console.log("CAM Z Bottom:", camZBottom);
-      console.log("CAM Z Thru:", camZThru);
-      console.log("Tool Size:", toolSize);
-      console.log("Roughing step over:", roughingStepOver);
-*/
-      return eng.setProcess({
-        camOriginTop: true,
-        camOriginCenter: false,
-        camRoughAll: false,
-        camZOffset: 0,
-        camZTop: -1, //top of stock hack has to be set to negative
-        camRoughDown: 2,
-        camRoughFlat: true,
-        camRoughIn: true,
-        camRoughOmitThru: false,
-        camRoughOmitVoid: false,
-        camRoughOn: true,
-        camRoughTop: false,
-        camRoughVoid: false,
-        camStockZ: 0,
-        camEaseAngle: 10,
-        camEaseDown: true,
-        camZAnchor: "bottom",
+      if (progressCallback) progressCallback(0.25); // 25% - Tools set
+
+      const bounds = eng.widget.getBoundingBox();
+      const down = (bounds.dim.z + CUT_THROUGH) / (passes - 1);
+      const stepOver = 0.8;
+      // camZAnchor is only for UI
+      eng.setOrigin(bounds.mid.x, bounds.mid.y, bounds.max.z);
+
+      // camStockOffset is only reliable in UI
+      eng.setStock({
+        x: bounds.dim.x + stock_offset.x,
+        y: bounds.dim.y + stock_offset.y,
+        z: bounds.dim.z + stock_offset.z,
+      });
+
+      eng.setProcess({
         camDepthFirst: true,
-        camZThru: camZThru,
-        camZClearance: 3,
-        camStockOffset: true,
-        camZBottom: camZBottom, //-zBottom, // temp hack to get around setTopZ bug
+        camEaseAngle: 40,
+        camEaseDown: true,
+        camOriginTop: true,
+        camOriginCenter: true,
+        camStockOffset: false,
         camToolInit: true,
-        camOutlineSpeed: speed,
-        camRetractFeed: 300,
-        camSpindleSpeed: speed,
-        camFastFeed: 6000,
-        camFastFeedZ: speed, // Match Z feed to speed to maintain feedrate during ramp down
-        cutThruBypass: true,
+        //zBottom: -bounds.max.z - CUT_THROUGH,
         ops: [
           {
-            type: "rough",
-            tool: 1000,
-            spindle: 1000,
+            all: false,
+            disabled: false,
             down: down,
-            step: roughingStepOver,
-            rate: speed,
-            plunge: speed,
+            flats: false,
+            inside: true,
             leave: 0,
             leavez: 0,
-            all: false,
-            voids: false,
-            flats: true,
-            inside: true,
             omitthru: true,
-            ov_topz: 0,
             ov_botz: 0,
             ov_conv: false,
-          },
-          {
-            type: "outline",
-            tool: 1000,
-            spindle: 1000,
-            step: 0.4,
-            steps: 1,
-            down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
-            rate: speed,
-            plunge: speed, // Match plunge rate to XY feedrate for consistent speed during ramp down
-            dogbones: false,
-            omitvoid: false,
-            omitthru: false,
-            outside: false,
-            inside: true,
-            wide: false,
-            top: false,
             ov_topz: 0,
-            ov_botz: 0,
-            ov_conv: true,
+            plunge: plunge,
+            rate: speed,
+            spindle: 13000,
+            step: stepOver,
+            tool: 1000,
+            type: "rough",
+            voids: false,
           },
           {
-            type: "outline",
-            tool: 1000,
-            spindle: 1000,
-            step: 0.4,
-            steps: 1,
-            down: down, // https://forum.grid.space/t/cam-kirimoto-api-help/2511/22
+            disabled: false,
+            down: 0,
+            flats: flats,
+            leave: 0,
+            leavez: 0,
+            mode: "clear",
+            ov_botz: 0,
+            ov_conv: false,
+            ov_topz: bounds.max.z,
+            plunge: plunge,
             rate: speed,
-            plunge: speed, // Match plunge rate to XY feedrate for consistent speed during ramp down
+            shadow: true,
+            spindle: 13000,
+            step: stepOver,
+            tool: 1000,
+            type: "area",
+          },
+          {
+            disabled: false,
             dogbones: false,
-            omitvoid: false,
-            omitthru: true,
-            outside: false,
+            down: down,
             inside: false,
-            wide: false,
-            top: false,
-            ov_topz: 0,
-            ov_botz: 0,
+            omitthru: false,
+            omitvoid: false,
+            outside: true,
+            ov_botz: -CUT_THROUGH,
             ov_conv: true,
+            ov_topz: 0,
+            plunge: plunge,
+            rate: speed,
+            spindle: 13000,
+            step: stepOver,
+            steps: 1,
+            tool: 1000,
+            top: false,
+            type: "outline",
+            wide: false,
           },
         ],
       });
-    })
-    .then((eng) => {
-      // Determine G-code units command based on project units
-      const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
+
       const unitsCommand =
         projectUnits === "MM"
           ? "G21 ; set units to MM (required)"
           : "G20 ; set units to inches (required)";
-
+      //
       return eng.setDevice({
         mode: "CAM",
         internal: 0,
@@ -241,14 +200,8 @@ const generateGcode = (
         bedWidth: 678.18,
         bedDepth: 1524,
         maxHeight: 150,
-        originCenter: false,
         spindleMax: 24000,
-        gcodePre: [
-          unitsCommand,
-          "G90 ; absolute position mode (required)",
-          "G0 F3000 ; set default rapid move feedrate",
-          "G1 F1000 ; set default cutting feedrate",
-        ],
+        gcodePre: [unitsCommand, "G90 ; absolute position mode (required)"],
         gcodePost: ["M05 ; spindle off", "M30 ; program end"],
         gcodeDwell: ["G4 P{time} ; dwell for {time}ms"],
         gcodeSpindle: ["M3 S{speed} ; spindle on at {spindle} rpm"],
@@ -266,7 +219,7 @@ const generateGcode = (
     })
     .then((eng) => {
       if (progressCallback) progressCallback(0.5); // 50% - Process set
-      // console.log(kiriEngine);
+
       startSlicingProgress();
       return eng.slice();
     })
