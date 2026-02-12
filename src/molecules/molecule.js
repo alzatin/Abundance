@@ -191,18 +191,6 @@ export default class Molecule extends Atom {
         this.name = value;
       },
     };
-    if (this.topLevel == true) {
-      inputParams["molecule name" + this.uniqueID + "units"] = {
-        type: "select",
-        value: this.unitsKey,
-        label: "Project Units",
-        options: Object.keys(this.units),
-        disabled: false,
-        onChange: (value) => {
-          this.unitsKey = this.units[value];
-        },
-      };
-    }
     if (GlobalVariables.currentAWSnode.parentRepo != null && this.topLevel) {
       inputParams["Reload from Github"] = {
         type: "button",
@@ -1712,7 +1700,7 @@ export default class Molecule extends Atom {
   makeActiveAtom(flowCanvas, atom) {
     // Trigger layout reflow to ensure getBoundingClientRect returns current values
     void flowCanvas.offsetHeight;
-    
+
     const rect = flowCanvas.getBoundingClientRect();
     const clientX = rect.left + GlobalVariables.widthToPixels(atom.x);
     const clientY = rect.top + GlobalVariables.heightToPixels(atom.y);
