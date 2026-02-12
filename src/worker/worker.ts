@@ -71,42 +71,39 @@ function findFlatFaces(
     //// Algo overview:
     // collect all prospective horizontal flats to pass to area operation
     const threshold = 0.01;
-    const geomfaces = await util.actOnLeafs(
-      geometryToFilter,
-      async (leaf: AbundanceLeaf) => {
-        let geom = await util.geometryProvider!.get(leaf.geometry, context);
-        if (!("faces" in geom)) {
-          // geom is a 2D object.
-          return leaf;
-          // TODO: add a warning here
-        } else if (geom.faces.length == 0) {
-          // unexpectedly no faces on this geometry. TODO: add a warning here.
-          return leaf;
-        }
-        geom = geom as Shape3D; // Safe to cast b/c we checked for faces above.
+    await util.actOnLeafs(geometryToFilter, async (leaf: AbundanceLeaf) => {
+      let geom = await util.geometryProvider!.get(leaf.geometry, context);
+      if (!("faces" in geom)) {
+        // geom is a 2D object.
+        return leaf;
+        // TODO: add a warning here
+      } else if (geom.faces.length == 0) {
+        // unexpectedly no faces on this geometry. TODO: add a warning here.
+        return leaf;
+      }
+      geom = geom as Shape3D; // Safe to cast b/c we checked for faces above.
 
-        // In order to be considered, a face must be...
-        //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
+      // In order to be considered, a face must be...
+      //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
 
-        const isHorizontal = (normal) =>
-          Math.abs(normal.x) < threshold &&
-          Math.abs(normal.y) < threshold &&
-          Math.abs(Math.abs(normal.z) - 1) < threshold;
+      const isHorizontal = (normal) =>
+        Math.abs(normal.x) < threshold &&
+        Math.abs(normal.y) < threshold &&
+        Math.abs(Math.abs(normal.z) - 1) < threshold;
 
-        const horizontalFaces = geom.faces.filter((face, idx) => {
-          const normal = face.normalAt ? face.normalAt() : null;
-          const result = normal && isHorizontal(normal);
+      const horizontalFaces = geom.faces.filter((face, idx) => {
+        const normal = face.normalAt ? face.normalAt() : null;
+        const result = normal && isHorizontal(normal);
 
-          return result;
-        });
+        return result;
+      });
 
-        horizontalFaces.forEach((face, idx) => {
-          const center = face.center;
-          const zVal = center[2] ?? center.z;
-          zValues.push(zVal);
-        });
-      },
-    );
+      horizontalFaces.forEach((face, idx) => {
+        const center = face.center;
+        const zVal = center[2] ?? center.z;
+        zValues.push(zVal);
+      });
+    });
     // Remove duplicate z values
     const uniqueZValues = Array.from(new Set(zValues));
     //Exclude the smallest and the largest z values as those are likely the floor and ceiling, and return the rest as potential flat faces for area operations.
