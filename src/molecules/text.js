@@ -50,12 +50,12 @@ export default class Text extends Atom {
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#484848";
     GlobalVariables.c.font = `${GlobalVariables.widthToPixels(
-      this.radius
+      this.radius,
     )}px Work Sans Bold`;
     GlobalVariables.c.fillText(
       "T",
       GlobalVariables.widthToPixels(this.x - this.radius / 3),
-      GlobalVariables.heightToPixels(this.y) + this.height / 3
+      GlobalVariables.heightToPixels(this.y) + this.height / 3,
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
@@ -63,13 +63,11 @@ export default class Text extends Atom {
 
   createInputParams(setInputChanged) {
     this.setInputChanged = setInputChanged;
-    let inputParams = { ...super.createInputParams() };
-
+    let inputParams = super.createInputParams();
     if (this.inputs) {
-      let fontFamilyHandled = false;
       this.inputs.forEach((input) => {
+        const checkConnector = () => input.connectors.length > 0;
         if (input.name === "Text") {
-          const checkConnector = () => input.connectors.length > 0;
           inputParams[this.uniqueID + "Text"] = {
             type: "string",
             value: input.value,
@@ -82,39 +80,21 @@ export default class Text extends Atom {
             },
           };
         }
-        if (input.name === "Font Family" && !fontFamilyHandled) {
-          fontFamilyHandled = true;
-          const checkConnector = () => input.connectors.length > 0;
-          if (checkConnector()) {
-            // If connected, show as string input (disabled)
-            inputParams[this.uniqueID + "FontFamily"] = {
-              type: "string",
-              value: input.value,
-              label: "Font Family",
-              disabled: true,
-              onChange: async (value) => {
-                if (input.value !== value) {
-                  input.setValue(value);
-                }
-              },
-            };
-          } else {
-            // If not connected, show as dropdown
-            inputParams[this.uniqueID + "FontFamily"] = {
-              type: "select",
-              value: input.value,
-              label: "Font Family",
-              options: Object.keys(Fonts),
-              onChange: (value) => {
-                input.setValue(value);
-                this.selectedFontIndex = Object.keys(Fonts).indexOf(value);
-                this.fontFamily = value;
-                this.onUpstreamChange();
-                this.setInputChanged();
-              },
-            };
-          }
-        }
+        // If not connected, show as dropdown
+        inputParams[this.uniqueID + "Font Family"] = {
+          type: "select",
+          value: input.value,
+          label: "Font Family",
+          options: Object.keys(Fonts),
+          disabled: checkConnector(),
+          onChange: (value) => {
+            input.setValue(value);
+            this.selectedFontIndex = Object.keys(Fonts).indexOf(value);
+            this.fontFamily = value;
+            this.onUpstreamChange();
+            this.setInputChanged();
+          },
+        };
       });
     }
     return inputParams;
@@ -131,7 +111,7 @@ export default class Text extends Atom {
       text,
       fontSize,
       fontFamily,
-      this.getContext()
+      this.getContext(),
     );
   }
 

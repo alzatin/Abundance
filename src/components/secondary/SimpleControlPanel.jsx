@@ -326,7 +326,11 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   // Commit changes to actual control values
   const commitChange = (key, value, config) => {
     // For number types, validate that the value is not NaN
-    if (config.type === "number" || config.type === "range") {
+    if (
+      config.type === "number" ||
+      config.type === "range" ||
+      config.type === "rangeSlider"
+    ) {
       if (isNaN(value) || value === null || value === undefined) {
         // Invalid number - revert to previous valid value
         setLocalValues((prev) => {
@@ -1093,6 +1097,81 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                           }}
                           {...commonProps}
                         />
+                      </div>
+                    );
+                  case "rangeSlider":
+                    return (
+                      <div key={key} style={labelStyle}>
+                        <span
+                          style={{
+                            width: inputFullWidth ? 0 : "100px",
+                            color: isDisabled
+                              ? inputDisabledStyle.color
+                              : undefined,
+                            overflow: "clip",
+                          }}
+                          title={label}
+                        >
+                          {label}:
+                        </span>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            width: "90%",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              flex: 1,
+                              gap: 4,
+                              width: "90%",
+                            }}
+                          >
+                            <input
+                              type="range"
+                              value={currentValue ?? config.min ?? 0}
+                              min={config.min ?? 0}
+                              max={config.max ?? 100}
+                              step={config.step ?? 1}
+                              onChange={(e) => {
+                                const numValue = Number(e.target.value);
+                                handleChange(numValue);
+                              }}
+                              onMouseUp={(e) => {
+                                const numValue = Number(e.target.value);
+                                commitChange(key, numValue, config);
+                              }}
+                              onTouchEnd={(e) => {
+                                const numValue = Number(e.target.value);
+                                commitChange(key, numValue, config);
+                              }}
+                              disabled={isDisabled}
+                              {...commonProps}
+                              style={{
+                                width: "95%",
+                                cursor: isDisabled ? "not-allowed" : "pointer",
+                                //accentColor: "var(--control-accent)",
+                              }}
+                            />
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                fontSize: 11,
+                                color: "var(--control-text-muted)",
+                              }}
+                            >
+                              <span>{config.min ?? 0}</span>
+                              <span style={{ fontWeight: 600 }}>
+                                {currentValue ?? config.min ?? 0}
+                              </span>
+                              <span>{config.max ?? 100}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     );
                   case "boolean":

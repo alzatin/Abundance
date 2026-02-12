@@ -3,6 +3,7 @@ import GlobalVariables from "../js/globalvariables.js";
 
 import { saveAs } from "file-saver";
 import { Status } from "../prototypes/observableEntity.js";
+import { re } from "mathjs";
 
 /**
  * This class creates the circle atom.
@@ -598,6 +599,10 @@ export default class Gcode extends Atom {
       }
     }
 
+    if (allGcode.length === 0) {
+      throw new Error("G-code generation failed for all parts.");
+    }
+
     // Concatenate all G-code
     this.gcodeString = this._concatenateGcode(allGcode);
     this.gcodeGenerated = true;
@@ -711,26 +716,28 @@ export default class Gcode extends Atom {
       const timeout = setTimeout(() => {
         reject(new Error(`G-code generation timeout for part ${partNumber}`));
       }, 60000); // 60 second timeout
-      try {
-        window.generateGcode(
+
+      window
+        .generateGcode(
           stlURL,
           center,
           this.findIOValue("Tool Size"),
           this.findIOValue("Passes"),
           this.findIOValue("Speed"),
           this.findIOValue("Cut Through"),
-          (gcode) => {
-            clearTimeout(timeout);
-            partGcodeCallback(gcode);
-          },
           partProgressCallback,
           selectedToolObj, // Pass the selected tool object/ disabled currently
           flats, // Pass the flat faces for area operation
-        );
-      } catch (err) {
-        clearTimeout(timeout);
-        reject(err);
-      }
+        )
+        .then((gcode) => {
+          clearTimeout(timeout);
+          partGcodeCallback(gcode);
+        })
+        .catch((err) => {
+          clearTimeout(timeout);
+          console.error(`Error generating G-code for part ${partNumber}:`, err);
+          reject(err);
+        });
     });
   }
 
