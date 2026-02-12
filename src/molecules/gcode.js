@@ -319,6 +319,10 @@ export default class Gcode extends Atom {
    */
   async _processSinglePart(inputID) {
     console.log("Processing single part for G-code generation:", inputID);
+
+    GlobalVariables.cad.scale(inputID, 25.4, this.getContext()).then(() => {
+      console.log("Scaled geometry for G-code generation");
+    });
     /* Find flat faces for area operation */
     GlobalVariables.cad
       .findFlatFaces(inputID, this.getContext())
@@ -533,18 +537,24 @@ export default class Gcode extends Atom {
       try {
         // Update progress
         this.progress = partProgress;
-        //this.sendToRender();
+
+        /*Because kirimoto defaults to MM units and we want to support both MM and IN, we will scale the geometry before exporting to STL for kirimoto. This is a temporary solution until we can pass units directly to kirimoto.*/
+        const scaledMesh = await GlobalVariables.cad.scale(
+          partID,
+          GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 1 : 25.4, // Scale to MM if in IN, otherwise keep the same
+          this.getContext(),
+        );
 
         /* Find flat faces for area operation */
-
+        console.log("Finding flat faces for part:", partID);
         const flatFaces = await GlobalVariables.cad.findFlatFaces(
-          partID,
+          scaledMesh,
           this.getContext(),
         );
         console.log("Flat faces found:", flatFaces);
         // Generate STL for this part
         const visExported = await GlobalVariables.cad.visExport(
-          partID,
+          scaledMesh,
           "STL",
           this.getContext(),
         );
