@@ -1,6 +1,5 @@
 //KIRIMOTO API EXAMPLE
 
-const STOCK_MARGIN = 5;
 const CUT_THROUGH = 0; // Default cut-through thickness if not provided
 const passes = 2;
 const speed = 1500;
