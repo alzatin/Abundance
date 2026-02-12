@@ -54,7 +54,7 @@ function createMesh(thickness: number): Promise<any[]> {
 /**
  * Returns the z-values of flat faces in the geometry, which can be used for area operations in gcode generation.
  * @param {AbundanceObject} input - The geometry to export
- * @returns {Promise<number>} A promise that resolves to an array of z-values corresponding to flat faces in the geometry
+ * @returns {Promise<number[]>} A promise that resolves to an array of z-values corresponding to flat faces in the geometry
  */
 function findFlatFaces(
   input: AbundanceObject,
@@ -69,7 +69,7 @@ function findFlatFaces(
       );
     }
     //// Algo overview:
-    // collect all prospective horizonal flats to pass to area operation
+    // collect all prospective horizontal flats to pass to area operation
     const threshold = 0.01;
     const geomfaces = await util.actOnLeafs(
       geometryToFilter,
