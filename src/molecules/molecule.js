@@ -283,7 +283,6 @@ export default class Molecule extends Atom {
     // this is wrong and only a placeholder for kiri forum questions
     gcodeAtoms.forEach((atom) => {
       atom.setInputChanged = setInputChanged;
-      console.log(atom.progress);
       exportParams[`Download Gcode – ${atom.partName}`] = {
         type: "button",
         label: `Download Gcode – ${atom.partName}`,
