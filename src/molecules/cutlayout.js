@@ -193,15 +193,28 @@ export default class CutLayout extends Atom {
     return this.placements;
   }
 
+  /**
+   * Get the layout configuration from the current inputs
+   * @returns {object} Layout configuration object
+   */
+  getLayoutConfig() {
+    return {
+      width: this.findIOValue("Sheet Width"),
+      height: this.findIOValue("Sheet Height"),
+      partPadding: this.findIOValue("Part Padding"),
+      units:
+        GlobalVariables.topLevelMolecule.units[
+          GlobalVariables.topLevelMolecule.unitsKey
+        ],
+      rotations: this.findIOValue("Orientations"),
+    };
+  }
+
   displayLayout(isFinalPlacement = false) {
     const placements = this.getPlacements();
 
     if (this.inputsAreReady()) {
       var inputGeom = this.findIOValue("geometry");
-      var sheetWidth = this.findIOValue("Sheet Width");
-      var sheetHeight = this.findIOValue("Sheet Height");
-      var partPadding = this.findIOValue("Part Padding");
-      var rotations = this.findIOValue("Orientations");
       const priorStatus = this.status;
       this.setProcessing();
       console.trace("Displaying layout with " + placements.length + " sheets.");
@@ -213,16 +226,7 @@ export default class CutLayout extends Atom {
             // TODO(tristan): warnings get cleared whenever we setReady.
             this.setWarning(message);
           }),
-          {
-            width: sheetWidth,
-            height: sheetHeight,
-            partPadding: partPadding,
-            units:
-              GlobalVariables.topLevelMolecule.units[
-                GlobalVariables.topLevelMolecule.unitsKey
-              ],
-            rotations: rotations,
-          },
+          this.getLayoutConfig(),
           this.getContext()
         )
         .then((result) => {
@@ -284,10 +288,6 @@ export default class CutLayout extends Atom {
     }
 
     var inputGeom = this.findIOValue("geometry");
-    var sheetWidth = this.findIOValue("Sheet Width");
-    var sheetHeight = this.findIOValue("Sheet Height");
-    var partPadding = this.findIOValue("Part Padding");
-    var rotations = this.findIOValue("Orientations");
 
     if (!inputGeom) {
       this.setWaiting();
@@ -302,16 +302,7 @@ export default class CutLayout extends Atom {
         proxy((message) => {
           this.setWarning(message);
         }),
-        {
-          width: sheetWidth,
-          height: sheetHeight,
-          partPadding: partPadding,
-          units:
-            GlobalVariables.topLevelMolecule.units[
-              GlobalVariables.topLevelMolecule.unitsKey
-            ],
-          rotations: rotations,
-        },
+        this.getLayoutConfig(),
         this.getContext()
       )
       .then(([result, placements]) => {
@@ -338,10 +329,6 @@ export default class CutLayout extends Atom {
       }
       this.setProcessing();
       var inputGeom = this.findIOValue("geometry");
-      var sheetWidth = this.findIOValue("Sheet Width");
-      var sheetHeight = this.findIOValue("Sheet Height");
-      var partPadding = this.findIOValue("Part Padding");
-      var rotations = this.findIOValue("Orientations");
       
       if (!inputGeom) {
         this.setError('"geometry" input is missing');
@@ -363,16 +350,7 @@ export default class CutLayout extends Atom {
           proxy((placements) => {
             this.handleNewPlacements(placements, inputGeom);
           }),
-          {
-            width: sheetWidth,
-            height: sheetHeight,
-            partPadding: partPadding,
-            units:
-              GlobalVariables.topLevelMolecule.units[
-                GlobalVariables.topLevelMolecule.unitsKey
-              ],
-            rotations: rotations,
-          },
+          this.getLayoutConfig(),
           this.getContext(),
           this.placements
         )
