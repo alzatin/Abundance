@@ -78,7 +78,7 @@ function AppContent() {
     setPlane,
     setGeometryType,
     setIsViewingOutputMesh,
-    setGcodeString,
+    setGcodeParts,
   } = useRendering();
 
   const {
@@ -329,9 +329,11 @@ function AppContent() {
       }
       if (gcode) {
         setMesh([]);
-        setGcodeString(moleculeValue);
+        setGcodeParts(moleculeValue);
         console.log("Received GCode for display");
         return;
+      } else {
+        setGcodeParts(null);
       }
       if (backgroundMolecule) {
         if (

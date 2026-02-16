@@ -620,9 +620,12 @@ export default class Gcode extends Atom {
       throw new Error("G-code generation failed for all parts.");
     }
 
-    // Concatenate all G-code
-    this.gcodeString = this._concatenateGcode(allGcode);
     this.gcodeGenerated = true;
+    console.log("G-code generation complete for all parts.");
+    console.log("Generated G-code for all parts:", allGcode);
+    this.setReady(allGcode);
+    // Concatenate all G-code
+    //this.gcodeString = this._concatenateGcode(allGcode);
 
     // this.setReady(this.gcodeString);
 
@@ -721,7 +724,7 @@ export default class Gcode extends Atom {
     return new Promise((resolve, reject) => {
       const partGcodeCallback = (gcode) => {
         resolve(gcode);
-        this.setReady(gcode);
+        //this.setReady(gcode);
       };
 
       const partProgressCallback = (progress) => {
