@@ -27,6 +27,7 @@ export default function GCodeLoaderMesh({ authorizedUserOcto }) {
 
         const allGcodeObjects = new Group();
         parsedObjects.forEach((obj) => {
+          obj.children[1].material.color.set(0x0000ff); // blue
           allGcodeObjects.add(obj);
         });
         console.log("All G-code objects added to group:", allGcodeObjects);
@@ -37,7 +38,6 @@ export default function GCodeLoaderMesh({ authorizedUserOcto }) {
     };
     parseGcodeString();
   }, [gcodeParts]);
-  console.log("GCodeLoaderMesh object state:", object);
   if (object) {
     object.rotation.x = Math.PI / 2; // Rotate to lay flat on XY plane
   }
