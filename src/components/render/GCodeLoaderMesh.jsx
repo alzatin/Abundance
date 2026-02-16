@@ -6,7 +6,7 @@ import { Group } from "three";
 
 export default function GCodeLoaderMesh({ authorizedUserOcto }) {
   const { gcodeParts } = useRendering(); // Access mesh state from context
-  const [object, setObject] = useState([]);
+  const [object, setObject] = useState(null);
 
   useEffect(() => {
     const parseGcodeString = async () => {
@@ -21,6 +21,7 @@ export default function GCodeLoaderMesh({ authorizedUserOcto }) {
         const parsedObjects = [];
         for (const part of gcodeParts) {
           const parseGcodeString = loader.parse(part);
+          console.log("Parsed G-code part:", parseGcodeString);
           parsedObjects.push(parseGcodeString);
         }
 
@@ -36,8 +37,10 @@ export default function GCodeLoaderMesh({ authorizedUserOcto }) {
     };
     parseGcodeString();
   }, [gcodeParts]);
-
-  object ? (object.rotation.x = Math.PI / 2) : null; // Rotate to lay flat on XY plane
+  console.log("GCodeLoaderMesh object state:", object);
+  if (object) {
+    object.rotation.x = Math.PI / 2; // Rotate to lay flat on XY plane
+  }
 
   return object ? <primitive object={object} /> : null;
 }
