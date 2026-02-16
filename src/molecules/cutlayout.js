@@ -263,15 +263,65 @@ export default class CutLayout extends Atom {
     if (this.placements?.length > 0) {
       this.displayLayout(true).catch(() => {
         // If displayLayout fails we have an inconsistent state between the current geom and whatever
-        // saved placements are here. Clear the placements and set ourselves to wait for a new click
-        // by the user.
+        // saved placements are here. Clear the placements and create default ones instead.
         this.placements = [];
         this.placementsFor = "";
-        this.setWaiting();
+        this.createDefaultPlacements();
       });
     } else {
-      this.setWaiting();
+      // No saved placements, create default ones with all parts at (0,0) with 0° rotation
+      this.createDefaultPlacements();
     }
+  }
+
+  /**
+   * Create default placements for all parts at (0,0) with 0° rotation
+   */
+  createDefaultPlacements() {
+    if (!this.inputsAreReady()) {
+      this.setWaiting();
+      return;
+    }
+
+    var inputGeom = this.findIOValue("geometry");
+    var sheetWidth = this.findIOValue("Sheet Width");
+    var sheetHeight = this.findIOValue("Sheet Height");
+    var partPadding = this.findIOValue("Part Padding");
+    var rotations = this.findIOValue("Orientations");
+
+    if (!inputGeom) {
+      this.setWaiting();
+      return;
+    }
+
+    this.setProcessing();
+    
+    GlobalVariables.cad
+      .createAndDisplayDefaultLayout(
+        inputGeom,
+        proxy((message) => {
+          this.setWarning(message);
+        }),
+        {
+          width: sheetWidth,
+          height: sheetHeight,
+          partPadding: partPadding,
+          units:
+            GlobalVariables.topLevelMolecule.units[
+              GlobalVariables.topLevelMolecule.unitsKey
+            ],
+          rotations: rotations,
+        },
+        this.getContext()
+      )
+      .then(([result, placements]) => {
+        this.handleNewPlacements(placements, inputGeom, true);
+        this.setReady(result);
+      })
+      .catch((err) => {
+        console.error("Failed to create default placements:", err);
+        this.setWaiting();
+      });
   }
 
   /**

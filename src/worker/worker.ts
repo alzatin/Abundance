@@ -4,7 +4,7 @@ import * as replicad from "replicad";
 import { drawSVG } from "replicad-decorate";
 import { chamfer, extrude, fillet, move, rotate, scale } from "./actions";
 import { executeCode as code } from "./code";
-import { displayLayout, layout } from "./cutlayout";
+import { createAndDisplayDefaultLayout, displayLayout, layout } from "./cutlayout";
 import { ReplicadObject, RequestContext } from "./geometryProvider";
 import {
   assembly,
@@ -860,6 +860,7 @@ if (
     extractAllTags,
     layout,
     displayLayout,
+    createAndDisplayDefaultLayout,
     bom,
     extractTag,
     intersect,
@@ -885,6 +886,7 @@ export {
   circle,
   code,
   color,
+  createAndDisplayDefaultLayout,
   createMesh,
   deleteFromLibrary,
   clearCache,

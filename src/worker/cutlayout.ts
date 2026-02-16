@@ -138,6 +138,38 @@ async function displayLayoutWithRotatedAssembly(
 }
 
 /**
+ * Creates default placements for all parts in the assembly and displays them.
+ * All parts are placed at (0, 0) with 0° rotation.
+ * Returns both the displayed layout and the default placements.
+ * @param assembly - The assembly to create default placements for
+ * @param warningCallback - Callback for warnings
+ * @param layoutConfig - Layout configuration
+ * @param context - Request context
+ * @returns Promise resolving to [displayedLayout, defaultPlacements]
+ */
+async function createAndDisplayDefaultLayout(
+  assembly: AbundanceObject,
+  warningCallback: (msg: string) => void,
+  layoutConfig: LayoutConfig,
+  context: RequestContext
+): Promise<[AbundanceObject, Placement[][]]> {
+  const [rotatedAssembly, shapesForLayout] = await rotateForLayout(
+    assembly,
+    layoutConfig,
+    warningCallback,
+    context
+  );
+  const defaultPlacements = createDefaultPlacements(shapesForLayout);
+  const displayedLayout = await applyLayout(
+    rotatedAssembly,
+    defaultPlacements,
+    layoutConfig,
+    context
+  );
+  return [displayedLayout, defaultPlacements];
+}
+
+/**
  * Rotates and moves all leafs into an orientation which can be fed into
  * the nesting algorithm.
  *
@@ -869,6 +901,7 @@ function areaApprox(bounds: {
 }
 
 export {
+  createAndDisplayDefaultLayout,
   createDefaultPlacements,
   displayLayout,
   displayLayoutWithRotatedAssembly,
