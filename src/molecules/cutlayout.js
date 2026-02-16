@@ -295,7 +295,7 @@ export default class CutLayout extends Atom {
     }
 
     this.setProcessing();
-    
+
     GlobalVariables.cad
       .createAndDisplayDefaultLayout(
         inputGeom,
