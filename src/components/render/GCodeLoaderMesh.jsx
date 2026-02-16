@@ -28,7 +28,7 @@ export default function GCodeLoaderMesh({ authorizedUserOcto }) {
 
         const allGcodeObjects = new Group();
         parsedObjects.forEach((obj) => {
-          obj.children[1].material.color.set(0x0000ff); // blue
+          //obj.children[1].material.color.set(0x0000ff); // blue
           allGcodeObjects.add(obj);
         });
         setObject(allGcodeObjects);
