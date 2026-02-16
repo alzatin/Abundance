@@ -109,12 +109,12 @@ export default class Gcode extends Atom {
         valueType: "string",
         defaultValue: this.partName,
       },
-      {
+      /*{
         name: "output",
         valueType: "geometry",
         defaultValue: null,
         type: "output",
-      },
+      },*/
     ]);
 
     this.stlURL = null; // Store the STL URL
@@ -623,8 +623,7 @@ export default class Gcode extends Atom {
     // Concatenate all G-code
     this.gcodeString = this._concatenateGcode(allGcode);
     this.gcodeGenerated = true;
-    console.log("G-code generation complete for all parts.");
-    console.log("Generated G-code:", this.gcodeString);
+
     // this.setReady(this.gcodeString);
 
     let gcodeWire;
