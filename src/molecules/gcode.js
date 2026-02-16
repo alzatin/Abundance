@@ -109,12 +109,12 @@ export default class Gcode extends Atom {
         valueType: "string",
         defaultValue: this.partName,
       },
-      {
+      /*{
         name: "output",
         valueType: "geometry",
         defaultValue: null,
         type: "output",
-      },
+      },*/
     ]);
 
     this.stlURL = null; // Store the STL URL
@@ -169,63 +169,6 @@ export default class Gcode extends Atom {
       GlobalVariables.c.closePath();
       GlobalVariables.c.fill();
     }
-  }
-
-  /**
-   * Creates a callback function for when gcode is generated
-   * @returns {Function} The gcode callback function
-   */
-  _createGcodeCallback() {
-    return async (gcode) => {
-      this.gcodeString = gcode;
-      this.gcodeGenerated = true;
-      this.progress = 1.0; // Complete progress
-
-      try {
-        const visualization =
-          await GlobalVariables.cad.visualizeGcodeIncremental(
-            [gcode],
-            this.getContext(),
-          );
-        this.setReady(visualization);
-      } catch (error) {
-        // Check if this is a high edge count error
-        if (
-          error.type === "HIGH_EDGE_COUNT" ||
-          error.message?.includes("HIGH_EDGE_COUNT")
-        ) {
-          // Show confirmation dialog
-          const userConfirmed = window.confirm(
-            "Your parts have an unusually high number of edges, continuing might stall the project. Try changing your tool size or number of passes. You can still download the gcode and visualize it elsewhere.\n\nDo you want to continue with visualization?",
-          );
-
-          if (userConfirmed) {
-            // User wants to proceed - call visualization with override flag
-            try {
-              const visualization =
-                await GlobalVariables.cad.visualizeGcodeIncrementalForced(
-                  [gcode],
-                  this.getContext(),
-                );
-              this.setReady(visualization);
-            } catch (innerError) {
-              console.error("Visualization failed:", innerError);
-              this.setReady(Promise.reject(innerError));
-            }
-          } else {
-            // User cancelled - gcode is still generated and downloadable
-            console.log("User cancelled visualization due to high edge count");
-
-            // Don't set an error state - gcode download should still work
-          }
-        } else {
-          // Other error - propagate it
-          this.setReady(Promise.reject(error));
-        }
-      }
-
-      this.setInputChanged?.();
-    };
   }
 
   /**
@@ -305,6 +248,23 @@ export default class Gcode extends Atom {
   }
 
   /**
+   * Send the value of this atom to the 3D display.
+   */
+  sendToRender() {
+    //Send code to JSxCAD to render
+    try {
+      GlobalVariables.writeToDisplay(
+        this.value,
+        this.getContext(),
+        false,
+        true,
+      );
+    } catch (err) {
+      this.setError(err);
+    }
+  }
+
+  /**
    * Check if the input geometry is an assembly
    * @param {string} inputID - The input geometry ID
    * @returns {Promise<boolean>} True if it's an assembly
@@ -319,7 +279,6 @@ export default class Gcode extends Atom {
    * @param {string} inputID - The input geometry ID
    */
   async _processSinglePart(inputID) {
-    console.log("Processing single part for G-code generation:", inputID);
 
     /*Because kirimoto defaults to MM units and we want to support both MM and IN, we will scale the geometry before exporting to STL for kirimoto. This is a temporary solution until we can pass units directly to kirimoto.*/
     const scaledMesh = await GlobalVariables.cad.scale(
@@ -603,89 +562,16 @@ export default class Gcode extends Atom {
       throw new Error("G-code generation failed for all parts.");
     }
 
-    // Concatenate all G-code
-    this.gcodeString = this._concatenateGcode(allGcode);
     this.gcodeGenerated = true;
-    let gcodeWire;
-    // Use the incremental visualization method with error handling
-    try {
-      gcodeWire = await GlobalVariables.cad.visualizeGcodeIncremental(
-        allGcode,
-        this.getContext(),
-      );
-      this.setReady(gcodeWire);
-    } catch (error) {
-      // Check if this is a high edge count error
-      if (
-        error.type === "HIGH_EDGE_COUNT" ||
-        error.message?.includes("HIGH_EDGE_COUNT")
-      ) {
-        // Show custom dialog with download button
-        const dialog = document.createElement("div");
-        dialog.className = "gcode-high-edges-dialog";
-
-        const box = document.createElement("div");
-        box.className = "gcode-high-edges-dialog-box";
-
-        const msg = document.createElement("div");
-        msg.className = "gcode-high-edges-dialog-message";
-        msg.textContent =
-          "Your gcode was generated succesfully but your parts have an unusually high number of edges, continuing might stall the project. Try changing your tool size or number of passes. You can still download the gcode and visualize it elsewhere.\n\nDo you want to continue with visualization?";
-
-        const downloadBtn = document.createElement("button");
-        downloadBtn.className =
-          "gcode-high-edges-dialog-btn gcode-high-edges-dialog-download";
-        downloadBtn.textContent = "Download G-code";
-        downloadBtn.onclick = () => {
-          this.downloadGcode(this.gcodeString);
-        };
-
-        const continueBtn = document.createElement("button");
-        continueBtn.className =
-          "gcode-high-edges-dialog-btn gcode-high-edges-dialog-continue";
-        continueBtn.textContent = "Continue Visualization";
-        continueBtn.onclick = async () => {
-          dialog.remove();
-          try {
-            gcodeWire =
-              await GlobalVariables.cad.visualizeGcodeIncrementalForced(
-                allGcode,
-                this.getContext(),
-              );
-            this.setReady(gcodeWire);
-          } catch (innerError) {
-            console.error("Visualization failed:", innerError);
-            this.setReady(Promise.reject(innerError));
-          }
-        };
-
-        const cancelBtn = document.createElement("button");
-        cancelBtn.className =
-          "gcode-high-edges-dialog-btn gcode-high-edges-dialog-cancel";
-        cancelBtn.textContent = "Cancel";
-        cancelBtn.onclick = () => {
-          dialog.remove();
-          // User cancelled - gcode is still generated and downloadable
-          console.log("User cancelled visualization due to high edge count");
-        };
-
-        box.appendChild(msg);
-        box.appendChild(downloadBtn);
-        box.appendChild(continueBtn);
-        box.appendChild(cancelBtn);
-        dialog.appendChild(box);
-        document.body.appendChild(dialog);
-      } else {
-        // Other error - propagate it
-        this.setReady(Promise.reject(error));
-      }
-    }
-
+    // Set the final result as ready for visualization to pass to loader - this is an array of G-code strings, one per part, which the loader can handle
+    this.setReady(allGcode);
+    // Concatenate all G-code for download
+    this.gcodeString = this._concatenateGcode(allGcode);
     this.progress = 1.0;
     this.setInputChanged?.();
+
     console.log("G-code generation complete.");
-    console.log("Generated wire:", gcodeWire);
-    return gcodeWire ?? null;
+    return this.gcodeString ?? null;
   }
 
   /**
@@ -699,6 +585,7 @@ export default class Gcode extends Atom {
     return new Promise((resolve, reject) => {
       const partGcodeCallback = (gcode) => {
         resolve(gcode);
+        //this.setReady(gcode);
       };
 
       const partProgressCallback = (progress) => {

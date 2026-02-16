@@ -78,6 +78,7 @@ function AppContent() {
     setPlane,
     setGeometryType,
     setIsViewingOutputMesh,
+    setGcodeParts,
   } = useRendering();
 
   const {
@@ -242,7 +243,7 @@ function AppContent() {
   const createPuppeteerDiv = () => {
     // Check if the div already exists
     const existingDiv = document.getElementById(
-      "molecule-fully-render-puppeteer"
+      "molecule-fully-render-puppeteer",
     );
     if (!existingDiv) {
       // If it doesn't exist, create it
@@ -275,9 +276,10 @@ function AppContent() {
         console.log("no-op because target is already in-flight or undefined");
         return;
       }
+      console.debug("starting mesh generation for: ", targetMesh.current);
       const genTask = worker.generateDisplayMesh(
         targetMesh.current,
-        GlobalVariables.topLevelMolecule.getContext()
+        GlobalVariables.topLevelMolecule.getContext(),
       );
       inFlightMeshRender.current = { task: genTask, value: targetMesh.current };
       genTask
@@ -316,10 +318,21 @@ function AppContent() {
     GlobalVariables.writeToDisplay = (
       moleculeValue,
       context,
-      backgroundMolecule = false
+      backgroundMolecule = false,
+      gcode = false,
     ) => {
       if (!moleculeValue) {
+        console.warn(
+          "Received null molecule value for display, using empty geometry",
+        );
         moleculeValue = { geometry: [] }; // use a non-null structure which still generates the default mesh
+      }
+      if (gcode) {
+        setMesh([]);
+        setGcodeParts(moleculeValue);
+        return;
+      } else {
+        setGcodeParts(null);
       }
       if (backgroundMolecule) {
         if (
@@ -436,7 +449,7 @@ function AppContent() {
         } else {
           // Handle small files using base64 content with UTF-8 encoding
           rawFileContent = GlobalVariables.fromBinaryStr(
-            atob(response.data.content)
+            atob(response.data.content),
           );
         }
 
@@ -478,7 +491,7 @@ function AppContent() {
         if (e?.status === 404) {
           console.warn(
             "Project not found on GitHub, marking as not found in AWS:",
-            project.repoName
+            project.repoName,
           );
           const apiUpdateUrl =
             "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
