@@ -13,6 +13,7 @@ import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
 import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 import ReadmePanel from "../secondary/ReadmePanel.jsx";
+import GCodeLoaderMesh from "../render/GCodeLoaderMesh.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -105,7 +106,7 @@ function runMode({ processing, setProcessing }) {
     renderBarVisible,
     renderProgress,
     renderStage || "Rendering",
-    true
+    true,
   );
 
   const { next, isActive } = useTutorial();
@@ -124,7 +125,7 @@ function runMode({ processing, setProcessing }) {
   const createPuppeteerDiv = () => {
     // Check if the div already exists
     const existingDiv = document.getElementById(
-      "molecule-fully-render-puppeteer"
+      "molecule-fully-render-puppeteer",
     );
     if (!existingDiv) {
       // If it doesn't exist, create it
@@ -183,7 +184,7 @@ function runMode({ processing, setProcessing }) {
   /** State for menu content collapsing */
   // Which menu is expanded: "params", "render", "bom", or "none"
   const [expandedMenu, setExpandedMenu] = useState(
-    GlobalVariables.isMobile() ? "none" : "params"
+    GlobalVariables.isMobile() ? "none" : "params",
   );
 
   useEffect(() => {
@@ -204,7 +205,7 @@ function runMode({ processing, setProcessing }) {
       /*resetting viewport*/
       GlobalVariables.resetView(); // TODO(tristan): possibly also need to writeToDisplay here.
       fetch(
-        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
+        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`,
       )
         .then((res) => res.json())
         .then((data) => {
@@ -380,6 +381,8 @@ function runMode({ processing, setProcessing }) {
                     setProcessing,
                   }}
                 />
+                {/* GCode visualization */}
+                <GCodeLoaderMesh />
               </ThreeContext>
             ) : (
               <div
