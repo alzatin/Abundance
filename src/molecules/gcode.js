@@ -305,6 +305,23 @@ export default class Gcode extends Atom {
   }
 
   /**
+   * Send the value of this atom to the 3D display.
+   */
+  sendToRender() {
+    //Send code to JSxCAD to render
+    try {
+      GlobalVariables.writeToDisplay(
+        this.value,
+        this.getContext(),
+        false,
+        true,
+      );
+    } catch (err) {
+      this.setError(err);
+    }
+  }
+
+  /**
    * Check if the input geometry is an assembly
    * @param {string} inputID - The input geometry ID
    * @returns {Promise<boolean>} True if it's an assembly
@@ -606,14 +623,20 @@ export default class Gcode extends Atom {
     // Concatenate all G-code
     this.gcodeString = this._concatenateGcode(allGcode);
     this.gcodeGenerated = true;
+    console.log("G-code generation complete for all parts.");
+    console.log("Generated G-code:", this.gcodeString);
+    // this.setReady(this.gcodeString);
+
     let gcodeWire;
     // Use the incremental visualization method with error handling
-    try {
+    /*try {
       gcodeWire = await GlobalVariables.cad.visualizeGcodeIncremental(
         allGcode,
         this.getContext(),
       );
       this.setReady(gcodeWire);
+      console.log("G-code wire.");
+      console.log(gcodeWire);
     } catch (error) {
       // Check if this is a high edge count error
       if (
@@ -685,7 +708,7 @@ export default class Gcode extends Atom {
     this.setInputChanged?.();
     console.log("G-code generation complete.");
     console.log("Generated wire:", gcodeWire);
-    return gcodeWire ?? null;
+    return gcodeWire ?? null;*/
   }
 
   /**
@@ -699,6 +722,7 @@ export default class Gcode extends Atom {
     return new Promise((resolve, reject) => {
       const partGcodeCallback = (gcode) => {
         resolve(gcode);
+        this.setReady(gcode);
       };
 
       const partProgressCallback = (progress) => {

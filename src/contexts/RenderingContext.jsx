@@ -13,6 +13,7 @@ export function RenderingProvider({ children }) {
   const [outdatedMesh, setOutdatedMesh] = useState(false);
   const [plane, setPlane] = useState(null);
   const [geometryType, setGeometryType] = useState(null);
+  const [gcodeString, setGcodeString] = useState(null);
 
   // Render progress state
   const [renderProgress, setRenderProgress] = useState(0);
@@ -88,6 +89,10 @@ export function RenderingProvider({ children }) {
     // Output mesh viewing state
     isViewingOutputMesh,
     setIsViewingOutputMesh,
+
+    // GCode group
+    gcodeString,
+    setGcodeString,
   };
 
   return (
