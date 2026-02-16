@@ -21,7 +21,6 @@ export default function GCodeLoaderMesh({ authorizedUserOcto }) {
         const parsedObjects = [];
         for (const part of gcodeParts) {
           const parseGcodeString = loader.parse(part);
-          console.log("Parsed G-code part:", parseGcodeString);
           parsedObjects.push(parseGcodeString);
         }
 
@@ -30,7 +29,6 @@ export default function GCodeLoaderMesh({ authorizedUserOcto }) {
           obj.children[1].material.color.set(0x0000ff); // blue
           allGcodeObjects.add(obj);
         });
-        console.log("All G-code objects added to group:", allGcodeObjects);
         setObject(allGcodeObjects);
       } catch (err) {
         console.error("Error parsing G-code:", err);

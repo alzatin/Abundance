@@ -330,7 +330,6 @@ function AppContent() {
       if (gcode) {
         setMesh([]);
         setGcodeParts(moleculeValue);
-        console.log("Received GCode for display");
         return;
       } else {
         setGcodeParts(null);
