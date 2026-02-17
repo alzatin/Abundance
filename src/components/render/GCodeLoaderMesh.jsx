@@ -21,9 +21,12 @@ export default function GCodeLoaderMesh({ authorizedUserOcto }) {
       try {
         const loader = new GCodeLoader();
         const parsedObjects = [];
+        let lastPosition = { x: 0, y: 0, z: 0 };
         for (const part of gcodeParts) {
-          const parseGcodeString = loader.parse(part);
-          parsedObjects.push(parseGcodeString);
+          const { object: parsedObject, lastPosition: partLastPosition } =
+            loader.parse(part, lastPosition.x, lastPosition.y);
+          lastPosition = partLastPosition;
+          parsedObjects.push(parsedObject);
         }
 
         const allGcodeObjects = new Group();
