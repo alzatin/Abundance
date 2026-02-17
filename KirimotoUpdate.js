@@ -83,7 +83,7 @@ const generateGcode = (
 
         eng.setMode("CAM");
 
-        eng.moveTo(-centerPos[0], centerPos[1], 0);
+        eng.setOrigin(-centerPos[0], centerPos[1], 0);
         // Determine if project uses metric units
         const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         const isMetric = projectUnits === "MM";
@@ -110,7 +110,7 @@ const generateGcode = (
         const down = (bounds.dim.z + CUT_THROUGH) / (passes - 1);
         const stepOver = 0.8;
         // camZAnchor is only for UI
-        eng.setOrigin(bounds.mid.x, bounds.mid.y, bounds.max.z);
+        //eng.setOrigin(bounds.mid.x, bounds.mid.y, bounds.max.z);
 
         // camStockOffset is only reliable in UI
         eng.setStock({
