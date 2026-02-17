@@ -127,7 +127,9 @@ export function useControls(initialConfig = {}) {
     for (const key in initialConfig) {
       vals[key] = initialConfig[key].value;
     }
-    setValues(vals);
+    // Use functional update to ensure we always get a new object reference
+    // This forces React to update even if values appear the same
+    setValues(() => vals);
   }, deps);
 
   // Set control value only if different
