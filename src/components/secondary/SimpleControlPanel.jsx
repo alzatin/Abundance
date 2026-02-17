@@ -291,7 +291,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 
   useImperativeHandle(ref, () => ({
     triggerPanelKeyDown: (event) => {
-      console.log("triggerPanelKeyDown", event);
       handlePanelKeyDown(event);
     },
   }));
