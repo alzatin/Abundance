@@ -295,7 +295,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     },
   }));
   const [controlValues, setControlValue, { controls: registeredControls }] =
-    useControls(controls);
+    useControls(controls, [controls]);
 
   // Focus management
   const controlKeys = Object.keys(controls);
