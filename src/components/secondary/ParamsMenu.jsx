@@ -86,6 +86,7 @@ export default function ParamsMenu({
         closeMenu={closeMenu}
         collapsedOffset={collapsedOffset}
         collapsedIcon={AtomIcon}
+        activeAtom={activeAtom}
       />
       {/* <button onClick={handleAddControl} style={{ marginTop: 16 }}>
         Add Custom Control
