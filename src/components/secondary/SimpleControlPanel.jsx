@@ -1381,7 +1381,11 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                       >
                         <span
                           style={{
-                            width: inputFullWidth ? 0 : 100,
+                            width: inputFullWidth
+                              ? 0
+                              : panelRef.current
+                                ? panelRef.current.offsetWidth * 0.4
+                                : 90,
                             color: isDisabled
                               ? inputDisabledStyle.color
                               : undefined,
