@@ -465,11 +465,26 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
       const firstInput = inputRefs.current[0];
       if (firstInput && typeof firstInput.addEventListener === "function") {
         let removed = false;
+        // Focus canvas and delete node
+        const canvas =
+          document.getElementById("flow-canvas") ||
+          document.querySelector("canvas");
         const handleDeleteKey = (e) => {
+          if (e.metaKey || e.ctrlKey) {
+            // Allow Command/Ctrl combos (copy, paste, etc.)
+            if (canvas) {
+              // Set ctrlDown to true so shortcut handler in flowCanvas works
+              if (window.GlobalVariables) {
+                window.GlobalVariables.ctrlDown = true;
+              }
+              canvas.focus();
+            }
+            return;
+          }
           if (e.key === "Delete" || e.key === "Backspace") {
-            // Focus canvas and delete node
-            const canvas = document.querySelector("canvas");
-            if (canvas) canvas.focus();
+            if (canvas) {
+              canvas.focus();
+            }
             if (activeAtom) {
               activeAtom.deleteNode();
             }
