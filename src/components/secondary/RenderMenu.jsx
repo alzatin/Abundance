@@ -57,6 +57,7 @@ export default function RenderMenu({
     setShowBackgroundModel,
     showTopLevelWireframe,
     setShowTopLevelWireframe,
+    activeAtom,
   } = useRendering();
   const [inputChanged, setInputChanged] = useState("");
 
@@ -142,6 +143,7 @@ export default function RenderMenu({
         setContentCollapsed={setContentCollapsed}
         closeMenu={closeMenu}
         collapsedIcon={GridAxisIcon}
+        activeAtom={activeAtom}
       />
     </div>
   );

@@ -69,6 +69,7 @@ export default function BomMenu({
         contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
         closeMenu={closeMenu}
+        activeAtom={activeAtom}
       />
     </div>
   );

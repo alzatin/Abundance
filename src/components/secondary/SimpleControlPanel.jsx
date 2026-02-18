@@ -276,6 +276,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     contentCollapsed,
     setContentCollapsed,
     closeMenu,
+    activeAtom,
   },
   ref,
 ) {
@@ -451,7 +452,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     }
     setLocalValues({});
   }, [controls]);
-
   // Only focus input on keyboard event, not on mount/controls change
   const [shouldFocus, setShouldFocus] = React.useState(false);
 
@@ -460,8 +460,37 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     if (!collapsed && !contentCollapsed && controlKeys.length > 0) {
       setFocusedIndex(0);
       setShouldFocus(true);
+      console.log("Focusing first control");
+      // Add keydown listener for Delete key on first control
+      const firstInput = inputRefs.current[0];
+      if (firstInput && typeof firstInput.addEventListener === "function") {
+        let removed = false;
+        const handleDeleteKey = (e) => {
+          if (e.key === "Delete" || e.key === "Backspace") {
+            // Focus canvas and delete node
+            const canvas = document.querySelector("canvas");
+            if (canvas) canvas.focus();
+            if (activeAtom) {
+              activeAtom.deleteNode();
+            }
+            e.preventDefault();
+          } else {
+            // Remove listener if any other key is pressed
+            if (!removed) {
+              firstInput.removeEventListener("keydown", handleDeleteKey);
+              removed = true;
+            }
+          }
+        };
+        firstInput.addEventListener("keydown", handleDeleteKey);
+        // Cleanup
+        return () => {
+          if (!removed)
+            firstInput.removeEventListener("keydown", handleDeleteKey);
+        };
+      }
     }
-  }, [collapsed, contentCollapsed, controlKeys.length]);
+  }, [collapsed, contentCollapsed, controlKeys.length, inputRefs.current[0]]);
 
   // Focus the current control when focusedIndex changes and shouldFocus is true
   React.useEffect(() => {
