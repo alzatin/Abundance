@@ -282,6 +282,37 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   // Collapsed panel state
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [activeEye, setActiveEye] = useState({});
+  // Resizing state
+  const [panelSize, setPanelSize] = useState({
+    width: minWidth,
+    height: maxHeight,
+  });
+  const panelRef = React.useRef();
+  const contentRef = React.useRef();
+  const resizingRef = React.useRef(false);
+  const lastMousePos = React.useRef({ x: 0, y: 0 });
+  // On mount, set initial height to fit content (up to maxHeight)
+  React.useEffect(() => {
+    if (
+      panelRef.current &&
+      contentRef.current &&
+      !collapsed &&
+      !contentCollapsed
+    ) {
+      // Use scrollHeight to get content height
+      const contentHeight = contentRef.current.scrollHeight;
+      // Add header/footer heights (header: 38px, footer: ~2px, padding: 24px)
+      const headerHeight = 38;
+      const footerHeight = 2;
+      const padding = 24;
+      let total = contentHeight + headerHeight + footerHeight + padding;
+      // Clamp to maxHeight
+      total = Math.min(total, maxHeight);
+      setPanelSize((prev) => ({ ...prev, height: total }));
+    }
+    // Only run on first mount or when controls/content change
+    // eslint-disable-next-line
+  }, [controls, collapsed, contentCollapsed]);
   // Sync collapsed state with contentCollapsed if initialCollapsed is true
   useEffect(() => {
     if (initialCollapsed) {
@@ -293,7 +324,36 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     triggerPanelKeyDown: (event) => {
       handlePanelKeyDown(event);
     },
+    getPanelSize: () => panelSize,
   }));
+
+  // Mouse event handlers for resizing
+  const handleResizeMouseDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizingRef.current = true;
+    lastMousePos.current = { x: e.clientX, y: e.clientY };
+    document.addEventListener("mousemove", handleResizeMouseMove);
+    document.addEventListener("mouseup", handleResizeMouseUp);
+  };
+
+  const handleResizeMouseMove = (e) => {
+    if (!resizingRef.current) return;
+    const dx = e.clientX - lastMousePos.current.x;
+    const dy = e.clientY - lastMousePos.current.y;
+    setPanelSize((prev) => {
+      let newWidth = Math.max(200, prev.width + dx);
+      let newHeight = Math.max(120, prev.height + dy);
+      return { width: newWidth, height: newHeight };
+    });
+    lastMousePos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleResizeMouseUp = () => {
+    resizingRef.current = false;
+    document.removeEventListener("mousemove", handleResizeMouseMove);
+    document.removeEventListener("mouseup", handleResizeMouseUp);
+  };
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls, [controls]);
 
@@ -463,6 +523,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   return (
     <div
       id={id}
+      ref={panelRef}
       style={{
         ...panelVars,
         ...(collapsed
@@ -470,9 +531,11 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
           : {
               ...getPanelStyle(minWidth),
               ...position,
-              maxHeight: maxHeight ? `${maxHeight}px` : undefined,
-              maxWidth: minWidth ? `${minWidth}px` : undefined,
-              overflowY: maxHeight ? "clip" : undefined,
+              width: panelSize.width,
+              height: panelSize.height,
+              maxHeight: panelSize.height,
+              maxWidth: panelSize.width,
+              overflowY: panelSize.height ? "clip" : undefined,
               top:
                 (typeof position.top === "number"
                   ? position.top
@@ -545,7 +608,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
           </div>
           {/* Controls */}
           {!contentCollapsed && (
-            <div style={getControlListStyle(maxHeight)}>
+            <div ref={contentRef} style={getControlListStyle(panelSize.height)}>
               {controlKeys.map((key, idx) => {
                 const config = controls[key];
                 const label = config.label;
@@ -1879,6 +1942,36 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
             </div>
           )}
         </>
+      )}
+      {/* Resize handle: bottom-right corner */}
+      {!collapsed && (
+        <div
+          style={{
+            position: "absolute",
+            right: 0,
+            bottom: 0,
+            width: 18,
+            height: 18,
+            cursor: "nwse-resize",
+            zIndex: 20,
+            background: "transparent",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "flex-end",
+            userSelect: "none",
+          }}
+          onMouseDown={handleResizeMouseDown}
+        >
+          <svg width="18" height="18" style={{ pointerEvents: "none" }}>
+            <path
+              d="M4,15 Q15,15 15,4"
+              fill="none"
+              stroke="#626163"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
       )}
     </div>
   );
