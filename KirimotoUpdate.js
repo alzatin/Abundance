@@ -18,7 +18,7 @@ const generateGcode = (
     const stock_offset = {
       x: 3,
       y: 3,
-      z: 1,
+      z: -0.01,
     };
     const plunge = speed;
 
@@ -82,8 +82,8 @@ const generateGcode = (
         if (progressCallback) progressCallback(0.1); // 10% - STL loaded
 
         eng.setMode("CAM");
-
-        eng.setOrigin(-centerPos[0], centerPos[1], 0);
+        const bounds = eng.widget.getBoundingBox();
+        eng.setOrigin(-centerPos[0], centerPos[1], bounds.max.z);
         // Determine if project uses metric units
         const projectUnits = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         const isMetric = projectUnits === "MM";
@@ -106,8 +106,7 @@ const generateGcode = (
 
         if (progressCallback) progressCallback(0.25); // 25% - Tools set
 
-        const bounds = eng.widget.getBoundingBox();
-        const down = (bounds.dim.z + CUT_THROUGH) / (passes - 1);
+        const down = (bounds.dim.z + CUT_THROUGH) / passes;
         const stepOver = 0.8;
         // camZAnchor is only for UI
         //eng.setOrigin(bounds.mid.x, bounds.mid.y, bounds.max.z);
@@ -127,13 +126,14 @@ const generateGcode = (
           camOriginCenter: true,
           camStockOffset: false,
           camToolInit: true,
+          camZClearance: 5,
           //zBottom: -bounds.max.z - CUT_THROUGH,
           ops: [
             {
               all: false,
               disabled: false,
               down: down,
-              flats: false,
+              flats: true,
               inside: true,
               leave: 0,
               leavez: 0,

@@ -115,7 +115,7 @@ class GCodeLoader extends Loader {
     extrudingMaterial.name = "extruded";
 
     // Rapid (moving/plunging, not cutting or extruding)
-    const rapidMaterial = new LineBasicMaterial({ color: 0xff0000 });
+    const rapidMaterial = new LineBasicMaterial({ color: 0xff9933 });
     rapidMaterial.name = "rapid";
 
     function newLayer(line) {
