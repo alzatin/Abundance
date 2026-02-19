@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState } from "react";
 
 const AppStateContext = createContext();
 
@@ -9,19 +9,21 @@ const AppStateContext = createContext();
 export function AppStateProvider({ children }) {
   const [activeAtom, setActiveAtom] = useState(null);
   const [shortCutsOn, setShortCuts] = useState(
-    localStorage.getItem("shortcuts") === "true"
+    localStorage.getItem("shortcuts") === "true",
   );
   const [exportPopUp, setExportPopUp] = useState(false);
   const [redirectType, setRedirectType] = useState(null);
   const [errorNotification, setErrorNotificationRaw] = useState(null);
-  const [notificationType, setNotificationType] = useState('error');
+  const [notificationType, setNotificationType] = useState("error");
 
-  const setNotification = (message, type = 'error') => {
+  const setNotification = (message, type = "error") => {
+    console.log("Setting notification:", { message, type });
     setErrorNotificationRaw(message);
-    setNotificationType(message ? type : 'error');
+    setNotificationType(message ? type : "error");
   };
 
-  const setErrorNotification = (message) => setNotification(message, 'error');
+  const setErrorNotification = (message, type) =>
+    setNotification(message, type || "error");
 
   const value = {
     activeAtom,
@@ -51,7 +53,7 @@ export function AppStateProvider({ children }) {
 export function useAppState() {
   const context = useContext(AppStateContext);
   if (!context) {
-    throw new Error('useAppState must be used within an AppStateProvider');
+    throw new Error("useAppState must be used within an AppStateProvider");
   }
   return context;
 }

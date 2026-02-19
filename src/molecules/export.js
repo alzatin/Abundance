@@ -182,7 +182,10 @@ export default class Export extends Atom {
         this.exportFile();
         // Dispatch a custom event for error notification
         const event = new CustomEvent("user-notification", {
-          detail: { message: "Preparing your export." || String(err) },
+          detail: {
+            message: "Preparing your export." || String(err),
+            type: "notice",
+          },
         });
         window.dispatchEvent(event);
       },

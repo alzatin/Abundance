@@ -269,7 +269,7 @@ export default class Molecule extends Atom {
           atom.exportFile();
           // Dispatch a custom event
           const event = new CustomEvent("user-notification", {
-            detail: { message: "Preparing your export." },
+            detail: { message: "Preparing your export.", type: "notice" },
           });
           window.dispatchEvent(event);
           console.log(`Exporting: ${partName}`);

@@ -86,7 +86,7 @@ function runMode({ processing, setProcessing }) {
     setSolid,
   } = useRendering();
   const { loadProject } = useProject();
-  const { uploadFile, deleteFile, importNotification } = useFileImport();
+  const { uploadFile, deleteFile } = useFileImport();
 
   const navigate = useNavigate();
 
@@ -174,8 +174,9 @@ function runMode({ processing, setProcessing }) {
 
   useEffect(() => {
     const handler = (e) => {
-      setErrorNotification(e.detail.message);
-      setTimeout(() => setErrorNotification(null), 5000);
+      console.log("Received user notification event:", e.detail);
+      setErrorNotification(e.detail.message, e.detail.type || "error");
+      setTimeout(() => setErrorNotification(null, "error"), 5000);
     };
     window.addEventListener("user-notification", handler);
     return () => window.removeEventListener("user-notification", handler);
@@ -226,8 +227,11 @@ function runMode({ processing, setProcessing }) {
         })
         .catch((e) => {
           console.error("Error fetching AWS project data:", e);
-          setErrorNotification("Can't load/find project: " + (e.message || e));
-          setTimeout(() => setErrorNotification(null), 5000);
+          setErrorNotification(
+            "Can't load/find project: " + (e.message || e),
+            "error",
+          );
+          setTimeout(() => setErrorNotification(null, "error"), 5000);
           navigate("/");
         });
     }
