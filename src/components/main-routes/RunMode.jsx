@@ -177,8 +177,8 @@ function runMode({ processing, setProcessing }) {
       setErrorNotification(e.detail.message);
       setTimeout(() => setErrorNotification(null), 5000);
     };
-    window.addEventListener("download-error", handler);
-    return () => window.removeEventListener("download-error", handler);
+    window.addEventListener("user-notification", handler);
+    return () => window.removeEventListener("user-notification", handler);
   }, []);
 
   /** State for menu content collapsing */
