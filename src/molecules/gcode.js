@@ -757,7 +757,7 @@ export default class Gcode extends Atom {
     if (!gcode) {
       console.error("No G-code available to download.");
       // Dispatch a custom event
-      const event = new CustomEvent("download-error", {
+      const event = new CustomEvent("user-notification", {
         detail: { message: "No G-code available to download." },
       });
       window.dispatchEvent(event);

@@ -10,7 +10,9 @@ export default memo(function FlowCanvas({
   shortCuts,
   authorizedUserOcto,
   importNotification,
-  errorNotification,
+  userNotification,
+  setUserNotification,
+  notificationType = "error",
   setExpandedMenu,
   windowSize,
   redirectType,
@@ -64,7 +66,7 @@ export default memo(function FlowCanvas({
         const previousProjectKey = `unsavedProject_${GlobalVariables.loadedRepo.owner.login}_${GlobalVariables.loadedRepo.name}`;
         localStorage.removeItem(previousProjectKey);
         console.log(
-          `Cleared localStorage for previous project: ${previousProjectKey}`
+          `Cleared localStorage for previous project: ${previousProjectKey}`,
         );
       }
 
@@ -108,7 +110,7 @@ export default memo(function FlowCanvas({
               () => {
                 localStorage.removeItem("pendingProjectSave");
                 setSavePopUp(false);
-              }
+              },
             );
           }
           loadAndDeserialize();
@@ -153,11 +155,12 @@ export default memo(function FlowCanvas({
                 })
                 .catch((e) => {
                   console.error("Error loading repo metadata:", e);
-                  if (setErrorNotification) {
-                    setErrorNotification(
-                      "Error loading project metadata: " + e.message
+                  if (setUserNotification) {
+                    setUserNotification(
+                      "Error loading project metadata: " + e.message,
+                      "error",
                     );
-                    setTimeout(() => setErrorNotification(null), 5000);
+                    setTimeout(() => setUserNotification(null), 5000);
                   }
                 });
             }
@@ -202,7 +205,7 @@ export default memo(function FlowCanvas({
       0,
       0,
       GlobalVariables.canvas.current.width,
-      GlobalVariables.canvas.current.height
+      GlobalVariables.canvas.current.height,
     );
 
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
@@ -221,7 +224,7 @@ export default memo(function FlowCanvas({
     }
     // Trigger layout reflow to ensure getBoundingClientRect returns current values
     void canvasRef.current.offsetHeight;
-    
+
     const rect = canvasRef.current.getBoundingClientRect();
     return {
       x: clientX - rect.left,
@@ -242,7 +245,7 @@ export default memo(function FlowCanvas({
       if (longPressTimer.current && touchStartPos.current) {
         const moveDistance = Math.sqrt(
           Math.pow(e.clientX - touchStartPos.current.x, 2) +
-            Math.pow(e.clientY - touchStartPos.current.y, 2)
+            Math.pow(e.clientY - touchStartPos.current.y, 2),
         );
 
         if (moveDistance > 10) {
@@ -296,7 +299,7 @@ export default memo(function FlowCanvas({
             atomData,
             true,
             undefined,
-            true // skipAutoConnect = true for paste operations
+            true, // skipAutoConnect = true for paste operations
           );
           atomPromises.push(promise);
         });
@@ -320,7 +323,7 @@ export default memo(function FlowCanvas({
             item,
             true,
             undefined,
-            true
+            true,
           ); // skipAutoConnect = true for paste
         } else {
           // For simple atoms, just assign a new unique ID
@@ -329,7 +332,7 @@ export default memo(function FlowCanvas({
             item,
             true,
             undefined,
-            true
+            true,
           ); // skipAutoConnect = true for paste
         }
       });
@@ -350,7 +353,7 @@ export default memo(function FlowCanvas({
             if (nodeOnTheScreen.uniqueID == item.uniqueID) {
               nodeOnTheScreen.deleteNode();
             }
-          }
+          },
         );
       });
       //every time a key is pressed
@@ -379,7 +382,7 @@ export default memo(function FlowCanvas({
         // Show notification based on what was undone
         if (hadUndoHistory && operationInfo) {
           setUndoNotification(
-            `Undone: ${operationInfo.context || operationInfo.type}`
+            `Undone: ${operationInfo.context || operationInfo.type}`,
           );
         } else if (hadUndoHistory) {
           setUndoNotification("Undone: Previous action");
@@ -419,7 +422,7 @@ export default memo(function FlowCanvas({
             atomType: `${shortCuts[e.key]}`,
             uniqueID: GlobalVariables.generateUniqueID(),
           },
-          true
+          true,
         );
       }
     }
@@ -464,7 +467,7 @@ export default memo(function FlowCanvas({
         // Calculate distance between current tap and last tap
         const tapDistance = Math.sqrt(
           Math.pow(event.clientX - lastTapPosition.current.x, 2) +
-            Math.pow(event.clientY - lastTapPosition.current.y, 2)
+            Math.pow(event.clientY - lastTapPosition.current.y, 2),
         );
 
         // If within radius, consider it a double tap
@@ -486,7 +489,7 @@ export default memo(function FlowCanvas({
         // Convert viewport coordinates to canvas-relative coordinates for correct positioning
         const canvasCoords = getCanvasCoordinates(
           touchStartPos.current.x,
-          touchStartPos.current.y
+          touchStartPos.current.y,
         );
         cmenu.show([canvasCoords.x, canvasCoords.y], false);
         longPressTimer.current = null;
@@ -537,7 +540,7 @@ export default memo(function FlowCanvas({
         atomClicked = molecule.clickDown(
           canvasCoords.x,
           canvasCoords.y,
-          clickHandledByMolecule
+          clickHandledByMolecule,
         );
         if (atomClicked !== undefined && !clickHandledByMolecule) {
           activeAtom = atomClicked;
@@ -574,7 +577,7 @@ export default memo(function FlowCanvas({
               name: "Box",
               atomType: "Box",
             },
-            false // Don't pass to undo
+            false, // Don't pass to undo
           )
           .then((newAtom) => {
             console.log("Box atom placed:", newAtom);
@@ -760,9 +763,11 @@ export default memo(function FlowCanvas({
         <div className="import-notification">{importNotification}</div>
       )}
 
-      {/* Error notification */}
-      {errorNotification && (
-        <div className="error-notification">{errorNotification}</div>
+      {/* User notification */}
+      {userNotification && (
+        <div className={`${notificationType}-notification`}>
+          {userNotification}
+        </div>
       )}
     </>
   );
