@@ -13,7 +13,15 @@ export function AppStateProvider({ children }) {
   );
   const [exportPopUp, setExportPopUp] = useState(false);
   const [redirectType, setRedirectType] = useState(null);
-  const [errorNotification, setErrorNotification] = useState(null);
+  const [errorNotification, setErrorNotificationRaw] = useState(null);
+  const [notificationType, setNotificationType] = useState('error');
+
+  const setNotification = (message, type = 'error') => {
+    setErrorNotificationRaw(message);
+    setNotificationType(message ? type : 'error');
+  };
+
+  const setErrorNotification = (message) => setNotification(message, 'error');
 
   const value = {
     activeAtom,
@@ -26,6 +34,8 @@ export function AppStateProvider({ children }) {
     setRedirectType,
     errorNotification,
     setErrorNotification,
+    notificationType,
+    setNotification,
   };
 
   return (

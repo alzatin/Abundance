@@ -93,7 +93,15 @@ function CreateMode() {
   const navigate = useNavigate();
 
   /** State for error notification */
-  const [errorNotification, setErrorNotification] = useState(null);
+  const [errorNotification, setErrorNotificationRaw] = useState(null);
+  const [notificationType, setNotificationType] = useState('error');
+
+  const setNotification = (message, type = 'error') => {
+    setErrorNotificationRaw(message);
+    setNotificationType(message ? type : 'error');
+  };
+
+  const setErrorNotification = (message) => setNotification(message, 'error');
 
   useEffect(() => {
     const handler = (e) => {
@@ -699,6 +707,7 @@ function CreateMode() {
               setWireMesh,
               importNotification,
               errorNotification,
+              notificationType,
               setErrorNotification,
               setExpandedMenu,
               windowSize,

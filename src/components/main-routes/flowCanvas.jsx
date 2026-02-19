@@ -11,6 +11,7 @@ export default memo(function FlowCanvas({
   authorizedUserOcto,
   importNotification,
   errorNotification,
+  notificationType = 'error',
   setExpandedMenu,
   windowSize,
   redirectType,
@@ -762,7 +763,7 @@ export default memo(function FlowCanvas({
 
       {/* Error notification */}
       {errorNotification && (
-        <div className="error-notification">{errorNotification}</div>
+        <div className={`${notificationType}-notification`}>{errorNotification}</div>
       )}
     </>
   );
