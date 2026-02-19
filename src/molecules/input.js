@@ -1110,6 +1110,7 @@ export default class Input extends Atom {
     // Save import-related properties if type is import
     if (this.type === "import") {
       superSerialObject.fileName = this.fileName;
+      superSerialObject.fileSha = this.fileSha;
       superSerialObject.fileType = this.fileType;
       superSerialObject.repoOwner = this.repoOwner;
       superSerialObject.repoName = this.repoName;
