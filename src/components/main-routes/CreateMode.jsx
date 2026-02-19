@@ -94,22 +94,22 @@ function CreateMode() {
 
   /** State for error notification */
   const [errorNotification, setErrorNotificationRaw] = useState(null);
-  const [notificationType, setNotificationType] = useState('error');
+  const [notificationType, setNotificationType] = useState("error");
 
-  const setNotification = (message, type = 'error') => {
+  const setNotification = (message, type = "error") => {
     setErrorNotificationRaw(message);
-    setNotificationType(message ? type : 'error');
+    setNotificationType(message ? type : "error");
   };
 
-  const setErrorNotification = (message) => setNotification(message, 'error');
+  const setErrorNotification = (message) => setNotification(message, "error");
 
   useEffect(() => {
     const handler = (e) => {
       setErrorNotification(e.detail.message);
       setTimeout(() => setErrorNotification(null), 5000);
     };
-    window.addEventListener("download-error", handler);
-    return () => window.removeEventListener("download-error", handler);
+    window.addEventListener("user-notification", handler);
+    return () => window.removeEventListener("user-notification", handler);
   }, []);
 
   // Wrapper function that calls saveProject with CreateMode-specific parameters

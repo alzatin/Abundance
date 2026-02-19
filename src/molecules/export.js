@@ -181,7 +181,7 @@ export default class Export extends Atom {
       onClick: () => {
         this.exportFile();
         // Dispatch a custom event for error notification
-        const event = new CustomEvent("download-error", {
+        const event = new CustomEvent("user-notification", {
           detail: { message: "Preparing your export." || String(err) },
         });
         window.dispatchEvent(event);
@@ -220,7 +220,7 @@ export default class Export extends Atom {
         this.alertingErrorHandler(err);
       }
       // Dispatch a custom event for error notification
-      const event = new CustomEvent("download-error", {
+      const event = new CustomEvent("user-notification", {
         detail: { message: err.message || String(err) },
       });
       window.dispatchEvent(event);

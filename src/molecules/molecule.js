@@ -233,7 +233,7 @@ export default class Molecule extends Atom {
       } else {
         console.error("G-code is not available yet");
         // Dispatch a custom event
-        const event = new CustomEvent("download-error", {
+        const event = new CustomEvent("user-notification", {
           detail: { message: "G-code is not available yet" },
         });
         window.dispatchEvent(event);
@@ -268,7 +268,7 @@ export default class Molecule extends Atom {
         onClick: () => {
           atom.exportFile();
           // Dispatch a custom event
-          const event = new CustomEvent("download-error", {
+          const event = new CustomEvent("user-notification", {
             detail: { message: "Preparing your export." },
           });
           window.dispatchEvent(event);
