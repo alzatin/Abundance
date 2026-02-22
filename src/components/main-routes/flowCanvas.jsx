@@ -9,7 +9,6 @@ export default memo(function FlowCanvas({
   setActiveAtom,
   shortCuts,
   authorizedUserOcto,
-  importNotification,
   userNotification,
   setUserNotification,
   notificationType = "error",
@@ -758,10 +757,6 @@ export default memo(function FlowCanvas({
         <div className="undo-notification">{undoNotification}</div>
       )}
 
-      {/* Import notification */}
-      {importNotification && (
-        <div className="import-notification">{importNotification}</div>
-      )}
 
       {/* User notification */}
       {userNotification && (
