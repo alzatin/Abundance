@@ -685,14 +685,17 @@ export default memo(function FlowCanvas({
     createCMenu(circleMenu, setExpandedMenu, shortCuts);
   }, []);
 
+  const getMoleculeDisplayName = (mol) =>
+    mol.topLevel && GlobalVariables.currentAWSnode?.repoName
+      ? GlobalVariables.currentAWSnode.repoName
+      : mol.name;
+
   let parentLinkPath = [];
   if (GlobalVariables.currentMolecule) {
-    parentLinkPath.unshift(GlobalVariables.currentMolecule.name);
+    parentLinkPath.unshift(getMoleculeDisplayName(GlobalVariables.currentMolecule));
     let currentParent = GlobalVariables.currentMolecule.parent;
     while (currentParent) {
-      let parentName = currentParent.name;
-      let parentLink = parentName;
-      parentLinkPath.unshift(parentLink);
+      parentLinkPath.unshift(getMoleculeDisplayName(currentParent));
       currentParent = currentParent.parent ? currentParent.parent : null;
     }
   }
@@ -737,6 +740,7 @@ export default memo(function FlowCanvas({
               onClick={() => {
                 while (
                   GlobalVariables.currentMolecule &&
+                  !GlobalVariables.currentMolecule.topLevel &&
                   GlobalVariables.currentMolecule.name !== item
                 ) {
                   GlobalVariables.currentMolecule.goToParentMolecule(item);
