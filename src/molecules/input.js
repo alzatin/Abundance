@@ -665,7 +665,15 @@ export default class Input extends Atom {
         }
         return result;
       })
-      .catch(this.alertingErrorHandler());
+      .catch((err) => {
+        // Provide a user-friendly error message for missing files
+        if (err && err.status === 404) {
+          const errorMessage = `Import file not found: "${this.fileName}". The file may have been deleted or moved from the repository.`;
+          this.setError(errorMessage);
+        } else {
+          this.alertingErrorHandler()(err);
+        }
+      });
   }
 
   /**
