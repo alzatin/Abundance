@@ -145,7 +145,14 @@ export default class Import extends Atom {
           }
           return result;
         })
-        .catch(this.alertingErrorHandler());
+        .catch((err) => {
+          this.setReady(NaN);
+          this.setError(
+            `Failed to load file "${this.fileName}". Please check that the file exists in the repository and try again.`,
+          );
+          this.alertingErrorHandler(err);
+          return NaN;
+        });
     }
   }
 
