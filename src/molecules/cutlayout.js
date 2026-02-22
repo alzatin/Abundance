@@ -236,6 +236,9 @@ export default class CutLayout extends Atom {
           // Only update our status if this is the final placement
           if (isFinalPlacement) {
             this.setReady(result);
+            if (this.setInputChanged) {
+              this.setInputChanged(this.status);
+            }
           } else {
             this.setStatus(priorStatus);
             this.value = result;
