@@ -19,7 +19,7 @@ export function FileImportProvider({ children }) {
    * @param {Object} activeAtom - The atom requesting the upload
    * @param {Function} onSave - Callback to trigger project save after upload
    */
-  const uploadFile = async function (file, activeAtom, onSave) {
+  const uploadFile = async function (file, activeAtom) {
     var reader = new FileReader();
 
     reader.onload = function (e) {
@@ -73,10 +73,6 @@ export function FileImportProvider({ children }) {
             { name: uniqueFileName },
             result.data.content.sha,
           );
-
-          if (onSave) {
-            onSave();
-          }
 
           // Show upload notification
           //setNotification(`File uploaded: ${uniqueFileName}`);

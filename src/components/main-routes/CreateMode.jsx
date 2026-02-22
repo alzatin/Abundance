@@ -657,9 +657,7 @@ function CreateMode() {
             onChange={(value) => {
               let file = value.target.files[0];
               if (file) {
-                uploadFile(file, activeAtom, () =>
-                  saveProject(setSaveState, "Upload Save"),
-                );
+                uploadFile(file, activeAtom);
               }
             }}
           />
