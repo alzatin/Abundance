@@ -14,7 +14,7 @@ export default function GitSearchMenu({
   position,
   collapsedOffset,
   gitRef,
-  setErrorNotification,
+  setUserNotification,
   closeMenu,
 }) {
   const [inputChanged, setInputChanged] = useState("");
@@ -54,7 +54,7 @@ export default function GitSearchMenu({
             "&yearShow=" +
             yearShow +
             "&user" +
-            lastKeyQuery
+            lastKeyQuery,
         ).then((res) => res.json());
       }
       return undefined;
@@ -69,9 +69,9 @@ export default function GitSearchMenu({
     GlobalVariables.currentMolecule
       .loadGithubMoleculeByName(item, {}, [], position)
       .catch(() => {
-        setErrorNotification(`Error: Project Missing`);
+        setUserNotification(`Error: Project Missing`, "error");
         // Auto-dismiss notification after 3 seconds
-        setTimeout(() => setErrorNotification(null), 3000);
+        setTimeout(() => setUserNotification(null, "error"), 3000);
       });
     //setIsShortcutTriggered(false);
     setInputValue("");
@@ -96,7 +96,7 @@ export default function GitSearchMenu({
         atomType: atomType,
         uniqueID: GlobalVariables.generateUniqueID(),
       },
-      true
+      true,
     );
 
     setInputValue("");
@@ -198,7 +198,7 @@ export default function GitSearchMenu({
         return rankB - rankA;
       });
       combinedResults.push(
-        ...sortedRepos.map((repo) => ({ ...repo, isLocal: false }))
+        ...sortedRepos.map((repo) => ({ ...repo, isLocal: false })),
       );
     }
 

@@ -47,6 +47,7 @@ function CreateMode() {
     exportPopUp,
     setExportPopUp,
     redirectType,
+    setNotification,
   } = useAppState();
   const {
     setMesh,
@@ -74,7 +75,7 @@ function CreateMode() {
     searchGithubMolecules,
     saveProject: saveProjectFromContext,
   } = useProject();
-  const { uploadFile, deleteFile, importNotification } = useFileImport();
+  const { uploadFile, deleteFile } = useFileImport();
   const meshRef = useRef();
 
   // Make meshRef, file import functions, and save function available globally
@@ -92,16 +93,21 @@ function CreateMode() {
 
   const navigate = useNavigate();
 
-  /** State for error notification */
-  const [errorNotification, setErrorNotification] = useState(null);
+  /** State for user notification */
+  const [userNotification, setUserNotificationRaw] = useState(null);
+  const [notificationType, setNotificationType] = useState("error");
+
+  // Wrapper to handle notifications set by child components
+  const setUserNotification = (message, type = "error") =>
+    setNotification(message, type);
 
   useEffect(() => {
     const handler = (e) => {
-      setErrorNotification(e.detail.message);
-      setTimeout(() => setErrorNotification(null), 5000);
+      setNotification(e.detail.message, e.detail.type || "error");
+      setTimeout(() => setNotification(null, "error"), 5000);
     };
-    window.addEventListener("download-error", handler);
-    return () => window.removeEventListener("download-error", handler);
+    window.addEventListener("user-notification", handler);
+    return () => window.removeEventListener("user-notification", handler);
   }, []);
 
   // Wrapper function that calls saveProject with CreateMode-specific parameters
@@ -111,7 +117,7 @@ function CreateMode() {
       typeSave,
       forceSave,
       meshRef,
-      setErrorNotification,
+      setUserNotification,
     );
   };
 
@@ -475,16 +481,17 @@ function CreateMode() {
       setShowBackgroundModel(true);
 
       saveProject(setSaveState, "Background 3D Model Upload Save");
-      setImportNotification(
+      setNotification(
         `Background 3D model uploaded: ${backgroundFileName}`,
+        "notice",
       );
-      setTimeout(() => setImportNotification(null), 3000);
+      setTimeout(() => setNotification(null, "notice"), 3000);
     } catch (error) {
       console.error("Error uploading 3D model:", error);
       // Reset userUploadedFile flag on error
       setUserUploadedFile(false);
-      setImportNotification("Failed to Upload 3D Model");
-      setTimeout(() => setImportNotification(null), 3000);
+      setNotification("Failed to Upload 3D Model", "error");
+      setTimeout(() => setNotification(null, "error"), 3000);
     }
   };
 
@@ -510,8 +517,8 @@ function CreateMode() {
       setShowBackgroundModel(false);
       setUserUploadedFile(false); // Reset user upload flag
 
-      setImportNotification(`Background 3D model deleted`);
-      setTimeout(() => setImportNotification(null), 3000);
+      setNotification(`Background 3D model deleted`, "warning");
+      setTimeout(() => setNotification(null, "warning"), 3000);
     } catch (error) {
       console.error("Error deleting background 3D model file:", error);
       alert(
@@ -571,7 +578,7 @@ function CreateMode() {
               position: { top: screenHeight / 2 + 125, left: 10 },
               collapsedOffset: [45, -135],
               gitRef: gitRef,
-              setErrorNotification: setErrorNotification,
+              setUserNotification,
             }}
           />
           <div id="headerBar">
@@ -697,9 +704,9 @@ function CreateMode() {
               setMesh,
               cad,
               setWireMesh,
-              importNotification,
-              errorNotification,
-              setErrorNotification,
+              userNotification,
+              notificationType,
+              setUserNotification,
               setExpandedMenu,
               windowSize,
               redirectType,
