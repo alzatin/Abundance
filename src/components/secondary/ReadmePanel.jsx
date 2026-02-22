@@ -70,7 +70,7 @@ export default function ReadmePanel({
         disabled: true,
       },
     }),
-    [readme]
+    [readme],
   );
 
   const screenHeight = window.innerHeight;
@@ -91,6 +91,7 @@ export default function ReadmePanel({
         closeMenu={closeMenu}
         collapsedOffset={collapsedOffset}
         collapsedIcon={collapsedIcon || BookIcon}
+        activeAtom={activeAtom}
       />
     </div>
   );

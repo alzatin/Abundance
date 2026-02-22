@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from "react";
 import GlobalVariables from "../js/globalvariables.js";
 import { useAuth } from "./AuthContext.jsx";
+import { useAppState } from "./AppStateContext.jsx";
 
 const FileImportContext = createContext();
 
@@ -10,7 +11,7 @@ const FileImportContext = createContext();
  */
 export function FileImportProvider({ children }) {
   const { authorizedUserOcto } = useAuth();
-  const [importNotification, setImportNotification] = useState(null);
+  const { setNotification } = useAppState();
 
   /**
    * Upload a file to the current GitHub repository
@@ -18,7 +19,7 @@ export function FileImportProvider({ children }) {
    * @param {Object} activeAtom - The atom requesting the upload
    * @param {Function} onSave - Callback to trigger project save after upload
    */
-  const uploadFile = async function (file, activeAtom, onSave) {
+  const uploadFile = async function (file, activeAtom) {
     var reader = new FileReader();
 
     reader.onload = function (e) {
@@ -41,7 +42,7 @@ export function FileImportProvider({ children }) {
           // Incrementally rename the file until a unique name is found
           while (
             existingFiles.data.some(
-              (existingFile) => existingFile.name === uniqueFileName
+              (existingFile) => existingFile.name === uniqueFileName,
             )
           ) {
             uniqueFileName = `${baseName}_copy${counter}${fileExtension}`;
@@ -62,29 +63,27 @@ export function FileImportProvider({ children }) {
             new Promise((_, reject) =>
               setTimeout(
                 () => reject(new Error("File upload timed out")),
-                60000
-              )
+                60000,
+              ),
             ),
           ]);
           console.log("File uploaded successfully:", result);
 
           activeAtom.updateFile(
             { name: uniqueFileName },
-            result.data.content.sha
+            result.data.content.sha,
           );
-          
-          if (onSave) {
-            onSave();
-          }
 
           // Show upload notification
-          setImportNotification(`File uploaded: ${uniqueFileName}`);
-          setTimeout(() => setImportNotification(null), 3000);
+          //setNotification(`File uploaded: ${uniqueFileName}`);
+          setNotification(`File uploaded: ${uniqueFileName}`, "notice");
+          setTimeout(() => setNotification(null, "notice"), 3000);
         } catch (error) {
-          setImportNotification(
-            `Failed to Upload File: Corrupt or exceeded size limit`
+          setNotification(
+            `Failed to Upload File: Corrupt or exceeded size limit`,
+            "error",
           );
-          setTimeout(() => setImportNotification(null), 3000);
+          setTimeout(() => setNotification(null, "error"), 3000);
           console.error("Error during file upload:", error);
         }
       })();
@@ -92,8 +91,8 @@ export function FileImportProvider({ children }) {
 
     reader.onerror = function (error) {
       console.error("Error reading file:", error);
-      setImportNotification("Failed to read the file. Please try again.");
-      setTimeout(() => setImportNotification(null), 3000);
+      setNotification("Failed to read the file. Please try again.", "error");
+      setTimeout(() => setNotification(null, "error"), 3000);
     };
     reader.readAsDataURL(file);
   };
@@ -120,14 +119,15 @@ export function FileImportProvider({ children }) {
       console.log("File deleted successfully:", fileName);
 
       // Show delete notification
-      setImportNotification(`File deleted: ${fileName}`);
-      setTimeout(() => setImportNotification(null), 3000);
+      setNotification(`File deleted: ${fileName}`, "warning");
+      setTimeout(() => setNotification(null, "warning"), 3000);
     } catch (error) {
       console.error("Error deleting file:", error);
-      setImportNotification(
-        `Failed to delete file: ${fileName}. The file will remain in your repository.`
+      setNotification(
+        `Failed to delete file: ${fileName}. The file will remain in your repository.`,
+        "error",
       );
-      setTimeout(() => setImportNotification(null), 5000);
+      setTimeout(() => setNotification(null, "error"), 5000);
     }
   };
 
@@ -141,7 +141,7 @@ export function FileImportProvider({ children }) {
     input.type = "file";
     input.accept = "." + fileType.toLowerCase();
     input.style.display = "none";
-    
+
     input.onchange = (event) => {
       const file = event.target.files[0];
       if (file && onFileSelected) {
@@ -150,7 +150,7 @@ export function FileImportProvider({ children }) {
       // Clean up
       document.body.removeChild(input);
     };
-    
+
     document.body.appendChild(input);
     input.click();
   };
@@ -159,8 +159,6 @@ export function FileImportProvider({ children }) {
     uploadFile,
     deleteFile,
     triggerFileUpload,
-    importNotification,
-    setImportNotification,
   };
 
   return (

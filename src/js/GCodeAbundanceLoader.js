@@ -82,10 +82,17 @@ class GCodeLoader extends Loader {
    * @param {string} data - The raw Gcode data as a string.
    * @return {Group} The parsed GCode asset.
    */
-  parse(data) {
+  /**
+   * Parses the given GCode data and returns a group with lines and last position.
+   * @param {string} data - The raw Gcode data as a string.
+   * @param {number} [x] - Optional starting x position.
+   * @param {number} [y] - Optional starting y position.
+   * @returns {{ object: Group, lastPosition: { x: number, y: number, z: number } }}
+   */
+  parse(data, x, y) {
     let state = {
-      x: 0,
-      y: 0,
+      x: x || 0,
+      y: y || 0,
       z: 0,
       e: 0,
       f: 0,
@@ -94,6 +101,7 @@ class GCodeLoader extends Loader {
       extrusionOverride: false,
       extrusionRelative: false,
     };
+    let lastPosition = { x: x || 0, y: y || 0, z: 0 };
     const layers = [];
 
     let currentLayer = undefined;
@@ -107,7 +115,7 @@ class GCodeLoader extends Loader {
     extrudingMaterial.name = "extruded";
 
     // Rapid (moving/plunging, not cutting or extruding)
-    const rapidMaterial = new LineBasicMaterial({ color: 0xff0000 });
+    const rapidMaterial = new LineBasicMaterial({ color: 0xff9933 });
     rapidMaterial.name = "rapid";
 
     function newLayer(line) {
@@ -254,6 +262,14 @@ class GCodeLoader extends Loader {
       } else {
         //console.warn( 'THREE.GCodeLoader: Command not supported:' + cmd );
       }
+      // Track last position for x, y, z if present
+      if (
+        state.x !== undefined &&
+        state.y !== undefined &&
+        state.z !== undefined
+      ) {
+        lastPosition = { x: state.x, y: state.y, z: state.z };
+      }
     }
 
     function addObject(vertexSegments, i) {
@@ -302,7 +318,7 @@ class GCodeLoader extends Loader {
 
     object.rotation.set(-Math.PI / 2, 0, 0);
 
-    return object;
+    return { object, lastPosition };
   }
 }
 

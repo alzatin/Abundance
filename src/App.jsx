@@ -96,6 +96,7 @@ function AppContent() {
     setRedirectType,
     errorNotification,
     setErrorNotification,
+    notificationType,
   } = useAppState();
 
   const navigate = useNavigate();
@@ -524,9 +525,9 @@ function AppContent() {
   };
 
   const location = useLocation();
-  let errorClass = "error-notification";
+  let errorClass = `${notificationType}-notification`;
   if (location.pathname.includes("/run")) {
-    errorClass = "error-notification-run";
+    errorClass = `${notificationType}-notification-run`;
   }
 
   return (
