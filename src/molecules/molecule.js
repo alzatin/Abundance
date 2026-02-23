@@ -1316,7 +1316,7 @@ export default class Molecule extends Atom {
     }
     return geomList;
   }
-
+  //Only enabling the molecules was causing propagation issues, so now we are deserializing the molecule to recompute it.
   async recomputeAll(setRecomputeVisible, setRecomputeProgress) {
     // Serialize the current molecule state
     const snapshot = this.serialize({ x: 0, y: 0 }, setRecomputeProgress);
