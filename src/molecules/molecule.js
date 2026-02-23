@@ -1318,12 +1318,17 @@ export default class Molecule extends Atom {
   }
 
   async recomputeAll() {
-    this.disable();
+    // Serialize the current molecule state
+    const snapshot = this.serialize();
+
+    // Remove all atoms from the molecule
+    this.deleteAllAtoms();
+
+    // Clear CAD cache
     await GlobalVariables.cad.clearCache(this.getContext());
-    this.enable();
-    for (const atom of this.nodesOnTheScreen) {
-      atom.enable();
-    }
+
+    // Re-deserialize the molecule from the snapshot
+    await this.deserialize(snapshot);
   }
 
   /**
