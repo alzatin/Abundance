@@ -609,8 +609,13 @@ export default class Atom extends ObservableEntity {
     let yInPixels = GlobalVariables.heightToPixels(this.y);
     let radiusInPixels = GlobalVariables.widthToPixels(this.radius);
     if (this.isMoving == true) {
-      this.x = GlobalVariables.pixelsToWidth(x);
-      this.y = GlobalVariables.pixelsToHeight(y);
+      if (this.atomType == "Input") {
+        // Input atoms are locked to the left side, only update y position
+        this.y = GlobalVariables.pixelsToHeight(y);
+      } else {
+        this.x = GlobalVariables.pixelsToWidth(x);
+        this.y = GlobalVariables.pixelsToHeight(y);
+      }
     }
 
     this.inputs.forEach((child) => {
@@ -791,7 +796,7 @@ export default class Atom extends ObservableEntity {
         const isMoleculeInput = ap.type === "input";
 
         // Debug logging for Input-type attachments
-        if (isMoleculeInput || ap.name === "Wood Thickness") {
+        /*if (isMoleculeInput || ap.name === "Wood Thickness") {
           console.log(
             `[Serialize Debug] AP="${ap.name}", type="${ap.type}", valueType="${
               ap.valueType
@@ -801,7 +806,7 @@ export default class Atom extends ObservableEntity {
               isDifferentFromDefault || hasCustomEquation || isMoleculeInput
             }`,
           );
-        }
+        }*/
 
         // Save if value changed from default OR has custom equation OR is a molecule input
         if (isDifferentFromDefault || hasCustomEquation || isMoleculeInput) {
