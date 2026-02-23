@@ -483,7 +483,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 
   // Keyboard navigation (skip disabled inputs)
   const handleKeyDown = (e) => {
-    console.log("Keydown in panel:", e.key);
     if (e.key === "ArrowDown") {
       let next = focusedIndex + 1;
       while (
@@ -511,8 +510,11 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
       }
       e.preventDefault();
     } else {
-      setFocusedIndex(0);
-      setShouldFocus(true);
+      //only focus if focus is not already on an input to avoid interfering with typing
+      if (focusedIndex === -1) {
+        setFocusedIndex(0);
+        setShouldFocus(true);
+      }
     }
   };
 
