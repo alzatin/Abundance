@@ -455,58 +455,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   // Only focus input on keyboard event, not on mount/controls change
   const [shouldFocus, setShouldFocus] = React.useState(false);
 
-  // Focus the first control when panel is opened (expanded and content not collapsed)
-  React.useEffect(() => {
-    if (!collapsed && !contentCollapsed && controlKeys.length > 0) {
-      setFocusedIndex(0);
-      setShouldFocus(true);
-      console.log("Focusing first control");
-      // Add keydown listener for Delete key on first control
-      const firstInput = inputRefs.current[0];
-      if (firstInput && typeof firstInput.addEventListener === "function") {
-        let removed = false;
-        // Focus canvas and delete node
-        const canvas =
-          document.getElementById("flow-canvas") ||
-          document.querySelector("canvas");
-        const handleDeleteKey = (e) => {
-          if (e.metaKey || e.ctrlKey) {
-            // Allow Command/Ctrl combos (copy, paste, etc.)
-            if (canvas) {
-              // Set ctrlDown to true so shortcut handler in flowCanvas works
-              if (window.GlobalVariables) {
-                window.GlobalVariables.ctrlDown = true;
-              }
-              canvas.focus();
-            }
-            return;
-          }
-          if (e.key === "Delete" || e.key === "Backspace") {
-            if (canvas) {
-              canvas.focus();
-            }
-            if (activeAtom) {
-              activeAtom.deleteNode();
-            }
-            e.preventDefault();
-          } else {
-            // Remove listener if any other key is pressed
-            if (!removed) {
-              firstInput.removeEventListener("keydown", handleDeleteKey);
-              removed = true;
-            }
-          }
-        };
-        firstInput.addEventListener("keydown", handleDeleteKey);
-        // Cleanup
-        return () => {
-          if (!removed)
-            firstInput.removeEventListener("keydown", handleDeleteKey);
-        };
-      }
-    }
-  }, [collapsed, contentCollapsed, controlKeys.length, inputRefs.current[0]]);
-
   // Focus the current control when focusedIndex changes and shouldFocus is true
   React.useEffect(() => {
     if (shouldFocus && inputRefs.current[focusedIndex]) {
@@ -561,6 +509,12 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
         setShouldFocus(true); // Ensure focus is applied
       }
       e.preventDefault();
+    } else {
+      //only focus if focus is not already on an input to avoid interfering with typing
+      if (focusedIndex === -1) {
+        setFocusedIndex(0);
+        setShouldFocus(true);
+      }
     }
   };
 

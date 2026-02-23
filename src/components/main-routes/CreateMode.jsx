@@ -231,13 +231,27 @@ function CreateMode() {
     }
   }, [activeAtom]);
 
+  /* SET AUTOSAVE INTERVAL */
+
+  useEffect(() => {
+    const myInterval = setInterval(() => {
+      setSavePopUp(true);
+      saveProject(setSaveState, "Auto Save");
+    }, 300000);
+
+    //Clearing the interval
+    return () => clearInterval(myInterval);
+  }, []);
+
+  /* ATTACH EVENT LISTENER FOR KEYBOARD SHORTCUTS */
+
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
-  // Attach keyup event listener
+
   useEffect(() => {
     window.addEventListener("keyup", handleKeyUp);
     return () => {
@@ -245,6 +259,7 @@ function CreateMode() {
     };
   }, []);
 
+  /* PANEL REFS OPEN */
   const expandedMenuRef = useRef(expandedMenu);
   useEffect(() => {
     expandedMenuRef.current = expandedMenu;
@@ -255,78 +270,84 @@ function CreateMode() {
    * @param {KeyboardEvent} e
    */
   const handleKeyDown = (e) => {
-    //Save project with Ctrl+S or Cmd+S (should work even when code is active)
+    // SAVE PROJECT- with Ctrl+S or Cmd+S
     if ((e.ctrlKey || e.metaKey) && e.key === "s") {
       e.preventDefault();
       setSavePopUp(true);
       saveProject(setSaveState, "User Save");
     }
 
-    //Copy /paste listeners
-    if (e.key == "Control" || e.key == "Meta") {
-      GlobalVariables.ctrlDown = true;
-    }
-    // Prevent forwarding if code atom is active, we don't want to interfere with code editing
+    // Prevent shortcuts if code editor or dialogs are active
     if (!document.getElementById("code-window").classList.contains("code-off"))
       return;
-    // Use ref to always get latest value
-    if (settingsPopUpRef.current) return; // Do not trigger shortcuts if settings popup is open
-    if (exportPopUpRef.current) return; // Do not trigger shortcuts if export popup is open
-    if (duplicateDialogRef.current) return; // Do not trigger shortcuts if duplicate dialog is open
-
-    // CTRL+SHIFT+I: Go up a level
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "U") {
-      e.preventDefault();
-      GlobalVariables.currentMolecule.goToParentMolecule();
-      setActiveAtom(GlobalVariables.currentMolecule);
-
+    if (
+      settingsPopUpRef.current ||
+      exportPopUpRef.current ||
+      duplicateDialogRef.current
+    )
       return;
+
+    // Track ctrl/meta key
+    if (e.key === "Control" || e.key === "Meta") {
+      GlobalVariables.ctrlDown = true;
     }
 
-    // CTRL+SHIFT+W: Toggle wireframe on/off
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "W") {
-      e.preventDefault();
-      setSolid(!solidParamRef.current);
-      return;
+    /* Organized shortcut handling */
+    // Copy/paste & other shortcuts get handled in flowcanvas
+    const shortcutCombos = [
+      {
+        key: "U",
+        action: () => {
+          GlobalVariables.currentMolecule.goToParentMolecule();
+          setActiveAtom(GlobalVariables.currentMolecule);
+        },
+      },
+      {
+        key: "W",
+        action: () => {
+          setSolid(!solidParamRef.current);
+        },
+      },
+      {
+        key: "A",
+        action: () => {
+          setShowTopLevelWireframe(!showTopLevelWireframeRef.current);
+        },
+      },
+    ];
+
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+      for (const combo of shortcutCombos) {
+        if (e.key === combo.key) {
+          e.preventDefault();
+          combo.action();
+          return;
+        }
+      }
     }
 
-    // CTRL+SHIFT+A: Toggle top level wireframe on/off
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "A") {
-      e.preventDefault();
-      setShowTopLevelWireframe(!showTopLevelWireframeRef.current);
-      return;
-    }
-
+    /* FORWARDING TO GIT SEARCH OR PARAMS PANEL - ALT KEY TOGGLE */
     if (
       (e.key === "Alt" || e.key === "AltGraph") &&
       !GlobalVariables.ctrlDown
     ) {
-      // Trigger GitSearch Panel when Option/Alt is pressed
       setExpandedMenu(
         expandedMenuRef.current === "git-search" ? "params" : "git-search",
       );
     } else {
-      if (expandedMenuRef.current === "git-search") {
+      if (
+        expandedMenuRef.current === "git-search" &&
+        !GlobalVariables.ctrlDown
+      ) {
         forwardKeyToGitPanel(e);
       }
-      if (expandedMenuRef.current !== "git-search") {
+      if (
+        expandedMenuRef.current !== "git-search" &&
+        !GlobalVariables.ctrlDown
+      ) {
         forwardKeyToPanel(e);
       }
     }
-    /*
-    // Example: Toggle shortcut display with Ctrl+/
-    if ((e.ctrlKey || e.metaKey) && e.key === "/") {
-      e.preventDefault();
-      setShortCuts((prev) => !prev);
-    }
-    // Add more shortcuts as needed
-    // Example: Focus code window with Ctrl+Y
-    if ((e.ctrlKey || e.metaKey) && e.key === "y") {
-      e.preventDefault();
-      const codeWindow = document.getElementById("codeWindowInput");
-      if (codeWindow) codeWindow.focus();
-    }*/
-    // Forward key to panel if needed
   };
   /**
    * Handles keyup events for keyboard shortcuts.
@@ -359,17 +380,6 @@ function CreateMode() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
-
-  useEffect(() => {
-    //Set autosave interval
-    const myInterval = setInterval(() => {
-      setSavePopUp(true);
-      saveProject(setSaveState, "Auto Save");
-    }, 300000);
-
-    //Clearing the interval
-    return () => clearInterval(myInterval);
   }, []);
 
   /**
