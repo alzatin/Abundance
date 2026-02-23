@@ -65,9 +65,15 @@ function TopMenu({
   const navigate = useNavigate();
 
   // Register progress bars with the manager
-  useProgressBar('save', savePopUp, saveState, 'Saving', false);
-  useProgressBar('duplicate', duplicatingProject, duplicateProgress, 'Duplicating', false);
-  useProgressBar('rename', renamingProject, renameProgress, 'Renaming', false);
+  useProgressBar("save", savePopUp, saveState, "Saving", false);
+  useProgressBar(
+    "duplicate",
+    duplicatingProject,
+    duplicateProgress,
+    "Duplicating",
+    false,
+  );
+  useProgressBar("rename", renamingProject, renameProgress, "Renaming", false);
 
   // Auto-hide save bar when complete
   useEffect(() => {
@@ -110,7 +116,7 @@ function TopMenu({
     const newProject = await duplicateProject(
       authorizedUserOcto,
       setDuplicateProgress,
-      customName
+      customName,
     );
 
     if (newProject) {
@@ -161,7 +167,7 @@ function TopMenu({
     const updatedProject = await renameProject(
       authorizedUserOcto,
       newName,
-      setRenameProgress
+      setRenameProgress,
     );
 
     setRenamingProject(false);
@@ -177,6 +183,13 @@ function TopMenu({
     }
   };
 
+  const closeNavbar = () => {
+    if (navbarOpenRef.current) {
+      navbarOpenRef.current = false;
+      setNavbarRenderTrigger((prev) => prev + 1);
+    }
+  };
+
   // objects for navigation items in the top menu
   const navItems = useMemo(
     () => [
@@ -185,7 +198,11 @@ function TopMenu({
         buttonFunc: () => {
           // Save current project state to localStorage before navigating
           // Note: owner and repoName come from GitHub's API and are validated by GitHub
-          if (GlobalVariables.topLevelMolecule && GlobalVariables.currentAWSnode?.owner && GlobalVariables.currentAWSnode?.repoName) {
+          if (
+            GlobalVariables.topLevelMolecule &&
+            GlobalVariables.currentAWSnode?.owner &&
+            GlobalVariables.currentAWSnode?.repoName
+          ) {
             const projectState = GlobalVariables.topLevelMolecule.serialize();
             projectState.filetypeVersion = 1;
             const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
@@ -337,7 +354,7 @@ function TopMenu({
       authRedirectHandler,
       setSettingsPopUp,
       setExportPopUp,
-    ]
+    ],
   );
 
   //{checks for top level variable and show go-up button if this is not top molecule
@@ -428,7 +445,10 @@ function TopMenu({
               <button
                 key={item.id}
                 className="menu-nav-button"
-                onClick={item.buttonFunc}
+                onClick={() => {
+                  item.buttonFunc();
+                  closeNavbar();
+                }}
               >
                 <img
                   className=" thumnail-logo"
