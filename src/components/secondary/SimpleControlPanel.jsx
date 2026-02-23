@@ -1,10 +1,35 @@
+// Eye icon for button controls
+const EyeIcon = ({ size = 16 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 20 20"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <ellipse
+      cx="10"
+      cy="10"
+      rx="8"
+      ry="5"
+      stroke="#8ea9ff"
+      strokeWidth="2"
+      fill="none"
+    />
+    <circle cx="10" cy="10" r="2.5" fill="#8ea9ff" />
+  </svg>
+);
 import React, {
   useState,
   useEffect,
   forwardRef,
   useImperativeHandle,
+  use,
 } from "react";
 import { useControls } from "../../hooks/useControls";
+import ReactMarkdown from "react-markdown";
+import TrashCanIcon from "../icons/TrashCanIcon";
+import { max } from "mathjs";
 
 // SVG icons (Settings, X, CaretDown)
 const SettingsIcon = ({ size = 14 }) => (
@@ -251,11 +276,44 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     contentCollapsed,
     setContentCollapsed,
     closeMenu,
+    activeAtom,
   },
-  ref
+  ref,
 ) {
   // Collapsed panel state
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const [activeEye, setActiveEye] = useState({});
+  // Resizing state
+  const [panelSize, setPanelSize] = useState({
+    width: minWidth,
+    height: maxHeight,
+  });
+  const panelRef = React.useRef();
+  const contentRef = React.useRef();
+  const resizingRef = React.useRef(false);
+  const lastMousePos = React.useRef({ x: 0, y: 0 });
+  // On mount, set initial height to fit content (up to maxHeight)
+  React.useEffect(() => {
+    if (
+      panelRef.current &&
+      contentRef.current &&
+      !collapsed &&
+      !contentCollapsed
+    ) {
+      // Use scrollHeight to get content height
+      const contentHeight = contentRef.current.scrollHeight;
+      // Add header/footer heights (header: 38px, footer: ~2px, padding: 24px)
+      const headerHeight = 38;
+      const footerHeight = 2;
+      const padding = 24;
+      let total = contentHeight + headerHeight + footerHeight + padding;
+      // Clamp to maxHeight
+      total = Math.min(total, maxHeight);
+      setPanelSize((prev) => ({ ...prev, height: total }));
+    }
+    // Only run on first mount or when controls/content change
+    // eslint-disable-next-line
+  }, [controls, collapsed, contentCollapsed]);
   // Sync collapsed state with contentCollapsed if initialCollapsed is true
   useEffect(() => {
     if (initialCollapsed) {
@@ -267,13 +325,42 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     triggerPanelKeyDown: (event) => {
       handlePanelKeyDown(event);
     },
+    getPanelSize: () => panelSize,
   }));
+
+  // Mouse event handlers for resizing
+  const handleResizeMouseDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizingRef.current = true;
+    lastMousePos.current = { x: e.clientX, y: e.clientY };
+    document.addEventListener("mousemove", handleResizeMouseMove);
+    document.addEventListener("mouseup", handleResizeMouseUp);
+  };
+
+  const handleResizeMouseMove = (e) => {
+    if (!resizingRef.current) return;
+    const dx = e.clientX - lastMousePos.current.x;
+    const dy = e.clientY - lastMousePos.current.y;
+    setPanelSize((prev) => {
+      let newWidth = Math.max(200, prev.width + dx);
+      let newHeight = Math.max(120, prev.height + dy);
+      return { width: newWidth, height: newHeight };
+    });
+    lastMousePos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleResizeMouseUp = () => {
+    resizingRef.current = false;
+    document.removeEventListener("mousemove", handleResizeMouseMove);
+    document.removeEventListener("mouseup", handleResizeMouseUp);
+  };
   const [controlValues, setControlValue, { controls: registeredControls }] =
-    useControls(controls);
+    useControls(controls, [controls]);
 
   // Focus management
   const controlKeys = Object.keys(controls);
-  const [focusedIndex, setFocusedIndex] = useState(0);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const [focusedListItem, setFocusedListItem] = useState({});
   const [focusedAxis, setFocusedAxis] = useState({});
   const inputRefs = React.useRef([]);
@@ -300,7 +387,11 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   // Commit changes to actual control values
   const commitChange = (key, value, config) => {
     // For number types, validate that the value is not NaN
-    if (config.type === "number" || config.type === "range") {
+    if (
+      config.type === "number" ||
+      config.type === "range" ||
+      config.type === "rangeSlider"
+    ) {
       if (isNaN(value) || value === null || value === undefined) {
         // Invalid number - revert to previous valid value
         setLocalValues((prev) => {
@@ -348,19 +439,73 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     }
   };
 
-  // Ensure initial values are set when controls prop changes
+  // Only reset focus if the keys of controls change
+  const prevControlKeys = React.useRef(Object.keys(controls));
   React.useEffect(() => {
-    Object.entries(controls).forEach(([key, config]) => {
-      if (config.value !== undefined) {
-        setControlValue(key, config.value);
-      }
-    });
-    setFocusedIndex(0); // Default focus to first control on controls change
-    setLocalValues({}); // Clear local values when controls change
+    const newKeys = Object.keys(controls);
+    if (
+      newKeys.length !== prevControlKeys.current.length ||
+      newKeys.some((k, i) => k !== prevControlKeys.current[i])
+    ) {
+      setFocusedIndex(-1);
+      prevControlKeys.current = newKeys;
+    }
+    setLocalValues({});
   }, [controls]);
-
   // Only focus input on keyboard event, not on mount/controls change
   const [shouldFocus, setShouldFocus] = React.useState(false);
+
+  // Focus the first control when panel is opened (expanded and content not collapsed)
+  React.useEffect(() => {
+    if (!collapsed && !contentCollapsed && controlKeys.length > 0) {
+      setFocusedIndex(0);
+      setShouldFocus(true);
+      console.log("Focusing first control");
+      // Add keydown listener for Delete key on first control
+      const firstInput = inputRefs.current[0];
+      if (firstInput && typeof firstInput.addEventListener === "function") {
+        let removed = false;
+        // Focus canvas and delete node
+        const canvas =
+          document.getElementById("flow-canvas") ||
+          document.querySelector("canvas");
+        const handleDeleteKey = (e) => {
+          if (e.metaKey || e.ctrlKey) {
+            // Allow Command/Ctrl combos (copy, paste, etc.)
+            if (canvas) {
+              // Set ctrlDown to true so shortcut handler in flowCanvas works
+              if (window.GlobalVariables) {
+                window.GlobalVariables.ctrlDown = true;
+              }
+              canvas.focus();
+            }
+            return;
+          }
+          if (e.key === "Delete" || e.key === "Backspace") {
+            if (canvas) {
+              canvas.focus();
+            }
+            if (activeAtom) {
+              activeAtom.deleteNode();
+            }
+            e.preventDefault();
+          } else {
+            // Remove listener if any other key is pressed
+            if (!removed) {
+              firstInput.removeEventListener("keydown", handleDeleteKey);
+              removed = true;
+            }
+          }
+        };
+        firstInput.addEventListener("keydown", handleDeleteKey);
+        // Cleanup
+        return () => {
+          if (!removed)
+            firstInput.removeEventListener("keydown", handleDeleteKey);
+        };
+      }
+    }
+  }, [collapsed, contentCollapsed, controlKeys.length, inputRefs.current[0]]);
 
   // Focus the current control when focusedIndex changes and shouldFocus is true
   React.useEffect(() => {
@@ -384,56 +529,45 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 
   // Listen for keyboard events on the panel to trigger focus
   const handlePanelKeyDown = (e) => {
-    // Focus if not already focused and key is printable or navigation
-    const isPrintable =
-      e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
-    const isNavigation = ["ArrowDown", "ArrowUp", "Tab"].includes(e.key);
-    if (!shouldFocus && (isPrintable || isNavigation)) {
-      setShouldFocus(true);
-    }
+    // Just pass through to handleKeyDown - it will set shouldFocus as needed
     handleKeyDown(e);
   };
 
   // Keyboard navigation (skip disabled inputs)
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
-      let next = focusedIndex;
-      do {
-        next = next + 1;
-      } while (
+      let next = focusedIndex + 1;
+      while (
         next < controlKeys.length &&
-        controls[controlKeys[next]]?.disabled
-      );
+        (controls[controlKeys[next]]?.disabled || !inputRefs.current[next])
+      ) {
+        next++;
+      }
       if (next < controlKeys.length) {
         setFocusedIndex(next);
+        setShouldFocus(true);
       }
       e.preventDefault();
     } else if (e.key === "ArrowUp") {
-      let prev = focusedIndex;
-      do {
-        prev = prev - 1;
-      } while (prev >= 0 && controls[controlKeys[prev]]?.disabled);
+      let prev = focusedIndex - 1;
+      while (
+        prev >= 0 &&
+        (controls[controlKeys[prev]]?.disabled || !inputRefs.current[prev])
+      ) {
+        prev--;
+      }
       if (prev >= 0) {
         setFocusedIndex(prev);
+        setShouldFocus(true); // Ensure focus is applied
       }
       e.preventDefault();
     }
   };
 
-  // Programmatic focus setter
-  const focusControl = (key) => {
-    const idx = controlKeys.indexOf(key);
-    if (idx !== -1) setFocusedIndex(idx);
-  };
-
-  // Only show values for existing controls
-  const filteredControlValues = Object.fromEntries(
-    Object.entries(controlValues).filter(([key]) => key in controls)
-  );
-
   return (
     <div
       id={id}
+      ref={panelRef}
       style={{
         ...panelVars,
         ...(collapsed
@@ -441,9 +575,11 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
           : {
               ...getPanelStyle(minWidth),
               ...position,
-              maxHeight: maxHeight ? `${maxHeight}px` : undefined,
-              maxWidth: minWidth ? `${minWidth}px` : undefined,
-              overflowY: maxHeight ? "clip" : undefined,
+              width: panelSize.width,
+              height: panelSize.height,
+              maxHeight: panelSize.height,
+              maxWidth: panelSize.width,
+              overflowY: panelSize.height ? "clip" : undefined,
               top:
                 (typeof position.top === "number"
                   ? position.top
@@ -455,7 +591,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
             }),
       }}
       tabIndex={-1}
-      onKeyDown={handlePanelKeyDown}
     >
       {/* Collapsed panel */}
       {collapsed && (
@@ -468,7 +603,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
             justifyContent: "center",
           }}
           onClick={() => (setCollapsed(false), setContentCollapsed())}
-          title="Open Panel"
+          title={`Open ${title}`}
         >
           {React.createElement(collapsedIcon, { size: 18 })}
         </div>
@@ -494,10 +629,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                 style={arrowButtonStyle}
                 onClick={() => {
                   if (contentCollapsed) {
-                    // Make this the active panel
-                    console.log(
-                      "uncollapsing and making this the active panel"
-                    );
                     setContentCollapsed();
                     if (initialCollapsed) setCollapsed(false);
                   } else if (initialCollapsed) {
@@ -511,8 +642,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                   contentCollapsed
                     ? "Open controls"
                     : initialCollapsed
-                    ? "Collapse panel"
-                    : "Active"
+                      ? "Collapse panel"
+                      : "Active"
                 }
               >
                 <CaretDownIcon size={14} collapsed={contentCollapsed} />
@@ -521,7 +652,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
           </div>
           {/* Controls */}
           {!contentCollapsed && (
-            <div style={getControlListStyle(maxHeight)}>
+            <div ref={contentRef} style={getControlListStyle(panelSize.height)}>
               {controlKeys.map((key, idx) => {
                 const config = controls[key];
                 const label = config.label;
@@ -547,7 +678,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                 // Get the current value - use local value if editing, otherwise committed value
                 const currentValue = localValues.hasOwnProperty(key)
                   ? localValues[key]
-                  : controlValues[key] ?? config.value;
+                  : (controlValues[key] ?? config.value);
                 const isFocused = focusedIndex === idx && !config.disabled;
                 const isDisabled = config.disabled;
                 const commonProps = {
@@ -567,8 +698,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                   style: isDisabled
                     ? { ...inputStyle, ...inputDisabledStyle }
                     : isFocused
-                    ? { ...inputStyle, ...inputFocusedStyle }
-                    : inputStyle,
+                      ? { ...inputStyle, ...inputFocusedStyle }
+                      : inputStyle,
                   disabled: isDisabled,
                 };
                 switch (config.type) {
@@ -611,12 +742,12 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         </span>
                         {["X", "Y", "Z"].map((axis, axisIdx) => {
                           const currentArrayValue = localValues.hasOwnProperty(
-                            key
+                            key,
                           )
                             ? localValues[key]
                             : Array.isArray(controlValues[key])
-                            ? controlValues[key]
-                            : [0, 0, 0];
+                              ? controlValues[key]
+                              : [0, 0, 0];
 
                           return (
                             <input
@@ -653,7 +784,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   } else {
                                     // Get the committed value from controlValues as fallback
                                     const committedValue = Array.isArray(
-                                      controlValues[key]
+                                      controlValues[key],
                                     )
                                       ? controlValues[key][i]
                                       : 0;
@@ -692,13 +823,17 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                       marginRight: 4,
                                     }
                                   : focusedAxis[key] === axisIdx && isFocused
-                                  ? {
-                                      ...inputStyle,
-                                      ...inputFocusedStyle,
-                                      width: 50,
-                                      marginRight: 4,
-                                    }
-                                  : { ...inputStyle, width: 50, marginRight: 4 }
+                                    ? {
+                                        ...inputStyle,
+                                        ...inputFocusedStyle,
+                                        width: 50,
+                                        marginRight: 4,
+                                      }
+                                    : {
+                                        ...inputStyle,
+                                        width: 50,
+                                        marginRight: 4,
+                                      }
                               }
                               ref={(el) => {
                                 if (!inputRefs.current[idx])
@@ -715,7 +850,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                     );
                   case "number":
                     return (
-                      <div key={key} style={labelStyle}>
+                      <div key={key} style={{ ...labelStyle }}>
                         <span
                           style={{
                             width: inputFullWidth ? 0 : 90,
@@ -912,7 +1047,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                               e.preventDefault();
                             } else if (e.key === "Enter") {
                               if (config.onItemClick && itemIdx !== -1) {
-                                console.log("Enter pressed on item", itemIdx);
                                 const item = config.value[itemIdx];
                                 config.onItemClick(item, itemIdx, e);
                               }
@@ -1007,12 +1141,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   onKeyDown={(e) => {
                                     if (config.onItemKeyDown)
                                       config.onItemKeyDown(item, itemIdx, e);
-                                    console.log(
-                                      "keydown item",
-                                      item,
-                                      itemIdx,
-                                      e.key
-                                    );
                                   }}
                                   onBlur={() =>
                                     setFocusedListItem({
@@ -1061,22 +1189,104 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             ) {
                               handleLocalChange(key, e.target.value);
                             } else {
-                              handleChange(numValue);
+                              handleLocalChange(key, numValue);
                             }
                           }}
                           onBlur={(e) => {
-                            const numValue = Number(e.target.value);
-                            commitChange(key, numValue, config);
+                            let value = currentValue;
+                            if (typeof value === "string") {
+                              // If user left an empty string or dash, revert to last committed value
+                              value = controlValues[key] ?? config.value ?? 0;
+                            }
+                            commitChange(key, value, config);
                           }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
-                              const numValue = Number(e.target.value);
-                              commitChange(key, numValue, config);
+                              let value = currentValue;
+                              if (typeof value === "string") {
+                                value = controlValues[key] ?? config.value ?? 0;
+                              }
+                              commitChange(key, value, config);
                               e.preventDefault();
                             }
                           }}
                           {...commonProps}
                         />
+                      </div>
+                    );
+                  case "rangeSlider":
+                    return (
+                      <div key={key} style={labelStyle}>
+                        <span
+                          style={{
+                            width: inputFullWidth ? 0 : "100px",
+                            color: isDisabled
+                              ? inputDisabledStyle.color
+                              : undefined,
+                            overflow: "clip",
+                          }}
+                          title={label}
+                        >
+                          {label}:
+                        </span>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            width: "90%",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              flex: 1,
+                              gap: 4,
+                              width: "90%",
+                            }}
+                          >
+                            <input
+                              type="range"
+                              value={currentValue ?? config.min ?? 0}
+                              min={config.min ?? 0}
+                              max={config.max ?? 100}
+                              step={config.step ?? 1}
+                              onChange={(e) => {
+                                const numValue = Number(e.target.value);
+                                handleChange(numValue);
+                              }}
+                              onMouseUp={(e) => {
+                                const numValue = Number(e.target.value);
+                                commitChange(key, numValue, config);
+                              }}
+                              onTouchEnd={(e) => {
+                                const numValue = Number(e.target.value);
+                                commitChange(key, numValue, config);
+                              }}
+                              disabled={isDisabled}
+                              {...commonProps}
+                              style={{
+                                width: "95%",
+                                cursor: isDisabled ? "not-allowed" : "pointer",
+                                //accentColor: "var(--control-accent)",
+                              }}
+                            />
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                fontSize: 11,
+                                color: "var(--control-text-muted)",
+                              }}
+                            >
+                              <span>{config.min ?? 0}</span>
+                              <span style={{ fontWeight: 600 }}>
+                                {currentValue ?? config.min ?? 0}
+                              </span>
+                              <span>{config.max ?? 100}</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     );
                   case "boolean":
@@ -1163,14 +1373,25 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                     );
                   case "string":
                     return (
-                      <div key={key} style={labelStyle}>
+                      <div
+                        key={key}
+                        style={{
+                          ...labelStyle,
+                        }}
+                      >
                         <span
                           style={{
-                            width: inputFullWidth ? 0 : 90,
+                            width: inputFullWidth
+                              ? 0
+                              : panelRef.current
+                                ? panelRef.current.offsetWidth * 0.4
+                                : 90,
                             color: isDisabled
                               ? inputDisabledStyle.color
                               : undefined,
+                            overflow: "clip",
                           }}
+                          title={label}
                         >
                           {label}
                           {label ? ":" : ""}
@@ -1225,7 +1446,10 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                               {...commonProps}
                               style={{
                                 ...inputStyle,
-                                width: 120,
+                                width:
+                                  typeof config.onRemove === "function"
+                                    ? 50
+                                    : 70,
                                 marginRight: 4,
                                 ...(isDisabled ? inputDisabledStyle : {}),
                               }}
@@ -1305,6 +1529,35 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   </button>
                                 </div>
                               )}
+                            {/* Trash can button appended to the right (optional) */}
+                            {typeof config.onRemove === "function" && (
+                              <button
+                                type="button"
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  marginLeft: 6,
+                                  padding: 0,
+                                  border: "none",
+                                  background: "transparent",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  //cursor: isDisabled
+                                  //</div>  ? "not-allowed"
+                                  //  : "pointer",
+                                  //opacity: isDisabled ? 0.5 : 1,
+                                }}
+                                disabled={false}
+                                tabIndex={isDisabled ? -1 : 0}
+                                aria-label="Remove"
+                                onClick={() => {
+                                  config.onRemove(key);
+                                }}
+                              >
+                                <TrashCanIcon size={16} />
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1330,8 +1583,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             isDisabled
                               ? { ...colorStyle, ...inputDisabledStyle }
                               : isFocused
-                              ? { ...colorStyle, ...inputFocusedStyle }
-                              : colorStyle
+                                ? { ...colorStyle, ...inputFocusedStyle }
+                                : colorStyle
                           }
                           ref={(el) => (inputRefs.current[idx] = el)}
                           tabIndex={isDisabled ? -1 : 0}
@@ -1348,10 +1601,11 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                       <div key={key} style={labelStyle}>
                         <span
                           style={{
-                            width: 90,
+                            width: inputFullWidth ? 0 : 70,
                             color: isDisabled
                               ? inputDisabledStyle.color
                               : undefined,
+                            overflow: "clip",
                           }}
                         >
                           {label}:
@@ -1376,6 +1630,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             }
                             handleChange(value);
                           }}
+                          onKeyDown={(e) => {}}
+                          onBlur={() => {}}
                           {...commonProps}
                         >
                           {Array.isArray(config.options)
@@ -1389,7 +1645,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                                   <option key={val} value={val}>
                                     {label}
                                   </option>
-                                )
+                                ),
                               )}
                         </select>
                       </div>
@@ -1397,62 +1653,112 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                   case "button":
                     return (
                       <div key={key} style={labelStyle}>
-                        <button
+                        <div
                           style={{
-                            ...(isDisabled
-                              ? {
-                                  ...inputStyle,
-                                  ...inputDisabledStyle,
-                                  cursor: "not-allowed",
-                                  fontWeight: 600,
-                                  background: "#3e7aff",
-                                  color: "#fff",
-                                  border: "none",
-                                  padding: "6px 16px",
-                                }
-                              : isFocused
-                              ? {
-                                  ...inputStyle,
-                                  ...inputFocusedStyle,
-                                  cursor: "pointer",
-                                  fontWeight: 600,
-                                  background: "#3e7aff",
-                                  color: "#fff",
-                                  padding: "6px 16px",
-                                }
-                              : {
-                                  ...inputStyle,
-                                  cursor: "pointer",
-                                  fontWeight: 600,
-                                  background: "#3e7aff",
-                                  color: "#fff",
-                                  border: "none",
-                                  padding: "6px 16px",
-                                }),
-                            ...(config.lowOpacity ? { opacity: 0.5 } : {}),
+                            display: "flex",
+                            alignItems: "center",
+                            width: "100%",
                           }}
-                          title={
-                            label ||
-                            (typeof config.label === "string"
-                              ? config.label
-                              : undefined) ||
-                            "Button"
-                          }
-                          onClick={() => {
-                            if (typeof config.onClick === "function") {
-                              config.onClick(key);
-                            }
-                          }}
-                          ref={(el) => (inputRefs.current[idx] = el)}
-                          tabIndex={isDisabled ? -1 : 0}
-                          onFocus={
-                            isDisabled ? undefined : () => setFocusedIndex(idx)
-                          }
-                          onBlur={() => {}}
-                          disabled={isDisabled}
                         >
-                          {config.icon ? config.icon : label || "Button"}
-                        </button>
+                          <button
+                            style={{
+                              ...(isDisabled
+                                ? {
+                                    ...inputStyle,
+                                    ...inputDisabledStyle,
+                                    cursor: "not-allowed",
+                                    fontWeight: 600,
+                                    background: "#3e7aff",
+                                    color: "#fff",
+                                    border: "none",
+                                    padding: "6px 16px",
+                                  }
+                                : isFocused
+                                  ? {
+                                      ...inputStyle,
+                                      ...inputFocusedStyle,
+                                      cursor: "pointer",
+                                      fontWeight: 600,
+                                      background: "#3e7aff",
+                                      color: "#fff",
+                                      padding: "6px 16px",
+                                    }
+                                  : {
+                                      ...inputStyle,
+                                      cursor: "pointer",
+                                      fontWeight: 600,
+                                      background: "#3e7aff",
+                                      color: "#fff",
+                                      border: "none",
+                                      padding: "6px 16px",
+                                    }),
+                              ...(config.lowOpacity ? { opacity: 0.5 } : {}),
+                            }}
+                            title={
+                              label ||
+                              (typeof config.label === "string"
+                                ? config.label
+                                : undefined) ||
+                              "Button"
+                            }
+                            onClick={() => {
+                              if (typeof config.onClick === "function") {
+                                config.onClick(key);
+                              }
+                            }}
+                            ref={(el) => (inputRefs.current[idx] = el)}
+                            tabIndex={isDisabled ? -1 : 0}
+                            onFocus={
+                              isDisabled
+                                ? undefined
+                                : () => setFocusedIndex(idx)
+                            }
+                            onBlur={() => {}}
+                            disabled={isDisabled}
+                          >
+                            {config.icon ? config.icon : label || "Button"}
+                          </button>
+                          {/* Eye icon appended to the right (optional) */}
+                          {config.eyeIcon && (
+                            <button
+                              type="button"
+                              style={{
+                                width: 24,
+                                height: 24,
+                                marginLeft: 6,
+                                padding: 0,
+                                border: `2px solid ${
+                                  activeEye[key] ? "#1850bef1" : "transparent"
+                                }`,
+
+                                background: activeEye[key]
+                                  ? "#e0e5ef"
+                                  : "transparent", // Example: highlight when active
+                                borderRadius: "20%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor: isDisabled ? "not-allowed" : "pointer",
+                                opacity: isDisabled ? 0.5 : 1,
+                              }}
+                              disabled={isDisabled}
+                              tabIndex={isDisabled ? -1 : 0}
+                              aria-label="Preview"
+                              onClick={() => {
+                                setActiveEye((prev) => ({
+                                  ...prev,
+                                  [key]: !prev[key],
+                                }));
+                                if (typeof config.eyeIcon === "function") {
+                                  config.eyeIcon(key);
+                                }
+                              }}
+                              title={`Preview ${label}`}
+                            >
+                              <EyeIcon size={16} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   case "buttongroup":
@@ -1499,6 +1805,159 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         ))}
                       </div>
                     );
+                  case "markdown":
+                    return (
+                      <div
+                        key={key}
+                        style={{
+                          ...labelStyle,
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "90%",
+                            padding: "8px 12px",
+                            fontSize: 14,
+                            borderRadius: 4,
+                            border: "1px solid #333741",
+                            background: "#242834",
+                            color: "#e0e5ef",
+                            maxHeight: config.maxHeight || "300px",
+                            overflowY: "auto",
+                            lineHeight: "1.6",
+                          }}
+                        >
+                          <ReactMarkdown
+                            components={{
+                              h1: ({ ...props }) => (
+                                <h1
+                                  style={{
+                                    fontSize: "1.5em",
+                                    fontWeight: 600,
+                                    marginTop: "16px",
+                                    marginBottom: "8px",
+                                    color: "#c4a3d5",
+                                  }}
+                                  {...props}
+                                />
+                              ),
+                              h2: ({ ...props }) => (
+                                <h2
+                                  style={{
+                                    fontSize: "1.3em",
+                                    fontWeight: 600,
+                                    marginTop: "14px",
+                                    marginBottom: "8px",
+                                    color: "#dec9e0",
+                                  }}
+                                  {...props}
+                                />
+                              ),
+                              h3: ({ ...props }) => (
+                                <h3
+                                  style={{
+                                    fontSize: "1.15em",
+                                    fontWeight: 600,
+                                    marginTop: "12px",
+                                    marginBottom: "6px",
+                                    color: "#dec9e0",
+                                  }}
+                                  {...props}
+                                />
+                              ),
+                              p: ({ ...props }) => (
+                                <p
+                                  style={{ marginTop: 0, marginBottom: "12px" }}
+                                  {...props}
+                                />
+                              ),
+                              ul: ({ ...props }) => (
+                                <ul
+                                  style={{
+                                    paddingLeft: "1.5em",
+                                    marginTop: 0,
+                                    marginBottom: "12px",
+                                  }}
+                                  {...props}
+                                />
+                              ),
+                              ol: ({ ...props }) => (
+                                <ol
+                                  style={{
+                                    paddingLeft: "1.5em",
+                                    marginTop: 0,
+                                    marginBottom: "12px",
+                                  }}
+                                  {...props}
+                                />
+                              ),
+                              li: ({ ...props }) => (
+                                <li
+                                  style={{ marginTop: "0.25em" }}
+                                  {...props}
+                                />
+                              ),
+                              code: ({ inline, ...props }) =>
+                                inline ? (
+                                  <code
+                                    style={{
+                                      padding: "0.2em 0.4em",
+                                      fontSize: "85%",
+                                      backgroundColor:
+                                        "rgba(196, 163, 213, 0.2)",
+                                      borderRadius: "3px",
+                                      color: "#c4a3d5",
+                                    }}
+                                    {...props}
+                                  />
+                                ) : (
+                                  <code
+                                    style={{
+                                      display: "block",
+                                      padding: "12px",
+                                      fontSize: "85%",
+                                      backgroundColor: "#3f4243",
+                                      borderRadius: "4px",
+                                      marginBottom: "12px",
+                                      color: "#e0e5ef",
+                                      overflowX: "auto",
+                                    }}
+                                    {...props}
+                                  />
+                                ),
+                              strong: ({ ...props }) => (
+                                <strong
+                                  style={{ fontWeight: 600, color: "#c4a3d5" }}
+                                  {...props}
+                                />
+                              ),
+                              em: ({ ...props }) => (
+                                <em
+                                  style={{
+                                    fontStyle: "italic",
+                                    color: "#dec9e0",
+                                  }}
+                                  {...props}
+                                />
+                              ),
+                              a: ({ ...props }) => (
+                                <a
+                                  style={{
+                                    color: "#be3fe5",
+                                    textDecoration: "none",
+                                  }}
+                                  {...props}
+                                />
+                              ),
+                            }}
+                          >
+                            {currentValue || ""}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    );
                   default:
                     return null;
                 }
@@ -1531,6 +1990,36 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
             </div>
           )}
         </>
+      )}
+      {/* Resize handle: bottom-right corner */}
+      {!collapsed && (
+        <div
+          style={{
+            position: "absolute",
+            right: 0,
+            bottom: 0,
+            width: 18,
+            height: 18,
+            cursor: "nwse-resize",
+            zIndex: 20,
+            background: "transparent",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "flex-end",
+            userSelect: "none",
+          }}
+          onMouseDown={handleResizeMouseDown}
+        >
+          <svg width="18" height="18" style={{ pointerEvents: "none" }}>
+            <path
+              d="M4,15 Q15,15 15,4"
+              fill="none"
+              stroke="#626163"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
       )}
     </div>
   );

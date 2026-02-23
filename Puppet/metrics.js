@@ -1,8 +1,40 @@
 import puppeteer from "puppeteer";
 import projects_to_test from "./projects_to_test.js";
 
+/**
+ * Abundance Performance Metrics Test
+ * 
+ * This script measures various performance metrics for Abundance projects:
+ * 
+ * 1. Load Time Metrics:
+ *    - Cold load time: Time to fully render project on first load
+ *    - Warm load time: Time to render project with cache available
+ * 
+ * 2. Cache Metrics:
+ *    - IndexedDB cache size and entry count
+ *    - Per-key cache sizes for detailed analysis
+ * 
+ * 3. Project File Metrics:
+ *    - Serialized project file size
+ *    - Project structure and content
+ * 
+ * 4. GCode Generation Metrics (NEW):
+ *    - GCode generation time per atom
+ *    - GCode output size (lines and commands)
+ *    - Visualization performance
+ *    - Support for both single parts and assemblies
+ * 
+ * Usage:
+ *   node Puppet/metrics.js > metrics.json
+ * 
+ * The script outputs both human-readable summaries and JSON for automated comparisons.
+ */
+
 const projectUser = "moatmaslow";
-const CACHE_WAIT_TIME_MS = 3000; // Wait time for cache operations to complete
+
+// GCode generation timeout and polling configuration
+const GCODE_GENERATION_TIMEOUT_MS = 60000; // 60 seconds max for GCode generation
+const GCODE_POLLING_INTERVAL_MS = 100; // Check generation status every 100ms
 
 /**
  * Get the size of IndexedDB database storage
@@ -14,55 +46,56 @@ async function getIndexedDBSize(page, dbName) {
   return await page.evaluate(async (dbName) => {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(dbName);
-      
-      request.onsuccess = function(event) {
+
+      request.onsuccess = function (event) {
         const db = event.target.result;
         let totalSize = 0;
-        
+
         // Get all object stores
         const storeNames = Array.from(db.objectStoreNames);
-        
+
         if (storeNames.length === 0) {
           db.close();
-          resolve(0);
+          resolve({ totalSize: 0, entryCount: 0 });
           return;
         }
-        
+
         try {
-          const transaction = db.transaction(storeNames, 'readonly');
-          let processedStores = 0;
-          
-          transaction.onerror = function() {
+          const transaction = db.transaction(storeNames, "readonly");
+
+          transaction.onerror = function () {
             db.close();
-            reject(new Error('Transaction error: ' + transaction.error));
+            reject(new Error("Transaction error: " + transaction.error));
           };
-          
-          storeNames.forEach(storeName => {
+
+          const keyedSizes = {};
+
+          storeNames.forEach((storeName) => {
             const objectStore = transaction.objectStore(storeName);
-            const getAllRequest = objectStore.getAll();
-            
-            getAllRequest.onsuccess = function() {
-              const records = getAllRequest.result;
-              
-              // Calculate size of all records in this store
-              records.forEach(record => {
+            const request = objectStore.openCursor();
+            request.onsuccess = function () {
+              const cursor = request.result;
+              if (cursor) {
+                const record = cursor.value;
                 const recordString = JSON.stringify(record);
-                // Use Blob size for more accurate byte count
-                const blob = new Blob([recordString]);
-                totalSize += blob.size;
-              });
-              
-              processedStores++;
-              
-              if (processedStores === storeNames.length) {
+                const recordBlob = new Blob([recordString]);
+                const keyBlob = new Blob([JSON.stringify(cursor.key)]);
+                totalSize += recordBlob.size + keyBlob.size;
+                keyedSizes[cursor.key] = recordBlob.size;
+                cursor.continue();
+              } else {
                 db.close();
-                resolve(totalSize);
+                resolve({
+                  totalSize,
+                  entryCount: Object.keys(keyedSizes).length,
+                  keyedSizes,
+                });
               }
             };
-            
-            getAllRequest.onerror = function() {
+
+            request.onerror = function () {
               db.close();
-              reject(new Error('ObjectStore error: ' + getAllRequest.error));
+              reject(new Error("ObjectStore error: " + request.error));
             };
           });
         } catch (err) {
@@ -70,9 +103,9 @@ async function getIndexedDBSize(page, dbName) {
           reject(err);
         }
       };
-      
-      request.onerror = function() {
-        reject(new Error('Database open error: ' + request.error));
+
+      request.onerror = function () {
+        reject(new Error("Database open error: " + request.error));
       };
     });
   }, dbName);
@@ -85,24 +118,237 @@ async function getIndexedDBSize(page, dbName) {
 async function clearIndexedDBCache(browser) {
   const page = await browser.newPage();
   try {
-    await page.goto('http://localhost:4444', { timeout: 30000, waitUntil: 'domcontentloaded' });
+    await page.goto("http://localhost:4444", {
+      timeout: 30000,
+      waitUntil: "load",
+    });
     await page.evaluate(() => {
       return new Promise((resolve, reject) => {
-        const request = indexedDB.deleteDatabase('AbundanceProjectCaches');
-        request.onsuccess = () => resolve();
+        const request = indexedDB.deleteDatabase("AbundanceProjectCaches");
+        request.onsuccess = () => {
+          console.log("got a success response from db deletion");
+          resolve();
+        };
         request.onerror = () => reject(request.error);
         request.onblocked = () => {
-          console.log('IndexedDB deletion blocked');
-          resolve(); // Continue anyway
+          console.log("IndexedDB deletion blocked");
+          reject("Indexdb deletion was blocked");
         };
       });
     });
-    console.log('✓ IndexedDB cache cleared');
+    console.log("✓ IndexedDB cache cleared");
   } catch (error) {
-    console.log('⚠ Could not clear IndexedDB cache:', error.message);
-  } finally {
-    await page.close();
+    console.log("⚠ Could not clear IndexedDB cache:", error.message);
   }
+}
+/**
+ * Gets size of the serialized top level molecule in the project
+ * @param {} page
+ * @returns
+ */
+async function getProjectFileSize(page) {
+  return await page.evaluate(() => {
+    try {
+      // Access the global variable (adjust path if needed)
+      if (!window.GlobalVarsForPuppeteer?.topLevelMolecule) {
+        throw new Error("window.GlobalVarsForPuppeteer not found");
+      }
+
+      // Call serialize on the molecule
+      const serialized =
+        window.GlobalVarsForPuppeteer.topLevelMolecule.serialize();
+      console.log("Serialized project:", serialized);
+      // Convert to JSON string and measure size
+      const jsonString = JSON.stringify(serialized, null, 2);
+      const blob = new Blob([jsonString]);
+
+      return {
+        size: blob.size,
+        rawJson: serialized,
+      };
+    } catch (error) {
+      console.error("Error getting project file size:", error);
+      return { size: 0, rawJson: "", error: error.message };
+    }
+  });
+}
+/**
+ * Get GCode generation and visualization metrics
+ * 
+ * This function measures performance metrics for GCode generation and visualization:
+ * - Recursively detects all GCode atoms in the project (including those inside nested molecules and GitHub molecules)
+ * - Triggers GCode generation if not already generated
+ * - Measures the time taken to generate GCode
+ * - Measures the time taken to visualize GCode (via visualizeGcodeIncremental)
+ * - Counts GCode lines and commands
+ * - Tracks the size of the generated GCode
+ * 
+ * The metrics help identify:
+ * - Performance regressions in GCode generation
+ * - Performance regressions in GCode visualization
+ * - Changes in GCode output size/complexity
+ * - Visualization performance for different GCode sizes
+ * 
+ * @param {Object} page - Puppeteer page object
+ * @returns {Promise<Object>} GCode metrics object containing:
+ *   - hasGcodeAtom: boolean - whether the project has any GCode atoms
+ *   - gcodeAtomCount: number - count of GCode atoms found (including nested ones)
+ *   - atoms: array - metrics for each GCode atom including:
+ *     - atomName: string - name of the atom
+ *     - gcodeGenerated: boolean - whether GCode was generated
+ *     - gcodeLength: number - length of GCode string in characters
+ *     - gcodeLineCount: number - number of lines in GCode
+ *     - gcodeCommandCount: number - number of G/M commands
+ *     - generationTimeMs: number - time to generate GCode in milliseconds
+ *     - visualizationTimeMs: number - time to visualize GCode in milliseconds
+ *     - generationError: string - error message if generation failed
+ *     - visualizationError: string - error message if visualization failed
+ */
+async function getGcodeMetrics(page) {
+  return await page.evaluate(async () => {
+    try {
+      // Access the global variable to get the top-level molecule
+      if (!window.GlobalVarsForPuppeteer?.topLevelMolecule) {
+        return {
+          hasGcodeAtom: false,
+          error: "GlobalVarsForPuppeteer.topLevelMolecule not found",
+        };
+      }
+
+      const molecule = window.GlobalVarsForPuppeteer.topLevelMolecule;
+
+      // Recursively find all Gcode atoms in the project, including those inside nested molecules and GitHub molecules
+      const findAllGcodeAtoms = (mol) => {
+        let gcodeAtoms = [];
+        
+        if (!mol.nodesOnTheScreen || !Array.isArray(mol.nodesOnTheScreen)) {
+          return gcodeAtoms;
+        }
+        
+        mol.nodesOnTheScreen.forEach((atom) => {
+          if (atom.atomType === "Gcode") {
+            gcodeAtoms.push(atom);
+          }
+          // Recursively search inside Molecule and GitHubMolecule atoms
+          if (atom.atomType === "Molecule" || atom.atomType === "GitHubMolecule") {
+            const nestedGcodeAtoms = findAllGcodeAtoms(atom);
+            gcodeAtoms = gcodeAtoms.concat(nestedGcodeAtoms);
+          }
+        });
+        
+        return gcodeAtoms;
+      };
+
+      // Find all Gcode atoms in the project (including nested ones)
+      const gcodeAtoms = findAllGcodeAtoms(molecule);
+
+      if (gcodeAtoms.length === 0) {
+        return {
+          hasGcodeAtom: false,
+          gcodeAtomCount: 0,
+        };
+      }
+
+      // Collect metrics from all GCode atoms
+      const gcodeMetrics = [];
+
+      for (const gcodeAtom of gcodeAtoms) {
+        const atomMetrics = {
+          atomName: gcodeAtom.name || "Gcode",
+          gcodeGenerated: gcodeAtom.gcodeGenerated || false,
+          gcodeLength: gcodeAtom.gcodeString
+            ? gcodeAtom.gcodeString.length
+            : 0,
+          isGenerating: gcodeAtom.isGenerating || false,
+          progress: gcodeAtom.progress || 0,
+        };
+
+        // If the GCode hasn't been generated yet, try to generate it and measure
+        if (!gcodeAtom.gcodeGenerated) {
+          try {
+            // Trigger GCode generation and measure time
+            const genStartTime = performance.now();
+
+            // Create a promise that resolves when generation completes
+            const generationPromise = new Promise((resolve, reject) => {
+              const timeout = setTimeout(
+                () => reject(new Error("GCode generation timeout")),
+                GCODE_GENERATION_TIMEOUT_MS
+              );
+
+              // Check if generation completes by polling the gcodeGenerated flag
+              const checkInterval = setInterval(() => {
+                if (gcodeAtom.gcodeGenerated) {
+                  clearInterval(checkInterval);
+                  clearTimeout(timeout);
+                  resolve();
+                }
+              }, GCODE_POLLING_INTERVAL_MS);
+            });
+
+            // Trigger generation - both methods might be async, so we await the promise instead
+            if (typeof gcodeAtom._generateGcode === "function") {
+              gcodeAtom._generateGcode(); // Fire and forget - promise handles completion
+            } else if (typeof gcodeAtom.onUpstreamChange === "function") {
+              gcodeAtom.onUpstreamChange(); // Fire and forget - promise handles completion
+            }
+
+            // Wait for generation to complete
+            await generationPromise;
+
+            const genEndTime = performance.now();
+            atomMetrics.generationTimeMs = genEndTime - genStartTime;
+            atomMetrics.gcodeLength = gcodeAtom.gcodeString
+              ? gcodeAtom.gcodeString.length
+              : 0;
+          } catch (error) {
+            atomMetrics.generationError = error.message;
+          }
+        }
+
+        // Measure visualization time by triggering visualizeGcodeIncremental
+        if (gcodeAtom.gcodeGenerated && gcodeAtom.gcodeString) {
+          try {
+            const vizStartTime = performance.now();
+            
+            // Call visualizeGcodeIncremental to measure visualization performance
+            const gcodeWire = await window.GlobalVarsForPuppeteer.cad.visualizeGcodeIncremental(
+              [gcodeAtom.gcodeString],
+              { project: "metrics-test" }
+            );
+            
+            const vizEndTime = performance.now();
+            atomMetrics.visualizationTimeMs = vizEndTime - vizStartTime;
+          } catch (error) {
+            atomMetrics.visualizationError = error.message;
+          }
+        }
+
+        // Count number of gcode lines
+        if (gcodeAtom.gcodeString) {
+          const lines = gcodeAtom.gcodeString.split("\n");
+          atomMetrics.gcodeLineCount = lines.length;
+          // Count G-code commands (lines starting with G or M)
+          atomMetrics.gcodeCommandCount = lines.filter((line) =>
+            /^\s*[GM]\d/.test(line)
+          ).length;
+        }
+
+        gcodeMetrics.push(atomMetrics);
+      }
+
+      return {
+        hasGcodeAtom: true,
+        gcodeAtomCount: gcodeAtoms.length,
+        atoms: gcodeMetrics,
+      };
+    } catch (error) {
+      return {
+        hasGcodeAtom: false,
+        error: error.message,
+      };
+    }
+  });
 }
 
 /**
@@ -117,9 +363,14 @@ async function runMetricsTest(browser, projectName) {
     projectName,
     timestamp: new Date().toISOString(),
     coldLoadTimeMs: null,
+    warmLoadTimeMs: null,
     cacheSize: null,
     cacheSizeFormatted: null,
-    error: null
+    cacheEntryCount: null,
+    projectFileSize: null,
+    projectFileSizeFormatted: null,
+    gcodeMetrics: null,
+    error: null,
   };
 
   try {
@@ -129,39 +380,84 @@ async function runMetricsTest(browser, projectName) {
     const navigationUrl = `http://localhost:4444/run/${projectUser}/${projectName}`;
     console.log(`\nTesting metrics for: ${projectName}`);
     console.log(`URL: ${navigationUrl}`);
-
-    // Start timing
-    const startTime = Date.now();
+    const projectReadySelector = "#molecule-fully-render-puppeteer";
+    const canvasSelector = "#flow-canvas";
 
     // Navigate to the project
-    await page.goto(navigationUrl, { 
+    await page.goto(navigationUrl, {
       timeout: 120000,
-      waitUntil: 'domcontentloaded' 
+      waitUntil: "load",
     });
 
+    await page.waitForSelector(canvasSelector, { timeout: 200000 });
     // Wait for the project to fully render
-    const selector = "#molecule-fully-render-puppeteer";
-    await page.waitForFunction(
-      (selector) => !!document.querySelector(selector),
-      { timeout: 120000 },
-      selector
-    );
-
-    // Wait a bit more to ensure all caching is complete
-    await new Promise((resolve) => setTimeout(resolve, CACHE_WAIT_TIME_MS));
+    const startTime = Date.now();
+    await page.waitForSelector(projectReadySelector, { timeout: 120000 });
 
     // Calculate cold load time
     const endTime = Date.now();
     metrics.coldLoadTimeMs = endTime - startTime;
 
     // Measure IndexedDB cache size
-    const cacheSize = await getIndexedDBSize(page, 'AbundanceProjectCaches');
-    metrics.cacheSize = cacheSize;
-    metrics.cacheSizeFormatted = formatBytes(cacheSize);
+    const cacheMetrics = await getIndexedDBSize(page, "AbundanceProjectCaches");
+    metrics.cacheSize = cacheMetrics.totalSize;
+    metrics.cacheSizeFormatted = formatBytes(cacheMetrics.totalSize);
+    metrics.cacheEntryCount = cacheMetrics.entryCount;
+    metrics.cacheKeyedSizes = cacheMetrics.keyedSizes;
 
-    console.log(`✓ Cold load time: ${metrics.coldLoadTimeMs}ms`);
-    console.log(`✓ Cache size: ${metrics.cacheSizeFormatted} (${metrics.cacheSize} bytes)`);
+    // Warm load
+    await page.reload({ waitUntil: "load", timeout: 120000 });
+    await page.waitForSelector(canvasSelector, { timeout: 200000 });
+    const warmStartTime = Date.now();
+    await page.waitForSelector(projectReadySelector, { timeout: 120000 });
+    const warmEndTime = Date.now();
+    metrics.warmLoadTimeMs = warmEndTime - warmStartTime;
 
+    // Project save size
+    const projectFileMetrics = await getProjectFileSize(page);
+    if (projectFileMetrics.error) {
+      throw new Error(
+        `Error getting project file size: ${projectFileMetrics.error}`
+      );
+    }
+    metrics.projectFileSize = projectFileMetrics.size;
+    metrics.projectFileSizeFormatted = formatBytes(projectFileMetrics.size);
+    metrics.projectFileRawJson = projectFileMetrics.rawJson;
+
+    // GCode generation and visualization performance metrics
+    console.log("  Measuring GCode metrics...");
+    const gcodeMetrics = await getGcodeMetrics(page);
+    metrics.gcodeMetrics = gcodeMetrics;
+
+    // Log GCode metrics summary
+    if (gcodeMetrics.hasGcodeAtom) {
+      console.log(
+        `  Found ${gcodeMetrics.gcodeAtomCount} GCode atom(s) in project`
+      );
+      if (gcodeMetrics.atoms) {
+        gcodeMetrics.atoms.forEach((atom, idx) => {
+          console.log(`  GCode Atom ${idx + 1}:`);
+          if (atom.generationTimeMs) {
+            console.log(`    Generation Time: ${atom.generationTimeMs.toFixed(2)}ms`);
+          }
+          if (atom.visualizationTimeMs) {
+            console.log(`    Visualization Time: ${atom.visualizationTimeMs.toFixed(2)}ms`);
+          }
+          if (atom.gcodeLineCount) {
+            console.log(`    GCode Lines: ${atom.gcodeLineCount}`);
+            console.log(`    GCode Commands: ${atom.gcodeCommandCount}`);
+          }
+          if (atom.generationError) {
+            console.log(`    Generation Error: ${atom.generationError}`);
+          }
+          if (atom.visualizationError) {
+            console.log(`    Visualization Error: ${atom.visualizationError}`);
+          }
+        });
+      }
+    } else {
+      console.log("  No GCode atoms found in project");
+    }
   } catch (error) {
     metrics.error = error.message;
     console.error(`✗ Error testing ${projectName}: ${error.message}`);
@@ -178,11 +474,14 @@ async function runMetricsTest(browser, projectName) {
  * @returns {string} Formatted string
  */
 function formatBytes(bytes) {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0 Bytes";
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+  const i = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(k)),
+    sizes.length - 1
+  );
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 /**
@@ -203,14 +502,17 @@ function formatBytes(bytes) {
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
-    // Clear IndexedDB cache before starting tests for cold load measurement
-    await clearIndexedDBCache(browser);
-
     // Run metrics test for each project
     for (const projectName of projects_to_test) {
+      // Clear IndexedDB cache before starting tests for cold load measurement
+      await clearIndexedDBCache(browser);
+
+      // Wait an additional 10 seconds to ensure cache is cleared
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+
       const metrics = await runMetricsTest(browser, projectName);
       allMetrics.push(metrics);
-      
+
       if (metrics.error) {
         hasErrors = true;
       }
@@ -220,15 +522,43 @@ function formatBytes(bytes) {
     console.log("\n" + "=".repeat(60));
     console.log("METRICS SUMMARY");
     console.log("=".repeat(60));
-    
-    allMetrics.forEach(m => {
+
+    allMetrics.forEach((m) => {
       if (m.error) {
         console.log(`\n${m.projectName}: FAILED`);
         console.log(`  Error: ${m.error}`);
       } else {
         console.log(`\n${m.projectName}:`);
         console.log(`  Cold Load Time: ${m.coldLoadTimeMs}ms`);
-        console.log(`  Cache Size: ${m.cacheSizeFormatted} (${m.cacheSize} bytes)`);
+        console.log(
+          `  Cache Size: ${m.cacheSizeFormatted} (${m.cacheSize} bytes)`
+        );
+
+        // Display GCode metrics if available
+        if (m.gcodeMetrics && m.gcodeMetrics.hasGcodeAtom) {
+          console.log(
+            `  GCode Atoms: ${m.gcodeMetrics.gcodeAtomCount} found`
+          );
+          if (m.gcodeMetrics.atoms) {
+            m.gcodeMetrics.atoms.forEach((atom, idx) => {
+              if (atom.generationTimeMs) {
+                console.log(
+                  `    Atom ${idx + 1} Generation: ${atom.generationTimeMs.toFixed(2)}ms`
+                );
+              }
+              if (atom.visualizationTimeMs) {
+                console.log(
+                  `    Atom ${idx + 1} Visualization: ${atom.visualizationTimeMs.toFixed(2)}ms`
+                );
+              }
+              if (atom.gcodeLineCount) {
+                console.log(
+                  `    Atom ${idx + 1} Lines: ${atom.gcodeLineCount} (${atom.gcodeCommandCount} commands)`
+                );
+              }
+            });
+          }
+        }
       }
     });
 
@@ -237,7 +567,6 @@ function formatBytes(bytes) {
     console.log("JSON OUTPUT");
     console.log("=".repeat(60));
     console.log(JSON.stringify(allMetrics, null, 2));
-
   } catch (error) {
     console.error(`Fatal error: ${error.message}`);
     hasErrors = true;
@@ -248,7 +577,11 @@ function formatBytes(bytes) {
   }
 
   console.log("\n" + "=".repeat(60));
-  console.log(hasErrors ? "METRICS TEST COMPLETED WITH ERRORS" : "METRICS TEST COMPLETED SUCCESSFULLY");
+  console.log(
+    hasErrors
+      ? "METRICS TEST COMPLETED WITH ERRORS"
+      : "METRICS TEST COMPLETED SUCCESSFULLY"
+  );
   console.log("=".repeat(60));
 
   // Exit with error code if there were failures

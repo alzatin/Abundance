@@ -6,6 +6,7 @@ import {
   Routes,
   Route,
   useNavigate,
+  useLocation,
 } from "react-router-dom";
 
 import { wrap } from "comlink";
@@ -28,6 +29,7 @@ import {
   AppStateProvider,
   ProjectProvider,
   BrowseSettingsProvider,
+  FileImportProvider,
   useRendering,
   useAuth,
   useAppState,
@@ -70,10 +72,13 @@ function AppContent() {
     renderProgress,
     setRenderProgress,
     setRenderBarVisible,
+    renderStage,
+    setRenderStage,
     setTopLevelWireMesh,
     setPlane,
     setGeometryType,
     setIsViewingOutputMesh,
+    setGcodeParts,
   } = useRendering();
 
   const {
@@ -91,6 +96,7 @@ function AppContent() {
     setRedirectType,
     errorNotification,
     setErrorNotification,
+    notificationType,
   } = useAppState();
 
   const navigate = useNavigate();
@@ -113,31 +119,60 @@ function AppContent() {
     }
   }, []);
 
+  const [processing, setProcessing] = useState(false);
+
   useEffect(() => {
     setRenderProgress(0);
     setRenderBarVisible(true);
+    setRenderStage("Waiting for input"); // Start with Building stage by default
+
     let interval = setInterval(() => {
       const molecule = GlobalVariables.topLevelMolecule;
       if (molecule) {
-        console.log("Molecule state:", molecule.getState().status);
-
         // Check if molecule is fully ready first
         if (molecule.getState().status === "ready") {
           setRenderProgress(100);
+          setRenderStage("Rendering");
           clearInterval(interval);
           return;
         }
 
-        const [ready, total] = molecule.getCompletionTuple();
-        // Apply power scaling to make progress appear more linear
-        // Later atoms are more computationally expensive, so we use power > 1
-        // to compress early progress and leave more visual space for later work
-        const linearProgress = ready / total;
-        // Power of 5 means: 50% atoms ready → 3.1% displayed, 70% → 16.8%, 90% → 59%
-        // This gives more visual progress space to the expensive later computations
-        const scaledProgress = Math.pow(linearProgress, 5);
-        const progress = Math.min(99, Math.floor(scaledProgress * 100));
-        setRenderProgress(progress);
+        // Determine which stage we're in based on the 3-stage system
+        const moleculeStatus = molecule.getState().status;
+
+        // Stage 1: Check if any top-level Input atoms are in WAITING state
+        const hasWaitingInputs = molecule.nodesOnTheScreen.some((atom) => {
+          if (atom.atomType === "Input") {
+            return (
+              atom.getState().status === "waiting" ||
+              atom.value === "__GEOMETRY_INPUT__"
+            );
+          }
+          return false;
+        });
+
+        if (hasWaitingInputs) {
+          setRenderStage("Waiting for input");
+          setRenderProgress(0); // First third
+          return;
+        }
+
+        // Stage 2: Check if top-level molecule is in WAITING or PROCESSING state
+        if (moleculeStatus === "waiting" || moleculeStatus === "processing") {
+          setRenderStage("Building");
+          // Calculate actual progress based on completion of atoms
+          const [ready, total] = molecule.getCompletionTuple();
+          // Guard against division by zero (though getCompletionTuple handles this)
+          const progress = total > 0 ? ready / total : 1;
+          // Map progress from 0-100% of atoms completed to 30-80% of overall progress
+          const buildingProgress = 30 + progress * 50;
+          setRenderProgress(Math.round(buildingProgress));
+          return;
+        }
+
+        // Stage 3: Rendering - mesh is being made and sent to render
+        setRenderStage("Rendering");
+        setRenderProgress(80); // Almost complete, will go to 100 when ready
       }
     }, 500); // Poll every 500ms
 
@@ -146,6 +181,8 @@ function AppContent() {
     GlobalVariables.topLevelMolecule,
     setRenderProgress,
     setRenderBarVisible,
+    setRenderStage,
+    processing,
   ]);
 
   useEffect(() => {
@@ -207,7 +244,7 @@ function AppContent() {
   const createPuppeteerDiv = () => {
     // Check if the div already exists
     const existingDiv = document.getElementById(
-      "molecule-fully-render-puppeteer"
+      "molecule-fully-render-puppeteer",
     );
     if (!existingDiv) {
       // If it doesn't exist, create it
@@ -240,9 +277,10 @@ function AppContent() {
         console.log("no-op because target is already in-flight or undefined");
         return;
       }
+      console.debug("starting mesh generation for: ", targetMesh.current);
       const genTask = worker.generateDisplayMesh(
         targetMesh.current,
-        GlobalVariables.topLevelMolecule.getContext()
+        GlobalVariables.topLevelMolecule.getContext(),
       );
       inFlightMeshRender.current = { task: genTask, value: targetMesh.current };
       genTask
@@ -256,6 +294,7 @@ function AppContent() {
           }
           setMesh(mesh);
           setOutdatedMesh(false);
+          setProcessing(false);
           /*Set plane and geometry type for ThreeContext*/
           setPlane(id?.plane);
           setGeometryType(id?.dimension);
@@ -280,10 +319,21 @@ function AppContent() {
     GlobalVariables.writeToDisplay = (
       moleculeValue,
       context,
-      backgroundMolecule = false
+      backgroundMolecule = false,
+      gcode = false,
     ) => {
       if (!moleculeValue) {
+        console.warn(
+          "Received null molecule value for display, using empty geometry",
+        );
         moleculeValue = { geometry: [] }; // use a non-null structure which still generates the default mesh
+      }
+      if (gcode) {
+        setMesh([]);
+        setGcodeParts(moleculeValue);
+        return;
+      } else {
+        setGcodeParts(null);
       }
       if (backgroundMolecule) {
         if (
@@ -400,7 +450,7 @@ function AppContent() {
         } else {
           // Handle small files using base64 content with UTF-8 encoding
           rawFileContent = GlobalVariables.fromBinaryStr(
-            atob(response.data.content)
+            atob(response.data.content),
           );
         }
 
@@ -442,7 +492,7 @@ function AppContent() {
         if (e?.status === 404) {
           console.warn(
             "Project not found on GitHub, marking as not found in AWS:",
-            project.repoName
+            project.repoName,
           );
           const apiUpdateUrl =
             "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
@@ -474,11 +524,17 @@ function AppContent() {
       });
   };
 
+  const location = useLocation();
+  let errorClass = `${notificationType}-notification`;
+  if (location.pathname.includes("/run")) {
+    errorClass = `${notificationType}-notification-run`;
+  }
+
   return (
     <main>
       {/* Error notification */}
       {errorNotification && (
-        <div className="error-notification">{errorNotification}</div>
+        <div className={errorClass}>{errorNotification}</div>
       )}
       <Routes>
         <Route
@@ -507,7 +563,7 @@ function AppContent() {
           path="/run/:owner/:repoName"
           element={
             <ProjectProvider cad={cad} loadProject={loadProject}>
-              <RunMode />
+              <RunMode processing={processing} setProcessing={setProcessing} />
             </ProjectProvider>
           }
         />
@@ -530,13 +586,15 @@ export default function ReplicadApp() {
       <AuthProvider>
         <AppStateProvider>
           <BrowseSettingsProvider>
-            <TutorialProvider>
-              <RenderingProvider>
-                <ProgressBarProvider>
-                  <AppContent />
-                </ProgressBarProvider>
-              </RenderingProvider>
-            </TutorialProvider>
+            <FileImportProvider>
+              <TutorialProvider>
+                <RenderingProvider>
+                  <ProgressBarProvider>
+                    <AppContent />
+                  </ProgressBarProvider>
+                </RenderingProvider>
+              </TutorialProvider>
+            </FileImportProvider>
           </BrowseSettingsProvider>
         </AppStateProvider>
       </AuthProvider>

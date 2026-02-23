@@ -1,5 +1,37 @@
 import { useState } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
+
+// Grid/Axis icon for RenderMenu
+const GridAxisIcon = ({ size = 22 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <rect
+      x="3"
+      y="3"
+      width="18"
+      height="18"
+      rx="4"
+      stroke="#c4a3d5"
+      strokeWidth="2"
+      fill="#181c23"
+    />
+    <line x1="3" y1="12" x2="21" y2="12" stroke="#a18fcf" strokeWidth="1.5" />
+    <line x1="12" y1="3" x2="12" y2="21" stroke="#a18fcf" strokeWidth="1.5" />
+    <circle
+      cx="12"
+      cy="12"
+      r="2.5"
+      fill="#c4a3d5"
+      stroke="#a18fcf"
+      strokeWidth="1"
+    />
+  </svg>
+);
 import { useControls } from "../../hooks/useControls";
 import { useRendering } from "../../contexts/index.js";
 
@@ -25,6 +57,7 @@ export default function RenderMenu({
     setShowBackgroundModel,
     showTopLevelWireframe,
     setShowTopLevelWireframe,
+    activeAtom,
   } = useRendering();
   const [inputChanged, setInputChanged] = useState("");
 
@@ -109,6 +142,8 @@ export default function RenderMenu({
         contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
         closeMenu={closeMenu}
+        collapsedIcon={GridAxisIcon}
+        activeAtom={activeAtom}
       />
     </div>
   );

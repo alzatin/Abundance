@@ -2,6 +2,8 @@ import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 
 import { saveAs } from "file-saver";
+import { Status } from "../prototypes/observableEntity.js";
+import { re } from "mathjs";
 
 /**
  * This class creates the circle atom.
@@ -107,12 +109,12 @@ export default class Gcode extends Atom {
         valueType: "string",
         defaultValue: this.partName,
       },
-      {
+      /*{
         name: "output",
         valueType: "geometry",
         defaultValue: null,
         type: "output",
-      },
+      },*/
     ]);
 
     this.stlURL = null; // Store the STL URL
@@ -162,29 +164,11 @@ export default class Gcode extends Atom {
         radiusInPixels / 1.5,
         0,
         this.progress * Math.PI * 2,
-        false
+        false,
       );
       GlobalVariables.c.closePath();
       GlobalVariables.c.fill();
     }
-  }
-
-  /**
-   * Creates a callback function for when gcode is generated
-   * @returns {Function} The gcode callback function
-   */
-  _createGcodeCallback() {
-    return (gcode) => {
-      this.gcodeString = gcode;
-      this.gcodeGenerated = true;
-      this.progress = 1.0; // Complete progress
-      this.setReady(
-        GlobalVariables.cad.visualizeGcodeIncremental(
-          [gcode],
-          this.getContext()
-        )
-      );
-    };
   }
 
   /**
@@ -197,7 +181,7 @@ export default class Gcode extends Atom {
       // If a run is in progress, queue a pending run
       this.pendingGeneration = true;
       console.warn(
-        "G-code generation already in progress, queuing pending run"
+        "G-code generation already in progress, queuing pending run",
       );
       return;
     }
@@ -264,6 +248,23 @@ export default class Gcode extends Atom {
   }
 
   /**
+   * Send the value of this atom to the 3D display.
+   */
+  sendToRender() {
+    //Send code to JSxCAD to render
+    try {
+      GlobalVariables.writeToDisplay(
+        this.value,
+        this.getContext(),
+        false,
+        true,
+      );
+    } catch (err) {
+      this.setError(err);
+    }
+  }
+
+  /**
    * Check if the input geometry is an assembly
    * @param {string} inputID - The input geometry ID
    * @returns {Promise<boolean>} True if it's an assembly
@@ -278,8 +279,21 @@ export default class Gcode extends Atom {
    * @param {string} inputID - The input geometry ID
    */
   async _processSinglePart(inputID) {
+    /*Because kirimoto defaults to MM units and we want to support both MM and IN, we will scale the geometry before exporting to STL for kirimoto. This is a temporary solution until we can pass units directly to kirimoto.*/
+    const scaledMesh = await GlobalVariables.cad.scale(
+      inputID,
+      GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 1 : 25.4, // Scale to MM if in IN, otherwise keep the same
+      this.getContext(),
+    );
+    /* Find flat faces for area operation */
     GlobalVariables.cad
-      .visExport(inputID, "STL")
+      .findFlatFaces(scaledMesh, this.getContext())
+      .then((flatFaces) => {
+        console.log("Flat faces found:", flatFaces);
+      });
+    // Export the geometry to STL and generate G-code
+    GlobalVariables.cad
+      .visExport(scaledMesh, "STL", this.getContext())
       .then((visExported) => {
         const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         GlobalVariables.cad
@@ -377,7 +391,7 @@ export default class Gcode extends Atom {
           if (
             this._isBoundsInsideBounds(
               partsWithBounds[j].bounds,
-              partsWithBounds[i].bounds
+              partsWithBounds[i].bounds,
             )
           ) {
             contains[i].push(j);
@@ -424,7 +438,7 @@ export default class Gcode extends Atom {
       try {
         const bounds = await GlobalVariables.cad.getBoundingBox(
           part,
-          this.getContext()
+          this.getContext(),
         );
         const centerX = (bounds.max[0] + bounds.min[0]) / 2;
         const centerY = (bounds.max[1] + bounds.min[1]) / 2;
@@ -485,13 +499,24 @@ export default class Gcode extends Atom {
       try {
         // Update progress
         this.progress = partProgress;
-        //this.sendToRender();
 
+        /*Because kirimoto defaults to MM units and we want to support both MM and IN, we will scale the geometry before exporting to STL for kirimoto. This is a temporary solution until we can pass units directly to kirimoto.*/
+        const scaledMesh = await GlobalVariables.cad.scale(
+          partID,
+          GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 1 : 25.4, // Scale to MM if in IN, otherwise keep the same
+          this.getContext(),
+        );
+
+        /* Find flat faces for area operation */
+        const flatFaces = await GlobalVariables.cad.findFlatFaces(
+          scaledMesh,
+          this.getContext(),
+        );
         // Generate STL for this part
         const visExported = await GlobalVariables.cad.visExport(
-          partID,
+          scaledMesh,
           "STL",
-          this.getContext()
+          this.getContext(),
         );
         const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
         const stlBlob = await GlobalVariables.cad.downExport(
@@ -499,7 +524,7 @@ export default class Gcode extends Atom {
           "STL",
           null,
           units,
-          this.getContext()
+          this.getContext(),
         );
 
         const stlURL = URL.createObjectURL(stlBlob);
@@ -507,7 +532,7 @@ export default class Gcode extends Atom {
         // Get part bounds for centering
         const bounds = await GlobalVariables.cad.getBoundingBox(
           visExported,
-          this.getContext()
+          this.getContext(),
         );
         const center = [
           (bounds.max[0] + bounds.min[0]) / 2,
@@ -519,7 +544,8 @@ export default class Gcode extends Atom {
         const partGcode = await this._generateGcodeForPart(
           stlURL,
           center,
-          i + 1
+          i + 1,
+          flatFaces,
         );
         allGcode.push(partGcode);
 
@@ -531,18 +557,20 @@ export default class Gcode extends Atom {
       }
     }
 
-    // Concatenate all G-code
-    this.gcodeString = this._concatenateGcode(allGcode);
-    this.gcodeGenerated = true;
+    if (allGcode.length === 0) {
+      throw new Error("G-code generation failed for all parts.");
+    }
 
-    // Use the incremental visualization method
-    const gcodeWire = await GlobalVariables.cad.visualizeGcodeIncremental(
-      allGcode,
-      this.getContext()
-    );
-    this.setReady(gcodeWire);
+    this.gcodeGenerated = true;
+    // Set the final result as ready for visualization to pass to loader - this is an array of G-code strings, one per part, which the loader can handle
+    this.setReady(allGcode);
+    // Concatenate all G-code for download
+    this.gcodeString = this._concatenateGcode(allGcode);
     this.progress = 1.0;
-    return gcodeWire;
+    this.setInputChanged?.();
+
+    console.log("G-code generation complete.");
+    return this.gcodeString ?? null;
   }
 
   /**
@@ -552,10 +580,11 @@ export default class Gcode extends Atom {
    * @param {number} partNumber - Part number for naming
    * @returns {Promise<string>} Generated G-code
    */
-  _generateGcodeForPart(stlURL, center, partNumber) {
+  _generateGcodeForPart(stlURL, center, partNumber, flats = []) {
     return new Promise((resolve, reject) => {
       const partGcodeCallback = (gcode) => {
         resolve(gcode);
+        //this.setReady(gcode);
       };
 
       const partProgressCallback = (progress) => {
@@ -574,25 +603,27 @@ export default class Gcode extends Atom {
         reject(new Error(`G-code generation timeout for part ${partNumber}`));
       }, 60000); // 60 second timeout
 
-      try {
-        window.generateGcode(
+      window
+        .generateGcode(
           stlURL,
           center,
           this.findIOValue("Tool Size"),
           this.findIOValue("Passes"),
           this.findIOValue("Speed"),
           this.findIOValue("Cut Through"),
-          (gcode) => {
-            clearTimeout(timeout);
-            partGcodeCallback(gcode);
-          },
           partProgressCallback,
-          selectedToolObj // Pass the selected tool object/ disabled currently
-        );
-      } catch (err) {
-        clearTimeout(timeout);
-        reject(err);
-      }
+          selectedToolObj, // Pass the selected tool object/ disabled currently
+          flats, // Pass the flat faces for area operation
+        )
+        .then((gcode) => {
+          clearTimeout(timeout);
+          partGcodeCallback(gcode);
+        })
+        .catch((err) => {
+          clearTimeout(timeout);
+          console.error(`Error generating G-code for part ${partNumber}:`, err);
+          reject(err);
+        });
     });
   }
 
@@ -667,7 +698,8 @@ export default class Gcode extends Atom {
     }
   }
 
-  createInputParams() {
+  createInputParams(setInputChanged) {
+    this.setInputChanged = setInputChanged;
     let inputParams = super.createInputParams();
 
     //Temporarily disable the "Cut Through" input parameter
@@ -698,6 +730,7 @@ export default class Gcode extends Atom {
     inputParams[`Download Gcode - ${partName}`] = {
       type: "button",
       label: `Download Gcode - ${partName}`,
+      disabled: this.status !== Status.READY,
       onClick: () => {
         if (this.gcodeGenerated && this.gcodeString) {
           // Get the current part name dynamically when button is clicked
@@ -719,10 +752,15 @@ export default class Gcode extends Atom {
   //Function to download G-code from a G-code string
   downloadGcode(gcode, filename = "output.gcode") {
     if (this.gcodeGenerated && !gcode) {
-      gcode = this.gcodeString; // Use the stored G-code string if not provided
+      gcode = this.gcodeString;
     }
     if (!gcode) {
       console.error("No G-code available to download.");
+      // Dispatch a custom event
+      const event = new CustomEvent("user-notification", {
+        detail: { message: "No G-code available to download." },
+      });
+      window.dispatchEvent(event);
       return;
     }
 

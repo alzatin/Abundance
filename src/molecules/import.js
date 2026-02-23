@@ -80,12 +80,12 @@ export default class Import extends Atom {
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#484848";
     GlobalVariables.c.font = `${GlobalVariables.widthToPixels(
-      this.radius
+      this.radius,
     )}px Work Sans Bold`;
     GlobalVariables.c.fillText(
       "G",
       GlobalVariables.widthToPixels(this.x - this.radius / 3),
-      GlobalVariables.heightToPixels(this.y) + this.height / 3
+      GlobalVariables.heightToPixels(this.y) + this.height / 3,
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
@@ -127,10 +127,10 @@ export default class Import extends Atom {
             fileType == "STL"
               ? GlobalVariables.cad.importingSTL
               : fileType == "SVG"
-              ? GlobalVariables.cad.importingSVG
-              : fileType == "STEP"
-              ? GlobalVariables.cad.importingSTEP
-              : null;
+                ? GlobalVariables.cad.importingSVG
+                : fileType == "STEP"
+                  ? GlobalVariables.cad.importingSTEP
+                  : null;
 
           if (funcToCall == null) {
             throw new Error("Invalid file type");
@@ -145,7 +145,14 @@ export default class Import extends Atom {
           }
           return result;
         })
-        .catch(this.alertingErrorHandler());
+        .catch((err) => {
+          this.setReady(NaN);
+          this.setError(
+            `Failed to load file "${this.fileName}". Please check that the file exists in the repository and try again.`,
+          );
+          this.alertingErrorHandler(err);
+          return NaN;
+        });
     }
   }
 
@@ -176,6 +183,7 @@ export default class Import extends Atom {
 
   createInputParams(setInputChanged) {
     //REVISE FOR NEW MENU
+    this.setInputChanged = setInputChanged;
     let inputParams = super.createInputParams();
     if (this.fileName == null) {
       inputParams[this.uniqueID + "file_ops"] = {
@@ -224,7 +232,7 @@ export default class Import extends Atom {
   /**
    * Creates an input element to load a file and calls import function in CreateMode
    */
-  loadFile(type, onLoadComplete, setInputChanged) {
+  loadFile(type, setInputChanged) {
     var f = document.getElementById("fileLoaderInput");
     f.accept = "." + type.toLowerCase();
     f.onchange = (event) => {
@@ -242,8 +250,8 @@ export default class Import extends Atom {
         this.type = type;
         this.fileName = file.name; // Set the new filename
 
-        if (onLoadComplete) {
-          onLoadComplete(file.name); // Trigger the callback with the new filename
+        if (setInputChanged) {
+          setInputChanged(event.timeStamp); // Trigger the callback with the event timestamp
         }
       }
     };
@@ -279,6 +287,9 @@ export default class Import extends Atom {
     this.repoOwner = GlobalVariables.currentAWSnode.owner;
     this.repoName = GlobalVariables.currentAWSnode.repoName;
     this.loadAndPropagate();
+    if (this.setInputChanged) {
+      this.setInputChanged(Date.now());
+    }
   }
 
   /**

@@ -8,11 +8,12 @@ import GlobalVariables from "../../js/globalvariables.js";
 import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
 import RunNavigation from "../secondary/RunNavigation.jsx";
 import Molecule from "../../molecules/molecule.js";
-import ParamsMenu from "../secondary/ParamsMenu.jsx";
-import ExportMenu from "../secondary/ExportMenu.jsx";
+import RunParams from "../secondary/RunParams.jsx";
 import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
 import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
+import ReadmePanel from "../secondary/ReadmePanel.jsx";
+import GCodeLoaderMesh from "../render/GCodeLoaderMesh.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -25,6 +26,7 @@ import {
   useAppState,
   useRendering,
   useProject,
+  useFileImport,
 } from "../../contexts/index.js";
 import { useTutorial } from "../../tutorial/TutorialManager";
 import { TutorialOverlay } from "../../tutorial/TutorialOverlay";
@@ -56,7 +58,7 @@ function useWindowSize() {
   return windowSize;
 }
 
-function runMode() {
+function runMode({ processing, setProcessing }) {
   // Get context values
   const { isloggedIn, authorizedUserOcto, authRedirectHandler } = useAuth();
   const {
@@ -73,6 +75,7 @@ function runMode() {
     setOutdatedMesh,
     renderProgress,
     renderBarVisible,
+    renderStage,
     gridParam,
     setGrid,
     axesParam,
@@ -83,16 +86,27 @@ function runMode() {
     setSolid,
   } = useRendering();
   const { loadProject } = useProject();
+  const { uploadFile, deleteFile } = useFileImport();
 
   const navigate = useNavigate();
+
+  // Make file import functions available globally for atoms
+  useEffect(() => {
+    GlobalVariables.uploadFile = uploadFile;
+    GlobalVariables.deleteFile = deleteFile;
+    return () => {
+      GlobalVariables.uploadFile = null;
+      GlobalVariables.deleteFile = null;
+    };
+  }, [uploadFile, deleteFile]);
 
   // Register render progress bar
   useProgressBar(
     "render-run",
     renderBarVisible,
     renderProgress,
-    "Rendering",
-    true
+    renderStage || "Rendering",
+    true,
   );
 
   const { next, isActive } = useTutorial();
@@ -111,7 +125,7 @@ function runMode() {
   const createPuppeteerDiv = () => {
     // Check if the div already exists
     const existingDiv = document.getElementById(
-      "molecule-fully-render-puppeteer"
+      "molecule-fully-render-puppeteer",
     );
     if (!existingDiv) {
       // If it doesn't exist, create it
@@ -129,8 +143,10 @@ function runMode() {
 
   useEffect(() => {
     if (cameraZoom == 1 && mesh[0]) {
-      console.log("Setting camera zoom", mesh[0].cameraZoom);
-      setCameraZoom(mesh[0].cameraZoom);
+      // Double the zoom ratio for run mode to make projects appear larger
+      const runModeZoom = mesh[0].cameraZoom * 2;
+      console.log("Setting camera zoom for run mode", runModeZoom);
+      setCameraZoom(runModeZoom);
     }
   }, [mesh]);
 
@@ -156,10 +172,20 @@ function runMode() {
     }
   }, [wireMesh, mesh]);
 
+  useEffect(() => {
+    const handler = (e) => {
+      console.log("Received user notification event:", e.detail);
+      setErrorNotification(e.detail.message, e.detail.type || "error");
+      setTimeout(() => setErrorNotification(null, "error"), 5000);
+    };
+    window.addEventListener("user-notification", handler);
+    return () => window.removeEventListener("user-notification", handler);
+  }, []);
+
   /** State for menu content collapsing */
   // Which menu is expanded: "params", "render", "bom", or "none"
   const [expandedMenu, setExpandedMenu] = useState(
-    GlobalVariables.isMobile() ? "none" : "params"
+    GlobalVariables.isMobile() ? "none" : "params",
   );
 
   useEffect(() => {
@@ -180,7 +206,7 @@ function runMode() {
       /*resetting viewport*/
       GlobalVariables.resetView(); // TODO(tristan): possibly also need to writeToDisplay here.
       fetch(
-        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
+        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`,
       )
         .then((res) => res.json())
         .then((data) => {
@@ -201,8 +227,11 @@ function runMode() {
         })
         .catch((e) => {
           console.error("Error fetching AWS project data:", e);
-          setErrorNotification("Can't load/find project: " + (e.message || e));
-          setTimeout(() => setErrorNotification(null), 5000);
+          setErrorNotification(
+            "Can't load/find project: " + (e.message || e),
+            "error",
+          );
+          setTimeout(() => setErrorNotification(null, "error"), 5000);
           navigate("/");
         });
     }
@@ -218,17 +247,30 @@ function runMode() {
   const screenHeight = window.innerHeight;
   const screenWidth = window.innerWidth;
 
+  /* Since we can't see current atoms processing status, set outdated mesh when active atom goes to waiting */
+  if (activeAtom) {
+    activeAtom.onStatusChange = (status) => {
+      console.log("Active atom status changed to:", status);
+      if (status === "waiting") {
+        setOutdatedMesh(true);
+        setProcessing(true);
+      }
+    };
+  }
+
   return (
     <>
-      <ParamsMenu
+      <RunParams
         activeAtom={activeAtom}
-        position={{ top: 30, left: screenWidth - 365 }}
+        position={{ top: 30, left: screenWidth - 50 }}
         id={"atom-run-params-panel"}
         contentCollapsed={expandedMenu !== "params"}
         setContentCollapsed={() => setExpandedMenu("params")}
         closeMenu={() => setExpandedMenu("none")}
         initialCollapsed={true}
-        collapsedOffset={[45, 0]}
+        collapsedOffset={[-315, 0]}
+        setReadMe={() => setExpandedMenu("readme")}
+        setBillOfMaterials={() => setExpandedMenu("bom")}
       />
       <RenderMenu
         {...{
@@ -244,20 +286,12 @@ function runMode() {
           contentCollapsed: expandedMenu !== "render",
           setContentCollapsed: () => setExpandedMenu("render"),
           closeMenu: () => setExpandedMenu("none"),
-          position: { top: 75, left: screenWidth - 365 },
-          collapsedOffset: [45, -45],
+          position: { top: 75, left: screenWidth - 50 },
+          collapsedOffset: [-315, -45],
         }}
         id={"atom-run-render-panel"}
       />
-      <ExportMenu
-        activeAtom={activeAtom}
-        position={{ top: 120, left: screenWidth - 365 }}
-        id={"atom-run-export-panel"}
-        contentCollapsed={expandedMenu !== "export"}
-        setContentCollapsed={() => setExpandedMenu("export")}
-        closeMenu={() => setExpandedMenu("none")}
-        collapsedOffset={[45, -90]}
-      />
+
       <BomMenu
         {...{
           activeAtom,
@@ -265,9 +299,22 @@ function runMode() {
           contentCollapsed: expandedMenu !== "bom",
           setContentCollapsed: () => setExpandedMenu("bom"),
           closeMenu: () => setExpandedMenu("none"),
-          position: { top: 165, left: screenWidth - 365 },
+          position: { top: 120, left: screenWidth - 50 },
+          collapsedOffset: [-315, -90],
         }}
-        collapsedOffset={[45, -135]}
+      />
+
+      {/* ReadmePanel below BomMenu, collapsed by default */}
+      <ReadmePanel
+        readme={GlobalVariables.currentRepo?.readme || ""}
+        id="atom-run-readme-panel"
+        position={{ top: 165, left: screenWidth - 50 }}
+        initialCollapsed={true}
+        contentCollapsed={expandedMenu !== "readme"}
+        setContentCollapsed={() => setExpandedMenu("readme")}
+        closeMenu={() => setExpandedMenu("none")}
+        collapsedOffset={[-315, -135]}
+        activeAtom={activeAtom}
       />
       <div id="headerBarRun">
         <img
@@ -275,6 +322,7 @@ function runMode() {
           src={
             import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/abundance_logo.png"
           }
+          onClick={() => navigate("/")}
           alt="logo"
         />
       </div>
@@ -300,8 +348,12 @@ function runMode() {
       ) : null}
       {GlobalVariables.currentAWSnode ? (
         <div className="info_run_div">
-          <p>{"Project Name: " + GlobalVariables.currentAWSnode.repoName}</p>
-          <p>{"Repo Owner: " + GlobalVariables.currentAWSnode.owner}</p>
+          <p>
+            {"Project Name: " +
+              GlobalVariables.currentAWSnode.repoName +
+              "  /  Project Owner: " +
+              GlobalVariables.currentAWSnode.owner}{" "}
+          </p>
         </div>
       ) : null}
       <div className="runContainer">
@@ -326,8 +378,15 @@ function runMode() {
                 {wireParam ? <WireframeMesh mesh={wireMesh} /> : null}
 
                 <ReplicadMesh
-                  {...{ mesh, isSolid: solidParam, setOutdatedMesh }}
+                  {...{
+                    mesh,
+                    isSolid: solidParam,
+                    setOutdatedMesh,
+                    setProcessing,
+                  }}
                 />
+                {/* GCode visualization */}
+                <GCodeLoaderMesh />
               </ThreeContext>
             ) : (
               <div

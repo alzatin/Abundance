@@ -9,8 +9,9 @@ export default memo(function FlowCanvas({
   setActiveAtom,
   shortCuts,
   authorizedUserOcto,
-  importNotification,
-  errorNotification,
+  userNotification,
+  setUserNotification,
+  notificationType = "error",
   setExpandedMenu,
   windowSize,
   redirectType,
@@ -64,7 +65,7 @@ export default memo(function FlowCanvas({
         const previousProjectKey = `unsavedProject_${GlobalVariables.loadedRepo.owner.login}_${GlobalVariables.loadedRepo.name}`;
         localStorage.removeItem(previousProjectKey);
         console.log(
-          `Cleared localStorage for previous project: ${previousProjectKey}`
+          `Cleared localStorage for previous project: ${previousProjectKey}`,
         );
       }
 
@@ -108,7 +109,7 @@ export default memo(function FlowCanvas({
               () => {
                 localStorage.removeItem("pendingProjectSave");
                 setSavePopUp(false);
-              }
+              },
             );
           }
           loadAndDeserialize();
@@ -153,11 +154,12 @@ export default memo(function FlowCanvas({
                 })
                 .catch((e) => {
                   console.error("Error loading repo metadata:", e);
-                  if (setErrorNotification) {
-                    setErrorNotification(
-                      "Error loading project metadata: " + e.message
+                  if (setUserNotification) {
+                    setUserNotification(
+                      "Error loading project metadata: " + e.message,
+                      "error",
                     );
-                    setTimeout(() => setErrorNotification(null), 5000);
+                    setTimeout(() => setUserNotification(null), 5000);
                   }
                 });
             }
@@ -202,12 +204,31 @@ export default memo(function FlowCanvas({
       0,
       0,
       GlobalVariables.canvas.current.width,
-      GlobalVariables.canvas.current.height
+      GlobalVariables.canvas.current.height,
     );
 
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
       atom.update();
     });
+  };
+
+  /**
+   * Helper function to convert viewport coordinates to canvas-relative coordinates
+   * This is necessary because when the on-screen keyboard appears, the page can scroll
+   * and touch coordinates (clientX/clientY) are relative to the viewport, not the canvas
+   */
+  const getCanvasCoordinates = (clientX, clientY) => {
+    if (!canvasRef.current) {
+      return { x: clientX, y: clientY };
+    }
+    // Trigger layout reflow to ensure getBoundingClientRect returns current values
+    void canvasRef.current.offsetHeight;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
   };
 
   const mouseMove = (e) => {
@@ -223,7 +244,7 @@ export default memo(function FlowCanvas({
       if (longPressTimer.current && touchStartPos.current) {
         const moveDistance = Math.sqrt(
           Math.pow(e.clientX - touchStartPos.current.x, 2) +
-            Math.pow(e.clientY - touchStartPos.current.y, 2)
+            Math.pow(e.clientY - touchStartPos.current.y, 2),
         );
 
         if (moveDistance > 10) {
@@ -238,8 +259,11 @@ export default memo(function FlowCanvas({
       return;
     }
 
+    // Convert viewport coordinates to canvas-relative coordinates
+    const canvasCoords = getCanvasCoordinates(e.clientX, e.clientY);
+
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
-      molecule.mouseMove(e.clientX, e.clientY);
+      molecule.mouseMove(canvasCoords.x, canvasCoords.y);
     });
   };
 
@@ -274,7 +298,7 @@ export default memo(function FlowCanvas({
             atomData,
             true,
             undefined,
-            true // skipAutoConnect = true for paste operations
+            true, // skipAutoConnect = true for paste operations
           );
           atomPromises.push(promise);
         });
@@ -298,7 +322,7 @@ export default memo(function FlowCanvas({
             item,
             true,
             undefined,
-            true
+            true,
           ); // skipAutoConnect = true for paste
         } else {
           // For simple atoms, just assign a new unique ID
@@ -307,7 +331,7 @@ export default memo(function FlowCanvas({
             item,
             true,
             undefined,
-            true
+            true,
           ); // skipAutoConnect = true for paste
         }
       });
@@ -328,7 +352,7 @@ export default memo(function FlowCanvas({
             if (nodeOnTheScreen.uniqueID == item.uniqueID) {
               nodeOnTheScreen.deleteNode();
             }
-          }
+          },
         );
       });
       //every time a key is pressed
@@ -357,7 +381,7 @@ export default memo(function FlowCanvas({
         // Show notification based on what was undone
         if (hadUndoHistory && operationInfo) {
           setUndoNotification(
-            `Undone: ${operationInfo.context || operationInfo.type}`
+            `Undone: ${operationInfo.context || operationInfo.type}`,
           );
         } else if (hadUndoHistory) {
           setUndoNotification("Undone: Previous action");
@@ -397,7 +421,7 @@ export default memo(function FlowCanvas({
             atomType: `${shortCuts[e.key]}`,
             uniqueID: GlobalVariables.generateUniqueID(),
           },
-          true
+          true,
         );
       }
     }
@@ -442,7 +466,7 @@ export default memo(function FlowCanvas({
         // Calculate distance between current tap and last tap
         const tapDistance = Math.sqrt(
           Math.pow(event.clientX - lastTapPosition.current.x, 2) +
-            Math.pow(event.clientY - lastTapPosition.current.y, 2)
+            Math.pow(event.clientY - lastTapPosition.current.y, 2),
         );
 
         // If within radius, consider it a double tap
@@ -461,7 +485,12 @@ export default memo(function FlowCanvas({
       // Start a long press timer for touch events (700ms is a common duration for long press)
       longPressTimer.current = setTimeout(() => {
         // When timer completes, show the circular menu at touch position
-        cmenu.show([touchStartPos.current.x, touchStartPos.current.y], false);
+        // Convert viewport coordinates to canvas-relative coordinates for correct positioning
+        const canvasCoords = getCanvasCoordinates(
+          touchStartPos.current.x,
+          touchStartPos.current.y,
+        );
+        cmenu.show([canvasCoords.x, canvasCoords.y], false);
         longPressTimer.current = null;
       }, 500);
     } else {
@@ -481,7 +510,9 @@ export default memo(function FlowCanvas({
     // if it's a right click show the circular menu
     if (isRightMB) {
       var doubleClick = false;
-      cmenu.show([event.clientX, event.clientY], doubleClick);
+      // Convert viewport coordinates to canvas-relative coordinates for correct positioning
+      const canvasCoords = getCanvasCoordinates(event.clientX, event.clientY);
+      cmenu.show([canvasCoords.x, canvasCoords.y], doubleClick);
       return;
     } else {
       cmenu.hide();
@@ -489,6 +520,9 @@ export default memo(function FlowCanvas({
       setIsShortcutTriggered(false);
       setIsHovering(false);
       setSearch("");
+
+      // Convert viewport coordinates to canvas-relative coordinates
+      const canvasCoords = getCanvasCoordinates(event.clientX, event.clientY);
 
       var clickHandledByMolecule = false;
       var activeAtom = null;
@@ -503,9 +537,9 @@ export default memo(function FlowCanvas({
         let atomClicked;
 
         atomClicked = molecule.clickDown(
-          event.clientX,
-          event.clientY,
-          clickHandledByMolecule
+          canvasCoords.x,
+          canvasCoords.y,
+          clickHandledByMolecule,
         );
         if (atomClicked !== undefined && !clickHandledByMolecule) {
           activeAtom = atomClicked;
@@ -536,13 +570,13 @@ export default memo(function FlowCanvas({
           .placeAtom(
             {
               parentMolecule: GlobalVariables.currentMolecule,
-              x: GlobalVariables.pixelsToWidth(event.clientX),
-              y: GlobalVariables.pixelsToHeight(event.clientY),
+              x: GlobalVariables.pixelsToWidth(canvasCoords.x),
+              y: GlobalVariables.pixelsToHeight(canvasCoords.y),
               parent: GlobalVariables.currentMolecule,
               name: "Box",
               atomType: "Box",
             },
-            false // Don't pass to undo
+            false, // Don't pass to undo
           )
           .then((newAtom) => {
             console.log("Box atom placed:", newAtom);
@@ -576,6 +610,9 @@ export default memo(function FlowCanvas({
       event.clientY = event.changedTouches[0].clientY;
     }
 
+    // Convert viewport coordinates to canvas-relative coordinates
+    const canvasCoords = getCanvasCoordinates(event.clientX, event.clientY);
+
     // Iterate in reverse order to give priority to newer atoms
     for (
       let i = GlobalVariables.currentMolecule.nodesOnTheScreen.length - 1;
@@ -583,7 +620,7 @@ export default memo(function FlowCanvas({
       i--
     ) {
       const molecule = GlobalVariables.currentMolecule.nodesOnTheScreen[i];
-      const handled = molecule?.doubleClick(event.clientX, event.clientY);
+      const handled = molecule?.doubleClick(canvasCoords.x, canvasCoords.y);
     }
   };
 
@@ -615,11 +652,14 @@ export default memo(function FlowCanvas({
       return;
     }
 
+    // Convert viewport coordinates to canvas-relative coordinates
+    const canvasCoords = getCanvasCoordinates(event.clientX, event.clientY);
+
     //every time the mouse button goes up
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
-      molecule.clickUp(event.clientX, event.clientY);
+      molecule.clickUp(canvasCoords.x, canvasCoords.y);
     });
-    GlobalVariables.currentMolecule.clickUp(event.clientX, event.clientY);
+    GlobalVariables.currentMolecule.clickUp(canvasCoords.x, canvasCoords.y);
   };
 
   useEffect(() => {
@@ -644,14 +684,17 @@ export default memo(function FlowCanvas({
     createCMenu(circleMenu, setExpandedMenu, shortCuts);
   }, []);
 
+  const getMoleculeDisplayName = (mol) =>
+    mol.topLevel && GlobalVariables.currentAWSnode?.repoName
+      ? GlobalVariables.currentAWSnode.repoName
+      : mol.name;
+
   let parentLinkPath = [];
   if (GlobalVariables.currentMolecule) {
-    parentLinkPath.unshift(GlobalVariables.currentMolecule.name);
+    parentLinkPath.unshift(getMoleculeDisplayName(GlobalVariables.currentMolecule));
     let currentParent = GlobalVariables.currentMolecule.parent;
     while (currentParent) {
-      let parentName = currentParent.name;
-      let parentLink = parentName;
-      parentLinkPath.unshift(parentLink);
+      parentLinkPath.unshift(getMoleculeDisplayName(currentParent));
       currentParent = currentParent.parent ? currentParent.parent : null;
     }
   }
@@ -696,6 +739,7 @@ export default memo(function FlowCanvas({
               onClick={() => {
                 while (
                   GlobalVariables.currentMolecule &&
+                  !GlobalVariables.currentMolecule.topLevel &&
                   GlobalVariables.currentMolecule.name !== item
                 ) {
                   GlobalVariables.currentMolecule.goToParentMolecule(item);
@@ -717,14 +761,12 @@ export default memo(function FlowCanvas({
         <div className="undo-notification">{undoNotification}</div>
       )}
 
-      {/* Import notification */}
-      {importNotification && (
-        <div className="import-notification">{importNotification}</div>
-      )}
 
-      {/* Error notification */}
-      {errorNotification && (
-        <div className="error-notification">{errorNotification}</div>
+      {/* User notification */}
+      {userNotification && (
+        <div className={`${notificationType}-notification`}>
+          {userNotification}
+        </div>
       )}
     </>
   );

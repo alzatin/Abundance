@@ -92,6 +92,12 @@ export default class Molecule extends Atom {
 
     this.compiledBom = {};
 
+    /**
+     * Compiled README content from child atoms.
+     * @type {array}
+     */
+    this.compiledReadme = [];
+
     this.partToExport = null;
 
     /**
@@ -154,7 +160,7 @@ export default class Molecule extends Atom {
     GlobalVariables.c.fillStyle = this.centerColor;
     GlobalVariables.c.moveTo(
       GlobalVariables.widthToPixels(this.x),
-      GlobalVariables.heightToPixels(this.y)
+      GlobalVariables.heightToPixels(this.y),
     );
 
     const [ready, total] = this.getCompletionTuple();
@@ -165,7 +171,7 @@ export default class Molecule extends Atom {
       GlobalVariables.widthToPixels(this.radius) / 2,
       0,
       (ready / total) * Math.PI * 2,
-      false
+      false,
     );
     GlobalVariables.c.closePath();
     GlobalVariables.c.fill();
@@ -185,18 +191,6 @@ export default class Molecule extends Atom {
         this.name = value;
       },
     };
-    if (this.topLevel == true) {
-      inputParams["molecule name" + this.uniqueID + "units"] = {
-        type: "select",
-        value: this.unitsKey,
-        label: "Project Units",
-        options: Object.keys(this.units),
-        disabled: false,
-        onChange: (value) => {
-          this.unitsKey = this.units[value];
-        },
-      };
-    }
     if (GlobalVariables.currentAWSnode.parentRepo != null && this.topLevel) {
       inputParams["Reload from Github"] = {
         type: "button",
@@ -206,41 +200,62 @@ export default class Molecule extends Atom {
         },
       };
     }
-
-    // Add BOM summary if this molecule has a compiled BOM
+    // Add README text if this molecule has compiled README content
     if (
-      this.compiledBom &&
-      Array.isArray(this.compiledBom) &&
-      this.compiledBom.length > 0
+      this.compiledReadme &&
+      Array.isArray(this.compiledReadme) &&
+      this.compiledReadme.length > 0
     ) {
-      // Add spacer and heading
-      inputParams["bom-spacer-" + this.uniqueID] = {
-        type: "spacer",
-        height: 0,
-      };
-      inputParams["bom-heading-" + this.uniqueID] = {
-        type: "string",
-        value: "Bill Of Materials:",
+      // Combine all readme text into a single display
+      const combinedReadmeText = this.compiledReadme
+        .map((item) => item.readMeText)
+        .join("\n\n");
+
+      inputParams["readme-text-" + this.uniqueID] = {
+        label: "Molecule Readme",
+        type: "markdown",
+        value: "README\n\n" + combinedReadmeText,
+        maxHeight: "300px",
         disabled: true,
       };
-
-      // Add each BOM item
-      this.compiledBom.forEach((item) => {
-        inputParams["bom-" + this.uniqueID + "-" + item.BOMitemName] = {
-          type: "string",
-          value: item.BOMitemName + ": " + item.numberNeeded,
-          disabled: true,
-        };
-      });
     }
 
     return inputParams;
   }
 
-  createExportMenuInputs() {
+  previewHandler(gcodeAtom) {
+    // Track preview state on the atom
+    if (!gcodeAtom._isPreviewing) {
+      if (gcodeAtom.gcodeString) {
+        gcodeAtom.sendToRender();
+        gcodeAtom._isPreviewing = true;
+        console.log(`Previewing Gcode: ${gcodeAtom.partName}`);
+      } else {
+        console.error("G-code is not available yet");
+        // Dispatch a custom event
+        const event = new CustomEvent("user-notification", {
+          detail: { message: "G-code is not available yet" },
+        });
+        window.dispatchEvent(event);
+        return;
+      }
+    } else {
+      // Send the top-level molecule to render and reset preview state
+      if (
+        GlobalVariables.topLevelMolecule &&
+        typeof GlobalVariables.topLevelMolecule.sendToRender === "function"
+      ) {
+        GlobalVariables.topLevelMolecule.sendToRender();
+        console.log("Previewing top-level molecule");
+      }
+      gcodeAtom._isPreviewing = false;
+    }
+  }
+
+  createExportMenuInputs(setInputChanged) {
     let exportParams = {};
     const exportAtoms = this.nodesOnTheScreen.filter(
-      (node) => node.atomType === "Export"
+      (node) => node.atomType === "Export",
     );
 
     exportAtoms.forEach((atom) => {
@@ -252,23 +267,31 @@ export default class Molecule extends Atom {
         label: `Export ${partName}`,
         onClick: () => {
           atom.exportFile();
+          // Dispatch a custom event
+          const event = new CustomEvent("user-notification", {
+            detail: { message: "Preparing your export.", type: "notice" },
+          });
+          window.dispatchEvent(event);
           console.log(`Exporting: ${partName}`);
         },
       };
     });
 
     const gcodeAtoms = this.nodesOnTheScreen.filter(
-      (node) => node.atomType === "Gcode"
+      (node) => node.atomType === "Gcode",
     );
     // this is wrong and only a placeholder for kiri forum questions
     gcodeAtoms.forEach((atom) => {
+      atom.setInputChanged = setInputChanged;
       exportParams[`Download Gcode – ${atom.partName}`] = {
         type: "button",
         label: `Download Gcode – ${atom.partName}`,
+        disabled: atom.status !== Status.READY,
         onClick: () => {
           atom.downloadGcode();
           console.log(`Downloading Gcode: ${atom.partName}`);
         },
+        eyeIcon: () => this.previewHandler(atom),
       };
     });
 
@@ -298,7 +321,7 @@ export default class Molecule extends Atom {
             GlobalVariables.topLevelMolecule.nodesOnTheScreen.forEach(
               (atom) => {
                 atom.deleteNode();
-              }
+              },
             );
             GlobalVariables.topLevelMolecule.nodesOnTheScreen = []; // <-- clear the array
             let rawFileContent;
@@ -309,7 +332,7 @@ export default class Molecule extends Atom {
             } else {
               // Handle small files using base64 content with UTF-8 encoding
               rawFileContent = GlobalVariables.fromBinaryStr(
-                atob(response.data.content)
+                atob(response.data.content),
               );
             }
 
@@ -434,7 +457,7 @@ export default class Molecule extends Atom {
     this.nodesOnTheScreen.forEach((atom) => {
       if (atom.selected) {
         GlobalVariables.atomsSelected.push(
-          atom.serialize({ x: 0.05, y: 0.05 })
+          atom.serialize({ x: 0.05, y: 0.05 }),
         );
       }
     });
@@ -483,15 +506,13 @@ export default class Molecule extends Atom {
         });
       }
     });
-    console.log("Selected Atom IDs:", selectedAtomIDs);
-    console.log("Internal Connectors:", internalConnectors);
 
     // Store in a structured format that includes both atoms and connectors
     GlobalVariables.atomsSelected = selectedAtoms;
     GlobalVariables.connectorsSelected = internalConnectors;
 
     console.log(
-      `Copied ${selectedAtoms.length} atoms with ${internalConnectors.length} internal connectors`
+      `Copied ${selectedAtoms.length} atoms with ${internalConnectors.length} internal connectors`,
     );
   }
 
@@ -502,7 +523,7 @@ export default class Molecule extends Atom {
   moveSelectedAtomsToMolecule(targetMolecule = null) {
     // Check if any atoms are selected
     const selectedCount = this.nodesOnTheScreen.filter(
-      (atom) => atom.selected
+      (atom) => atom.selected,
     ).length;
     if (selectedCount === 0) {
       console.log("No atoms selected to move. Please select atoms first.");
@@ -520,7 +541,7 @@ export default class Molecule extends Atom {
     console.log(
       `Moving ${selectedCount} selected atoms to ${
         targetMolecule ? "existing" : "new"
-      } molecule`
+      } molecule`,
     );
 
     // Create new molecule if not provided
@@ -551,7 +572,7 @@ export default class Molecule extends Atom {
         .then(() => {
           // Find the newly created molecule
           targetMolecule = this.nodesOnTheScreen.find(
-            (atom) => atom.uniqueID === newMoleculeObj.uniqueID
+            (atom) => atom.uniqueID === newMoleculeObj.uniqueID,
           );
 
           if (targetMolecule) {
@@ -606,7 +627,7 @@ export default class Molecule extends Atom {
           atomData,
           true,
           undefined,
-          true
+          true,
         ); // skipAutoConnect = true
         atomPromises.push(promise);
       });
@@ -654,7 +675,7 @@ export default class Molecule extends Atom {
 
       // Get the last saved state and operation info
       let rawFile = JSON.parse(
-        GlobalVariables.recentMoleculeRepresentation.pop()
+        GlobalVariables.recentMoleculeRepresentation.pop(),
       );
 
       // Get operation info if available
@@ -662,7 +683,7 @@ export default class Molecule extends Atom {
       if (GlobalVariables.undoOperationHistory.length > 0) {
         operationInfo = GlobalVariables.undoOperationHistory.pop();
         console.log(
-          `Undoing ${operationInfo.type} operation: ${operationInfo.context}`
+          `Undoing ${operationInfo.type} operation: ${operationInfo.context}`,
         );
       }
 
@@ -729,14 +750,14 @@ export default class Molecule extends Atom {
             bomList[bomElement.BOMitemName].costUSD =
               Math.round(
                 (bomList[bomElement.BOMitemName].costUSD + bomElement.costUSD) *
-                  100
+                  100,
               ) / 100;
           }
         });
 
         // Alphabetize by source
         compileBomItems = compileBomItems.sort((a, b) =>
-          a.source > b.source ? 1 : b.source > a.source ? -1 : 0
+          a.source > b.source ? 1 : b.source > a.source ? -1 : 0,
         );
         return compileBomItems;
       }
@@ -833,7 +854,7 @@ export default class Molecule extends Atom {
 
   getOutputAtom() {
     return this.nodesOnTheScreen.find(
-      (atom) => atom.atomType === "Output" && atom.parent === this
+      (atom) => atom.atomType === "Output" && atom.parent === this,
     );
   }
 
@@ -873,6 +894,15 @@ export default class Molecule extends Atom {
             }
           })
           .catch(this.alertingErrorHandler);
+        // Compile README as well
+        this.requestReadme()
+          .then((readme) => {
+            this.compiledReadme = readme;
+            // Note: setInputChanged is not called for README as it's only used for BOM updates
+          })
+          .catch((err) => {
+            console.warn("Error loading README:", err);
+          });
       } else {
         if (this.inputs.every((input) => input.status == Status.READY)) {
           // All inputs are ready but our output isn't yet. check for an internal error
@@ -891,6 +921,8 @@ export default class Molecule extends Atom {
           // Else set status to waiting since some of our inputs are not ready.
           this.setWaiting();
         }
+        // Notify UI of status change to waiting
+        if (this.onStatusChange) this.onStatusChange(this.getState().status);
       }
     } else {
       console.trace("Undefined output atom in onUpstreamChange");
@@ -944,7 +976,7 @@ export default class Molecule extends Atom {
     return GlobalVariables.cad
       .generateDisplayMesh(
         GlobalVariables.topLevelMolecule.value,
-        GlobalVariables.topLevelMolecule.getContext()
+        GlobalVariables.topLevelMolecule.getContext(),
       )
       .then((m) => {
         console.log("Generated project thumbnail");
@@ -960,7 +992,7 @@ export default class Molecule extends Atom {
     var sortableAtomsList = this.nodesOnTheScreen;
     sortableAtomsList = sortableAtomsList
       .filter(
-        (atom) => atom.atomType == "Molecule" || atom.atomType == "Readme"
+        (atom) => atom.atomType == "Molecule" || atom.atomType == "Readme",
       )
       .sort(function (a, b) {
         return (
@@ -992,8 +1024,23 @@ export default class Molecule extends Atom {
         } else {
           text = value.readMeText;
           if (value.svg) {
+            // Generate a simple hash from the SVG content for cache-busting
+            // This ensures the image URL changes when the SVG content changes
+            const svgHash = value.svg
+              .split("")
+              .reduce((hash, char) => {
+                const charCode = char.charCodeAt(0);
+                return ((hash << 5) - hash + charCode) | 0;
+              }, 0)
+              .toString(36)
+              .replace("-", "n"); // Replace negative sign with 'n'
+
             text = text.concat(
-              " \n\n![readme](/readme" + value.uniqueID + ".svg)\n\n"
+              " \n\n![readme](/readme" +
+                value.uniqueID +
+                ".svg?v=" +
+                svgHash +
+                ")\n\n",
             );
           }
           finalReadMe.push({
@@ -1045,7 +1092,7 @@ export default class Molecule extends Atom {
     // Check if there are Input atoms whose values aren't in ioValues
     // This handles cases where Input atoms exist but their attachment points weren't added to this.inputs
     const inputAtoms = this.nodesOnTheScreen.filter(
-      (atom) => atom.atomType === "Input"
+      (atom) => atom.atomType === "Input",
     );
     if (inputAtoms.length > 0) {
       // Get existing ioValues or create empty array
@@ -1076,7 +1123,7 @@ export default class Molecule extends Atom {
         // Skip large strings
         if (typeof value === "string" && value.length > MAX_VALUE_SIZE) {
           console.warn(
-            `Skipping serialization of large string value (${value.length} chars) for Input atom: ${inputAtom.name}`
+            `Skipping serialization of large string value (${value.length} chars) for Input atom: ${inputAtom.name}`,
           );
           return;
         }
@@ -1130,7 +1177,7 @@ export default class Molecule extends Atom {
         atomType: "Output",
         uniqueID: GlobalVariables.generateUniqueID(),
       },
-      false
+      false,
     );
     this.setValues(json); //Grab the values of everything from the passed object
     this.setValues(values); //Over write those values with the passed ones where needed
@@ -1172,8 +1219,40 @@ export default class Molecule extends Atom {
           this.onUpstreamChange();
         },
         this.uniqueID,
-        false
+        false,
       );
+
+      // Subscribe molecule to README atom changes for automatic README recompilation
+      // Issue: README atoms were not part of molecule's propagation chain
+      // Solution: When a README atom's text changes (via setReady()), propagate that change
+      // to trigger the molecule's requestReadme() and update compiledReadme.
+      // This ensures that the README content in the molecule's input panel and saved README
+      // files stays in sync with the actual README atom values.
+      this.nodesOnTheScreen.forEach((atom) => {
+        if (atom.atomType === "Readme") {
+          atom.subscribe(
+            () => {
+              // Recompile README content when any README atom changes
+              this.requestReadme()
+                .then((readme) => {
+                  this.compiledReadme = readme;
+                  // Note: setInputChanged is not called here as it's only used for BOM updates
+                  // README changes are reflected automatically in the properties panel
+                  // through the compiledReadme property
+                })
+                .catch((err) => {
+                  console.warn(
+                    `Error updating README after atom change in molecule ${this.uniqueID}, README atom ${atom.uniqueID}:`,
+                    err,
+                  );
+                });
+            },
+            `readme-subscription-${this.uniqueID}-${atom.uniqueID}`,
+            false,
+          );
+        }
+      });
+
       if (GlobalVariables.currentMolecule === this || forceEnable) {
         this.enable(); // Enable self and all child nodes upstream of output.
       }
@@ -1258,7 +1337,7 @@ export default class Molecule extends Atom {
     gitObj,
     oldObject = {},
     oldParentObjectConnectors = [],
-    position
+    position,
   ) {
     let octokit = new Octokit();
     try {
@@ -1276,7 +1355,7 @@ export default class Molecule extends Atom {
           } else {
             // Handle small files using base64 content with UTF-8 encoding
             rawFileContent = GlobalVariables.fromBinaryStr(
-              atob(response.data.content)
+              atob(response.data.content),
             );
           }
 
@@ -1300,13 +1379,13 @@ export default class Molecule extends Atom {
             let xPos = position
               ? position.x
               : oldObject.x !== undefined
-              ? oldObject.x
-              : this.x;
+                ? oldObject.x
+                : this.x;
             let yPos = position
               ? position.y
               : oldObject.y !== undefined
-              ? oldObject.y
-              : this.y;
+                ? oldObject.y
+                : this.y;
 
             valuesToOverwriteInLoadedVersion = {
               uniqueID: newMoleculeUniqueID,
@@ -1333,7 +1412,7 @@ export default class Molecule extends Atom {
             .placeAtom(
               rawFileWithNewIds,
               false,
-              valuesToOverwriteInLoadedVersion
+              valuesToOverwriteInLoadedVersion,
             )
             .then((placedAtom) => {
               oldParentObjectConnectors.forEach((connector) => {
@@ -1426,8 +1505,20 @@ export default class Molecule extends Atom {
    * Constructs a new AP and returns it, does not subscribe to changes.
    * The caller is responsible for calling updateIO and removeIO on `this` as needed.
    */
-  addIO(name, valueType, defaultValue = undefined, type = "input") {
-    return this._addIOWithoutSubscribing(name, valueType, defaultValue, type);
+  addIO(
+    name,
+    valueType,
+    defaultValue = undefined,
+    type = "input",
+    options = {},
+  ) {
+    return this._addIOWithoutSubscribing(
+      name,
+      valueType,
+      defaultValue,
+      type,
+      options,
+    );
   }
 
   /**
@@ -1513,7 +1604,7 @@ export default class Molecule extends Atom {
       if (GlobalVariables.isReferencableByName(newAtomObj) && unlock) {
         newAtomObj.name = GlobalVariables.incrementVariableName(
           newAtomObj.name ? newAtomObj.name : newAtomObj.atomType,
-          this
+          this,
         );
       }
       // Save undo state for user-initiated atom additions (unlock=true means user action)
@@ -1537,7 +1628,7 @@ export default class Molecule extends Atom {
         ) {
           newAtomObj.parent = this;
           var atom = new GlobalVariables.availableTypes[key].creator(
-            newAtomObj
+            newAtomObj,
           );
           //If this is a molecule, de-serialize it
           if (
@@ -1556,7 +1647,7 @@ export default class Molecule extends Atom {
             if (unlock) {
               atom.name = GlobalVariables.incrementVariableName(
                 newAtomObj.name,
-                this
+                this,
               );
             } else {
               atom.name = newAtomObj.name; // Preserve exact name for normal loading
@@ -1606,6 +1697,9 @@ export default class Molecule extends Atom {
   }
   /** Force mouse events for activeAtom selection that triggers menu */
   makeActiveAtom(flowCanvas, atom) {
+    // Trigger layout reflow to ensure getBoundingClientRect returns current values
+    void flowCanvas.offsetHeight;
+
     const rect = flowCanvas.getBoundingClientRect();
     const clientX = rect.left + GlobalVariables.widthToPixels(atom.x);
     const clientY = rect.top + GlobalVariables.heightToPixels(atom.y);
@@ -1680,13 +1774,13 @@ export default class Molecule extends Atom {
         if (
           AttachmentPoint.areTypesCompatible(
             outputAttachmentPoint,
-            inputAttachmentPoint
+            inputAttachmentPoint,
           )
         ) {
           // Save undo state before replacing connection during project loading
           GlobalVariables.saveUndoState(
             "MODIFY",
-            `Connection replacement during load: ${outputAttachmentPoint.parentMolecule.name} → ${inputAttachmentPoint.parentMolecule.name}.${inputAttachmentPoint.name}`
+            `Connection replacement during load: ${outputAttachmentPoint.parentMolecule.name} → ${inputAttachmentPoint.parentMolecule.name}.${inputAttachmentPoint.name}`,
           );
 
           // Remove existing connections
@@ -1713,7 +1807,7 @@ export default class Molecule extends Atom {
       [outputAttachmentPoint.x, outputAttachmentPoint.y] =
         GlobalVariables.constrainToCanvasBorders(
           outputAttachmentPoint.x,
-          outputAttachmentPoint.y
+          outputAttachmentPoint.y,
         );
 
       // Update input attachment point position
@@ -1724,7 +1818,7 @@ export default class Molecule extends Atom {
       [inputAttachmentPoint.x, inputAttachmentPoint.y] =
         GlobalVariables.constrainToCanvasBorders(
           inputAttachmentPoint.x,
-          inputAttachmentPoint.y
+          inputAttachmentPoint.y,
         );
 
       new Connector({
@@ -1801,7 +1895,7 @@ export default class Molecule extends Atom {
           (atom) =>
             (atom.atomType === "Molecule" ||
               atom.atomType === "GitHubMolecule") &&
-            atom.name === targetMoleculeName
+            atom.name === targetMoleculeName,
         );
       }
 
@@ -1812,7 +1906,7 @@ export default class Molecule extends Atom {
       } else {
         // If we can't find a molecule in the path, stop at the current level
         console.warn(
-          `Cannot find molecule "${targetMoleculeName}" in path, stopping navigation at current level`
+          `Cannot find molecule "${targetMoleculeName}" in path, stopping navigation at current level`,
         );
         break;
       }

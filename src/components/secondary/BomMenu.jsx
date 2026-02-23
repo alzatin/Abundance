@@ -65,10 +65,11 @@ export default function BomMenu({
         initialCollapsed={true}
         minWidth={280}
         collapsedIcon={DollarIcon}
-        collapsedOffset={collapsedOffset} // shifts expanded panel by 45px right, 45px down
+        collapsedOffset={collapsedOffset}
         contentCollapsed={contentCollapsed}
         setContentCollapsed={setContentCollapsed}
         closeMenu={closeMenu}
+        activeAtom={activeAtom}
       />
     </div>
   );

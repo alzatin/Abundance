@@ -28,6 +28,7 @@ import {
   useAppState,
   useRendering,
   useProject,
+  useFileImport,
 } from "../../contexts/index.js";
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
@@ -46,12 +47,14 @@ function CreateMode() {
     exportPopUp,
     setExportPopUp,
     redirectType,
+    setNotification,
   } = useAppState();
   const {
     setMesh,
     setWireMesh,
     renderProgress,
     renderBarVisible,
+    renderStage,
     backgroundUsdzFile,
     setBackgroundUsdzFile,
     backgroundUsdzSha,
@@ -66,25 +69,56 @@ function CreateMode() {
     setShowTopLevelWireframe,
   } = useRendering();
 
-  const { cad, loadProject, searchGithubMolecules, saveProject: saveProjectFromContext } = useProject();
+  const {
+    cad,
+    loadProject,
+    searchGithubMolecules,
+    saveProject: saveProjectFromContext,
+  } = useProject();
+  const { uploadFile, deleteFile } = useFileImport();
   const meshRef = useRef();
 
-  // Make meshRef available globally for thumbnail generation
+  // Make meshRef, file import functions, and save function available globally
   useEffect(() => {
     GlobalVariables.meshRef = meshRef;
+    GlobalVariables.uploadFile = uploadFile;
+    GlobalVariables.deleteFile = deleteFile;
+
     return () => {
       GlobalVariables.meshRef = null;
+      GlobalVariables.uploadFile = null;
+      GlobalVariables.deleteFile = null;
     };
-  }, []);
+  }, [uploadFile, deleteFile]);
 
   const navigate = useNavigate();
 
-  /** State for error notification */
-  const [errorNotification, setErrorNotification] = useState(null);
+  /** State for user notification */
+  const [userNotification, setUserNotificationRaw] = useState(null);
+  const [notificationType, setNotificationType] = useState("error");
+
+  // Wrapper to handle notifications set by child components
+  const setUserNotification = (message, type = "error") =>
+    setNotification(message, type);
+
+  useEffect(() => {
+    const handler = (e) => {
+      setNotification(e.detail.message, e.detail.type || "error");
+      setTimeout(() => setNotification(null, "error"), 5000);
+    };
+    window.addEventListener("user-notification", handler);
+    return () => window.removeEventListener("user-notification", handler);
+  }, []);
 
   // Wrapper function that calls saveProject with CreateMode-specific parameters
   const saveProject = (setSaveProgress, typeSave, forceSave = false) => {
-    return saveProjectFromContext(setSaveProgress, typeSave, forceSave, meshRef, setErrorNotification);
+    return saveProjectFromContext(
+      setSaveProgress,
+      typeSave,
+      forceSave,
+      meshRef,
+      setUserNotification,
+    );
   };
 
   // Register render progress bar
@@ -92,12 +126,9 @@ function CreateMode() {
     "render",
     renderBarVisible,
     renderProgress,
-    "Rendering",
-    false
+    renderStage || "Rendering",
+    false,
   );
-
-  /** State for import notifications */
-  const [importNotification, setImportNotification] = useState(null);
 
   /** State for save progress bar */
   const [saveState, setSaveState] = useState(0);
@@ -141,7 +172,7 @@ function CreateMode() {
   /** State for menu content collapsing */
   // Which menu is expanded: "params", "render", "bom", or "none"
   const [expandedMenu, setExpandedMenu] = useState(
-    GlobalVariables.isMobile() ? "none" : "params"
+    GlobalVariables.isMobile() ? "none" : "params",
   );
 
   /**
@@ -177,29 +208,19 @@ function CreateMode() {
   useEffect(() => {
     // Handler to call on window resize
     function handleResize() {
-      let height;
-      if (window.visualViewport) {
-        height = window.visualViewport.height;
-      } else if (GlobalVariables.isMobile()) {
-        height = window.screen.height;
-      } else {
-        height = window.innerHeight;
-      }
+      // Always use window.innerHeight instead of visualViewport.height
+      // This prevents the 3D view from shrinking when mobile keyboard opens
+      // visualViewport.height changes when keyboard appears, but we want the
+      // full layout viewport for the 3D canvas
       setWindowSize({
         width: window.innerWidth,
-        height,
+        height: window.innerHeight,
       });
     }
     window.addEventListener("resize", handleResize);
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", handleResize);
-    }
     handleResize();
     return () => {
       window.removeEventListener("resize", handleResize);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", handleResize);
-      }
     };
   }, []); // Empty array ensures that effect is only run on mount
 
@@ -282,7 +303,7 @@ function CreateMode() {
     ) {
       // Trigger GitSearch Panel when Option/Alt is pressed
       setExpandedMenu(
-        expandedMenuRef.current === "git-search" ? "params" : "git-search"
+        expandedMenuRef.current === "git-search" ? "params" : "git-search",
       );
     } else {
       if (expandedMenuRef.current === "git-search") {
@@ -378,7 +399,7 @@ function CreateMode() {
         (file) =>
           file.type === "file" &&
           (file.name.toLowerCase().endsWith(".glb") ||
-            file.name.toLowerCase().endsWith(".gltf"))
+            file.name.toLowerCase().endsWith(".gltf")),
       );
 
       if (backgroundFiles.length > 0) {
@@ -423,109 +444,6 @@ function CreateMode() {
     setUserUploadedFile(false);
   }, [GlobalVariables.currentAWSnode]);
 
-  const uploadAFile = async function (file) {
-    var reader = new FileReader();
-
-    reader.onload = function (e) {
-      const base64result = e.target.result.split(",")[1];
-
-      (async () => {
-        try {
-          const existingFiles = await authorizedUserOcto.rest.repos.getContent({
-            owner: GlobalVariables.currentAWSnode.owner,
-            repo: GlobalVariables.currentAWSnode.repoName,
-            path: "",
-          });
-
-          let fileName = file.name;
-          const fileExtension = fileName.substring(fileName.lastIndexOf("."));
-          const baseName = fileName.substring(0, fileName.lastIndexOf("."));
-          let uniqueFileName = fileName;
-          let counter = 1;
-
-          // Incrementally rename the file until a unique name is found
-          while (
-            existingFiles.data.some(
-              (existingFile) => existingFile.name === uniqueFileName
-            )
-          ) {
-            uniqueFileName = `${baseName}_copy${counter}${fileExtension}`;
-            counter++;
-          }
-
-          if (uniqueFileName !== fileName) {
-            console.warn(`File already exists. Renaming to: ${uniqueFileName}`);
-          }
-          const result = await Promise.race([
-            authorizedUserOcto.rest.repos.createOrUpdateFileContents({
-              owner: GlobalVariables.currentAWSnode.owner,
-              repo: GlobalVariables.currentAWSnode.repoName,
-              path: uniqueFileName,
-              message: "Import File",
-              content: base64result,
-            }),
-            new Promise((_, reject) =>
-              setTimeout(
-                () => reject(new Error("File upload timed out")),
-                60000
-              )
-            ),
-          ]);
-          console.log("File uploaded successfully:", result);
-
-          activeAtom.updateFile(
-            { name: uniqueFileName },
-            result.data.content.sha
-          );
-          saveProject(setSaveState, "Upload Save");
-
-          // Show upload notification
-          setImportNotification(`File uploaded: ${uniqueFileName}`);
-          setTimeout(() => setImportNotification(null), 3000);
-        } catch (error) {
-          setImportNotification(
-            `Failed to Upload File: Corrupt or exceeded size limit`
-          );
-          setTimeout(() => setImportNotification(null), 3000);
-          console.error("Error during file upload:", error);
-        }
-      })();
-    };
-
-    reader.onerror = function (error) {
-      console.error("Error reading file:", error);
-      alert("Failed to read the file. Please try again.");
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const deleteAFile = async function (fileName, fileSha) {
-    // If fileName is null or undefined, there's no file to delete
-    if (fileName == null) {
-      return;
-    }
-
-    try {
-      await authorizedUserOcto.rest.repos.deleteFile({
-        owner: GlobalVariables.currentAWSnode.owner,
-        repo: GlobalVariables.currentAWSnode.repoName,
-        path: fileName,
-        message: "Deleted node",
-        sha: fileSha,
-      });
-      console.log("File deleted successfully:", fileName);
-
-      // Show delete notification
-      setImportNotification(`File deleted: ${fileName}`);
-      setTimeout(() => setImportNotification(null), 3000);
-    } catch (error) {
-      console.error("Error deleting file:", error);
-      alert(
-        `Failed to delete file: ${fileName}. The file will remain in your repository.`
-      );
-    }
-  };
-
   /**
    * Upload a 3D background file (GLB/GLTF) to GitHub
    */
@@ -563,16 +481,17 @@ function CreateMode() {
       setShowBackgroundModel(true);
 
       saveProject(setSaveState, "Background 3D Model Upload Save");
-      setImportNotification(
-        `Background 3D model uploaded: ${backgroundFileName}`
+      setNotification(
+        `Background 3D model uploaded: ${backgroundFileName}`,
+        "notice",
       );
-      setTimeout(() => setImportNotification(null), 3000);
+      setTimeout(() => setNotification(null, "notice"), 3000);
     } catch (error) {
       console.error("Error uploading 3D model:", error);
       // Reset userUploadedFile flag on error
       setUserUploadedFile(false);
-      setImportNotification("Failed to Upload 3D Model");
-      setTimeout(() => setImportNotification(null), 3000);
+      setNotification("Failed to Upload 3D Model", "error");
+      setTimeout(() => setNotification(null, "error"), 3000);
     }
   };
 
@@ -598,12 +517,12 @@ function CreateMode() {
       setShowBackgroundModel(false);
       setUserUploadedFile(false); // Reset user upload flag
 
-      setImportNotification(`Background 3D model deleted`);
-      setTimeout(() => setImportNotification(null), 3000);
+      setNotification(`Background 3D model deleted`, "warning");
+      setTimeout(() => setNotification(null, "warning"), 3000);
     } catch (error) {
       console.error("Error deleting background 3D model file:", error);
       alert(
-        `Failed to delete 3D model file. The file will remain in your repository.`
+        `Failed to delete 3D model file. The file will remain in your repository.`,
       );
     }
   };
@@ -659,7 +578,7 @@ function CreateMode() {
               position: { top: screenHeight / 2 + 125, left: 10 },
               collapsedOffset: [45, -135],
               gitRef: gitRef,
-              setErrorNotification: setErrorNotification,
+              setUserNotification,
             }}
           />
           <div id="headerBar">
@@ -737,7 +656,9 @@ function CreateMode() {
             style={{ display: "none" }}
             onChange={(value) => {
               let file = value.target.files[0];
-              uploadAFile(file);
+              if (file) {
+                uploadFile(file, activeAtom);
+              }
             }}
           />
           <input
@@ -745,7 +666,7 @@ function CreateMode() {
             id="fileDeleteInput"
             style={{ display: "none" }}
             onClick={() => {
-              deleteAFile(activeAtom.fileName, activeAtom.sha);
+              deleteFile(activeAtom.fileName, activeAtom.sha);
             }}
           />
           <input
@@ -781,9 +702,9 @@ function CreateMode() {
               setMesh,
               cad,
               setWireMesh,
-              importNotification,
-              errorNotification,
-              setErrorNotification,
+              userNotification,
+              notificationType,
+              setUserNotification,
               setExpandedMenu,
               windowSize,
               redirectType,

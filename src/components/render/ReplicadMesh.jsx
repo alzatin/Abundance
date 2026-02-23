@@ -23,11 +23,9 @@ import {
 } from "replicad-threejs-helper";
 import { Wireframe } from "@react-three/drei";
 import { useRendering } from "../../contexts/index.js";
-import { SVGRenderer } from "three/examples/jsm/renderers/SVGRenderer.js";
-import globalvariables from "../../js/globalvariables.js";
 
 export default React.memo(
-  forwardRef(function ShapeMeshes({ isSolid, cameraZoom }, ref) {
+  forwardRef(function ShapeMeshes({ isSolid, cameraZoom, setProcessing }, ref) {
     const { mesh, setOutdatedMesh, plane } = useRendering();
     const { invalidate } = useThree();
 
@@ -42,6 +40,8 @@ export default React.memo(
     }, [mesh, invalidate]);
 
     function makeMeshes(meshes) {
+      console.log("Making meshes for rendering...");
+      console.log(meshes);
       let meshArray = [];
       let keepOutMesh = [];
       meshes.map((m) => {
@@ -104,12 +104,12 @@ export default React.memo(
         const exampleDiagonal = Math.sqrt(
           Math.pow(exampleBoundingBox.width, 2) +
             Math.pow(exampleBoundingBox.height, 2) +
-            Math.pow(exampleBoundingBox.depth, 2)
+            Math.pow(exampleBoundingBox.depth, 2),
         );
 
         // Calculate the diagonal length of the input bounding box
         const diagonal = Math.sqrt(
-          Math.pow(width, 2) + Math.pow(height, 2) + Math.pow(depth, 2)
+          Math.pow(width, 2) + Math.pow(height, 2) + Math.pow(depth, 2),
         );
 
         // Calculate the zoom level based on the proportional relationship
@@ -145,7 +145,7 @@ export default React.memo(
           const positions = m.lines.attributes.position.array;
           for (let i = 0; i < positions.length; i += 3) {
             boundingBox.expandByPoint(
-              new Vector3(positions[i], positions[i + 1], positions[i + 2])
+              new Vector3(positions[i], positions[i + 1], positions[i + 2]),
             );
           }
         }
@@ -164,7 +164,7 @@ export default React.memo(
         boundingBoxDimensions.width,
         boundingBoxDimensions.height,
         boundingBoxDimensions.depth,
-        9
+        9,
       );
 
       // 2. Setup camera with dynamic positioning
@@ -194,7 +194,7 @@ export default React.memo(
           const v1 = new Vector3(
             positions[i],
             positions[i + 1],
-            positions[i + 2]
+            positions[i + 2],
           );
           v1.project(camera);
           const x1 = (v1.x * 0.5 + 0.5) * width;
@@ -205,7 +205,7 @@ export default React.memo(
           const v2 = new Vector3(
             positions[i + 3],
             positions[i + 4],
-            positions[i + 5]
+            positions[i + 5],
           );
           v2.project(camera);
           const x2 = (v2.x * 0.5 + 0.5) * width;
@@ -215,7 +215,7 @@ export default React.memo(
           path += `M${x1},${y1} L${x2},${y2} `;
         }
         svgPaths.push(
-          `<path d="${path.trim()}" stroke="${m.color}" fill="none"/>`
+          `<path d="${path.trim()}" stroke="${m.color}" fill="none"/>`,
         );
       });
 
@@ -243,7 +243,7 @@ export default React.memo(
           const v1 = new Vector3(
             positions[i],
             positions[i + 1],
-            positions[i + 2]
+            positions[i + 2],
           );
           v1.project(camera);
           const x1 = (v1.x * 0.5 + 0.5) * width - centerX + width / 2;
@@ -253,7 +253,7 @@ export default React.memo(
           const v2 = new Vector3(
             positions[i + 3],
             positions[i + 4],
-            positions[i + 5]
+            positions[i + 5],
           );
           v2.project(camera);
           const x2 = (v2.x * 0.5 + 0.5) * width - centerX + width / 2;
@@ -265,7 +265,7 @@ export default React.memo(
           /*`<path d="${path.trim()}" stroke="${
             m.color
           }" stroke-width="4" fill="none"/>`*/
-          `<path d="${path.trim()}" stroke="black"  stroke-width="4"  fill="red"/>`
+          `<path d="${path.trim()}" stroke="black"  stroke-width="4"  fill="red"/>`,
         );
       });
 
@@ -296,7 +296,7 @@ export default React.memo(
         setOutdatedMesh(false);
         invalidate();
       },
-      [invalidate]
+      [invalidate],
     );
 
     const wireframeProps = {
@@ -384,5 +384,5 @@ export default React.memo(
         })}
       </>
     );
-  })
+  }),
 );

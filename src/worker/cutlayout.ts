@@ -14,6 +14,7 @@ type LayoutConfig = {
   height: number;
   partPadding: number;
   units?: string;
+  rotations: number;
 };
 
 type Placement = {
@@ -49,6 +50,8 @@ async function layout(
   context: RequestContext,
   previousPlacements: Placement[][] | undefined = undefined
 ): Promise<[AbundanceObject, Placement[][]]> {
+  checkConfig(layoutConfig);
+
   var [rotatedAssembly, shapesForLayout] = await rotateForLayout(
     assembly,
     layoutConfig,
@@ -132,6 +135,38 @@ async function displayLayoutWithRotatedAssembly(
   context: RequestContext
 ): Promise<AbundanceObject> {
   return applyLayout(rotatedAssembly, positions, layoutConfig, context);
+}
+
+/**
+ * Creates default placements for all parts in the assembly and displays them.
+ * All parts are placed at (0, 0) with 0° rotation.
+ * Returns both the displayed layout and the default placements.
+ * @param assembly - The assembly to create default placements for
+ * @param warningCallback - Callback for warnings
+ * @param layoutConfig - Layout configuration
+ * @param context - Request context
+ * @returns Promise resolving to [displayedLayout, defaultPlacements]
+ */
+async function createAndDisplayDefaultLayout(
+  assembly: AbundanceObject,
+  warningCallback: (msg: string) => void,
+  layoutConfig: LayoutConfig,
+  context: RequestContext
+): Promise<[AbundanceObject, Placement[][]]> {
+  const [rotatedAssembly, shapesForLayout] = await rotateForLayout(
+    assembly,
+    layoutConfig,
+    warningCallback,
+    context
+  );
+  const defaultPlacements = createDefaultPlacements(shapesForLayout);
+  const displayedLayout = await applyLayout(
+    rotatedAssembly,
+    defaultPlacements,
+    layoutConfig,
+    context
+  );
+  return [displayedLayout, defaultPlacements];
 }
 
 /**
@@ -422,16 +457,17 @@ async function applyLayout(
   const result = util.actOnLeafs(
     rotatedAssembly,
     async (leaf: AbundanceLeaf) => {
-      let transform, index;
+      let transform;
+      let sheetNumber = 0;
       // @ts-ignore TODO: some fancy subtyping to define an id-ed AbundanceLeaf variant
       const leafID = leaf.id;
-      for (var i = 0; i < positions.length; i++) {
-        let candidates = positions[i].filter(
+      for (var sheet = 0; sheet < positions.length; sheet++) {
+        let candidates = positions[sheet].filter(
           (transform) => transform.id == leafID
         );
         if (candidates.length == 1) {
           transform = candidates[0];
-          index = i;
+          sheetNumber = sheet;
           break;
         } else if (candidates.length > 1) {
           console.warn("Found more than one transformation for same id");
@@ -457,7 +493,9 @@ async function applyLayout(
       newGeom = await util.geometryProvider!.move(
         newGeom,
         transform.translate.x - layoutConfig.width / 2,
-        transform.translate.y + i * layoutConfig.height - layoutConfig.height / 2,
+        transform.translate.y +
+          sheetNumber * layoutConfig.height -
+          layoutConfig.height / 2,
         0,
         context
       );
@@ -466,11 +504,21 @@ async function applyLayout(
         ...leaf,
         geometry: newGeom,
         referencePoint: undefined,
+        tags: [...(leaf.tags || []), `sheet:${sheetNumber}`],
       };
     }
   );
 
   return result;
+}
+
+function checkConfig(layoutConfig: LayoutConfig) {
+  if (layoutConfig.width <= 0 || layoutConfig.height <= 0) {
+    throw new Error("Sheet width and height must be greater than zero.");
+  }
+  if (layoutConfig.rotations < 1 || !Number.isInteger(layoutConfig.rotations)) {
+    throw new Error("Orientations must be an integer of 1 or more.");
+  }
 }
 
 /**
@@ -531,7 +579,7 @@ function computePositions(
   const config = {
     curveTolerance: 0.1,
     spacing: layoutConfig.partPadding + tolerance * 2,
-    rotations: 12,
+    rotations: layoutConfig.rotations,
     populationSize: 8,
     mutationRate: 50,
     useHoles: false,
@@ -853,6 +901,7 @@ function areaApprox(bounds: {
 }
 
 export {
+  createAndDisplayDefaultLayout,
   createDefaultPlacements,
   displayLayout,
   displayLayoutWithRotatedAssembly,

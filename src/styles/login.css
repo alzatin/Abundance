@@ -1128,6 +1128,12 @@
   z-index: 5;
 }
 
+/* Position panel on the left when it would overflow on the right */
+.thumb-quick-view-panel.panel-on-left {
+  left: auto;
+  right: 110%;
+}
+
 /* Responsive positioning for smaller screens */
 @media (max-width: 768px) {
   .thumb-quick-view-panel {

@@ -13,10 +13,12 @@ export function RenderingProvider({ children }) {
   const [outdatedMesh, setOutdatedMesh] = useState(false);
   const [plane, setPlane] = useState(null);
   const [geometryType, setGeometryType] = useState(null);
+  const [gcodeParts, setGcodeParts] = useState(null);
 
   // Render progress state
   const [renderProgress, setRenderProgress] = useState(0);
   const [renderBarVisible, setRenderBarVisible] = useState(true);
+  const [renderStage, setRenderStage] = useState(""); // "Waiting for user Input", "Building", or "Rendering"
 
   // Render settings state
   const [gridParam, setGrid] = useState(true);
@@ -55,6 +57,8 @@ export function RenderingProvider({ children }) {
     setRenderProgress,
     renderBarVisible,
     setRenderBarVisible,
+    renderStage,
+    setRenderStage,
 
     // Render settings
     gridParam,
@@ -85,6 +89,10 @@ export function RenderingProvider({ children }) {
     // Output mesh viewing state
     isViewingOutputMesh,
     setIsViewingOutputMesh,
+
+    // GCode group
+    gcodeParts,
+    setGcodeParts,
   };
 
   return (
