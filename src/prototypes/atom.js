@@ -791,7 +791,7 @@ export default class Atom extends ObservableEntity {
         const isMoleculeInput = ap.type === "input";
 
         // Debug logging for Input-type attachments
-        if (isMoleculeInput || ap.name === "Wood Thickness") {
+        /*if (isMoleculeInput || ap.name === "Wood Thickness") {
           console.log(
             `[Serialize Debug] AP="${ap.name}", type="${ap.type}", valueType="${
               ap.valueType
@@ -801,7 +801,7 @@ export default class Atom extends ObservableEntity {
               isDifferentFromDefault || hasCustomEquation || isMoleculeInput
             }`,
           );
-        }
+        }*/
 
         // Save if value changed from default OR has custom equation OR is a molecule input
         if (isDifferentFromDefault || hasCustomEquation || isMoleculeInput) {

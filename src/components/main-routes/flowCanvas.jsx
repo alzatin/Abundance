@@ -359,6 +359,7 @@ export default memo(function FlowCanvas({
       GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
         molecule.keyPress(e.key);
       });
+      setActiveAtom(GlobalVariables.currentMolecule);
     }
 
     if (GlobalVariables.ctrlDown && shortCuts.hasOwnProperty([e.key])) {
@@ -691,7 +692,9 @@ export default memo(function FlowCanvas({
 
   let parentLinkPath = [];
   if (GlobalVariables.currentMolecule) {
-    parentLinkPath.unshift(getMoleculeDisplayName(GlobalVariables.currentMolecule));
+    parentLinkPath.unshift(
+      getMoleculeDisplayName(GlobalVariables.currentMolecule),
+    );
     let currentParent = GlobalVariables.currentMolecule.parent;
     while (currentParent) {
       parentLinkPath.unshift(getMoleculeDisplayName(currentParent));
@@ -760,7 +763,6 @@ export default memo(function FlowCanvas({
       {undoNotification && (
         <div className="undo-notification">{undoNotification}</div>
       )}
-
 
       {/* User notification */}
       {userNotification && (
