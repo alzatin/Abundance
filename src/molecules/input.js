@@ -126,7 +126,7 @@ export default class Input extends Atom {
         this.type === "import" ? "geometry" : this.type,
         this.value,
         "input",
-        inputOptions
+        inputOptions,
       );
       // We also subscribe directly to the parent ap.
       this.parentAP.subscribe(() => {
@@ -134,7 +134,7 @@ export default class Input extends Atom {
       }, this.uniqueID);
     } else {
       throw new Error(
-        "constructed an input with undefined parent. IDK what to do here"
+        "constructed an input with undefined parent. IDK what to do here",
       );
     }
 
@@ -162,7 +162,7 @@ export default class Input extends Atom {
 
     // Find all existing Input atoms in the parent molecule (excluding this one)
     const existingInputs = this.parent.nodesOnTheScreen.filter(
-      (atom) => atom.atomType === "Input" && atom !== this
+      (atom) => atom.atomType === "Input" && atom !== this,
     );
 
     // Calculate total number of inputs including this one
@@ -197,7 +197,7 @@ export default class Input extends Atom {
         const adjustedRequiredHeight = (totalInputs - 1) * atomSpacing;
         startY = Math.max(
           GlobalVariables.atomSize * 2,
-          maxY - adjustedRequiredHeight
+          maxY - adjustedRequiredHeight,
         );
       }
     }
@@ -438,7 +438,7 @@ export default class Input extends Atom {
     GlobalVariables.c.fillText(
       this.fittingString(GlobalVariables.c, this.name, maxTextWidth),
       5,
-      yInPixels + 3
+      yInPixels + 3,
     );
 
     // Draw the inputs
@@ -524,7 +524,7 @@ export default class Input extends Atom {
     const canvas = GlobalVariables.canvas.current;
     // Trigger layout reflow to ensure getBoundingClientRect returns current values
     void canvas.offsetHeight;
-    
+
     const canvasRect = canvas.getBoundingClientRect();
 
     this.tooltipElement = document.createElement("div");
@@ -565,16 +565,17 @@ export default class Input extends Atom {
       return;
     }
 
-    // Check if mouse is over this input atom using the input's actual dimensions
+    // Adjust hit area to match left-aligned drawing (drawn from x=0 to x=width)
     let xInPixels = GlobalVariables.widthToPixels(this.x);
     let yInPixels = GlobalVariables.heightToPixels(this.y);
-
-    // Use the input's width and height instead of just radius
+    // The shape is drawn from x=0 to x=width, so hit area is from xInPixels to xInPixels+width
+    const width = this.width || 100;
+    const height = this.height || 30;
     const isOverAtom =
-      x >= xInPixels - (this.width || 100) / 2 &&
-      x <= xInPixels + (this.width || 100) / 2 &&
-      y >= yInPixels - (this.height || 30) / 2 &&
-      y <= yInPixels + (this.height || 30) / 2;
+      x >= xInPixels &&
+      x <= xInPixels + width &&
+      y >= yInPixels - height / 2 &&
+      y <= yInPixels + height / 2;
 
     if (isOverAtom) {
       // Mouse is over the atom
@@ -645,10 +646,10 @@ export default class Input extends Atom {
           fileType === "STL"
             ? GlobalVariables.cad.importingSTL
             : fileType === "SVG"
-            ? GlobalVariables.cad.importingSVG
-            : fileType === "STEP"
-            ? GlobalVariables.cad.importingSTEP
-            : null;
+              ? GlobalVariables.cad.importingSVG
+              : fileType === "STEP"
+                ? GlobalVariables.cad.importingSTEP
+                : null;
 
         if (funcToCall === null) {
           throw new Error("Invalid file type");
@@ -778,10 +779,10 @@ export default class Input extends Atom {
         this.fileType === "STL"
           ? GlobalVariables.cad.importingSTL
           : this.fileType === "SVG"
-          ? GlobalVariables.cad.importingSVG
-          : this.fileType === "STEP"
-          ? GlobalVariables.cad.importingSTEP
-          : null;
+            ? GlobalVariables.cad.importingSVG
+            : this.fileType === "STEP"
+              ? GlobalVariables.cad.importingSTEP
+              : null;
 
       if (funcToCall === null) {
         throw new Error("Invalid file type");
@@ -790,7 +791,7 @@ export default class Input extends Atom {
       const result = await funcToCall(
         fileData,
         this.getContext(),
-        this.SVGwidth
+        this.SVGwidth,
       );
 
       this.value = result;
@@ -945,7 +946,7 @@ export default class Input extends Atom {
         sanitizedName = GlobalVariables.incrementVariableName(
           sanitizedName,
           this.parent,
-          [this]
+          [this],
         );
         if (this.name !== sanitizedName) {
           this.name = sanitizedName;
@@ -961,7 +962,15 @@ export default class Input extends Atom {
       value: this.type,
       label: "Input Type",
       disabled: false,
-      options: ["number", "string", "geometry", "array", "boolean", "range", "import"],
+      options: [
+        "number",
+        "string",
+        "geometry",
+        "array",
+        "boolean",
+        "range",
+        "import",
+      ],
       onChange: (newType) => {
         if (this.type !== newType) {
           this.type = newType;
@@ -1061,7 +1070,7 @@ export default class Input extends Atom {
           onClick: () => {
             this.loadFile(
               this.importOptions[this.importIndex],
-              this.setInputChanged
+              this.setInputChanged,
             );
           },
         };
