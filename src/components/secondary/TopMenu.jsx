@@ -25,6 +25,10 @@ function TopMenu({
   setSettingsPopUp,
   duplicateDialog,
   setDuplicateDialog,
+  recomputeVisible,
+  setRecomputeVisible,
+  recomputeProgress,
+  setRecomputeProgress,
 }) {
   const { authorizedUserOcto, authRedirectHandler } = useAuth();
   const {
@@ -319,7 +323,12 @@ function TopMenu({
         id: "Recompute Project",
         buttonFunc: () => {
           GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
-          GlobalVariables.topLevelMolecule.recomputeAll();
+          GlobalVariables.topLevelMolecule.recomputeAll(
+            setRecomputeVisible,
+            setRecomputeProgress,
+          );
+          setRecomputeVisible(true);
+          setRecomputeProgress(0);
         },
       },
       {

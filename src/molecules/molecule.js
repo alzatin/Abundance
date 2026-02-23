@@ -1317,18 +1317,18 @@ export default class Molecule extends Atom {
     return geomList;
   }
 
-  async recomputeAll() {
+  async recomputeAll(setRecomputeVisible, setRecomputeProgress) {
     // Serialize the current molecule state
-    const snapshot = this.serialize();
-
+    const snapshot = this.serialize({ x: 0, y: 0 }, setRecomputeProgress);
     // Remove all atoms from the molecule
     this.deleteAllAtoms();
 
     // Clear CAD cache
     await GlobalVariables.cad.clearCache(this.getContext());
-
     // Re-deserialize the molecule from the snapshot
     await this.deserialize(snapshot);
+    setRecomputeProgress(100); // Update progress to indicate completion
+    setRecomputeVisible(false); // Hide the progress bar after recompute is done
   }
 
   /**
