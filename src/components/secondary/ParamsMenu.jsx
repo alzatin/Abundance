@@ -2,9 +2,7 @@ import React from "react";
 import { useEffect, useState, useMemo } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
-import GlobalVariables from "../../js/globalvariables";
 import { useAppState } from "../../contexts/index.js";
-import init from "replicad-opencascadejs";
 
 export default function ParamsMenu({
   position,
