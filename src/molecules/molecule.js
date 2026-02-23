@@ -1316,14 +1316,19 @@ export default class Molecule extends Atom {
     }
     return geomList;
   }
+  //Only enabling the molecules was causing propagation issues, so now we are deserializing the molecule to recompute it.
+  async recomputeAll(setRecomputeVisible, setRecomputeProgress) {
+    // Serialize the current molecule state
+    const snapshot = this.serialize({ x: 0, y: 0 }, setRecomputeProgress);
+    // Remove all atoms from the molecule
+    this.deleteAllAtoms();
 
-  async recomputeAll() {
-    this.disable();
+    // Clear CAD cache
     await GlobalVariables.cad.clearCache(this.getContext());
-    this.enable();
-    for (const atom of this.nodesOnTheScreen) {
-      atom.enable();
-    }
+    // Re-deserialize the molecule from the snapshot
+    await this.deserialize(snapshot);
+    setRecomputeProgress(100); // Update progress to indicate completion
+    setRecomputeVisible(false); // Hide the progress bar after recompute is done
   }
 
   /**

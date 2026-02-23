@@ -130,6 +130,17 @@ function CreateMode() {
     false,
   );
 
+  const [recomputeProgress, setRecomputeProgress] = useState(0);
+  const [recomputeVisible, setRecomputeVisible] = useState(false);
+
+  useProgressBar(
+    "recompute",
+    recomputeVisible,
+    recomputeProgress,
+    "Recomputing",
+    false,
+  );
+
   /** State for save progress bar */
   const [saveState, setSaveState] = useState(0);
   const [savePopUp, setSavePopUp] = useState(false);
@@ -656,6 +667,10 @@ function CreateMode() {
               setSettingsPopUp,
               duplicateDialog,
               setDuplicateDialog,
+              recomputeVisible,
+              setRecomputeVisible,
+              recomputeProgress,
+              setRecomputeProgress,
             }}
           />
 
