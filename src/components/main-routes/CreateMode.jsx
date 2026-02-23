@@ -315,7 +315,7 @@ function CreateMode() {
         },
       },
     ];
-
+    //Only works with CTRL
     if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
       for (const combo of shortcutCombos) {
         if (e.key === combo.key) {
