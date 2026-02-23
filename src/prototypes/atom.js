@@ -609,8 +609,13 @@ export default class Atom extends ObservableEntity {
     let yInPixels = GlobalVariables.heightToPixels(this.y);
     let radiusInPixels = GlobalVariables.widthToPixels(this.radius);
     if (this.isMoving == true) {
-      this.x = GlobalVariables.pixelsToWidth(x);
-      this.y = GlobalVariables.pixelsToHeight(y);
+      if (this.atomType == "Input") {
+        // Input atoms are locked to the left side, only update y position
+        this.y = GlobalVariables.pixelsToHeight(y);
+      } else {
+        this.x = GlobalVariables.pixelsToWidth(x);
+        this.y = GlobalVariables.pixelsToHeight(y);
+      }
     }
 
     this.inputs.forEach((child) => {
