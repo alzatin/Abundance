@@ -319,6 +319,7 @@ export default class CutLayout extends Atom {
       .createAndDisplayDefaultLayout(
         inputGeom,
         proxy((message) => {
+          console.warn("Warning while creating default placements:", message);
           this.setWarning(message);
         }),
         this.getLayoutConfig(),
@@ -329,15 +330,19 @@ export default class CutLayout extends Atom {
         this.setReady(result);
       })
       .catch((err) => {
-        console.error("Failed to create default placements:", err);
-        this.setWaiting();
+        this.alertingErrorHandler()(err);
+        this.selected = false; // Deselect self so that the atom renders in red with the warning attached.
+      })
+      .finally(() => {
+        this.cancelationHandle = undefined;
+        this.progress = 1.0;
       });
   }
 
   /**
    * Pass the input geometry to a worker function to compute the translation.
    */
-  updateValueButton(setInputChanged) {
+  computeValueButton(setInputChanged) {
     //this.setInputsChanged = setInputsChanged;
     if (this.inputsAreReady()) {
       // Only checks AP inputs, not the placement values themselves.
@@ -416,7 +421,7 @@ export default class CutLayout extends Atom {
         if (this.getState().status == Status.PROCESSING) {
           this.haltAndDisplay();
         } else {
-          this.updateValueButton(setInputChanged);
+          this.computeValueButton(setInputChanged);
         }
         setInputChanged();
       },
