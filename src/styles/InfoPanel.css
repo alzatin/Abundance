@@ -190,3 +190,59 @@
 .info-panel-body::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover, #666);
 }
+
+/* Console panel styles */
+.console-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.console-clear-btn {
+  background: none;
+  border: 1px solid var(--border-color, #555);
+  color: var(--control-text-muted, #888);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 3px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.console-clear-btn:hover {
+  color: var(--control-text, #e0e0e0);
+  border-color: var(--control-text-muted, #888);
+}
+
+.console-body {
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+}
+
+.console-error-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.console-error-item {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  background-color: rgba(200, 50, 50, 0.12);
+  border-left: 3px solid #e05b5b;
+  border-radius: 3px;
+  word-break: break-word;
+}
+
+.console-error-time {
+  font-size: 10px;
+  color: var(--control-text-muted, #888);
+  margin-bottom: 4px;
+}
+
+.console-error-message {
+  color: #e05b5b;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
