@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import ReactCodeEditor from "@uiw/react-codemirror";
 import { keymap } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
@@ -56,12 +56,38 @@ const CODE_WINDOW_GUIDE = [
 export default function CodeWindow(props) {
   const [docvalue, setdocValue] = useState("");
   const extensions = [keymap.of(defaultKeymap)];
-  const [expandedPanel, setExpandedPanel] = useState(null); // null, 'replicad', 'abundance', or 'common'
+  const [expandedPanel, setExpandedPanel] = useState(null); // null, 'replicad', 'abundance', 'common', or 'console'
+  const [consoleErrors, setConsoleErrors] = useState([]);
 
   useEffect(() => {
     if (props.activeAtom != null) {
       setdocValue(props.activeAtom.code);
     }
+  }, [props.activeAtom]);
+
+  // Subscribe to activeAtom changes to capture code execution errors
+  useEffect(() => {
+    if (props.activeAtom == null) return;
+
+    const subscriberId = "codeWindowConsole";
+    const handleAtomChange = () => {
+      if (
+        props.activeAtom.status === "error" &&
+        props.activeAtom.alert &&
+        props.activeAtom.alert.message
+      ) {
+        setConsoleErrors((prev) => [
+          { message: props.activeAtom.alert.message, timestamp: new Date(), id: Date.now() + Math.random() },
+          ...prev,
+        ]);
+      }
+    };
+
+    props.activeAtom.subscribe(handleAtomChange, subscriberId, false);
+
+    return () => {
+      props.activeAtom.unsubscribe(subscriberId);
+    };
   }, [props.activeAtom]);
 
   /**
@@ -300,6 +326,65 @@ Tips:
               >
                 <span className="tab-arrow">◀</span>
                 <span className="tab-label">Code Window Guide</span>
+              </div>
+            )}
+          </div>
+          <div
+            className={`info-panel ${
+              expandedPanel === "console" ? "expanded" : "collapsed"
+            }`}
+          >
+            {expandedPanel === "console" ? (
+              <div className="info-panel-content">
+                <div className="info-panel-header">
+                  <h3>Console</h3>
+                  <div className="console-header-actions">
+                    <button
+                      className="console-clear-btn"
+                      onClick={() => setConsoleErrors([])}
+                      title="Clear console"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      className="collapse-btn"
+                      onClick={() => togglePanel("console")}
+                    >
+                      ▶
+                    </button>
+                  </div>
+                </div>
+                <div className="info-panel-body console-body">
+                  {consoleErrors.length === 0 ? (
+                    <div className="no-methods">No errors</div>
+                  ) : (
+                    <div className="console-error-list">
+                      {consoleErrors.map((entry) => (
+                        <div key={entry.id} className="console-error-item">
+                          <span className="console-error-time">
+                            {entry.timestamp.toLocaleTimeString()}
+                          </span>
+                          <span className="console-error-message">
+                            {entry.message}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div
+                className="info-panel-tab"
+                onClick={() => togglePanel("console")}
+              >
+                <span className="tab-arrow">◀</span>
+                <span
+                  className="tab-label"
+                  style={consoleErrors.length > 0 ? { color: "#e05b5b" } : {}}
+                >
+                  Console{consoleErrors.length > 0 ? ` (${consoleErrors.length})` : ""}
+                </span>
               </div>
             )}
           </div>
