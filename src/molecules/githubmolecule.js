@@ -120,6 +120,8 @@ export default class GitHubMolecule extends Molecule {
     inputParams["Reload From Github"] = {
       type: "button",
       label: "Reload From Github",
+      title:
+        "Reload this molecule from GitHub, which will update its contents to match the current state of the linked GitHub repository.",
       onClick: () => this.reloadMoleculeFromGithub(),
     };
     return inputParams;
@@ -143,7 +145,7 @@ export default class GitHubMolecule extends Molecule {
       /*old way > keeping until i fix reload -- this.gitHubUniqueID*/
       gitObj,
       githubMoleculeObjectPreReload,
-      githubMoleculeParentObjectConnectorsPreReload
+      githubMoleculeParentObjectConnectorsPreReload,
     );
   }
 }

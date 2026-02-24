@@ -412,6 +412,10 @@ export default class CutLayout extends Atom {
         this.getState().status == Status.PROCESSING
           ? "Halt Layout"
           : "Compute Layout",
+      title:
+        this.getState().status == Status.PROCESSING
+          ? "Halt the current layout computation"
+          : "Compute the ideal layout based on the current geometry and layout configuration",
       onClick: () => {
         if (this.getState().status == Status.PROCESSING) {
           this.haltAndDisplay();
@@ -425,6 +429,8 @@ export default class CutLayout extends Atom {
     inputParams["Reset Layout"] = {
       type: "button",
       label: "Reset Layout",
+      title:
+        "Reset all part placements to a default position to manually arrange them",
       onClick: () => {
         this.placements = [];
         this.placementsFor = "";
