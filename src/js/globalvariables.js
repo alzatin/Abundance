@@ -215,6 +215,12 @@ class GlobalVariables {
      */
     this.cad = null; //Set in flowCanvas
     /**
+     * A dedicated worker for cutlayout and gcode operations, separate from the
+     * main CAD worker to avoid blocking other model computations.
+     * @type {object}
+     */
+    this.layoutCad = null; //Set in App.jsx
+    /**
      * A total of the number of atoms in this project
      * @type {integer}
      */
