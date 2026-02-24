@@ -319,7 +319,6 @@ export default class CutLayout extends Atom {
       .createAndDisplayDefaultLayout(
         inputGeom,
         proxy((message) => {
-          console.warn("Warning while creating default placements:", message);
           this.setWarning(message);
         }),
         this.getLayoutConfig(),
