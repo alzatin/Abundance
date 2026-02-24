@@ -1585,6 +1585,12 @@ export default class Molecule extends Atom {
       return; // New atom doesn't have an available geometry input
     }
 
+    // If no free geometry input is found, fall back to any geometry input to allow replacement
+    // placeConnector will handle replacing the existing connection if types are compatible
+    if (!geometryInput && newAtom.inputs) {
+      geometryInput =
+        newAtom.inputs.find((input) => input.valueType === "geometry") || null;
+    }
     // Use the first selected atom with geometry output (could be enhanced to be smarter)
     const sourceAtom = selectedGeometryAtoms[0];
 
