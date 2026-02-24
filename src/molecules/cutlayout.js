@@ -101,17 +101,17 @@ export default class CutLayout extends Atom {
     GlobalVariables.c.fillStyle = "#949294";
     GlobalVariables.c.moveTo(
       xInPixels - radiusInPixels / 2,
-      yInPixels + radiusInPixels / 2
+      yInPixels + radiusInPixels / 2,
     );
     GlobalVariables.c.lineTo(
       xInPixels + radiusInPixels / 2,
-      yInPixels + radiusInPixels / 2
+      yInPixels + radiusInPixels / 2,
     );
     GlobalVariables.c.lineTo(xInPixels + radiusInPixels / 2, yInPixels);
     GlobalVariables.c.lineTo(xInPixels - radiusInPixels / 2, yInPixels);
     GlobalVariables.c.lineTo(
       xInPixels - radiusInPixels / 2,
-      yInPixels + radiusInPixels / 2
+      yInPixels + radiusInPixels / 2,
     );
     //GlobalVariables.c.fill()
     GlobalVariables.c.setLineDash([3, 3]);
@@ -120,17 +120,17 @@ export default class CutLayout extends Atom {
     GlobalVariables.c.beginPath();
     GlobalVariables.c.lineTo(
       xInPixels + radiusInPixels / 4,
-      yInPixels - radiusInPixels / 1.7
+      yInPixels - radiusInPixels / 1.7,
     );
     GlobalVariables.c.lineTo(
       xInPixels - radiusInPixels / 4,
-      yInPixels - radiusInPixels / 2
+      yInPixels - radiusInPixels / 2,
     );
     GlobalVariables.c.lineTo(xInPixels - radiusInPixels / 4, yInPixels);
     GlobalVariables.c.lineTo(xInPixels + radiusInPixels / 2, yInPixels);
     GlobalVariables.c.lineTo(
       xInPixels + radiusInPixels / 4,
-      yInPixels - radiusInPixels / 1.7
+      yInPixels - radiusInPixels / 1.7,
     );
 
     //GlobalVariables.c.fill()
@@ -146,7 +146,7 @@ export default class CutLayout extends Atom {
       GlobalVariables.c.fillStyle = this.centerColor;
       GlobalVariables.c.moveTo(
         GlobalVariables.widthToPixels(this.x),
-        GlobalVariables.heightToPixels(this.y)
+        GlobalVariables.heightToPixels(this.y),
       );
       GlobalVariables.c.arc(
         GlobalVariables.widthToPixels(this.x),
@@ -154,7 +154,7 @@ export default class CutLayout extends Atom {
         GlobalVariables.widthToPixels(this.radius) / 1.5,
         0,
         this.progress * Math.PI * 2,
-        false
+        false,
       );
       GlobalVariables.c.closePath();
       GlobalVariables.c.fill();
@@ -227,7 +227,7 @@ export default class CutLayout extends Atom {
             this.setWarning(message);
           }),
           this.getLayoutConfig(),
-          this.getContext()
+          this.getContext(),
         )
         .then((result) => {
           if (this.selected) {
@@ -276,8 +276,9 @@ export default class CutLayout extends Atom {
         this.createDefaultPlacements();
       });
     } else {
-      // No saved placements, create default ones with all parts at (0,0) with 0° rotation
-      this.createDefaultPlacements();
+      // No saved placements, set to waiting and wait for user to compute layout with the new geometry.
+      this.setStatus(Status.WAITING);
+      console.trace("No saved placements, waiting for user to compute layout.");
     }
   }
 
@@ -306,7 +307,7 @@ export default class CutLayout extends Atom {
           this.setWarning(message);
         }),
         this.getLayoutConfig(),
-        this.getContext()
+        this.getContext(),
       )
       .then(([result, placements]) => {
         this.handleNewPlacements(placements, inputGeom, true);
@@ -332,7 +333,7 @@ export default class CutLayout extends Atom {
       }
       this.setProcessing();
       var inputGeom = this.findIOValue("geometry");
-      
+
       if (!inputGeom) {
         this.setError('"geometry" input is missing');
         return;
@@ -355,7 +356,7 @@ export default class CutLayout extends Atom {
           }),
           this.getLayoutConfig(),
           this.getContext(),
-          this.placements
+          this.placements,
         )
         .then((layoutAndPositions) => {
           const [layout, positions] = layoutAndPositions;
@@ -406,6 +407,17 @@ export default class CutLayout extends Atom {
       },
     };
 
+    inputParams["Reset Layout"] = {
+      type: "button",
+      label: "Reset Layout",
+      onClick: () => {
+        this.placements = [];
+        this.placementsFor = "";
+        this.createDefaultPlacements();
+        setInputChanged();
+      },
+    };
+
     let prepareLabel = (sheet, index, totalsheets) => {
       if (totalsheets > 1) {
         return "sheet " + sheet + " p" + index;
@@ -450,7 +462,7 @@ export default class CutLayout extends Atom {
                 this.handleNewPlacements(
                   this.getPlacements(),
                   this.placementsFor,
-                  true
+                  true,
                 );
               }
             }
