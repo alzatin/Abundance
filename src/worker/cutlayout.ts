@@ -48,7 +48,7 @@ async function layout(
   placementsCallback: (placements: Placement[][]) => void,
   layoutConfig: LayoutConfig,
   context: RequestContext,
-  previousPlacements: Placement[][] | undefined = undefined
+  previousPlacements: Placement[][] | undefined = undefined,
 ): Promise<[AbundanceObject, Placement[][]]> {
   checkConfig(layoutConfig);
 
@@ -56,7 +56,7 @@ async function layout(
     assembly,
     layoutConfig,
     warningCallback,
-    context
+    context,
   );
 
   let positionsPromise = computePositions(
@@ -64,7 +64,7 @@ async function layout(
     progressCallback,
     placementsCallback,
     layoutConfig,
-    previousPlacements
+    previousPlacements,
   );
   return positionsPromise.then(async (positions) => {
     //This does the actual layout of the parts.
@@ -72,7 +72,7 @@ async function layout(
       rotatedAssembly,
       positions,
       layoutConfig,
-      context
+      context,
     );
 
     if (positions.length == 0) {
@@ -105,19 +105,19 @@ async function displayLayout(
   positions: Placement[][],
   warningCallback: (msg: string) => void,
   layoutConfig: LayoutConfig,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   const [rotatedAssembly, shapesForLayout] = await rotateForLayout(
     assembly,
     layoutConfig,
     warningCallback,
-    context
+    context,
   );
   const result = await applyLayout(
     rotatedAssembly,
     positions,
     layoutConfig,
-    context
+    context,
   );
   return result;
 }
@@ -132,7 +132,7 @@ async function displayLayoutWithRotatedAssembly(
   positions: Placement[][],
   warningCallback: (msg: string) => void,
   layoutConfig: LayoutConfig,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   return applyLayout(rotatedAssembly, positions, layoutConfig, context);
 }
@@ -151,20 +151,20 @@ async function createAndDisplayDefaultLayout(
   assembly: AbundanceObject,
   warningCallback: (msg: string) => void,
   layoutConfig: LayoutConfig,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<[AbundanceObject, Placement[][]]> {
   const [rotatedAssembly, shapesForLayout] = await rotateForLayout(
     assembly,
     layoutConfig,
     warningCallback,
-    context
+    context,
   );
   const defaultPlacements = createDefaultPlacements(shapesForLayout);
   const displayedLayout = await applyLayout(
     rotatedAssembly,
     defaultPlacements,
     layoutConfig,
-    context
+    context,
   );
   return [displayedLayout, defaultPlacements];
 }
@@ -185,7 +185,7 @@ async function rotateForLayout(
   assembly: AbundanceObject,
   layoutConfig: LayoutConfig,
   warningCallback: (msg: string) => void,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<[AbundanceObject, ShapeForLayout[]]> {
   // Filter out keepout geometry before any processing
   const filteredAssembly = extractKeepOut(assembly);
@@ -200,7 +200,7 @@ async function rotateForLayout(
     try {
       await util.geometryProvider!.get(
         util.flattenAssembly(rotatedAssembly)[0].geometry,
-        context
+        context,
       );
       // If retrieving a geometry succeeds, then the cache hasn't been revoked on us
       // and we can proceed.
@@ -212,7 +212,7 @@ async function rotateForLayout(
     } catch (error) {
       console.warn(
         "Geom cache was evicted during the lifetime of rotateForLayout memoization",
-        error
+        error,
       );
     }
   }
@@ -288,7 +288,7 @@ async function rotateForLayout(
       };
       localId++;
       return newLeaf;
-    }
+    },
   );
 
   // Heuristic here is... for each part get it's minimum thickness. If the largest of these is
@@ -299,7 +299,7 @@ async function rotateForLayout(
   if (layoutConfig.units) {
     const LARGEST_PLAUSIBLE_STOCK = layoutConfig.units == "MM" ? 25.4 : 1;
     const min_thickness_per_part = Object.values(all_candidates).map((s) =>
-      Math.min(...s.map((c) => c.thickness))
+      Math.min(...s.map((c) => c.thickness)),
     );
     if (
       Math.max(...min_thickness_per_part) <=
@@ -312,7 +312,7 @@ async function rotateForLayout(
   if (Object.keys(all_candidates).length == 0) {
     // If no candidates were found, we can't proceed with the layout.
     throw new Error(
-      "No placable parts found for layout. 2D parts are not supported."
+      "No placeable parts found for layout. 2D parts are not supported.",
     );
   }
 
@@ -411,7 +411,7 @@ async function rotateForLayout(
         // Next args are constituents of the cache ID for this new leaf, must amount to a
         // UUID for this leaf among all other leafs in this layout or other layouts in this project.
         "rotateForLayout",
-        [assembly, layoutConfig, leafID]
+        [assembly, layoutConfig, leafID],
       ),
       id: leafID,
       referencePoint: selected.face.center,
@@ -432,7 +432,7 @@ async function rotateForLayout(
   let warningString = "";
   if (layoutWarnList.length > 0 && warningCallback) {
     warningString = `Part(s) ${layoutWarnList.join(
-      ", "
+      ", ",
     )} have no orientation suitable for layout.`;
     warningCallback(warningString);
   }
@@ -452,7 +452,7 @@ async function applyLayout(
   rotatedAssembly: AbundanceObject,
   positions: Placement[][],
   layoutConfig: LayoutConfig,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   const result = util.actOnLeafs(
     rotatedAssembly,
@@ -463,7 +463,7 @@ async function applyLayout(
       const leafID = leaf.id;
       for (var sheet = 0; sheet < positions.length; sheet++) {
         let candidates = positions[sheet].filter(
-          (transform) => transform.id == leafID
+          (transform) => transform.id == leafID,
         );
         if (candidates.length == 1) {
           transform = candidates[0];
@@ -487,7 +487,7 @@ async function applyLayout(
         0,
         0,
         transform.rotate,
-        context
+        context,
       );
       // Center the layout on the origin by offsetting by half the sheet dimensions
       newGeom = await util.geometryProvider!.move(
@@ -497,7 +497,7 @@ async function applyLayout(
           sheetNumber * layoutConfig.height -
           layoutConfig.height / 2,
         0,
-        context
+        context,
       );
 
       return {
@@ -506,7 +506,7 @@ async function applyLayout(
         referencePoint: undefined,
         tags: [...(leaf.tags || []), `sheet:${sheetNumber}`],
       };
-    }
+    },
   );
 
   return result;
@@ -540,7 +540,7 @@ function asFloat64(shape: SimpleXY[]): Float64Array {
 
   if (points.filter((c) => !Number.isFinite(c)).length > 0) {
     throw new Error(
-      "NaN points in Float64Array from: " + JSON.stringify(shape)
+      "NaN points in Float64Array from: " + JSON.stringify(shape),
     );
   }
 
@@ -554,7 +554,7 @@ function asFloat64(shape: SimpleXY[]): Float64Array {
  * @returns {Array} Default placements with all parts at origin
  */
 function createDefaultPlacements(
-  shapesForLayout: ShapeForLayout[]
+  shapesForLayout: ShapeForLayout[],
 ): Placement[][] {
   const defaultSheet = shapesForLayout.map((shape) => ({
     id: shape.id,
@@ -572,7 +572,7 @@ function computePositions(
   progressCallback: (progress: number, cancel: () => void) => void,
   placementsCallback: (placements: Placement[][]) => void,
   layoutConfig: LayoutConfig,
-  previousPlacements: Placement[][] | undefined = undefined
+  previousPlacements: Placement[][] | undefined = undefined,
 ): Promise<Placement[][]> {
   const tolerance = 0.2;
   const runtimeMs = 120000;
@@ -618,7 +618,7 @@ function computePositions(
       0.1 + 0.9 * ((progressCallbackCounter * 100) / runtimeMs),
       proxy(() => {
         packer.stop(true);
-      })
+      }),
     );
   };
 
@@ -630,14 +630,14 @@ function computePositions(
       placementsData,
       placementPercentage,
       placedParts,
-      partCount
+      partCount,
     ) => {
       callbackCounter++;
       if (placedParts > 0) {
         let placements = translatePlacements(
           placementsData,
           placedParts,
-          partCount
+          partCount,
         );
 
         placementsCallback(placements);
@@ -652,7 +652,7 @@ function computePositions(
         bin,
         callbackFunction,
         displayCallback,
-        previousPlacements
+        previousPlacements,
       );
 
       setTimeout(() => {
@@ -663,7 +663,7 @@ function computePositions(
         } else {
           packer.stop(true);
           console.log(
-            "No placement found within time limit, using default placement at origin."
+            "No placement found within time limit, using default placement at origin.",
           );
           const defaultPlacements = createDefaultPlacements(shapesForLayout);
           resolve(defaultPlacements);
@@ -692,11 +692,11 @@ function computePositions(
 function translatePlacements(
   placement: any,
   placedParts: number,
-  partCount: number
+  partCount: number,
 ): Placement[][] {
   const placements = new PlacementWrapper(
     placement.placementsData,
-    placement.angleSplit
+    placement.angleSplit,
   );
   console.log(
     "new placement received. " +
@@ -704,7 +704,7 @@ function translatePlacements(
       " of " +
       partCount +
       " parts placed. score: " +
-      placement.placementsData[0]
+      placement.placementsData[0],
   );
 
   const result = [];
@@ -803,7 +803,7 @@ function preparePoints(mesh: any, tolerance: number): SimpleXY[] {
     });
     if (nextEdges.length == 0) {
       throw new Error(
-        "Found a discontinuity in the perimeter of an input part."
+        "Found a discontinuity in the perimeter of an input part.",
       );
     } else if (nextEdges.length == 1) {
       currentEdge = nextEdges[0];
@@ -815,10 +815,10 @@ function preparePoints(mesh: any, tolerance: number): SimpleXY[] {
         const p2 = a.startPoint;
         const p3 = b.startPoint;
         const distA = Math.sqrt(
-          Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)
+          Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2),
         );
         const distB = Math.sqrt(
-          Math.pow(p1.x - p3.x, 2) + Math.pow(p1.y - p3.y, 2)
+          Math.pow(p1.x - p3.x, 2) + Math.pow(p1.y - p3.y, 2),
         );
         return distA - distB;
       });
@@ -828,7 +828,7 @@ function preparePoints(mesh: any, tolerance: number): SimpleXY[] {
 
   if (result.length < 3) {
     throw new Error(
-      "Part perimiter has less than 3 points: " + JSON.stringify(result)
+      "Part perimiter has less than 3 points: " + JSON.stringify(result),
     );
   }
   return result;
@@ -875,7 +875,7 @@ function moveFaceToCuttingPlane(geom: Shape3D, face: Face): Shape3D {
   let rotationDegrees =
     (Math.acos(
       faceNormal.dot(targetOrientation) /
-        (targetOrientation.Length * faceNormal.Length)
+        (targetOrientation.Length * faceNormal.Length),
     ) *
       360) /
     (2 * Math.PI);
