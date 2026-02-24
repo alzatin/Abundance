@@ -218,7 +218,7 @@ export default class CutLayout extends Atom {
       const priorStatus = this.status;
       this.setProcessing();
       console.trace("Displaying layout with " + placements.length + " sheets.");
-      return GlobalVariables.cad
+      return GlobalVariables.layoutCad
         .displayLayout(
           inputGeom,
           placements,
@@ -254,6 +254,10 @@ export default class CutLayout extends Atom {
     if (this.status === Status.DISABLED) {
       return;
     }
+    // No-op if we're currently processing a layout.
+    if (this.status === Status.PROCESSING) {
+      return;
+    }
 
     // Check for errors in inputs first
     if (this.inputsHaveErrors()) {
@@ -266,9 +270,20 @@ export default class CutLayout extends Atom {
     // so there's not much else to do here.
 
     // If we have saved placements, try to display them with the current geometry.
-    // If the geometry structure has changed, displayLayout will fail and we'll reset.
+    // If the geometry structure has changed, displayLayout will fail and we'll warn the user and reset placements.
     if (this.placements?.length > 0) {
       this.displayLayout(true).catch(() => {
+        console.warn(
+          "Failed to display saved placements with new geometry. Clearing placements.",
+        );
+        const event = new CustomEvent("user-notification", {
+          detail: {
+            message:
+              "Your geometry has changed since you last computed cutLayout. CutLayout is resetting to default placements.",
+            type: "warning",
+          },
+        });
+        window.dispatchEvent(event);
         // If displayLayout fails we have an inconsistent state between the current geom and whatever
         // saved placements are here. Clear the placements and create default ones instead.
         this.placements = [];
@@ -300,7 +315,7 @@ export default class CutLayout extends Atom {
 
     this.setProcessing();
 
-    GlobalVariables.cad
+    GlobalVariables.layoutCad
       .createAndDisplayDefaultLayout(
         inputGeom,
         proxy((message) => {
@@ -339,7 +354,7 @@ export default class CutLayout extends Atom {
         return;
       }
 
-      GlobalVariables.cad
+      GlobalVariables.layoutCad
         .layout(
           inputGeom,
           proxy((progress, cancelationHandle) => {
