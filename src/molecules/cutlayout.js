@@ -101,17 +101,17 @@ export default class CutLayout extends Atom {
     GlobalVariables.c.fillStyle = "#949294";
     GlobalVariables.c.moveTo(
       xInPixels - radiusInPixels / 2,
-      yInPixels + radiusInPixels / 2
+      yInPixels + radiusInPixels / 2,
     );
     GlobalVariables.c.lineTo(
       xInPixels + radiusInPixels / 2,
-      yInPixels + radiusInPixels / 2
+      yInPixels + radiusInPixels / 2,
     );
     GlobalVariables.c.lineTo(xInPixels + radiusInPixels / 2, yInPixels);
     GlobalVariables.c.lineTo(xInPixels - radiusInPixels / 2, yInPixels);
     GlobalVariables.c.lineTo(
       xInPixels - radiusInPixels / 2,
-      yInPixels + radiusInPixels / 2
+      yInPixels + radiusInPixels / 2,
     );
     //GlobalVariables.c.fill()
     GlobalVariables.c.setLineDash([3, 3]);
@@ -120,17 +120,17 @@ export default class CutLayout extends Atom {
     GlobalVariables.c.beginPath();
     GlobalVariables.c.lineTo(
       xInPixels + radiusInPixels / 4,
-      yInPixels - radiusInPixels / 1.7
+      yInPixels - radiusInPixels / 1.7,
     );
     GlobalVariables.c.lineTo(
       xInPixels - radiusInPixels / 4,
-      yInPixels - radiusInPixels / 2
+      yInPixels - radiusInPixels / 2,
     );
     GlobalVariables.c.lineTo(xInPixels - radiusInPixels / 4, yInPixels);
     GlobalVariables.c.lineTo(xInPixels + radiusInPixels / 2, yInPixels);
     GlobalVariables.c.lineTo(
       xInPixels + radiusInPixels / 4,
-      yInPixels - radiusInPixels / 1.7
+      yInPixels - radiusInPixels / 1.7,
     );
 
     //GlobalVariables.c.fill()
@@ -146,7 +146,7 @@ export default class CutLayout extends Atom {
       GlobalVariables.c.fillStyle = this.centerColor;
       GlobalVariables.c.moveTo(
         GlobalVariables.widthToPixels(this.x),
-        GlobalVariables.heightToPixels(this.y)
+        GlobalVariables.heightToPixels(this.y),
       );
       GlobalVariables.c.arc(
         GlobalVariables.widthToPixels(this.x),
@@ -154,7 +154,7 @@ export default class CutLayout extends Atom {
         GlobalVariables.widthToPixels(this.radius) / 1.5,
         0,
         this.progress * Math.PI * 2,
-        false
+        false,
       );
       GlobalVariables.c.closePath();
       GlobalVariables.c.fill();
@@ -218,7 +218,7 @@ export default class CutLayout extends Atom {
       const priorStatus = this.status;
       this.setProcessing();
       console.trace("Displaying layout with " + placements.length + " sheets.");
-      return GlobalVariables.cad
+      return GlobalVariables.layoutCad
         .displayLayout(
           inputGeom,
           placements,
@@ -227,7 +227,7 @@ export default class CutLayout extends Atom {
             this.setWarning(message);
           }),
           this.getLayoutConfig(),
-          this.getContext()
+          this.getContext(),
         )
         .then((result) => {
           if (this.selected) {
@@ -254,6 +254,10 @@ export default class CutLayout extends Atom {
     if (this.status === Status.DISABLED) {
       return;
     }
+    // No-op if we're currently processing a layout.
+    if (this.status === Status.PROCESSING) {
+      return;
+    }
 
     // Check for errors in inputs first
     if (this.inputsHaveErrors()) {
@@ -266,9 +270,20 @@ export default class CutLayout extends Atom {
     // so there's not much else to do here.
 
     // If we have saved placements, try to display them with the current geometry.
-    // If the geometry structure has changed, displayLayout will fail and we'll reset.
+    // If the geometry structure has changed, displayLayout will fail and we'll warn the user and reset placements.
     if (this.placements?.length > 0) {
       this.displayLayout(true).catch(() => {
+        console.warn(
+          "Failed to display saved placements with new geometry. Clearing placements.",
+        );
+        const event = new CustomEvent("user-notification", {
+          detail: {
+            message:
+              "Your geometry has changed since you last computed cutLayout. CutLayout is resetting to default placements.",
+            type: "warning",
+          },
+        });
+        window.dispatchEvent(event);
         // If displayLayout fails we have an inconsistent state between the current geom and whatever
         // saved placements are here. Clear the placements and create default ones instead.
         this.placements = [];
@@ -276,8 +291,9 @@ export default class CutLayout extends Atom {
         this.createDefaultPlacements();
       });
     } else {
-      // No saved placements, create default ones with all parts at (0,0) with 0° rotation
-      this.createDefaultPlacements();
+      // No saved placements, set to waiting and wait for user to compute layout with the new geometry.
+      this.setStatus(Status.WAITING);
+      console.trace("No saved placements, waiting for user to compute layout.");
     }
   }
 
@@ -299,14 +315,14 @@ export default class CutLayout extends Atom {
 
     this.setProcessing();
 
-    GlobalVariables.cad
+    GlobalVariables.layoutCad
       .createAndDisplayDefaultLayout(
         inputGeom,
         proxy((message) => {
           this.setWarning(message);
         }),
         this.getLayoutConfig(),
-        this.getContext()
+        this.getContext(),
       )
       .then(([result, placements]) => {
         this.handleNewPlacements(placements, inputGeom, true);
@@ -332,13 +348,13 @@ export default class CutLayout extends Atom {
       }
       this.setProcessing();
       var inputGeom = this.findIOValue("geometry");
-      
+
       if (!inputGeom) {
         this.setError('"geometry" input is missing');
         return;
       }
 
-      GlobalVariables.cad
+      GlobalVariables.layoutCad
         .layout(
           inputGeom,
           proxy((progress, cancelationHandle) => {
@@ -355,7 +371,7 @@ export default class CutLayout extends Atom {
           }),
           this.getLayoutConfig(),
           this.getContext(),
-          this.placements
+          this.placements,
         )
         .then((layoutAndPositions) => {
           const [layout, positions] = layoutAndPositions;
@@ -406,6 +422,17 @@ export default class CutLayout extends Atom {
       },
     };
 
+    inputParams["Reset Layout"] = {
+      type: "button",
+      label: "Reset Layout",
+      onClick: () => {
+        this.placements = [];
+        this.placementsFor = "";
+        this.createDefaultPlacements();
+        setInputChanged();
+      },
+    };
+
     let prepareLabel = (sheet, index, totalsheets) => {
       if (totalsheets > 1) {
         return "sheet " + sheet + " p" + index;
@@ -450,7 +477,7 @@ export default class CutLayout extends Atom {
                 this.handleNewPlacements(
                   this.getPlacements(),
                   this.placementsFor,
-                  true
+                  true,
                 );
               }
             }

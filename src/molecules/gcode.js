@@ -271,7 +271,7 @@ export default class Gcode extends Atom {
    * @throws {Error} If the input ID is not found
    */
   async _checkIfAssembly(inputID) {
-    return GlobalVariables.cad.isAssembly(inputID);
+    return GlobalVariables.layoutCad.isAssembly(inputID);
   }
 
   /**
@@ -280,23 +280,23 @@ export default class Gcode extends Atom {
    */
   async _processSinglePart(inputID) {
     /*Because kirimoto defaults to MM units and we want to support both MM and IN, we will scale the geometry before exporting to STL for kirimoto. This is a temporary solution until we can pass units directly to kirimoto.*/
-    const scaledMesh = await GlobalVariables.cad.scale(
+    const scaledMesh = await GlobalVariables.layoutCad.scale(
       inputID,
       GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 1 : 25.4, // Scale to MM if in IN, otherwise keep the same
       this.getContext(),
     );
     /* Find flat faces for area operation */
-    GlobalVariables.cad
+    GlobalVariables.layoutCad
       .findFlatFaces(scaledMesh, this.getContext())
       .then((flatFaces) => {
         console.log("Flat faces found:", flatFaces);
       });
     // Export the geometry to STL and generate G-code
-    GlobalVariables.cad
+    GlobalVariables.layoutCad
       .visExport(scaledMesh, "STL", this.getContext())
       .then((visExported) => {
         const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
-        GlobalVariables.cad
+        GlobalVariables.layoutCad
           .downExport(visExported, "STL", null, units, this.getContext())
           .then((result) => {
             //Delete anything previously stored
@@ -306,7 +306,7 @@ export default class Gcode extends Atom {
 
             this.stlURL = URL.createObjectURL(result); // Store the STL URL
 
-            GlobalVariables.cad
+            GlobalVariables.layoutCad
               .getBoundingBox(visExported, this.getContext())
               .then((bounds) => {
                 this.center = [
@@ -351,7 +351,7 @@ export default class Gcode extends Atom {
    * @returns {Promise<Array>} Array of part IDs
    */
   async _extractPartsFromAssembly(assemblyID) {
-    return GlobalVariables.cad.extractParts(assemblyID, this.getContext());
+    return GlobalVariables.layoutCad.extractParts(assemblyID, this.getContext());
   }
 
   /**
@@ -436,7 +436,7 @@ export default class Gcode extends Atom {
 
     for (const part of parts) {
       try {
-        const bounds = await GlobalVariables.cad.getBoundingBox(
+        const bounds = await GlobalVariables.layoutCad.getBoundingBox(
           part,
           this.getContext(),
         );
@@ -501,25 +501,25 @@ export default class Gcode extends Atom {
         this.progress = partProgress;
 
         /*Because kirimoto defaults to MM units and we want to support both MM and IN, we will scale the geometry before exporting to STL for kirimoto. This is a temporary solution until we can pass units directly to kirimoto.*/
-        const scaledMesh = await GlobalVariables.cad.scale(
+        const scaledMesh = await GlobalVariables.layoutCad.scale(
           partID,
           GlobalVariables.topLevelMolecule?.unitsKey === "MM" ? 1 : 25.4, // Scale to MM if in IN, otherwise keep the same
           this.getContext(),
         );
 
         /* Find flat faces for area operation */
-        const flatFaces = await GlobalVariables.cad.findFlatFaces(
+        const flatFaces = await GlobalVariables.layoutCad.findFlatFaces(
           scaledMesh,
           this.getContext(),
         );
         // Generate STL for this part
-        const visExported = await GlobalVariables.cad.visExport(
+        const visExported = await GlobalVariables.layoutCad.visExport(
           scaledMesh,
           "STL",
           this.getContext(),
         );
         const units = GlobalVariables.topLevelMolecule?.unitsKey || "MM";
-        const stlBlob = await GlobalVariables.cad.downExport(
+        const stlBlob = await GlobalVariables.layoutCad.downExport(
           visExported,
           "STL",
           null,
@@ -530,7 +530,7 @@ export default class Gcode extends Atom {
         const stlURL = URL.createObjectURL(stlBlob);
 
         // Get part bounds for centering
-        const bounds = await GlobalVariables.cad.getBoundingBox(
+        const bounds = await GlobalVariables.layoutCad.getBoundingBox(
           visExported,
           this.getContext(),
         );
