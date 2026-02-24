@@ -1649,6 +1649,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                               ...(config.lowOpacity ? { opacity: 0.5 } : {}),
                             }}
                             title={
+                              config.title ||
                               label ||
                               (typeof config.label === "string"
                                 ? config.label
