@@ -6,6 +6,7 @@ import TopLevelWireframeMesh from "../render/TopLevelWireframeMesh.jsx";
 import globalvariables from "../../js/globalvariables.js";
 import { useRendering } from "../../contexts/index.js";
 import GCodeLoaderMesh from "../render/GCodeLoaderMesh.jsx";
+import NonReplicadMesh from "../render/NonReplicadMesh.jsx";
 
 const LowerHalf = forwardRef(function LowerHalf({ windowSize }, ref) {
   const { mesh, wireMesh, wireParam, solidParam, isViewingOutputMesh } =
@@ -49,6 +50,7 @@ const LowerHalf = forwardRef(function LowerHalf({ windowSize }, ref) {
             >
               {wireParam && !isViewingOutputMesh ? <WireframeMesh /> : null}
               <TopLevelWireframeMesh />
+              <NonReplicadMesh />
               <ReplicadMesh
                 isSolid={solidParam}
                 ref={ref}

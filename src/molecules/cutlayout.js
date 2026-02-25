@@ -4,6 +4,8 @@ import GlobalVariables from "../js/globalvariables.js";
 import { proxy } from "comlink";
 import { Status } from "../prototypes/observableEntity.js";
 
+import { Group, ShapeGeometry } from "three";
+
 /**
  * Rearrange all input geometries to fit on a sheet of material. Parts are packed
  * as densely as possible while still respecting part padding. In general, all parts
@@ -210,11 +212,30 @@ export default class CutLayout extends Atom {
     };
   }
 
+  displaySheet() {
+    var sheetWidth = this.findIOValue("Sheet Width");
+    var sheetHeight = this.findIOValue("Sheet Height");
+
+    const sheetShape = new THREE.Shape()
+      .moveTo(sheetWidth / 2, sheetHeight / 2)
+      .lineTo(-sheetWidth / 2, sheetHeight / 2)
+      .lineTo(-sheetWidth / 2, -sheetHeight / 2)
+      .lineTo(sheetWidth / 2, -sheetHeight / 2)
+      .lineTo(sheetWidth / 2, sheetHeight / 2)
+      .closePath();
+    console.log("sheetShape", sheetShape);
+    const shapeGeometry = new ShapeGeometry(sheetShape);
+    shapeGeometry.name = "sheet";
+
+    this.nonReplicadGeom = [shapeGeometry];
+  }
+
   displayLayout(isFinalPlacement = false) {
     const placements = this.getPlacements();
 
     if (this.inputsAreReady()) {
       var inputGeom = this.findIOValue("geometry");
+      this.displaySheet();
       const priorStatus = this.status;
       this.setProcessing();
       console.trace("Displaying layout with " + placements.length + " sheets.");

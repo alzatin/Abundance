@@ -14,6 +14,7 @@ export function RenderingProvider({ children }) {
   const [plane, setPlane] = useState(null);
   const [geometryType, setGeometryType] = useState(null);
   const [gcodeParts, setGcodeParts] = useState(null);
+  const [nonReplicadGeometry, setNonReplicadGeometry] = useState(null);
 
   // Render progress state
   const [renderProgress, setRenderProgress] = useState(0);
@@ -51,6 +52,8 @@ export function RenderingProvider({ children }) {
     setPlane,
     geometryType,
     setGeometryType,
+    nonReplicadGeometry,
+    setNonReplicadGeometry,
 
     // Render progress
     renderProgress,

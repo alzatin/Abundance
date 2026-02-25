@@ -471,6 +471,7 @@ class GlobalVariables {
    * Display a given atom's mesh on the screen. Requires also the molecule context. See atom's getContext() function.
    * @param {string} The value of the molecule to display
    * @param {object} context - Project context of the atom to display.
+   *
    */
   writeToDisplay(moleculeValue, context) {
     // Placeholder function - implementation is set in App.jsx

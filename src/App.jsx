@@ -79,6 +79,8 @@ function AppContent() {
     setGeometryType,
     setIsViewingOutputMesh,
     setGcodeParts,
+    nonReplicadGeometry,
+    setNonReplicadGeometry,
   } = useRendering();
 
   const {
@@ -321,6 +323,7 @@ function AppContent() {
       context,
       backgroundMolecule = false,
       gcode = false,
+      otherGeometry = [],
     ) => {
       if (!moleculeValue) {
         console.warn(
@@ -335,6 +338,13 @@ function AppContent() {
       } else {
         setGcodeParts(null);
       }
+      /* Handle non-Replicad geometry - if otherGeometry is provided*/
+      if (otherGeometry.length > 0) {
+        setNonReplicadGeometry(otherGeometry);
+      } else {
+        setNonReplicadGeometry([]);
+      }
+
       if (backgroundMolecule) {
         if (
           backgroundMesh.current &&
