@@ -218,7 +218,7 @@ export default class CutLayout extends Atom {
       const priorStatus = this.status;
       this.setProcessing();
       console.trace("Displaying layout with " + placements.length + " sheets.");
-      return GlobalVariables.layoutCad
+      return GlobalVariables.cad
         .displayLayout(
           inputGeom,
           placements,
@@ -315,7 +315,7 @@ export default class CutLayout extends Atom {
 
     this.setProcessing();
 
-    GlobalVariables.layoutCad
+    GlobalVariables.cad
       .createAndDisplayDefaultLayout(
         inputGeom,
         proxy((message) => {
@@ -358,7 +358,7 @@ export default class CutLayout extends Atom {
         return;
       }
 
-      GlobalVariables.layoutCad
+      GlobalVariables.cad
         .layout(
           inputGeom,
           proxy((progress, cancelationHandle) => {

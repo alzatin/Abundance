@@ -60,7 +60,6 @@ const pool = workerpool.pool(RenderURL, {
 });
 
 const cad = wrap(new cadWorker());
-const layoutCad = wrap(new cadWorker());
 
 /**
  * Inner app component that has access to all contexts
@@ -396,7 +395,6 @@ function AppContent() {
     };
 
     GlobalVariables.cad = cad;
-    GlobalVariables.layoutCad = layoutCad;
     GlobalVariables.pool = pool;
   }, [
     activeAtom,

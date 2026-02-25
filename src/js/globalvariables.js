@@ -215,12 +215,6 @@ class GlobalVariables {
      */
     this.cad = null; //Set in flowCanvas
     /**
-     * A dedicated worker for cutlayout and gcode operations, separate from the
-     * main CAD worker to avoid blocking other model computations.
-     * @type {object}
-     */
-    this.layoutCad = null; //Set in App.jsx
-    /**
      * A total of the number of atoms in this project
      * @type {integer}
      */
@@ -319,8 +313,8 @@ class GlobalVariables {
       return storedSize
         ? parseFloat(storedSize)
         : this.isMobile()
-        ? 1 / 30
-        : 1 / 65;
+          ? 1 / 30
+          : 1 / 65;
     })();
 
     const math = create(all); //What does this do? I think it is used to evalue strings as math
@@ -352,7 +346,7 @@ class GlobalVariables {
           throw new Error("Function derivative is disabled");
         },
       },
-      { override: true }
+      { override: true },
     );
   }
 
@@ -400,7 +394,7 @@ class GlobalVariables {
     // Check for common mobile device indicators in the user agent string
     if (
       /Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
+        navigator.userAgent,
       )
     ) {
       return true;
@@ -553,7 +547,7 @@ class GlobalVariables {
         (o) =>
           this.isReferencableByName(o) &&
           o.name === varName &&
-          !excludeAtoms.includes(o)
+          !excludeAtoms.includes(o),
       )
     ) {
       // Look for the pattern " (number)" at the end of the variable name
@@ -569,14 +563,14 @@ class GlobalVariables {
         return this.incrementVariableName(
           incrementedVarName,
           molecule,
-          excludeAtoms
+          excludeAtoms,
         );
       } else {
         // No " (number)" suffix found, add "_1"
         return this.incrementVariableName(
           varName + "_1",
           molecule,
-          excludeAtoms
+          excludeAtoms,
         );
       }
     } else {
@@ -597,7 +591,7 @@ class GlobalVariables {
     const topLevelMoleculeCopy = JSON.stringify(
       this.topLevelMolecule.serialize(),
       null,
-      2
+      2,
     );
 
     this.recentMoleculeRepresentation.push(topLevelMoleculeCopy);
