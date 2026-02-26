@@ -3,8 +3,7 @@ import GlobalVariables from "../js/globalvariables.js";
 //import GlobalVariables from '../js/globalvariables.js'
 import { proxy } from "comlink";
 import { Status } from "../prototypes/observableEntity.js";
-
-import { Group, ShapeGeometry } from "three";
+import * as THREE from "three";
 
 /**
  * Rearrange all input geometries to fit on a sheet of material. Parts are packed
@@ -211,23 +210,29 @@ export default class CutLayout extends Atom {
       rotations: this.findIOValue("Orientations"),
     };
   }
-
-  displaySheet() {
-    var sheetWidth = this.findIOValue("Sheet Width");
-    var sheetHeight = this.findIOValue("Sheet Height");
-
-    const sheetShape = new THREE.Shape()
-      .moveTo(sheetWidth / 2, sheetHeight / 2)
-      .lineTo(-sheetWidth / 2, sheetHeight / 2)
-      .lineTo(-sheetWidth / 2, -sheetHeight / 2)
-      .lineTo(sheetWidth / 2, -sheetHeight / 2)
-      .lineTo(sheetWidth / 2, sheetHeight / 2)
-      .closePath();
-    console.log("sheetShape", sheetShape);
-    const shapeGeometry = new ShapeGeometry(sheetShape);
-    shapeGeometry.name = "sheet";
-
-    this.nonReplicadGeom = [shapeGeometry];
+  /** Creates three.js shape to display the size of the cutlayout sheet and set it to nonReplicadGeom */
+  displaySheet(sheetCount) {
+    var sheetWidth = this.findIOValue("Sheet Height");
+    var sheetHeight = this.findIOValue("Sheet Width");
+    const geometryArray = [];
+    for (let i = 1; i <= sheetCount; i++) {
+      const sheetShape = new THREE.Shape()
+        .moveTo(-sheetWidth / 2, (sheetHeight / 2) * i)
+        .lineTo(-sheetWidth / 2, (-sheetHeight / 2) * i)
+        .lineTo(sheetWidth / 2, (-sheetHeight / 2) * i)
+        .lineTo(sheetWidth / 2, (sheetHeight / 2) * i)
+        .lineTo(-sheetWidth / 2, (sheetHeight / 2) * i)
+        .closePath();
+      const shapeGeometry = new THREE.ShapeGeometry(sheetShape);
+      shapeGeometry.name = "sheet " + i;
+      geometryArray.push(shapeGeometry);
+    }
+    this.nonReplicadGeom["geometry"] = geometryArray;
+    this.nonReplicadGeom["material"] = new THREE.MeshBasicMaterial({
+      color: "lightgray",
+      side: THREE.DoubleSide,
+    });
+    console.log("this.nonReplicadGeom:", this.nonReplicadGeom);
   }
 
   displayLayout(isFinalPlacement = false) {
@@ -235,10 +240,10 @@ export default class CutLayout extends Atom {
 
     if (this.inputsAreReady()) {
       var inputGeom = this.findIOValue("geometry");
-      this.displaySheet();
+      this.displaySheet(placements.length);
       const priorStatus = this.status;
       this.setProcessing();
-      console.trace("Displaying layout with " + placements.length + " sheets.");
+      console.log("Displaying layout with " + placements.length + " sheets."); // replaced the trace since it was too long
       return GlobalVariables.cad
         .displayLayout(
           inputGeom,

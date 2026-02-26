@@ -339,10 +339,10 @@ function AppContent() {
         setGcodeParts(null);
       }
       /* Handle non-Replicad geometry - if otherGeometry is provided*/
-      if (otherGeometry.length > 0) {
+      if (otherGeometry) {
         setNonReplicadGeometry(otherGeometry);
       } else {
-        setNonReplicadGeometry([]);
+        setNonReplicadGeometry(null);
       }
 
       if (backgroundMolecule) {
