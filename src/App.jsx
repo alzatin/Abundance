@@ -333,6 +333,7 @@ function AppContent() {
       }
       if (gcode) {
         setMesh([]);
+        setNonReplicadGeometry(null);
         setGcodeParts(moleculeValue);
         return;
       } else {
