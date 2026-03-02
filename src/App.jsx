@@ -345,7 +345,7 @@ function AppContent() {
         nonReplicadGeometryFromAtom.geometry &&
         nonReplicadGeometryFromAtom.geometry.length > 0
       ) {
-        setNonReplicadGeometry(nonReplicadGeometryFromAtom);
+        setNonReplicadGeometry({ ...nonReplicadGeometryFromAtom });
       } else {
         setNonReplicadGeometry(null);
       }
