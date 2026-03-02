@@ -35,7 +35,13 @@ export default class Label extends Atom {
     this.addAllIOs([
       { name: "geometry", valueType: "geometry", type: "input" },
       { name: "text", valueType: "string", defaultValue: "label" },
-      { name: "lineLength", valueType: "number", defaultValue: 10 },
+      { name: "startX", valueType: "number", defaultValue: 0 },
+      { name: "startY", valueType: "number", defaultValue: 0 },
+      { name: "startZ", valueType: "number", defaultValue: 0 },
+      { name: "endX", valueType: "number", defaultValue: 10 },
+      { name: "endY", valueType: "number", defaultValue: 0 },
+      { name: "endZ", valueType: "number", defaultValue: 0 },
+      { name: "color", valueType: "string", defaultValue: "#333333" },
       { name: "geometry", valueType: "geometry", type: "output" },
     ]);
 
@@ -45,9 +51,10 @@ export default class Label extends Atom {
   /**
    * Build a ThreeJS texture/sprite from a text string and return a Sprite object.
    * @param {string} text - The text to render
+   * @param {string} color - The hex color string for the text
    * @returns {THREE.Sprite}
    */
-  createTextSprite(text) {
+  createTextSprite(text, color) {
     const canvas = document.createElement("canvas");
     const size = 256;
     canvas.width = size;
@@ -58,7 +65,7 @@ export default class Label extends Atom {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.font = "Bold 40px Arial";
-    ctx.fillStyle = "#333333";
+    ctx.fillStyle = color;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(text, canvas.width / 2, canvas.height / 2);
@@ -77,26 +84,31 @@ export default class Label extends Atom {
   /**
    * Build the ThreeJS geometries (line + text sprite) and store them in
    * this.nonReplicadGeom so they get sent to the renderer.
-   * @param {number} lineLength - The length of the dimension line
+   * @param {THREE.Vector3} start - Start point of the line
+   * @param {THREE.Vector3} end - End point of the line
    * @param {string} labelText - The text to display
+   * @param {string} color - The hex color string for the line and text
    */
-  buildLabelGeometry(lineLength, labelText) {
+  buildLabelGeometry(start, end, labelText, color) {
     const geometryArray = [];
 
     // --- Line (complete Three.js object with geometry + material) ---
-    const points = [
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(lineLength, 0, 0),
-    ];
-    const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
-    const lineMat = new THREE.LineBasicMaterial({ color: "#333333" });
+    const lineGeo = new THREE.BufferGeometry().setFromPoints([start, end]);
+    const lineMat = new THREE.LineBasicMaterial({ color });
     const line = new THREE.Line(lineGeo, lineMat);
     line.name = "label-line";
     geometryArray.push(line);
 
-    // --- Text sprite (positioned at the end of the line) ---
-    const sprite = this.createTextSprite(String(labelText));
-    sprite.position.set(lineLength + 6, 0, 0);
+    // --- Text sprite (positioned just past the end of the line) ---
+    const TEXT_OFFSET_DISTANCE = 3;
+    const direction = new THREE.Vector3().subVectors(end, start).normalize();
+    const textOffset = direction.multiplyScalar(TEXT_OFFSET_DISTANCE);
+    const sprite = this.createTextSprite(String(labelText), color);
+    sprite.position.set(
+      end.x + textOffset.x,
+      end.y + textOffset.y,
+      end.z + textOffset.z,
+    );
     sprite.name = "label-text";
     geometryArray.push(sprite);
 
@@ -113,17 +125,81 @@ export default class Label extends Atom {
    * @returns {Promise} The input geometry unchanged
    */
   async compute(inputs) {
-    const lineLength = Number(inputs.lineLength) || 10;
+    const start = new THREE.Vector3(
+      Number(inputs.startX) || 0,
+      Number(inputs.startY) || 0,
+      Number(inputs.startZ) || 0,
+    );
+    const end = new THREE.Vector3(
+      Number(inputs.endX) || 10,
+      Number(inputs.endY) || 0,
+      Number(inputs.endZ) || 0,
+    );
     const labelText = String(inputs.text || "label");
+    const color = String(inputs.color || "#333333");
 
-    this.buildLabelGeometry(lineLength, labelText);
+    this.buildLabelGeometry(start, end, labelText, color);
 
     return inputs.geometry;
   }
 
   /**
+   * Create the input parameters panel for this atom.
+   */
+  createInputParams() {
+    const inputParams = {};
+
+    if (this.inputs.every((x) => x.ready)) {
+      this.inputs.forEach((input) => {
+        const checkConnector = () => input.connectors.length > 0;
+
+        if (input.valueType !== "geometry") {
+          inputParams[this.uniqueID + input.name] = {
+            type: input.valueType === "string" ? "text" : "number",
+            value: input.value,
+            label: input.name,
+            disabled: checkConnector(),
+            step: input.valueType === "number" ? 0.1 : undefined,
+            onChange: (value) => {
+              if (input.value !== value) {
+                input.setValue(value);
+              }
+            },
+          };
+        }
+      });
+    }
+
+    // Add mobile delete button for touchscreen devices
+    const flowCanvas = document.getElementById("flow-canvas");
+    if (
+      GlobalVariables.isMobile() &&
+      flowCanvas &&
+      flowCanvas.style.display !== "none"
+    ) {
+      inputParams[this.uniqueID + "delete"] = {
+        type: "button",
+        label: "Delete Selected",
+        onClick: () => {
+          flowCanvas.focus();
+          const event = new KeyboardEvent("keydown", {
+            bubbles: true,
+            cancelable: true,
+            key: "Delete",
+            code: "Delete",
+            keyCode: 46,
+          });
+          flowCanvas.dispatchEvent(event);
+        },
+      };
+    }
+
+    return inputParams;
+  }
+
+  /**
    * Serialize the atom's state. Uses the default implementation since all
-   * label properties (text, lineLength) are stored as IO values.
+   * label properties are stored as IO values.
    */
   serialize(offset = { x: 0, y: 0 }) {
     return super.serialize(offset);
