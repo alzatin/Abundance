@@ -323,7 +323,7 @@ function AppContent() {
       context,
       backgroundMolecule = false,
       gcode = false,
-      otherGeometry = null,
+      nonReplicadGeometryFromAtom = null,
     ) => {
       if (!moleculeValue) {
         console.warn(
@@ -340,9 +340,12 @@ function AppContent() {
         setGcodeParts(null);
       }
       /* Handle non-Replicad geometry - if otherGeometry is provided*/
-      if (otherGeometry) {
-        console.log("otherGeom", otherGeometry);
-        setNonReplicadGeometry(otherGeometry);
+      if (
+        nonReplicadGeometryFromAtom &&
+        nonReplicadGeometryFromAtom.geometry &&
+        nonReplicadGeometryFromAtom.geometry.length > 0
+      ) {
+        setNonReplicadGeometry(nonReplicadGeometryFromAtom);
       } else {
         setNonReplicadGeometry(null);
       }

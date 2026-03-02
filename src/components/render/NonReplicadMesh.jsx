@@ -1,6 +1,8 @@
 import React, { useState, useEffect, use } from "react";
 import { useRendering } from "../../contexts/RenderingContext.jsx";
 import * as THREE from "three";
+import { useLayoutEffect } from "react";
+import { invalidate } from "react-three-fiber";
 
 export default function NonReplicadMesh({}) {
   const { nonReplicadGeometry } = useRendering();
@@ -9,14 +11,17 @@ export default function NonReplicadMesh({}) {
     color: "lightgray",
     side: THREE.DoubleSide,
   });
-  console.log("rendering NonReplicadMesh with geometry:", nonReplicadGeometry);
-  useEffect(() => {
+
+  useLayoutEffect(() => {
     if (nonReplicadGeometry && nonReplicadGeometry.geometry?.length > 0) {
       setObject(nonReplicadGeometry.geometry);
     } else {
       setObject([]);
     }
-  }, [nonReplicadGeometry]);
+    // We have configured the canvas to only refresh when there is a change,
+    // the invalidate function is here to tell it to recompute
+    invalidate();
+  }, [nonReplicadGeometry, invalidate]);
 
   return (
     <group>

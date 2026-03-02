@@ -121,10 +121,14 @@ export default class Atom extends ObservableEntity {
 
     this.context = undefined;
 
-    /* An array of THREEjs geometries that can be converted into meshes (a.e Shape geometry, Box geometry) */
-    /* @type {object}
+    /**
+     * An object that stores threeJS geometry and material to be rendered.
+     * @type {object}
      */
-    this.nonReplicadGeom = {};
+    this.nonReplicadGeom = {
+      geometry: [],
+      material: null,
+    };
 
     this.subscribe(this.selfSubscriber.bind(this), "self-clear-alert");
   }
