@@ -121,6 +121,15 @@ export default class Atom extends ObservableEntity {
 
     this.context = undefined;
 
+    /**
+     * An object that stores threeJS geometry and material to be rendered.
+     * @type {object}
+     */
+    this.nonReplicadGeom = {
+      geometry: [],
+      material: null,
+    };
+
     this.subscribe(this.selfSubscriber.bind(this), "self-clear-alert");
   }
 
@@ -957,7 +966,14 @@ export default class Atom extends ObservableEntity {
   sendToRender() {
     //Send code to JSxCAD to render
     try {
-      GlobalVariables.writeToDisplay(this.value, this.getContext());
+      console.log(this.nonReplicadGeom);
+      GlobalVariables.writeToDisplay(
+        this.value,
+        this.getContext(),
+        false,
+        false,
+        this.nonReplicadGeom,
+      );
     } catch (err) {
       this.setError(err);
     }

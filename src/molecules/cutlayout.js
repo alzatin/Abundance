@@ -3,6 +3,7 @@ import GlobalVariables from "../js/globalvariables.js";
 //import GlobalVariables from '../js/globalvariables.js'
 import { proxy } from "comlink";
 import { Status } from "../prototypes/observableEntity.js";
+import * as THREE from "three";
 
 /**
  * Rearrange all input geometries to fit on a sheet of material. Parts are packed
@@ -209,15 +210,42 @@ export default class CutLayout extends Atom {
       rotations: this.findIOValue("Orientations"),
     };
   }
+  /** Creates three.js shape to display the size of the cutlayout sheet and set it to nonReplicadGeom */
+  displaySheet(sheetCount) {
+    var sheetWidth = this.findIOValue("Sheet Width");
+    var sheetHeight = this.findIOValue("Sheet Height");
+    const geometryArray = [];
+    const spacing = 10; // Spacing between sheets, this is arbitrary and only for visual clarity in the UI but it is also declared inside the worker for the actual layout so it should be consistent with that spacing.
+    for (let i = 0; i < sheetCount; i++) {
+      // Center first sheet at (0,0), others spaced in +y direction
+      const yOffset = i * (sheetHeight + spacing); // 10 units spacing, adjust as needed
+      const sheetShape = new THREE.Shape()
+        .moveTo(-sheetWidth / 2, -sheetHeight / 2 + yOffset)
+        .lineTo(-sheetWidth / 2, sheetHeight / 2 + yOffset)
+        .lineTo(sheetWidth / 2, sheetHeight / 2 + yOffset)
+        .lineTo(sheetWidth / 2, -sheetHeight / 2 + yOffset)
+        .lineTo(-sheetWidth / 2, -sheetHeight / 2 + yOffset)
+        .closePath();
+      const shapeGeometry = new THREE.ShapeGeometry(sheetShape);
+      shapeGeometry.name = "sheet " + (i + 1);
+      geometryArray.push(shapeGeometry);
+    }
+    this.nonReplicadGeom["geometry"] = geometryArray;
+    this.nonReplicadGeom["material"] = new THREE.MeshBasicMaterial({
+      color: "lightgray",
+      side: THREE.DoubleSide,
+    });
+  }
 
   displayLayout(isFinalPlacement = false) {
     const placements = this.getPlacements();
 
     if (this.inputsAreReady()) {
       var inputGeom = this.findIOValue("geometry");
+      this.displaySheet(placements.length);
       const priorStatus = this.status;
       this.setProcessing();
-      console.trace("Displaying layout with " + placements.length + " sheets.");
+      console.log("Displaying layout with " + placements.length + " sheets."); // replaced the trace since it was too long
       return GlobalVariables.cad
         .displayLayout(
           inputGeom,
