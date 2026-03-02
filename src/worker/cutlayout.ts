@@ -159,7 +159,10 @@ async function createAndDisplayDefaultLayout(
     warningCallback,
     context,
   );
-  const defaultPlacements = createDefaultPlacements(shapesForLayout);
+  const defaultPlacements = createDefaultPlacements(
+    shapesForLayout,
+    layoutConfig,
+  );
   const displayedLayout = await applyLayout(
     rotatedAssembly,
     defaultPlacements,
@@ -557,11 +560,15 @@ function asFloat64(shape: SimpleXY[]): Float64Array {
  */
 function createDefaultPlacements(
   shapesForLayout: ShapeForLayout[],
+  layoutConfig: LayoutConfig,
 ): Placement[][] {
+  // Center default placements in the middle of the sheet
+  const centerX = layoutConfig.width / 2;
+  const centerY = layoutConfig.height / 2;
   const defaultSheet = shapesForLayout.map((shape) => ({
     id: shape.id,
     rotate: 0,
-    translate: { x: 0, y: 0 },
+    translate: { x: centerX, y: centerY },
   }));
   return [defaultSheet]; // Return as a single sheet
 }
@@ -667,7 +674,10 @@ function computePositions(
           console.log(
             "No placement found within time limit, using default placement at origin.",
           );
-          const defaultPlacements = createDefaultPlacements(shapesForLayout);
+          const defaultPlacements = createDefaultPlacements(
+            shapesForLayout,
+            layoutConfig,
+          );
           resolve(defaultPlacements);
         }
       }, runtimeMs);
@@ -675,7 +685,10 @@ function computePositions(
       console.log("error in nesting engine: " + err);
       packer.stop(true);
       console.log("Using default placement at origin due to packing error.");
-      const defaultPlacements = createDefaultPlacements(shapesForLayout);
+      const defaultPlacements = createDefaultPlacements(
+        shapesForLayout,
+        layoutConfig,
+      );
       resolve(defaultPlacements);
     }
   });
