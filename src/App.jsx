@@ -337,10 +337,6 @@ function AppContent() {
         nonReplicadGeometryFromAtom.geometry.length > 0
       ) {
         setNonReplicadGeometry({ ...nonReplicadGeometryFromAtom });
-        if (nonReplicadGeometryFromAtom.hideMainMesh) {
-          setMesh([]); // hide the main mesh if specified (used for gcode visualization)
-          setOutdatedMesh(false);
-        }
       } else {
         setNonReplicadGeometry(null);
       }
@@ -374,6 +370,7 @@ function AppContent() {
         }
       } else {
         targetMesh.current = moleculeValue;
+
         if (
           JSON.stringify(targetMesh.current) ===
             JSON.stringify(backgroundMesh.current?.id) &&
@@ -390,7 +387,12 @@ function AppContent() {
           setIsViewingOutputMesh(true);
         } else {
           // General case - generate the mesh for selected atom
-          makeMesh();
+          //Check if mesh should be hidden (a.e gcode)
+          if (!nonReplicadGeometryFromAtom.hideMainMesh) {
+            makeMesh();
+          } else {
+            setMesh([]);
+          }
           // Check if we're viewing the same geometry as the wireframe
           if (
             backgroundMesh.current?.id &&

@@ -547,7 +547,8 @@ export default class Gcode extends Atom {
     }
     this.gcodeGenerated = true;
     this.parseGcodeString(allGcode).then(() => {
-      this.setReady({ geometry: [] });
+      const geometryValue = this.findIOValue("geometry");
+      this.setReady(geometryValue);
     });
     // Set the final result as ready for visualization to pass to loader - this is an array of G-code strings, one per part, which the loader can handle
     // Concatenate all G-code for download
