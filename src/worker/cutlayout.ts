@@ -492,7 +492,7 @@ async function applyLayout(
       // Center the first sheet at origin, width along y axis, subsequent sheets offset in +y
       // For first sheet (sheetNumber==0), offset by -width/2, -height/2 to center at (0,0)
       // For others, offset by +sheetNumber * (layoutConfig.height + spacing) in y
-      const spacing = 10; // Match JS logic, adjust as needed
+      const spacing = 10; // Spacing between sheets in mm, this is arbitrary and only for visual clarity in the UI, it doesn't affect the actual nesting layout.
       const yOffset = sheetNumber * (layoutConfig.height + spacing);
       newGeom = await util.geometryProvider!.move(
         newGeom,
