@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import ThreeContext from "../render/ThreeContext.jsx";
 import ReplicadMesh from "../render/ReplicadMesh.jsx";
+import NonReplicadMesh from "../render/NonReplicadMesh.jsx";
 
 import WireframeMesh from "../render/WireframeMesh.jsx";
 import GlobalVariables from "../../js/globalvariables.js";
@@ -11,9 +12,7 @@ import Molecule from "../../molecules/molecule.js";
 import RunParams from "../secondary/RunParams.jsx";
 import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
-import RenderProgressBar from "../secondary/RenderProgressBar.jsx";
 import ReadmePanel from "../secondary/ReadmePanel.jsx";
-import GCodeLoaderMesh from "../render/GCodeLoaderMesh.jsx";
 import {
   BrowserRouter as Router,
   useParams,
@@ -376,7 +375,7 @@ function runMode({ processing, setProcessing }) {
                 {...{ cameraZoom, gridParam, axesParam, outdatedMesh }}
               >
                 {wireParam ? <WireframeMesh mesh={wireMesh} /> : null}
-
+                <NonReplicadMesh />
                 <ReplicadMesh
                   {...{
                     mesh,
@@ -385,8 +384,6 @@ function runMode({ processing, setProcessing }) {
                     setProcessing,
                   }}
                 />
-                {/* GCode visualization */}
-                <GCodeLoaderMesh />
               </ThreeContext>
             ) : (
               <div

@@ -322,7 +322,6 @@ function AppContent() {
       moleculeValue,
       context,
       backgroundMolecule = false,
-      gcode = false,
       nonReplicadGeometryFromAtom = null,
     ) => {
       if (!moleculeValue) {
@@ -330,14 +329,6 @@ function AppContent() {
           "Received null molecule value for display, using empty geometry",
         );
         moleculeValue = { geometry: [] }; // use a non-null structure which still generates the default mesh
-      }
-      if (gcode) {
-        setMesh([]);
-        setNonReplicadGeometry(null);
-        setGcodeParts(moleculeValue);
-        return;
-      } else {
-        setGcodeParts(null);
       }
       /* Handle non-Replicad geometry - if otherGeometry is provided*/
       if (
@@ -379,6 +370,7 @@ function AppContent() {
         }
       } else {
         targetMesh.current = moleculeValue;
+
         if (
           JSON.stringify(targetMesh.current) ===
             JSON.stringify(backgroundMesh.current?.id) &&
@@ -388,13 +380,19 @@ function AppContent() {
           // wireframe background.
           setMesh(backgroundMesh.current.mesh);
           setOutdatedMesh(false);
+
           setPlane(targetMesh.current?.plane);
           setGeometryType(targetMesh.current?.dimension);
           // We're viewing the output mesh directly, hide the wireframe
           setIsViewingOutputMesh(true);
         } else {
           // General case - generate the mesh for selected atom
-          makeMesh();
+          //Check if mesh should be hidden (a.e gcode)
+          if (!nonReplicadGeometryFromAtom.hideMainMesh) {
+            makeMesh();
+          } else {
+            setMesh([]);
+          }
           // Check if we're viewing the same geometry as the wireframe
           if (
             backgroundMesh.current?.id &&
