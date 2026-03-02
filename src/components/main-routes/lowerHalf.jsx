@@ -5,7 +5,6 @@ import WireframeMesh from "../render/WireframeMesh.jsx";
 import TopLevelWireframeMesh from "../render/TopLevelWireframeMesh.jsx";
 import globalvariables from "../../js/globalvariables.js";
 import { useRendering } from "../../contexts/index.js";
-import GCodeLoaderMesh from "../render/GCodeLoaderMesh.jsx";
 import NonReplicadMesh from "../render/NonReplicadMesh.jsx";
 
 const LowerHalf = forwardRef(function LowerHalf({ windowSize }, ref) {
@@ -56,8 +55,6 @@ const LowerHalf = forwardRef(function LowerHalf({ windowSize }, ref) {
                 ref={ref}
                 cameraZoom={cameraZoom}
               />
-              {/* GCode visualization */}
-              <GCodeLoaderMesh />
             </ThreeContext>
           ) : (
             <div
