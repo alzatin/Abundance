@@ -55,6 +55,8 @@ export default class CutLayout extends Atom {
 
     this.progress = 0.0;
 
+    this.computing = false;
+
     this.cancelationHandle = undefined;
 
     this.addAllIOs([
@@ -371,6 +373,8 @@ export default class CutLayout extends Atom {
    */
   computeValueButton(setInputChanged) {
     //this.setInputsChanged = setInputsChanged;
+    this.computing = true;
+    setInputChanged(this.progress);
     if (this.inputsAreReady()) {
       // Only checks AP inputs, not the placement values themselves.
       if (this.cancelationHandle) {
@@ -415,12 +419,15 @@ export default class CutLayout extends Atom {
         })
         .finally(() => {
           this.cancelationHandle = undefined;
+          console.log(this.progress);
+          this.computing = false;
+          setInputChanged(this.progress);
           this.progress = 1.0;
         });
     }
   }
 
-  haltAndDisplay() {
+  haltAndDisplay(setInputChanged) {
     if (this.cancelationHandle) {
       this.cancelationHandle();
       this.cancelationHandle = undefined;
@@ -430,6 +437,8 @@ export default class CutLayout extends Atom {
     if (this.placements != undefined) {
       this.displayLayout(true);
     }
+    this.computing = false;
+    setInputChanged(this.progress);
   }
 
   createInputParams(setInputChanged) {
@@ -438,29 +447,40 @@ export default class CutLayout extends Atom {
 
     let inputParams = super.createInputParams();
 
-    inputParams["Compute Layout"] = {
-      type: "button",
-      label:
-        this.getState().status == Status.PROCESSING
-          ? "Halt Layout"
-          : "Compute Layout",
-      title:
-        this.getState().status == Status.PROCESSING
-          ? "Halt the current layout computation"
-          : "Compute the ideal layout based on the current geometry and layout configuration",
-      onClick: () => {
-        if (this.getState().status == Status.PROCESSING) {
-          this.haltAndDisplay();
-        } else {
-          this.computeValueButton(setInputChanged);
+    // If computing, disable all input params
+    if (this.computing) {
+      for (const key in inputParams) {
+        if (Object.prototype.hasOwnProperty.call(inputParams, key)) {
+          inputParams[key].disabled = true;
         }
-        setInputChanged();
-      },
-    };
+      }
+    }
+
+    if (!this.computing) {
+      inputParams["Compute Layout"] = {
+        type: "button",
+        label: "Compute Layout",
+        title:
+          "Compute the ideal layout based on the current geometry and layout configuration",
+        onClick: () => {
+          this.computeValueButton(setInputChanged);
+        },
+      };
+    } else {
+      inputParams["Halt Layout"] = {
+        type: "button",
+        label: "Halt Layout",
+        title: "Halt the current layout computation",
+        onClick: () => {
+          this.haltAndDisplay(setInputChanged);
+        },
+      };
+    }
 
     inputParams["Reset Layout"] = {
       type: "button",
       label: "Reset Layout",
+      disabled: this.computing,
       title:
         "Reset all part placements to a default position to manually arrange them",
       onClick: () => {
@@ -520,6 +540,7 @@ export default class CutLayout extends Atom {
               }
             }
           },
+          disabled: this.computing,
         };
         part_counter++;
       });
