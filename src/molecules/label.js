@@ -122,60 +122,6 @@ export default class Label extends Atom {
   }
 
   /**
-   * Create the input parameters panel for this atom.
-   */
-  createInputParams() {
-    let inputParams = {};
-
-    if (this.inputs.every((x) => x.ready)) {
-      this.inputs.map((input) => {
-        const checkConnector = () => input.connectors.length > 0;
-
-        if (input.valueType !== "geometry") {
-          inputParams[this.uniqueID + input.name] = {
-            type: input.valueType === "string" ? "text" : "number",
-            value: input.value,
-            label: input.name,
-            disabled: checkConnector(),
-            step: input.valueType === "number" ? 0.1 : undefined,
-            onChange: (value) => {
-              if (input.value !== value) {
-                input.setValue(value);
-              }
-            },
-          };
-        }
-      });
-    }
-
-    // Add mobile delete button for touchscreen devices
-    const flowCanvas = document.getElementById("flow-canvas");
-    if (
-      GlobalVariables.isMobile() &&
-      flowCanvas &&
-      flowCanvas.style.display !== "none"
-    ) {
-      inputParams[this.uniqueID + "delete"] = {
-        type: "button",
-        label: "Delete Selected",
-        onClick: () => {
-          flowCanvas.focus();
-          const event = new KeyboardEvent("keydown", {
-            bubbles: true,
-            cancelable: true,
-            key: "Delete",
-            code: "Delete",
-            keyCode: 46,
-          });
-          flowCanvas.dispatchEvent(event);
-        },
-      };
-    }
-
-    return inputParams;
-  }
-
-  /**
    * Serialize the atom's state. Uses the default implementation since all
    * label properties (text, lineLength) are stored as IO values.
    */
