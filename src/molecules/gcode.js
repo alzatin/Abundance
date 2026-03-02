@@ -3,7 +3,9 @@ import GlobalVariables from "../js/globalvariables.js";
 
 import { saveAs } from "file-saver";
 import { Status } from "../prototypes/observableEntity.js";
-import { re } from "mathjs";
+
+import { GCodeLoader } from "../js/GCodeAbundanceLoader.js";
+import { Group } from "three";
 
 /**
  * This class creates the circle atom.
@@ -243,23 +245,6 @@ export default class Gcode extends Atom {
       }
     } catch (err) {
       console.error("Error handling geometry input:", err);
-      this.setError(err);
-    }
-  }
-
-  /**
-   * Send the value of this atom to the 3D display.
-   */
-  sendToRender() {
-    //Send code to JSxCAD to render
-    try {
-      GlobalVariables.writeToDisplay(
-        this.value,
-        this.getContext(),
-        false,
-        true,
-      );
-    } catch (err) {
       this.setError(err);
     }
   }
@@ -560,10 +545,11 @@ export default class Gcode extends Atom {
     if (allGcode.length === 0) {
       throw new Error("G-code generation failed for all parts.");
     }
-
     this.gcodeGenerated = true;
+    this.parseGcodeString(allGcode).then(() => {
+      this.setReady({ geometry: [] });
+    });
     // Set the final result as ready for visualization to pass to loader - this is an array of G-code strings, one per part, which the loader can handle
-    this.setReady(allGcode);
     // Concatenate all G-code for download
     this.gcodeString = this._concatenateGcode(allGcode);
     this.progress = 1.0;
@@ -572,6 +558,41 @@ export default class Gcode extends Atom {
     console.log("G-code generation complete.");
     return this.gcodeString ?? null;
   }
+
+  parseGcodeString = async (allGcode) => {
+    if (!allGcode) {
+      console.warn("No G-code string available for parsing.");
+      setObject(null);
+      return;
+    }
+
+    try {
+      const loader = new GCodeLoader();
+      const parsedObjects = [];
+      let lastPosition = { x: 0, y: 0, z: 0 };
+      for (const part of allGcode) {
+        const { object: parsedObject, lastPosition: partLastPosition } =
+          loader.parse(part, lastPosition.x, lastPosition.y);
+        lastPosition = partLastPosition;
+        parsedObjects.push(parsedObject);
+      }
+
+      const allGcodeObjects = new Group();
+      parsedObjects.forEach((obj) => {
+        //obj.children[1].material.color.set(0x0000ff); // blue
+        allGcodeObjects.add(obj);
+      });
+      allGcodeObjects.rotation.x = Math.PI / 2;
+      this.nonReplicadGeom = {
+        geometry: [allGcodeObjects],
+        material: null,
+        hideMainMesh: true, // Hide the main mesh when rendering G-code visualization
+      };
+      //setObject(allGcodeObjects);
+    } catch (err) {
+      console.error("Error parsing G-code:", err);
+    }
+  };
 
   /**
    * Generate G-code for a single part
