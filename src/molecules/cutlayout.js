@@ -212,19 +212,22 @@ export default class CutLayout extends Atom {
   }
   /** Creates three.js shape to display the size of the cutlayout sheet and set it to nonReplicadGeom */
   displaySheet(sheetCount) {
-    var sheetWidth = this.findIOValue("Sheet Height");
-    var sheetHeight = this.findIOValue("Sheet Width");
+    var sheetWidth = this.findIOValue("Sheet Width");
+    var sheetHeight = this.findIOValue("Sheet Height");
     const geometryArray = [];
-    for (let i = 1; i <= sheetCount; i++) {
+    const spacing = 10; // Spacing between sheets, this is arbitrary and only for visual clarity in the UI but it is also declared inside the worker for the actual layout so it should be consistent with that spacing.
+    for (let i = 0; i < sheetCount; i++) {
+      // Center first sheet at (0,0), others spaced in +y direction
+      const yOffset = i * (sheetHeight + spacing); // 10 units spacing, adjust as needed
       const sheetShape = new THREE.Shape()
-        .moveTo(-sheetWidth / 2, (sheetHeight / 2) * i)
-        .lineTo(-sheetWidth / 2, (-sheetHeight / 2) * i)
-        .lineTo(sheetWidth / 2, (-sheetHeight / 2) * i)
-        .lineTo(sheetWidth / 2, (sheetHeight / 2) * i)
-        .lineTo(-sheetWidth / 2, (sheetHeight / 2) * i)
+        .moveTo(-sheetWidth / 2, -sheetHeight / 2 + yOffset)
+        .lineTo(-sheetWidth / 2, sheetHeight / 2 + yOffset)
+        .lineTo(sheetWidth / 2, sheetHeight / 2 + yOffset)
+        .lineTo(sheetWidth / 2, -sheetHeight / 2 + yOffset)
+        .lineTo(-sheetWidth / 2, -sheetHeight / 2 + yOffset)
         .closePath();
       const shapeGeometry = new THREE.ShapeGeometry(sheetShape);
-      shapeGeometry.name = "sheet " + i;
+      shapeGeometry.name = "sheet " + (i + 1);
       geometryArray.push(shapeGeometry);
     }
     this.nonReplicadGeom["geometry"] = geometryArray;
