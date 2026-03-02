@@ -235,7 +235,6 @@ export default class CutLayout extends Atom {
       color: "lightgray",
       side: THREE.DoubleSide,
     });
-    console.log("this.nonReplicadGeom:", this.nonReplicadGeom);
   }
 
   displayLayout(isFinalPlacement = false) {
