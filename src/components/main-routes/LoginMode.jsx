@@ -117,10 +117,10 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
     projectToShow == "featured"
       ? "byStars"
       : projectToShow == "all"
-      ? "byDateModified"
-      : projectToShow == "owned"
-      ? "byDateModified"
-      : "byName";
+        ? "byDateModified"
+        : projectToShow == "owned"
+          ? "byDateModified"
+          : "byName";
 
   // Use persistent settings from context
   //looking for highest ranking project and tool
@@ -135,7 +135,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
     highestRankingNode = sortedNodes[0];
 
     const toolNodes = nodes.filter((node) =>
-      node.topics.includes("abundance-tool")
+      node.topics.includes("abundance-tool"),
     );
     const sortedToolNodes = toolNodes.sort((a, b) => b.ranking - a.ranking);
     highestRankingToolNode = sortedToolNodes[0];
@@ -461,7 +461,7 @@ const ProjectDiv = ({
     const updatedProject = await renameProject(
       authorizedUserOcto,
       newName,
-      setRenameProgress
+      setRenameProgress,
     );
 
     setRenamingProject(false);
@@ -503,7 +503,7 @@ const ProjectDiv = ({
         if (projectRef.current) {
           const rect = projectRef.current.getBoundingClientRect();
           const spaceOnRight = window.innerWidth - rect.right;
-          
+
           // If not enough space on the right, show panel on the left
           setPanelOnLeft(spaceOnRight < PANEL_WIDTH + PANEL_MARGIN);
         }
@@ -661,7 +661,7 @@ const ProjectDiv = ({
               {/* Quick view panel */}
               {showQuickView && (
                 <div
-                  className={`thumb-quick-view-panel ${panelOnLeft ? 'panel-on-left' : ''}`}
+                  className={`thumb-quick-view-panel ${panelOnLeft ? "panel-on-left" : ""}`}
                   onMouseEnter={() => {
                     // Keep panel open when hovering over it
                     if (hoverTimerRef.current) {
@@ -850,15 +850,15 @@ const ProjectDiv = ({
       return new Date(a.dateCreated) > new Date(b.dateCreated)
         ? -1
         : new Date(a.dateCreated) < new Date(b.dateCreated)
-        ? 1
-        : 0;
+          ? 1
+          : 0;
     },
     byDateModified: function (a, b) {
       return a.dateModified > b.dateModified
         ? -1
         : a.dateModified < b.dateModified
-        ? 1
-        : 0;
+          ? 1
+          : 0;
     },
   };
   const dummyNode = {
@@ -1022,7 +1022,7 @@ const ShowProjects = ({
         yearShow +
         "&user" +
         lastKeyQuery,
-      { signal }
+      { signal },
     )
       .then((res) => res.json())
       .then((data) => {
@@ -1041,13 +1041,13 @@ const ShowProjects = ({
         "&user=" +
         user +
         lastKeyQuery,
-      { signal }
+      { signal },
     ).then((res) => res.json());
   };
   const fetchFeaturedRepos = async ({ signal }) => {
     return fetch(
       "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/queryFeaturedProjects",
-      { signal }
+      { signal },
     )
       .then((res) => res.json())
       .then((data) => {
@@ -1059,7 +1059,7 @@ const ShowProjects = ({
       "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/USER-TABLE?user=" +
         user +
         "&liked=true",
-      { signal }
+      { signal },
     )
       .then((res) => res.json())
       .then((data) => {
@@ -1193,7 +1193,7 @@ const ShowProjects = ({
     // Try to fetch the user's tutorial-default project
     let project = await fetchProject(
       GlobalVariables.currentUser,
-      "tutorial-default"
+      "tutorial-default",
     );
     if (!project) {
       // If not found, create it
@@ -1208,7 +1208,7 @@ const ShowProjects = ({
         ],
         null, // No loaded molecule
         false, // not exporting
-        setLoadingTutorialBar
+        setLoadingTutorialBar,
       );
     }
     if (project) {
@@ -1223,7 +1223,7 @@ const ShowProjects = ({
   const fetchProject = async (owner, repoName) => {
     try {
       const response = await fetch(
-        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`
+        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`,
       );
       setLoadingTutorialBar(10);
       const data = await response.json();
@@ -1473,7 +1473,7 @@ const ShowProjects = ({
               onClick: () => {
                 window.open(
                   "https://forums.maslowcnc.com/c/abundance/25",
-                  "_blank"
+                  "_blank",
                 );
               },
             },
@@ -1573,8 +1573,6 @@ const ShowProjects = ({
 
 function LoginMode() {
   const {
-    isloggedIn,
-    setIsLoggedIn,
     isAuthorized,
     authorizedUserOcto,
     setAuthorizedUserOcto,
