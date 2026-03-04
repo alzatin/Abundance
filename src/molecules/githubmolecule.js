@@ -139,8 +139,7 @@ export default class GitHubMolecule extends Molecule {
     let gitObj = this.parentRepo;
     let parentMolecule = this.parent;
 
-    //Only delete if you have permission to load
-
+    //Only delete and continue if you have permission to load
     if (
       gitObj.privateRepo &&
       (!authorizedUserOcto || !userScopes.includes("repo"))
