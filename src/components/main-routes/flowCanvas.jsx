@@ -84,17 +84,14 @@ export default memo(function FlowCanvas({
         (redirectType === "save" || redirectType === "reauth") &&
         authorizedUserOcto
       ) {
-        console.log("Loading pending project after reauthentication...");
         // If there's a pending project save in local storage, load it
         const pendingProject = localStorage.getItem("pendingProjectSave");
         if (pendingProject) {
           // Only deserialize after all atoms have been deleted
           let rawFile = JSON.parse(pendingProject);
-          console.log("Pending project data:", rawFile); // Log the raw data for debugging
           // Check if pending project matches current project
-          const pendingRepo = rawFile.repoName || rawFile.name || rawFile.repo;
+          const pendingRepo = rawFile.repoName || rawFile.name;
           const currentRepo = GlobalVariables.currentAWSnode.repoName;
-          console.log(pendingRepo, currentRepo);
           if (pendingRepo === currentRepo) {
             // Reset ID counter to avoid collisions with existing IDs
             GlobalVariables.resetIdCounter(rawFile);
