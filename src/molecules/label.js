@@ -1,6 +1,8 @@
 import Atom from "../prototypes/atom.js";
-import GlobalVariables from "../js/globalvariables.js";
 import * as THREE from "three";
+import { Line2 } from "three/addons/lines/Line2.js";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 
 /**
  * This class creates the label atom which adds a dimension label (a line with
@@ -34,16 +36,12 @@ export default class Label extends Atom {
 
     this.addAllIOs([
       { name: "geometry", valueType: "geometry", type: "input" },
-      { name: "text", valueType: "string", defaultValue: "label" },
-      { name: "startX", valueType: "number", defaultValue: 0 },
-      { name: "startY", valueType: "number", defaultValue: 0 },
-      { name: "startZ", valueType: "number", defaultValue: 0 },
-      { name: "endX", valueType: "number", defaultValue: 10 },
-      { name: "endY", valueType: "number", defaultValue: 0 },
-      { name: "endZ", valueType: "number", defaultValue: 0 },
-      { name: "color", valueType: "string", defaultValue: "#333333" },
-      { name: "geometry", valueType: "geometry", type: "output" },
     ]);
+
+    this.start = { x: 0, y: 0, z: 0 };
+    this.end = { x: 10, y: 10, z: 10 };
+    this.text = "label";
+    this.color = "#333333";
 
     this.setValues(values);
   }
@@ -93,9 +91,17 @@ export default class Label extends Atom {
     const geometryArray = [];
 
     // --- Line (complete Three.js object with geometry + material) ---
-    const lineGeo = new THREE.BufferGeometry().setFromPoints([start, end]);
-    const lineMat = new THREE.LineBasicMaterial({ color });
-    const line = new THREE.Line(lineGeo, lineMat);
+    const lineGeo = new LineGeometry();
+    const lineMat = new LineMaterial({
+      color: 0xff0000, // Red color
+      linewidth: 5, // Desired width in pixels
+      // You must set these uniforms in your render loop or whenever the window is resized
+      resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
+    });
+    // Define points as a flat array of x, y, z coordinates
+    lineGeo.setPositions(start.toArray().concat(end.toArray()));
+    const line = new Line2(lineGeo, lineMat);
+
     line.name = "label-line";
     geometryArray.push(line);
 
@@ -124,75 +130,64 @@ export default class Label extends Atom {
    * @param {object} inputs - The resolved input values
    * @returns {Promise} The input geometry unchanged
    */
-  async compute(inputs) {
+  compute() {
+    console.log("Computing label with inputs", this.inputs);
     const start = new THREE.Vector3(
-      Number(inputs.startX) || 0,
-      Number(inputs.startY) || 0,
-      Number(inputs.startZ) || 0,
+      Number(this.start.x) || 0,
+      Number(this.start.y) || 0,
+      Number(this.start.z) || 0,
     );
     const end = new THREE.Vector3(
-      Number(inputs.endX) || 10,
-      Number(inputs.endY) || 0,
-      Number(inputs.endZ) || 0,
+      Number(this.end.x) || 10,
+      Number(this.end.y) || 10,
+      Number(this.end.z) || 10,
     );
-    const labelText = String(inputs.text || "label");
-    const color = String(inputs.color || "#333333");
+    const labelText = String(this.text || "label");
+    const color = String(this.color || "#cf8c8c");
 
     this.buildLabelGeometry(start, end, labelText, color);
 
-    return inputs.geometry;
+    let geom = this.findIOValue("geometry"); // pass through the input geometry unchanged
+    this.setReady(geom);
+    return geom;
   }
 
   /**
    * Create the input parameters panel for this atom.
    */
   createInputParams() {
-    const inputParams = {};
+    let inputParams = super.createInputParams();
 
-    if (this.inputs.every((x) => x.ready)) {
-      this.inputs.forEach((input) => {
-        const checkConnector = () => input.connectors.length > 0;
-
-        if (input.valueType !== "geometry") {
-          inputParams[this.uniqueID + input.name] = {
-            type: input.valueType === "string" ? "text" : "number",
-            value: input.value,
-            label: input.name,
-            disabled: checkConnector(),
-            step: input.valueType === "number" ? 0.1 : undefined,
-            onChange: (value) => {
-              if (input.value !== value) {
-                input.setValue(value);
-              }
-            },
-          };
+    inputParams[this.name + this.uniqueID + "text"] = {
+      type: "string",
+      value: this.text,
+      label: "Label text",
+      onChange: (value) => {
+        if (this.text !== value) {
+          this.text = value;
+          this.onUpstreamChange();
         }
-      });
-    }
+      },
+    };
 
-    // Add mobile delete button for touchscreen devices
-    const flowCanvas = document.getElementById("flow-canvas");
-    if (
-      GlobalVariables.isMobile() &&
-      flowCanvas &&
-      flowCanvas.style.display !== "none"
-    ) {
-      inputParams[this.uniqueID + "delete"] = {
-        type: "button",
-        label: "Delete Selected",
-        onClick: () => {
-          flowCanvas.focus();
-          const event = new KeyboardEvent("keydown", {
-            bubbles: true,
-            cancelable: true,
-            key: "Delete",
-            code: "Delete",
-            keyCode: 46,
-          });
-          flowCanvas.dispatchEvent(event);
-        },
-      };
-    }
+    inputParams[this.uniqueID + "startPosition"] = {
+      type: "point",
+      value: [this.start.x, this.start.y, this.start.z],
+      label: "Start point",
+      onChange: (value, index) => {
+        this.start = { x: value[0], y: value[1], z: value[2] };
+        this.onUpstreamChange();
+      },
+    };
+    inputParams[this.uniqueID + "endPosition"] = {
+      type: "point",
+      value: [this.end.x, this.end.y, this.end.z],
+      label: "End point",
+      onChange: (value, index) => {
+        this.end = { x: value[0], y: value[1], z: value[2] };
+        this.onUpstreamChange();
+      },
+    };
 
     return inputParams;
   }
