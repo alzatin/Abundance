@@ -1039,7 +1039,8 @@ const ShowProjects = ({
         "&yearShow=" +
         yearShow +
         "&user=" +
-        user +
+        GlobalVariables.currentUser +
+        "&mode=user" +
         lastKeyQuery,
       { signal },
     ).then((res) => res.json());

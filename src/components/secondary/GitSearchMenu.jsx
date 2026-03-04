@@ -53,7 +53,9 @@ export default function GitSearchMenu({
             debouncedSearchTerm +
             "&yearShow=" +
             yearShow +
-            "&user" +
+            "&user=" +
+            GlobalVariables.currentUser +
+            "&mode=all" +
             lastKeyQuery,
         ).then((res) => res.json());
       }
