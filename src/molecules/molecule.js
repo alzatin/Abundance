@@ -1355,7 +1355,6 @@ export default class Molecule extends Atom {
     } else {
       octokit = new Octokit();
     }
-    console.log(gitObj, authorizedUser, userScopes);
     if (
       gitObj.privateRepo &&
       (!authorizedUser || !userScopes.includes("repo"))
