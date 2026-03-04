@@ -4,6 +4,7 @@ import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
 import { useQuery } from "react-query";
 import useDebounce from "../../hooks/useDebounce.js";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function GitSearchMenu({
   activeAtom,
@@ -26,6 +27,7 @@ export default function GitSearchMenu({
   const [lastKey, setLastKey] = useState("");
 
   const debouncedSearchTerm = useDebounce(inputValue, 200);
+  const { authorizedUserOcto } = useAuth();
 
   const handleSearchBarValueChange = function (value) {
     setInputValue(value.toLowerCase());
@@ -69,7 +71,7 @@ export default function GitSearchMenu({
    */
   function placeGitHubMolecule(e, item, position) {
     GlobalVariables.currentMolecule
-      .loadGithubMoleculeByName(item, {}, [], position)
+      .loadGithubMoleculeByName(item, {}, [], position, authorizedUserOcto)
       .catch(() => {
         setUserNotification(`Error: Project Missing`, "error");
         // Auto-dismiss notification after 3 seconds

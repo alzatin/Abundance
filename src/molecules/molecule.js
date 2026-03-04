@@ -1343,8 +1343,15 @@ export default class Molecule extends Atom {
     oldObject = {},
     oldParentObjectConnectors = [],
     position,
+    authorizedUser,
   ) {
-    let octokit = new Octokit();
+    let octokit;
+    if (authorizedUser) {
+      octokit = authorizedUser;
+    } else {
+      octokit = new Octokit();
+    }
+
     try {
       await octokit
         .request("GET /repos/{owner}/{repo}/contents/project.abundance", {
