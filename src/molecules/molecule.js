@@ -8,6 +8,7 @@ import { BOMEntry } from "../js/BOM";
 
 import { Status } from "../prototypes/observableEntity.js";
 import { saveAs } from "file-saver";
+import { re } from "mathjs";
 
 /**
  * This class creates the Molecule atom.
@@ -1337,6 +1338,8 @@ export default class Molecule extends Atom {
    * @param {object} gitObj - An object containing the GitHub repository information (owner, repoName, etc).
    * @param {object} oldObject - (Optional) The previous atom object to recover IO values from.
    * @param {object} oldParentObjectConnectors - (Optional) Connectors from the parent object to remap.
+   * @param {object} position - (Optional) The position to place the loaded molecule at. If not provided, it will use oldObject's position or default to (0.5, 0.6).
+   * @param {object} authorizedUser - (Optional) An authenticated Octokit instance for accessing private repositories.
    */
   async loadGithubMoleculeByName(
     gitObj,
@@ -1344,6 +1347,7 @@ export default class Molecule extends Atom {
     oldParentObjectConnectors = [],
     position,
     authorizedUser,
+    userScopes,
   ) {
     let octokit;
     if (authorizedUser) {
@@ -1351,7 +1355,15 @@ export default class Molecule extends Atom {
     } else {
       octokit = new Octokit();
     }
-
+    console.log(gitObj, authorizedUser, userScopes);
+    if (
+      gitObj.privateRepo &&
+      (!authorizedUser || !userScopes.includes("repo"))
+    ) {
+      throw new Error(
+        "Authentication with 'repo' scope is required to access private repositories.",
+      );
+    }
     try {
       await octokit
         .request("GET /repos/{owner}/{repo}/contents/project.abundance", {

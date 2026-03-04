@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, use } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
 import { useControls } from "../../hooks/useControls";
 import GlobalVariables from "../../js/globalvariables";
@@ -27,7 +27,7 @@ export default function GitSearchMenu({
   const [lastKey, setLastKey] = useState("");
 
   const debouncedSearchTerm = useDebounce(inputValue, 200);
-  const { authorizedUserOcto } = useAuth();
+  const { authorizedUserOcto, userScopes } = useAuth();
 
   const handleSearchBarValueChange = function (value) {
     setInputValue(value.toLowerCase());
@@ -71,9 +71,19 @@ export default function GitSearchMenu({
    */
   function placeGitHubMolecule(e, item, position) {
     GlobalVariables.currentMolecule
-      .loadGithubMoleculeByName(item, {}, [], position, authorizedUserOcto)
-      .catch(() => {
-        setUserNotification(`Error: Project Missing`, "error");
+      .loadGithubMoleculeByName(
+        item,
+        {},
+        [],
+        position,
+        authorizedUserOcto,
+        userScopes,
+      )
+      .catch((err) => {
+        setUserNotification(
+          err.message ? err.message : `Error: Project Missing`,
+          "error",
+        );
         // Auto-dismiss notification after 3 seconds
         setTimeout(() => setUserNotification(null, "error"), 3000);
       });
