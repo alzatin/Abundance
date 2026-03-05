@@ -39,7 +39,7 @@ export default class Label extends Atom {
     ]);
 
     this.start = { x: 0, y: 0, z: 0 };
-    this.end = { x: 10, y: 10, z: 10 };
+    this.end = { x: 10, y: 10, z: 0 };
     this.text = "label";
     this.color = "#333333";
 
@@ -105,16 +105,10 @@ export default class Label extends Atom {
     line.name = "label-line";
     geometryArray.push(line);
 
-    // --- Text sprite (positioned just past the end of the line) ---
-    const TEXT_OFFSET_DISTANCE = 3;
-    const direction = new THREE.Vector3().subVectors(end, start).normalize();
-    const textOffset = direction.multiplyScalar(TEXT_OFFSET_DISTANCE);
+    // --- Text sprite (placed exactly at the midpoint of the line) ---
     const sprite = this.createTextSprite(String(labelText), color);
-    sprite.position.set(
-      end.x + textOffset.x,
-      end.y + textOffset.y,
-      end.z + textOffset.z,
-    );
+    const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+    sprite.position.set(mid.x, mid.y, mid.z);
     sprite.name = "label-text";
     geometryArray.push(sprite);
 
@@ -138,9 +132,9 @@ export default class Label extends Atom {
       Number(this.start.z) || 0,
     );
     const end = new THREE.Vector3(
-      Number(this.end.x) || 10,
-      Number(this.end.y) || 10,
-      Number(this.end.z) || 10,
+      Number(this.end.x) || 0,
+      Number(this.end.y) || 0,
+      Number(this.end.z) || 0,
     );
     const labelText = String(this.text || "label");
     const color = String(this.color || "#cf8c8c");
