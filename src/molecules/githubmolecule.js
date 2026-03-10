@@ -114,7 +114,7 @@ export default class GitHubMolecule extends Molecule {
     this.setError("An unknown error occurred in a child atom.");
   }
 
-  createInputParams() {
+  createInputParams(setInputChanged, authorizedUserOcto, userScopes) {
     let inputParams = {};
     inputParams = super.createInputParams();
     inputParams["Reload From Github"] = {
@@ -122,7 +122,8 @@ export default class GitHubMolecule extends Molecule {
       label: "Reload From Github",
       title:
         "Reload this molecule from GitHub, which will update its contents to match the current state of the linked GitHub repository.",
-      onClick: () => this.reloadMoleculeFromGithub(),
+      onClick: () =>
+        this.reloadMoleculeFromGithub(authorizedUserOcto, userScopes),
     };
     return inputParams;
   }
@@ -130,13 +131,24 @@ export default class GitHubMolecule extends Molecule {
   /**
    * Reload this github molecule from github
    */
-  reloadMoleculeFromGithub() {
+  reloadMoleculeFromGithub(authorizedUserOcto, userScopes) {
     var githubMoleculeObjectPreReload = this.serialize();
     var githubMoleculeParentObjectConnectorsPreReload =
       this.parent.serialize().allConnectors;
 
     let gitObj = this.parentRepo;
     let parentMolecule = this.parent;
+
+    //Only delete and continue if you have permission to load
+    if (
+      gitObj.privateRepo &&
+      (!authorizedUserOcto || !userScopes.includes("repo"))
+    ) {
+      this.setError(
+        "Authentication with 'repo' scope is required to access private repositories.",
+      );
+      return;
+    }
 
     const copyOfNodeToBeDeleted = this;
     copyOfNodeToBeDeleted.deleteNode(false, false, true);
@@ -146,6 +158,9 @@ export default class GitHubMolecule extends Molecule {
       gitObj,
       githubMoleculeObjectPreReload,
       githubMoleculeParentObjectConnectorsPreReload,
+      null,
+      authorizedUserOcto,
+      userScopes,
     );
   }
 }

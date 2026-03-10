@@ -84,11 +84,11 @@ function AppContent() {
   } = useRendering();
 
   const {
-    setIsLoggedIn,
     isAuthorized,
     setIsAuthorized,
     setAuthorizedUserOcto,
     authRedirectHandler,
+    userScopes,
   } = useAuth();
 
   const {
@@ -500,6 +500,19 @@ function AppContent() {
           });
           return;
         }
+        /* We are trying to open a private repo without sufficient scopes, trigger re-auth with repo scope*/
+        if (project.privateRepo ? !userScopes.includes("repo") : false) {
+          setErrorNotification(
+            "Insufficient token scopes to load private repository. Please re-authenticate with the 'repo' scope.",
+          );
+          authRedirectHandler({
+            authType: "reauth",
+            currentProjectRep: undefined,
+            returnTo: `/`,
+            privateRepo: true,
+          });
+          return;
+        }
 
         // If error is 404 (project not found), mark it in AWS
         if (e?.status === 404) {
@@ -565,7 +578,6 @@ function AppContent() {
             <Callback
               isAuthorized={isAuthorized}
               setIsAuthorized={setIsAuthorized}
-              setIsLoggedIn={setIsLoggedIn}
               setAuthorizedUserOcto={setAuthorizedUserOcto}
               setRedirectType={setRedirectType}
             />
