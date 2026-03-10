@@ -43,10 +43,6 @@ function handleNonReplicadMove(
     toMove.nonReplicadSerialized &&
     toMove.nonReplicadSerialized.type == "Label"
   ) {
-    console.log(
-      "moving non replicad geometry for label",
-      toMove.nonReplicadSerialized,
-    );
     const moveVec = [x, y, z];
     const addVec = (arr: number[], vec: number[]) =>
       arr.map((val, idx) => val + vec[idx]);
