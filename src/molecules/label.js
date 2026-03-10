@@ -4,6 +4,9 @@ import { Line2 } from "three/addons/lines/Line2.js";
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 
+import GlobalVariables from "../js/globalvariables.js";
+import { re } from "mathjs";
+
 /**
  * This class creates the label atom which adds a dimension label (a line with
  * accompanying text) to the 3D view. The label is rendered as non-replicad
@@ -36,6 +39,7 @@ export default class Label extends Atom {
 
     this.addAllIOs([
       { name: "geometry", valueType: "geometry", type: "input" },
+      { name: "geometry", valueType: "geometry", type: "output" },
     ]);
 
     this.start = { x: 0, y: 0, z: 0 };
@@ -87,7 +91,26 @@ export default class Label extends Atom {
    * @param {string} labelText - The text to display
    * @param {string} color - The hex color string for the line and text
    */
-  buildLabelGeometry(start, end, labelText, color) {
+  buildLabelGeometry() {
+    console.log(
+      "Building label geometry with start:",
+      this.start,
+      "end:",
+      this.end,
+    );
+    const start = new THREE.Vector3(
+      Number(this.start.x) || 0,
+      Number(this.start.y) || 0,
+      Number(this.start.z) || 0,
+    );
+    const end = new THREE.Vector3(
+      Number(this.end.x) || 0,
+      Number(this.end.y) || 0,
+      Number(this.end.z) || 0,
+    );
+    const labelText = String(this.text || "label");
+    const color = String(this.color || "#d72020");
+
     const geometryArray = [];
 
     // --- Line (complete Three.js object with geometry + material) ---
@@ -105,10 +128,23 @@ export default class Label extends Atom {
     line.name = "label-line";
     geometryArray.push(line);
 
-    // --- Text sprite (placed exactly at the midpoint of the line) ---
+    // --- Text sprite (placed slightly offset from the midpoint of the line) ---
     const sprite = this.createTextSprite(String(labelText), color);
     const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-    sprite.position.set(mid.x, mid.y, mid.z);
+    // Determine if the line is more vertical or horizontal
+    const dx = Math.abs(end.x - start.x);
+    const dy = Math.abs(end.y - start.y);
+    // Offset direction: above for horizontal, right for vertical
+    let offset = new THREE.Vector3(0, 0, 0);
+    const OFFSET_DIST = 2.5;
+    if (dy > dx) {
+      // More vertical: offset to the right (positive x)
+      offset.set(OFFSET_DIST, 0, 0);
+    } else {
+      // More horizontal: offset above (positive y)
+      offset.set(0, OFFSET_DIST, 0);
+    }
+    sprite.position.set(mid.x + offset.x, mid.y + offset.y, mid.z + offset.z);
     sprite.name = "label-text";
     geometryArray.push(sprite);
 
@@ -116,6 +152,58 @@ export default class Label extends Atom {
       geometry: geometryArray,
       material: null,
       hideMainMesh: false,
+    };
+
+    return this.buildSerializableLabelGeometry(
+      start,
+      end,
+      labelText,
+      color,
+      mid,
+      offset,
+    );
+  }
+
+  buildSerializableLabelGeometry(
+    start,
+    end,
+    labelText,
+    color,
+    movement = { x: 0, y: 0, z: 0 },
+    rotation = { x: 0, y: 0, z: 0 },
+  ) {
+    const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+    // Determine if the line is more vertical or horizontal
+    const dx = Math.abs(end.x - start.x);
+    const dy = Math.abs(end.y - start.y);
+    // Offset direction: above for horizontal, right for vertical
+    let offset = new THREE.Vector3(0, 0, 0);
+    const OFFSET_DIST = 2.5;
+    if (dy > dx) {
+      // More vertical: offset to the right (positive x)
+      offset.set(OFFSET_DIST, 0, 0);
+    } else {
+      // More horizontal: offset above (positive y)
+      offset.set(0, OFFSET_DIST, 0);
+    }
+
+    return {
+      type: "Label",
+      line: {
+        start: start.toArray(),
+        end: end.toArray(),
+        color: color,
+        linewidth: 5,
+      },
+      text: {
+        value: labelText,
+        color: color,
+        position: [mid.x + offset.x, mid.y + offset.y, mid.z + offset.z],
+        scale: [10, 5, 1],
+        font: "Bold 40px Arial",
+      },
+      movement: { ...movement }, // e.g. {x: 10, y: 0, z: 0}
+      rotation: { ...rotation }, // e.g. {x: 0, y: 0, z: Math.PI/2}
     };
   }
 
@@ -125,30 +213,11 @@ export default class Label extends Atom {
    * @returns {Promise} The input geometry unchanged
    */
   compute() {
-    console.log("Computing label with inputs", this.inputs);
-    const start = new THREE.Vector3(
-      Number(this.start.x) || 0,
-      Number(this.start.y) || 0,
-      Number(this.start.z) || 0,
-    );
-    const end = new THREE.Vector3(
-      Number(this.end.x) || 0,
-      Number(this.end.y) || 0,
-      Number(this.end.z) || 0,
-    );
-    const labelText = String(this.text || "label");
-    const color = String(this.color || "#cf8c8c");
-
-    this.buildLabelGeometry(start, end, labelText, color);
-
-    let geom = this.findIOValue("geometry"); // pass through the input geometry unchanged
-    this.setReady(geom);
-    return geom;
+    this.serializedLabel = this.buildLabelGeometry();
+    let geom = this.findIOValue("geometry");
+    return GlobalVariables.cad.addNonReplicadGeom(geom, this.serializedLabel);
   }
 
-  /**
-   * Create the input parameters panel for this atom.
-   */
   createInputParams() {
     let inputParams = super.createInputParams();
 
@@ -191,6 +260,11 @@ export default class Label extends Atom {
    * label properties are stored as IO values.
    */
   serialize(offset = { x: 0, y: 0 }) {
-    return super.serialize(offset);
+    var thisAsObject = super.serialize(offset);
+    thisAsObject.start = this.start;
+    thisAsObject.end = this.end;
+    thisAsObject.text = this.text;
+    thisAsObject.color = this.color;
+    return thisAsObject;
   }
 }

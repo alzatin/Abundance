@@ -12,7 +12,7 @@ import { RequestContext } from "./geometryProvider";
 async function extrude(
   toExtrude: AbundanceObject,
   height: number,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   if (util.is3D(toExtrude)) {
     throw new Error("Cannot extrude a 3D geometry.");
@@ -25,11 +25,51 @@ async function extrude(
         leaf.geometry,
         leaf.plane,
         height,
-        context
+        context,
       ),
       dimension: "3D",
     };
   });
+}
+
+function handleNonReplicadMove(
+  toMove: AbundanceObject,
+  x: number,
+  y: number,
+  z: number,
+  context: RequestContext,
+) {
+  if (
+    toMove.nonReplicadSerialized &&
+    toMove.nonReplicadSerialized.type == "Label"
+  ) {
+    console.log(
+      "moving non replicad geometry for label",
+      toMove.nonReplicadSerialized,
+    );
+    const moveVec = [x, y, z];
+    const addVec = (arr: number[], vec: number[]) =>
+      arr.map((val, idx) => val + vec[idx]);
+
+    const movedLabel = {
+      ...toMove.nonReplicadSerialized,
+      line: {
+        ...toMove.nonReplicadSerialized.line,
+        start: addVec(toMove.nonReplicadSerialized.line.start, moveVec),
+        end: addVec(toMove.nonReplicadSerialized.line.end, moveVec),
+      },
+      text: {
+        ...toMove.nonReplicadSerialized.text,
+        position: addVec(toMove.nonReplicadSerialized.text.position, moveVec),
+      },
+      movement: {
+        x: (toMove.nonReplicadSerialized.movement?.x || 0) + x,
+        y: (toMove.nonReplicadSerialized.movement?.y || 0) + y,
+        z: (toMove.nonReplicadSerialized.movement?.z || 0) + z,
+      },
+    };
+    return movedLabel;
+  }
 }
 
 /**
@@ -41,9 +81,16 @@ async function move(
   x: number,
   y: number,
   z: number,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   await util.init();
+  toMove.nonReplicadSerialized = handleNonReplicadMove(
+    toMove,
+    x,
+    y,
+    z,
+    context,
+  );
   if (util.is3D(toMove)) {
     return util.actOnLeafs(
       toMove,
@@ -55,11 +102,12 @@ async function move(
             x,
             y,
             z,
-            context
+            context,
           ),
         };
       },
-      toMove.plane
+      toMove.plane,
+      toMove.nonReplicadSerialized,
     );
   } else {
     const zTranslate = (plane: any, z: number) => {
@@ -72,7 +120,7 @@ async function move(
         originArr[2] + normalArr[2] * z,
       ] as [number, number, number];
       return util.asSimplePlane(
-        new util.replicad.Plane(newOrigin, repPlane.xDir.toTuple(), normalArr)
+        new util.replicad.Plane(newOrigin, repPlane.xDir.toTuple(), normalArr),
       );
     };
     return util.actOnLeafs(
@@ -85,13 +133,87 @@ async function move(
             x,
             y,
             0,
-            context
+            context,
           ),
           plane: zTranslate(leaf.plane, z),
         };
       },
-      zTranslate(toMove.plane, z)
+      zTranslate(toMove.plane, z),
+      toMove.nonReplicadSerialized,
     );
+  }
+}
+
+function handleNonReplicadRotate(
+  toRotate: AbundanceObject,
+  x: number,
+  y: number,
+  z: number,
+) {
+  if (
+    toRotate.nonReplicadSerialized &&
+    toRotate.nonReplicadSerialized.type == "Label"
+  ) {
+    //if we have non Replicad geometry, we need to rotate it as well
+    //write the logic here
+    const toRadians = (deg: number) => (deg * Math.PI) / 180;
+
+    // Basic rotation around axes
+    function rotatePoint(
+      [px, py, pz]: number[],
+      x: number,
+      y: number,
+      z: number,
+    ) {
+      // X axis
+      let [nx, ny, nz] = [px, py, pz];
+      if (x) {
+        const rad = toRadians(x);
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+        [ny, nz] = [ny * cos - nz * sin, ny * sin + nz * cos];
+      }
+      // Y axis
+      if (y) {
+        const rad = toRadians(y);
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+        [nx, nz] = [nx * cos + nz * sin, -nx * sin + nz * cos];
+      }
+      // Z axis
+      if (z) {
+        const rad = toRadians(z);
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+        [nx, ny] = [nx * cos - ny * sin, nx * sin + ny * cos];
+      }
+      return [nx, ny, nz];
+    }
+
+    if (
+      toRotate.nonReplicadSerialized &&
+      toRotate.nonReplicadSerialized.type == "Label"
+    ) {
+      const { line, text, rotation: prevRot } = toRotate.nonReplicadSerialized;
+      const rotatedLabel = {
+        ...toRotate.nonReplicadSerialized,
+        line: {
+          ...line,
+          start: rotatePoint(line.start, x, y, z),
+          end: rotatePoint(line.end, x, y, z),
+        },
+        text: {
+          ...text,
+          position: rotatePoint(text.position, x, y, z),
+        },
+        rotation: {
+          x: (prevRot?.x || 0) + x,
+          y: (prevRot?.y || 0) + y,
+          z: (prevRot?.z || 0) + z,
+        },
+      };
+      return rotatedLabel;
+    }
   }
 }
 
@@ -104,22 +226,31 @@ async function rotate(
   x: number,
   y: number,
   z: number,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   await util.init();
+  // Handle non-Replicad geometry rotation for labels
+  if (toRotate.nonReplicadSerialized) {
+    toRotate.nonReplicadSerialized = handleNonReplicadRotate(toRotate, x, y, z);
+  }
   if (util.is3D(toRotate)) {
-    return util.actOnLeafs(toRotate, async (leaf: AbundanceLeaf) => {
-      return {
-        ...leaf,
-        geometry: await util.geometryProvider!.rotate(
-          leaf.geometry,
-          x,
-          y,
-          z,
-          context
-        ),
-      };
-    });
+    return util.actOnLeafs(
+      toRotate,
+      async (leaf: AbundanceLeaf) => {
+        return {
+          ...leaf,
+          geometry: await util.geometryProvider!.rotate(
+            leaf.geometry,
+            x,
+            y,
+            z,
+            context,
+          ),
+        };
+      },
+      toRotate.plane,
+      toRotate.nonReplicadSerialized,
+    );
   } else {
     return util.actOnLeafs(toRotate, async (leaf: AbundanceLeaf) => {
       return {
@@ -129,10 +260,10 @@ async function rotate(
           0,
           0,
           z,
-          context
+          context,
         ),
         plane: util.asSimplePlane(
-          util.asReplicadPlane(leaf.plane).pivot(x, "X").pivot(y, "Y")
+          util.asReplicadPlane(leaf.plane).pivot(x, "X").pivot(y, "Y"),
         ),
       };
     });
@@ -145,7 +276,7 @@ async function rotate(
 async function scale(
   geom: AbundanceObject,
   scaleFactor: number,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   await util.init();
   return util.actOnLeafs(
@@ -156,11 +287,11 @@ async function scale(
         geometry: await util.geometryProvider!.scale(
           leaf.geometry,
           scaleFactor,
-          context
+          context,
         ),
       };
     },
-    geom.plane
+    geom.plane,
   );
 }
 
@@ -170,7 +301,7 @@ async function scale(
 async function fillet(
   geom: AbundanceObject,
   radius: number,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   await util.init();
   return util.actOnLeafs(
@@ -181,11 +312,11 @@ async function fillet(
         geometry: await util.geometryProvider!.fillet(
           leaf.geometry,
           radius,
-          context
+          context,
         ),
       };
     },
-    geom.plane
+    geom.plane,
   );
 }
 
@@ -196,7 +327,7 @@ async function fillet(
 async function chamfer(
   geom: AbundanceObject,
   size: number,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   await util.init();
   return util.actOnLeafs(
@@ -207,11 +338,11 @@ async function chamfer(
         geometry: await util.geometryProvider!.chamfer(
           leaf.geometry,
           size,
-          context
+          context,
         ),
       };
     },
-    geom.plane
+    geom.plane,
   );
 }
 
