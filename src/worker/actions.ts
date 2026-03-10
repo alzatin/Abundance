@@ -39,32 +39,49 @@ function handleNonReplicadMove(
   z: number,
   context: RequestContext,
 ) {
-  if (
-    toMove.nonReplicadSerialized &&
-    toMove.nonReplicadSerialized.type == "Label"
-  ) {
+  const nrs = toMove.nonReplicadSerialized;
+  if (Array.isArray(nrs) && nrs.length > 0 && nrs[0].type === "Label") {
     const moveVec = [x, y, z];
     const addVec = (arr: number[], vec: number[]) =>
       arr.map((val, idx) => val + vec[idx]);
-
-    const movedLabel = {
-      ...toMove.nonReplicadSerialized,
+    return nrs.map((label) => ({
+      ...label,
       line: {
-        ...toMove.nonReplicadSerialized.line,
-        start: addVec(toMove.nonReplicadSerialized.line.start, moveVec),
-        end: addVec(toMove.nonReplicadSerialized.line.end, moveVec),
+        ...label.line,
+        start: addVec(label.line.start, moveVec),
+        end: addVec(label.line.end, moveVec),
       },
       text: {
-        ...toMove.nonReplicadSerialized.text,
-        position: addVec(toMove.nonReplicadSerialized.text.position, moveVec),
+        ...label.text,
+        position: addVec(label.text.position, moveVec),
       },
       movement: {
-        x: (toMove.nonReplicadSerialized.movement?.x || 0) + x,
-        y: (toMove.nonReplicadSerialized.movement?.y || 0) + y,
-        z: (toMove.nonReplicadSerialized.movement?.z || 0) + z,
+        x: (label.movement?.x || 0) + x,
+        y: (label.movement?.y || 0) + y,
+        z: (label.movement?.z || 0) + z,
+      },
+    }));
+  } else if (nrs && nrs.type === "Label") {
+    const moveVec = [x, y, z];
+    const addVec = (arr: number[], vec: number[]) =>
+      arr.map((val, idx) => val + vec[idx]);
+    return {
+      ...nrs,
+      line: {
+        ...nrs.line,
+        start: addVec(nrs.line.start, moveVec),
+        end: addVec(nrs.line.end, moveVec),
+      },
+      text: {
+        ...nrs.text,
+        position: addVec(nrs.text.position, moveVec),
+      },
+      movement: {
+        x: (nrs.movement?.x || 0) + x,
+        y: (nrs.movement?.y || 0) + y,
+        z: (nrs.movement?.z || 0) + z,
       },
     };
-    return movedLabel;
   }
 }
 
@@ -146,53 +163,45 @@ function handleNonReplicadRotate(
   y: number,
   z: number,
 ) {
-  if (
-    toRotate.nonReplicadSerialized &&
-    toRotate.nonReplicadSerialized.type == "Label"
+  const nrs = toRotate.nonReplicadSerialized;
+  const toRadians = (deg: number) => (deg * Math.PI) / 180;
+
+  function rotatePoint(
+    [px, py, pz]: number[],
+    x: number,
+    y: number,
+    z: number,
   ) {
-    //if we have non Replicad geometry, we need to rotate it as well
-    //write the logic here
-    const toRadians = (deg: number) => (deg * Math.PI) / 180;
-
-    // Basic rotation around axes
-    function rotatePoint(
-      [px, py, pz]: number[],
-      x: number,
-      y: number,
-      z: number,
-    ) {
-      // X axis
-      let [nx, ny, nz] = [px, py, pz];
-      if (x) {
-        const rad = toRadians(x);
-        const cos = Math.cos(rad);
-        const sin = Math.sin(rad);
-        [ny, nz] = [ny * cos - nz * sin, ny * sin + nz * cos];
-      }
-      // Y axis
-      if (y) {
-        const rad = toRadians(y);
-        const cos = Math.cos(rad);
-        const sin = Math.sin(rad);
-        [nx, nz] = [nx * cos + nz * sin, -nx * sin + nz * cos];
-      }
-      // Z axis
-      if (z) {
-        const rad = toRadians(z);
-        const cos = Math.cos(rad);
-        const sin = Math.sin(rad);
-        [nx, ny] = [nx * cos - ny * sin, nx * sin + ny * cos];
-      }
-      return [nx, ny, nz];
+    // X axis
+    let [nx, ny, nz] = [px, py, pz];
+    if (x) {
+      const rad = toRadians(x);
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      [ny, nz] = [ny * cos - nz * sin, ny * sin + nz * cos];
     }
+    // Y axis
+    if (y) {
+      const rad = toRadians(y);
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      [nx, nz] = [nx * cos + nz * sin, -nx * sin + nz * cos];
+    }
+    // Z axis
+    if (z) {
+      const rad = toRadians(z);
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      [nx, ny] = [nx * cos - ny * sin, nx * sin + ny * cos];
+    }
+    return [nx, ny, nz];
+  }
 
-    if (
-      toRotate.nonReplicadSerialized &&
-      toRotate.nonReplicadSerialized.type == "Label"
-    ) {
-      const { line, text, rotation: prevRot } = toRotate.nonReplicadSerialized;
-      const rotatedLabel = {
-        ...toRotate.nonReplicadSerialized,
+  if (Array.isArray(nrs) && nrs.length > 0 && nrs[0].type === "Label") {
+    return nrs.map((label) => {
+      const { line, text, rotation: prevRot } = label;
+      return {
+        ...label,
         line: {
           ...line,
           start: rotatePoint(line.start, x, y, z),
@@ -208,8 +217,26 @@ function handleNonReplicadRotate(
           z: (prevRot?.z || 0) + z,
         },
       };
-      return rotatedLabel;
-    }
+    });
+  } else if (nrs && nrs.type === "Label") {
+    const { line, text, rotation: prevRot } = nrs;
+    return {
+      ...nrs,
+      line: {
+        ...line,
+        start: rotatePoint(line.start, x, y, z),
+        end: rotatePoint(line.end, x, y, z),
+      },
+      text: {
+        ...text,
+        position: rotatePoint(text.position, x, y, z),
+      },
+      rotation: {
+        x: (prevRot?.x || 0) + x,
+        y: (prevRot?.y || 0) + y,
+        z: (prevRot?.z || 0) + z,
+      },
+    };
   }
 }
 

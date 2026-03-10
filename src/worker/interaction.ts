@@ -16,7 +16,7 @@ import { json } from "react-router-dom";
  */
 async function loftShapes(
   sketches: AbundanceObject[],
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   await util.init();
   let sketchAndPlane = await Promise.all(
@@ -29,7 +29,7 @@ async function loftShapes(
         geometry: result.geometry,
         plane: result.plane,
       };
-    })
+    }),
   );
 
   const sketchList = sketchAndPlane.map((sp) => sp.geometry);
@@ -39,7 +39,7 @@ async function loftShapes(
     geometry: await util.geometryProvider!.loftSketches(
       sketchList,
       planes,
-      context
+      context,
     ),
     dimension: "3D",
     tags: [],
@@ -56,7 +56,7 @@ async function loftShapes(
 async function difference(
   target: AbundanceObject,
   cutter: AbundanceObject,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   await util.init();
   if (
@@ -77,7 +77,7 @@ async function difference(
  */
 async function shrinkWrapSketches(
   sketches: AbundanceObject[],
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceLeaf> {
   await util.init();
   let BOM: any[] = [];
@@ -94,26 +94,26 @@ async function shrinkWrapSketches(
     let fusedInput = await fuseAssembly(sketches[i], context);
     let fusedObj = (await util.geometryProvider!.get(
       fusedInput.geometry,
-      context
+      context,
     )) as Drawing;
     //@ts-ignore - ignore access of private innerShape field
     if (fusedObj.innerShape && fusedObj.innerShape.blueprints) {
       throw new Error(
-        "Sketches to be shrink wrapped can't have interior geometries"
+        "Sketches to be shrink wrapped can't have interior geometries",
       );
     }
     BOM.push(fusedInput.bom);
     geometryToWrap.geometry = await util.geometryProvider!.fuse(
       geometryToWrap.geometry,
       fusedInput.geometry,
-      context
+      context,
     );
   }
   return {
     geometry: await util.geometryProvider!.shrinkWrapSketches(
       geometryToWrap.geometry,
       50,
-      context
+      context,
     ),
     dimension: "2D",
     tags: [],
@@ -129,7 +129,7 @@ async function shrinkWrapSketches(
 async function intersect(
   shape1: AbundanceObject,
   shape2: AbundanceObject,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   await util.init();
   return util.actOnLeafs(shape1, async (leaf: AbundanceLeaf) => {
@@ -137,7 +137,7 @@ async function intersect(
     const resultGeom = await util.geometryProvider!.intersect(
       leaf.geometry,
       shapeToIntersectWith.geometry,
-      context
+      context,
     );
     if (resultGeom === undefined) {
       return undefined;
@@ -158,14 +158,14 @@ async function intersect(
  */
 async function fusion(
   shapes: AbundanceObject[],
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceLeaf> {
   await util.init();
   const all2D = shapes.every((shape) => !util.is3D(shape));
   const all3D = shapes.every((shape) => util.is3D(shape));
   if (!all2D && !all3D) {
     throw new Error(
-      "Fusion must be composed from only sketches OR only solids"
+      "Fusion must be composed from only sketches OR only solids",
     );
   }
 
@@ -178,10 +178,8 @@ async function fusion(
   for (let i = 1; i < shapes.length; i++) {
     fusedGeometry = await util.geometryProvider!.fuse(
       fusedGeometry,
-      (
-        await fuseAssembly(shapes[i], context)
-      ).geometry,
-      context
+      (await fuseAssembly(shapes[i], context)).geometry,
+      context,
     );
     bomAssembly.push(...(shapes[i].bom || []));
   }
@@ -237,7 +235,7 @@ deserialization options:
  */
 async function assembly(
   geometries: AbundanceObject[],
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   if (!Array.isArray(geometries) || geometries.length === 0) {
     throw new Error("inputIDs must be a non-empty array");
@@ -261,6 +259,7 @@ async function assembly(
 
   let assembly: AbundanceObject[] = [];
   let bomAssembly: any[] = [];
+  let nonReplicadGeoms: any[] = [];
 
   let all3D = false;
   let all2D = false;
@@ -272,15 +271,18 @@ async function assembly(
       for (let i = 0; i < geometries.length; i++) {
         const geometry = geometries[i];
         assembly.push(
-          await cutAssembly(geometry, geometries.slice(i + 1), context)
+          await cutAssembly(geometry, geometries.slice(i + 1), context),
         );
         if (geometry.bom && geometry.bom.length > 0) {
           bomAssembly.push(...geometry.bom);
         }
+        if (geometry.nonReplicadSerialized) {
+          nonReplicadGeoms.push(...geometry.nonReplicadSerialized);
+        }
       }
     } else {
       throw new Error(
-        "Assemblies must be composed from only sketches OR only solids"
+        "Assemblies must be composed from only sketches OR only solids",
       );
     }
   } else {
@@ -288,6 +290,9 @@ async function assembly(
     assembly.push(geometry);
     if (geometry.bom) {
       bomAssembly.push(...geometry.bom);
+    }
+    if (geometry.nonReplicadSerialized) {
+      nonReplicadGeoms.push(...geometry.nonReplicadSerialized);
     }
   }
   const result = {
@@ -297,6 +302,7 @@ async function assembly(
     color: util.defaultColor,
     bom: bomAssembly,
     dimension: all3D ? "3D" : "2D",
+    nonReplicadSerialized: nonReplicadGeoms,
   };
   if (startedBatch) {
     await util.geometryProvider!.endBatchOperation(context, result);
@@ -319,7 +325,7 @@ async function assembly(
  */
 async function fuseAssembly(
   assembly: AbundanceObject,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceLeaf> {
   await util.init();
   const flattened = util.flattenAssembly(assembly);
@@ -351,7 +357,7 @@ async function fuseAssembly(
 async function cutAssembly(
   partToCut: AbundanceObject,
   cuttingParts: AbundanceObject[],
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   await util.init();
 
@@ -411,7 +417,7 @@ async function cutAssembly(
 async function recursiveCut(
   partToCut: AbundanceLeaf,
   cuttingParts: AbundanceObject,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceLeaf> {
   if (util.isWireGeometry(partToCut)) {
     return partToCut;
@@ -426,7 +432,7 @@ async function recursiveCut(
     }
     const cuttingPartGeom = await util.geometryProvider!.get(
       cuttingPart.geometry,
-      context
+      context,
     );
     // @ts-ignore
     if (toCutGeom.boundingBox.isOut(cuttingPartGeom.boundingBox)) {
@@ -461,7 +467,7 @@ async function recursiveCut(
         Math.abs(
           p1.normal[0] * originDelta[0] +
             p1.normal[1] * originDelta[1] +
-            p1.normal[2] * originDelta[2]
+            p1.normal[2] * originDelta[2],
         ) < 1e-6;
 
       if (!normalsAreParallel || !originOnPlane) {
@@ -473,7 +479,7 @@ async function recursiveCut(
     resultGeomId = await util.geometryProvider!.cut(
       resultGeomId,
       cuttingPart.geometry,
-      context
+      context,
     );
   }
   const result = {
@@ -485,11 +491,11 @@ async function recursiveCut(
 
 async function splitCompSolid(
   part: AbundanceLeaf,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<AbundanceObject> {
   const subPartIds = await util.geometryProvider!.expandCompoundShape(
     part.geometry,
-    context
+    context,
   );
   if (subPartIds.length <= 1) {
     return part;

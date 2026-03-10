@@ -135,9 +135,14 @@ function addNonReplicadGeom(
   assembly: AbundanceObject,
   nonReplicadGeom: any,
 ): AbundanceObject {
+  const prev = Array.isArray(assembly.nonReplicadSerialized)
+    ? assembly.nonReplicadSerialized
+    : assembly.nonReplicadSerialized
+      ? [assembly.nonReplicadSerialized]
+      : [];
   return {
     ...assembly,
-    nonReplicadSerialized: nonReplicadGeom,
+    nonReplicadSerialized: [...prev, nonReplicadGeom],
   };
 }
 
