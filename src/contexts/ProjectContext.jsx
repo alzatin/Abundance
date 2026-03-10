@@ -516,6 +516,50 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
       setDuplicateProjectBar(93);
 
+      // Ensure GlobalVariables.topLevelMolecule is up to date by loading the duplicated project.abundance
+      try {
+        const projectFileResponse = await authorizedUserOcto.request(
+          "GET /repos/{owner}/{repo}/contents/{path}",
+          {
+            owner: currentUser,
+            repo: newRepo.data.name,
+            path: "project.abundance",
+          },
+        );
+        let projectFileContent;
+        if (
+          !projectFileResponse.data.content ||
+          projectFileResponse.data.content.length === 0
+        ) {
+          const contentResponse = await fetch(
+            projectFileResponse.data.download_url,
+          );
+          projectFileContent = await contentResponse.text();
+        } else {
+          projectFileContent = GlobalVariables.fromBinaryStr(
+            atob(projectFileResponse.data.content),
+          );
+        }
+        // Parse and update topLevelMolecule
+        const projectData = JSON.parse(projectFileContent);
+        GlobalVariables.topLevelMolecule = new Molecule(projectData);
+      } catch (err) {
+        console.error(
+          "Error updating GlobalVariables.topLevelMolecule for AWS node:",
+          err,
+        );
+      }
+
+      // Populate githubMoleculesUsed using searchGithubMolecules
+      let githubMoleculeUsedList = [];
+      try {
+        githubMoleculeUsedList = await searchGithubMolecules(
+          GlobalVariables.topLevelMolecule,
+        );
+      } catch (err) {
+        console.error("Error searching GitHub molecules for AWS node:", err);
+      }
+
       // Create AWS node for the new project
       const newProjectBody = {
         owner: currentUser,
@@ -542,7 +586,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
           "https://raw.githubusercontent.com/" +
           newRepo.data.full_name +
           "/master/project.abundance?sanitize=true",
-        githubMoleculesUsed: [],
+        githubMoleculesUsed: githubMoleculeUsedList,
         svgURL:
           "https://raw.githubusercontent.com/" +
           newRepo.data.full_name +
