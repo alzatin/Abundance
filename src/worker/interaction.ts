@@ -248,8 +248,25 @@ async function assembly(
     const batch: RequestContext | AbundanceObject =
       await util.geometryProvider!.startBatchOperation(context, batchId);
 
-    // Full assembly cache hit. No work to do.
+    // Full assembly cache hit. No work to do, but update nonReplicadSerialized if needed.
     if (util.isAbundanceObject(batch)) {
+      // Gather all nonReplicadSerialized and bom from input geometries
+      let nonReplicadGeoms: any[] = [];
+      let bomAssembly: any[] = [];
+      for (const geometry of geometries) {
+        if (
+          Array.isArray(geometry.nonReplicadSerialized) &&
+          geometry.nonReplicadSerialized.length > 0
+        ) {
+          nonReplicadGeoms.push(...geometry.nonReplicadSerialized);
+        }
+        if (Array.isArray(geometry.bom) && geometry.bom.length > 0) {
+          bomAssembly.push(...geometry.bom);
+        }
+      }
+      // Always update to reflect current state, even if empty
+      batch.nonReplicadSerialized = nonReplicadGeoms;
+      batch.bom = bomAssembly;
       return batch;
     }
 
@@ -268,16 +285,25 @@ async function assembly(
     all2D = geometries.every((geom) => !util.is3D(geom));
 
     if (all3D || all2D) {
+      // Always clear arrays before populating
+      bomAssembly.length = 0;
+      nonReplicadGeoms.length = 0;
       for (let i = 0; i < geometries.length; i++) {
         const geometry = geometries[i];
         assembly.push(
           await cutAssembly(geometry, geometries.slice(i + 1), context),
         );
-        if (geometry.bom && geometry.bom.length > 0) {
-          bomAssembly.push(...geometry.bom);
-        }
-        if (geometry.nonReplicadSerialized) {
+      }
+      // Gather all nonReplicadSerialized and bom from input geometries
+      for (const geometry of geometries) {
+        if (
+          Array.isArray(geometry.nonReplicadSerialized) &&
+          geometry.nonReplicadSerialized.length > 0
+        ) {
           nonReplicadGeoms.push(...geometry.nonReplicadSerialized);
+        }
+        if (Array.isArray(geometry.bom) && geometry.bom.length > 0) {
+          bomAssembly.push(...geometry.bom);
         }
       }
     } else {
@@ -286,13 +312,22 @@ async function assembly(
       );
     }
   } else {
+    // Always clear arrays before populating
+    bomAssembly.length = 0;
+    nonReplicadGeoms.length = 0;
     const geometry = geometries[0];
     assembly.push(geometry);
-    if (geometry.bom) {
-      bomAssembly.push(...geometry.bom);
-    }
-    if (geometry.nonReplicadSerialized) {
-      nonReplicadGeoms.push(...geometry.nonReplicadSerialized);
+    // Gather all nonReplicadSerialized and bom from input geometries
+    for (const geometry of geometries) {
+      if (
+        Array.isArray(geometry.nonReplicadSerialized) &&
+        geometry.nonReplicadSerialized.length > 0
+      ) {
+        nonReplicadGeoms.push(...geometry.nonReplicadSerialized);
+      }
+      if (Array.isArray(geometry.bom) && geometry.bom.length > 0) {
+        bomAssembly.push(...geometry.bom);
+      }
     }
   }
   const result = {

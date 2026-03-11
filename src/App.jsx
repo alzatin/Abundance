@@ -339,9 +339,6 @@ function AppContent() {
       ) {
         setNonReplicadGeometry({ ...nonReplicadGeometryFromAtom });
       } else {
-        console.log(
-          "No non-Replicad geometry provided, clearing any existing non-Replicad geometry",
-        );
         //We only want to clear non-Replicad if we're not setting the backgroundMolecule
         if (!backgroundMolecule) {
           // If we're trying to set a background molecule but it doesn't have non-Replicad geometry, we should clear the existing non-Replicad geometry to avoid showing stale geometry from a previous background molecule

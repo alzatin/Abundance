@@ -92,12 +92,6 @@ export default class Label extends Atom {
    * @param {string} color - The hex color string for the line and text
    */
   buildLabelGeometry() {
-    console.log(
-      "Building label geometry with start:",
-      this.start,
-      "end:",
-      this.end,
-    );
     const start = new THREE.Vector3(
       Number(this.start.x) || 0,
       Number(this.start.y) || 0,

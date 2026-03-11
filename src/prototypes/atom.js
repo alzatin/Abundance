@@ -990,7 +990,12 @@ export default class Atom extends ObservableEntity {
       this.nonReplicadGeom = this.reconstructLabelGeometry(nrs);
       return;
     } else {
-      console.log("not a label or no geometry found for non-Replicad geometry");
+      //delete label geometry if it exists from a prior compute
+      this.nonReplicadGeom = {
+        geometry: [],
+        material: null,
+        hideMainMesh: false,
+      };
     }
   }
 
