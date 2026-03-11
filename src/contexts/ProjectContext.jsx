@@ -4,6 +4,8 @@ import Molecule from "../molecules/molecule.js";
 import { licenses } from "../js/licenseOptions.js";
 import { re } from "mathjs";
 import { useAuth } from "./AuthContext.jsx";
+import { useAppState } from "./AppStateContext.jsx";
+import { useNavigate } from "react-router-dom";
 
 const ProjectContext = createContext();
 
@@ -14,9 +16,12 @@ const ProjectContext = createContext();
 export function ProjectProvider({ children, cad, loadProject }) {
   const [size, setSize] = useState(5);
   const { authorizedUserOcto, authRedirectHandler } = useAuth();
+  const { setNotification } = useAppState();
 
   // Track last saved data to avoid unnecessary saves
   const lastSaveData = useRef({});
+
+  var navigate = useNavigate();
 
   /**
    * The text to display at the top of the bill of materials.
@@ -266,6 +271,128 @@ export function ProjectProvider({ children, cad, loadProject }) {
     return GlobalVariables.currentAWSnode;
   };
 
+  /** forkProject takes care of making the octokit request for the authenticated user to make a copy of a not owned repo */
+  const forkProject = async function (
+    authorizedUserOcto,
+    setForkBarVisible,
+    setForkProgress,
+    setRedirectType,
+  ) {
+    var owner = GlobalVariables.currentAWSnode.owner;
+    var repo = GlobalVariables.currentAWSnode.repoName;
+    try {
+      // if authenticated and it is not your project, make a clone of the project and return to create mode
+      if (owner === GlobalVariables.currentUser) {
+        // Prevent forking your own project
+        console.warn("You cannot fork your own project.");
+        navigate(
+          `/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`,
+        );
+        return;
+      }
+
+      setForkBarVisible(true);
+      setForkProgress(0);
+
+      // Get the original repo info
+      const result = await authorizedUserOcto.request(
+        "GET /repos/{owner}/{repo}",
+        {
+          owner: owner,
+          repo: repo,
+        },
+      );
+      setForkProgress(5);
+
+      // Create the fork
+      await authorizedUserOcto.rest.repos.createFork({
+        owner: owner,
+        repo: repo,
+      });
+      setForkProgress(50);
+
+      // Prepare AWS node body
+      const apiUrl =
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
+      let searchField = (
+        result.data.name +
+        " " +
+        GlobalVariables.currentUser
+      ).toLowerCase();
+      let forkedNodeBody = {
+        owner: GlobalVariables.currentUser,
+        ranking: result.data.stargazers_count,
+        description: result.data.description,
+        searchField: searchField,
+        repoName: result.data.name,
+        forks: 0,
+        topMoleculeID: GlobalVariables.topLevelMolecule.uniqueID,
+        topics: [],
+        readme:
+          "https://raw.githubusercontent.com/" +
+          GlobalVariables.currentUser +
+          "/" +
+          result.data.name +
+          "/master/README.md?sanitize=true",
+        contentURL:
+          "https://raw.githubusercontent.com/" +
+          GlobalVariables.currentUser +
+          "/" +
+          result.data.name +
+          "/master/project.abundance?sanitize=true",
+        githubMoleculesUsed: [],
+        parentRepo: owner + "/" + repo,
+        svgURL:
+          "https://raw.githubusercontent.com/" +
+          GlobalVariables.currentUser +
+          "/" +
+          result.data.name +
+          "/master/project.svg?sanitize=true",
+        dateCreated: result.data.created_at,
+        html_url:
+          "https://github.com/" +
+          GlobalVariables.currentUser +
+          "/" +
+          result.data.name,
+      };
+
+      // Post to AWS
+      setForkProgress(75);
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        body: JSON.stringify(forkedNodeBody),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      });
+      setForkProgress(100);
+
+      GlobalVariables.currentAWSnode = forkedNodeBody;
+      setRedirectType(null);
+
+      // Hide progress bar after a short delay
+      setTimeout(() => {
+        setForkBarVisible(false);
+      }, 1000);
+
+      navigate(
+        `/${GlobalVariables.currentUser}/${GlobalVariables.currentAWSnode.repoName}`,
+        { replace: true },
+      );
+    } catch (error) {
+      console.error("Error during forking the repository:", error);
+      setNotification(
+        error?.message || "Error forking the repository. Please try again.",
+      );
+      // Hide progress bar after a short delay
+      setTimeout(() => {
+        setForkBarVisible(false);
+      }, 1000);
+
+      setRedirectType && setRedirectType(null);
+    }
+  };
+
   const searchGithubMolecules = (molecule) => {
     return new Promise((resolve, reject) => {
       try {
@@ -312,6 +439,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
    * @param {object} authorizedUserOcto - Authenticated Octokit instance
    * @param {function} setDuplicateProjectBar - Progress bar callback
    * @param {string} customName - Custom name for the duplicated project (optional)
+   * @param {function} setErrorNotification - Callback to set error notification message
    * @returns {object} The new project AWS node or null on error
    */
   const duplicateProject = async (
@@ -636,9 +764,8 @@ export function ProjectProvider({ children, cad, loadProject }) {
       return newProjectBody;
     } catch (err) {
       console.error("Error duplicating project:", err);
-      window.alert(
-        "An error occurred while duplicating the project. Please try again.",
-      );
+      setNotification("Error duplicating project. Please try again.", "error");
+
       return null;
     }
   };
@@ -1196,16 +1323,14 @@ export function ProjectProvider({ children, cad, loadProject }) {
       setSaveProgress(100);
     } catch (error) {
       console.error("Error during project save:", error);
-
       // The createCommit function already handles authentication errors,
       // so we only need to handle other types of errors here
       if (!error.message.includes("Bad credentials") && error.status !== 401) {
-        if (setErrorNotification) {
-          setErrorNotification(
-            `Save failed: ${error.message || "Unknown error occurred"}`,
-          );
-          setTimeout(() => setErrorNotification(null), 5000);
-        }
+        setNotification(
+          `Save failed: ${error.message || "Unknown error occurred"}`,
+          "error",
+        );
+        setTimeout(() => setNotification(null), 5000);
       }
 
       setSaveProgress(0); // Reset save progress
@@ -1219,6 +1344,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
     loadProject,
     createProject,
     duplicateProject,
+    forkProject,
     renameProject,
     searchGithubMolecules,
     saveProject,

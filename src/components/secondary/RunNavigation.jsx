@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import GlobalVariables from "../../js/globalvariables.js";
 import { re } from "mathjs";
 import { useProgressBar } from "./ProgressBarManager.jsx";
+import { useProject } from "../../contexts/ProjectContext.jsx";
 
 //navigation svg icons - turn into key pairs later
 let shareSvg = (
@@ -78,6 +79,8 @@ function RunNavigation({
 
   let [starredState, setStarred] = useState(false);
   let [dialogContent, setDialog] = useState("");
+
+  const { forkProject } = useProject();
 
   // Fork progress tracking
   const [forkProgress, setForkProgress] = useState(0);
@@ -204,130 +207,6 @@ function RunNavigation({
     });
   };
 
-  /** forkProject takes care of making the octokit request for the authenticated user to make a copy of a not owned repo */
-  const forkProject = async function (authorizedUserOcto) {
-    var owner = GlobalVariables.currentAWSnode.owner;
-    var repo = GlobalVariables.currentAWSnode.repoName;
-    console.log(owner);
-    if (owner === GlobalVariables.currentUser) {
-      // Prevent forking your own project
-      console.warn("You cannot fork your own project.");
-      navigate(
-        `/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`,
-      );
-      return;
-    } else {
-      setForkBarVisible(true);
-      setForkProgress(0);
-
-      try {
-        // Get original repo info
-        const result = await authorizedUserOcto.request(
-          "GET /repos/{owner}/{repo}",
-          {
-            owner: owner,
-            repo: repo,
-          },
-        );
-        setForkProgress(5);
-
-        // Create the fork
-        await authorizedUserOcto.rest.repos.createFork({
-          owner: owner,
-          repo: repo,
-        });
-        setForkProgress(50);
-
-        // Poll for the fork to be available under the new user
-        const forkOwner = GlobalVariables.currentUser;
-        const forkRepo = result.data.name;
-        let forkData = null;
-        let attempts = 0;
-        const maxAttempts = 10;
-        const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-        while (attempts < maxAttempts) {
-          try {
-            const forkResult = await authorizedUserOcto.request(
-              "GET /repos/{owner}/{repo}",
-              {
-                owner: forkOwner,
-                repo: forkRepo,
-              },
-            );
-            forkData = forkResult.data;
-            break;
-          } catch (err) {
-            // Not ready yet
-            await delay(1500);
-            attempts++;
-          }
-        }
-        if (!forkData) {
-          throw new Error("Forked repository not found after waiting.");
-        }
-
-        // Prepare forkedNodeBody with fork's metadata
-        let searchField = (forkData.name + " " + forkOwner).toLowerCase();
-        let forkedNodeBody = {
-          owner: forkOwner,
-          ranking: forkData.stargazers_count,
-          description: forkData.description,
-          searchField: searchField,
-          repoName: forkData.name,
-          forks: forkData.forks_count,
-          topMoleculeID: GlobalVariables.topLevelMolecule.uniqueID,
-          topics: forkData.topics || [],
-          readme:
-            "https://raw.githubusercontent.com/" +
-            forkOwner +
-            "/" +
-            forkData.name +
-            "/master/README.md?sanitize=true",
-          contentURL:
-            "https://raw.githubusercontent.com/" +
-            forkOwner +
-            "/" +
-            forkData.name +
-            "/master/project.abundance?sanitize=true",
-          githubMoleculesUsed: [],
-          parentRepo: owner + "/" + repo,
-          svgURL:
-            "https://raw.githubusercontent.com/" +
-            forkOwner +
-            "/" +
-            forkData.name +
-            "/master/project.svg?sanitize=true",
-          dateCreated: forkData.created_at,
-          html_url: "https://github.com/" + forkOwner + "/" + forkData.name,
-        };
-
-        setForkProgress(75);
-        const apiUrl =
-          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
-        await fetch(apiUrl, {
-          method: "POST",
-          body: JSON.stringify(forkedNodeBody),
-          headers: {
-            "Content-type": "application/json; charset=UTF-8",
-          },
-        });
-
-        setForkProgress(100);
-        GlobalVariables.currentAWSnode = forkedNodeBody;
-        setRedirectType(null);
-        setTimeout(() => {
-          setForkBarVisible(false);
-        }, 1000);
-
-        navigate(`/${forkOwner}/${forkData.name}`);
-      } catch (error) {
-        console.error("Error during forking the repository:", error);
-        setRedirectType(null);
-        setForkBarVisible(false);
-      }
-    }
-  };
-
   // Handler for fork button click - show confirmation dialog
   const handleForkClick = () => {
     setShowForkDialog(true);
@@ -338,7 +217,12 @@ function RunNavigation({
     setShowForkDialog(false);
     if (authorizedUserOcto) {
       // User is logged in, proceed with fork
-      forkProject(authorizedUserOcto);
+      forkProject(
+        authorizedUserOcto,
+        setForkBarVisible,
+        setForkProgress,
+        setRedirectType,
+      );
     } else {
       // User needs to log in first, clear redirectType temporarily
       // It will be set again after auth when the dialog shows
