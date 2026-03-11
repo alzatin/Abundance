@@ -463,7 +463,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
       const currentUser = GlobalVariables.currentUser;
 
       if (!currentRepo || !currentUser) {
-        window.alert(
+        setNotification(
           "Cannot duplicate project: No active project or user not authenticated.",
         );
         return null;
@@ -509,7 +509,9 @@ export function ProjectProvider({ children, cad, loadProject }) {
           },
         });
       } catch (err) {
-        window.alert("Error creating duplicate project. Please try again.");
+        setNotification(
+          "Error creating duplicate project. The project name might be taken.",
+        );
         return null;
       }
 
@@ -805,7 +807,10 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
       // Check if new name is the same as current
       if (newName === oldRepoName) {
-        window.alert("New project name is the same as the current name.");
+        setNotification(
+          "New project name is the same as the current name.",
+          "warning",
+        );
         return null;
       }
 
@@ -820,8 +825,9 @@ export function ProjectProvider({ children, cad, loadProject }) {
         });
       } catch (err) {
         console.error("Error renaming GitHub repository:", err);
-        window.alert(
+        setNotification(
           "Error renaming repository on GitHub. The name might already be taken or invalid. Please try a different name.",
+          "error",
         );
         return null;
       }
