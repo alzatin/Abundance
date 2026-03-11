@@ -281,7 +281,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
     var owner = GlobalVariables.currentAWSnode.owner;
     var repo = GlobalVariables.currentAWSnode.repoName;
     try {
-      // if authenticated and it is not your project, make a clone of the project and return to create mode
       if (owner === GlobalVariables.currentUser) {
         // Prevent forking your own project
         console.warn("You cannot fork your own project.");
@@ -294,7 +293,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
       setForkBarVisible(true);
       setForkProgress(0);
 
-      // Get the original repo info
+      // Get original repo info
       const result = await authorizedUserOcto.request(
         "GET /repos/{owner}/{repo}",
         {
@@ -311,85 +310,95 @@ export function ProjectProvider({ children, cad, loadProject }) {
       });
       setForkProgress(50);
 
-      // Prepare AWS node body
-      const apiUrl =
-        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
-      let searchField = (
-        result.data.name +
-        " " +
-        GlobalVariables.currentUser
-      ).toLowerCase();
+      // Poll for the fork to be available under the new user
+      const forkOwner = GlobalVariables.currentUser;
+      const forkRepo = result.data.name;
+      let forkData = null;
+      let attempts = 0;
+      const maxAttempts = 10;
+      const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+      while (attempts < maxAttempts) {
+        try {
+          const forkResult = await authorizedUserOcto.request(
+            "GET /repos/{owner}/{repo}",
+            {
+              owner: forkOwner,
+              repo: forkRepo,
+            },
+          );
+          forkData = forkResult.data;
+          break;
+        } catch (err) {
+          // Not ready yet
+          await delay(1500);
+          attempts++;
+        }
+      }
+      if (!forkData) {
+        throw new Error("Forked repository not found after waiting.");
+      }
+
+      // Prepare forkedNodeBody with fork's metadata
+      let searchField = (forkData.name + " " + forkOwner).toLowerCase();
       let forkedNodeBody = {
-        owner: GlobalVariables.currentUser,
-        ranking: result.data.stargazers_count,
-        description: result.data.description,
+        owner: forkOwner,
+        ranking: forkData.stargazers_count,
+        description: forkData.description,
         searchField: searchField,
-        repoName: result.data.name,
-        forks: 0,
+        repoName: forkData.name,
+        forks: forkData.forks_count,
         topMoleculeID: GlobalVariables.topLevelMolecule.uniqueID,
-        topics: [],
+        topics: forkData.topics || [],
         readme:
           "https://raw.githubusercontent.com/" +
-          GlobalVariables.currentUser +
+          forkOwner +
           "/" +
-          result.data.name +
+          forkData.name +
           "/master/README.md?sanitize=true",
         contentURL:
           "https://raw.githubusercontent.com/" +
-          GlobalVariables.currentUser +
+          forkOwner +
           "/" +
-          result.data.name +
+          forkData.name +
           "/master/project.abundance?sanitize=true",
         githubMoleculesUsed: [],
         parentRepo: owner + "/" + repo,
         svgURL:
           "https://raw.githubusercontent.com/" +
-          GlobalVariables.currentUser +
+          forkOwner +
           "/" +
-          result.data.name +
+          forkData.name +
           "/master/project.svg?sanitize=true",
-        dateCreated: result.data.created_at,
-        html_url:
-          "https://github.com/" +
-          GlobalVariables.currentUser +
-          "/" +
-          result.data.name,
+        dateCreated: forkData.created_at,
+        html_url: "https://github.com/" + forkOwner + "/" + forkData.name,
       };
 
-      // Post to AWS
       setForkProgress(75);
-      const response = await fetch(apiUrl, {
+      const apiUrl =
+        "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
+      await fetch(apiUrl, {
         method: "POST",
         body: JSON.stringify(forkedNodeBody),
         headers: {
           "Content-type": "application/json; charset=UTF-8",
         },
       });
+
       setForkProgress(100);
-
       GlobalVariables.currentAWSnode = forkedNodeBody;
-      setRedirectType(null);
-
-      // Hide progress bar after a short delay
+      setRedirectType && setRedirectType(null);
       setTimeout(() => {
-        setForkBarVisible(false);
+        setForkBarVisible && setForkBarVisible(false);
       }, 1000);
 
-      navigate(
-        `/${GlobalVariables.currentUser}/${GlobalVariables.currentAWSnode.repoName}`,
-        { replace: true },
-      );
+      navigate(`/${forkOwner}/${forkData.name}`);
     } catch (error) {
       console.error("Error during forking the repository:", error);
       setNotification(
         error?.message || "Error forking the repository. Please try again.",
       );
-      // Hide progress bar after a short delay
-      setTimeout(() => {
-        setForkBarVisible(false);
-      }, 1000);
-
       setRedirectType && setRedirectType(null);
+      setForkBarVisible && setForkBarVisible(false);
     }
   };
 
