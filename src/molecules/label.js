@@ -40,11 +40,26 @@ export default class Label extends Atom {
     this.addAllIOs([
       { name: "geometry", valueType: "geometry", type: "input" },
       { name: "geometry", valueType: "geometry", type: "output" },
+      {
+        name: "text",
+        valueType: "string",
+        defaultValue: "label",
+        type: "input",
+      },
+      {
+        name: "startPosition",
+        valueType: "array",
+        defaultValue: [0, 0, 0],
+        type: "input",
+      },
+      {
+        name: "endPosition",
+        valueType: "array",
+        defaultValue: [10, 10, 0],
+        type: "input",
+      },
     ]);
 
-    this.start = { x: 0, y: 0, z: 0 };
-    this.end = { x: 10, y: 10, z: 0 };
-    this.text = "label";
     this.color = "#333333";
 
     this.setValues(values);
@@ -92,15 +107,29 @@ export default class Label extends Atom {
    * @param {string} color - The hex color string for the line and text
    */
   buildLabelGeometry() {
+    this.start = this.findIOValue("startPosition");
+    this.end = this.findIOValue("endPosition");
+    this.text = this.findIOValue("text");
+
+    console.log(
+      "Building label geometry with start:",
+      this.start,
+      "end:",
+      this.end,
+      "text:",
+      this.text,
+      "color:",
+      this.color,
+    );
     const start = new THREE.Vector3(
-      Number(this.start.x) || 0,
-      Number(this.start.y) || 0,
-      Number(this.start.z) || 0,
+      Number(this.start[0]) || 0,
+      Number(this.start[1]) || 0,
+      Number(this.start[2]) || 0,
     );
     const end = new THREE.Vector3(
-      Number(this.end.x) || 0,
-      Number(this.end.y) || 0,
-      Number(this.end.z) || 0,
+      Number(this.end[0]) || 0,
+      Number(this.end[1]) || 0,
+      Number(this.end[2]) || 0,
     );
     const labelText = String(this.text || "label");
     const color = String(this.color || "#d72020");
@@ -110,7 +139,7 @@ export default class Label extends Atom {
     // --- Line (complete Three.js object with geometry + material) ---
     const lineGeo = new LineGeometry();
     const lineMat = new LineMaterial({
-      color: 0xff0000, // Red color
+      color: color,
       linewidth: 5, // Desired width in pixels
       // You must set these uniforms in your render loop or whenever the window is resized
       resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
@@ -215,36 +244,53 @@ export default class Label extends Atom {
   createInputParams() {
     let inputParams = super.createInputParams();
 
-    inputParams[this.name + this.uniqueID + "text"] = {
-      type: "string",
-      value: this.text,
-      label: "Label text",
-      onChange: (value) => {
-        if (this.text !== value) {
-          this.text = value;
-          this.onUpstreamChange();
+    if (this.inputs) {
+      this.inputs.forEach((input) => {
+        if (input.name === "text") {
+          inputParams[this.uniqueID + "text"] = {
+            type: "string",
+            value: input.value,
+            label: "Label text",
+            onChange: async (value) => {
+              if (input.value !== value) {
+                input.setValue(value);
+                //this.onUpstreamChange();
+              }
+            },
+          };
+        } else if (input.name === "startPosition") {
+          inputParams[this.uniqueID + "startPosition"] = {
+            type: "point",
+            value: [input.value[0], input.value[1], input.value[2]],
+            label: "Start position",
+            step: 0.1,
+            onChange: (value) => {
+              input.setValue([value[0], value[1], value[2]]);
+            },
+          };
+        } else if (input.name === "endPosition") {
+          inputParams[this.uniqueID + "endPosition"] = {
+            type: "point",
+            value: [input.value[0], input.value[1], input.value[2]],
+            label: "End position",
+            step: 0.1,
+            onChange: (value) => {
+              input.setValue([value[0], value[1], value[2]]);
+            },
+          };
         }
-      },
-    };
+      });
 
-    inputParams[this.uniqueID + "startPosition"] = {
-      type: "point",
-      value: [this.start.x, this.start.y, this.start.z],
-      label: "Start point",
-      onChange: (value, index) => {
-        this.start = { x: value[0], y: value[1], z: value[2] };
-        this.onUpstreamChange();
-      },
-    };
-    inputParams[this.uniqueID + "endPosition"] = {
-      type: "point",
-      value: [this.end.x, this.end.y, this.end.z],
-      label: "End point",
-      onChange: (value, index) => {
-        this.end = { x: value[0], y: value[1], z: value[2] };
-        this.onUpstreamChange();
-      },
-    };
+      inputParams[this.uniqueID + "color"] = {
+        type: "color",
+        value: this.color,
+        label: "Label color",
+        onChange: (value) => {
+          this.color = value;
+          this.onUpstreamChange();
+        },
+      };
+    }
 
     return inputParams;
   }

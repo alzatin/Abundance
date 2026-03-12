@@ -926,6 +926,7 @@ export default class Atom extends ObservableEntity {
       : [serializedLabels];
     const geometries = [];
     labels.forEach((serializedLabel, idx) => {
+      console.log("SERIALIZED LABEL COLOR: ", serializedLabel.line.color);
       // --- Line ---
       const start = new THREE.Vector3(...serializedLabel.line.start);
       const end = new THREE.Vector3(...serializedLabel.line.end);
@@ -937,7 +938,7 @@ export default class Atom extends ObservableEntity {
       ]);
 
       const lineMat = new LineMaterial({
-        color: 0xff0000, // Red color
+        color: serializedLabel.line.color,
         linewidth: serializedLabel.line.linewidth,
         resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
       });
