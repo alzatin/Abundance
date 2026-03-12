@@ -5,6 +5,12 @@ import { ObservableEntity, Status } from "./observableEntity.js";
 import { getPredictedAtoms } from "../js/atomPrediction.js";
 import React from "react";
 
+/*THREEJS*/
+import * as THREE from "three";
+import { Line2 } from "three/addons/lines/Line2.js";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
+
 // Make this an enum once we're using typescript
 const AlertType = Object.freeze({
   ERROR: "error",
@@ -912,6 +918,87 @@ export default class Atom extends ObservableEntity {
     });
   }
 
+  // For label atoms, we serialize the geometry data in a custom way and reconstruct as THREEJS geometry here
+  reconstructLabelGeometry(serializedLabels) {
+    // Accepts an array of label objects
+    const labels = Array.isArray(serializedLabels)
+      ? serializedLabels
+      : [serializedLabels];
+    const geometries = [];
+    labels.forEach((serializedLabel, idx) => {
+      // --- Line ---
+      const start = new THREE.Vector3(...serializedLabel.line.start);
+      const end = new THREE.Vector3(...serializedLabel.line.end);
+
+      const lineGeo = new LineGeometry();
+      lineGeo.setPositions([
+        ...serializedLabel.line.start,
+        ...serializedLabel.line.end,
+      ]);
+
+      const lineMat = new LineMaterial({
+        color: serializedLabel.line.color,
+        linewidth: serializedLabel.line.linewidth,
+        resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
+      });
+
+      const line = new Line2(lineGeo, lineMat);
+      line.name = `label-line-${idx}`;
+
+      // --- Text Sprite ---
+      const canvas = document.createElement("canvas");
+      canvas.width = 256;
+      canvas.height = 128;
+      const ctx = canvas.getContext("2d");
+      ctx.font = serializedLabel.text.font;
+      ctx.fillStyle = serializedLabel.text.color;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(
+        serializedLabel.text.value,
+        canvas.width / 2,
+        canvas.height / 2,
+      );
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.SpriteMaterial({
+        map: texture,
+        depthTest: false,
+      });
+      const sprite = new THREE.Sprite(material);
+      sprite.scale.set(...serializedLabel.text.scale);
+      sprite.position.set(...serializedLabel.text.position);
+      sprite.name = `label-text-${idx}`;
+
+      geometries.push(line, sprite);
+    });
+    return {
+      geometry: geometries,
+      material: null,
+      hideMainMesh: false,
+    };
+  }
+
+  //gets called after compute if there is a non-Replicad geometry result to convert it to threeJS geometry for rendering
+  buildNonReplicadGeom(atomValue) {
+    const nrs = atomValue.nonReplicadSerialized;
+    if (
+      nrs &&
+      ((Array.isArray(nrs) && nrs.length > 0 && nrs[0].type === "Label") ||
+        nrs.type === "Label")
+    ) {
+      this.nonReplicadGeom = this.reconstructLabelGeometry(nrs);
+      return;
+    } else {
+      //delete label geometry if it exists from a prior compute
+      this.nonReplicadGeom = {
+        geometry: [],
+        material: null,
+        hideMainMesh: false,
+      };
+    }
+  }
+
   /**
    * This method defines the core logic for propagating changes in the DAG.
    *
@@ -942,9 +1029,12 @@ export default class Atom extends ObservableEntity {
 
       // const inputVals = this.inputs.map((input) => {input.getValue());
       this.setProcessing();
+
       this.compute(argsDict)
         .then((value) => {
+          this.buildNonReplicadGeom(value);
           this.setReady(value);
+
           if (
             this.setInputChanged &&
             typeof this.setInputChanged === "function"

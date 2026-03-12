@@ -4,7 +4,11 @@ import * as replicad from "replicad";
 import { drawSVG } from "replicad-decorate";
 import { chamfer, extrude, fillet, move, rotate, scale } from "./actions";
 import { executeCode as code } from "./code";
-import { createAndDisplayDefaultLayout, displayLayout, layout } from "./cutlayout";
+import {
+  createAndDisplayDefaultLayout,
+  displayLayout,
+  layout,
+} from "./cutlayout";
 import { ReplicadObject, RequestContext } from "./geometryProvider";
 import {
   assembly,
@@ -19,6 +23,7 @@ import { circle, rectangle, regularPolygon, text } from "./shapes";
 import {
   bom,
   color,
+  addNonReplicadGeom,
   extractAllTags,
   extractBomList,
   extractKeepOut,
@@ -27,7 +32,6 @@ import {
 } from "./tags";
 import type { AbundanceObject, AbundanceLeaf } from "./util";
 import * as util from "./util";
-import { re } from "mathjs";
 
 // --- Type Definitions ---
 const started: Promise<boolean> = util.init();
@@ -862,6 +866,7 @@ if (
     displayLayout,
     createAndDisplayDefaultLayout,
     bom,
+    addNonReplicadGeom,
     extractTag,
     intersect,
     assembly,
@@ -882,6 +887,7 @@ if (
 export {
   assembly,
   bom,
+  addNonReplicadGeom,
   chamfer,
   circle,
   code,
