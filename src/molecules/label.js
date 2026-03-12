@@ -272,10 +272,6 @@ export default class Label extends Atom {
             label: "Start position",
             step: 0.1,
             onChange: (value) => {
-              console.log(
-                this.color +
-                  " is the current label color on startPosition change",
-              );
               input.setValue([value[0], value[1], value[2]]);
             },
           };
@@ -296,8 +292,6 @@ export default class Label extends Atom {
             label: "Label color",
             onChange: (value) => {
               input.setValue(value);
-              console.log("Updated label color to:", value);
-              //this.onUpstreamChange();
             },
           };
         }
