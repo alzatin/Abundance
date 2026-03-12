@@ -1597,7 +1597,7 @@ export default class Molecule extends Atom {
     }
 
     // Find first available geometry input on the new atom
-    const geometryInput = this.findFirstAvailableGeometryInput(newAtom);
+    let geometryInput = this.findFirstAvailableGeometryInput(newAtom);
 
     if (!geometryInput) {
       return; // New atom doesn't have an available geometry input
