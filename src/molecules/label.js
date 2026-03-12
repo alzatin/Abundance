@@ -58,9 +58,15 @@ export default class Label extends Atom {
         defaultValue: [10, 10, 0],
         type: "input",
       },
+      {
+        name: "color",
+        valueType: "string",
+        defaultValue: "#dd863b",
+        type: "input",
+      },
     ]);
 
-    this.color = "#333333";
+    this.color = "#dd863b";
 
     this.setValues(values);
   }
@@ -110,6 +116,7 @@ export default class Label extends Atom {
     this.start = this.findIOValue("startPosition");
     this.end = this.findIOValue("endPosition");
     this.text = this.findIOValue("text");
+    this.color = this.findIOValue("color");
 
     console.log(
       "Building label geometry with start:",
@@ -265,6 +272,10 @@ export default class Label extends Atom {
             label: "Start position",
             step: 0.1,
             onChange: (value) => {
+              console.log(
+                this.color +
+                  " is the current label color on startPosition change",
+              );
               input.setValue([value[0], value[1], value[2]]);
             },
           };
@@ -278,18 +289,19 @@ export default class Label extends Atom {
               input.setValue([value[0], value[1], value[2]]);
             },
           };
+        } else if (input.name === "color") {
+          inputParams[this.uniqueID + "color"] = {
+            type: "color",
+            value: input.value,
+            label: "Label color",
+            onChange: (value) => {
+              input.setValue(value);
+              console.log("Updated label color to:", value);
+              //this.onUpstreamChange();
+            },
+          };
         }
       });
-
-      inputParams[this.uniqueID + "color"] = {
-        type: "color",
-        value: this.color,
-        label: "Label color",
-        onChange: (value) => {
-          this.color = value;
-          this.onUpstreamChange();
-        },
-      };
     }
 
     return inputParams;
