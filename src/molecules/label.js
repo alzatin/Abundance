@@ -7,6 +7,9 @@ import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import GlobalVariables from "../js/globalvariables.js";
 import { re } from "mathjs";
 
+/** Number of millimeters per inch, used to scale label geometry for MM projects. */
+const MM_PER_INCH = 25.4;
+
 /**
  * This class creates the label atom which adds a dimension label (a line with
  * accompanying text) to the 3D view. The label is rendered as non-replicad
@@ -72,12 +75,25 @@ export default class Label extends Atom {
   }
 
   /**
+   * Returns the scale factor for label geometry based on project units.
+   * MM projects use coordinates ~25.4x larger than Inch projects, so the
+   * sprite size and offsets must be scaled accordingly.
+   * @returns {number} 25.4 for MM projects, 1 otherwise
+   */
+  getUnitScale() {
+    return GlobalVariables.topLevelMolecule?.unitsKey === "MM"
+      ? MM_PER_INCH
+      : 1;
+  }
+
+  /**
    * Build a ThreeJS texture/sprite from a text string and return a Sprite object.
    * @param {string} text - The text to render
    * @param {string} color - The hex color string for the text
+   * @param {number} unitScale - Scale factor based on project units (25.4 for MM, 1 for Inches)
    * @returns {THREE.Sprite}
    */
-  createTextSprite(text, color) {
+  createTextSprite(text, color, unitScale = 1) {
     const canvas = document.createElement("canvas");
     const size = 256;
     canvas.width = size;
@@ -99,8 +115,8 @@ export default class Label extends Atom {
       depthTest: false, // Render label text on top so it remains visible regardless of depth
     });
     const sprite = new THREE.Sprite(material);
-    // Scale so text appears at a reasonable size relative to the line
-    sprite.scale.set(10, 5, 1);
+    // Scale so text appears at a reasonable size relative to the line, adjusted for project units
+    sprite.scale.set(10 * unitScale, 5 * unitScale, 1);
     return sprite;
   }
 
@@ -141,6 +157,9 @@ export default class Label extends Atom {
     const labelText = String(this.text || "label");
     const color = String(this.color || "#d72020");
 
+    // Scale sprite size and offset based on project units (MM coords are ~25.4x larger than Inches)
+    const unitScale = this.getUnitScale();
+
     const geometryArray = [];
 
     // --- Line (complete Three.js object with geometry + material) ---
@@ -159,14 +178,14 @@ export default class Label extends Atom {
     geometryArray.push(line);
 
     // --- Text sprite (placed slightly offset from the midpoint of the line) ---
-    const sprite = this.createTextSprite(String(labelText), color);
+    const sprite = this.createTextSprite(String(labelText), color, unitScale);
     const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
     // Determine if the line is more vertical or horizontal
     const dx = Math.abs(end.x - start.x);
     const dy = Math.abs(end.y - start.y);
     // Offset direction: above for horizontal, right for vertical
     let offset = new THREE.Vector3(0, 0, 0);
-    const OFFSET_DIST = 2.5;
+    const OFFSET_DIST = 2.5 * unitScale;
     if (dy > dx) {
       // More vertical: offset to the right (positive x)
       offset.set(OFFSET_DIST, 0, 0);
@@ -202,13 +221,14 @@ export default class Label extends Atom {
     movement = { x: 0, y: 0, z: 0 },
     rotation = { x: 0, y: 0, z: 0 },
   ) {
+    const unitScale = this.getUnitScale();
     const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
     // Determine if the line is more vertical or horizontal
     const dx = Math.abs(end.x - start.x);
     const dy = Math.abs(end.y - start.y);
     // Offset direction: above for horizontal, right for vertical
     let offset = new THREE.Vector3(0, 0, 0);
-    const OFFSET_DIST = 2.5;
+    const OFFSET_DIST = 2.5 * unitScale;
     if (dy > dx) {
       // More vertical: offset to the right (positive x)
       offset.set(OFFSET_DIST, 0, 0);
@@ -229,7 +249,7 @@ export default class Label extends Atom {
         value: labelText,
         color: color,
         position: [mid.x + offset.x, mid.y + offset.y, mid.z + offset.z],
-        scale: [10, 5, 1],
+        scale: [10 * unitScale, 5 * unitScale, 1],
         font: "Bold 40px Arial",
       },
       movement: { ...movement }, // e.g. {x: 10, y: 0, z: 0}
