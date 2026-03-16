@@ -165,22 +165,15 @@ export default class Label extends Atom {
     line.name = "label-line";
     geometryArray.push(line);
 
-    // --- Text sprite (placed slightly offset from the midpoint of the line) ---
+    // --- Text sprite (positioned above the line like an underscore) ---
     const sprite = this.createTextSprite(String(labelText), color, unitScale);
     const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-    // Determine if the line is more vertical or horizontal
-    const dx = Math.abs(end.x - start.x);
-    const dy = Math.abs(end.y - start.y);
-    // Offset direction: above for horizontal, right for vertical
-    let offset = new THREE.Vector3(0, 0, 0);
+    // Calculate perpendicular direction to the line (rotated 90 degrees in XY plane)
+    const lineDir = new THREE.Vector3().subVectors(end, start);
+    const perpDir = new THREE.Vector3(-lineDir.y, lineDir.x, 0).normalize();
+    // Position text above the line at a fixed offset distance
     const OFFSET_DIST = 2.5 * unitScale;
-    if (dy > dx) {
-      // More vertical: offset to the right (positive x)
-      offset.set(OFFSET_DIST, 0, 0);
-    } else {
-      // More horizontal: offset above (positive y)
-      offset.set(0, OFFSET_DIST, 0);
-    }
+    const offset = perpDir.multiplyScalar(OFFSET_DIST);
     sprite.position.set(mid.x + offset.x, mid.y + offset.y, mid.z + offset.z);
     sprite.name = "label-text";
     geometryArray.push(sprite);
@@ -211,19 +204,12 @@ export default class Label extends Atom {
   ) {
     const unitScale = this.getUnitScale();
     const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-    // Determine if the line is more vertical or horizontal
-    const dx = Math.abs(end.x - start.x);
-    const dy = Math.abs(end.y - start.y);
-    // Offset direction: above for horizontal, right for vertical
-    let offset = new THREE.Vector3(0, 0, 0);
+    // Calculate perpendicular direction to the line (rotated 90 degrees in XY plane)
+    const lineDir = new THREE.Vector3().subVectors(end, start);
+    const perpDir = new THREE.Vector3(-lineDir.y, lineDir.x, 0).normalize();
+    // Position text above the line at a fixed offset distance
     const OFFSET_DIST = 2.5 * unitScale;
-    if (dy > dx) {
-      // More vertical: offset to the right (positive x)
-      offset.set(OFFSET_DIST, 0, 0);
-    } else {
-      // More horizontal: offset above (positive y)
-      offset.set(0, OFFSET_DIST, 0);
-    }
+    const offset = perpDir.multiplyScalar(OFFSET_DIST);
 
     return {
       type: "Label",
