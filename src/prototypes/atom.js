@@ -798,6 +798,25 @@ export default class Atom extends ObservableEntity {
         return;
       }
 
+      // Handle point2d and point3d values (which are arrays)
+      if (
+        (ap.valueType === "point2d" || ap.valueType === "point3d") &&
+        Array.isArray(ap.getValue())
+      ) {
+        const currentValue = ap.getValue();
+        const isDifferentFromDefault =
+          !Array.isArray(ap.defaultValue) ||
+          JSON.stringify(ap.defaultValue) !== JSON.stringify(currentValue);
+        const isMoleculeInput = ap.type === "input";
+        if (isDifferentFromDefault || isMoleculeInput) {
+          ioValues.push({
+            name: ap.name,
+            ioValue: currentValue,
+          });
+        }
+        return;
+      }
+
       if (
         typeof ap.getValue() == "number" ||
         typeof ap.getValue() == "string"
@@ -1186,6 +1205,36 @@ export default class Atom extends ObservableEntity {
               if (input.value !== value) {
                 input.setValue(value);
               }
+            },
+          };
+        } else if (input.valueType === "point2d") {
+          // Handle 2D point inputs
+          const displayValue = hasConnector ? input.getValue() : input.value;
+          inputParams[this.uniqueID + input.name] = {
+            type: "point",
+            value: [displayValue?.[0] ?? 0, displayValue?.[1] ?? 0],
+            label: input.name,
+            step: 0.1,
+            disabled: hasConnector,
+            onChange: (value) => {
+              input.setValue([value[0], value[1]]);
+            },
+          };
+        } else if (input.valueType === "point3d") {
+          // Handle 3D point inputs
+          const displayValue = hasConnector ? input.getValue() : input.value;
+          inputParams[this.uniqueID + input.name] = {
+            type: "point",
+            value: [
+              displayValue?.[0] ?? 0,
+              displayValue?.[1] ?? 0,
+              displayValue?.[2] ?? 0,
+            ],
+            label: input.name,
+            step: 0.1,
+            disabled: hasConnector,
+            onChange: (value) => {
+              input.setValue([value[0], value[1], value[2]]);
             },
           };
         } else if (input.valueType === "array") {
