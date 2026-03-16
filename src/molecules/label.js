@@ -69,8 +69,7 @@ export default class Label extends Atom {
       },
     ]);
 
-    this.color = "#dd863b";
-
+    console.log("Label constructor values:", values);
     this.setValues(values);
   }
 
@@ -129,33 +128,22 @@ export default class Label extends Atom {
    * @param {string} color - The hex color string for the line and text
    */
   buildLabelGeometry() {
-    this.start = this.findIOValue("startPosition");
-    this.end = this.findIOValue("endPosition");
-    this.text = this.findIOValue("text");
-    this.color = this.findIOValue("color");
+    let startPoint = this.findIOValue("startPosition");
+    let endPoint = this.findIOValue("endPosition");
+    let text = this.findIOValue("text");
 
-    console.log(
-      "Building label geometry with start:",
-      this.start,
-      "end:",
-      this.end,
-      "text:",
-      this.text,
-      "color:",
-      this.color,
-    );
     const start = new THREE.Vector3(
-      Number(this.start[0]) || 0,
-      Number(this.start[1]) || 0,
-      Number(this.start[2]) || 0,
+      Number(startPoint[0]) || 0,
+      Number(startPoint[1]) || 0,
+      Number(startPoint[2]) || 0,
     );
     const end = new THREE.Vector3(
-      Number(this.end[0]) || 0,
-      Number(this.end[1]) || 0,
-      Number(this.end[2]) || 0,
+      Number(endPoint[0]) || 0,
+      Number(endPoint[1]) || 0,
+      Number(endPoint[2]) || 0,
     );
-    const labelText = String(this.text || "label");
-    const color = String(this.color || "#d72020");
+    const labelText = String(text || "label");
+    const color = String(this.findIOValue("color") || "#d72020");
 
     // Scale sprite size and offset based on project units (MM coords are ~25.4x larger than Inches)
     const unitScale = this.getUnitScale();
@@ -281,7 +269,6 @@ export default class Label extends Atom {
             onChange: async (value) => {
               if (input.value !== value) {
                 input.setValue(value);
-                //this.onUpstreamChange();
               }
             },
           };
@@ -319,18 +306,5 @@ export default class Label extends Atom {
     }
 
     return inputParams;
-  }
-
-  /**
-   * Serialize the atom's state. Uses the default implementation since all
-   * label properties are stored as IO values.
-   */
-  serialize(offset = { x: 0, y: 0 }) {
-    var thisAsObject = super.serialize(offset);
-    thisAsObject.start = this.start;
-    thisAsObject.end = this.end;
-    thisAsObject.text = this.text;
-    thisAsObject.color = this.color;
-    return thisAsObject;
   }
 }

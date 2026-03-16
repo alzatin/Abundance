@@ -782,6 +782,21 @@ export default class Atom extends ObservableEntity {
           return;
         }
       }
+      // Handle array values
+      if (ap.valueType === "array" && Array.isArray(ap.getValue())) {
+        const currentValue = ap.getValue();
+        const isDifferentFromDefault =
+          !Array.isArray(ap.defaultValue) ||
+          JSON.stringify(ap.defaultValue) !== JSON.stringify(currentValue);
+        const isMoleculeInput = ap.type === "input";
+        if (isDifferentFromDefault || isMoleculeInput) {
+          ioValues.push({
+            name: ap.name,
+            ioValue: currentValue,
+          });
+        }
+        return;
+      }
 
       if (
         typeof ap.getValue() == "number" ||
