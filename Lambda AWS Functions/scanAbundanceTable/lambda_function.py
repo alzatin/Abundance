@@ -73,17 +73,40 @@ def lambda_handler(event: any, context: any):
             item_array.extend(response.get('Items', []))
 
         elif mode == "all" and user:
-            # All public projects + private projects owned by user
-            scan_args = {
-                'FilterExpression': (~Attr('privateRepo').eq(True)) | (Attr('owner').eq(user))
-            }
-            response = table.scan(**scan_args)
-            item_array.extend(response.get('Items', []))
+            # All public projects matching query + private projects matching query owned by user
+            if searchAttribute and query:
+                scan_args = {
+                    'FilterExpression': (
+                        (Attr(searchAttribute).contains(query) & ~(Attr('privateRepo').eq(
+                            True)) & ~(Attr('repoName').eq('tutorial-default')))
+                        | (Attr(searchAttribute).contains(query) & Attr('owner').eq(user))
+                    )
+                }
+                response = table.scan(**scan_args)
+                item_array.extend(response.get('Items', []))
+            else:
+                # All public projects + private projects owned by user (no search)
+                scan_args = {
+                    'FilterExpression': (~Attr('privateRepo').eq(True)) | (Attr('owner').eq(user))
+                }
+                response = table.scan(**scan_args)
+                item_array.extend(response.get('Items', []))
 
         elif searchAttribute and query:
-            scan_args = {
-                'FilterExpression': Attr(searchAttribute).contains(query) & ~(Attr('privateRepo').eq(True)) & ~(Attr('repoName').eq('tutorial-default')),
-            }
+            if user:
+                # All public projects matching query + private projects matching query owned by user
+                scan_args = {
+                    'FilterExpression': (
+                        (Attr(searchAttribute).contains(query) & ~(Attr('privateRepo').eq(
+                            True)) & ~(Attr('repoName').eq('tutorial-default')))
+                        | (Attr(searchAttribute).contains(query) & Attr('owner').eq(user))
+                    )
+                }
+            else:
+                # Only public projects matching query
+                scan_args = {
+                    'FilterExpression': Attr(searchAttribute).contains(query) & ~(Attr('privateRepo').eq(True)) & ~(Attr('repoName').eq('tutorial-default')),
+                }
             response = table.scan(**scan_args)
             item_array.extend(response.get('Items', []))
 
