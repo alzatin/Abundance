@@ -87,12 +87,12 @@ return assembly;
     GlobalVariables.c.beginPath();
     GlobalVariables.c.fillStyle = "#949294";
     GlobalVariables.c.font = `${GlobalVariables.widthToPixels(
-      this.radius
+      this.radius,
     )}px Work Sans Bold`;
     GlobalVariables.c.fillText(
       "</>",
       GlobalVariables.widthToPixels(this.x - this.radius / 1.5),
-      GlobalVariables.heightToPixels(this.y + this.radius * 1.5)
+      GlobalVariables.heightToPixels(this.y + this.radius * 1.5),
     );
   }
 
@@ -118,9 +118,9 @@ return assembly;
           this.inputs
             .map(
               (input) =>
-                `${input.name}:${input.defaultValue}:${input.valueType}`
+                `${input.name}:${input.defaultValue}:${input.valueType}`,
             )
-            .join("|")
+            .join("|"),
         );
       },
     };
@@ -160,7 +160,7 @@ return assembly;
       if (lineMatch) {
         const lineNumber = lineMatch[1];
         super.setError(
-          `User code error at line ${lineNumber}: ${err.name} - ${err.message}`
+          `User code error at line ${lineNumber}: ${err.name} - ${err.message}`,
         );
         logged = true;
       }
@@ -177,7 +177,7 @@ return assembly;
     return GlobalVariables.cad.code(
       this.code,
       argumentsArray,
-      this.getContext()
+      this.getContext(),
     );
   }
 
@@ -191,24 +191,48 @@ return assembly;
     // Remove all block comments and line comments before matching Inputs array
     let codeNoComments = this.code.replace(/\/\*[\s\S]*?\*\//g, ""); // Remove block comments
     codeNoComments = codeNoComments.replace(/\/\/.*$/gm, ""); // Remove line comments
-    const allInputsMatches = [
-      ...codeNoComments.matchAll(/(?:const\s+)?Inputs\s*=\s*\[(.*?)]\s*;?/gs),
-    ];
-    
+
+    // Find Inputs = [ and extract the entire array by counting brackets
+    // This handles nested arrays in defaultValue (e.g., defaultValue: [0,0])
+    const inputsStart = codeNoComments.search(/(?:const\s+)?Inputs\s*=\s*\[/);
+    if (inputsStart === -1) return;
+
+    // Find the matching closing bracket by counting bracket depth
+    let bracketCount = 0;
+    let arrayEndIndex = -1;
+    const startBracket = codeNoComments.indexOf("[", inputsStart);
+
+    for (let i = startBracket; i < codeNoComments.length; i++) {
+      if (codeNoComments[i] === "[") bracketCount++;
+      if (codeNoComments[i] === "]") {
+        bracketCount--;
+        if (bracketCount === 0) {
+          arrayEndIndex = i + 1;
+          break;
+        }
+      }
+    }
+
+    if (arrayEndIndex === -1) return;
+
+    const fullMatch = codeNoComments.substring(inputsStart, arrayEndIndex);
+    const arrContent = fullMatch.match(/\[([\s\S]*)\]/)[1];
+    const allInputsMatches = [{ 0: fullMatch, 1: arrContent }];
+
     if (allInputsMatches.length > 0) {
       const firstMatch = allInputsMatches[0];
-      
+
       // If it's a const declaration, use safe eval
       if (/const\s+Inputs\s*=/.test(firstMatch[0])) {
         try {
           const sandboxFn = new Function(firstMatch[0] + "; return Inputs;");
           const inputsArray = sandboxFn();
-          
+
           const variableNames = [];
           inputsArray.forEach(({ inputName, type, defaultValue }) => {
             variableNames.push(inputName);
             const existingInput = this.inputs.find(
-              (input) => input.name === inputName
+              (input) => input.name === inputName,
             );
 
             if (!existingInput) {
@@ -216,7 +240,7 @@ return assembly;
                 inputName,
                 type,
                 defaultValue,
-                "input"
+                "input",
               );
             } else {
               existingInput.valueType = type;
@@ -242,22 +266,22 @@ return assembly;
         arrStr = arrStr.replace(/,\s*$/, ""); // Remove trailing comma at end
         arrStr = arrStr.replace(/(\w+)\s*:/g, '"$1":');
         arrStr = arrStr.replace(/'/g, '"');
-        
+
         try {
           const inputsArray = JSON.parse(`[${arrStr}]`);
-          
+
           const variableNames = [];
           inputsArray.forEach(({ inputName, type, defaultValue }) => {
             variableNames.push(inputName);
             const existingInput = this.inputs.find(
-              (input) => input.name === inputName
+              (input) => input.name === inputName,
             );
             if (!existingInput) {
               this._addIOWithoutSubscribing(
                 inputName,
                 type,
                 defaultValue,
-                "input"
+                "input",
               );
             } else {
               existingInput.valueType = type;
@@ -315,7 +339,7 @@ return assembly;
       x,
       xInPixels,
       y,
-      yInPixels
+      yInPixels,
     );
 
     if (distFromClick < this.radius) {
