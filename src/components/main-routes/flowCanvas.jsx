@@ -349,6 +349,7 @@ export default memo(function FlowCanvas({
 
   const keyDown = async (e) => {
     if (e.key == "Backspace" || e.key == "Delete") {
+      e.stopPropagation();
       /* Save undo state before deletion */
       GlobalVariables.saveUndoState("DELETE", "Deleted selected atoms");
 

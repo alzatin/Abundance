@@ -886,6 +886,7 @@ export default class Molecule extends Atom {
     if (outputAtom) {
       const outputState = outputAtom.getState();
       if (outputState.status == Status.READY) {
+        this.nonReplicadGeom = outputAtom.nonReplicadGeom;
         this.setReady(outputState.value);
         this.compileBom()
           .then((bom) => {
