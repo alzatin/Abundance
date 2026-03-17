@@ -133,7 +133,7 @@ const generateGcode = (
               all: false,
               disabled: false,
               down: down,
-              flats: true,
+              flats: false,
               inside: true,
               leave: 0,
               leavez: 0,
