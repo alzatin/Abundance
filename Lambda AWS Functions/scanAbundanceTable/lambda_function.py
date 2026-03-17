@@ -48,9 +48,12 @@ def lambda_handler(event: any, context: any):
 
     # Support flexible query modes
     params = event.get('queryStringParameters', {})
+    if params is None:
+        params = {}
     mode = params.get('mode', 'public')
     user = params.get('user')
-    searchAttribute = params.get('attribute')
+    # Default to repoName if not specified
+    searchAttribute = params.get('attribute', 'repoName')
     query = params.get('query')
     lastKey = params.get('lastKey')
     year = params.get('yearShow')
@@ -65,52 +68,74 @@ def lambda_handler(event: any, context: any):
 
     try:
         response = None
+
         if mode == "user" and user:
-            # Only user-owned projects (public and private)
-            key_condition_expression = Key('owner').eq(user)
-            response = table.query(
-                KeyConditionExpression=key_condition_expression)
-            item_array.extend(response.get('Items', []))
-
-        elif mode == "all" and user:
-            # All public projects matching query + private projects matching query owned by user
-            if searchAttribute and query:
+            # Mode: user - return user's projects (public and private)
+            if query:
+                # User's projects matching search
                 scan_args = {
-                    'FilterExpression': (
-                        (Attr(searchAttribute).contains(query) & ~(Attr('privateRepo').eq(
-                            True)) & ~(Attr('repoName').eq('tutorial-default')))
-                        | (Attr(searchAttribute).contains(query) & Attr('owner').eq(user))
-                    )
+                    'FilterExpression': (Attr('owner').eq(user)) & (Attr(searchAttribute).contains(query))
                 }
                 response = table.scan(**scan_args)
                 item_array.extend(response.get('Items', []))
             else:
-                # All public projects + private projects owned by user (no search)
-                scan_args = {
-                    'FilterExpression': (~Attr('privateRepo').eq(True)) | (Attr('owner').eq(user))
-                }
-                response = table.scan(**scan_args)
+                # All user's projects
+                key_condition_expression = Key('owner').eq(user)
+                response = table.query(
+                    KeyConditionExpression=key_condition_expression)
                 item_array.extend(response.get('Items', []))
 
-        elif searchAttribute and query:
+        elif mode == "all":
+            # Mode: all
             if user:
-                # All public projects matching query + private projects matching query owned by user
-                scan_args = {
-                    'FilterExpression': (
-                        (Attr(searchAttribute).contains(query) & ~(Attr('privateRepo').eq(
-                            True)) & ~(Attr('repoName').eq('tutorial-default')))
-                        | (Attr(searchAttribute).contains(query) & Attr('owner').eq(user))
-                    )
-                }
+                # All public projects + private projects owned by user
+                if query:
+                    # Public projects matching query + private projects owned by user matching query
+                    scan_args = {
+                        'FilterExpression': (
+                            (~(Attr('privateRepo').eq(True)) & ~(Attr('repoName').eq(
+                                'tutorial-default')) & Attr(searchAttribute).contains(query))
+                            | (Attr('owner').eq(user) & Attr(searchAttribute).contains(query))
+                        )
+                    }
+                    response = table.scan(**scan_args)
+                    item_array.extend(response.get('Items', []))
+                else:
+                    # All public projects + private projects owned by user (no search)
+                    scan_args = {
+                        'FilterExpression': (~Attr('privateRepo').eq(True) & ~Attr('repoName').eq('tutorial-default')) | (Attr('owner').eq(user))
+                    }
+                    response = table.scan(**scan_args)
+                    item_array.extend(response.get('Items', []))
             else:
-                # Only public projects matching query
-                scan_args = {
-                    'FilterExpression': Attr(searchAttribute).contains(query) & ~(Attr('privateRepo').eq(True)) & ~(Attr('repoName').eq('tutorial-default')),
-                }
-            response = table.scan(**scan_args)
-            item_array.extend(response.get('Items', []))
-
+                # No user specified - return all public projects
+                if query:
+                    # Public projects matching query
+                    scan_args = {
+                        'FilterExpression': ~(Attr('privateRepo').eq(True)) & ~(Attr('repoName').eq('tutorial-default')) & Attr(searchAttribute).contains(query)
+                    }
+                    response = table.scan(**scan_args)
+                    item_array.extend(response.get('Items', []))
+                else:
+                    # All public projects by year
+                    exclusiveKey = lookForLast()
+                    query_args = {
+                        'IndexName': 'yyyy-dateCreated-index',
+                        'KeyConditionExpression': Key('yyyy').eq(year),
+                        'FilterExpression': ~(Attr('privateRepo').eq(True)) & ~(Attr('repoName').eq('tutorial-default'))
+                    }
+                    if exclusiveKey:
+                        query_args['ExclusiveStartKey'] = exclusiveKey
+                    response = table.query(**query_args)
+                    item_array.extend(response.get('Items', []))
+                    if 0 < len(item_array) < 50:
+                        year = year - 1
+                        query_args['KeyConditionExpression'] = Key(
+                            'yyyy').eq(year)
+                        response2 = table.query(**query_args)
+                        item_array.extend(response2.get('Items', []))
         else:
+            # Default: public projects by year (no specific mode)
             exclusiveKey = lookForLast()
             query_args = {
                 'IndexName': 'yyyy-dateCreated-index',
