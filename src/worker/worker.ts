@@ -8,6 +8,7 @@ import {
   createAndDisplayDefaultLayout,
   displayLayout,
   layout,
+  clearRotateCache,
 } from "./cutlayout";
 import { ReplicadObject, RequestContext } from "./geometryProvider";
 import {
@@ -840,6 +841,7 @@ if (
     importingSTL,
     importingSVG,
     clearCache,
+    clearRotateCache,
     createMesh,
     circle,
     color,
@@ -890,12 +892,13 @@ export {
   addNonReplicadGeom,
   chamfer,
   circle,
+  clearCache,
+  clearRotateCache,
   code,
   color,
   createAndDisplayDefaultLayout,
   createMesh,
   deleteFromLibrary,
-  clearCache,
   difference,
   displayLayout,
   downExport,

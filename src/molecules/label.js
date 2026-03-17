@@ -128,6 +128,9 @@ export default class Label extends Atom {
    * @param {string} color - The hex color string for the line and text
    */
   buildLabelGeometry() {
+    // Dispose of old geometry before creating new one
+    this.disposeLabelGeometry();
+
     let startPoint = this.findIOValue("startPosition");
     let endPoint = this.findIOValue("endPosition");
     let text = this.findIOValue("text");

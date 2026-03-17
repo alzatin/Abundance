@@ -670,6 +670,9 @@ export default class Atom extends ObservableEntity {
    * Delete this atom. Silent prevents it from telling its neighbors
    */
   deleteNode(backgroundClickAfter = true, deletePath = true, silent = false) {
+    // Dispose of label geometries to free GPU memory
+    this.disposeLabelGeometry();
+
     this.inputs.forEach((input) => {
       input.unsubscribe(this.uniqueID);
       input.deleteSelf(silent);
@@ -953,6 +956,41 @@ export default class Atom extends ObservableEntity {
   }
 
   // For label atoms, we serialize the geometry data in a custom way and reconstruct as THREEJS geometry here
+  disposeLabelGeometry() {
+    if (
+      this.nonReplicadGeom?.geometry &&
+      Array.isArray(this.nonReplicadGeom.geometry)
+    ) {
+      this.nonReplicadGeom.geometry.forEach((obj) => {
+        if (obj && typeof obj === "object") {
+          // Dispose geometry if it exists
+          if (obj.geometry && obj.geometry.dispose) {
+            obj.geometry.dispose();
+          }
+          // Dispose all materials and their textures
+          if (obj.material) {
+            if (Array.isArray(obj.material)) {
+              obj.material.forEach((mat) => {
+                if (mat && mat.dispose) {
+                  mat.dispose();
+                }
+                if (mat && mat.map && mat.map.dispose) {
+                  mat.map.dispose();
+                }
+              });
+            } else if (obj.material.dispose) {
+              obj.material.dispose();
+              if (obj.material.map && obj.material.map.dispose) {
+                obj.material.map.dispose();
+              }
+            }
+          }
+        }
+      });
+      this.nonReplicadGeom.geometry = null;
+    }
+  }
+
   reconstructLabelGeometry(serializedLabels) {
     // Accepts an array of label objects
     const labels = Array.isArray(serializedLabels)
@@ -1015,6 +1053,9 @@ export default class Atom extends ObservableEntity {
 
   //gets called after compute if there is a non-Replicad geometry result to convert it to threeJS geometry for rendering
   buildNonReplicadGeom(atomValue) {
+    // Dispose old label geometries first
+    this.disposeLabelGeometry();
+
     const nrs = atomValue.nonReplicadSerialized;
     if (
       nrs &&
