@@ -195,112 +195,117 @@ return assembly;
     // Find Inputs = [ and extract the entire array by counting brackets
     // This handles nested arrays in defaultValue (e.g., defaultValue: [0,0])
     const inputsStart = codeNoComments.search(/(?:const\s+)?Inputs\s*=\s*\[/);
-    if (inputsStart === -1) return;
+    if (inputsStart !== -1) {
+      // Try to parse new format if found
 
-    // Find the matching closing bracket by counting bracket depth
-    let bracketCount = 0;
-    let arrayEndIndex = -1;
-    const startBracket = codeNoComments.indexOf("[", inputsStart);
+      // Find the matching closing bracket by counting bracket depth
+      let bracketCount = 0;
+      let arrayEndIndex = -1;
+      const startBracket = codeNoComments.indexOf("[", inputsStart);
 
-    for (let i = startBracket; i < codeNoComments.length; i++) {
-      if (codeNoComments[i] === "[") bracketCount++;
-      if (codeNoComments[i] === "]") {
-        bracketCount--;
-        if (bracketCount === 0) {
-          arrayEndIndex = i + 1;
-          break;
+      for (let i = startBracket; i < codeNoComments.length; i++) {
+        if (codeNoComments[i] === "[") bracketCount++;
+        if (codeNoComments[i] === "]") {
+          bracketCount--;
+          if (bracketCount === 0) {
+            arrayEndIndex = i + 1;
+            break;
+          }
+        }
+      }
+
+      if (arrayEndIndex !== -1) {
+        const fullMatch = codeNoComments.substring(inputsStart, arrayEndIndex);
+        const arrContent = fullMatch.match(/\[([\s\S]*)\]/)[1];
+        const allInputsMatches = [{ 0: fullMatch, 1: arrContent }];
+
+        if (allInputsMatches.length > 0) {
+          const firstMatch = allInputsMatches[0];
+
+          // If it's a const declaration, use safe eval
+          if (/const\s+Inputs\s*=/.test(firstMatch[0])) {
+            try {
+              const sandboxFn = new Function(
+                firstMatch[0] + "; return Inputs;",
+              );
+              const inputsArray = sandboxFn();
+
+              const variableNames = [];
+              inputsArray.forEach(({ inputName, type, defaultValue }) => {
+                variableNames.push(inputName);
+                const existingInput = this.inputs.find(
+                  (input) => input.name === inputName,
+                );
+
+                if (!existingInput) {
+                  this._addIOWithoutSubscribing(
+                    inputName,
+                    type,
+                    defaultValue,
+                    "input",
+                  );
+                } else {
+                  existingInput.valueType = type;
+                  existingInput.defaultValue = defaultValue;
+                }
+              });
+              // Remove any inputs not in the new array
+              const inputList = [...this.inputs];
+              inputList.forEach((input) => {
+                if (!variableNames.includes(input.name)) {
+                  this.removeIO(input.type, input.name, this);
+                }
+              });
+              return;
+            } catch (e) {
+              console.warn("Failed to eval const Inputs array from code:", e);
+            }
+          } else {
+            // Otherwise, parse as JSON
+            let arrStr = firstMatch[1];
+            arrStr = arrStr.replace(/\n/g, ""); // Remove newlines
+            arrStr = arrStr.replace(/\r/g, ""); // Remove carriage returns
+            arrStr = arrStr.replace(/,\s*$/, ""); // Remove trailing comma at end
+            arrStr = arrStr.replace(/(\w+)\s*:/g, '"$1":');
+            arrStr = arrStr.replace(/'/g, '"');
+
+            try {
+              const inputsArray = JSON.parse(`[${arrStr}]`);
+
+              const variableNames = [];
+              inputsArray.forEach(({ inputName, type, defaultValue }) => {
+                variableNames.push(inputName);
+                const existingInput = this.inputs.find(
+                  (input) => input.name === inputName,
+                );
+                if (!existingInput) {
+                  this._addIOWithoutSubscribing(
+                    inputName,
+                    type,
+                    defaultValue,
+                    "input",
+                  );
+                } else {
+                  existingInput.valueType = type;
+                  existingInput.defaultValue = defaultValue;
+                }
+              });
+              // Remove any inputs not in the new array
+              const inputList = [...this.inputs];
+              inputList.forEach((input) => {
+                if (!variableNames.includes(input.name)) {
+                  this.removeIO(input.type, input.name, this);
+                }
+              });
+              return;
+            } catch (e) {
+              console.warn("Failed to parse Inputs array from code:", e);
+            }
+          }
         }
       }
     }
 
-    if (arrayEndIndex === -1) return;
-
-    const fullMatch = codeNoComments.substring(inputsStart, arrayEndIndex);
-    const arrContent = fullMatch.match(/\[([\s\S]*)\]/)[1];
-    const allInputsMatches = [{ 0: fullMatch, 1: arrContent }];
-
-    if (allInputsMatches.length > 0) {
-      const firstMatch = allInputsMatches[0];
-
-      // If it's a const declaration, use safe eval
-      if (/const\s+Inputs\s*=/.test(firstMatch[0])) {
-        try {
-          const sandboxFn = new Function(firstMatch[0] + "; return Inputs;");
-          const inputsArray = sandboxFn();
-
-          const variableNames = [];
-          inputsArray.forEach(({ inputName, type, defaultValue }) => {
-            variableNames.push(inputName);
-            const existingInput = this.inputs.find(
-              (input) => input.name === inputName,
-            );
-
-            if (!existingInput) {
-              this._addIOWithoutSubscribing(
-                inputName,
-                type,
-                defaultValue,
-                "input",
-              );
-            } else {
-              existingInput.valueType = type;
-              existingInput.defaultValue = defaultValue;
-            }
-          });
-          // Remove any inputs not in the new array
-          const inputList = [...this.inputs];
-          inputList.forEach((input) => {
-            if (!variableNames.includes(input.name)) {
-              this.removeIO(input.type, input.name, this);
-            }
-          });
-          return;
-        } catch (e) {
-          console.warn("Failed to eval const Inputs array from code:", e);
-        }
-      } else {
-        // Otherwise, parse as JSON
-        let arrStr = firstMatch[1];
-        arrStr = arrStr.replace(/\n/g, ""); // Remove newlines
-        arrStr = arrStr.replace(/\r/g, ""); // Remove carriage returns
-        arrStr = arrStr.replace(/,\s*$/, ""); // Remove trailing comma at end
-        arrStr = arrStr.replace(/(\w+)\s*:/g, '"$1":');
-        arrStr = arrStr.replace(/'/g, '"');
-
-        try {
-          const inputsArray = JSON.parse(`[${arrStr}]`);
-
-          const variableNames = [];
-          inputsArray.forEach(({ inputName, type, defaultValue }) => {
-            variableNames.push(inputName);
-            const existingInput = this.inputs.find(
-              (input) => input.name === inputName,
-            );
-            if (!existingInput) {
-              this._addIOWithoutSubscribing(
-                inputName,
-                type,
-                defaultValue,
-                "input",
-              );
-            } else {
-              existingInput.valueType = type;
-              existingInput.defaultValue = defaultValue;
-            }
-          });
-          // Remove any inputs not in the new array
-          const inputList = [...this.inputs];
-          inputList.forEach((input) => {
-            if (!variableNames.includes(input.name)) {
-              this.removeIO(input.type, input.name, this);
-            }
-          });
-          return;
-        } catch (e) {
-          console.warn("Failed to parse Inputs array from code:", e);
-        }
-      }
-    }
     // Fallback: legacy string parsing for old format like //Inputs:[input1,input2,input3]
     // This supports the old way of declaring inputs as simple comma-separated variable names
     const legacyPattern = /(?:\/\/\s*)?Inputs\s*:\s*\[\s*([^\]]+?)\s*\]/;
@@ -312,7 +317,8 @@ return assembly;
       parsedVariables.forEach(([name, defaultVal]) => {
         if (!name || name.trim() === "") return; // Skip empty entries
         const trimmedName = name.trim();
-        const value = defaultVal ? defaultVal.trim() : 10;
+        // For legacy format, use null for geometry inputs (no default value specified)
+        const value = defaultVal ? defaultVal.trim() : null;
         variableNames.push(trimmedName);
         const existingInput = this.inputs.find(
           (input) => input.name === trimmedName,
