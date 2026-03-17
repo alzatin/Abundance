@@ -1018,9 +1018,9 @@ const ShowProjects = ({
         "attribute=searchField" +
         "&query=" +
         debouncedSearchTerm +
+        "&mode=all" +
         "&yearShow=" +
         yearShow +
-        "&user" +
         lastKeyQuery,
       { signal },
     )
