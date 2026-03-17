@@ -301,18 +301,29 @@ return assembly;
         }
       }
     }
-    // Fallback: legacy string parsing
-    const variables = /Inputs:\[\s*([^)]+?)\s*\]/.exec(this.code);
+    // Fallback: legacy string parsing for old format like //Inputs:[input1,input2,input3]
+    // This supports the old way of declaring inputs as simple comma-separated variable names
+    const legacyPattern = /(?:\/\/\s*)?Inputs\s*:\s*\[\s*([^\]]+?)\s*\]/;
+    const variables = legacyPattern.exec(this.code);
     if (variables) {
       const variableNames = [];
       const parsedVariables =
         variables[1]?.split(/\s*,\s*/).map((v) => v.split(/\s*=\s*/)) || [];
       parsedVariables.forEach(([name, defaultVal]) => {
-        const value = defaultVal || 10;
-        variableNames.push(name);
-        const existingInput = this.inputs.find((input) => input.name === name);
+        if (!name || name.trim() === "") return; // Skip empty entries
+        const trimmedName = name.trim();
+        const value = defaultVal ? defaultVal.trim() : 10;
+        variableNames.push(trimmedName);
+        const existingInput = this.inputs.find(
+          (input) => input.name === trimmedName,
+        );
         if (!existingInput) {
-          this._addIOWithoutSubscribing(name, "geometry", value, "input");
+          this._addIOWithoutSubscribing(
+            trimmedName,
+            "geometry",
+            value,
+            "input",
+          );
         }
       });
       const inputList = [...this.inputs];
