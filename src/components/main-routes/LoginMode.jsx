@@ -103,6 +103,7 @@ const InitialLog = ({ setNoUserBrowsing }) => {
 // adds individual projects after API call
 const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
   const [svgCacheBuster, setSvgCacheBuster] = useState(Date.now());
+  const [failedImages, setFailedImages] = useState(new Set());
   const {
     browseType,
     updateBrowseType,
@@ -269,6 +270,8 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
                   orderType,
                   authorizedUserOcto,
                   svgCacheBuster,
+                  failedImages,
+                  setFailedImages,
                 }}
               />
             ) : (
@@ -359,6 +362,8 @@ const ProjectDiv = ({
   orderType,
   authorizedUserOcto,
   svgCacheBuster,
+  failedImages,
+  setFailedImages,
 }) => {
   const { renameProject } = useProject();
   const navigate = useNavigate();
@@ -473,6 +478,24 @@ const ProjectDiv = ({
     }
   };
 
+  const handleImageError = (repoUrl) => {
+    setFailedImages((prev) => new Set(prev).add(repoUrl));
+  };
+
+  const getImageSrc = (node) => {
+    if (failedImages.has(node.svgURL)) {
+      return (
+        import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/defaultThumbnail.svg"
+      );
+    }
+    return (
+      node.svgURL +
+      (node.svgURL.includes("?") ? "&" : "?") +
+      "cb=" +
+      svgCacheBuster
+    );
+  };
+
   const ThumbItem = React.memo(({ node, svgCacheBuster }) => {
     const [showQuickView, setShowQuickView] = useState(false);
     const [panelOnLeft, setPanelOnLeft] = useState(false);
@@ -546,18 +569,8 @@ const ProjectDiv = ({
           <div style={{ display: "flex", flexDirection: "row" }}>
             <img
               className="project_image"
-              src={
-                node.svgURL +
-                (node.svgURL.includes("?") ? "&" : "?") +
-                "cb=" +
-                svgCacheBuster
-              }
-              onError={({ currentTarget }) => {
-                currentTarget.onerror = null;
-                currentTarget.src =
-                  import.meta.env.VITE_APP_PATH_FOR_PICS +
-                  "/imgs/defaultThumbnail.svg";
-              }}
+              src={getImageSrc(node)}
+              onError={() => handleImageError(node.svgURL)}
               alt={node.repoName}
             />
             <div
@@ -674,18 +687,8 @@ const ProjectDiv = ({
                 >
                   <div className="GitInfoLeft">
                     <img
-                      src={
-                        node.svgURL +
-                        (node.svgURL.includes("?") ? "&" : "?") +
-                        "cb=" +
-                        svgCacheBuster
-                      }
-                      onError={({ currentTarget }) => {
-                        currentTarget.onerror = null;
-                        currentTarget.src =
-                          import.meta.env.VITE_APP_PATH_FOR_PICS +
-                          "/imgs/defaultThumbnail.svg";
-                      }}
+                      src={getImageSrc(node)}
+                      onError={() => handleImageError(node.svgURL)}
                       alt={node.repoName}
                     />
                     <div style={{ display: "flex", alignItems: "center" }}>
