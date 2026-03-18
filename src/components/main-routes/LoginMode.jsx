@@ -479,11 +479,13 @@ const ProjectDiv = ({
   };
 
   const handleImageError = (repoUrl) => {
-    setFailedImages((prev) => new Set(prev).add(repoUrl));
+    if (repoUrl) {
+      setFailedImages((prev) => new Set(prev).add(repoUrl));
+    }
   };
 
   const getImageSrc = (node) => {
-    if (failedImages.has(node.svgURL)) {
+    if (!node?.svgURL || failedImages.has(node.svgURL)) {
       return (
         import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/defaultThumbnail.svg"
       );
