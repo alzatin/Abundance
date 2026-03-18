@@ -1539,16 +1539,15 @@ export default class Atom extends ObservableEntity {
     const resolvedValues = {};
     const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
     if (variables.length > 0) {
-      const parentInputs =
-        (this.parent && this.parent.inputs) ||
-        (this.parentMolecule && this.parentMolecule.inputs) ||
-        [];
+      // Get inputs from all ancestors up the chain, not just immediate parent
+      const parentInputs = this.getInputsFromAncestors();
+
       for (const variable of variables) {
         if (BUILTIN_CONSTS.has(variable)) {
           continue; // let evaluator handle it
         }
         let value = null;
-        // Try parent inputs first
+        // Try parent inputs first (now includes all ancestors)
         for (let j = 0; j < parentInputs.length; j++) {
           if (parentInputs[j].name === variable) {
             value =
@@ -1612,6 +1611,41 @@ export default class Atom extends ObservableEntity {
   }
 
   /**
+   * Get all inputs from this atom and all ancestor molecules up the chain
+   * @returns {Array} Array of all ancestor inputs
+   */
+  getInputsFromAncestors() {
+    const allInputs = [];
+    let current = this;
+
+    // Traverse up the parent chain (molecule hierarchy)
+    while (current) {
+      const parentInputs =
+        (current.parent && current.parent.inputs) ||
+        (current.parentMolecule && current.parentMolecule.inputs) ||
+        null;
+
+      if (parentInputs) {
+        // Add inputs from this level, avoiding duplicates (prefer higher in hierarchy)
+        parentInputs.forEach((input) => {
+          if (!allInputs.some((i) => i.name === input.name)) {
+            allInputs.push(input);
+          }
+        });
+      }
+
+      // Move up to parent molecule
+      current = current.parent || current.parentMolecule;
+      if (current && !current.inputs) {
+        // Stop if we hit a non-molecule parent
+        break;
+      }
+    }
+
+    return allInputs;
+  }
+
+  /**
    * Resolve a variable name to its value
    */
   resolveVariable(variableName) {
@@ -1627,11 +1661,8 @@ export default class Atom extends ObservableEntity {
       return num;
     }
 
-    // Try parent inputs first
-    const parentInputs =
-      (this.parent && this.parent.inputs) ||
-      (this.parentMolecule && this.parentMolecule.inputs) ||
-      [];
+    // Try parent inputs first (now includes all ancestors up the chain)
+    const parentInputs = this.getInputsFromAncestors();
     for (let j = 0; j < parentInputs.length; j++) {
       if (parentInputs[j].name === variableName) {
         const value =

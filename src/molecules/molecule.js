@@ -452,6 +452,32 @@ export default class Molecule extends Atom {
   }
 
   /**
+   * Enables child atoms in dependency order to ensure proper propagation chains.
+   * Phase 1: Enable Input atoms first (they have no upstream connector dependencies)
+   * Phase 2: Enable other atoms via recursive connector chain enabling
+   *
+   * This ensures:
+   * - Input atoms become READY and can propagate variable references
+   * - Other atoms can recursively enable through their connectors
+   * - Dependency ordering emerges naturally from connector topology
+   */
+  enableAllChildrenInOrder() {
+    // Phase 1: Enable Input atoms first (no upstream dependencies)
+    this.nodesOnTheScreen.forEach((atom) => {
+      if (atom.atomType === "Input" && atom.status === Status.DISABLED) {
+        atom.enable();
+      }
+    });
+
+    // Phase 2: Enable other atoms (recursively enable through connectors)
+    this.nodesOnTheScreen.forEach((atom) => {
+      if (atom.atomType !== "Input" && atom.status === Status.DISABLED) {
+        atom.enable();
+      }
+    });
+  }
+
+  /**
    * Pushes serialized atoms into array if selected
    */
   copy() {
@@ -906,9 +932,14 @@ export default class Molecule extends Atom {
             console.warn("Error loading README:", err);
           });
       } else {
+        // Enable child atoms in dependency order to ensure atoms can subscribe to variable equations.
+        // Do this on EVERY upstream change, not just when all inputs are ready.
+        // This is critical for deep nesting where variables depend on inputs that become ready at different times.
+        this.enableAllChildrenInOrder();
+
         if (this.inputs.every((input) => input.status == Status.READY)) {
-          // All inputs are ready but our output isn't yet. check for an internal error
-          // else we're in progress.
+          // All inputs are ready but our output isn't yet.
+          // Check for an internal error, else we're in progress.
           if (
             outputAtom.status == Status.UPSTREAM_ERROR ||
             outputAtom.status == Status.ERROR
