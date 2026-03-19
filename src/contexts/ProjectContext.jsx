@@ -1191,6 +1191,21 @@ export function ProjectProvider({ children, cad, loadProject }) {
     setErrorNotification = null,
   ) => {
     try {
+      // Block the save if atoms are still computing to prevent saving incomplete data
+      if (
+        GlobalVariables.topLevelMolecule &&
+        GlobalVariables.topLevelMolecule.isComputing()
+      ) {
+        if (typeSave !== "Auto Save") {
+          setNotification(
+            "Save blocked: project is still computing. Please wait for computation to finish before saving.",
+            "error",
+          );
+          setTimeout(() => setNotification(null), 5000);
+        }
+        return;
+      }
+
       //We only want to save if something has actually changed since the last save
       var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
 

@@ -151,6 +151,27 @@ export default class Molecule extends Atom {
   }
 
   /**
+   * Returns true if any atoms in this molecule (or nested molecules) are still
+   * computing (WAITING or PROCESSING state), indicating the project is not yet
+   * fully computed and should not be saved.
+   */
+  isComputing() {
+    return this.nodesOnTheScreen.some((atom) => {
+      const status = atom.getState().status;
+      if (status === Status.WAITING || status === Status.PROCESSING) {
+        return true;
+      }
+      if (
+        (atom.atomType === "Molecule" || atom.atomType === "GitHubMolecule") &&
+        typeof atom.isComputing === "function"
+      ) {
+        return atom.isComputing();
+      }
+      return false;
+    });
+  }
+
+  /**
    * Add the center dot to the molecule
    */
   draw() {
