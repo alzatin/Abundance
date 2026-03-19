@@ -314,6 +314,13 @@ export default class Equation extends Atom {
     this.currentEquation = equation;
     this.name = this.currentEquation; // Update the displayed name to match the current equation
     this.addAndRemoveInputs();
+
+    // When all equation variables are molecule-level inputs, no atom inputs exist and
+    // _subscribeToInputs() won't trigger onUpstreamChange(). Force a recompute so
+    // the result reflects the new equation rather than the previous stale value.
+    if (this.isEnabled() && this.inputs.length === 0) {
+      this.onUpstreamChange();
+    }
   }
 
   /**
