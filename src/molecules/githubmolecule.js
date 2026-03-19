@@ -1,5 +1,6 @@
 import Molecule from "../molecules/molecule";
 import GlobalVariables from "../js/globalvariables.js";
+import { Octokit } from "octokit";
 
 import { Status } from "../prototypes/observableEntity.js";
 
@@ -131,7 +132,7 @@ export default class GitHubMolecule extends Molecule {
   /**
    * Reload this github molecule from github
    */
-  reloadMoleculeFromGithub(authorizedUserOcto, userScopes) {
+  async reloadMoleculeFromGithub(authorizedUserOcto, userScopes) {
     var githubMoleculeObjectPreReload = this.serialize();
     var githubMoleculeParentObjectConnectorsPreReload =
       this.parent.serialize().allConnectors;
@@ -146,6 +147,25 @@ export default class GitHubMolecule extends Molecule {
     ) {
       this.setError(
         "Authentication with 'repo' scope is required to access private repositories.",
+      );
+      return;
+    }
+
+    // Verify the repository is accessible before deleting the existing node.
+    // If the repository has been deleted or is unreachable, keep the existing
+    // molecule and show an error rather than silently removing it.
+    const octokit = authorizedUserOcto || new Octokit();
+    try {
+      await octokit.request(
+        "GET /repos/{owner}/{repo}/contents/project.abundance",
+        {
+          owner: gitObj.owner,
+          repo: gitObj.repoName,
+        },
+      );
+    } catch (error) {
+      this.setError(
+        `Cannot reload: the repository "${gitObj.owner}/${gitObj.repoName}" could not be found or accessed.`,
       );
       return;
     }
