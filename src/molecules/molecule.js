@@ -975,27 +975,37 @@ export default class Molecule extends Atom {
    * Handle input value changes at the molecule level.
    * Called when a molecule's input atom changes value.
    * Propagates changes to child atoms that depend on that input (e.g., Equation, Code atoms).
-   * This handles atoms that have zero direct inputs because all their variables are molecule-level inputs.
+   * This handles atoms whose variables include molecule-level inputs — whether they have zero
+   * atom-level inputs OR a mix of atom-level and molecule-level inputs.
+   * Also recursively propagates into nested child molecules so equations inside them receive updates.
    * @param {string} inputName - The name of the input that changed
    */
   propagateInputChange(inputName) {
-    // Find all equation/code atoms with zero inputs and trigger their recomputation if they use this input
     this.nodesOnTheScreen.forEach((atom) => {
-      // Target atoms that extract variables from expressions AND have no direct inputs
+      // Recursively propagate to child molecules so nested equations using ancestor inputs are also triggered
       if (
-        (atom.atomType === "Equation" || atom.atomType === "Code") &&
-        atom.inputs.length === 0
+        (atom.atomType === "Molecule" || atom.atomType === "GitHubMolecule") &&
+        typeof atom.propagateInputChange === "function"
       ) {
-        // For Equation, check if it uses the changed input
-        if (atom.atomType === "Equation") {
-          const equationVariables = atom._extractVariablesFromEquation();
-          if (equationVariables.includes(inputName) && atom.isEnabled()) {
-            atom.onUpstreamChange();
-          }
+        atom.propagateInputChange(inputName);
+      }
+
+      // For Equation atoms: trigger if the equation uses the changed molecule-level input
+      // AND that input is not already provided via an atom-level connector (which handles its own propagation).
+      if (atom.atomType === "Equation") {
+        const equationVariables = atom._extractVariablesFromEquation();
+        if (
+          equationVariables.includes(inputName) &&
+          !atom.inputs.some((input) => input.name === inputName) &&
+          atom.isEnabled()
+        ) {
+          atom.onUpstreamChange();
         }
-        // For Code atoms, we can't easily check if they use the input without parsing code,
-        // so recompute if any input changed to be safe
-        else if (atom.atomType === "Code" && atom.isEnabled()) {
+      }
+      // For Code atoms, we can't easily parse which variables they use, so trigger recomputation
+      // whenever a molecule input changes, unless that input is already wired as an atom-level input.
+      else if (atom.atomType === "Code" && atom.isEnabled()) {
+        if (!atom.inputs.some((input) => input.name === inputName)) {
           atom.onUpstreamChange();
         }
       }
