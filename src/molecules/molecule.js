@@ -151,27 +151,6 @@ export default class Molecule extends Atom {
   }
 
   /**
-   * Returns true if any atoms in this molecule (or nested molecules) are still
-   * computing (WAITING or PROCESSING state), indicating the project is not yet
-   * fully computed and should not be saved.
-   */
-  isComputing() {
-    return this.nodesOnTheScreen.some((atom) => {
-      const status = atom.getState().status;
-      if (status === Status.WAITING || status === Status.PROCESSING) {
-        return true;
-      }
-      if (
-        (atom.atomType === "Molecule" || atom.atomType === "GitHubMolecule") &&
-        typeof atom.isComputing === "function"
-      ) {
-        return atom.isComputing();
-      }
-      return false;
-    });
-  }
-
-  /**
    * Add the center dot to the molecule
    */
   draw() {
@@ -1220,6 +1199,11 @@ export default class Molecule extends Atom {
     //Find the target molecule in the list
     let promiseArray = [];
 
+    // Set loading flag to block saves during deserialization of the top-level molecule
+    if (this.topLevel) {
+      GlobalVariables.projectIsLoading = true;
+    }
+
     //Try to place molecule's output
     this.placeAtom(
       {
@@ -1316,6 +1300,11 @@ export default class Molecule extends Atom {
       }
 
       return this;
+    }).finally(() => {
+      // Always clear loading flag when deserialization completes or fails
+      if (this.topLevel) {
+        GlobalVariables.projectIsLoading = false;
+      }
     });
   }
 

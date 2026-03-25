@@ -227,6 +227,12 @@ class GlobalVariables {
      */
     this.numberOfAtomsToLoad = 0;
     /**
+     * A flag to indicate if the project is currently loading/deserializing.
+     * Used to block saves during deserialization to prevent wiping out the project structure.
+     * @type {boolean}
+     */
+    this.projectIsLoading = false;
+    /**
      * A flag to indicate if the project is a fork.
      * @type {boolean}
      */
