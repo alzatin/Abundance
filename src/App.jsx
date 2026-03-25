@@ -397,7 +397,11 @@ function AppContent() {
           if (!nonReplicadGeometryFromAtom?.hideMainMesh) {
             makeMesh();
           } else {
+            // Invalidate any in-flight mesh render so it doesn't override the
+            // non-replicad geometry (e.g. gcode visualization) after computing
+            targetMesh.current = null;
             setMesh([]);
+            setOutdatedMesh(false);
           }
           // Check if we're viewing the same geometry as the wireframe
           if (
