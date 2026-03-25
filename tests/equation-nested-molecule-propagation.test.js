@@ -1,15 +1,14 @@
 /**
- * Tests that propagateInputChange() in Molecule recursively propagates into
- * nested child molecules so that equations using ancestor-level inputs (from a
- * grandparent or higher molecule) are re-evaluated when those inputs change.
+ * Tests that propagateInputChange() in Molecule correctly propagates to:
+ * 1. Equations that use only molecule-level inputs (zero atom-level inputs)
+ * 2. Equations that mix atom-level inputs AND molecule-level inputs (e.g., BaseSize + y
+ *    where BaseSize is a molecule input and y is an atom-level input with value 5)
+ * 3. Equations nested inside child molecules
  *
- * Bug: propagateInputChange() only iterated over this.nodesOnTheScreen (the
- * direct children of the current molecule).  An Equation atom inside a NESTED
- * molecule was therefore never reached, so changing an input value on the
- * parent molecule had no effect on the nested equation.
- *
- * Fix: propagateInputChange() now calls itself recursively on any child
- * molecule it encounters, so the update reaches arbitrarily deep equations.
+ * Regression for two related bugs:
+ * - propagateInputChange() only iterated direct children (fixed: recurse into child molecules)
+ * - propagateInputChange() skipped equations with ANY atom-level inputs, even when only
+ *   some variables were molecule-level (fixed: check per-variable, not inputs.length === 0)
  */
 import { describe, it, expect, vi } from "vitest";
 
@@ -32,17 +31,21 @@ function makeMolecule({ nodesOnTheScreen = [] } = {}) {
           atom.propagateInputChange(inputName);
         }
 
-        // Target Equation / Code atoms with no direct atom-level inputs
-        if (
-          (atom.atomType === "Equation" || atom.atomType === "Code") &&
-          atom.inputs.length === 0
-        ) {
-          if (atom.atomType === "Equation") {
-            const vars = atom._extractVariablesFromEquation();
-            if (vars.includes(inputName) && atom.isEnabled()) {
-              atom.onUpstreamChange();
-            }
-          } else if (atom.atomType === "Code" && atom.isEnabled()) {
+        // For Equation atoms: trigger if the equation uses the changed molecule-level input
+        // AND that input is not already provided via an atom-level connector.
+        if (atom.atomType === "Equation") {
+          const vars = atom._extractVariablesFromEquation();
+          if (
+            vars.includes(inputName) &&
+            !atom.inputs.some((input) => input.name === inputName) &&
+            atom.isEnabled()
+          ) {
+            atom.onUpstreamChange();
+          }
+        }
+        // For Code atoms: trigger unless the changed input is already an atom-level input.
+        else if (atom.atomType === "Code" && atom.isEnabled()) {
+          if (!atom.inputs.some((input) => input.name === inputName)) {
             atom.onUpstreamChange();
           }
         }
@@ -116,18 +119,47 @@ describe("propagateInputChange recursive into nested molecules", () => {
     expect(eq.onUpstreamChange).not.toHaveBeenCalled();
   });
 
-  it("does NOT trigger equation that has local atom-level inputs (handled via connectors)", () => {
-    // When inputs.length > 0 the normal connector-based propagation handles it
+  it("DOES trigger equation with mixed inputs when the changed molecule input is used as a molecule-level variable", () => {
+    // This is the new regression: BaseSize + y where BaseSize is a molecule input
+    // and y=5 is an atom-level input connected via connector.
+    const eq = makeEquationAtom({
+      equation: "BaseSize + y",
+      inputs: [{ name: "y" }], // y is atom-level, BaseSize is molecule-level
+    });
+    const parent = makeMolecule({ nodesOnTheScreen: [eq] });
+
+    parent.propagateInputChange("BaseSize");
+
+    // BaseSize is used in equation and NOT in atom.inputs → should trigger
+    expect(eq.onUpstreamChange).toHaveBeenCalledOnce();
+  });
+
+  it("does NOT trigger equation when the changed molecule input is already wired as an atom-level input", () => {
+    // If TableWidth is wired as an atom-level input, the connector handles propagation
     const eq = makeEquationAtom({
       equation: "TableWidth + x",
-      inputs: [{ name: "x" }],
+      inputs: [{ name: "TableWidth" }], // TableWidth is already an atom-level input
+    });
+    const parent = makeMolecule({ nodesOnTheScreen: [eq] });
+
+    parent.propagateInputChange("TableWidth");
+
+    // TableWidth IS in atom.inputs → connector handles it, not propagateInputChange
+    expect(eq.onUpstreamChange).not.toHaveBeenCalled();
+  });
+
+  it("DOES trigger mixed-input equation inside a nested molecule", () => {
+    // Same mixed-input case but inside a nested molecule
+    const eq = makeEquationAtom({
+      equation: "BaseSize + y",
+      inputs: [{ name: "y" }],
     });
     const child = makeMolecule({ nodesOnTheScreen: [eq] });
     const parent = makeMolecule({ nodesOnTheScreen: [child] });
 
-    parent.propagateInputChange("TableWidth");
+    parent.propagateInputChange("BaseSize");
 
-    expect(eq.onUpstreamChange).not.toHaveBeenCalled();
+    expect(eq.onUpstreamChange).toHaveBeenCalledOnce();
   });
 
   it("does NOT trigger disabled equation", () => {
@@ -140,7 +172,7 @@ describe("propagateInputChange recursive into nested molecules", () => {
     expect(eq.onUpstreamChange).not.toHaveBeenCalled();
   });
 
-  it("triggers Code atom in nested molecule for any input change", () => {
+  it("triggers Code atom in nested molecule for any input change (not already atom-level)", () => {
     const code = makeCodeAtom();
     const child = makeMolecule({ nodesOnTheScreen: [code] });
     const parent = makeMolecule({ nodesOnTheScreen: [child] });
@@ -148,6 +180,16 @@ describe("propagateInputChange recursive into nested molecules", () => {
     parent.propagateInputChange("AnyInput");
 
     expect(code.onUpstreamChange).toHaveBeenCalledOnce();
+  });
+
+  it("does NOT trigger Code atom when the changed input is already an atom-level input", () => {
+    const code = makeCodeAtom({ inputs: [{ name: "BaseSize" }] });
+    const parent = makeMolecule({ nodesOnTheScreen: [code] });
+
+    parent.propagateInputChange("BaseSize");
+
+    // BaseSize is already wired; connector handles it
+    expect(code.onUpstreamChange).not.toHaveBeenCalled();
   });
 
   it("triggers equations in both direct children and nested molecules", () => {
