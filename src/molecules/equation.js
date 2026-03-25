@@ -191,11 +191,9 @@ export default class Equation extends Atom {
   addAndRemoveInputs() {
     // Use AST-based variable extraction
     let variables = this._extractVariablesFromEquation();
-    // Only add inputs for variables NOT present in parent molecule's inputs
-    let moleculeInputs = [];
-    if (this.parent && this.parent.inputs) {
-      moleculeInputs = this.parent.inputs.map((input) => input.name);
-    }
+    // Only add inputs for variables NOT present in any ancestor molecule's inputs
+    const ancestorInputs = this.getInputsFromAncestors();
+    let moleculeInputs = ancestorInputs.map((input) => input.name);
 
     //Remove any inputs which are not needed
     const deleteExtraInputs = () => {
