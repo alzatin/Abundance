@@ -1516,7 +1516,6 @@ function LoginMode() {
     setAuthorizedUserOcto,
     clearStoredToken,
     isRestoringSession,
-    userScopes,
   } = useAuth();
   const { exportPopUp, setExportPopUp } = useAppState();
   const { projectTab, updateProjectTab, resetSettings } = useBrowseSettings();
@@ -1658,12 +1657,6 @@ function LoginMode() {
             }
             alt="logo"
             id="welcome-logo-img"
-            className={userScopes.includes("repo") ? "logo-private-scope" : ""}
-            title={
-              userScopes.includes("repo")
-                ? "Authenticated with private repository access"
-                : undefined
-            }
           />
           <img
             src={
