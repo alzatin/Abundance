@@ -172,7 +172,6 @@ export default class GitHubMolecule extends Molecule {
     copyOfNodeToBeDeleted.deleteNode(false, false, true);
 
     this.loadGithubMoleculeByName(
-      /*old way > keeping until i fix reload -- this.gitHubUniqueID*/
       gitObj,
       githubMoleculeObjectPreReload,
       githubMoleculeParentObjectConnectorsPreReload,
