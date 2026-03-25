@@ -963,6 +963,37 @@ export default class Molecule extends Atom {
     }
   }
 
+  /**
+   * Handle input value changes at the molecule level.
+   * Called when a molecule's input atom changes value.
+   * Propagates changes to child atoms that depend on that input (e.g., Equation, Code atoms).
+   * This handles atoms that have zero direct inputs because all their variables are molecule-level inputs.
+   * @param {string} inputName - The name of the input that changed
+   */
+  propagateInputChange(inputName) {
+    // Find all equation/code atoms with zero inputs and trigger their recomputation if they use this input
+    this.nodesOnTheScreen.forEach((atom) => {
+      // Target atoms that extract variables from expressions AND have no direct inputs
+      if (
+        (atom.atomType === "Equation" || atom.atomType === "Code") &&
+        atom.inputs.length === 0
+      ) {
+        // For Equation, check if it uses the changed input
+        if (atom.atomType === "Equation") {
+          const equationVariables = atom._extractVariablesFromEquation();
+          if (equationVariables.includes(inputName) && atom.isEnabled()) {
+            atom.onUpstreamChange();
+          }
+        }
+        // For Code atoms, we can't easily check if they use the input without parsing code,
+        // so recompute if any input changed to be safe
+        else if (atom.atomType === "Code" && atom.isEnabled()) {
+          atom.onUpstreamChange();
+        }
+      }
+    });
+  }
+
   propagateChange() {
     if (this == GlobalVariables.currentMolecule) {
       // This is the output of the currently focused molecule
