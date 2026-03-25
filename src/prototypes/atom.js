@@ -1405,13 +1405,11 @@ export default class Atom extends ObservableEntity {
 
     const variables = this.extractVariablesFromEquation(equation);
     const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
-    const parentInputs =
-      (this.parent && this.parent.inputs) ||
-      (this.parentMolecule && this.parentMolecule.inputs) ||
-      [];
+    // Check all ancestor molecules, not just the immediate parent
+    const ancestorInputs = this.getInputsFromAncestors();
 
     // Get parent input names to avoid duplicating them
-    const parentInputNames = parentInputs.map((input) => input.name);
+    const parentInputNames = ancestorInputs.map((input) => input.name);
 
     const inputsToAdd = [];
 
