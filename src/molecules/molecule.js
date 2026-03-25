@@ -976,11 +976,20 @@ export default class Molecule extends Atom {
    * Called when a molecule's input atom changes value.
    * Propagates changes to child atoms that depend on that input (e.g., Equation, Code atoms).
    * This handles atoms that have zero direct inputs because all their variables are molecule-level inputs.
+   * Also recursively propagates into nested child molecules so equations inside them receive updates.
    * @param {string} inputName - The name of the input that changed
    */
   propagateInputChange(inputName) {
     // Find all equation/code atoms with zero inputs and trigger their recomputation if they use this input
     this.nodesOnTheScreen.forEach((atom) => {
+      // Recursively propagate to child molecules so nested equations using ancestor inputs are also triggered
+      if (
+        (atom.atomType === "Molecule" || atom.atomType === "GitHubMolecule") &&
+        typeof atom.propagateInputChange === "function"
+      ) {
+        atom.propagateInputChange(inputName);
+      }
+
       // Target atoms that extract variables from expressions AND have no direct inputs
       if (
         (atom.atomType === "Equation" || atom.atomType === "Code") &&
