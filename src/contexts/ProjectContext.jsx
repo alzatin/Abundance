@@ -1191,6 +1191,19 @@ export function ProjectProvider({ children, cad, loadProject }) {
     setErrorNotification = null,
   ) => {
     try {
+      // Block the save if the project is still loading/deserializing to prevent
+      // saving an incomplete project structure that would wipe out atoms on load
+      if (GlobalVariables.projectIsLoading) {
+        if (typeSave !== "Auto Save") {
+          setNotification(
+            "Save blocked: project is still loading. Please wait for the project to finish loading before saving.",
+            "error",
+          );
+          setTimeout(() => setNotification(null), 5000);
+        }
+        return;
+      }
+
       //We only want to save if something has actually changed since the last save
       var jsonRepOfProject = GlobalVariables.topLevelMolecule.serialize();
 
