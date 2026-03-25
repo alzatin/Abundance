@@ -164,9 +164,7 @@ export default class GitHubMolecule extends Molecule {
         },
       );
     } catch (error) {
-      this.setError(
-        `Cannot reload: the repository "${gitObj.owner}/${gitObj.repoName}" could not be found or accessed.`,
-      );
+      window.dispatchEvent(new CustomEvent('user-notification', { detail: { message: `Cannot reload: the repository "${gitObj.owner}/${gitObj.repoName}" could not be found or accessed.`, type: 'error' } }));
       return;
     }
 
