@@ -1519,8 +1519,16 @@ export default class Molecule extends Atom {
               ioValues: oldObject.ioValues,
             };
           } else {
-            let xPos = position ? position.x : 0.5;
-            let yPos = position ? position.y : 0.6;
+            let xPos = position
+              ? position.x
+              : oldObject.x !== undefined
+                ? oldObject.x
+                : 0.5;
+            let yPos = position
+              ? position.y
+              : oldObject.y !== undefined
+                ? oldObject.y
+                : 0.6;
 
             valuesToOverwriteInLoadedVersion = {
               uniqueID: newMoleculeUniqueID,
