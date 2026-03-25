@@ -51,7 +51,7 @@
     "react-select": "^5.8.0",
     "react-three-fiber": "^6.0.13",
     "rehype-raw": "^7.0.0",
-    "replicad": "^0.20.2",
+    "replicad": "^0.22.0",
     "replicad-decorate": "^0.1.2",
     "replicad-opencascadejs": "^0.20.2",
     "replicad-shrink-wrap": "^0.1.0",
