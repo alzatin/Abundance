@@ -318,39 +318,47 @@ export default class Molecule extends Atom {
             path: "project.abundance",
           })
           .then(async (response) => {
-            // Clear the nodesOnTheScreen array before deserialization to avoid doubling
-            GlobalVariables.topLevelMolecule.nodesOnTheScreen.forEach(
-              (atom) => {
-                atom.deleteNode();
-              },
-            );
-            GlobalVariables.topLevelMolecule.nodesOnTheScreen = []; // <-- clear the array
-            let rawFileContent;
-            // Handle large files (>1MB) using download_url
-            if (!response.data.content || response.data.content.length === 0) {
-              const fileResponse = await fetch(response.data.download_url);
-              rawFileContent = await fileResponse.text();
-            } else {
-              // Handle small files using base64 content with UTF-8 encoding
-              rawFileContent = GlobalVariables.fromBinaryStr(
-                atob(response.data.content),
-              );
-            }
-
-            let rawFile;
+            // Set loading flag before clearing atoms to prevent saves during the clear+reload window
+            GlobalVariables.projectIsLoading = true;
             try {
-              rawFile = await this.asyncJsonParse(rawFileContent); // Use the async parser from previous answer
-            } catch (err) {
-              console.error("Failed to parse project.abundance:", err);
-              return;
+              // Clear the nodesOnTheScreen array before deserialization to avoid doubling
+              GlobalVariables.topLevelMolecule.nodesOnTheScreen.forEach(
+                (atom) => {
+                  atom.deleteNode();
+                },
+              );
+              GlobalVariables.topLevelMolecule.nodesOnTheScreen = []; // <-- clear the array
+              let rawFileContent;
+              // Handle large files (>1MB) using download_url
+              if (!response.data.content || response.data.content.length === 0) {
+                const fileResponse = await fetch(response.data.download_url);
+                rawFileContent = await fileResponse.text();
+              } else {
+                // Handle small files using base64 content with UTF-8 encoding
+                rawFileContent = GlobalVariables.fromBinaryStr(
+                  atob(response.data.content),
+                );
+              }
+
+              let rawFile;
+              try {
+                rawFile = await this.asyncJsonParse(rawFileContent); // Use the async parser from previous answer
+              } catch (err) {
+                console.error("Failed to parse project.abundance:", err);
+                return;
+              }
+              // Reset ID counter to avoid collisions with existing IDs
+              GlobalVariables.resetIdCounter(rawFile);
+              // Only call deserialize after rawFile is ready
+              if (rawFile.filetypeVersion == 1) {
+                await GlobalVariables.topLevelMolecule.deserialize(rawFile);
+              }
+              GlobalVariables.currentMolecule.selected = true;
+            } finally {
+              // Ensure flag is cleared even if fetch/parse/deserialize fails
+              // (deserialize's own .finally() also clears the flag when it runs)
+              GlobalVariables.projectIsLoading = false;
             }
-            // Reset ID counter to avoid collisions with existing IDs
-            GlobalVariables.resetIdCounter(rawFile);
-            // Only call deserialize after rawFile is ready
-            if (rawFile.filetypeVersion == 1) {
-              await GlobalVariables.topLevelMolecule.deserialize(rawFile);
-            }
-            GlobalVariables.currentMolecule.selected = true;
           });
       });
   }
@@ -1363,12 +1371,23 @@ export default class Molecule extends Atom {
   async recomputeAll(setRecomputeVisible, setRecomputeProgress) {
     // Serialize the current molecule state
     const snapshot = this.serialize({ x: 0, y: 0 }, setRecomputeProgress);
+    // Block saves during the clear+reload window to prevent saving an empty project.
+    // This must be set before deleteAllAtoms() because clearCache() below is async,
+    // creating a window where nodesOnTheScreen would be empty without the guard.
+    GlobalVariables.projectIsLoading = true;
     // Remove all atoms from the molecule
     this.deleteAllAtoms();
 
-    // Clear CAD cache
-    await GlobalVariables.cad.clearCache(this.getContext());
-    // Re-deserialize the molecule from the snapshot
+    try {
+      // Clear CAD cache
+      await GlobalVariables.cad.clearCache(this.getContext());
+    } catch (err) {
+      // If cache clear fails before deserialize runs, ensure the flag is cleared
+      GlobalVariables.projectIsLoading = false;
+      throw err;
+    }
+    // Re-deserialize the molecule from the snapshot.
+    // deserialize() sets and clears projectIsLoading itself via its own .finally() block.
     await this.deserialize(snapshot);
     setRecomputeProgress(100); // Update progress to indicate completion
     setRecomputeVisible(false); // Hide the progress bar after recompute is done
