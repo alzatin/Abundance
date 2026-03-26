@@ -137,6 +137,11 @@ export default class Input extends Atom {
       this.parentAP.subscribe(() => {
         this.onUpstreamChange(); // Subscribe with our callback instead of our parent's which is default.
       }, this.uniqueID);
+
+      // If this is a range type, propagate min/max to parentAP (restored from serialized data)
+      if (this.type === "range" && (this.min !== undefined || this.max !== undefined)) {
+        this.updateParentAPRangeOptions();
+      }
     } else {
       throw new Error(
         "constructed an input with undefined parent. IDK what to do here",
