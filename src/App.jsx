@@ -292,6 +292,14 @@ function AppContent() {
           setMesh(mesh);
           setOutdatedMesh(false);
           setProcessing(false);
+          // Also update top-level wireframe if this is the top-level molecule's mesh
+          if (
+            GlobalVariables.topLevelMolecule &&
+            JSON.stringify(targetMesh.current) ===
+              JSON.stringify(GlobalVariables.topLevelMolecule.value)
+          ) {
+            setTopLevelWireMesh(mesh);
+          }
           /*Set plane and geometry type for ThreeContext*/
           setPlane(id?.plane);
           setGeometryType(id?.dimension);
@@ -354,6 +362,14 @@ function AppContent() {
             worker.generateDisplayMesh(moleculeValue, context).then((m) => {
               backgroundMesh.current.mesh = m.mesh;
               setWireMesh(m.mesh);
+              // Also update top-level wireframe if this is the top-level molecule's mesh
+              if (
+                GlobalVariables.topLevelMolecule &&
+                JSON.stringify(moleculeValue) ===
+                  JSON.stringify(GlobalVariables.topLevelMolecule.value)
+              ) {
+                setTopLevelWireMesh(m.mesh);
+              }
               setOutdatedMesh(false);
             });
           });
@@ -381,7 +397,6 @@ function AppContent() {
           // wireframe background.
           setMesh(backgroundMesh.current.mesh);
           setOutdatedMesh(false);
-
           setPlane(targetMesh.current?.plane);
           setGeometryType(targetMesh.current?.dimension);
           // We're viewing the output mesh directly, hide the wireframe
