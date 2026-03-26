@@ -830,6 +830,20 @@ async function sweepCache(
   return util.geometryProvider!.sweepCache(idsToRetainSet, context);
 }
 
+/**
+ * Extracts all geometry except those tagged as "keepout".
+ * Throws an error if no geometry remains after removing keepout geometry.
+ * @param {AbundanceObject} input - The geometry to filter
+ * @returns {AbundanceObject} The geometry with all keepout-tagged geometry removed
+ */
+function extractNotKeepOut(input: AbundanceObject): AbundanceObject {
+  const result = extractKeepOut(input);
+  if (!result) {
+    throw new Error("No geometry remaining after removing keepout geometry");
+  }
+  return result;
+}
+
 if (
   typeof self !== "undefined" &&
   typeof self.addEventListener === "function" &&
@@ -870,6 +884,7 @@ if (
     bom,
     addNonReplicadGeom,
     extractTag,
+    extractNotKeepOut,
     intersect,
     assembly,
     loftShapes,
@@ -903,6 +918,7 @@ export {
   displayLayout,
   downExport,
   extractAllTags,
+  extractNotKeepOut,
   extractParts,
   extractTag,
   extrude,
