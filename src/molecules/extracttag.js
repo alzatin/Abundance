@@ -48,6 +48,11 @@ export default class ExtractTag extends Atom {
      */
     this.tag = undefined;
 
+    /** Extract mode: "Tag" extracts geometry with the selected tag, "Not Keep Out" extracts all geometry except keepout
+     * @type {string}
+     */
+    this.extractMode = "Tag";
+
     /** Value stored in tagList Observable is a struct of {source: "geomID", tags: ["tag1", "tag2"...]} */
     this.tagList = { source: undefined, tags: [] };
 
@@ -98,23 +103,42 @@ export default class ExtractTag extends Atom {
     let tagList = this.tagList.tags || [];
     let inputParams = {};
 
-    inputParams[this.uniqueID + "tag_ops"] = {
+    inputParams[this.uniqueID + "extract_mode"] = {
       type: "select",
-      value: this.tag ? this.tag : "Select Tag",
-      options: tagList,
-      label: "Extract Tag",
+      value: this.extractMode || "Tag",
+      options: ["Tag", "Not Keep Out"],
+      label: "Extract Mode",
       onChange: (value) => {
-        if (this.tag != value && value != "Select Tag") {
-          this.tag = value;
+        if (this.extractMode !== value) {
+          this.extractMode = value;
           this.onUpstreamChange();
         }
       },
     };
+
+    if (this.extractMode !== "Not Keep Out") {
+      inputParams[this.uniqueID + "tag_ops"] = {
+        type: "select",
+        value: this.tag ? this.tag : "Select Tag",
+        options: tagList,
+        label: "Extract Tag",
+        onChange: (value) => {
+          if (this.tag != value && value != "Select Tag") {
+            this.tag = value;
+            this.onUpstreamChange();
+          }
+        },
+      };
+    }
+
     return inputParams;
   }
 
   compute(inputs) {
     const input = inputs.input;
+    if (this.extractMode === "Not Keep Out") {
+      return GlobalVariables.cad.extractNotKeepOut(input);
+    }
     return GlobalVariables.cad.extractTag(input, this.tag);
   }
 
@@ -143,27 +167,37 @@ export default class ExtractTag extends Atom {
         throw new Error("inputs ready but couldn't find geometry id");
       }
 
-      if (!this.tagList.source || this.tagList.source != geomId) {
+      if (this.extractMode === "Not Keep Out") {
+        // Directly compute without needing tag selection
         this.setProcessing();
-        GlobalVariables.cad
-          .extractAllTags(geomId)
-          .then((result) => {
-            // Implicit recursion since we're observing tagList with onUpstreamChange
-            this.setWaiting();
-            this.tagList = { source: geomId, tags: result };
+        this.compute({ input: geomId })
+          .then((value) => {
+            this.setReady(value);
           })
           .catch(this.alertingErrorHandler());
-      }
-
-      if (this.tag) {
-        if (this.tag != "Select Tag") {
-          // A legit tag has been selected and we're ready to go!
+      } else {
+        if (!this.tagList.source || this.tagList.source != geomId) {
           this.setProcessing();
-          this.compute({ input: geomId })
-            .then((value) => {
-              this.setReady(value);
+          GlobalVariables.cad
+            .extractAllTags(geomId)
+            .then((result) => {
+              // Implicit recursion since we're observing tagList with onUpstreamChange
+              this.setWaiting();
+              this.tagList = { source: geomId, tags: result };
             })
             .catch(this.alertingErrorHandler());
+        }
+
+        if (this.tag) {
+          if (this.tag != "Select Tag") {
+            // A legit tag has been selected and we're ready to go!
+            this.setProcessing();
+            this.compute({ input: geomId })
+              .then((value) => {
+                this.setReady(value);
+              })
+              .catch(this.alertingErrorHandler());
+          }
         }
       }
     } else {
@@ -183,6 +217,7 @@ export default class ExtractTag extends Atom {
     var superSerialObject = super.serialize(offset);
     superSerialObject.tag = this.tag;
     superSerialObject.tagIndex = this.tagIndex;
+    superSerialObject.extractMode = this.extractMode;
 
     return superSerialObject;
   }
