@@ -124,6 +124,7 @@ function AppContent() {
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
+    console.log("Processing state changed:", processing);
     setRenderProgress(0);
     setRenderBarVisible(true);
     setRenderStage("Waiting for input"); // Start with Building stage by default
@@ -179,13 +180,7 @@ function AppContent() {
     }, 500); // Poll every 500ms
 
     return () => clearInterval(interval);
-  }, [
-    GlobalVariables.topLevelMolecule,
-    setRenderProgress,
-    setRenderBarVisible,
-    setRenderStage,
-    processing,
-  ]);
+  }, [GlobalVariables.topLevelMolecule, processing]);
 
   useEffect(() => {
     if (renderProgress >= 100) {
