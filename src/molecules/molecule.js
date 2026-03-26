@@ -183,9 +183,7 @@ export default class Molecule extends Atom {
 
     inputParams["molecule name" + this.uniqueID] = {
       type: "string",
-      value: this.topLevel
-        ? GlobalVariables.currentAWSnode.repoName
-        : this.name,
+      value: this.name,
       label: "Molecule Name",
       disabled: this.topLevel || this.atomType === "GitHubMolecule",
       onChange: (value) => {
@@ -330,7 +328,10 @@ export default class Molecule extends Atom {
               GlobalVariables.topLevelMolecule.nodesOnTheScreen = []; // <-- clear the array
               let rawFileContent;
               // Handle large files (>1MB) using download_url
-              if (!response.data.content || response.data.content.length === 0) {
+              if (
+                !response.data.content ||
+                response.data.content.length === 0
+              ) {
                 const fileResponse = await fetch(response.data.download_url);
                 rawFileContent = await fileResponse.text();
               } else {
@@ -1283,86 +1284,88 @@ export default class Molecule extends Atom {
         promiseArray.push(promise);
       });
     }
-    return Promise.all(promiseArray).then(() => {
-      //Once all the atoms are placed we can finish
-      this.setValues([]); //Call set values again with an empty list to trigger loading of IO values from memory
+    return Promise.all(promiseArray)
+      .then(() => {
+        //Once all the atoms are placed we can finish
+        this.setValues([]); //Call set values again with an empty list to trigger loading of IO values from memory
 
-      if (this.topLevel) {
-        GlobalVariables.totalAtomCount = GlobalVariables.numberOfAtomsToLoad;
-      }
+        if (this.topLevel) {
+          GlobalVariables.totalAtomCount = GlobalVariables.numberOfAtomsToLoad;
+        }
 
-      //Place the connectors, skipping null/undefined
-      if (json.allConnectors) {
-        json.allConnectors.forEach((connector) => {
-          if (connector) {
-            this.placeConnector(connector);
+        //Place the connectors, skipping null/undefined
+        if (json.allConnectors) {
+          json.allConnectors.forEach((connector) => {
+            if (connector) {
+              this.placeConnector(connector);
+            }
+          });
+        }
+
+        // Reset variable name subscriptions now that all atoms are placed.
+        this.nodesOnTheScreen.forEach((atom) => {
+          atom.inputs.forEach((ap) => {
+            ap.subscribeToVariablesInEquation(ap.currentEquation);
+          });
+        });
+
+        const outputAtom = this.getOutputAtom();
+        outputAtom.subscribe(
+          () => {
+            this.onUpstreamChange();
+          },
+          this.uniqueID,
+          false,
+        );
+
+        // Subscribe molecule to README atom changes for automatic README recompilation
+        // Issue: README atoms were not part of molecule's propagation chain
+        // Solution: When a README atom's text changes (via setReady()), propagate that change
+        // to trigger the molecule's requestReadme() and update compiledReadme.
+        // This ensures that the README content in the molecule's input panel and saved README
+        // files stays in sync with the actual README atom values.
+        this.nodesOnTheScreen.forEach((atom) => {
+          if (atom.atomType === "Readme") {
+            atom.subscribe(
+              () => {
+                // Recompile README content when any README atom changes
+                this.requestReadme()
+                  .then((readme) => {
+                    this.compiledReadme = readme;
+                    // Note: setInputChanged is not called here as it's only used for BOM updates
+                    // README changes are reflected automatically in the properties panel
+                    // through the compiledReadme property
+                  })
+                  .catch((err) => {
+                    console.warn(
+                      `Error updating README after atom change in molecule ${this.uniqueID}, README atom ${atom.uniqueID}:`,
+                      err,
+                    );
+                  });
+              },
+              `readme-subscription-${this.uniqueID}-${atom.uniqueID}`,
+              false,
+            );
           }
         });
-      }
 
-      // Reset variable name subscriptions now that all atoms are placed.
-      this.nodesOnTheScreen.forEach((atom) => {
-        atom.inputs.forEach((ap) => {
-          ap.subscribeToVariablesInEquation(ap.currentEquation);
-        });
-      });
+        if (GlobalVariables.currentMolecule === this || forceEnable) {
+          this.enable(); // Enable self and all child nodes upstream of output.
+        }
+        if (GlobalVariables.currentMolecule === this) {
+          this.enableAllChildren(); // For the currently rendered molecule, also
+          // enable all children visible on the screen
+        }
 
-      const outputAtom = this.getOutputAtom();
-      outputAtom.subscribe(
-        () => {
-          this.onUpstreamChange();
-        },
-        this.uniqueID,
-        false,
-      );
-
-      // Subscribe molecule to README atom changes for automatic README recompilation
-      // Issue: README atoms were not part of molecule's propagation chain
-      // Solution: When a README atom's text changes (via setReady()), propagate that change
-      // to trigger the molecule's requestReadme() and update compiledReadme.
-      // This ensures that the README content in the molecule's input panel and saved README
-      // files stays in sync with the actual README atom values.
-      this.nodesOnTheScreen.forEach((atom) => {
-        if (atom.atomType === "Readme") {
-          atom.subscribe(
-            () => {
-              // Recompile README content when any README atom changes
-              this.requestReadme()
-                .then((readme) => {
-                  this.compiledReadme = readme;
-                  // Note: setInputChanged is not called here as it's only used for BOM updates
-                  // README changes are reflected automatically in the properties panel
-                  // through the compiledReadme property
-                })
-                .catch((err) => {
-                  console.warn(
-                    `Error updating README after atom change in molecule ${this.uniqueID}, README atom ${atom.uniqueID}:`,
-                    err,
-                  );
-                });
-            },
-            `readme-subscription-${this.uniqueID}-${atom.uniqueID}`,
-            false,
-          );
+        return this;
+      })
+      .finally(() => {
+        // Always clear loading flag when deserialization completes or fails.
+        // Use wasTopLevel (captured at entry) because setValues() may have changed this.topLevel.
+        if (wasTopLevel) {
+          GlobalVariables.projectIsLoading = false;
         }
       });
-
-      if (GlobalVariables.currentMolecule === this || forceEnable) {
-        this.enable(); // Enable self and all child nodes upstream of output.
-      }
-      if (GlobalVariables.currentMolecule === this) {
-        this.enableAllChildren(); // For the currently rendered molecule, also
-        // enable all children visible on the screen
-      }
-
-      return this;
-    }).finally(() => {
-      // Always clear loading flag when deserialization completes or fails.
-      // Use wasTopLevel (captured at entry) because setValues() may have changed this.topLevel.
-      if (wasTopLevel) {
-        GlobalVariables.projectIsLoading = false;
-      }
-    });
   }
 
   enable() {
