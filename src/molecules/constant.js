@@ -59,7 +59,7 @@ export default class Constant extends Atom {
      */
     this.value = 10.0;
 
-    this.addAllIOs([{ name: "number", valueType: "number", type: "output" }]);
+    this.addIO("result", "any", 0, "output");
 
     this.setValues(values); //This will overwrite the default value if one is loaded
   }
@@ -101,7 +101,7 @@ export default class Constant extends Atom {
         const sanitizedName = GlobalVariables.incrementVariableName(
           value,
           this.parent,
-          [this]
+          [this],
         );
         if (this.name !== sanitizedName) {
           this.name = sanitizedName;
@@ -183,7 +183,7 @@ export default class Constant extends Atom {
       valuesObj,
       "value",
       this.value,
-      this.name || "Constant"
+      this.name || "Constant",
     );
 
     return valuesObj;
