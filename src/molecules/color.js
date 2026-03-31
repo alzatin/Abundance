@@ -66,7 +66,7 @@ export default class Color extends Atom {
       "Keep Out": "#D9544D",
     };
     this.addAllIOs([
-      { name: "color", valueType: "string", type: "output" },
+      { name: "geometry", valueType: "geometry", type: "output" },
       { name: "geometry", valueType: "geometry", type: "input" },
     ]);
 
@@ -90,7 +90,7 @@ export default class Color extends Atom {
       GlobalVariables.widthToPixels(this.radius / 1.5),
       0,
       Math.PI * 2,
-      false
+      false,
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
@@ -101,13 +101,13 @@ export default class Color extends Atom {
    */
   compute(inputs) {
     const color = Object.values(this.colorOptions)[this.selectedColorIndex];
-    
+
     // Set the color output value so anything connected to it gets the hex color
     // This is required for Keep Out tagging in tags.ts, which checks for "#D9544D"
     if (this.output) {
       this.output.value = color;
     }
-    
+
     return GlobalVariables.cad.color(inputs.geometry, color);
   }
 
@@ -189,13 +189,15 @@ export default class Color extends Atom {
       // New format: selectedColor contains the color name (e.g., "Orange", "Keep Out", "Glass")
       const colorNames = Object.keys(this.colorOptions);
       const colorIndex = colorNames.indexOf(values.selectedColor);
-      
+
       if (colorIndex !== -1) {
         // Found the color name in our options - override any selectedColorIndex that was set
         this.selectedColorIndex = colorIndex;
       } else {
         // Color name not found, default to first color
-        console.warn(`Color "${values.selectedColor}" not found in colorOptions, defaulting to first color`);
+        console.warn(
+          `Color "${values.selectedColor}" not found in colorOptions, defaulting to first color`,
+        );
         this.selectedColorIndex = 0;
       }
     } else if (this.selectedColorIndex !== undefined) {
@@ -203,7 +205,9 @@ export default class Color extends Atom {
       // Validate it's within range
       const maxIndex = Object.keys(this.colorOptions).length - 1;
       if (this.selectedColorIndex < 0 || this.selectedColorIndex > maxIndex) {
-        console.warn(`Invalid selectedColorIndex ${this.selectedColorIndex}, defaulting to 0`);
+        console.warn(
+          `Invalid selectedColorIndex ${this.selectedColorIndex}, defaulting to 0`,
+        );
         this.selectedColorIndex = 0;
       }
     }
@@ -217,7 +221,9 @@ export default class Color extends Atom {
 
     // Save the color name (e.g., "Orange", "Keep Out", "Glass") instead of the index or hex value
     // This allows for special materials and enables changing hex values later without breaking saved files
-    const selectedColorName = Object.keys(this.colorOptions)[this.selectedColorIndex];
+    const selectedColorName = Object.keys(this.colorOptions)[
+      this.selectedColorIndex
+    ];
     superSerialObject.selectedColor = selectedColorName;
 
     return superSerialObject;

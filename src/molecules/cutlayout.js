@@ -374,6 +374,14 @@ export default class CutLayout extends Atom {
    * Create default placements for all parts at (0,0) with 0° rotation
    */
   createDefaultPlacements() {
+    // Don't start if already processing
+    if (this.getState().status === Status.PROCESSING) {
+      console.warn(
+        "CutLayout is already processing, skipping createDefaultPlacements",
+      );
+      return;
+    }
+
     // Cancel any in-progress layout computation
     if (this.cancelationHandle) {
       this.cancelationHandle();
@@ -426,6 +434,13 @@ export default class CutLayout extends Atom {
    */
   computeValueButton(setInputChanged) {
     //this.setInputsChanged = setInputsChanged;
+
+    // Don't allow compute if we're already processing (including createDefaultPlacements)
+    if (this.getState().status === Status.PROCESSING) {
+      console.warn("CutLayout is already processing, ignoring compute request");
+      return;
+    }
+
     this.computing = true;
     setInputChanged(this.progress);
     if (this.inputsAreReady()) {
