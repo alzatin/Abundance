@@ -257,12 +257,24 @@ async function generateDisplayMesh(
           });
         }
       } catch (e) {
-        throw new Error("Error generating display mesh" + e);
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(
+          `Error meshing geometry part ${meshArray.indexOf(meshObj)} (color: ${meshObj.color}): ${msg}`,
+          e
+        );
+        // Skip this part and continue so other parts still display
       }
+    }
+    if (finalMeshes.length === 0 && meshArray.length > 0) {
+      console.error(
+        "All geometry parts failed to mesh — falling back to default mesh"
+      );
+      return { id: id, mesh: await generateDefaultMesh(context) };
     }
     return { id: geom, mesh: finalMeshes };
   } catch (e) {
-    console.error("Error in generateDisplayMesh:", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("Error in generateDisplayMesh:", msg, e);
     return { id: undefined, mesh: [] };
   }
 }
