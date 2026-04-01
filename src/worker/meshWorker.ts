@@ -163,13 +163,15 @@ async function generateDefaultMesh(
 ): Promise<DisplayMesh[]> {
   if (defaultMesh == undefined) {
     const s = performance.now();
-    const textId = await text("No output to display", 28, "ROBOTO", context);
-    const rObj = await util.geometryProvider?.get(textId.geometry, context);
-    const meshShape = (rObj as replicad.Drawing)
-      .sketchOnPlane("XY")
-      .extrude(0.0001);
-    defaultMesh = [
-      {
+    const textAssembly = await text("No output to display", 28, "ROBOTO", context);
+    const leaves = util.flattenAssembly(textAssembly);
+    const meshParts: DisplayMesh[] = [];
+    for (const leaf of leaves) {
+      const rObj = await util.geometryProvider?.get(leaf.geometry, context);
+      const meshShape = (rObj as replicad.Drawing)
+        .sketchOnPlane("XY")
+        .extrude(0.0001);
+      meshParts.push({
         cameraZoom: 10,
         faces: meshShape.mesh({ tolerance: 0.1, angularTolerance: 0.5 }),
         edges: meshShape.meshEdges({
@@ -177,8 +179,9 @@ async function generateDefaultMesh(
           angularTolerance: 0.5,
         }),
         color: util.defaultColor,
-      },
-    ];
+      });
+    }
+    defaultMesh = meshParts;
     console.debug("generated default mesh. took ", performance.now() - s, "ms");
   } else {
     console.debug("default mesh hit");

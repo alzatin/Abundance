@@ -306,7 +306,9 @@ function AppContent() {
         })
         .catch((e) => {
           console.error("Can't display Mesh " + e);
-          activeAtom.setError("Can't display Mesh " + e);
+          if (activeAtom) {
+            activeAtom.setError("Can't display Mesh " + e);
+          }
         })
         .finally(() => {
           createPuppeteerDiv();
