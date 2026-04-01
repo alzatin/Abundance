@@ -121,10 +121,24 @@ export default class Import extends Atom {
 
     if (this.fileName != null) {
       return this.getAFile()
-        .then((result) => {
+        .then(async (result) => {
           this.sha = result.data.sha;
-          this.file = this.newBlobFromBase64(result);
-          let file = this.file;
+
+          // GitHub's getContent API returns empty content for files >1MB.
+          // In that case, fetch the raw file via download_url (which carries
+          // an auth token for private repos).
+          let file;
+          if (!result.data.content) {
+            const response = await fetch(result.data.download_url);
+            if (!response.ok) {
+              throw new Error(`Failed to download file: ${response.statusText}`);
+            }
+            file = await response.blob();
+          } else {
+            file = this.newBlobFromBase64(result);
+          }
+
+          this.file = file;
           let fileType = this.type;
 
           let funcToCall =
