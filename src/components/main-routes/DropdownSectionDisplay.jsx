@@ -38,9 +38,11 @@ export default function DropdownSectionDisplay({ sections }) {
                 padding: 25,
                 borderRadius: 4,
                 display: "flex",
-                flexWrap: "wrap",
+                flexWrap: section.type === "videos" ? "nowrap" : "wrap",
                 justifyContent: "space-start",
                 gap: 16,
+                overflowX: section.type === "videos" ? "auto" : "visible",
+                paddingRight: section.type === "videos" ? 40 : 25,
               }}
             >
               {Array.isArray(section.value) ? (
@@ -56,20 +58,36 @@ export default function DropdownSectionDisplay({ sections }) {
                     item && typeof item === "object" && item.label
                       ? item.label
                       : String(item);
+                  const url =
+                    item && typeof item === "object" ? item.url : null;
 
                   return (
                     <div
                       key={i}
-                      onClick={hasOnClick ? item.onClick : undefined}
+                      onClick={
+                        url
+                          ? () => window.open(url, "_blank")
+                          : hasOnClick
+                            ? item.onClick
+                            : undefined
+                      }
                       onMouseEnter={() => setHoveredIndex(`${idx}-${i}`)}
                       onMouseLeave={() => setHoveredIndex(null)}
                       style={{
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        cursor: hasOnClick ? "pointer" : "default",
-                        minWidth: 100,
+                        cursor: url || hasOnClick ? "pointer" : "default",
+                        minWidth: section.type === "videos" ? 120 : 100,
                         textAlign: "center",
+                        flexShrink: section.type === "videos" ? 0 : 1,
+                        padding: 8,
+                        borderRadius: 8,
+                        backgroundColor:
+                          hoveredIndex === `${idx}-${i}`
+                            ? "rgba(196, 163, 213, 0.2)"
+                            : "transparent",
+                        transition: "background-color 0.2s ease",
                       }}
                     >
                       <img
@@ -81,6 +99,11 @@ export default function DropdownSectionDisplay({ sections }) {
                           objectFit: "cover",
                           borderRadius: 4,
                           marginBottom: 8,
+                          transition: "transform 0.2s ease",
+                          transform:
+                            hoveredIndex === `${idx}-${i}`
+                              ? "scale(1.05)"
+                              : "scale(1)",
                         }}
                       />
                       <p

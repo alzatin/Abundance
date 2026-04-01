@@ -72,6 +72,26 @@ export const TutorialOverlay: React.FC = () => {
       height: window.innerHeight,
       borderRadius: 8,
     };
+  } else if (currentStep.target === "orbitControls") {
+    //custom input atom
+    const size = 400;
+    highlightRect = {
+      top: window.innerHeight - size / 2 - 50,
+      left: window.innerWidth - size / 2 - 50,
+      width: window.innerHeight / 2,
+      height: offset.height || size,
+      borderRadius: 8,
+    };
+  } else if (currentStep.target === "other-params-panels") {
+    //custom other parameters panels highlight
+    const size = 100;
+    highlightRect = {
+      top: window.innerHeight / 2 - 10,
+      left: 10,
+      width: offset.width || size,
+      height: offset.height || size,
+      borderRadius: 8,
+    };
   } else if (currentStep.target) {
     const el = document.querySelector(currentStep.target);
     if (el) {

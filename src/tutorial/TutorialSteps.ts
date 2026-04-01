@@ -27,6 +27,113 @@ export interface TutorialStep {
   offset?: { top?: number; left?: number; width?: number; height?: number };
 }
 
+const canvasBasics: TutorialStep[] = [
+  {
+    id: "welcome",
+    message:
+      "Welcome to Abundance! This tutorial will introduce you to the canvas.",
+    overlay: "full",
+    action: "click",
+    svgDiagram: "abundance_Svg.svg",
+  },
+  {
+    id: "project-name",
+    message:
+      "This is your project path. You can click on it to navigate to different levels of your project. Right now you only have one level, the top level, but as you create molecules you will be able to navigate into them and see your path update.",
+    overlay: "highlight",
+    action: "valueChange",
+    target: "#molecule-path-link-div",
+    messagePosition: { top: -50, left: 350 },
+    messageArrow: "left",
+  },
+  {
+    id: "logo",
+    message:
+      "You can also click on the Abundance logo to go back to search your other projects and explore other people's projects.",
+    overlay: "highlight",
+    action: "click",
+    target: ".thumnail-logo",
+    messagePosition: { top: -50, left: 350 },
+    messageArrow: "left",
+  },
+  {
+    id: "canvas-1",
+    message:
+      "This is the canvas. This is where you will build your design by placing and connecting atoms.",
+    overlay: "highlight",
+    action: "click",
+    target: "#flow-canvas",
+    messageArrow: "top",
+  },
+  {
+    id: "canvas-2",
+    message: "Right click anywhere on the canvas to open the atom menu",
+    overlay: "highlight",
+    action: "rightClick",
+    target: "#flow-canvas",
+    messageArrow: "top",
+  },
+  {
+    id: "top-menu",
+    message:
+      "This is the top menu. You will find options to save, export, or share your project here.",
+    overlay: "highlight",
+    action: "click",
+    target: "#top-menu-button",
+    messageArrow: "right",
+    messagePosition: { top: -50, left: -300 },
+  },
+  {
+    id: "render-1",
+    message:
+      "This is the render view. It shows a preview of your design. You can click and drag on the background to orbit around your design.",
+    overlay: "highlight",
+    action: "rightClick",
+    target: "#threeCanvas",
+    messageArrow: "bottom",
+    messagePosition: { top: -620, left: 200 },
+  },
+  {
+    id: "orbit-controls",
+    message:
+      "These are the orbit controls, use them to orient yourself in the 3D view.",
+    overlay: "highlight",
+    action: "click",
+    target: "orbitControls",
+    messageArrow: "right",
+    messagePosition: { top: -420, left: -500 },
+  },
+  {
+    id: "parameter-panel",
+    message:
+      "This is the parameter panel. When you select an atom, you can change its parameters here.",
+    overlay: "highlight",
+    action: "click",
+    target: "#atom-create-params-panel",
+    messagePosition: { top: -220, left: 400 },
+    messageArrow: "left",
+  },
+  {
+    id: " Other parameters menus",
+    message:
+      "These buttons will open other menus where you can adjust additional settings like toggle the grid or your project wireframe, or search for github molecules.",
+    overlay: "highlight",
+    action: "click",
+    target: "other-params-panels",
+    messagePosition: { top: -200, left: 300 },
+
+    offset: { top: 300, left: 100, width: 50, height: 200 },
+    messageArrow: "left",
+  },
+  {
+    id: "Finish",
+    message:
+      "That's the end of the tutorial. Check out our other tutorials to learn more or get started with your design!",
+    overlay: "full",
+    action: "none",
+  },
+];
+
 const gettingStartedSteps: TutorialStep[] = [
   {
     id: "welcome",
@@ -452,6 +559,7 @@ const tagsSteps: TutorialStep[] = [
 ];
 
 export const tutorials = {
+  canvasBasics: canvasBasics,
   gettingStarted: gettingStartedSteps,
   moleculesAndGithubMolecules: moleculesSteps,
   inputsSteps: inputsEquationsValuesSteps,
