@@ -1,7 +1,11 @@
 import React from "react";
 
+const DEFAULT_THUMBNAIL =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e0e0e0'/%3E%3Ctext x='50' y='50' font-size='12' fill='%23999' text-anchor='middle' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+
 export default function DropdownSectionDisplay({ sections }) {
-  const [openIndex, setOpenIndex] = React.useState(null);
+  const [openIndex, setOpenIndex] = React.useState(0);
+  const [hoveredIndex, setHoveredIndex] = React.useState(null);
 
   if (!sections || !Array.isArray(sections)) return null;
 
@@ -16,7 +20,7 @@ export default function DropdownSectionDisplay({ sections }) {
               display: "inline",
               fontWeight: openIndex === idx ? "bold" : "normal",
             }}
-            onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
+            onClick={() => setOpenIndex(openIndex === idx ? 0 : idx)}
           >
             <p>
               {section.label}{" "}
@@ -29,59 +33,111 @@ export default function DropdownSectionDisplay({ sections }) {
             <div
               className="dropdown-section-value"
               style={{
-                marginLeft: 20,
+                marginLeft: 25,
                 marginTop: 4,
-                padding: 8,
-                background: "#f6f6f6",
+                padding: 25,
                 borderRadius: 4,
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "space-start",
+                gap: 16,
               }}
-              //onClick={() => section.onClick()}
             >
               {Array.isArray(section.value) ? (
-                <div style={{ margin: 0, paddingLeft: 0 }}>
-                  {section.value.map((item, i) => {
-                    const hasOnClick =
-                      item &&
-                      typeof item === "object" &&
-                      typeof item.onClick === "function";
-                    return (
-                      <div
-                        onClick={hasOnClick ? item.onClick : undefined}
-                        className="login-nav-item dropdown-section-value"
+                section.value.map((item, i) => {
+                  const hasOnClick =
+                    item &&
+                    typeof item === "object" &&
+                    typeof item.onClick === "function";
+                  const thumbnail =
+                    (item && typeof item === "object" && item.thumbnail) ||
+                    DEFAULT_THUMBNAIL;
+                  const label =
+                    item && typeof item === "object" && item.label
+                      ? item.label
+                      : String(item);
+
+                  return (
+                    <div
+                      key={i}
+                      onClick={hasOnClick ? item.onClick : undefined}
+                      onMouseEnter={() => setHoveredIndex(`${idx}-${i}`)}
+                      onMouseLeave={() => setHoveredIndex(null)}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        cursor: hasOnClick ? "pointer" : "default",
+                        minWidth: 100,
+                        textAlign: "center",
+                      }}
+                    >
+                      <img
+                        src={thumbnail}
+                        alt={label}
+                        style={{
+                          width: 100,
+                          height: 100,
+                          objectFit: "cover",
+                          borderRadius: 4,
+                          marginBottom: 8,
+                        }}
+                      />
+                      <p
+                        style={{
+                          fontSize: "0.95em",
+                          opacity: 0.85,
+                          margin: 0,
+                          wordBreak: "break-word",
+                          padding: 6,
+                          borderRadius: 4,
+                          backgroundColor:
+                            hoveredIndex === `${idx}-${i}`
+                              ? "#e0e0e0"
+                              : "transparent",
+                          transition: "background-color 0.2s ease",
+                        }}
                       >
-                        <p
-                          key={i}
-                          style={{
-                            fontSize: "0.95em",
-                            opacity: 0.85,
-                            marginLeft: 0,
-                            marginBottom: 4,
-                            cursor: hasOnClick ? "pointer" : "default",
-                            display: "inline",
-                          }}
-                        >
-                          {item && typeof item === "object" && item.label
-                            ? item.label
-                            : String(item)}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
+                        {label}
+                      </p>
+                    </div>
+                  );
+                })
               ) : (
                 <div
                   onClick={section.onClick ? section.onClick : undefined}
-                  className="login-nav-item dropdown-section-value"
+                  onMouseEnter={() => setHoveredIndex(`single-${idx}`)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    cursor: section.onClick ? "pointer" : "default",
+                  }}
                 >
+                  <img
+                    src={section.thumbnail || DEFAULT_THUMBNAIL}
+                    alt={section.label}
+                    style={{
+                      width: 100,
+                      height: 100,
+                      objectFit: "cover",
+                      borderRadius: 4,
+                      marginBottom: 8,
+                    }}
+                  />
                   <p
-                    key={section.label}
                     style={{
                       fontSize: "0.95em",
                       opacity: 0.85,
-                      marginLeft: 0,
-                      marginBottom: 4,
-                      cursor: section.onClick ? "pointer" : "default",
-                      display: "inline",
+                      margin: 0,
+                      padding: 6,
+                      borderRadius: 4,
+                      backgroundColor:
+                        hoveredIndex === `single-${idx}`
+                          ? "#e0e0e0"
+                          : "transparent",
+                      transition: "background-color 0.2s ease",
                     }}
                   >
                     {section && typeof section === "object" && section.label

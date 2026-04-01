@@ -1385,7 +1385,7 @@ const ShowProjects = ({
           ],
         },
         {
-          label: "User Guide",
+          label: "User Resources",
           value: [
             {
               label: "User Guide",
@@ -1401,11 +1401,6 @@ const ShowProjects = ({
                 setProjectsToShow("faq");
               },
             },
-          ],
-        },
-        {
-          label: "Forums",
-          value: [
             {
               label: "Maslow Forums - Abundance Questions",
               onClick: () => {
@@ -1413,6 +1408,33 @@ const ShowProjects = ({
                   "https://forums.maslowcnc.com/c/abundance/25",
                   "_blank",
                 );
+              },
+            },
+          ],
+        },
+        {
+          label: "Videos",
+          value: [
+            {
+              label: "Getting Started",
+              thumbnail: "https://via.placeholder.com/100?text=Getting+Started",
+              onClick: () => {
+                // Add your video link here
+              },
+            },
+            {
+              label: "Tutorial",
+              thumbnail: "https://via.placeholder.com/100?text=Tutorial",
+              onClick: () => {
+                // Add your video link here
+              },
+            },
+            {
+              label: "Advanced Features",
+              thumbnail:
+                "https://via.placeholder.com/100?text=Advanced+Features",
+              onClick: () => {
+                // Add your video link here
               },
             },
           ],
