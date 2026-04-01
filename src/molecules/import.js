@@ -150,10 +150,10 @@ export default class Import extends Atom {
           return result;
         })
         .catch((err) => {
-          this.setError(
+          throw new Error(
             `Failed to load file "${this.fileName}". Please check that the file exists in the repository and try again.`,
+            { cause: err },
           );
-          throw err; // rethrow so onUpstreamChange's .then doesn't call setReady and override the error state
         });
     }
   }
