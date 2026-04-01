@@ -75,7 +75,7 @@ function CreateMode() {
     searchGithubMolecules,
     saveProject: saveProjectFromContext,
   } = useProject();
-  const { uploadFile, deleteFile, fetchFileContent } = useFileImport();
+  const { uploadFile, deleteFile, fetchFileContent, fetchRawFileContent } = useFileImport();
   const meshRef = useRef();
 
   // Make meshRef, file import functions, and save function available globally
@@ -84,14 +84,16 @@ function CreateMode() {
     GlobalVariables.uploadFile = uploadFile;
     GlobalVariables.deleteFile = deleteFile;
     GlobalVariables.fetchFileContent = fetchFileContent;
+    GlobalVariables.fetchRawFileContent = fetchRawFileContent;
 
     return () => {
       GlobalVariables.meshRef = null;
       GlobalVariables.uploadFile = null;
       GlobalVariables.deleteFile = null;
       GlobalVariables.fetchFileContent = null;
+      GlobalVariables.fetchRawFileContent = null;
     };
-  }, [uploadFile, deleteFile, fetchFileContent]);
+  }, [uploadFile, deleteFile, fetchFileContent, fetchRawFileContent]);
 
   const navigate = useNavigate();
 

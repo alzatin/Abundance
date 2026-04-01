@@ -651,9 +651,26 @@ export default class Input extends Atom {
     this.setProcessing();
 
     return this.getAFile()
-      .then((result) => {
+      .then(async (result) => {
         this.fileSha = result.data.sha;
-        const file = this.newBlobFromBase64(result);
+
+        // GitHub's getContent API returns empty content for files >1MB.
+        // In that case, fetch the raw file via the authenticated git blob API.
+        let file;
+        if (!result.data.content) {
+          if (!GlobalVariables.fetchRawFileContent) {
+            throw new Error("Authenticated file fetch is not available");
+          }
+          file = await GlobalVariables.fetchRawFileContent(
+            this.repoOwner,
+            this.repoName,
+            result.data.sha,
+            this.fileType,
+          );
+        } else {
+          file = this.newBlobFromBase64(result);
+        }
+
         const fileType = this.fileType;
 
         let funcToCall =
