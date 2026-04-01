@@ -226,7 +226,7 @@ async function generateDisplayMesh(
 
     let finalMeshes = [];
     // Iterate through the meshArray and create final meshes with faces, edges and color to pass to display
-    for (const meshObj of meshArray) {
+    for (const [index, meshObj] of meshArray.entries()) {
       try {
         let sketchPlane = util.asReplicadPlane(geom.plane);
         if (meshObj.geometry instanceof replicad.Drawing) {
@@ -259,7 +259,7 @@ async function generateDisplayMesh(
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         console.error(
-          `Error meshing geometry part ${meshArray.indexOf(meshObj)} (color: ${meshObj.color}): ${msg}`,
+          `Error meshing geometry part ${index} (color: ${meshObj.color}): ${msg}`,
           e
         );
         // Skip this part and continue so other parts still display
@@ -275,7 +275,8 @@ async function generateDisplayMesh(
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("Error in generateDisplayMesh:", msg, e);
-    return { id: undefined, mesh: [] };
+    // Fall back to default mesh while preserving the original id so callers can update UI state
+    return { id, mesh: await generateDefaultMesh(context) };
   }
 }
 
