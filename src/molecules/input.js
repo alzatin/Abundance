@@ -617,17 +617,21 @@ export default class Input extends Atom {
    * Get a file from github. Called when loading a saved project with import input.
    */
   getAFile = async function () {
-    const octokit = new Octokit();
     const filePath = this.fileName;
-
     const repoOwner = this.repoOwner;
     const repoName = this.repoName;
-    const result = await octokit.rest.repos.getContent({
+
+    // Use authenticated fetch if available (required for private repos)
+    if (GlobalVariables.fetchFileContent) {
+      return GlobalVariables.fetchFileContent(repoOwner, repoName, filePath);
+    }
+
+    const octokit = new Octokit();
+    return octokit.rest.repos.getContent({
       owner: repoOwner,
       repo: repoName,
       path: filePath,
     });
-    return result;
   };
 
   /**
@@ -692,7 +696,8 @@ export default class Input extends Atom {
    */
   newBlobFromBase64(result) {
     let base64String = result.data.content;
-    let binary = atob(base64String);
+    // GitHub API returns base64 with \n every 60 chars; atob() rejects whitespace
+    let binary = atob(base64String.replace(/\s/g, ''));
 
     if (this.fileType === "SVG") {
       return binary;
@@ -909,7 +914,49 @@ export default class Input extends Atom {
     // Update parent AP options with file metadata
     this.updateParentAPOptions();
 
-    this.loadAndPropagate();
+    if (file instanceof File) {
+      // File object was passed directly from a fresh upload — process it immediately
+      // without re-fetching from GitHub (avoids CDN propagation-delay 404s)
+      this.processFileFromBlob(file);
+    } else {
+      this.loadAndPropagate();
+    }
+  }
+
+  /**
+   * Process a File/Blob object directly without fetching from GitHub.
+   * Used after a fresh upload where we already have the file in memory.
+   */
+  processFileFromBlob(file) {
+    this.setProcessing();
+
+    const fileType = this.fileType;
+    const funcToCall =
+      fileType === "STL"
+        ? GlobalVariables.cad.importingSTL
+        : fileType === "SVG"
+          ? GlobalVariables.cad.importingSVG
+          : fileType === "STEP"
+            ? GlobalVariables.cad.importingSTEP
+            : null;
+
+    if (funcToCall === null) {
+      this.alertingErrorHandler()(new Error(`Unknown file type: ${fileType}`));
+      return;
+    }
+
+    funcToCall(file, this.getContext(), this.SVGwidth)
+      .then((result) => {
+        this.value = result;
+        this.setReady(result);
+        if (this.parentAP) {
+          this.parentAP.setValue(result);
+        }
+        this.updateParentAPOptions();
+      })
+      .catch((err) => {
+        this.alertingErrorHandler()(err);
+      });
   }
 
   /**
