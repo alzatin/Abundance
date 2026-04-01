@@ -69,8 +69,11 @@ export function FileImportProvider({ children }) {
           ]);
           console.log("File uploaded successfully:", result);
 
+          // Create a renamed File object so the atom can process it directly
+          // without re-fetching from GitHub (avoids propagation-delay 404s)
+          const renamedFile = new File([file], uniqueFileName, { type: file.type });
           activeAtom.updateFile(
-            { name: uniqueFileName },
+            renamedFile,
             result.data.content.sha,
           );
 
@@ -155,10 +158,18 @@ export function FileImportProvider({ children }) {
     input.click();
   };
 
+  /**
+   * Fetch a file from the current GitHub repository using authenticated Octokit
+   */
+  const fetchFileContent = async (owner, repo, path) => {
+    return authorizedUserOcto.rest.repos.getContent({ owner, repo, path });
+  };
+
   const value = {
     uploadFile,
     deleteFile,
     triggerFileUpload,
+    fetchFileContent,
   };
 
   return (
