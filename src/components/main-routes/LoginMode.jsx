@@ -1500,41 +1500,6 @@ const ShowProjects = ({
               ),
             },
             {
-              label: "Assembly Basics",
-              url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-              thumbnail: getYouTubeThumbnail(
-                "https://www.youtube.com/embed/dQw4w9WgXcQ",
-              ),
-            },
-            {
-              label: "Working with Molecules",
-              url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-              thumbnail: getYouTubeThumbnail(
-                "https://www.youtube.com/embed/dQw4w9WgXcQ",
-              ),
-            },
-            {
-              label: "GitHub Integration",
-              url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-              thumbnail: getYouTubeThumbnail(
-                "https://www.youtube.com/embed/dQw4w9WgXcQ",
-              ),
-            },
-            {
-              label: "Collaborative Design",
-              url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-              thumbnail: getYouTubeThumbnail(
-                "https://www.youtube.com/embed/dQw4w9WgXcQ",
-              ),
-            },
-            {
-              label: "Tips and Tricks",
-              url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-              thumbnail: getYouTubeThumbnail(
-                "https://www.youtube.com/embed/dQw4w9WgXcQ",
-              ),
-            },
-            {
               label: "Abundance Introduction 2025",
               url: "https://www.youtube.com/watch?v=BgxUIrnyTI4&t=198s",
               thumbnail: getYouTubeThumbnail(

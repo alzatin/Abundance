@@ -721,21 +721,19 @@ const tagsSteps: TutorialStep[] = [
     //make a shape and place a tag atom and connect the shape to it
     id: "tags-3",
     message:
-      "Try placing a tag and connecting a shape to it. You can add as many tags as you want to a part by connecting more tags to it.",
+      "Try placing a tag and connecting a shape to it. You can then connect the output of the tag atom to an assembly and your part will retain that tag ",
     overlay: "highlight",
     action: "none",
     target: "#flow-canvas",
-    messagePosition: { top: -100, left: 0 },
     messageArrow: "top",
   },
   {
     id: "tags-4",
     message:
-      "You can see all the tags in your project in the parameter panel. Try clicking on the tag you just created to see which part it's connected to.",
+      "Open the right click menu and place an extract tag atom. Connect the output of your assembly to it and in the parameters panel, select the tag you used in your part. This will extract all the parts with that tag from the assembly.",
     overlay: "highlight",
     action: "click",
-    target: "#atom-create-params-panel",
-    messagePosition: { top: -150, left: 400 },
+    target: "#flow-canvas",
     messageArrow: "left",
   },
   {
