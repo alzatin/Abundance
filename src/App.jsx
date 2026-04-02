@@ -14,6 +14,7 @@ import GlobalVariables from "./js/globalvariables.js";
 import LoginMode from "./components/main-routes/LoginMode.jsx";
 import RunMode from "./components/main-routes/RunMode.jsx";
 import CreateMode from "./components/main-routes/CreateMode.jsx";
+import PreviewCreateMode from "./components/main-routes/PreviewCreateMode.jsx";
 import UserGuidePage from "./components/main-routes/UserGuidePage.jsx";
 import cadWorker from "./worker/worker.ts?worker";
 import RenderURL from "./worker/meshWorker.ts?url&worker";
@@ -611,6 +612,14 @@ function AppContent() {
           element={
             <ProjectProvider cad={cad} loadProject={loadProject}>
               <RunMode processing={processing} setProcessing={setProcessing} />
+            </ProjectProvider>
+          }
+        />
+        <Route
+          path="/preview/:owner/:repoName"
+          element={
+            <ProjectProvider cad={cad} loadProject={loadProject}>
+              <PreviewCreateMode />
             </ProjectProvider>
           }
         />
