@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import { Link, useNavigate } from "react-router-dom";
 
-function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
+function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
   const [runModeon, setRunMode] = useState(run);
   const [showTooltip, setShowTooltip] = useState(false);
   const navigate = useNavigate();
@@ -39,8 +39,59 @@ function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
     }
     navigate("/", { state: { fromRunMode: true } });
   };
+  const handlePreviewCreateMode = (e) => {
+    e.preventDefault();
+    if (GlobalVariables.currentRepo) {
+      navigate(`/preview/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`);
+    }
+  };
+  const handleBackToRunMode = (e) => {
+    e.preventDefault();
+    if (GlobalVariables.currentRepo) {
+      navigate(`/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`);
+    }
+  };
   if (GlobalVariables.currentRepo) {
     if (!runModeon) {
+      if (isPreview) {
+        return (
+          <label title="Back to Run Mode" className="switch_run">
+            <button id="back-to-run-mode-btn" onClick={handleBackToRunMode}>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 18 18"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{
+                  transform: "rotate(-90deg)",
+                  alignSelf: "center",
+                  display: "block",
+                }}
+              >
+                <polyline
+                  points="5,7 9,13 13,7"
+                  fill="none"
+                  stroke="#c4a3d5"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <p
+                style={{
+                  fontSize: "12px",
+                  padding: "0 5px 0 5px",
+                  color: "#c4a3d5",
+                  fontFamily:
+                    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+                }}
+              >
+                Back to Run Mode
+              </p>
+            </button>
+          </label>
+        );
+      }
       return (
         <>
           <Link
@@ -138,41 +189,78 @@ function ToggleRunCreate({ run, isItOwned, setActiveAtom }) {
               </label>
             </Link>
           ) : (
-            <label title="Browse Projects" className="switch_run">
-              <button id="create-mode-btn" onClick={handleBrowseProjects}>
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 18 18"
-                  xmlns="http://www.w3.org/2000/svg"
-                  style={{
-                    transform: "rotate(90deg)",
-                    alignSelf: "center",
-                    display: "block",
-                  }}
-                >
-                  <polyline
-                    points="5,7 9,13 13,7"
-                    fill="none"
-                    stroke="#c4a3d5"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <p
-                  style={{
-                    fontSize: "12px",
-                    padding: "0 5px 0 5px",
-                    color: "#c4a3d5",
-                    fontFamily:
-                      "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-                  }}
-                >
-                  Browse Projects
-                </p>
-              </button>
-            </label>
+            <div className="switch_run_stack">
+              <label title="Preview Create Mode" className="switch_run">
+                <button id="preview-create-mode-btn" onClick={handlePreviewCreateMode}>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{
+                      transform: "rotate(90deg)",
+                      alignSelf: "center",
+                      display: "block",
+                    }}
+                  >
+                    <polyline
+                      points="5,7 9,13 13,7"
+                      fill="none"
+                      stroke="#c4a3d5"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      padding: "0 5px 0 5px",
+                      color: "#c4a3d5",
+                      fontFamily:
+                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+                    }}
+                  >
+                    Preview Create Mode
+                  </p>
+                </button>
+              </label>
+              <label title="Browse Projects" className="switch_run">
+                <button id="create-mode-btn" onClick={handleBrowseProjects}>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{
+                      transform: "rotate(90deg)",
+                      alignSelf: "center",
+                      display: "block",
+                    }}
+                  >
+                    <polyline
+                      points="5,7 9,13 13,7"
+                      fill="none"
+                      stroke="#c4a3d5"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      padding: "0 5px 0 5px",
+                      color: "#c4a3d5",
+                      fontFamily:
+                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+                    }}
+                  >
+                    Browse Projects
+                  </p>
+                </button>
+              </label>
+            </div>
           )}
         </>
       );
