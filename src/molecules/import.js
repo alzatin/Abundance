@@ -99,17 +99,21 @@ export default class Import extends Atom {
    * Get a file from github. Calback is called after the retrieved.
    */
   getAFile = async function () {
-    const octokit = new Octokit();
     const filePath = this.fileName;
-
     const repoOwner = this.repoOwner;
     const repoName = this.repoName;
-    const result = await octokit.rest.repos.getContent({
+
+    // Use authenticated fetch if available (required for private repos)
+    if (GlobalVariables.fetchFileContent) {
+      return GlobalVariables.fetchFileContent(repoOwner, repoName, filePath);
+    }
+
+    const octokit = new Octokit();
+    return octokit.rest.repos.getContent({
       owner: repoOwner,
       repo: repoName,
       path: filePath,
     });
-    return result;
   };
 
   loadAndPropagate() {
@@ -117,10 +121,27 @@ export default class Import extends Atom {
 
     if (this.fileName != null) {
       return this.getAFile()
-        .then((result) => {
+        .then(async (result) => {
           this.sha = result.data.sha;
-          this.file = this.newBlobFromBase64(result);
-          let file = this.file;
+
+          // GitHub's getContent API returns empty content for files >1MB.
+          // In that case, fetch the raw file via the authenticated git blob API.
+          let file;
+          if (!result.data.content) {
+            if (!GlobalVariables.fetchRawFileContent) {
+              throw new Error("Authenticated file fetch is not available");
+            }
+            file = await GlobalVariables.fetchRawFileContent(
+              this.repoOwner,
+              this.repoName,
+              result.data.sha,
+              this.type,
+            );
+          } else {
+            file = this.newBlobFromBase64(result);
+          }
+
+          this.file = file;
           let fileType = this.type;
 
           let funcToCall =
@@ -146,12 +167,10 @@ export default class Import extends Atom {
           return result;
         })
         .catch((err) => {
-          this.setReady(NaN);
-          this.setError(
+          throw new Error(
             `Failed to load file "${this.fileName}". Please check that the file exists in the repository and try again.`,
+            { cause: err },
           );
-          this.alertingErrorHandler(err);
-          return NaN;
         });
     }
   }
@@ -162,8 +181,8 @@ export default class Import extends Atom {
     // Your base64 string
     let base64String = result.data.content;
 
-    // Convert base64 string to binary
-    let binary = atob(base64String);
+    // GitHub API returns base64 with \n every 60 chars; atob() rejects whitespace
+    let binary = atob(base64String.replace(/\s/g, ''));
 
     if (this.type == "SVG") {
       return binary;
@@ -284,9 +303,42 @@ export default class Import extends Atom {
     this.repoOwner = GlobalVariables.currentAWSnode.owner;
     this.repoName = GlobalVariables.currentAWSnode.repoName;
 
-    this.repoOwner = GlobalVariables.currentAWSnode.owner;
-    this.repoName = GlobalVariables.currentAWSnode.repoName;
-    this.loadAndPropagate();
+    if (file instanceof File) {
+      // File object was passed directly from a fresh upload — process it immediately
+      // without re-fetching from GitHub (avoids CDN propagation-delay 404s)
+      this.setProcessing();
+      const fileType = this.type;
+      const funcToCall =
+        fileType === "STL"
+          ? GlobalVariables.cad.importingSTL
+          : fileType === "SVG"
+            ? GlobalVariables.cad.importingSVG
+            : fileType === "STEP"
+              ? GlobalVariables.cad.importingSTEP
+              : null;
+
+      if (funcToCall === null) {
+        this.setError(`Unknown file type: ${fileType}`);
+        return;
+      }
+
+      funcToCall(file, this.getContext(), this.SVGwidth)
+        .then((result) => {
+          this.setReady(result);
+          if (this.selected) {
+            this.sendToRender();
+          }
+        })
+        .catch((err) => {
+          this.setError(
+            `Failed to process imported file "${this.fileName}".`,
+          );
+          throw err;
+        });
+    } else {
+      this.loadAndPropagate();
+    }
+
     if (this.setInputChanged) {
       this.setInputChanged(Date.now());
     }

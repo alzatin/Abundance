@@ -69,8 +69,11 @@ export function FileImportProvider({ children }) {
           ]);
           console.log("File uploaded successfully:", result);
 
+          // Create a renamed File object so the atom can process it directly
+          // without re-fetching from GitHub (avoids propagation-delay 404s)
+          const renamedFile = new File([file], uniqueFileName, { type: file.type });
           activeAtom.updateFile(
-            { name: uniqueFileName },
+            renamedFile,
             result.data.content.sha,
           );
 
@@ -155,10 +158,51 @@ export function FileImportProvider({ children }) {
     input.click();
   };
 
+  /**
+   * Fetch a file from the current GitHub repository using authenticated Octokit
+   */
+  const fetchFileContent = async (owner, repo, path) => {
+    return authorizedUserOcto.rest.repos.getContent({ owner, repo, path });
+  };
+
+  /**
+   * Fetch raw file bytes by SHA using the authenticated git blob API.
+   * Used as a fallback when getContent omits `content` for files larger than 1 MB.
+   * Returns a string for SVG files and a Blob for binary files (STL/STEP).
+   * @param {string} owner - Repository owner
+   * @param {string} repo - Repository name
+   * @param {string} fileSha - The git blob SHA from the getContent response
+   * @param {string} fileType - One of "SVG", "STL", or "STEP" (case-insensitive)
+   */
+  const fetchRawFileContent = async (owner, repo, fileSha, fileType) => {
+    let blobResponse;
+    try {
+      blobResponse = await authorizedUserOcto.rest.git.getBlob({
+        owner,
+        repo,
+        file_sha: fileSha,
+      });
+    } catch (err) {
+      throw new Error(
+        `Failed to fetch blob for SHA "${fileSha}" (${fileType}): ${err.message}`,
+        { cause: err },
+      );
+    }
+    const base64Content = blobResponse.data.content || "";
+    const binary = atob(base64Content.replace(/\s/g, ""));
+    if (fileType.toUpperCase() === "SVG") {
+      return binary;
+    }
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return new Blob([bytes], { type: "application/octet-stream" });
+  };
+
   const value = {
     uploadFile,
     deleteFile,
     triggerFileUpload,
+    fetchFileContent,
+    fetchRawFileContent,
   };
 
   return (

@@ -163,13 +163,15 @@ async function generateDefaultMesh(
 ): Promise<DisplayMesh[]> {
   if (defaultMesh == undefined) {
     const s = performance.now();
-    const textId = await text("No output to display", 28, "ROBOTO", context);
-    const rObj = await util.geometryProvider?.get(textId.geometry, context);
-    const meshShape = (rObj as replicad.Drawing)
-      .sketchOnPlane("XY")
-      .extrude(0.0001);
-    defaultMesh = [
-      {
+    const textAssembly = await text("No output to display", 28, "ROBOTO", context);
+    const leaves = util.flattenAssembly(textAssembly);
+    const meshParts: DisplayMesh[] = [];
+    for (const leaf of leaves) {
+      const rObj = await util.geometryProvider?.get(leaf.geometry, context);
+      const meshShape = (rObj as replicad.Drawing)
+        .sketchOnPlane("XY")
+        .extrude(0.0001);
+      meshParts.push({
         cameraZoom: 10,
         faces: meshShape.mesh({ tolerance: 0.1, angularTolerance: 0.5 }),
         edges: meshShape.meshEdges({
@@ -177,8 +179,9 @@ async function generateDefaultMesh(
           angularTolerance: 0.5,
         }),
         color: util.defaultColor,
-      },
-    ];
+      });
+    }
+    defaultMesh = meshParts;
     console.debug("generated default mesh. took ", performance.now() - s, "ms");
   } else {
     console.debug("default mesh hit");
@@ -226,7 +229,7 @@ async function generateDisplayMesh(
 
     let finalMeshes = [];
     // Iterate through the meshArray and create final meshes with faces, edges and color to pass to display
-    for (const meshObj of meshArray) {
+    for (const [index, meshObj] of meshArray.entries()) {
       try {
         let sketchPlane = util.asReplicadPlane(geom.plane);
         if (meshObj.geometry instanceof replicad.Drawing) {
@@ -257,13 +260,26 @@ async function generateDisplayMesh(
           });
         }
       } catch (e) {
-        throw new Error("Error generating display mesh" + e);
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error(
+          `Error meshing geometry part ${index} (color: ${meshObj.color}): ${msg}`,
+          e
+        );
+        // Skip this part and continue so other parts still display
       }
+    }
+    if (finalMeshes.length === 0 && meshArray.length > 0) {
+      console.error(
+        "All geometry parts failed to mesh — falling back to default mesh"
+      );
+      return { id: id, mesh: await generateDefaultMesh(context) };
     }
     return { id: geom, mesh: finalMeshes };
   } catch (e) {
-    console.error("Error in generateDisplayMesh:", e);
-    return { id: undefined, mesh: [] };
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("Error in generateDisplayMesh:", msg, e);
+    // Fall back to default mesh while preserving the original id so callers can update UI state
+    return { id, mesh: await generateDefaultMesh(context) };
   }
 }
 
