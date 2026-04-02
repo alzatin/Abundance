@@ -82,6 +82,16 @@ export const TutorialOverlay: React.FC = () => {
       height: offset.height || size,
       borderRadius: 8,
     };
+  } else if (currentStep.target === "gitpanel") {
+    //custom input atom
+    const size = 400;
+    highlightRect = {
+      top: window.innerHeight / 2 - 10,
+      left: 10,
+      width: offset.width || size,
+      height: offset.height || size,
+      borderRadius: 8,
+    };
   } else if (currentStep.target === "other-params-panels") {
     //custom other parameters panels highlight
     const size = 100;

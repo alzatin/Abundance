@@ -49,6 +49,7 @@
 }
 .login-nav-item {
   padding: 3px;
+  overflow: visible;
 }
 .login-nav-item p {
   font-family: "Roboto", sans-serif;
@@ -58,6 +59,25 @@
 }
 .login-nav-item-clicked {
   background-color: var(--loginPopup-projectColorHover);
+}
+
+/* Pulsating animation for new user highlight */
+@keyframes pulse-highlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(190, 63, 229, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(190, 63, 229, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(190, 63, 229, 0);
+  }
+}
+
+.login-nav-item-highlight {
+  animation: pulse-highlight 2s infinite;
+  position: relative;
+  z-index: 10;
 }
 .home-section {
   float: right;
@@ -330,7 +350,9 @@
   border-radius: 4px;
   width: 80%;
   text-align: center;
-  box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
+  box-shadow:
+    0 0 20px 0 rgba(0, 0, 0, 0.2),
+    0 5px 5px 0 rgba(0, 0, 0, 0.24);
   max-height: 75vh;
   overflow-y: auto;
 }
@@ -906,7 +928,9 @@
 
 .progress-done {
   background: linear-gradient(to left, #e388de, var(--saveBar-progressColor));
-  box-shadow: 0 3px 3px -5px #e15e8a, 0 2px 5px #d42ab5;
+  box-shadow:
+    0 3px 3px -5px #e15e8a,
+    0 2px 5px #d42ab5;
   border-radius: 20px;
   color: var(--saveBar-text);
   display: flex;
@@ -918,9 +942,6 @@
   transition: 1s ease 0.3s;
 }
 
- {
-  /*Rename Bar Styling*/
-}
 /*Save bar styling*/
 .rename-bar {
   font-family: "Montserrat", sans-serif;
@@ -1049,7 +1070,9 @@
   cursor: pointer;
   width: 100%;
   font-size: 0.9em;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 .context-menu-btn:hover {
   background: #e9ddf2;
@@ -1093,7 +1116,9 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  transition:
+    background-color 0.3s ease,
+    transform 0.2s ease;
   z-index: 2;
 }
 

@@ -17,7 +17,7 @@ interface TutorialContextType {
 }
 
 const TutorialContext = createContext<TutorialContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export function useTutorial() {
@@ -42,7 +42,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
       setStepIdx(0);
       setIsActive(true);
     },
-    []
+    [],
   );
 
   const steps = tutorials[tutorialKey];
@@ -87,9 +87,18 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
     if (currentStep.action === "valueChange" && currentStep.target) {
       const el = document.querySelector(currentStep.target);
       if (el) {
-        const handler = () => next();
-        el.addEventListener("change", handler, { once: true });
-        return () => el.removeEventListener("change", handler);
+        const changeHandler = () => next();
+        const keydownHandler = (e: KeyboardEvent) => {
+          if (e.key === "Enter") {
+            next();
+          }
+        };
+        el.addEventListener("change", changeHandler, { once: true });
+        el.addEventListener("keydown", keydownHandler, { once: true });
+        return () => {
+          el.removeEventListener("change", changeHandler);
+          el.removeEventListener("keydown", keydownHandler);
+        };
       }
     }
     if (currentStep.action === "custom" && currentStep.advanceOn) {
