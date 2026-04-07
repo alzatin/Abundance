@@ -250,6 +250,14 @@ function CreateMode() {
 
   useEffect(() => {
     const myInterval = setInterval(() => {
+      // Skip auto-save when any popup is visible to avoid committing
+      // unintended changes while the user is navigating away
+      if (
+        exportPopUpRef.current ||
+        settingsPopUpRef.current ||
+        duplicateDialogRef.current
+      )
+        return;
       setSavePopUp(true);
       saveProject(setSaveState, "Auto Save");
     }, 300000);
@@ -288,8 +296,16 @@ function CreateMode() {
     // SAVE PROJECT- with Ctrl+S or Cmd+S
     if ((e.ctrlKey || e.metaKey) && e.key === "s") {
       e.preventDefault();
-      setSavePopUp(true);
-      saveProject(setSaveState, "User Save");
+      // Skip save when any popup is visible to avoid committing
+      // unintended changes while the user is navigating away
+      if (
+        !exportPopUpRef.current &&
+        !settingsPopUpRef.current &&
+        !duplicateDialogRef.current
+      ) {
+        setSavePopUp(true);
+        saveProject(setSaveState, "User Save");
+      }
     }
 
     // Prevent shortcuts if code editor or dialogs are active

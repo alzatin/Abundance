@@ -1,4 +1,6 @@
 import { ImgHTMLAttributes } from "react";
+import Molecule from "../molecules/molecule";
+import GitHubMolecule from "../molecules/githubmolecule";
 
 export interface TutorialStep {
   id: string;
@@ -26,6 +28,113 @@ export interface TutorialStep {
   svgDiagram?: React.ReactNode;
   offset?: { top?: number; left?: number; width?: number; height?: number };
 }
+
+const canvasBasics: TutorialStep[] = [
+  {
+    id: "welcome",
+    message:
+      "Welcome to Abundance! This tutorial will introduce you to the canvas.",
+    overlay: "full",
+    action: "click",
+    svgDiagram: "abundance_Svg.svg",
+  },
+  {
+    id: "project-name",
+    message:
+      "This is your project path. You can click on it to navigate to different levels of your project. Right now you only have one level, the top level, but as you create molecules you will be able to navigate into them and see your path update.",
+    overlay: "highlight",
+    action: "valueChange",
+    target: "#molecule-path-link-div",
+    messagePosition: { top: -50, left: 350 },
+    messageArrow: "left",
+  },
+  {
+    id: "logo",
+    message:
+      "You can also click on the Abundance logo to go back to search your other projects and explore other people's projects.",
+    overlay: "highlight",
+    action: "click",
+    target: ".thumnail-logo",
+    messagePosition: { top: -50, left: 350 },
+    messageArrow: "left",
+  },
+  {
+    id: "canvas-1",
+    message:
+      "This is the canvas. This is where you will build your design by placing and connecting atoms.",
+    overlay: "highlight",
+    action: "click",
+    target: "#flow-canvas",
+    messageArrow: "top",
+  },
+  {
+    id: "canvas-2",
+    message: "Right click anywhere on the canvas to open the atom menu",
+    overlay: "highlight",
+    action: "rightClick",
+    target: "#flow-canvas",
+    messageArrow: "top",
+  },
+  {
+    id: "top-menu",
+    message:
+      "This is the top menu. You will find options to save, export, or share your project here.",
+    overlay: "highlight",
+    action: "click",
+    target: "#top-menu-button",
+    messageArrow: "right",
+    messagePosition: { top: -50, left: -300 },
+  },
+  {
+    id: "render-1",
+    message:
+      "This is the render view. It shows a preview of your design. You can click and drag on the background to orbit around your design.",
+    overlay: "highlight",
+    action: "rightClick",
+    target: "#threeCanvas",
+    messageArrow: "bottom",
+    messagePosition: { top: -620, left: 200 },
+  },
+  {
+    id: "orbit-controls",
+    message:
+      "These are the orbit controls, use them to orient yourself in the 3D view.",
+    overlay: "highlight",
+    action: "click",
+    target: "orbitControls",
+    messageArrow: "right",
+    messagePosition: { top: -420, left: -500 },
+  },
+  {
+    id: "parameter-panel",
+    message:
+      "This is the parameter panel. When you select an atom, you can change its parameters here.",
+    overlay: "highlight",
+    action: "click",
+    target: "#atom-create-params-panel",
+    messagePosition: { top: -220, left: 400 },
+    messageArrow: "left",
+  },
+  {
+    id: " Other parameters menus",
+    message:
+      "These buttons will open other menus where you can adjust additional settings like toggle the grid or your project wireframe, or search for github molecules.",
+    overlay: "highlight",
+    action: "click",
+    target: "other-params-panels",
+    messagePosition: { top: -200, left: 300 },
+
+    offset: { top: 300, left: 100, width: 50, height: 200 },
+    messageArrow: "left",
+  },
+  {
+    id: "Finish",
+    message:
+      "That's the end of the tutorial. Check out our other tutorials to learn more or get started with your design!",
+    overlay: "full",
+    action: "none",
+  },
+];
 
 const gettingStartedSteps: TutorialStep[] = [
   {
@@ -256,9 +365,29 @@ const moleculesSteps: TutorialStep[] = [
     message:
       "You can rename the molecule whatever you like. Try renaming it now.",
     target: "#atom-create-params-panel",
-    messageArrow: "top",
+    messageArrow: "left",
+    messagePosition: { top: -150, left: 400 },
     overlay: "highlight",
     action: "valueChange",
+  },
+  {
+    id: "top-level",
+    message:
+      "This is your molecule path, it can help you locate yourself in your project. If you see your new molecule's name in the path, you are inside that molecule",
+    messageArrow: "top",
+    overlay: "highlight",
+    action: "click",
+    messagePosition: { top: 0, left: 150 },
+    target: "#molecule-path-link-div",
+  },
+  {
+    id: " Connect to output",
+    message:
+      "To make whatever you create inside your molecule available at a higher level, you need to connect it to the molecule's output. Create something inside your molecule and connect it to the molecule's output.",
+    target: "#flow-canvas",
+    messageArrow: "top",
+    overlay: "highlight",
+    action: "none",
   },
   {
     id: "go-up-level",
@@ -270,19 +399,18 @@ const moleculesSteps: TutorialStep[] = [
     action: "click",
   },
   {
-    id: "top-level",
+    id: "add-inputs-to-molecule",
     message:
-      "This is your molecule path, it can help you locate yourself in your project. You are at the top level of your current project. Click it at any time to navigate to the top level of your project.",
+      "Molecules can have inputs which you can create either by placing Input atoms inside the molecule or by dragging a connector from an existing Input atom and dropping it at the center of your Molecule. Give it a try",
+    target: "#flow-canvas",
     messageArrow: "top",
     overlay: "highlight",
     action: "click",
-    messagePosition: { top: 0, left: 150 },
-    target: "#molecule-path-link-div",
   },
   {
     id: "intro-github-molecule",
     message:
-      "Your entire project is a molecule too! You can choose to export molecules inside of your project to Github as independent projects or add other user's projects as molecules in your project.",
+      "Your entire project is a molecule too! You can choose to export molecules inside of your project to Github as independent repositories so they can be reused in other projects.",
     overlay: "highlight",
     action: "click",
     target: "#flow-canvas",
@@ -290,35 +418,80 @@ const moleculesSteps: TutorialStep[] = [
     messageArrow: "top",
   },
   {
+    id: "Finish",
+    message:
+      "That's the end of the tutorial. Go to the next tutorial if you want to learn how to import other people's projects into yours!",
+    overlay: "full",
+    action: "none",
+  },
+];
+
+const githubMoleculesSteps: TutorialStep[] = [
+  {
+    id: "welcome",
+    message:
+      "Welcome to Abundance! This tutorial will introduce you to how to use Github Molecules.",
+    overlay: "full",
+    action: "click",
+    svgDiagram: "abundance_Svg.svg",
+  },
+  {
     id: "place-github-molecule",
-    message: "To place a Github Molecule ",
+    message:
+      "There are several ways to place a Github Molecule in your project. You can place it from the right click atom menu, by navigating to the Import/Export submenu and clicking on the Github Molecule Icon. This will prompt you to search for an existing molecule",
     overlay: "highlight",
     action: "click",
     target: "#flow-canvas",
-    messagePosition: { top: -100, left: 0 },
     messageArrow: "top",
   },
   {
     id: "find-gh-mol",
     message:
-      "To place a Github Molecule, we need to find an existing molecule. Try typing - sphere -. It might take a few seconds. Once the list appear, hover over the list items and click on one.",
+      "In the text input field, try typing - sphere -. It might take a few seconds. Once items appear on the list, hover over them to see more information about each one and click on one. Click continue",
+    overlay: "highlight",
+    action: "click",
+    target: "gitpanel",
+    messagePosition: { top: -550, left: 50 },
+    offset: { top: 0, left: -50, width: 350, height: 300 },
+    messageArrow: "bottom",
+  },
+  {
+    id: "gh-mol-select2",
+    message:
+      "Some molecules might need to receive inputs before they render anything. Hover over the molecule to see the inputs that the molecule can receive. ",
     overlay: "highlight",
     action: "valueChange",
-    target: "#atom-create-params-panel",
-    messagePosition: { top: -100, left: 0 },
+    target: "#flow-canvas",
     messageArrow: "top",
   },
   {
-    id: "see-your-ghm",
-    message:
-      "To place a Github Molecule, we need to find an existing molecule. Try typing - sphere -. It might take a few seconds. Once the list appear, hover over the list items and click on one.",
+    id: "gh-mol-select",
+    message: "Click on your newly placed molecule",
     overlay: "highlight",
-    action: "valueChange",
-    target: "#atom-create-params-panel",
-    messagePosition: { top: -100, left: 0 },
+    action: "click",
+    target: "#flow-canvas",
+    //messagePosition: { top: -500, left: 50 },
     messageArrow: "top",
   },
+  {
+    id: "gh-mol-params",
+    message:
+      "Some Github Molecules have parameters that you can adjust. You can find these parameters in the parameter panel when you select the molecule. Try changing some of the parameters to see how it affects the molecule.",
+    overlay: "highlight",
+    action: "click",
+    target: "#atom-create-params-panel",
+    messagePosition: { top: -150, left: 400 },
+    messageArrow: "left",
+  },
+  {
+    id: "Finish",
+    message:
+      "That's the end of the tutorial. Check out our other tutorials to learn more or get started with your design!",
+    overlay: "full",
+    action: "none",
+  },
 ];
+
 const inputsEquationsValuesSteps: TutorialStep[] = [
   {
     id: "welcome",
@@ -362,16 +535,6 @@ const inputsEquationsValuesSteps: TutorialStep[] = [
     messageArrow: "left",
   },
   {
-    id: "inputs-4",
-    message:
-      "If your molecule is active, you will see all its inputs listed here. You can change the values of these inputs like you change the values of other atoms. Select an input to continue.",
-    overlay: "highlight",
-    action: "click",
-    target: "#atom-create-params-panel",
-    messagePosition: { top: -150, left: 400 },
-    messageArrow: "left",
-  },
-  {
     id: "inputs-5",
     message:
       "When an input is selected, you can change its name and type here.",
@@ -382,9 +545,39 @@ const inputsEquationsValuesSteps: TutorialStep[] = [
     messageArrow: "left",
   },
   {
+    id: "inputs-5",
+    message:
+      "On the type dropdown you'll see that there are many types of inputs. The type of an input determines what kind of data it can accept and what kind of atoms it can connect to.",
+    overlay: "highlight",
+    action: "valueChange",
+    target: "#atom-create-params-panel",
+    messagePosition: { top: -150, left: 400 },
+    messageArrow: "left",
+  },
+  {
+    id: "active-molecule",
+    message:
+      "Make the current molecule active by clicking on the background of the canvas while no atom is selected. This will allow you to see the inputs of the molecule on the left panel and interact with them.",
+    overlay: "highlight",
+    action: "click",
+    target: "#flow-canvas",
+    messagePosition: { top: -150, left: 350 },
+    messageArrow: "left",
+  },
+  {
+    id: "inputs-4",
+    message:
+      "If your molecule is active, you will see all its inputs listed here. You can change the values of these inputs like you change the values of other atoms. Select an input to continue.",
+    overlay: "highlight",
+    action: "valueChange",
+    target: "#atom-create-params-panel",
+    messagePosition: { top: -150, left: 400 },
+    messageArrow: "left",
+  },
+  {
     id: "inputs-6",
     message:
-      "You can drag a connector from the Input's output to the input of an atom that expects the same type of value. Try connecting the output of your input atom to the diameter input of a circle atom.",
+      "You can drag a connector from the Input's output to the input of an atom that expects the same type of value. Try connecting the output of your input atom to the diameter input of a circle atom. Then connect the output of the circle to the output atom and see what happens when you change the value of your input.",
     overlay: "highlight",
     action: "click",
     target: "#flow-canvas",
@@ -395,11 +588,22 @@ const inputsEquationsValuesSteps: TutorialStep[] = [
     id: "inputs-7",
     message:
       "If you change the value of your input, you will see that the circle's diameter changes too.",
-    overlay: "highlight",
+    overlay: "full",
     action: "click",
-    target: "#flow-canvas",
-    messagePosition: { top: -100, left: 0 },
-    messageArrow: "top",
+    //target: "#flow-canvas",
+    messagePosition: { top: -50, left: -50 },
+    messageArrow: "left",
+  },
+  {
+    //go to run mode and show how inputs can be changed from there
+    id: "inputs-run-mode",
+    message:
+      "Go to run mode. You will see the inputs of your molecule on the right. You can change the values of your inputs from run mode as well and share your design with others while allowing them to customize it by changing the input values.",
+    target: "#run-mode-btn",
+    overlay: "highlight",
+    messagePosition: { top: -100, left: -300 },
+    messageArrow: "right",
+    action: "click",
   },
   {
     id: "Finish",
@@ -407,10 +611,11 @@ const inputsEquationsValuesSteps: TutorialStep[] = [
       "That's the end of the tutorial. Check out our other tutorials to learn more or get started with your design!",
     overlay: "full",
     action: "none",
+    messagePosition: { top: -250, left: -50 },
   },
 ];
 
-const assemblysSteps: TutorialStep[] = [
+const assemblySteps: TutorialStep[] = [
   {
     id: "welcome",
     message:
@@ -420,14 +625,73 @@ const assemblysSteps: TutorialStep[] = [
     svgDiagram: "abundance_Svg.svg",
   },
   {
-    id: "assembly-1",
+    id: "interactions",
     message:
-      "Assembly atoms allow you to create multiple copies of a geometry and arrange them in a grid or along a path. Open the right click menu and in the Actions submenu, place an Assembly atom.",
-    overlay: "highlight",
+      "There are several ways in which you can have shapes interact. In the right click menu (Interaction submenu), you'll find different atoms like fusion, difference or intersection, as well as an atom called Assembly.  ",
+    overlay: "full",
     action: "click",
+  },
+  {
+    id: "interactions3",
+    message:
+      "The assembly atom allows multiple shapes to be combined into one unit called an assembly but unlike fusion it doesn't simply flatten it into a shape that you can't take apart, it instersects and joins the parts while keeping them as separate entities.",
+    overlay: "full",
+    action: "click",
+  },
+  {
+    id: "interactions3",
+    message:
+      "The order in which you add parts to Assembly, determines which parts cut which.  For example, if you have a bolt which needs to create a hole in a part you should add first the part and then the bolt to the assembly.",
+    overlay: "full",
+    action: "click",
+  },
+  {
+    id: "assembly-1",
+    message: "First place a rectangle and extrude it. ",
+    overlay: "highlight",
+    action: "none",
     target: "#flow-canvas",
     messagePosition: { top: -100, left: 0 },
     messageArrow: "top",
+  },
+  {
+    id: "assembly-2",
+    message:
+      "Place a circle, give it a smaller diameter and extrude it with a value larger than your rectangle extrusion",
+    overlay: "full",
+    action: "none",
+    //target: "#flow-canvas",
+    messagePosition: { top: 80, left: 0 },
+    messageArrow: "top",
+  },
+  {
+    id: "assembly-3",
+    message:
+      "Now place an Assembly atom and connect both extrusions to it. Make sure the rectangle extrusion is connected before the circle extrusion. Click on your assembly and then continue.",
+    overlay: "full",
+    action: "none",
+    //target: "#flow-canvas",
+
+    messagePosition: { top: 80, left: 0 },
+    messageArrow: "top",
+  },
+  {
+    id: "assembly-4",
+    message:
+      "Even though it looks like the shape has been fused together, the circle extrusion has cut its volume away from the rectangle. This will allow you to later retrieve them as separate parts if you need to.",
+    overlay: "highlight",
+    action: "none",
+    target: "#threeCanvas",
+    messagePosition: { top: -720, left: -300 },
+    messageArrow: "bottom",
+  },
+  {
+    id: "Finish",
+    message:
+      "That's the end of the tutorial. Check out our other tutorials to learn more or get started with your design!",
+    overlay: "full",
+    action: "none",
+    messagePosition: { top: -250, left: -50 },
   },
 ];
 
@@ -440,22 +704,55 @@ const tagsSteps: TutorialStep[] = [
     svgDiagram: "abundance_Svg.svg",
   },
   {
-    id: "assembly-1",
+    id: "tags-1",
     message:
-      "Assembly atoms allow you to create multiple copies of a geometry and arrange them in a grid or along a path. Open the right click menu and in the Actions submenu, place an Assembly atom.",
+      "In the tags submenu of the right click menu you'll find different types of tags. Tags can help you label parts to make them easier to extract later or to add important information to them. For example, you can add a tag to a part with the name of the material you want it to be made of or with instructions for assembly.",
+    overlay: "full",
+    action: "click",
+  },
+  {
+    id: "tags-2",
+    message:
+      "Tags can also be used to group parts together. For example, you can add the same tag to all the parts that you want to be made of the same material and then later extract them together by filtering by that tag.",
+    overlay: "full",
+    action: "click",
+  },
+  {
+    //make a shape and place a tag atom and connect the shape to it
+    id: "tags-3",
+    message:
+      "Try placing a tag and connecting a shape to it. You can then connect the output of the tag atom to an assembly and your part will retain that tag ",
+    overlay: "highlight",
+    action: "none",
+    target: "#flow-canvas",
+    messageArrow: "top",
+  },
+  {
+    id: "tags-4",
+    message:
+      "Open the right click menu and place an extract tag atom. Connect the output of your assembly to it and in the parameters panel, select the tag you used in your part. This will extract all the parts with that tag from the assembly.",
     overlay: "highlight",
     action: "click",
     target: "#flow-canvas",
-    messagePosition: { top: -100, left: 0 },
-    messageArrow: "top",
+    messageArrow: "left",
+  },
+  {
+    id: "Finish",
+    message:
+      "That's the end of the tutorial. Check out our other tutorials to learn more or get started with your design!",
+    overlay: "full",
+    action: "none",
+    messagePosition: { top: -250, left: -50 },
   },
 ];
 
 export const tutorials = {
+  canvasBasics: canvasBasics,
   gettingStarted: gettingStartedSteps,
-  moleculesAndGithubMolecules: moleculesSteps,
+  Molecules: moleculesSteps,
   inputsSteps: inputsEquationsValuesSteps,
-  assemblySteps: assemblysSteps,
+  assemblySteps: assemblySteps,
   tagsSteps: tagsSteps,
+  GitHubMolecule: githubMoleculesSteps,
   // Add more as needed
 };

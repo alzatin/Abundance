@@ -425,7 +425,11 @@ function TopMenu({
     return (
       <>
         <nav ref={ref} className="navbar">
-          <button className="toggle menu-nav-button" onClick={toggleNavbar}>
+          <button
+            id="top-menu-button"
+            className="toggle menu-nav-button"
+            onClick={toggleNavbar}
+          >
             {navbarOpen ? (
               <img
                 className={`thumnail-logo nav-img ${

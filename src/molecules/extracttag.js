@@ -79,7 +79,7 @@ export default class ExtractTag extends Atom {
     GlobalVariables.c.fillText(
       String.fromCharCode(0x2191, 0x0040, 0x2191),
       pixelsX - pixelsRadius / 1,
-      pixelsY + this.height / 2
+      pixelsY + this.height / 2,
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.closePath();
@@ -95,6 +95,7 @@ export default class ExtractTag extends Atom {
   }
 
   createInputParams(setInputChanged) {
+    this.setInputChanged = setInputChanged;
     let tagList = this.tagList.tags || [];
     let inputParams = {};
 
@@ -128,6 +129,7 @@ export default class ExtractTag extends Atom {
    * then wait on the user to select one before we can proceed with extraction.
    */
   onUpstreamChange() {
+    console.log(this.tag);
     // No-op if this atom is disabled
     if (this.status === Status.DISABLED) {
       return;
@@ -161,9 +163,10 @@ export default class ExtractTag extends Atom {
           GlobalVariables.cad
             .extractAllTags(geomId)
             .then((result) => {
-              // Implicit recursion since we're observing tagList with onUpstreamChange
-              this.setWaiting();
+              // Update tagList and trigger another onUpstreamChange to check if we can proceed
               this.tagList = { source: geomId, tags: result };
+              this.setInputChanged(this.tagList.tags); // Mark input as changed to trigger re-render of tag dropdown
+              this.onUpstreamChange();
             })
             .catch(this.alertingErrorHandler());
         }
@@ -178,6 +181,8 @@ export default class ExtractTag extends Atom {
               })
               .catch(this.alertingErrorHandler());
           }
+        } else {
+          this.setWaiting();
         }
       }
     } else {
