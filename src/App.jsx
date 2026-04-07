@@ -9,8 +9,8 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import { wrap } from "comlink";
 import GlobalVariables from "./js/globalvariables.js";
+import { CadWorkerManager } from "./worker/cadWorkerManager.js";
 import LoginMode from "./components/main-routes/LoginMode.jsx";
 import RunMode from "./components/main-routes/RunMode.jsx";
 import CreateMode from "./components/main-routes/CreateMode.jsx";
@@ -60,7 +60,10 @@ const pool = workerpool.pool(RenderURL, {
   },
 });
 
-const cad = wrap(new cadWorker());
+// CadWorkerManager wraps the comlink worker with a 60-second per-call timeout.
+// If the worker hangs it is automatically terminated and restarted, so the UI
+// never gets permanently stuck waiting for a computation that will never return.
+const cad = new CadWorkerManager(cadWorker, 60_000);
 
 /**
  * Inner app component that has access to all contexts
@@ -432,6 +435,13 @@ function AppContent() {
 
     GlobalVariables.cad = cad;
     GlobalVariables.pool = pool;
+
+    // Wire up worker restart notification so the user sees a warning banner
+    // if the CAD worker hangs and has to be automatically restarted.
+    cad.onRestartCallback = (message) => {
+      setErrorNotification(message, "warning");
+      setTimeout(() => setErrorNotification(null), 8000);
+    };
   }, [
     activeAtom,
     setMesh,
@@ -440,6 +450,7 @@ function AppContent() {
     setRenderProgress,
     setTopLevelWireMesh,
     setIsViewingOutputMesh,
+    setErrorNotification,
   ]);
 
   /**
@@ -494,6 +505,10 @@ function AppContent() {
 
         // Reset ID counter to avoid collisions with existing IDs
         GlobalVariables.resetIdCounter(rawFile);
+
+        // Cancel any in-flight CAD calls from the previous project so their
+        // progress log intervals don't keep running after the switch.
+        cad.cancelAll();
 
         if (rawFile.filetypeVersion == 1) {
           GlobalVariables.topLevelMolecule.deserialize(rawFile);
