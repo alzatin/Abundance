@@ -13,12 +13,16 @@ function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
     }
     setRunMode(!runModeon);
   };
-  
+
   const handleCreateToRun = (e) => {
     // Save current project state to localStorage before switching to Run mode
     // This preserves unsaved changes when toggling between Create and Run modes
     // Note: owner and repoName come from GitHub's API and are validated by GitHub
-    if (GlobalVariables.topLevelMolecule && GlobalVariables.currentAWSnode?.owner && GlobalVariables.currentAWSnode?.repoName) {
+    if (
+      GlobalVariables.topLevelMolecule &&
+      GlobalVariables.currentAWSnode?.owner &&
+      GlobalVariables.currentAWSnode?.repoName
+    ) {
       const projectState = GlobalVariables.topLevelMolecule.serialize();
       projectState.filetypeVersion = 1;
       const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
@@ -31,7 +35,11 @@ function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
     handleChange();
     // Save current project state to localStorage before navigating
     // Note: owner and repoName come from GitHub's API and are validated by GitHub
-    if (GlobalVariables.topLevelMolecule && GlobalVariables.currentAWSnode?.owner && GlobalVariables.currentAWSnode?.repoName) {
+    if (
+      GlobalVariables.topLevelMolecule &&
+      GlobalVariables.currentAWSnode?.owner &&
+      GlobalVariables.currentAWSnode?.repoName
+    ) {
       const projectState = GlobalVariables.topLevelMolecule.serialize();
       projectState.filetypeVersion = 1;
       const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
@@ -42,20 +50,24 @@ function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
   const handlePreviewCreateMode = (e) => {
     e.preventDefault();
     if (GlobalVariables.currentRepo) {
-      navigate(`/preview/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`);
+      navigate(
+        `/preview/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`,
+      );
     }
   };
   const handleBackToRunMode = (e) => {
     e.preventDefault();
     if (GlobalVariables.currentRepo) {
-      navigate(`/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`);
+      navigate(
+        `/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`,
+      );
     }
   };
   if (GlobalVariables.currentRepo) {
     if (!runModeon) {
       if (isPreview) {
         return (
-          <label title="Back to Run Mode" className="switch_run">
+          <label title="Back to Run Mode" className="back_to_runmode">
             <button id="back-to-run-mode-btn" onClick={handleBackToRunMode}>
               <svg
                 width="18"
@@ -191,7 +203,10 @@ function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
           ) : (
             <div className="switch_run_stack">
               <label title="Preview Create Mode" className="switch_run">
-                <button id="preview-create-mode-btn" onClick={handlePreviewCreateMode}>
+                <button
+                  id="preview-create-mode-btn"
+                  onClick={handlePreviewCreateMode}
+                >
                   <svg
                     width="18"
                     height="18"

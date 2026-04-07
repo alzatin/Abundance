@@ -819,16 +819,34 @@ Sidebar navigation
   position: fixed;
   width: 45px;
   height: 23px;
+  margin-bottom: 50px;
   top: 3vh;
   right: 10vh;
   z-index: 2;
+}
+
+.back_to_runmode {
+  position: fixed;
+  top: 3vh;
+  right: 5vh;
+  z-index: 2;
+}
+.back_to_runmode button {
+  width: 100px;
+  background-color: var(--abundance-color-background);
+  border-radius: 5px;
+  display: flex;
+  font-family: "JetBrains Mono, monospace";
+  font-weight: 550;
+  font-size: 15px;
+  letter-spacing: 1px;
 }
 
 /* Container for stacked run/create mode buttons (non-owner run mode) */
 .switch_run_stack {
   position: fixed;
   top: 3vh;
-  right: 10vh;
+  left: 5vh;
   z-index: 2;
   display: flex;
   flex-direction: column;
