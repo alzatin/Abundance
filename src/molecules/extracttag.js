@@ -165,7 +165,9 @@ export default class ExtractTag extends Atom {
             .then((result) => {
               // Update tagList and trigger another onUpstreamChange to check if we can proceed
               this.tagList = { source: geomId, tags: result };
-              this.setInputChanged(this.tagList.tags); // Mark input as changed to trigger re-render of tag dropdown
+              if (typeof this.setInputChanged === "function") {
+                this.setInputChanged(this.tagList.tags); // Mark input as changed to trigger re-render of tag dropdown
+              }
               this.onUpstreamChange();
             })
             .catch(this.alertingErrorHandler());
