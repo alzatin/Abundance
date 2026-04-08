@@ -315,9 +315,13 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     // eslint-disable-next-line
   }, [controls, collapsed, contentCollapsed]);
   // Sync collapsed state with contentCollapsed if initialCollapsed is true
+  // Also reset focus when the panel opens so stale focusedIndex doesn't carry over
   useEffect(() => {
     if (initialCollapsed) {
       setCollapsed(contentCollapsed);
+      if (!contentCollapsed) {
+        setFocusedIndex(-1);
+      }
     }
   }, [contentCollapsed, initialCollapsed]);
 
@@ -515,6 +519,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
         setFocusedIndex(0);
         setShouldFocus(true);
       }
+
+      setShouldFocus(true);
     }
   };
 
