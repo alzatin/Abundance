@@ -1,5 +1,6 @@
 import GlobalVariables from "../js/globalvariables.js";
 import AttachmentPoint from "./attachmentpoint.js";
+import { ReplaceConnectionCommand } from "../js/undoCommands.js";
 
 /**
  * The connector class defines how an output can be connected to an input. It appears on the screen as a black line extending from an output to an input.
@@ -92,7 +93,7 @@ export default class Connector {
       endXInPixels - 100,
       endYInPixels,
       endXInPixels,
-      endYInPixels
+      endYInPixels,
     );
     GlobalVariables.c.stroke();
     GlobalVariables.c.globalCompositeOperation = "source-over"; //switch back to drawing on top
@@ -127,11 +128,25 @@ export default class Connector {
             ) {
               // If there are existing connections, remove them first
               if (attachmentPoint.connectors.length > 0) {
-                // Save undo state before replacing connection
-                GlobalVariables.saveUndoState(
-                  "MODIFY",
-                  `Connection replacement: ${this.attachmentPoint1.parentMolecule.name} → ${attachmentPoint.parentMolecule.name}.${attachmentPoint.name}`
-                );
+                // Push undo command before replacing connection
+                if (!GlobalVariables.isUndoing) {
+                  const oldConnectors = attachmentPoint.connectors.map((c) => ({
+                    ap1ID: c.attachmentPoint1.parentMolecule.uniqueID,
+                    ap2ID: c.attachmentPoint2.parentMolecule.uniqueID,
+                    ap2Name: c.attachmentPoint2.name,
+                  }));
+                  GlobalVariables.pushUndoCommand(
+                    new ReplaceConnectionCommand(
+                      oldConnectors,
+                      {
+                        ap1ID: this.attachmentPoint1.parentMolecule.uniqueID,
+                        ap2ID: attachmentPoint.parentMolecule.uniqueID,
+                        ap2Name: attachmentPoint.name,
+                      },
+                      GlobalVariables.currentMolecule,
+                    ),
+                  );
+                }
 
                 // Make a copy of the connectors array to avoid modification during iteration
                 const connectorsToRemove = [...attachmentPoint.connectors];
@@ -140,6 +155,23 @@ export default class Connector {
                 });
               }
 
+              // Push undo for fresh connection (no prior connector to replace)
+              if (
+                attachmentPoint.connectors.length === 0 &&
+                !GlobalVariables.isUndoing
+              ) {
+                GlobalVariables.pushUndoCommand(
+                  new ReplaceConnectionCommand(
+                    [],
+                    {
+                      ap1ID: this.attachmentPoint1.parentMolecule.uniqueID,
+                      ap2ID: attachmentPoint.parentMolecule.uniqueID,
+                      ap2Name: attachmentPoint.name,
+                    },
+                    GlobalVariables.currentMolecule,
+                  ),
+                );
+              }
               //Check to make sure we haven't already attached somewhere else
               attachmentMade = true;
               this.attachmentPoint2 = attachmentPoint;
@@ -159,7 +191,7 @@ export default class Connector {
             x,
             xInPixels,
             y,
-            yInPixels
+            yInPixels,
           );
           const radiusInPixels = GlobalVariables.widthToPixels(atom.radius);
 
@@ -180,7 +212,7 @@ export default class Connector {
                 // Ensure the name is unique within the target molecule
                 inputName = GlobalVariables.incrementVariableName(
                   inputName,
-                  atom
+                  atom,
                 );
 
                 // Determine the type for the new input based on the source
@@ -217,7 +249,7 @@ export default class Connector {
                   (input) =>
                     input.name === inputName &&
                     input.type === "input" &&
-                    input.connectors.length === 0
+                    input.connectors.length === 0,
                 );
 
                 if (newInputAP) {
@@ -239,9 +271,23 @@ export default class Connector {
                       if (
                         AttachmentPoint.areTypesCompatible(
                           this.attachmentPoint1,
-                          input
+                          input,
                         )
                       ) {
+                        if (!GlobalVariables.isUndoing) {
+                          GlobalVariables.pushUndoCommand(
+                            new ReplaceConnectionCommand(
+                              [],
+                              {
+                                ap1ID:
+                                  this.attachmentPoint1.parentMolecule.uniqueID,
+                                ap2ID: atom.uniqueID,
+                                ap2Name: input.name,
+                              },
+                              GlobalVariables.currentMolecule,
+                            ),
+                          );
+                        }
                         attachmentMade = true;
                         this.attachmentPoint2 = input;
                         input.attach(this);
@@ -251,7 +297,7 @@ export default class Connector {
                     } else {
                       // Only allow replacement if there are no available geometry input APs
                       const geometryInputs = atom.inputs.filter(
-                        (ap) => ap.valueType === "geometry"
+                        (ap) => ap.valueType === "geometry",
                       );
                       const supportsMultiGeometryInputs =
                         geometryInputs.length > 1;
@@ -263,7 +309,7 @@ export default class Connector {
                         hasAvailableGeometryInput = atom.inputs.some(
                           (ap) =>
                             ap.valueType === "geometry" &&
-                            ap.connectors.length === 0
+                            ap.connectors.length === 0,
                         );
                       }
                       if (
@@ -271,14 +317,29 @@ export default class Connector {
                           !hasAvailableGeometryInput) &&
                         AttachmentPoint.areTypesCompatible(
                           this.attachmentPoint1,
-                          input
+                          input,
                         )
                       ) {
-                        // Save undo state before replacing connection
-                        GlobalVariables.saveUndoState(
-                          "MODIFY",
-                          `Connection replacement: ${this.attachmentPoint1.parentMolecule.name} → ${atom.name}.${input.name}`
-                        );
+                        // Push undo command before replacing connection
+                        if (!GlobalVariables.isUndoing) {
+                          const oldConnectors = input.connectors.map((c) => ({
+                            ap1ID: c.attachmentPoint1.parentMolecule.uniqueID,
+                            ap2ID: c.attachmentPoint2.parentMolecule.uniqueID,
+                            ap2Name: c.attachmentPoint2.name,
+                          }));
+                          GlobalVariables.pushUndoCommand(
+                            new ReplaceConnectionCommand(
+                              oldConnectors,
+                              {
+                                ap1ID:
+                                  this.attachmentPoint1.parentMolecule.uniqueID,
+                                ap2ID: atom.uniqueID,
+                                ap2Name: input.name,
+                              },
+                              GlobalVariables.currentMolecule,
+                            ),
+                          );
+                        }
 
                         // Remove existing connections
                         const connectorsToRemove = [...input.connectors];

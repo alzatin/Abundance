@@ -1,6 +1,6 @@
 import Atom from "../prototypes/atom.js";
-
 import GlobalVariables from "../js/globalvariables.js";
+import { ValueChangeCommand } from "../js/undoCommands.js";
 
 /**
  * The Code molecule type adds support for executing arbitrary jsxcad code.
@@ -139,6 +139,21 @@ return assembly;
    * Called when code editor save button is clicked. Updates the code and value of the atom.
    */
   updateCode(code) {
+    if (!GlobalVariables.isUndoing) {
+      const oldCode = this.code;
+      GlobalVariables.pushUndoCommand(
+        new ValueChangeCommand(
+          this.uniqueID,
+          this.parent,
+          "code",
+          oldCode,
+          (atom, val) => {
+            atom.updateCode(val);
+          },
+          `Change code "${this.name}"`,
+        ),
+      );
+    }
     this.code = code;
 
     this.parseInputs();
