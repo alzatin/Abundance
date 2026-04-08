@@ -10,30 +10,32 @@ import { convertToGithubName } from "../../js/projectNameUtils.js";
 // Helper function to validate project name
 const validateProjectName = (name) => {
   const errors = [];
-  
+
   if (!name || name.trim() === "") {
     errors.push("Project name cannot be empty");
     return errors;
   }
-  
+
   // Convert spaces to underscores for GitHub compatibility
   const githubName = convertToGithubName(name);
-  
+
   // Check for invalid characters (GitHub allows alphanumeric, dots, underscores, and hyphens)
   if (!/^[a-zA-Z0-9._-]+$/.test(githubName)) {
-    errors.push("Project name can only contain letters, numbers, dots, underscores, and hyphens");
+    errors.push(
+      "Project name can only contain letters, numbers, dots, underscores, and hyphens",
+    );
   }
-  
+
   // Check if starts/ends with hyphen
   if (githubName.startsWith("-") || githubName.endsWith("-")) {
     errors.push("Project name cannot start or end with a hyphen");
   }
-  
+
   // Check length
   if (githubName.length > 100) {
     errors.push("Project name must be 100 characters or less");
   }
-  
+
   return errors;
 };
 
@@ -41,46 +43,46 @@ const validateProjectName = (name) => {
 const validateTopics = (topics) => {
   const errors = [];
   const sanitized = [];
-  
+
   topics.forEach((topic) => {
     const topicValue = topic.value || topic;
-    
+
     // Convert to lowercase (GitHub requirement)
     const lowerTopic = topicValue.toLowerCase();
-    
+
     // Check for spaces
     if (lowerTopic.includes(" ")) {
       errors.push(`Tag "${topicValue}" contains spaces (they will be removed)`);
     }
-    
+
     // Remove spaces and special characters, keep only letters, numbers, and hyphens
     const cleaned = lowerTopic.replace(/[^a-z0-9-]/g, "");
-    
+
     // Check if starts with hyphen
     if (cleaned.startsWith("-")) {
       errors.push(`Tag "${topicValue}" cannot start with a hyphen`);
       return;
     }
-    
+
     // Check length
     if (cleaned.length > 50) {
       errors.push(`Tag "${topicValue}" is too long (max 50 characters)`);
       return;
     }
-    
+
     // Check if anything remains after cleaning
     if (cleaned.length === 0) {
       errors.push(`Tag "${topicValue}" contains only invalid characters`);
       return;
     }
-    
+
     if (cleaned !== topicValue) {
       errors.push(`Tag "${topicValue}" will be changed to "${cleaned}"`);
     }
-    
+
     sanitized.push(cleaned);
   });
-  
+
   return { errors, sanitized };
 };
 
@@ -134,7 +136,7 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
   const handleKeyDown = (e, fieldType) => {
     if (e.key === "Enter") {
       e.preventDefault(); // Prevent form submission on Enter
-      
+
       // Validate the specific field
       if (fieldType === "name") {
         validateNameField();
@@ -147,36 +149,36 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
   /* Handles form submission for create new/ export project form */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const projectName = projectRef.current.value.replace(/\//g, "");
     const projectTopicArray = projectTopicRef.current.getValue();
     const projectDescription = projectDescriptionRef.current.value;
     const projectLicense = projectLicenseRef.current.value;
     const projectUnits = projectUnitsRef.current.value;
-    
+
     // Validate project name
     const nameErrors = validateProjectName(projectName);
-    
+
     // Validate and sanitize topics
     const projectTopic = [];
     projectTopicArray.forEach((topic) => {
       projectTopic.push(topic[`value`]);
     });
     const topicValidation = validateTopics(projectTopic);
-    
+
     // Collect all validation errors
     const allErrors = [...nameErrors, ...topicValidation.errors];
-    
+
     if (allErrors.length > 0) {
       setValidationErrors(allErrors);
       // Block submission and show error dialog
       window.alert(
         "Please fix the following issues before submitting:\n\n" +
-        allErrors.join("\n")
+          allErrors.join("\n"),
       );
       return; // Do not proceed with submission
     }
-    
+
     // Clear any previous validation errors
     setValidationErrors([]);
     setPending(true);
@@ -192,26 +194,33 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
       authorizedUserOcto,
       [
         githubProjectName,
-        topicValidation.sanitized.length > 0 ? topicValidation.sanitized : projectTopic,
+        topicValidation.sanitized.length > 0
+          ? topicValidation.sanitized
+          : projectTopic,
         projectDescription,
         projectLicense,
         projectUnits,
       ],
       molecule,
       exporting,
-      setNewProjectBar
-    ).then((project) => {
-      console.log("Created project:", project);
-      setExportPopUp(false);
-      setPending(false);
-      navigate(
-        `/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`
-      );
-    }).catch((error) => {
-      console.error("Error creating project:", error);
-      setPending(false);
-      window.alert("An error occurred while creating the project. Please try again.");
-    });
+      setNewProjectBar,
+    )
+      .then((project) => {
+        console.log("Created project:", project);
+        setExportPopUp(false);
+        setPending(false);
+        navigate(
+          `/${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`,
+        );
+      })
+      .catch((error) => {
+        console.error("Error creating project:", error);
+        setPending(false);
+        window.alert(
+          error?.message ||
+            "An error occurred while creating the project. Please try again.",
+        );
+      });
   };
 
   return (
