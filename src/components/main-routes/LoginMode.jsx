@@ -1131,8 +1131,12 @@ const ShowProjects = ({
   };
 
   // Determine if user is new (no projects), triggers animation to draw attention to getting started tab
+  // Only trigger when search is empty - a search with no results should not be treated as "no projects"
   const isNewUser =
-    !isLoadingUser && myRepos && (!myRepos.repos || myRepos.repos.length === 0);
+    !isLoadingUser &&
+    !search &&
+    myRepos &&
+    (!myRepos.repos || myRepos.repos.length === 0);
 
   const navigate = useNavigate();
   const { start, isActive } = useTutorial();
