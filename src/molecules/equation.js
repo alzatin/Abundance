@@ -1,5 +1,6 @@
 import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
+import { ValueChangeCommand } from "../js/undoCommands.js";
 import { parse } from "mathjs";
 import { Status } from "../prototypes/observableEntity.js";
 
@@ -253,6 +254,21 @@ export default class Equation extends Atom {
       type: "string",
       onChange: async (value) => {
         if (this.currentEquation !== value) {
+          if (!GlobalVariables.isUndoing) {
+            const oldEquation = this.currentEquation;
+            GlobalVariables.pushUndoCommand(
+              new ValueChangeCommand(
+                this.uniqueID,
+                this.parent,
+                "currentEquation",
+                oldEquation,
+                (atom, val) => {
+                  atom.setEquation(val);
+                },
+                `Change equation "${this.name}"`,
+              ),
+            );
+          }
           this.setEquation(value);
           this.rerenderInputs();
         }

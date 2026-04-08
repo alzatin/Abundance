@@ -2,6 +2,10 @@ import Atom from "../prototypes/atom.js";
 import Connector from "../prototypes/connector.js";
 import AttachmentPoint from "../prototypes/attachmentpoint.js";
 import GlobalVariables from "../js/globalvariables.js";
+import {
+  AddAtomCommand,
+  ReplaceConnectionCommand,
+} from "../js/undoCommands.js";
 
 import { Octokit } from "octokit";
 import { BOMEntry } from "../js/BOM";
@@ -699,57 +703,23 @@ export default class Molecule extends Atom {
    * Performs undo operation with improved reliability and operation type awareness
    */
   async undo() {
-    // Check if there are any undo states available
-    if (GlobalVariables.recentMoleculeRepresentation.length === 0) {
+    if (GlobalVariables.undoCommandStack.length === 0) {
       console.log("No undo history available");
-      return; // Exit gracefully when no undo history exists
+      return null;
     }
 
+    const command = GlobalVariables.undoCommandStack.pop();
+    console.log(`Undoing: ${command.description}`);
+
     try {
-      // Save the current molecule path so we can navigate back to it after undo
-      const currentMoleculePath = this.getMoleculePath();
-
-      // Get the last saved state and operation info
-      let rawFile = JSON.parse(
-        GlobalVariables.recentMoleculeRepresentation.pop(),
-      );
-
-      // Get operation info if available
-      let operationInfo = null;
-      if (GlobalVariables.undoOperationHistory.length > 0) {
-        operationInfo = GlobalVariables.undoOperationHistory.pop();
-        console.log(
-          `Undoing ${operationInfo.type} operation: ${operationInfo.context}`,
-        );
-      }
-
-      // Make a copy of current nodes to safely delete them
-      const nodesCopy = [...GlobalVariables.topLevelMolecule.nodesOnTheScreen];
-
-      // Delete all current nodes to prepare for state restoration
-      nodesCopy.forEach((atom) => {
-        try {
-          atom.deleteNode();
-        } catch (error) {
-          console.warn("Error deleting atom during undo:", error);
-        }
-      });
-
-      // Restore the previous state if it's a valid format
-      if (rawFile && rawFile.fileTypeVersion == 1) {
-        // Reset ID counter to avoid collisions with existing IDs
-        GlobalVariables.resetIdCounter(rawFile);
-        await GlobalVariables.topLevelMolecule.deserialize(rawFile);
-        // Navigate back to the molecule where the user was working before undo
-        this.navigateToMoleculePath(currentMoleculePath);
-      } else {
-        console.warn("Invalid file format for undo operation");
-      }
+      await command.undo();
 
       // Ensure current molecule is selected
       if (GlobalVariables.currentMolecule) {
         GlobalVariables.currentMolecule.selected = true;
       }
+
+      return command;
     } catch (error) {
       console.error("Error during undo operation:", error);
       // If undo fails, we should try to maintain a consistent state
@@ -1756,9 +1726,15 @@ export default class Molecule extends Atom {
           this,
         );
       }
-      // Save undo state for user-initiated atom additions (unlock=true means user action)
-      if (unlock && this === GlobalVariables.currentMolecule) {
-        GlobalVariables.saveUndoState("ADD", `Added ${newAtomObj.atomType}`);
+      // Capture undo command for user-initiated atom additions (unlock=true means user action)
+      // Pushed after the atom object is created so we have its uniqueID
+      let addUndoAtomRef = null;
+      if (
+        unlock &&
+        this === GlobalVariables.currentMolecule &&
+        !GlobalVariables.isUndoing
+      ) {
+        addUndoAtomRef = newAtomObj; // will use uniqueID once atom is created
       }
 
       GlobalVariables.numberOfAtomsToLoad =
@@ -1819,6 +1795,13 @@ export default class Molecule extends Atom {
 
           // Add the atom to the list to display
           this.nodesOnTheScreen.push(atom);
+
+          // Push AddAtomCommand now that the atom's uniqueID is known
+          if (addUndoAtomRef !== null) {
+            GlobalVariables.pushUndoCommand(
+              new AddAtomCommand(atom.uniqueID, this, `Add ${atom.atomType}`),
+            );
+          }
 
           if (unlock) {
             const flowCanvas = document.querySelector("#flow-canvas");
@@ -1926,11 +1909,25 @@ export default class Molecule extends Atom {
             inputAttachmentPoint,
           )
         ) {
-          // Save undo state before replacing connection during project loading
-          GlobalVariables.saveUndoState(
-            "MODIFY",
-            `Connection replacement during load: ${outputAttachmentPoint.parentMolecule.name} → ${inputAttachmentPoint.parentMolecule.name}.${inputAttachmentPoint.name}`,
-          );
+          // Push undo command before replacing connection (but not during load or undo execution)
+          if (!GlobalVariables.isUndoing && !GlobalVariables.projectIsLoading) {
+            const oldConnectors = inputAttachmentPoint.connectors.map((c) => ({
+              ap1ID: c.attachmentPoint1.parentMolecule.uniqueID,
+              ap2ID: c.attachmentPoint2.parentMolecule.uniqueID,
+              ap2Name: c.attachmentPoint2.name,
+            }));
+            GlobalVariables.pushUndoCommand(
+              new ReplaceConnectionCommand(
+                oldConnectors,
+                {
+                  ap1ID: connectorObj.ap1ID,
+                  ap2ID: connectorObj.ap2ID,
+                  ap2Name: connectorObj.ap2Name,
+                },
+                this,
+              ),
+            );
+          }
 
           // Remove existing connections
           const connectorsToRemove = [...inputAttachmentPoint.connectors];
@@ -1941,6 +1938,22 @@ export default class Molecule extends Atom {
           console.warn("Cannot place connector: incompatible types");
           return;
         }
+      } else if (
+        !GlobalVariables.isUndoing &&
+        !GlobalVariables.projectIsLoading
+      ) {
+        // Fresh connection to an empty input — push undo so it can be removed
+        GlobalVariables.pushUndoCommand(
+          new ReplaceConnectionCommand(
+            [],
+            {
+              ap1ID: connectorObj.ap1ID,
+              ap2ID: connectorObj.ap2ID,
+              ap2Name: connectorObj.ap2Name,
+            },
+            this,
+          ),
+        );
       }
 
       // Ensure attachment points have correct positions during project loading

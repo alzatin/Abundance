@@ -1,5 +1,6 @@
 import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
+import { ValueChangeCommand } from "../js/undoCommands.js";
 import { Status } from "../prototypes/observableEntity.js";
 
 /**
@@ -117,7 +118,29 @@ export default class Constant extends Atom {
       label: this.name,
       disabled: false,
       onChange: (value) => {
-        let currentEquation = String(value).trim();
+        const newEquation = String(value).trim();
+        if (!GlobalVariables.isUndoing) {
+          const oldEquation = this.currentEquation;
+          GlobalVariables.pushUndoCommand(
+            new ValueChangeCommand(
+              this.uniqueID,
+              this.parent,
+              "currentEquation",
+              oldEquation,
+              (atom, val) => {
+                atom.currentEquation = val;
+                try {
+                  const result = atom.evaluateEquation(val);
+                  atom.setReady(Number.isFinite(result) ? result : NaN);
+                } catch {
+                  atom.setReady(NaN);
+                }
+              },
+              `Change constant "${this.name}"`,
+            ),
+          );
+        }
+        let currentEquation = newEquation;
         this.currentEquation = currentEquation;
         try {
           // Ensure inputs exist for variables in the equation before evaluating

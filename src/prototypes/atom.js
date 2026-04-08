@@ -1,5 +1,6 @@
 import { parse } from "mathjs";
 import GlobalVariables from "../js/globalvariables.js";
+import { ValueChangeCommand } from "../js/undoCommands.js";
 import AttachmentPoint from "./attachmentpoint";
 import { ObservableEntity, Status } from "./observableEntity.js";
 import { getPredictedAtoms } from "../js/atomPrediction.js";
@@ -1244,6 +1245,25 @@ export default class Atom extends ObservableEntity {
             disabled: hasConnector,
             onChange: (value) => {
               if (input.value !== value) {
+                if (!GlobalVariables.isUndoing && this.parent) {
+                  const oldVal = input.value;
+                  const inputName = input.name;
+                  GlobalVariables.pushUndoCommand(
+                    new ValueChangeCommand(
+                      this.uniqueID,
+                      this.parent,
+                      inputName,
+                      oldVal,
+                      (atom, val) => {
+                        const inp = atom.inputs.find(
+                          (i) => i.name === inputName,
+                        );
+                        if (inp) inp.setValue(val);
+                      },
+                      `Change ${this.name} "${input.name}"`,
+                    ),
+                  );
+                }
                 input.setValue(value);
               }
             },
@@ -1258,6 +1278,23 @@ export default class Atom extends ObservableEntity {
             step: 0.1,
             disabled: hasConnector,
             onChange: (value) => {
+              if (!GlobalVariables.isUndoing && this.parent) {
+                const oldVal = input.value ? [...input.value] : [0, 0];
+                const inputName = input.name;
+                GlobalVariables.pushUndoCommand(
+                  new ValueChangeCommand(
+                    this.uniqueID,
+                    this.parent,
+                    inputName,
+                    oldVal,
+                    (atom, val) => {
+                      const inp = atom.inputs.find((i) => i.name === inputName);
+                      if (inp) inp.setValue(val);
+                    },
+                    `Change ${this.name} "${input.name}"`,
+                  ),
+                );
+              }
               input.setValue([value[0], value[1]]);
             },
           };
@@ -1275,6 +1312,23 @@ export default class Atom extends ObservableEntity {
             step: 0.1,
             disabled: hasConnector,
             onChange: (value) => {
+              if (!GlobalVariables.isUndoing && this.parent) {
+                const oldVal = input.value ? [...input.value] : [0, 0, 0];
+                const inputName = input.name;
+                GlobalVariables.pushUndoCommand(
+                  new ValueChangeCommand(
+                    this.uniqueID,
+                    this.parent,
+                    inputName,
+                    oldVal,
+                    (atom, val) => {
+                      const inp = atom.inputs.find((i) => i.name === inputName);
+                      if (inp) inp.setValue(val);
+                    },
+                    `Change ${this.name} "${input.name}"`,
+                  ),
+                );
+              }
               input.setValue([value[0], value[1], value[2]]);
             },
           };
@@ -1286,6 +1340,23 @@ export default class Atom extends ObservableEntity {
             label: input.name,
             options: Array.isArray(input.options) ? input.options : [],
             onChange: (value) => {
+              if (!GlobalVariables.isUndoing && this.parent) {
+                const oldVal = input.value;
+                const inputName = input.name;
+                GlobalVariables.pushUndoCommand(
+                  new ValueChangeCommand(
+                    this.uniqueID,
+                    this.parent,
+                    inputName,
+                    oldVal,
+                    (atom, val) => {
+                      const inp = atom.inputs.find((i) => i.name === inputName);
+                      if (inp) inp.setValue(val);
+                    },
+                    `Change ${this.name} "${input.name}"`,
+                  ),
+                );
+              }
               input.setValue(value);
             },
           };
@@ -1303,6 +1374,25 @@ export default class Atom extends ObservableEntity {
             step: step,
             disabled: hasConnector,
             onChange: (value) => {
+              if (!GlobalVariables.isUndoing && this.parent) {
+                const oldVal = Array.isArray(input.value)
+                  ? [...input.value]
+                  : input.value;
+                const inputName = input.name;
+                GlobalVariables.pushUndoCommand(
+                  new ValueChangeCommand(
+                    this.uniqueID,
+                    this.parent,
+                    inputName,
+                    oldVal,
+                    (atom, val) => {
+                      const inp = atom.inputs.find((i) => i.name === inputName);
+                      if (inp) inp.setValue(val);
+                    },
+                    `Change ${this.name} "${input.name}"`,
+                  ),
+                );
+              }
               input.setValue(value);
             },
           };
@@ -1312,6 +1402,23 @@ export default class Atom extends ObservableEntity {
             value: input.value,
             label: input.name,
             onChange: (value) => {
+              if (!GlobalVariables.isUndoing && this.parent) {
+                const oldVal = input.value;
+                const inputName = input.name;
+                GlobalVariables.pushUndoCommand(
+                  new ValueChangeCommand(
+                    this.uniqueID,
+                    this.parent,
+                    inputName,
+                    oldVal,
+                    (atom, val) => {
+                      const inp = atom.inputs.find((i) => i.name === inputName);
+                      if (inp) inp.setValue(val);
+                    },
+                    `Change ${this.name} "${input.name}"`,
+                  ),
+                );
+              }
               input.setValue(value);
             },
           };
@@ -1330,6 +1437,41 @@ export default class Atom extends ObservableEntity {
             disabled: hasConnector,
             onChange: (value) => {
               let currentEquation = String(value).trim();
+              if (!GlobalVariables.isUndoing && this.parent) {
+                const oldEquation =
+                  input.currentEquation != null
+                    ? input.currentEquation
+                    : input.value;
+                const inputName = input.name;
+                GlobalVariables.pushUndoCommand(
+                  new ValueChangeCommand(
+                    this.uniqueID,
+                    this.parent,
+                    inputName,
+                    oldEquation,
+                    (atom, val) => {
+                      const inp = atom.inputs.find((i) => i.name === inputName);
+                      if (inp) {
+                        inp.currentEquation = val;
+                        try {
+                          atom.ensureInputsForEquation(val);
+                          if (
+                            inp._nameSubscriptionActive &&
+                            inp._nameSubscribedAtoms &&
+                            inp._nameSubscribedAtoms.size > 0
+                          )
+                            return;
+                          const result = atom.evaluateEquation(val);
+                          if (Number.isFinite(result)) inp.setValue(result);
+                        } catch {
+                          inp.setValue(NaN);
+                        }
+                      }
+                    },
+                    `Change ${this.name} "${input.name}"`,
+                  ),
+                );
+              }
               input.currentEquation = currentEquation;
               try {
                 // Ensure inputs exist for variables in the equation before evaluating

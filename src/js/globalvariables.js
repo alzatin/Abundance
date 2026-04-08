@@ -284,17 +284,18 @@ class GlobalVariables {
      */
     this.displayEdges = true;
     /**
-     * An array to keep track of recent molecule changes to allow undo to revert back recently deleted molecules.
+     * Stack of undo commands. Each entry is an instance of one of the command classes
+     * from undoCommands.js (DeleteAtomsCommand, AddAtomCommand, ReplaceConnectionCommand,
+     * ValueChangeCommand). Replaces the previous full-serialization approach.
      * @type {array}
      */
-    this.recentMoleculeRepresentation = [];
+    this.undoCommandStack = [];
 
     /**
-     * An array to track operation types for better undo handling.
-     * Each entry contains: { type: 'ADD'|'DELETE'|'MODIFY', timestamp: number, context: string }
-     * @type {array}
+     * Set to true while an undo is executing to prevent cascading undo captures.
+     * @type {boolean}
      */
-    this.undoOperationHistory = [];
+    this.isUndoing = false;
 
     /**
      * A counter for generating short, sequential unique IDs instead of long UUIDs.
@@ -588,32 +589,33 @@ class GlobalVariables {
   }
 
   /**
-   * Saves the current state for undo functionality with operation type tracking
-   * @param {string} operationType - Type of operation ('ADD', 'DELETE', 'MODIFY')
-   * @param {string} context - Additional context about the operation
+   * Pushes an undo command onto the stack.
+   * No-ops during undo execution to prevent cascading captures.
+   * Consecutive ValueChangeCommands for the same atom+field are merged so
+   * rapid typing produces only a single undo step.
+   * @param {object} command - An instance from undoCommands.js
    */
-  saveUndoState(operationType, context = "") {
-    if (!this.topLevelMolecule) {
-      return; // Can't save state if no top level molecule exists
+  pushUndoCommand(command) {
+    if (this.isUndoing) return;
+
+    // Merge consecutive value changes for the same atom+field
+    if (this.undoCommandStack.length > 0) {
+      const top = this.undoCommandStack[this.undoCommandStack.length - 1];
+      if (
+        top.fieldKey !== undefined &&
+        command.fieldKey !== undefined &&
+        top.atomUniqueID === command.atomUniqueID &&
+        top.fieldKey === command.fieldKey
+      ) {
+        // Keep oldest "before" value; discard this command
+        return;
+      }
     }
 
-    const topLevelMoleculeCopy = JSON.stringify(
-      this.topLevelMolecule.serialize(),
-      null,
-      2,
-    );
-
-    this.recentMoleculeRepresentation.push(topLevelMoleculeCopy);
-    this.undoOperationHistory.push({
-      type: operationType,
-      timestamp: Date.now(),
-      context: context,
-    });
-
-    // Keep maximum of 5 undo states
-    if (this.recentMoleculeRepresentation.length > 5) {
-      this.recentMoleculeRepresentation.shift();
-      this.undoOperationHistory.shift();
+    this.undoCommandStack.push(command);
+    // Keep maximum of 20 undo steps
+    if (this.undoCommandStack.length > 20) {
+      this.undoCommandStack.shift();
     }
   }
 
