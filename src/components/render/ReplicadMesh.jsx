@@ -44,6 +44,7 @@ export default React.memo(
       console.log(meshes);
       let meshArray = [];
       let keepOutMesh = [];
+      if (!Array.isArray(meshes)) return meshArray;
       meshes.map((m) => {
         const body = new BufferGeometry();
         const lines = new BufferGeometry();

@@ -172,6 +172,7 @@ export class CadWorkerManager {
    * Clears progress logs, timeouts, and rejects all pending promises.
    */
   cancelAll() {
+    if (this._pendingCalls.length === 0) return;
     console.log(
       `[CadWorkerManager] cancelAll — clearing ${this._pendingCalls.length} in-flight call(s)`,
     );
@@ -180,7 +181,16 @@ export class CadWorkerManager {
     pending.forEach((entry) => {
       clearInterval(entry.progressIntervalId);
       clearTimeout(entry.timeoutId);
-      entry.reject(new Error("CAD call cancelled due to project switch"));
+      // Suppress the rejection — callers are expected to add .catch() for this
+      // case. Using Promise.resolve().then() to defer so any existing .then()
+      // handlers have a chance to attach a .catch() before the rejection fires.
+      Promise.resolve().then(() =>
+        entry.reject(
+          Object.assign(new Error("CAD call cancelled due to project switch"), {
+            cancelled: true,
+          }),
+        ),
+      );
     });
   }
 

@@ -100,10 +100,10 @@ export default function GitSearchMenu({
   function placeLocalAtom(e, atomType, position) {
     GlobalVariables.currentMolecule.placeAtom(
       {
-        x: position.x
+        x: position
           ? position.x
           : GlobalVariables.pixelsToWidth(window.innerWidth * 0.75),
-        y: position.y
+        y: position
           ? position.y
           : GlobalVariables.pixelsToHeight(window.innerHeight * 0.37),
         parent: GlobalVariables.currentMolecule,

@@ -110,10 +110,15 @@ function AppContent() {
   const [size, setSize] = useState(5);
 
   useEffect(() => {
-    cad.createMesh(size).then((m) => {
-      setMesh(m);
-      setWireMesh(m);
-    });
+    cad
+      .createMesh(size)
+      .then((m) => {
+        setMesh(m);
+        setWireMesh(m);
+      })
+      .catch(() => {
+        // ignore — this call is cancelled on project switch via cancelAll()
+      });
   }, [size, setMesh, setWireMesh]);
 
   useEffect(() => {
@@ -460,8 +465,7 @@ function AppContent() {
    * @returns
    */
   const loadProject = function (project, authorizedUser) {
-    GlobalVariables.recentMoleculeRepresentation = [];
-    GlobalVariables.undoOperationHistory = [];
+    GlobalVariables.undoCommandStack = [];
     GlobalVariables.totalAtomCount = 0;
     GlobalVariables.numberOfAtomsToLoad = 0;
     GlobalVariables.startTime = new Date().getTime();

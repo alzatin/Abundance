@@ -1,6 +1,7 @@
 import Atom from "../prototypes/atom";
 import GlobalVariables from "../js/globalvariables.js";
 import { Status } from "../prototypes/observableEntity.js";
+import { ValueChangeCommand } from "../js/undoCommands.js";
 import { Octokit } from "octokit";
 
 // Default values for range type inputs
@@ -139,7 +140,10 @@ export default class Input extends Atom {
       }, this.uniqueID);
 
       // If this is a range type, propagate min/max to parentAP (restored from serialized data)
-      if (this.type === "range" && (this.min !== undefined || this.max !== undefined)) {
+      if (
+        this.type === "range" &&
+        (this.min !== undefined || this.max !== undefined)
+      ) {
         this.updateParentAPRangeOptions();
       }
     } else {
@@ -714,7 +718,7 @@ export default class Input extends Atom {
   newBlobFromBase64(result) {
     let base64String = result.data.content;
     // GitHub API returns base64 with \n every 60 chars; atob() rejects whitespace
-    let binary = atob(base64String.replace(/\s/g, ''));
+    let binary = atob(base64String.replace(/\s/g, ""));
 
     if (this.fileType === "SVG") {
       return binary;
@@ -1023,6 +1027,24 @@ export default class Input extends Atom {
           [this],
         );
         if (this.name !== sanitizedName) {
+          if (!GlobalVariables.isUndoing && this.parent) {
+            const oldName = this.name;
+            GlobalVariables.pushUndoCommand(
+              new ValueChangeCommand(
+                this.uniqueID,
+                this.parent,
+                "inputName",
+                oldName,
+                (atom, val) => {
+                  atom.name = val;
+                  if (atom.parentAP) atom.parentAP.name = val;
+                  if (typeof atom.setInputChanged === "function")
+                    atom.setInputChanged(val);
+                },
+                `Rename input "${this.name}" → "${sanitizedName}"`,
+              ),
+            );
+          }
           this.name = sanitizedName;
           this.parentAP.name = sanitizedName; // Update the attachment point name
           setInputChanged(sanitizedName);
@@ -1049,6 +1071,35 @@ export default class Input extends Atom {
       ],
       onChange: (newType) => {
         if (this.type !== newType) {
+          if (!GlobalVariables.isUndoing && this.parent) {
+            const oldState = {
+              type: this.type,
+              outputValueType: this.output.valueType,
+              parentAPValueType: this.parentAP?.valueType,
+              parentAPOptions: this.parentAP
+                ? { ...this.parentAP.options }
+                : {},
+            };
+            GlobalVariables.pushUndoCommand(
+              new ValueChangeCommand(
+                this.uniqueID,
+                this.parent,
+                "inputType",
+                oldState,
+                (atom, val) => {
+                  atom.type = val.type;
+                  if (atom.output) atom.output.valueType = val.outputValueType;
+                  if (atom.parentAP) {
+                    atom.parentAP.valueType = val.parentAPValueType;
+                    atom.parentAP.options = val.parentAPOptions;
+                  }
+                  if (typeof atom.setInputChanged === "function")
+                    atom.setInputChanged(val.type);
+                },
+                `Change input type to "${newType}"`,
+              ),
+            );
+          }
           this.type = newType;
           // Import type should output geometry
           const outputType = newType === "import" ? "geometry" : newType;
@@ -1077,6 +1128,26 @@ export default class Input extends Atom {
         label: "Array Options (comma separated)",
         disabled: false,
         onChange: (val) => {
+          if (!GlobalVariables.isUndoing && this.parent) {
+            const oldOptions = Array.isArray(this.options)
+              ? [...this.options]
+              : [];
+            GlobalVariables.pushUndoCommand(
+              new ValueChangeCommand(
+                this.uniqueID,
+                this.parent,
+                "arrayOptions",
+                oldOptions,
+                (atom, oldVal) => {
+                  atom.options = oldVal;
+                  if (atom.parentAP) atom.parentAP.options = oldVal;
+                  if (typeof atom.setInputChanged === "function")
+                    atom.setInputChanged(oldVal.join(", "));
+                },
+                `Change array options`,
+              ),
+            );
+          }
           // Split by comma and trim whitespace
           this.options = val
             .split(",")
@@ -1107,6 +1178,24 @@ export default class Input extends Atom {
         label: "Min Value",
         disabled: false,
         onChange: (val) => {
+          if (!GlobalVariables.isUndoing && this.parent) {
+            const oldMin = this.min;
+            GlobalVariables.pushUndoCommand(
+              new ValueChangeCommand(
+                this.uniqueID,
+                this.parent,
+                "rangeMin",
+                oldMin,
+                (atom, oldVal) => {
+                  atom.min = oldVal;
+                  atom.updateParentAPRangeOptions();
+                  if (typeof atom.setInputChanged === "function")
+                    atom.setInputChanged(oldVal);
+                },
+                `Change min value`,
+              ),
+            );
+          }
           this.min = val;
           this.updateParentAPRangeOptions();
           this.setInputChanged(val);
@@ -1119,6 +1208,24 @@ export default class Input extends Atom {
         label: "Max Value",
         disabled: false,
         onChange: (val) => {
+          if (!GlobalVariables.isUndoing && this.parent) {
+            const oldMax = this.max;
+            GlobalVariables.pushUndoCommand(
+              new ValueChangeCommand(
+                this.uniqueID,
+                this.parent,
+                "rangeMax",
+                oldMax,
+                (atom, oldVal) => {
+                  atom.max = oldVal;
+                  atom.updateParentAPRangeOptions();
+                  if (typeof atom.setInputChanged === "function")
+                    atom.setInputChanged(oldVal);
+                },
+                `Change max value`,
+              ),
+            );
+          }
           this.max = val;
           this.updateParentAPRangeOptions();
           this.setInputChanged(val);
@@ -1140,6 +1247,23 @@ export default class Input extends Atom {
         step: 0.1,
         disabled: false,
         onChange: (val) => {
+          if (!GlobalVariables.isUndoing && this.parent) {
+            const oldX = this.pointValue[0];
+            GlobalVariables.pushUndoCommand(
+              new ValueChangeCommand(
+                this.uniqueID,
+                this.parent,
+                "point2dX",
+                oldX,
+                (atom, oldVal) => {
+                  if (atom.pointValue) atom.pointValue[0] = oldVal;
+                  if (typeof atom.setInputChanged === "function")
+                    atom.setInputChanged(oldVal);
+                },
+                `Change X coordinate`,
+              ),
+            );
+          }
           this.pointValue[0] = val;
           this.setInputChanged(val);
         },
@@ -1152,6 +1276,23 @@ export default class Input extends Atom {
         step: 0.1,
         disabled: false,
         onChange: (val) => {
+          if (!GlobalVariables.isUndoing && this.parent) {
+            const oldY = this.pointValue[1];
+            GlobalVariables.pushUndoCommand(
+              new ValueChangeCommand(
+                this.uniqueID,
+                this.parent,
+                "point2dY",
+                oldY,
+                (atom, oldVal) => {
+                  if (atom.pointValue) atom.pointValue[1] = oldVal;
+                  if (typeof atom.setInputChanged === "function")
+                    atom.setInputChanged(oldVal);
+                },
+                `Change Y coordinate`,
+              ),
+            );
+          }
           this.pointValue[1] = val;
           this.setInputChanged(val);
         },
@@ -1172,6 +1313,23 @@ export default class Input extends Atom {
         step: 0.1,
         disabled: false,
         onChange: (val) => {
+          if (!GlobalVariables.isUndoing && this.parent) {
+            const oldX = this.pointValue[0];
+            GlobalVariables.pushUndoCommand(
+              new ValueChangeCommand(
+                this.uniqueID,
+                this.parent,
+                "point3dX",
+                oldX,
+                (atom, oldVal) => {
+                  if (atom.pointValue) atom.pointValue[0] = oldVal;
+                  if (typeof atom.setInputChanged === "function")
+                    atom.setInputChanged(oldVal);
+                },
+                `Change X coordinate`,
+              ),
+            );
+          }
           this.pointValue[0] = val;
           this.setInputChanged(val);
         },
@@ -1184,6 +1342,23 @@ export default class Input extends Atom {
         step: 0.1,
         disabled: false,
         onChange: (val) => {
+          if (!GlobalVariables.isUndoing && this.parent) {
+            const oldY = this.pointValue[1];
+            GlobalVariables.pushUndoCommand(
+              new ValueChangeCommand(
+                this.uniqueID,
+                this.parent,
+                "point3dY",
+                oldY,
+                (atom, oldVal) => {
+                  if (atom.pointValue) atom.pointValue[1] = oldVal;
+                  if (typeof atom.setInputChanged === "function")
+                    atom.setInputChanged(oldVal);
+                },
+                `Change Y coordinate`,
+              ),
+            );
+          }
           this.pointValue[1] = val;
           this.setInputChanged(val);
         },
@@ -1196,6 +1371,23 @@ export default class Input extends Atom {
         step: 0.1,
         disabled: false,
         onChange: (val) => {
+          if (!GlobalVariables.isUndoing && this.parent) {
+            const oldZ = this.pointValue[2];
+            GlobalVariables.pushUndoCommand(
+              new ValueChangeCommand(
+                this.uniqueID,
+                this.parent,
+                "point3dZ",
+                oldZ,
+                (atom, oldVal) => {
+                  if (atom.pointValue) atom.pointValue[2] = oldVal;
+                  if (typeof atom.setInputChanged === "function")
+                    atom.setInputChanged(oldVal);
+                },
+                `Change Z coordinate`,
+              ),
+            );
+          }
           this.pointValue[2] = val;
           this.setInputChanged(val);
         },
@@ -1235,6 +1427,22 @@ export default class Input extends Atom {
             label: "Width",
             step: 1,
             onChange: (value) => {
+              if (!GlobalVariables.isUndoing && this.parent) {
+                const oldWidth = this.SVGwidth;
+                GlobalVariables.pushUndoCommand(
+                  new ValueChangeCommand(
+                    this.uniqueID,
+                    this.parent,
+                    "SVGwidth",
+                    oldWidth,
+                    (atom, oldVal) => {
+                      atom.SVGwidth = oldVal;
+                      atom.loadAndPropagate();
+                    },
+                    `Change SVG width`,
+                  ),
+                );
+              }
               this.SVGwidth = value;
               this.loadAndPropagate();
             },

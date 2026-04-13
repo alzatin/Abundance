@@ -57,6 +57,11 @@ function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
   };
   const handleBackToRunMode = (e) => {
     e.preventDefault();
+    // Reset activeAtom to topLevelMolecule before navigating so RunMode's first
+    // render never sees a stale non-Molecule atom that lacks createExportMenuInputs.
+    if (setActiveAtom && GlobalVariables.topLevelMolecule) {
+      setActiveAtom(GlobalVariables.topLevelMolecule);
+    }
     if (GlobalVariables.currentRepo) {
       navigate(
         `/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`,

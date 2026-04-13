@@ -154,13 +154,34 @@ export function ProjectProvider({ children, cad, loadProject }) {
     // Post new project to AWS database
     const apiUrl =
       "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage//post-new-project";
-    await fetch(apiUrl, {
-      method: "POST",
-      body: JSON.stringify(newProjectBody),
-      headers: {
-        "Content-type": "application/json; charset=UTF-8",
-      },
-    });
+    const awsErrorMessage =
+      `Project "${currentRepoName}" was created on GitHub but could not be registered in Abundance. ` +
+      `Visit your GitHub profile to delete the failed repo and try creating the project again. If the problem persists, let us know.`;
+    try {
+      const postProjectResponse = await fetch(apiUrl, {
+        method: "POST",
+        body: JSON.stringify(newProjectBody),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      });
+      if (!postProjectResponse.ok) {
+        // HTTP error — retry once before giving up
+        const retryResponse = await fetch(apiUrl, {
+          method: "POST",
+          body: JSON.stringify(newProjectBody),
+          headers: {
+            "Content-type": "application/json; charset=UTF-8",
+          },
+        });
+        if (!retryResponse.ok) {
+          throw new Error(awsErrorMessage);
+        }
+      }
+    } catch (fetchError) {
+      // Network-level error (CORS, DNS, timeout) or re-thrown HTTP error above
+      throw new Error(awsErrorMessage);
+    }
     GlobalVariables.currentAWSnode = newProjectBody;
 
     // Add to user table

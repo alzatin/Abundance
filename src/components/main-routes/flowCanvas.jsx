@@ -2,6 +2,7 @@ import React, { memo, useEffect, useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import Molecule from "../../molecules/molecule.js";
 import { createCMenu, cmenu } from "../../js/NewMenu.js";
+import { DeleteAtomsCommand } from "../../js/undoCommands.js";
 import { useNavigate } from "react-router-dom";
 
 export default memo(function FlowCanvas({
@@ -350,8 +351,53 @@ export default memo(function FlowCanvas({
   const keyDown = async (e) => {
     if (e.key == "Backspace" || e.key == "Delete") {
       e.stopPropagation();
-      /* Save undo state before deletion */
-      GlobalVariables.saveUndoState("DELETE", "Deleted selected atoms");
+
+      // Capture selected atoms and their external connectors before deletion
+      const selectedAtoms =
+        GlobalVariables.currentMolecule.nodesOnTheScreen.filter(
+          (a) => a.selected,
+        );
+      if (selectedAtoms.length > 0) {
+        const atomSnapshots = selectedAtoms.map((a) => a.serialize());
+        const connectorSnapshots = [];
+        selectedAtoms.forEach((atom) => {
+          // Outgoing connectors to non-selected atoms
+          if (atom.output) {
+            atom.output.connectors.forEach((conn) => {
+              if (
+                !selectedAtoms.includes(conn.attachmentPoint2.parentMolecule)
+              ) {
+                connectorSnapshots.push({
+                  ap1ID: atom.uniqueID,
+                  ap2ID: conn.attachmentPoint2.parentMolecule.uniqueID,
+                  ap2Name: conn.attachmentPoint2.name,
+                });
+              }
+            });
+          }
+          // Incoming connectors from non-selected atoms
+          atom.inputs.forEach((input) => {
+            input.connectors.forEach((conn) => {
+              if (
+                !selectedAtoms.includes(conn.attachmentPoint1.parentMolecule)
+              ) {
+                connectorSnapshots.push({
+                  ap1ID: conn.attachmentPoint1.parentMolecule.uniqueID,
+                  ap2ID: atom.uniqueID,
+                  ap2Name: input.name,
+                });
+              }
+            });
+          });
+        });
+        GlobalVariables.pushUndoCommand(
+          new DeleteAtomsCommand(
+            atomSnapshots,
+            connectorSnapshots,
+            GlobalVariables.currentMolecule,
+          ),
+        );
+      }
 
       GlobalVariables.atomsSelected = [];
       //Adds items to the  array that we will use to delete
@@ -376,24 +422,12 @@ export default memo(function FlowCanvas({
       e.preventDefault();
       // Undo
       if (e.key == "z") {
-        // Get operation info before undo (it gets popped during undo)
-        const operationInfo =
-          GlobalVariables.undoOperationHistory.length > 0
-            ? GlobalVariables.undoOperationHistory[
-                GlobalVariables.undoOperationHistory.length - 1
-              ]
-            : null;
+        const hadUndoHistory = GlobalVariables.undoCommandStack.length > 0;
 
-        const hadUndoHistory =
-          GlobalVariables.recentMoleculeRepresentation.length > 0;
+        const command = await GlobalVariables.currentMolecule.undo();
 
-        await GlobalVariables.currentMolecule.undo();
-
-        // Show notification based on what was undone
-        if (hadUndoHistory && operationInfo) {
-          setUndoNotification(
-            `Undone: ${operationInfo.context || operationInfo.type}`,
-          );
+        if (command) {
+          setUndoNotification(`Undone: ${command.description}`);
         } else if (hadUndoHistory) {
           setUndoNotification("Undone: Previous action");
         } else {

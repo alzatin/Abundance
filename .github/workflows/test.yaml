@@ -27,7 +27,7 @@ jobs:
     if: github.event.action == 'closed'
     steps:
       - name: Configure AWS credentials for cleanup
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         if: env.AWS_ACCESS_KEY_ID != ''
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -100,7 +100,7 @@ jobs:
       - name: Run Tests
         run: npm test
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         if: always() && env.AWS_ACCESS_KEY_ID != ''
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -252,7 +252,7 @@ jobs:
           script: |
             const fs = require('fs');
             const { diff } = require('jest-diff');
-            
+
             // Performance comparison threshold (20% change triggers warning emoji)
             const PERF_CHANGE_WARNING_THRESHOLD = 20;
 
@@ -333,7 +333,7 @@ jobs:
               markdown += '|\n';
             });
             markdown += '\n---\n';
-            
+
             // Add GCode metrics section if any project has GCode atoms
             let hasAnyGcodeMetrics = false;
             Object.keys(prMetrics).forEach((projectName) => {
@@ -345,7 +345,7 @@ jobs:
                 hasAnyGcodeMetrics = true;
               }
             });
-            
+
             if (hasAnyGcodeMetrics) {
               markdown += '\n### 🔧 GCode Generation & Visualization Metrics\n\n';
               markdown += '| Project | GCode Atoms | Generation Time | Visualization Time | Lines | Commands |\n';
@@ -416,7 +416,7 @@ jobs:
               });
               markdown += '\n';
             }
-            
+
             console.log(withDiffs);
 
             Object.keys(withDiffs).forEach((projectName) => {
