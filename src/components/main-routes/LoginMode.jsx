@@ -1452,6 +1452,59 @@ const ShowProjects = ({
           ],
         },
         {
+          label: "Videos",
+          type: "videos",
+          value: [
+            {
+              label: "Introduction to Abundance",
+              url: "https://www.youtube.com/watch?v=k4pZ8ex20sM",
+              thumbnail: getYouTubeThumbnail(
+                "https://www.youtube.com/watch?v=k4pZ8ex20sM",
+              ),
+            },
+            {
+              label: "Abundance - TAGS/EXTRACT TAG",
+              url: "https://www.youtube.com/watch?v=AwGbaCevFKc",
+              thumbnail: getYouTubeThumbnail(
+                "https://www.youtube.com/watch?v=AwGbaCevFKc",
+              ),
+            },
+            {
+              label: "Abundance- ASSEMBLIES AND FUSIONS",
+              url: "https://www.youtube.com/watch?v=WU1Ou8ps9Bs",
+              thumbnail: getYouTubeThumbnail(
+                "https://www.youtube.com/watch?v=WU1Ou8ps9Bs",
+              ),
+            },
+            {
+              label: "Abundance - Github Molecules",
+              url: "https://www.youtube.com/watch?v=HSGGM8ijP5I",
+              thumbnail: getYouTubeThumbnail(
+                "https://www.youtube.com/watch?v=HSGGM8ijP5I",
+              ),
+            },
+            {
+              label: "Abundance - Inputs",
+              url: "https://youtu.be/exlEQ5dIfHI",
+              thumbnail: getYouTubeThumbnail("https://youtu.be/exlEQ5dIfHI"),
+            },
+            {
+              label: "Extruded Ellipse with the Code atom",
+              url: "https://www.youtube.com/watch?v=z9ti5OeI9TM",
+              thumbnail: getYouTubeThumbnail(
+                "https://www.youtube.com/watch?v=z9ti5OeI9TM",
+              ),
+            },
+            {
+              label: "Abundance - Make a custom sign with an svg",
+              url: "https://www.youtube.com/watch?v=9R-l8GRrO2c",
+              thumbnail: getYouTubeThumbnail(
+                "https://www.youtube.com/watch?v=9R-l8GRrO2c",
+              ),
+            },
+          ],
+        },
+        {
           label: "User Resources",
           value: [
             {
@@ -1482,33 +1535,6 @@ const ShowProjects = ({
                   "_blank",
                 );
               },
-            },
-          ],
-        },
-        {
-          label: "Videos",
-          type: "videos",
-          value: [
-            {
-              label: "Extruded Ellipse",
-              url: "https://www.youtube.com/watch?v=eGzLvBxRS6Q",
-              thumbnail: getYouTubeThumbnail(
-                "https://www.youtube.com/watch?v=eGzLvBxRS6Q",
-              ),
-            },
-            {
-              label: "Custom Sign Walkthrough",
-              url: "https://www.youtube.com/watch?v=q-QD7nktjtE",
-              thumbnail: getYouTubeThumbnail(
-                "https://www.youtube.com/watch?v=q-QD7nktjtE",
-              ),
-            },
-            {
-              label: "Abundance Introduction 2025",
-              url: "https://www.youtube.com/watch?v=BgxUIrnyTI4&t=198s",
-              thumbnail: getYouTubeThumbnail(
-                "https://www.youtube.com/watch?v=BgxUIrnyTI4&t=198s",
-              ),
             },
           ],
         },
