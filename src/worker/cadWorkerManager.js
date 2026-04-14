@@ -61,61 +61,97 @@ export class CadWorkerManager {
   }
 
   /**
+   * Start timeout and progress-logging timers for an entry that is now
+   * actively being processed by the worker.
+   */
+  _startTimers(entry) {
+    entry.startTime = Date.now();
+
+    // Log progress every 5 seconds so it's visible in the console.
+    entry.progressIntervalId = setInterval(() => {
+      const elapsed = Math.round((Date.now() - entry.startTime) / 1000);
+      const remaining = Math.round(
+        (this._timeoutMs - (Date.now() - entry.startTime)) / 1000,
+      );
+      console.log(
+        `[CadWorkerManager] ⏳ "${String(entry.method)}" still running — ${elapsed}s elapsed, ${remaining}s until timeout`,
+      );
+    }, 5000);
+
+    entry.timeoutId = setTimeout(() => {
+      clearInterval(entry.progressIntervalId);
+      entry.progressIntervalId = null;
+      const elapsed = Math.round((Date.now() - entry.startTime) / 1000);
+      console.log(
+        `[CadWorkerManager] ⏱ TIMEOUT fired for "${String(entry.method)}" after ${elapsed}s — restarting worker`,
+      );
+      this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
+      entry.reject(
+        new Error(
+          `CAD worker timed out on "${String(entry.method)}" after ${this._timeoutMs}ms`,
+        ),
+      );
+      this._restartWorker();
+    }, this._timeoutMs);
+  }
+
+  /**
+   * If there are queued calls waiting, start timers for the next one
+   * (which is now the actively processing call).
+   */
+  _activateNextCall() {
+    if (this._pendingCalls.length > 0) {
+      const next = this._pendingCalls[0];
+      if (next.startTime === null) {
+        this._startTimers(next);
+      }
+    }
+  }
+
+  /**
    * Dispatch a call to the live comlink proxy, racing against the timeout.
+   * The timeout and progress timers only start when this call is the one
+   * actively being processed by the worker (i.e. first in the queue).
    * @param {string|symbol} method
    * @param {unknown[]} args
    * @returns {Promise<unknown>}
    */
   _call(method, args) {
     return new Promise((resolve, reject) => {
-      const entry = { reject, timeoutId: null, progressIntervalId: null };
-      const startTime = Date.now();
+      const entry = {
+        reject,
+        timeoutId: null,
+        progressIntervalId: null,
+        method,
+        startTime: null,
+      };
 
-      // Log progress every 5 seconds so it's visible in the console.
-      entry.progressIntervalId = setInterval(() => {
-        const elapsed = Math.round((Date.now() - startTime) / 1000);
-        const remaining = Math.round(
-          (this._timeoutMs - (Date.now() - startTime)) / 1000,
-        );
-        console.log(
-          `[CadWorkerManager] ⏳ "${String(method)}" still running — ${elapsed}s elapsed, ${remaining}s until timeout`,
-        );
-      }, 5000);
+      this._pendingCalls.push(entry);
+
+      // Only start timers if this is the currently processing call
+      // (no other call ahead of it in the queue).
+      if (this._pendingCalls[0] === entry) {
+        this._startTimers(entry);
+      }
 
       const cleanup = () => {
         clearInterval(entry.progressIntervalId);
         entry.progressIntervalId = null;
+        clearTimeout(entry.timeoutId);
+        entry.timeoutId = null;
       };
-
-      const timeoutId = setTimeout(() => {
-        cleanup();
-        const elapsed = Math.round((Date.now() - startTime) / 1000);
-        console.log(
-          `[CadWorkerManager] ⏱ TIMEOUT fired for "${String(method)}" after ${elapsed}s — restarting worker`,
-        );
-        this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
-        reject(
-          new Error(
-            `CAD worker timed out on "${String(method)}" after ${this._timeoutMs}ms`,
-          ),
-        );
-        this._restartWorker();
-      }, this._timeoutMs);
-
-      entry.timeoutId = timeoutId;
-      this._pendingCalls.push(entry);
 
       this._proxy[method](...args).then(
         (result) => {
           cleanup();
-          clearTimeout(timeoutId);
           this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
+          this._activateNextCall();
           resolve(result);
         },
         (err) => {
           cleanup();
-          clearTimeout(timeoutId);
           this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
+          this._activateNextCall();
           reject(err);
         },
       );
