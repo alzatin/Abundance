@@ -665,7 +665,7 @@ class GeometryProvider {
       for (const leaf of flattenAssembly(result)) {
         const geom = this.getFromWarmCache(leaf.geometry, context);
         if (geom) {
-          putShape(
+          await putShape(
             context.project,
             leaf.geometry,
             this.getFromWarmCache(leaf.geometry, context)!.serialize()
