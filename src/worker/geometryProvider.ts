@@ -86,7 +86,6 @@ class GeometryProvider {
         const evictIds = Array.from(allIds).filter(
           (id) => !this.projectLRU.includes(id)
         );
-        console.warn("Evicting projects from cache:", evictIds);
         for (const evictId of evictIds) {
           await deleteProjectCache(evictId);
         }
@@ -111,7 +110,6 @@ class GeometryProvider {
       const geometry = await builder();
       if (geometry === undefined) {
         // builder produced nonexistent geometry (eg: intersect of nonoverlapping shapes)
-        console.warn("Geometry builder returned undefined for id:", id);
         return undefined;
       }
       if (context.operationId) {
@@ -207,9 +205,6 @@ class GeometryProvider {
 
   async clearCache(context: RequestContext): Promise<boolean> {
     const caches = await getAllProjectIds();
-    if (!caches.has(context.project)) {
-      console.warn("Delete called on non-existent cache ", context.project);
-    }
     this.projectLRU = this.projectLRU.filter((id) => id !== context.project);
     await deleteProjectCache(context.project);
     return true;

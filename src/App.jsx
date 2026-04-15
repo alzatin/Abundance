@@ -280,7 +280,6 @@ function AppContent() {
         JSON.stringify(targetMesh.current) ===
           JSON.stringify(inFlightMeshRender.current?.value)
       ) {
-        console.debug("no-op because target is already in-flight or undefined");
         return;
       }
       console.debug("starting mesh generation for: ", targetMesh.current);

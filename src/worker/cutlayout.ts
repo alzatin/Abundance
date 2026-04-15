@@ -496,7 +496,7 @@ async function applyLayout(
         }
       }
       if (transform == undefined) {
-        console.warn("didn't find transform for id: " + leafID);
+        console.warn("did not find transform for id: " + leafID);
         return leaf;
       }
       // apply rotation first. All rotations are around (0, 0, 0)
