@@ -340,9 +340,6 @@ export default class Equation extends Atom {
     // _subscribeToInputs() won't trigger onUpstreamChange(). Force a recompute so
     // the result reflects the new equation rather than the previous stale value.
     if (this.isEnabled() && this.inputs.length === 0) {
-      console.log(
-        "forcing recompute of Equation atom with molecule-level inputs",
-      );
       this.onUpstreamChange();
     }
   }

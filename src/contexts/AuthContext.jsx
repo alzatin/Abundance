@@ -48,7 +48,6 @@ export function AuthProvider({ children }) {
       const maxAge = TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000; // Convert days to milliseconds
 
       if (tokenAge > maxAge) {
-        console.log("Token expired, clearing storage");
         clearStoredToken();
         return null;
       }

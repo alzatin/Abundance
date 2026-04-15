@@ -129,7 +129,6 @@ export default class ExtractTag extends Atom {
    * then wait on the user to select one before we can proceed with extraction.
    */
   onUpstreamChange() {
-    console.log(this.tag);
     // No-op if this atom is disabled
     if (this.status === Status.DISABLED) {
       return;

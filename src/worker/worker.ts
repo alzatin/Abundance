@@ -446,12 +446,6 @@ async function visualizeGcodeIncrementalInternal(
   context: RequestContext,
   forceVisualization: boolean = false,
 ): Promise<AbundanceObject> {
-  console.log(`\n=== Gcode Visualization with Individual Wire Assembly ===`);
-  console.log(`Processing ${gcodeArray.length} gcode parts`);
-  if (forceVisualization) {
-    console.log(`⚠️ Force mode enabled - skipping edge count validation`);
-  }
-
   // Create a generation-specific ID by hashing all gcode content together
   // This ensures each unique set of gcode strings gets a unique generation ID
   const generationId = util.hashString(gcodeArray.join("|||"));
@@ -476,17 +470,10 @@ async function visualizeGcodeIncrementalInternal(
   }
   const parseTime = performance.now() - parseStart;
 
-  // Log edge statistics to help diagnose issues
+  // Check edge statistics to help diagnose issues
   if (edgesPerPart.length > 0) {
     const edgeCounts = edgesPerPart.map((edges) => edges.length);
-    const totalEdges = edgeCounts.reduce((sum, count) => sum + count, 0);
-    const minEdges = Math.min(...edgeCounts);
     const maxEdges = Math.max(...edgeCounts);
-    const avgEdges = (totalEdges / edgeCounts.length).toFixed(1);
-
-    console.log(`\nEdge Statistics:`);
-    console.log(`  Total edges: ${totalEdges}`);
-    console.log(`  Average edges per part: ${avgEdges}`);
 
     // Check if any part has unusually high edge count (unless forced)
     if (!forceVisualization && maxEdges > 35000) {
@@ -504,7 +491,6 @@ async function visualizeGcodeIncrementalInternal(
   }
 
   // Assemble individual wires and create separate AbundanceObjects
-  console.log(`\n--- Assembling Individual Wires ---`);
   const assemblyStart = performance.now();
   const wireObjects: AbundanceObject[] = [];
 
@@ -529,11 +515,6 @@ async function visualizeGcodeIncrementalInternal(
 
       const wireStart = performance.now();
       const wire = util.replicad.assembleWire(edges);
-      const wireTime = performance.now() - wireStart;
-
-      console.log(
-        `  ✓ Wire assembly completed for part ${i + 1} in ${wireTime.toFixed(2)}ms`,
-      );
 
       // Create a unique hash for this part using generation ID, index, and gcode content
       // The generationId (hash of all gcode) ensures different generations don't collide in cache
@@ -554,34 +535,11 @@ async function visualizeGcodeIncrementalInternal(
         bom: [],
         dimension: "3D",
       });
-
-      // Log progress: first 5 parts, every 10th part, and last part
-      const shouldLog =
-        i < 5 || i === edgesPerPart.length - 1 || (i + 1) % 10 === 0;
-      if (shouldLog) {
-        console.log(
-          `  Part ${i + 1}/${edgesPerPart.length}: ${edgeCount} edges in ${wireTime.toFixed(2)}ms`,
-        );
-      }
     } catch (err) {
       console.error(`  ❌ Failed to create wire for part ${i + 1}:`, err);
       // Continue processing other parts even if one fails
     }
   }
-
-  const assemblyTime = performance.now() - assemblyStart;
-  console.log(
-    `\nAssembled ${wireObjects.length} wires in ${assemblyTime.toFixed(2)}ms`,
-  );
-  if (wireObjects.length > 0) {
-    console.log(
-      `Average per wire: ${(assemblyTime / wireObjects.length).toFixed(2)}ms`,
-    );
-  }
-
-  const overallTime = performance.now() - overallStart;
-  console.log(`Total visualization time: ${overallTime.toFixed(2)}ms`);
-  console.log(`===========================================\n`);
 
   // Return as an assembly if multiple wires, single wire if only one
   if (wireObjects.length === 0) {
@@ -593,7 +551,6 @@ async function visualizeGcodeIncrementalInternal(
   }
 
   // Use the assembly function to combine multiple wires
-  console.log(`Creating assembly of ${wireObjects.length} wire objects...`);
   return await assembly(wireObjects, context);
 }
 
@@ -608,9 +565,6 @@ async function visualizeGcodeAsAssembly(
   gcodeArray: string[],
   context: RequestContext,
 ): Promise<AbundanceObject> {
-  console.log(`\n=== Experimental: Gcode as Assembly ===`);
-  const startTime = performance.now();
-
   // Create a generation-specific ID by hashing all gcode content together
   const generationId = util.hashString(gcodeArray.join("|||"));
 
@@ -626,11 +580,6 @@ async function visualizeGcodeAsAssembly(
       try {
         const edgeCount = partEdges.length;
 
-        // Log edge information before wire assembly
-        console.log(
-          `\n  [Wire Assembly] Experimental part ${i + 1}/${gcodeArray.length}: ${edgeCount} edges`,
-        );
-
         // Check for potential issues
         if (edgeCount > 10000) {
           console.warn(
@@ -638,13 +587,7 @@ async function visualizeGcodeAsAssembly(
           );
         }
 
-        const wireStart = performance.now();
         const wire = util.replicad.assembleWire(partEdges);
-        const wireTime = performance.now() - wireStart;
-
-        console.log(
-          `  ✓ Experimental wire assembly completed for part ${i + 1} in ${wireTime.toFixed(2)}ms`,
-        );
 
         // Use generationId to prevent cache collisions between different generations
         const partHash = util.hashString(
@@ -669,13 +612,6 @@ async function visualizeGcodeAsAssembly(
       }
     }
   }
-
-  const assemblyTime = performance.now() - startTime;
-  console.log(
-    `Created assembly with ${wireObjects.length} wires in ${assemblyTime.toFixed(2)}ms`,
-  );
-  console.log(`Note: This approach may show wires as disconnected in the UI`);
-  console.log(`=======================================\n`);
 
   // Return as an assembly
   if (wireObjects.length === 0) {

@@ -47,7 +47,7 @@ class GeometryProvider {
 
     if (logMetrics) {
       setInterval(() => {
-        console.log(this.cacheHitMetrics);
+        console.warn(this.cacheHitMetrics);
       }, 10000);
     }
   }
@@ -86,11 +86,10 @@ class GeometryProvider {
         const evictIds = Array.from(allIds).filter(
           (id) => !this.projectLRU.includes(id)
         );
-        console.log("Evicting projects from cache:", evictIds);
+        console.warn("Evicting projects from cache:", evictIds);
         for (const evictId of evictIds) {
           await deleteProjectCache(evictId);
         }
-        console.log("Eviction complete");
       });
     }
   }
@@ -112,7 +111,7 @@ class GeometryProvider {
       const geometry = await builder();
       if (geometry === undefined) {
         // builder produced nonexistent geometry (eg: intersect of nonoverlapping shapes)
-        console.log("Geometry builder returned undefined for id:", id);
+        console.warn("Geometry builder returned undefined for id:", id);
         return undefined;
       }
       if (context.operationId) {
@@ -207,10 +206,9 @@ class GeometryProvider {
   }
 
   async clearCache(context: RequestContext): Promise<boolean> {
-    console.log("Clearing cache for project", context.project);
     const caches = await getAllProjectIds();
     if (!caches.has(context.project)) {
-      console.log("Delete called on non-existent cache ", context.project);
+      console.warn("Delete called on non-existent cache ", context.project);
     }
     this.projectLRU = this.projectLRU.filter((id) => id !== context.project);
     await deleteProjectCache(context.project);
@@ -267,9 +265,6 @@ class GeometryProvider {
     );
 
     const assemblyTime = performance.now() - s - geomTime;
-    console.log(
-      `swept cache. removed ${deletedGeoms} geoms in ${geomTime}ms and ${deletedAssemblies} assemblies in ${assemblyTime}ms`
-    );
     return deletedGeoms + deletedAssemblies;
   }
 
@@ -634,7 +629,6 @@ class GeometryProvider {
 
     const preparedResult = await this.getAssembly(batchId, context);
     if (preparedResult) {
-      console.log("Using pre-computed batch operation result: " + batchId);
       return preparedResult;
     }
 
@@ -653,11 +647,6 @@ class GeometryProvider {
     if (!context.operationId) {
       throw new Error("provided context is not a batch operation " + context);
     }
-    console.log(
-      `End of batch ${context.operationId}. hit/miss: ${
-        this.batchMetrics
-      }. size: ${this.warmCache.get(context.operationId)?.size}`
-    );
     this.batchMetrics = [0, 0];
     if (!context.persistIntermediates) {
       // For all intermediate shapes which are part of the result assembly,
@@ -694,9 +683,6 @@ class GeometryProvider {
     if (!context.operationId) {
       throw new Error("provided context is not a batch operation " + context);
     }
-    console.log(
-      `Cleanup batch ${context.operationId} without caching (primitive result)`
-    );
     this.batchMetrics = [0, 0];
     this.warmCache.delete(context.operationId);
   }

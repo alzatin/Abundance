@@ -65,9 +65,6 @@ export default memo(function FlowCanvas({
       ) {
         const previousProjectKey = `unsavedProject_${GlobalVariables.loadedRepo.owner.login}_${GlobalVariables.loadedRepo.name}`;
         localStorage.removeItem(previousProjectKey);
-        console.log(
-          `Cleared localStorage for previous project: ${previousProjectKey}`,
-        );
       }
 
       GlobalVariables.resetView();
@@ -136,7 +133,6 @@ export default memo(function FlowCanvas({
         const unsavedProject = localStorage.getItem(projectKey);
 
         if (unsavedProject) {
-          console.log("Loading unsaved project state from localStorage...");
           try {
             let rawFile = JSON.parse(unsavedProject);
             // Reset ID counter to avoid collisions with existing IDs
@@ -190,7 +186,6 @@ export default memo(function FlowCanvas({
       const unsavedProject = localStorage.getItem(projectKey);
 
       if (unsavedProject) {
-        console.log(`Cleaning up localStorage for same project: ${projectKey}`);
         // Remove the entry to prevent accumulation
         // We don't restore it because the project is already loaded in memory
         localStorage.removeItem(projectKey);
@@ -624,7 +619,6 @@ export default memo(function FlowCanvas({
             false, // Don't pass to undo
           )
           .then((newAtom) => {
-            console.log("Box atom placed:", newAtom);
           });
       }
 

@@ -73,18 +73,14 @@ export class CadWorkerManager {
       const remaining = Math.round(
         (this._timeoutMs - (Date.now() - entry.startTime)) / 1000,
       );
-      console.log(
-        `[CadWorkerManager] ⏳ "${String(entry.method)}" still running — ${elapsed}s elapsed, ${remaining}s until timeout`,
-      );
+
     }, 5000);
 
     entry.timeoutId = setTimeout(() => {
       clearInterval(entry.progressIntervalId);
       entry.progressIntervalId = null;
       const elapsed = Math.round((Date.now() - entry.startTime) / 1000);
-      console.log(
-        `[CadWorkerManager] ⏱ TIMEOUT fired for "${String(entry.method)}" after ${elapsed}s — restarting worker`,
-      );
+
       this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
       entry.reject(
         new Error(
@@ -164,9 +160,6 @@ export class CadWorkerManager {
    */
   cancelAll() {
     if (this._pendingCalls.length === 0) return;
-    console.log(
-      `[CadWorkerManager] cancelAll — clearing ${this._pendingCalls.length} in-flight call(s)`,
-    );
     const pending = [...this._pendingCalls];
     this._pendingCalls = [];
     pending.forEach((entry) => {
@@ -213,7 +206,6 @@ export class CadWorkerManager {
     });
 
     this._createWorker();
-    console.log("[CadWorkerManager] Fresh CAD worker is ready.");
 
     if (this.onRestartCallback) {
       this.onRestartCallback(

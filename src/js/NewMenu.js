@@ -48,9 +48,6 @@ const createCMenu = (targetElement, setExpandedMenu, shortCuts) => {
               //need to prevent mousedown from running to keep gitsearch open
               cmenu.hide();
               e.preventDefault();
-              console.log(
-                "Touch event detected, preventing further click behavior."
-              );
             }
           } else {
             e.target.id = title.name;

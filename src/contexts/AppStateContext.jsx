@@ -17,7 +17,6 @@ export function AppStateProvider({ children }) {
   const [notificationType, setNotificationType] = useState("error");
 
   const setNotification = (message, type = "error") => {
-    console.log("Setting notification:", { message, type });
     setErrorNotificationRaw(message);
     setNotificationType(message ? type : "error");
   };

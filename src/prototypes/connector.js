@@ -266,7 +266,6 @@ export default class Connector {
                   if (input.type === "input") {
                     // Check if this input is available or can be replaced
                     if (input.connectors.length === 0) {
-                      console.log("Input has no existing connections", input);
                       // Available input - check compatibility
                       if (
                         AttachmentPoint.areTypesCompatible(

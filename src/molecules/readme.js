@@ -187,7 +187,7 @@ export default class Readme extends Atom {
           }
         })
         .catch((error) => {
-          console.log(error);
+          console.error(error);
           return {
             readMeText: readMeTextWithValue,
             svg: null,

@@ -132,7 +132,6 @@ function runMode({ processing, setProcessing }) {
       invisibleDiv.id = "molecule-fully-render-puppeteer";
       invisibleDiv.style.display = "none";
       document.body.appendChild(invisibleDiv);
-      console.log("Puppeteer element created for run mode");
     }
   };
   useEffect(() => {
@@ -144,7 +143,6 @@ function runMode({ processing, setProcessing }) {
     if (cameraZoom == 1 && mesh[0]) {
       // Double the zoom ratio for run mode to make projects appear larger
       const runModeZoom = mesh[0].cameraZoom * 2;
-      console.log("Setting camera zoom for run mode", runModeZoom);
       setCameraZoom(runModeZoom);
     }
   }, [mesh]);
@@ -173,7 +171,6 @@ function runMode({ processing, setProcessing }) {
 
   useEffect(() => {
     const handler = (e) => {
-      console.log("Received user notification event:", e.detail);
       setErrorNotification(e.detail.message, e.detail.type || "error");
       setTimeout(() => setErrorNotification(null, "error"), 5000);
     };
@@ -197,7 +194,7 @@ function runMode({ processing, setProcessing }) {
       GlobalVariables.currentAWSnode.repoName ==
         GlobalVariables.loadedRepo?.name
     ) {
-      console.log("Same project, loading from memory");
+      console.warn("Same project, loading from memory");
       GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
       GlobalVariables.currentMolecule.selected = true;
       setActiveAtom(GlobalVariables.currentMolecule);
@@ -239,7 +236,6 @@ function runMode({ processing, setProcessing }) {
       GlobalVariables.currentAWSnode &&
       GlobalVariables.currentAWSnode.owner == GlobalVariables.currentUser
     ) {
-      console.log("You own this project");
       setOwned(true);
     }
   }, []);
@@ -249,7 +245,6 @@ function runMode({ processing, setProcessing }) {
   /* Since we can't see current atoms processing status, set outdated mesh when active atom goes to waiting */
   if (activeAtom) {
     activeAtom.onStatusChange = (status) => {
-      console.log("Active atom status changed to:", status);
       if (status === "waiting") {
         setOutdatedMesh(true);
         setProcessing(true);

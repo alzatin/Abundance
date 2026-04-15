@@ -274,7 +274,6 @@ export default class Gcode extends Atom {
     GlobalVariables.cad
       .findFlatFaces(scaledMesh, this.getContext())
       .then((flatFaces) => {
-        console.log("Flat faces found:", flatFaces);
       });
     // Export the geometry to STL and generate G-code
     GlobalVariables.cad
@@ -556,7 +555,6 @@ export default class Gcode extends Atom {
     this.progress = 1.0;
     this.setInputChanged?.();
 
-    console.log("G-code generation complete.");
     return this.gcodeString ?? null;
   }
 

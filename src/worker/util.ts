@@ -19,9 +19,6 @@ const init = async (logMetrics: boolean = true): Promise<boolean> => {
   loaded = true;
   replicad.setOC(OC);
   geometryProvider = new GeometryProvider(logMetrics);
-  console.log(
-    `Replicad and OpenCascade initialized. took ${performance.now() - start} ms`,
-  );
 
   return true;
 };

@@ -49,7 +49,6 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({
   const currentStep = isActive && stepIdx >= 0 ? steps[stepIdx] : null;
 
   const next = useCallback(() => {
-    console.log("Next step");
     if (stepIdx < steps.length - 1) {
       setStepIdx((idx) => idx + 1);
     } else {

@@ -69,7 +69,6 @@ export default class Label extends Atom {
       },
     ]);
 
-    console.log("Label constructor values:", values);
     this.setValues(values);
   }
 
