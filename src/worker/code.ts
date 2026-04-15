@@ -383,7 +383,7 @@ async function executeCode(
 
     // Execute with timeout protection
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Code execution timed out")), 60000); // 1 min timeout
+      setTimeout(() => reject(new Error("Code execution timed out")), 120000); // 2 min timeout
     });
 
     // Get the raw result from user code

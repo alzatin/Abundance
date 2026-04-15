@@ -9,7 +9,7 @@ import { wrap } from "comlink";
  * spawned so subsequent calls continue to work.
  *
  * Usage:
- *   const cad = new CadWorkerManager(cadWorker, 60_000);
+ *   const cad = new CadWorkerManager(cadWorker, 120_000);
  *   // Then use `cad` exactly like the plain comlink proxy.
  *
  * The constructor returns a JS Proxy, so every property access that is not an
@@ -19,9 +19,9 @@ import { wrap } from "comlink";
 export class CadWorkerManager {
   /**
    * @param {new () => Worker} WorkerFactory - The Vite `?worker` import (a constructor).
-   * @param {number} [timeoutMs=60000] - Milliseconds before a call is considered hung.
+   * @param {number} [timeoutMs=120000] - Milliseconds before a call is considered hung.
    */
-  constructor(WorkerFactory, timeoutMs = 60_000) {
+  constructor(WorkerFactory, timeoutMs = 120_000) {
     this._WorkerFactory = WorkerFactory;
     this._timeoutMs = timeoutMs;
     /** @type {Array<{reject: Function, timeoutId: ReturnType<typeof setTimeout>}>} */
