@@ -61,7 +61,6 @@ const Callback = ({ setRedirectType }) => {
         GlobalVariables.currentUser = data.login;
         if (GlobalVariables.currentUser) {
           setAuthorizedUserOcto(authorizedUser);
-          console.log("OAuth scopes for token:", scopes);
           setUserScopes(scopes);
           return authorizedUser;
         }

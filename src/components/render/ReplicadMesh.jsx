@@ -40,8 +40,6 @@ export default React.memo(
     }, [mesh, invalidate]);
 
     function makeMeshes(meshes) {
-      console.log("Making meshes for rendering...");
-      console.log(meshes);
       let meshArray = [];
       let keepOutMesh = [];
       if (!Array.isArray(meshes)) return meshArray;
@@ -181,7 +179,6 @@ export default React.memo(
       camera.lookAt(0, 0, 0);
       camera.updateMatrixWorld();
       camera.updateProjectionMatrix();
-      console.log("Camera :", camera);
 
       // 3. Project all points to 2D and collect for bounding box
       let allProjectedPoints = [];

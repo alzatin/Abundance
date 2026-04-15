@@ -772,7 +772,6 @@ function CreateMode() {
     } else {
       // Fallback: navigate to run mode if repo is still missing
       const { owner, repoName } = useParams();
-      console.log("No repository found, redirecting to run mode");
       navigate(`/run/${owner}/${repoName}`);
     }
   } else {

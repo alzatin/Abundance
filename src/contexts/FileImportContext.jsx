@@ -67,7 +67,6 @@ export function FileImportProvider({ children }) {
               ),
             ),
           ]);
-          console.log("File uploaded successfully:", result);
 
           // Create a renamed File object so the atom can process it directly
           // without re-fetching from GitHub (avoids propagation-delay 404s)
@@ -119,7 +118,6 @@ export function FileImportProvider({ children }) {
         message: "Deleted node",
         sha: fileSha,
       });
-      console.log("File deleted successfully:", fileName);
 
       // Show delete notification
       setNotification(`File deleted: ${fileName}`, "warning");

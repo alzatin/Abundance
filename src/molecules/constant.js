@@ -153,7 +153,7 @@ export default class Constant extends Atom {
             }
           }
         } catch (err) {
-          console.log("setting value to NaN");
+          console.warn("setting value to NaN");
           this.setReady(NaN);
           this.alertingErrorHandler()(err);
         }

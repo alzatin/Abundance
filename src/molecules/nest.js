@@ -333,7 +333,6 @@ export default class Nest extends Atom {
 
             var estimate = (diff/percent)*(1-percent)
             //document.getElementById('info_time').innerHTML = millisecondsToStr(estimate)+' remaining'
-            console.log(estimate)        
             if(diff > 5000 && percent < 0.3 && percent > 0.02 && estimate > 10000){
                 document.getElementById('info_time').setAttribute('style','display: block')
             }

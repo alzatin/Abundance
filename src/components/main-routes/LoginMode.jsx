@@ -1043,7 +1043,6 @@ const ShowProjects = ({
     )
       .then((res) => res.json())
       .then((data) => {
-        console.log("Fetched all repos:", data);
         return data;
       });
   };
@@ -1186,7 +1185,6 @@ const ShowProjects = ({
       setLoadingTutorialBar(10);
       const data = await response.json();
       if (data && data.item) {
-        console.log("Fetched AWS project data:", data.item);
         GlobalVariables.currentAWSnode = data.item;
         return data.item;
       }

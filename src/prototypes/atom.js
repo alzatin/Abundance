@@ -427,8 +427,8 @@ export default class Atom extends ObservableEntity {
    */
   alertingErrorHandler() {
     return (err) => {
-      console.log("Error in atom: " + this.name);
-      console.log(err);
+      console.error("Error in atom: " + this.name);
+      console.error(err);
       this.setError(err || "Unknown error occurred");
     };
   }
@@ -1496,7 +1496,7 @@ export default class Atom extends ObservableEntity {
                   }
                 }
               } catch (err) {
-                console.log("setting value to NaN");
+                console.warn("setting value to NaN");
                 input.setValue(NaN);
                 this.alertingErrorHandler()(err);
               }

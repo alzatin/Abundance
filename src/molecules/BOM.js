@@ -151,7 +151,6 @@ export default class AddBOMTag extends Atom {
               if (numberNeededInput) {
                 numberNeededInput.setValue(value);
               }
-              console.log("Number Needed changed to:", value);
               this.onUpstreamChange(); //Recompute to update the tag in the 3D view
             },
           };

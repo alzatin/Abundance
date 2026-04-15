@@ -290,7 +290,6 @@ export default class CutLayout extends Atom {
       this.displaySheet(placements.length);
       const priorStatus = this.status;
       this.setProcessing();
-      console.log("Displaying layout with " + placements.length + " sheets."); // replaced the trace since it was too long
       return GlobalVariables.cad
         .displayLayout(
           inputGeom,
@@ -500,7 +499,6 @@ export default class CutLayout extends Atom {
       })
       .finally(() => {
         this.cancelationHandle = undefined;
-        console.log(this.progress);
         this.computing = false;
         // Clear the worker cache to free up memory
         if (GlobalVariables.cad.clearRotateCache) {

@@ -174,7 +174,6 @@ function RunNavigation({
       },
     }).then((response) => {
       //reenable button after api call so user can unlike
-      console.log("added to liked projects");
       document.getElementById("Star-button").disabled = false;
       setRedirectType(null);
     });
@@ -202,7 +201,6 @@ function RunNavigation({
         "Content-type": "application/json; charset=UTF-8",
       },
     }).then((response) => {
-      console.log("unliked");
       document.getElementById("Star-button").disabled = false;
     });
   };
