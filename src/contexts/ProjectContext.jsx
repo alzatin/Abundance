@@ -1266,6 +1266,19 @@ export function ProjectProvider({ children, cad, loadProject }) {
         GlobalVariables.currentAWSnode.repoName +
         "\n\n![](/project.svg)\n\n";
 
+      // Automatically document top-level molecule inputs
+      if (
+        GlobalVariables.topLevelMolecule &&
+        GlobalVariables.topLevelMolecule.inputs &&
+        GlobalVariables.topLevelMolecule.inputs.length > 0
+      ) {
+        readmeContent += "## Inputs\n\n";
+        GlobalVariables.topLevelMolecule.inputs.forEach((input) => {
+          readmeContent += `- **${input.name}** (${input.valueType})\n`;
+        });
+        readmeContent += "\n\n";
+      }
+
       setSaveProgress(20);
 
       let readMeRequestResult =
