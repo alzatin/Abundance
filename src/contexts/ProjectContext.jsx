@@ -1290,6 +1290,19 @@ export function ProjectProvider({ children, cad, loadProject }) {
       });
       readmeContent = readmeContent + "\n\n" + readMeTextArray + "\n\n";
 
+      // Automatically document top-level molecule inputs
+      if (
+        GlobalVariables.topLevelMolecule &&
+        GlobalVariables.topLevelMolecule.inputs &&
+        GlobalVariables.topLevelMolecule.inputs.length > 0
+      ) {
+        readmeContent += "## Inputs\n\n";
+        GlobalVariables.topLevelMolecule.inputs.forEach((input) => {
+          readmeContent += `- **${input.name}** (${input.valueType})\n`;
+        });
+        readmeContent += "\n\n";
+      }
+
       /** File object to commit */
       let filesObject = {
         "BillOfMaterials.md": bomContent,
