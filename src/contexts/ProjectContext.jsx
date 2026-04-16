@@ -1278,18 +1278,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
         GlobalVariables.currentAWSnode.repoName +
         "\n\n![](/project.svg)\n\n";
 
-      setSaveProgress(20);
-
-      let readMeRequestResult =
-        await GlobalVariables.topLevelMolecule.requestReadme();
-
-      let readMeTextArray = " ";
-
-      readMeRequestResult.forEach((item) => {
-        readMeTextArray = readMeTextArray.concat(item["readMeText"]) + "\n\n";
-      });
-      readmeContent = readmeContent + "\n\n" + readMeTextArray + "\n\n";
-
       // Automatically document top-level molecule inputs
       if (
         GlobalVariables.topLevelMolecule &&
@@ -1302,6 +1290,18 @@ export function ProjectProvider({ children, cad, loadProject }) {
         });
         readmeContent += "\n\n";
       }
+
+      setSaveProgress(20);
+
+      let readMeRequestResult =
+        await GlobalVariables.topLevelMolecule.requestReadme();
+
+      let readMeTextArray = " ";
+
+      readMeRequestResult.forEach((item) => {
+        readMeTextArray = readMeTextArray.concat(item["readMeText"]) + "\n\n";
+      });
+      readmeContent = readmeContent + "\n\n" + readMeTextArray + "\n\n";
 
       /** File object to commit */
       let filesObject = {
