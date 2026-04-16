@@ -52,7 +52,7 @@ function clearRotateCache() {
     // No explicit disposal needed here as the objects will be garbage collected
   });
   rotateMemoCache.clear();
-  console.log("Rotate memoization cache cleared");
+
 }
 
 async function layout(
@@ -224,7 +224,7 @@ async function rotateForLayout(
       if (warning) {
         warningCallback(warning);
       }
-      console.log("rotateForLayout cache hit for: " + cacheID);
+
       return Promise.resolve([rotatedAssembly, shapesForLayout]);
     } catch (error) {
       console.warn(
@@ -233,7 +233,7 @@ async function rotateForLayout(
       );
     }
   }
-  console.log("rotateForLayout cache miss for: " + cacheID);
+
   // Cache miss - only clear old entries to prevent memory leaks from long sessions
   // but retain recent ones for chained cutlayouts
   if (rotateMemoCache.size > 10) {
@@ -496,7 +496,7 @@ async function applyLayout(
         }
       }
       if (transform == undefined) {
-        console.log("didn't find transform for id: " + leafID);
+        console.warn("did not find transform for id: " + leafID);
         return leaf;
       }
       // apply rotation first. All rotations are around (0, 0, 0)
@@ -684,15 +684,11 @@ function computePositions(
       );
 
       setTimeout(() => {
-        console.log("Timeout reached. Stopping packer.");
         if (bestPlacement != undefined) {
           packer.stop(true);
           resolve(bestPlacement as Placement[][]);
         } else {
           packer.stop(true);
-          console.log(
-            "No placement found within time limit, using default placement at origin.",
-          );
           const defaultPlacements = createDefaultPlacements(
             shapesForLayout,
             layoutConfig,
@@ -701,9 +697,8 @@ function computePositions(
         }
       }, runtimeMs);
     } catch (err) {
-      console.log("error in nesting engine: " + err);
+      console.error("error in nesting engine: " + err);
       packer.stop(true);
-      console.log("Using default placement at origin due to packing error.");
       const defaultPlacements = createDefaultPlacements(
         shapesForLayout,
         layoutConfig,
@@ -731,14 +726,6 @@ function translatePlacements(
   const placements = new PlacementWrapper(
     placement.placementsData,
     placement.angleSplit,
-  );
-  console.log(
-    "new placement received. " +
-      placedParts +
-      " of " +
-      partCount +
-      " parts placed. score: " +
-      placement.placementsData[0],
   );
 
   const result = [];

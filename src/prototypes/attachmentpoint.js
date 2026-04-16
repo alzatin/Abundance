@@ -695,9 +695,6 @@ export default class AttachmentPoint extends ObservableEntity {
   unsubscribeAllNameSubscriptions() {
     if (this._nameSubscribedAtoms && this._nameSubscribedAtoms.size > 0) {
       for (const [varName, inputAtom] of this._nameSubscribedAtoms) {
-        console.log(
-          `[Name Subscription] AP "${this.name}" (${this.uniqueID}) unsubscribing from Input atom "${inputAtom.name}"`
-        );
         inputAtom.unsubscribe(this.uniqueID);
       }
       this._nameSubscribedAtoms.clear();
@@ -801,10 +798,6 @@ export default class AttachmentPoint extends ObservableEntity {
    */
   onSubscribedInputChanged(inputAtom) {
     const state = inputAtom.getState();
-    console.log(
-      `[Name Subscription] AP "${this.name}" (${this.uniqueID}) received update from Input atom "${inputAtom.name}": status=${state.status}, value=${state.value}`
-    );
-
     // Re-evaluate the equation
     this.reevaluateEquation();
   }
@@ -828,9 +821,6 @@ export default class AttachmentPoint extends ObservableEntity {
         ][0];
         if (this._currentEquation === varName) {
           const state = inputAtom.getState();
-          console.log(
-            `[Name Subscription] AP "${this.name}" (${this.uniqueID}) using Input atom "${inputAtom.name}" value directly: ${state.value}`
-          );
           if (
             state.status === Status.READY &&
             state.value !== null &&
@@ -884,10 +874,6 @@ export default class AttachmentPoint extends ObservableEntity {
         )();
       }
 
-      console.log(
-        `[Name Subscription] AP "${this.name}" (${this.uniqueID}) re-evaluated equation "${this._currentEquation}" (substituted: "${substitutedEquation}") = ${result}`
-      );
-
       if (Number.isFinite(result)) {
         this.setStatus(Status.READY, result);
       } else {
@@ -895,9 +881,6 @@ export default class AttachmentPoint extends ObservableEntity {
         this.setStatus(Status.WAITING);
       }
     } catch (err) {
-      console.log(
-        `[Name Subscription] AP "${this.name}" (${this.uniqueID}) equation evaluation failed: ${err.message}`
-      );
       this.setStatus(Status.WAITING);
     }
   }
@@ -912,9 +895,6 @@ export default class AttachmentPoint extends ObservableEntity {
   subscribeToInputByName(name) {
     const inputAtom = this.findInputAtomByName(name);
     if (!inputAtom) {
-      console.log(
-        `[Name Subscription] AP "${this.name}" (${this.uniqueID}) could not find Input atom named "${name}"`
-      );
       return false;
     }
 

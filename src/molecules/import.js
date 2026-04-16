@@ -259,7 +259,6 @@ export default class Import extends Atom {
       if (file) {
         // If a previous file exists, delete it
         if (this.fileName && this.sha) {
-          console.log(`Deleting previous file: ${this.fileName}`);
           const deleteInput = document.getElementById("fileDeleteInput");
           deleteInput.value = this.fileName;
           deleteInput.setAttribute("data-sha", this.sha);

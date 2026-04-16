@@ -232,7 +232,6 @@ export default class Molecule extends Atom {
       if (gcodeAtom.gcodeString) {
         gcodeAtom.sendToRender();
         gcodeAtom._isPreviewing = true;
-        console.log(`Previewing Gcode: ${gcodeAtom.partName}`);
       } else {
         console.error("G-code is not available yet");
         // Dispatch a custom event
@@ -249,7 +248,6 @@ export default class Molecule extends Atom {
         typeof GlobalVariables.topLevelMolecule.sendToRender === "function"
       ) {
         GlobalVariables.topLevelMolecule.sendToRender();
-        console.log("Previewing top-level molecule");
       }
       gcodeAtom._isPreviewing = false;
     }
@@ -301,7 +299,6 @@ export default class Molecule extends Atom {
             detail: { message: "Preparing your export.", type: "notice" },
           });
           window.dispatchEvent(event);
-          console.log(`Exporting: ${partName}`);
         },
       };
     });
@@ -314,7 +311,6 @@ export default class Molecule extends Atom {
         disabled: atom.status !== Status.READY,
         onClick: () => {
           atom.downloadGcode();
-          console.log(`Downloading Gcode: ${atom.partName}`);
         },
         eyeIcon: () => this.previewHandler(atom),
       };
@@ -334,7 +330,6 @@ export default class Molecule extends Atom {
         repo: parentRepo,
       })
       .then((response) => {
-        console.log("Fetched repository data:", response.data);
         octokit.rest.repos
           .getContent({
             owner: response.data.owner.login,
@@ -543,7 +538,6 @@ export default class Molecule extends Atom {
 
     // Early return if no atoms selected
     if (selectedAtoms.length === 0) {
-      console.log("No atoms selected for copy with connectors");
       return;
     }
 
@@ -572,10 +566,6 @@ export default class Molecule extends Atom {
     // Store in a structured format that includes both atoms and connectors
     GlobalVariables.atomsSelected = selectedAtoms;
     GlobalVariables.connectorsSelected = internalConnectors;
-
-    console.log(
-      `Copied ${selectedAtoms.length} atoms with ${internalConnectors.length} internal connectors`,
-    );
   }
 
   /**
@@ -588,7 +578,6 @@ export default class Molecule extends Atom {
       (atom) => atom.selected,
     ).length;
     if (selectedCount === 0) {
-      console.log("No atoms selected to move. Please select atoms first.");
       return null;
     }
 
@@ -599,12 +588,6 @@ export default class Molecule extends Atom {
       console.warn("No atoms could be copied for moving");
       return null;
     }
-
-    console.log(
-      `Moving ${selectedCount} selected atoms to ${
-        targetMolecule ? "existing" : "new"
-      } molecule`,
-    );
 
     // Create new molecule if not provided
     if (!targetMolecule) {
@@ -726,12 +709,10 @@ export default class Molecule extends Atom {
    */
   async undo() {
     if (GlobalVariables.undoCommandStack.length === 0) {
-      console.log("No undo history available");
       return null;
     }
 
     const command = GlobalVariables.undoCommandStack.pop();
-    console.log(`Undoing: ${command.description}`);
 
     try {
       await command.undo();
@@ -1054,8 +1035,6 @@ export default class Molecule extends Atom {
         GlobalVariables.topLevelMolecule.getContext(),
       )
       .then((m) => {
-        console.log("Generated project thumbnail");
-        console.log(m);
         return m;
       });
   }

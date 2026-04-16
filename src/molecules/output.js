@@ -71,7 +71,6 @@ export default class Output extends Atom {
   }
 
   compute(argsDict) {
-    console.log("Output compute called with argsDict:", argsDict);
     return Promise.resolve(argsDict["number or geometry"]);
   }
 
@@ -134,14 +133,7 @@ export default class Output extends Atom {
     }
 
     if (this.uniqueID == "9f9d507e-3da6-4de1-885d-f2896e8c8ff2") {
-      console.log(
-        "update received. initial status: " +
-          this.status +
-          " input status: " +
-          this.inputs[0].status,
-      );
       const result = super.onUpstreamChange();
-      console.log("update received. final status: " + this.status);
       return result;
     } else {
       return super.onUpstreamChange();

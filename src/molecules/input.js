@@ -485,9 +485,7 @@ export default class Input extends Atom {
   }
 
   deleteFile() {
-    console.log("delete file called from input atom");
     // Delete uploaded file if this is an import type
-    console.log(this.type, this.fileName);
     if (this.type === "import" && this.fileName) {
       if (GlobalVariables.deleteFile) {
         GlobalVariables.deleteFile(this.fileName, this.fileSha);

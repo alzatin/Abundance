@@ -883,7 +883,6 @@ export default function ReactCodeEditorWithApiAutocomplete(props: {
         {
           key: "Mod-s",
           run: () => {
-            console.log("mod-s pressed, attempting to save code");
             if (activeAtom != null) {
               activeAtom.saveCode();
             }

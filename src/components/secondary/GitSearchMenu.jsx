@@ -269,7 +269,6 @@ export default function GitSearchMenu({
         handleMouseOut();
       },
       onItemKeyDown: (item, idx, event) => {
-        console.log("Key Down Event on Item:", item, "Event:", event);
         if (event.key === "Enter") {
           handleItemClick(event, item);
         }
@@ -324,7 +323,6 @@ export default function GitSearchMenu({
       activeAtom.atomType == "GitHubMolecule" &&
       !activeAtom.parentRepo
     ) {
-      console.log(activeAtom);
       position = { x: activeAtom.x, y: activeAtom.y };
       activeAtom.deleteNode();
     }

@@ -60,8 +60,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
       GlobalVariables.topLevelMolecule = molecule;
       GlobalVariables.topLevelMolecule.enableAllChildren();
       molecule.topLevel = true;
-      console.log("Exporting existing molecule as new project");
-      console.log(GlobalVariables.topLevelMolecule);
     } else {
       GlobalVariables.topLevelMolecule = new Molecule({
         x: 0,
@@ -287,8 +285,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
     }
 
     // All done, return the AWS node
-    console.log("Project created");
-    console.log(GlobalVariables.currentAWSnode);
     return GlobalVariables.currentAWSnode;
   };
 
@@ -477,8 +473,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
     setDuplicateProjectBar,
     customName = null,
   ) => {
-    console.log("Duplicating project...");
-    console.log(GlobalVariables.currentRepo);
     try {
       const currentRepo = GlobalVariables.currentRepo;
       const currentUser = GlobalVariables.currentUser;
@@ -651,7 +645,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
           sha: projectFileResponse.data.sha,
         });
 
-        console.log(
+        console.warn(
           `Updated top molecule name to ${newRepo.data.name} in duplicated project`,
         );
       } catch (err) {
@@ -764,7 +758,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
           "Content-type": "application/json; charset=UTF-8",
         },
       });
-      console.log("Posted new project to AWS:", postProjectResponse);
       if (postProjectResponse.status !== 200) {
         throw new Error(
           `Failed to post new project: ${postProjectResponse.status}`,
@@ -814,7 +807,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
     newName,
     setRenameProgress = () => {},
   ) => {
-    console.log(GlobalVariables.currentRepo);
     try {
       const currentUser = GlobalVariables.currentUser;
       const currentAWSnode = GlobalVariables.currentAWSnode;
@@ -889,8 +881,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
       setRenameProgress(70);
 
       const updatedAWSnode = await updateKeysResponse.json();
-      console.log("AWS update response:", updatedAWSnode);
-
       setRenameProgress(75);
 
       // Update the top molecule name in project.abundance to match the new project name
@@ -950,7 +940,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
       }
 
       setRenameProgress(90);
-      console.log("Project renamed successfully");
       // Update global variables
       GlobalVariables.currentAWSnode = updatedAWSnode;
       GlobalVariables.currentRepoName = newName;
@@ -1047,7 +1036,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
       })
       .then(async (m) => {
         const svg = await meshRef.current.buildThumbnail(m.mesh);
-        console.log("Project thumbnail generated.");
         return svg;
       });
   };
@@ -1375,7 +1363,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
         GlobalVariables.cad
           .sweepCache(geomIds, GlobalVariables.topLevelMolecule.getContext())
           .then((count) => {
-            console.log("cache sweep complete, removed: " + count + " items");
           })
           .catch((error) => {
             console.error("Error during cache sweep:", error);

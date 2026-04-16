@@ -133,7 +133,7 @@ function AppContent() {
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
-    console.log("Processing state changed:", processing);
+
     setRenderProgress(0);
     setRenderBarVisible(true);
     setRenderStage("Waiting for input"); // Start with Building stage by default
@@ -280,7 +280,6 @@ function AppContent() {
         JSON.stringify(targetMesh.current) ===
           JSON.stringify(inFlightMeshRender.current?.value)
       ) {
-        console.log("no-op because target is already in-flight or undefined");
         return;
       }
       console.debug("starting mesh generation for: ", targetMesh.current);

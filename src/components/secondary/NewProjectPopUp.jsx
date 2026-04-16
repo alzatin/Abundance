@@ -206,7 +206,6 @@ const NewProjectPopUp = ({ setExportPopUp, authorizedUserOcto, exporting }) => {
       setNewProjectBar,
     )
       .then((project) => {
-        console.log("Created project:", project);
         setExportPopUp(false);
         setPending(false);
         navigate(
