@@ -255,11 +255,37 @@ export default class Molecule extends Atom {
     }
   }
 
+  /**
+   * Recursively search for all Export and GCode atoms in this molecule and nested molecules
+   * @param {array} exportList - Accumulator for export atoms
+   * @param {array} gcodeList - Accumulator for gcode atoms
+   */
+  collectExportAndGcodeAtoms(exportList = [], gcodeList = []) {
+    // Search current level
+    this.nodesOnTheScreen.forEach((node) => {
+      if (node.atomType === "Export") {
+        exportList.push(node);
+      } else if (node.atomType === "Gcode") {
+        gcodeList.push(node);
+      }
+      // Recursively search inside nested molecules
+      else if (
+        node.atomType === "Molecule" &&
+        node.collectExportAndGcodeAtoms
+      ) {
+        node.collectExportAndGcodeAtoms(exportList, gcodeList);
+      }
+    });
+
+    return { exportList, gcodeList };
+  }
+
   createExportMenuInputs(setInputChanged) {
     let exportParams = {};
-    const exportAtoms = this.nodesOnTheScreen.filter(
-      (node) => node.atomType === "Export",
-    );
+
+    // Recursively find all Export and GCode atoms
+    const { exportList: exportAtoms, gcodeList: gcodeAtoms } =
+      this.collectExportAndGcodeAtoms();
 
     exportAtoms.forEach((atom) => {
       const partName =
@@ -280,10 +306,6 @@ export default class Molecule extends Atom {
       };
     });
 
-    const gcodeAtoms = this.nodesOnTheScreen.filter(
-      (node) => node.atomType === "Gcode",
-    );
-    // this is wrong and only a placeholder for kiri forum questions
     gcodeAtoms.forEach((atom) => {
       atom.setInputChanged = setInputChanged;
       exportParams[`Download Gcode – ${atom.partName}`] = {
