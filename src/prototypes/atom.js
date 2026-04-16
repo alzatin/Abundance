@@ -1017,16 +1017,63 @@ export default class Atom extends ObservableEntity {
 
       const line = new Line2(lineGeo, lineMat);
       line.name = `label-line-${idx}`;
+      geometries.push(line);
+
+      // --- End Segments (perpendicular marks at line endpoints) ---
+      if (serializedLabel.endSegments) {
+        // Start end segment
+        const startSegGeo = new LineGeometry();
+        startSegGeo.setPositions([
+          ...serializedLabel.endSegments.start.p1,
+          ...serializedLabel.endSegments.start.p2,
+        ]);
+        const startSegMat = new LineMaterial({
+          color: serializedLabel.endSegments.color,
+          linewidth: serializedLabel.endSegments.linewidth,
+          resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
+        });
+        const startSegLine = new Line2(startSegGeo, startSegMat);
+        startSegLine.name = `label-end-segment-start-${idx}`;
+        geometries.push(startSegLine);
+
+        // End end segment
+        const endSegGeo = new LineGeometry();
+        endSegGeo.setPositions([
+          ...serializedLabel.endSegments.end.p1,
+          ...serializedLabel.endSegments.end.p2,
+        ]);
+        const endSegMat = new LineMaterial({
+          color: serializedLabel.endSegments.color,
+          linewidth: serializedLabel.endSegments.linewidth,
+          resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
+        });
+        const endSegLine = new Line2(endSegGeo, endSegMat);
+        endSegLine.name = `label-end-segment-end-${idx}`;
+        geometries.push(endSegLine);
+      }
 
       // --- Text Sprite ---
       const canvas = document.createElement("canvas");
-      canvas.width = 256;
-      canvas.height = 128;
+      canvas.width = 512;
+      canvas.height = 256;
       const ctx = canvas.getContext("2d");
       ctx.font = serializedLabel.text.font;
-      ctx.fillStyle = serializedLabel.text.color;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
+
+      // Draw stroke (text color)
+      ctx.strokeStyle = serializedLabel.text.color;
+      ctx.lineWidth = 15;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.strokeText(
+        serializedLabel.text.value,
+        canvas.width / 2,
+        canvas.height / 2,
+      );
+
+      // Draw fill (white)
+      ctx.fillStyle = "white";
       ctx.fillText(
         serializedLabel.text.value,
         canvas.width / 2,
@@ -1034,16 +1081,18 @@ export default class Atom extends ObservableEntity {
       );
 
       const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
       const material = new THREE.SpriteMaterial({
         map: texture,
         depthTest: false,
+        sRGBTransfer: true,
       });
       const sprite = new THREE.Sprite(material);
       sprite.scale.set(...serializedLabel.text.scale);
       sprite.position.set(...serializedLabel.text.position);
       sprite.name = `label-text-${idx}`;
 
-      geometries.push(line, sprite);
+      geometries.push(sprite);
     });
     return {
       geometry: geometries,

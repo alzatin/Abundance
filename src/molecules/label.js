@@ -64,7 +64,7 @@ export default class Label extends Atom {
       {
         name: "color",
         valueType: "string",
-        defaultValue: "#dd863b",
+        defaultValue: "#3F3CDD",
         type: "input",
       },
     ]);
@@ -89,10 +89,10 @@ export default class Label extends Atom {
    * Build a ThreeJS texture/sprite from a text string and return a Sprite object.
    * @param {string} text - The text to render
    * @param {string} color - The hex color string for the text
-   * @param {number} unitScale - Scale factor based on project units (25.4 for MM, 1 for Inches)
+   * @param {number} lineLength - Length of the label line to scale text proportionally
    * @returns {THREE.Sprite}
    */
-  createTextSprite(text, color, unitScale = 1) {
+  createTextSprite(text, color, lineLength = 10) {
     const canvas = document.createElement("canvas");
     const size = 256;
     canvas.width = size;
@@ -103,19 +103,39 @@ export default class Label extends Atom {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.font = "Bold 40px Arial";
-    ctx.fillStyle = color;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+
+    // Draw stroke (text color)
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+
+    // Draw fill (white)
+    ctx.fillStyle = "white";
     ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 
     const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
     const material = new THREE.SpriteMaterial({
       map: texture,
       depthTest: false, // Render label text on top so it remains visible regardless of depth
+      sRGBTransfer: true,
     });
     const sprite = new THREE.Sprite(material);
-    // Scale so text appears at a reasonable size relative to the line, adjusted for project units
-    sprite.scale.set(10 * unitScale, 5 * unitScale, 1);
+    // Scale based on line length
+    const scaleX = lineLength * 30;
+    const scaleY = lineLength * 60;
+    console.log(
+      "Text sprite scale:",
+      scaleX,
+      scaleY,
+      "from lineLength:",
+      lineLength,
+    );
+    sprite.scale.set(scaleX, scaleY, 1);
     return sprite;
   }
 
@@ -146,7 +166,7 @@ export default class Label extends Atom {
       Number(endPoint[2]) || 0,
     );
     const labelText = String(text || "label");
-    const color = String(this.findIOValue("color") || "#d72020");
+    const color = String(this.findIOValue("color") || "#3F3CDD");
 
     // Scale sprite size and offset based on project units (MM coords are ~25.4x larger than Inches)
     const unitScale = this.getUnitScale();
@@ -168,16 +188,84 @@ export default class Label extends Atom {
     line.name = "label-line";
     geometryArray.push(line);
 
-    // --- Text sprite (positioned above the line like an underscore) ---
-    const sprite = this.createTextSprite(String(labelText), color, unitScale);
-    const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-    // Calculate perpendicular direction to the line (rotated 90 degrees in XY plane)
-    const lineDir = new THREE.Vector3().subVectors(end, start);
+    // --- Calculate perpendicular direction for text offset and segments ---
+    const lineDir = new THREE.Vector3().subVectors(end, start).normalize();
+
+    // Find a perpendicular direction to the line that works for any orientation
+    // If line is mostly horizontal, use vertical as reference; if mostly vertical, use horizontal
+    let referenceVec;
+    if (Math.abs(lineDir.z) < 0.9) {
+      // Line is mostly horizontal, use vertical as reference to get perpendicular in XY plane
+      referenceVec = new THREE.Vector3(0, 0, 1);
+    } else {
+      // Line is mostly vertical, use horizontal as reference
+      referenceVec = new THREE.Vector3(1, 0, 0);
+    }
+
+    const segmentDir = new THREE.Vector3()
+      .crossVectors(lineDir, referenceVec)
+      .normalize();
+
+    // For text, use perpendicular in XY plane
     const perpDir = new THREE.Vector3(-lineDir.y, lineDir.x, 0).normalize();
+
+    // --- End segments perpendicular to the line ---
+    // Length of the segments (proportional to line length or fixed)
+    const lineLength = start.distanceTo(end);
+    const endSegmentLength = Math.max(lineLength * 0.05, 1 * unitScale); // 5% of line length or 1 unit minimum
+
+    // Start perpendicular segment
+    const startSegStart = new THREE.Vector3()
+      .copy(start)
+      .sub(segmentDir.clone().multiplyScalar(endSegmentLength / 2));
+    const startSegEnd = new THREE.Vector3()
+      .copy(start)
+      .add(segmentDir.clone().multiplyScalar(endSegmentLength / 2));
+
+    const startSegGeo = new LineGeometry();
+    startSegGeo.setPositions(
+      startSegStart.toArray().concat(startSegEnd.toArray()),
+    );
+    const startSegMat = new LineMaterial({
+      color: color,
+      linewidth: 5,
+      resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
+    });
+    const startSegLine = new Line2(startSegGeo, startSegMat);
+    startSegLine.name = "label-end-segment-start";
+    geometryArray.push(startSegLine);
+
+    // End perpendicular segment
+    const endSegStart = new THREE.Vector3()
+      .copy(end)
+      .sub(segmentDir.clone().multiplyScalar(endSegmentLength / 2));
+    const endSegEnd = new THREE.Vector3()
+      .copy(end)
+      .add(segmentDir.clone().multiplyScalar(endSegmentLength / 2));
+
+    const endSegGeo = new LineGeometry();
+    endSegGeo.setPositions(endSegStart.toArray().concat(endSegEnd.toArray()));
+    const endSegMat = new LineMaterial({
+      color: color,
+      linewidth: 5,
+      resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
+    });
+    const endSegLine = new Line2(endSegGeo, endSegMat);
+    endSegLine.name = "label-end-segment-end";
+    geometryArray.push(endSegLine);
+
+    // --- Text sprite (positioned above the line like an underscore) ---
+    const sprite = this.createTextSprite(String(labelText), color, lineLength);
+    const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+    // Use the perpendicular direction already calculated for end segments
     // Position text above the line at a fixed offset distance
     const OFFSET_DIST = 2.5 * unitScale;
-    const offset = perpDir.multiplyScalar(OFFSET_DIST);
-    sprite.position.set(mid.x + offset.x, mid.y + offset.y, mid.z + offset.z);
+    const offsetVec = perpDir.clone().multiplyScalar(OFFSET_DIST);
+    sprite.position.set(
+      mid.x + offsetVec.x,
+      mid.y + offsetVec.y,
+      mid.z + offsetVec.z,
+    );
     sprite.name = "label-text";
     geometryArray.push(sprite);
 
@@ -193,7 +281,7 @@ export default class Label extends Atom {
       labelText,
       color,
       mid,
-      offset,
+      offsetVec,
     );
   }
 
@@ -207,12 +295,46 @@ export default class Label extends Atom {
   ) {
     const unitScale = this.getUnitScale();
     const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-    // Calculate perpendicular direction to the line (rotated 90 degrees in XY plane)
-    const lineDir = new THREE.Vector3().subVectors(end, start);
+
+    // Calculate perpendicular direction to the line
+    const lineDir = new THREE.Vector3().subVectors(end, start).normalize();
+
+    // Find a perpendicular direction that works for any line orientation
+    let referenceVec;
+    if (Math.abs(lineDir.z) < 0.9) {
+      // Line is mostly horizontal, use vertical as reference
+      referenceVec = new THREE.Vector3(0, 0, 1);
+    } else {
+      // Line is mostly vertical, use horizontal as reference
+      referenceVec = new THREE.Vector3(1, 0, 0);
+    }
+
+    const segmentDir = new THREE.Vector3()
+      .crossVectors(lineDir, referenceVec)
+      .normalize();
+
+    // For text, use perpendicular in XY plane
     const perpDir = new THREE.Vector3(-lineDir.y, lineDir.x, 0).normalize();
-    // Position text above the line at a fixed offset distance
     const OFFSET_DIST = 2.5 * unitScale;
-    const offset = perpDir.multiplyScalar(OFFSET_DIST);
+    const offset = perpDir.clone().multiplyScalar(OFFSET_DIST);
+
+    // Calculate end segments
+    const lineLength = start.distanceTo(end);
+    const endSegmentLength = Math.max(lineLength * 0.05, 1 * unitScale);
+
+    const startSegStart = new THREE.Vector3()
+      .copy(start)
+      .sub(segmentDir.clone().multiplyScalar(endSegmentLength / 2));
+    const startSegEnd = new THREE.Vector3()
+      .copy(start)
+      .add(segmentDir.clone().multiplyScalar(endSegmentLength / 2));
+
+    const endSegStart = new THREE.Vector3()
+      .copy(end)
+      .sub(segmentDir.clone().multiplyScalar(endSegmentLength / 2));
+    const endSegEnd = new THREE.Vector3()
+      .copy(end)
+      .add(segmentDir.clone().multiplyScalar(endSegmentLength / 2));
 
     return {
       type: "Label",
@@ -222,12 +344,24 @@ export default class Label extends Atom {
         color: color,
         linewidth: 5,
       },
+      endSegments: {
+        start: {
+          p1: startSegStart.toArray(),
+          p2: startSegEnd.toArray(),
+        },
+        end: {
+          p1: endSegStart.toArray(),
+          p2: endSegEnd.toArray(),
+        },
+        color: color,
+        linewidth: 5,
+      },
       text: {
         value: labelText,
         color: color,
         position: [mid.x + offset.x, mid.y + offset.y, mid.z + offset.z],
-        scale: [10 * unitScale, 5 * unitScale, 1],
-        font: "Bold 40px Arial",
+        scale: [lineLength * 0.1, lineLength * 0.05, 1],
+        font: "Bold 80px Arial",
       },
       movement: { ...movement }, // e.g. {x: 10, y: 0, z: 0}
       rotation: { ...rotation }, // e.g. {x: 0, y: 0, z: Math.PI/2}
