@@ -14,7 +14,8 @@
     "test": "node Puppet/index.js",
     "test:metrics": "node Puppet/metrics.js",
     "coverage": "vitest run --coverage",
-    "unit": "vitest --config=vitest.browser.config.ts"
+    "unit": "vitest --config=vitest.browser.config.ts",
+    "lint": "eslint src/**/*.ts src/**/*.tsx"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -74,6 +75,8 @@
     "esbuild": "^0.25.9",
     "eslint": "^9.39.2",
     "gh-pages": "^6.2.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.0",
     "vite": "^5.1.6",
     "vite-plugin-node-polyfills": "^0.23.0",
     "vite-plugin-pages": "^0.32.3",
