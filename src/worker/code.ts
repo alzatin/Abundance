@@ -396,7 +396,7 @@ async function executeCode(
     if (isPrimitive(rawResult) || Array.isArray(rawResult)) {
       // Clean up the warm cache without caching the result
       // Primitive and array (point) results are not cached - only geometry results are cached
-      util.geometryProvider!.cleanupBatchWithoutCaching(context);
+      await util.geometryProvider!.cleanupBatchWithoutCaching(context);
       return rawResult;
     }
 
@@ -407,7 +407,7 @@ async function executeCode(
       context,
       cacheId,
     );
-    util.geometryProvider!.endBatchOperation(context, abundanceObj);
+    await util.geometryProvider!.endBatchOperation(context, abundanceObj);
     return abundanceObj;
   } catch (error) {
     console.error("Code execution error:", error);
