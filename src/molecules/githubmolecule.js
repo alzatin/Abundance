@@ -3,6 +3,7 @@ import GlobalVariables from "../js/globalvariables.js";
 import { Octokit } from "octokit";
 
 import { Status } from "../prototypes/observableEntity.js";
+import { formatOrdinalDate } from "../js/projectNameUtils.js";
 
 /**
  * This class creates the GitHubMolecule atom.
@@ -118,6 +119,19 @@ export default class GitHubMolecule extends Molecule {
   createInputParams(setInputChanged, authorizedUserOcto, userScopes) {
     let inputParams = {};
     inputParams = super.createInputParams();
+    inputParams["ParentInfo"] = {
+      type: "string",
+      label: "Parent Repository",
+      value: `${this.parentRepo.owner}/${this.parentRepo.repoName}`,
+      disabled: true,
+    };
+    inputParams["Last Modified"] = {
+      type: "string",
+      label: "Last Modified",
+      value: formatOrdinalDate(this.parentRepo.dateModified),
+      disabled: true,
+    };
+    console.log(this.parentRepo.dateModified);
     inputParams["Reload From Github"] = {
       type: "button",
       label: "Reload From Github",
@@ -164,7 +178,14 @@ export default class GitHubMolecule extends Molecule {
         },
       );
     } catch (error) {
-      window.dispatchEvent(new CustomEvent('user-notification', { detail: { message: `Cannot reload: the repository "${gitObj.owner}/${gitObj.repoName}" could not be found or accessed.`, type: 'error' } }));
+      window.dispatchEvent(
+        new CustomEvent("user-notification", {
+          detail: {
+            message: `Cannot reload: the repository "${gitObj.owner}/${gitObj.repoName}" could not be found or accessed.`,
+            type: "error",
+          },
+        }),
+      );
       return;
     }
 
