@@ -147,7 +147,6 @@ export default class GitHubMolecule extends Molecule {
         : "Unknown",
       disabled: true,
     };
-    console.log(this.lastReloadedFromGithubAt);
     inputParams["Reload From Github"] = {
       type: "button",
       label: "Reload From Github",
