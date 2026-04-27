@@ -190,7 +190,7 @@ return assembly;
       }
     }
     if (!logged) {
-      super.setError(err.name + ": " + err.message + "test");
+      super.setError(err.name + ": " + err.message);
     }
   }
 
