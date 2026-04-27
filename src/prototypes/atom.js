@@ -427,7 +427,7 @@ export default class Atom extends ObservableEntity {
    */
   alertingErrorHandler() {
     return (err) => {
-      console.error("Error in atom: " + this.name);
+      console.error("Error in atom: " + this.getAtomPath());
       console.error(err);
       this.setError(err || "Unknown error occurred");
     };
@@ -933,8 +933,28 @@ export default class Atom extends ObservableEntity {
     if (err instanceof Error) {
       err = err.message;
     }
-    this.alert = { type: AlertType.ERROR, message: String(err) };
+    const path = this.getAtomPath();
+    const message = path ? `[${path}] ${err}` : String(err);
+    this.alert = { type: AlertType.ERROR, message };
     this.setStatus(Status.ERROR);
+  }
+
+  /**
+   * Get the full path of this atom in the molecule hierarchy.
+   * Example: "top level/molecule1/moleculemimi/code"
+   * @returns {string} The full path of this atom
+   */
+  getAtomPath() {
+    const path = [];
+    let current = this;
+
+    // Walk up the parent chain
+    while (current) {
+      path.unshift(current.name || current.atomType || "unknown");
+      current = current.parent || current.parentMolecule;
+    }
+
+    return path.join("/");
   }
 
   /**
@@ -1771,7 +1791,7 @@ export default class Atom extends ObservableEntity {
     if (unresolved.length) {
       const msg = `Variable(s) not found: ${unresolved.join(
         ", ",
-      )}. Make sure the variables you are using exist as inputs`;
+      )}. Make sure the variables you are using exist as inputs in ${this.getAtomPath()}`;
       console.warn(msg);
       throw new Error(msg);
     } else {
