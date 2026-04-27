@@ -131,7 +131,6 @@ export default class GitHubMolecule extends Molecule {
       value: formatOrdinalDate(this.parentRepo.dateModified),
       disabled: true,
     };
-    console.log(this.parentRepo.dateModified);
     inputParams["Reload From Github"] = {
       type: "button",
       label: "Reload From Github",

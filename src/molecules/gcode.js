@@ -221,6 +221,7 @@ export default class Gcode extends Atom {
     } finally {
       // Always reset the flag when generation completes
       this.isGenerating = false;
+      console.log("G-code generated successfully in " + this.getAtomPath());
       // If a pending run was queued, run again
       if (this.pendingGeneration) {
         this.pendingGeneration = false;
