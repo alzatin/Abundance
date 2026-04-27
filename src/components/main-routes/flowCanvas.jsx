@@ -394,17 +394,16 @@ export default memo(function FlowCanvas({
         );
       }
 
-      GlobalVariables.atomsSelected = [];
-      //Adds items to the  array that we will use to delete
-      GlobalVariables.currentMolecule.copy();
-      GlobalVariables.atomsSelected.forEach((item) => {
-        GlobalVariables.currentMolecule.nodesOnTheScreen.forEach(
-          (nodeOnTheScreen) => {
-            if (nodeOnTheScreen.uniqueID == item.uniqueID) {
-              nodeOnTheScreen.deleteNode();
-            }
-          },
-        );
+      // Delete selected atoms without clearing the clipboard (atomsSelected)
+      // Use a local variable instead of reusing atomsSelected which stores copied atoms
+      const atomsToDelete = [];
+      GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
+        if (atom.selected) {
+          atomsToDelete.push(atom);
+        }
+      });
+      atomsToDelete.forEach((item) => {
+        item.deleteNode();
       });
       //every time a key is pressed
       GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
@@ -618,8 +617,7 @@ export default memo(function FlowCanvas({
             },
             false, // Don't pass to undo
           )
-          .then((newAtom) => {
-          });
+          .then((newAtom) => {});
       }
 
       if (!clickHandledByMolecule) {
