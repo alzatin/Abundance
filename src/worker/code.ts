@@ -168,6 +168,13 @@ async function executeCode(
       throw new Error("Code too long (maximum 50,000 characters)");
     }
 
+    // Validate that all inputs are defined (not undefined or NO_GEOMETRY sentinel)
+    for (const [key, value] of Object.entries(argumentsArray)) {
+      if (value === undefined || isNoGeometry(value)) {
+        throw new Error(`Required input "${key}" is not connected or ready`);
+      }
+    }
+
     // Make a copy of the necessary entries in the library where all geometries are de-cached.
     // This library copy will be in focus for the user. Has the side effect that direct assignments
     // to the library by the user code will not affect the main library.
@@ -175,19 +182,14 @@ async function executeCode(
     let i = 0;
     const argsSignature: string[] = [];
     for (const [key, value] of Object.entries(argumentsArray)) {
-      // Convert NO_GEOMETRY sentinel back to null for user code
-      const actualValue = isNoGeometry(value) ? null : value;
-
-      if (util.isAbundanceObject(actualValue)) {
+      if (util.isAbundanceObject(value)) {
         const newKey = `userlib_${i++}`;
-        userLib[newKey] = await realizeAssembly(actualValue, context);
+        userLib[newKey] = await realizeAssembly(value, context);
         argumentsArray[key] = newKey;
-        argsSignature.push(JSON.stringify(actualValue));
+        argsSignature.push(JSON.stringify(value));
       } else {
-        // Use original value for signature (NO_GEOMETRY object or primitive)
+        // Use original value for signature
         argsSignature.push(String(value));
-        // But replace in argumentsArray with null for user code if it's NO_GEOMETRY
-        argumentsArray[key] = actualValue;
       }
     }
 

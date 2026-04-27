@@ -64,10 +64,19 @@ return assembly;
     this.parent = values.parent || null;
     this.uniqueID = values.uniqueID || GlobalVariables.generateUniqueID();
 
-    // Special behavior for code atoms requires that ap's are explicitly set to ready
+    // Only mark inputs as ready if they have defined values and are not sentinel objects
     values.ioValues?.forEach((ioValue) => {
       const ap = this._addIOWithoutSubscribing(ioValue.name, ioValue.valueType);
-      ap.setReady(ioValue.ioValue);
+      // Check if value is defined and not the NO_GEOMETRY sentinel
+      const isNoGeometry =
+        ioValue.ioValue && ioValue.ioValue == "__GEOMETRY_INPUT__";
+      if (
+        ioValue.ioValue !== undefined &&
+        ioValue.ioValue !== null &&
+        !isNoGeometry
+      ) {
+        ap.setReady(ioValue.ioValue);
+      }
     });
     this._addIOWithoutSubscribing("output", "geometry", null, "output");
 
