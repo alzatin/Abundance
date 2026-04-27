@@ -3,6 +3,7 @@ import GlobalVariables from "../js/globalvariables.js";
 import Atom from "../prototypes/atom.js";
 import { Global } from "@emotion/react";
 import { ObservableEntity, Status } from "./observableEntity.js";
+import { DeleteConnectorCommand } from "../js/undoCommands.js";
 
 /**
  * Sentinel value to represent an optional geometry input that has no connection.
@@ -242,20 +243,20 @@ export default class AttachmentPoint extends ObservableEntity {
       yInPixels,
       radiusInPixels,
       Math.PI / 2,
-      (-1 * Math.PI) / 2
+      (-1 * Math.PI) / 2,
     );
     GlobalVariables.c.rect(
       leftEdge,
       topEdge,
       textWidth + radiusInPixels + halfRadius,
-      radiusInPixels * 2
+      radiusInPixels * 2,
     );
     GlobalVariables.c.arc(
       leftEdge + textWidth + radiusInPixels + halfRadius,
       yInPixels,
       radiusInPixels,
       (-1 * Math.PI) / 2,
-      Math.PI / 2
+      Math.PI / 2,
     );
     GlobalVariables.c.fill();
 
@@ -273,7 +274,7 @@ export default class AttachmentPoint extends ObservableEntity {
     } else {
       GlobalVariables.c.fillStyle = Atom.statusAsColor(
         this.status,
-        this.parentMolecule.selected
+        this.parentMolecule.selected,
       );
     }
 
@@ -288,7 +289,7 @@ export default class AttachmentPoint extends ObservableEntity {
       radiusInPixels,
       0,
       Math.PI * 2,
-      false
+      false,
     );
     GlobalVariables.c.fill();
     GlobalVariables.c.stroke();
@@ -363,14 +364,14 @@ export default class AttachmentPoint extends ObservableEntity {
         parentXInPixels,
         x,
         parentYInPixels,
-        y
+        y,
       ) <= GlobalVariables.widthToPixels(activationBoundary)
     ) {
       this.isVisible = true;
       [this.x, this.y] = this.computePosition(activationBoundary);
       [this.x, this.y] = GlobalVariables.constrainToCanvasBorders(
         this.x,
-        this.y
+        this.y,
       );
       this.isTargeted = this.isCloseEnoughToTarget(x, y);
     } else {
@@ -412,7 +413,7 @@ export default class AttachmentPoint extends ObservableEntity {
    */
   computePosition(boundary) {
     const inputList = this.parentMolecule.inputs.filter(
-      (ap) => ap.type == "input"
+      (ap) => ap.type == "input",
     );
 
     if (this.type == "output") {
@@ -422,7 +423,7 @@ export default class AttachmentPoint extends ObservableEntity {
           this.parentMolecule.width ||
           GlobalVariables.widthToPixels(GlobalVariables.atomSize * 3.25);
         const inputWidthFractional = GlobalVariables.pixelsToWidth(
-          inputWidthInPixels * 0.75
+          inputWidthInPixels * 0.75,
         );
         return [
           this.parentMolecule.x + inputWidthFractional,
@@ -469,7 +470,7 @@ export default class AttachmentPoint extends ObservableEntity {
         -1 *
         GlobalVariables.pixelsToHeight(
           GlobalVariables.widthToPixels(hoverRadius) *
-            Math.sin(attachmentPointNumber * anglePerIO + angleCorrection)
+            Math.sin(attachmentPointNumber * anglePerIO + angleCorrection),
         );
 
       return [
@@ -495,7 +496,7 @@ export default class AttachmentPoint extends ObservableEntity {
       x,
       GlobalVariables.widthToPixels(this.x),
       y,
-      GlobalVariables.heightToPixels(this.y)
+      GlobalVariables.heightToPixels(this.y),
     );
 
     const apRadiusInPixels = GlobalVariables.widthToPixels(this.scaledRadius);
@@ -512,7 +513,7 @@ export default class AttachmentPoint extends ObservableEntity {
       const distFromParent = AttachmentPoint.getDistFromParent(inputCount);
       let hoverRadius = GlobalVariables.widthToPixels(
         distFromParent * this.parentMolecule.radius -
-          this.scaledRadius * AttachmentPoint.TARGET_SCALEUP
+          this.scaledRadius * AttachmentPoint.TARGET_SCALEUP,
       );
 
       const anglePerIO = Math.PI / (inputCount + 1);
@@ -520,7 +521,7 @@ export default class AttachmentPoint extends ObservableEntity {
 
       targetRadius = Math.max(
         apRadiusInPixels,
-        Math.min(targetRadius, maxNonOverlappingRadius)
+        Math.min(targetRadius, maxNonOverlappingRadius),
       );
       return dist < targetRadius;
     }
@@ -536,7 +537,19 @@ export default class AttachmentPoint extends ObservableEntity {
         this.connectors[0].selected &&
         ["Delete", "Backspace"].includes(key)
       ) {
-        this.deleteConnector(this.connectors[0]);
+        const connector = this.connectors[0];
+        // Serialize connector data for undo before deletion
+        const connectorData = {
+          ap1ID: connector.attachmentPoint1.parentMolecule.uniqueID,
+          ap2ID: connector.attachmentPoint2.parentMolecule.uniqueID,
+          ap2Name: connector.attachmentPoint2.name,
+        };
+        // Create undo command - use the molecule that contains the connected atoms
+        GlobalVariables.pushUndoCommand(
+          new DeleteConnectorCommand(connectorData, this.parentMolecule.parent),
+        );
+        // Delete the connector
+        this.deleteConnector(connector);
       }
     }
   }
@@ -561,7 +574,7 @@ export default class AttachmentPoint extends ObservableEntity {
       if (this.connectors.length == 1) {
         if (this.connectors[0] !== connector) {
           throw new Error(
-            "Input connector exists but doesn't match delete target"
+            "Input connector exists but doesn't match delete target",
           );
         }
         const otherAP = connector.getOtherAP(this);
@@ -675,7 +688,7 @@ export default class AttachmentPoint extends ObservableEntity {
       if (currentMolecule.nodesOnTheScreen) {
         const inputAtom = currentMolecule.nodesOnTheScreen.find(
           (atom) =>
-            GlobalVariables.isReferencableByName(atom) && atom.name === name
+            GlobalVariables.isReferencableByName(atom) && atom.name === name,
         );
         if (inputAtom) {
           return inputAtom;
@@ -778,7 +791,7 @@ export default class AttachmentPoint extends ObservableEntity {
             this.onSubscribedInputChanged(inputAtom);
           },
           this.uniqueID,
-          false
+          false,
         ); // Don't use immediateCallback - we'll trigger evaluation once after all subscriptions
 
         subscribedCount++;
@@ -849,7 +862,7 @@ export default class AttachmentPoint extends ObservableEntity {
           const safeVar = varName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
           substitutedEquation = substitutedEquation.replace(
             new RegExp(`\\b${safeVar}\\b`, "g"),
-            String(state.value)
+            String(state.value),
           );
         } else {
           allReady = false;
@@ -870,7 +883,7 @@ export default class AttachmentPoint extends ObservableEntity {
       } else {
         // Fallback: try to evaluate as a simple JavaScript expression
         result = Function(
-          '"use strict"; return (' + substitutedEquation + ")"
+          '"use strict"; return (' + substitutedEquation + ")",
         )();
       }
 
@@ -1007,7 +1020,7 @@ export default class AttachmentPoint extends ObservableEntity {
           newValue === undefined || newValue === null
             ? Status.WAITING
             : Status.READY,
-          newValue
+          newValue,
         );
       }
     } else {
