@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import GlobalVariables from "../../js/globalvariables.js";
 
 /**
  * Dialog to confirm navigation to an owned GitHub molecule project
@@ -19,9 +20,12 @@ function NavigateToMoleculeDialog({
 
   const handleNavigate = () => {
     onClose();
+    // Set GlobalVariables before navigating so FlowCanvas has the right project when it mounts
+    GlobalVariables.currentAWSnode = {
+      owner,
+      repoName,
+    };
     navigate(`/${owner}/${repoName}`);
-    // Reload the page to load the target project
-    window.location.reload();
   };
 
   const handleStay = () => {

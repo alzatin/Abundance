@@ -6,6 +6,7 @@ import FlowCanvas from "./flowCanvas.jsx";
 import LowerHalf from "./lowerHalf.jsx";
 import CodeWindow from "../secondary/codeWindow.jsx";
 import { useParams, useNavigate } from "react-router-dom";
+import GoUpLevelButton from "../secondary/GoUpLevelButton.jsx";
 
 import ParamsMenu from "../secondary/ParamsMenu.jsx";
 import RenderMenu from "../secondary/RenderMenu.jsx";
@@ -319,6 +320,7 @@ function PreviewCreateMode() {
         setActiveAtom={setActiveAtom}
       />
       <CodeWindow {...{ activeAtom }} />
+      {!GlobalVariables.currentMolecule.topLevel ? <GoUpLevelButton /> : null}
       <FlowCanvas
         {...{
           activeAtom,
