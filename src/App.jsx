@@ -486,25 +486,52 @@ function AppContent() {
         GlobalVariables.currentRepoName = project.repoName;
       });
 
+    const fetchProjectFile = async (response, { bustCache } = {}) => {
+      // Use download_url for any file that isn't returned base64-inlined.
+      // GitHub omits inline content for files >1MB (and may return a
+      // placeholder), so don't trust a non-empty content field alone.
+      const useDownloadUrl =
+        response.data.encoding !== "base64" ||
+        !response.data.content ||
+        response.data.content.length === 0;
+
+      if (useDownloadUrl) {
+        const url = bustCache
+          ? `${response.data.download_url}${response.data.download_url.includes("?") ? "&" : "?"}_=${Date.now()}`
+          : response.data.download_url;
+        const fileResponse = await fetch(url, { cache: "no-store" });
+        if (!fileResponse.ok) {
+          throw new Error(
+            `download_url returned ${fileResponse.status} ${fileResponse.statusText}`,
+          );
+        }
+        return await fileResponse.text();
+      }
+      return GlobalVariables.fromBinaryStr(atob(response.data.content));
+    };
+
     return octokit
       .request("GET /repos/{owner}/{repo}/contents/project.abundance", {
         owner: project.owner,
         repo: project.repoName,
       })
       .then(async (response) => {
-        let rawFileContent;
-        // Handle large files (>1MB) using download_url
-        if (!response.data.content || response.data.content.length === 0) {
-          const fileResponse = await fetch(response.data.download_url);
-          rawFileContent = await fileResponse.text();
-        } else {
-          // Handle small files using base64 content with UTF-8 encoding
-          rawFileContent = GlobalVariables.fromBinaryStr(
-            atob(response.data.content),
+        let rawFileContent = await fetchProjectFile(response);
+        let rawFile;
+        try {
+          rawFile = JSON.parse(rawFileContent);
+        } catch (parseError) {
+          console.warn(
+            "project.abundance JSON.parse failed, retrying with cache bust:",
+            parseError?.message,
+            "head:",
+            rawFileContent?.slice(0, 64),
+            "tail:",
+            rawFileContent?.slice(-64),
           );
+          rawFileContent = await fetchProjectFile(response, { bustCache: true });
+          rawFile = JSON.parse(rawFileContent);
         }
-
-        let rawFile = JSON.parse(rawFileContent);
 
         // Reset ID counter to avoid collisions with existing IDs
         GlobalVariables.resetIdCounter(rawFile);
