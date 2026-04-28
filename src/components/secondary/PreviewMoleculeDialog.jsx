@@ -32,6 +32,7 @@ function PreviewMoleculeDialog({
         }),
       );
     }
+    GlobalVariables.currentAWSnode = { owner, repoName };
     onClose();
     navigate(`/preview/${owner}/${repoName}`);
   };

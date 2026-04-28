@@ -68,6 +68,7 @@ function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
     if (isPreview && originProject) {
       try {
         const { owner, repoName } = JSON.parse(originProject);
+        GlobalVariables.currentAWSnode = { owner, repoName };
         sessionStorage.removeItem("previewOriginProject");
         navigate(`/${owner}/${repoName}`);
         return;
