@@ -19,12 +19,8 @@ function NavigateToMoleculeDialog({
   const navigate = useNavigate();
 
   const handleNavigate = () => {
+    GlobalVariables.currentAWSnode = { owner, repoName };
     onClose();
-    // Set GlobalVariables before navigating so FlowCanvas has the right project when it mounts
-    GlobalVariables.currentAWSnode = {
-      owner,
-      repoName,
-    };
     navigate(`/${owner}/${repoName}`);
   };
 

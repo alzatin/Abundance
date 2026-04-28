@@ -99,13 +99,27 @@ function CreateMode() {
   const navigate = useNavigate();
   const { owner, repoName } = useParams();
 
-  // Update GlobalVariables when route params change (triggers FlowCanvas to reload project)
+  // Update GlobalVariables when route params change and fetch full AWS node
   useEffect(() => {
     if (owner && repoName) {
-      GlobalVariables.currentAWSnode = {
-        owner,
-        repoName,
-      };
+      // Fetch the full project metadata from AWS
+      fetch(
+        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`,
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.item) {
+            GlobalVariables.currentAWSnode = data.item;
+          } else {
+            // Fallback if we can't fetch from AWS
+            GlobalVariables.currentAWSnode = { owner, repoName };
+          }
+        })
+        .catch((err) => {
+          console.warn("Error fetching AWS node for project:", err);
+          // Fallback to partial node
+          GlobalVariables.currentAWSnode = { owner, repoName };
+        });
     }
   }, [owner, repoName]);
 
