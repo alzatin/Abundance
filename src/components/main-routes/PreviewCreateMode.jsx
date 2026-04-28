@@ -297,40 +297,6 @@ function PreviewCreateMode() {
         initialCollapsed={true}
         collapsedOffset={[45, 0]}
       />
-      <RenderMenu
-        {...{
-          contentCollapsed: expandedMenu !== "render",
-          setContentCollapsed: () => setExpandedMenu("render"),
-          position: { top: screenHeight / 2 + 35, left: 10 },
-          collapsedOffset: [45, -45],
-          closeMenu: () => setExpandedMenu("none"),
-        }}
-        id={"atom-create-render-panel"}
-      />
-      <BomMenu
-        {...{
-          id: "atom-bom-panel",
-          contentCollapsed: expandedMenu !== "bom",
-          setContentCollapsed: () => setExpandedMenu("bom"),
-          closeMenu: () => setExpandedMenu("none"),
-          position: { top: screenHeight / 2 + 80, left: 10 },
-          collapsedOffset: [45, -90],
-        }}
-      />
-      <GitSearchMenu
-        {...{
-          activeAtom,
-          id: "atom-git-search-panel",
-          contentCollapsed: expandedMenu !== "git-search",
-          setContentCollapsed: () => setExpandedMenu("git-search"),
-          closeMenu: () => setExpandedMenu("none"),
-          setParamsMenuExpanded: () => setExpandedMenu("params"),
-          position: { top: screenHeight / 2 + 125, left: 10 },
-          collapsedOffset: [45, -135],
-          gitRef: gitRef,
-          setUserNotification: (msg, type) => setNotification(msg, type),
-        }}
-      />
       <div id="headerBar">
         <img
           className={
@@ -373,6 +339,7 @@ function PreviewCreateMode() {
           windowSize,
           redirectType,
           saveProject: null,
+          isPreview: true,
         }}
       />
       <div className="parent flex-parent" id="lowerHalf">
