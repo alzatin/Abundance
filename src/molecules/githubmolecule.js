@@ -144,13 +144,17 @@ export default class GitHubMolecule extends Molecule {
     inputParams["ParentInfo"] = {
       type: "string",
       label: "Parent Repository",
-      value: `${this.parentRepo.owner}/${this.parentRepo.repoName}`,
+      value: this.parentRepo
+        ? `${this.parentRepo.owner}/${this.parentRepo.repoName}`
+        : "",
       disabled: true,
     };
     inputParams["Parent Last Modified"] = {
       type: "string",
       label: "Last Modified",
-      value: formatOrdinalDate(this.parentRepo.dateModified),
+      value: this.parentRepo
+        ? formatOrdinalDate(this.parentRepo.dateModified)
+        : "",
       disabled: true,
     };
     inputParams["Last Reloaded"] = {
