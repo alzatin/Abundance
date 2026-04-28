@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
+import Molecule from "../../molecules/molecule.js";
 import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
 import FlowCanvas from "./flowCanvas.jsx";
 import LowerHalf from "./lowerHalf.jsx";
@@ -91,6 +92,51 @@ function PreviewCreateMode() {
 
   /** State for top level molecule */
   const [currentMoleculeTop, setTop] = useState(false);
+
+  /** Load project when URL params change */
+  useEffect(() => {
+    // Check if project is already loaded
+    if (
+      GlobalVariables.currentAWSnode &&
+      GlobalVariables.currentAWSnode.repoName === repoName &&
+      GlobalVariables.loadedRepo?.name === repoName
+    ) {
+      // Project already loaded, just set up the view
+      GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
+      GlobalVariables.currentMolecule.selected = true;
+      setActiveAtom(GlobalVariables.currentMolecule);
+    } else {
+      // Project not loaded - fetch from AWS and load it
+      GlobalVariables.resetView();
+      fetch(
+        `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`,
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.item) {
+            GlobalVariables.currentAWSnode = data.item;
+
+            // Load a blank project
+            GlobalVariables.topLevelMolecule = new Molecule({
+              x: 0,
+              y: 0,
+              topLevel: true,
+              atomType: "Molecule",
+            });
+            GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
+            GlobalVariables.currentMolecule.selected = true;
+            loadProject(GlobalVariables.currentAWSnode);
+            setActiveAtom(GlobalVariables.currentMolecule);
+          }
+        })
+        .catch((e) => {
+          console.error("Error loading preview project:", e);
+          setNotification("Can't load project: " + (e.message || e), "error");
+          setTimeout(() => setNotification(null), 5000);
+          navigate("/");
+        });
+    }
+  }, [owner, repoName]);
 
   const solidParamRef = useRef(solidParam);
   useEffect(() => {
@@ -289,11 +335,12 @@ function PreviewCreateMode() {
         <img
           className={
             "thumnail-logo" +
-            (userScopes && userScopes.includes("repo") ? " logo-private-scope" : "")
+            (userScopes && userScopes.includes("repo")
+              ? " logo-private-scope"
+              : "")
           }
           src={
-            import.meta.env.VITE_APP_PATH_FOR_PICS +
-            "/imgs/abundance_logo.png"
+            import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/abundance_logo.png"
           }
           alt="logo"
           onClick={() => navigate("/")}

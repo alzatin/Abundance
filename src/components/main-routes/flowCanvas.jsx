@@ -4,6 +4,8 @@ import Molecule from "../../molecules/molecule.js";
 import { createCMenu, cmenu } from "../../js/NewMenu.js";
 import { DeleteAtomsCommand } from "../../js/undoCommands.js";
 import { useNavigate } from "react-router-dom";
+import NavigateToMoleculeDialog from "../secondary/NavigateToMoleculeDialog.jsx";
+import PreviewMoleculeDialog from "../secondary/PreviewMoleculeDialog.jsx";
 
 export default memo(function FlowCanvas({
   loadProject,
@@ -27,6 +29,15 @@ export default memo(function FlowCanvas({
   /** State for undo notification */
   const [undoNotification, setUndoNotification] = useState(null);
   const [isShortcut, setIsShortcutTriggered] = useState(false);
+
+  /** State for GitHub molecule dialogs */
+  const [navigateDialogOpen, setNavigateDialogOpen] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [moleculeDialogData, setMoleculeDialogData] = useState({
+    owner: "",
+    repoName: "",
+    moleculeName: "",
+  });
 
   const canvasRef = useRef(null);
   const circleMenu = useRef(null);
@@ -203,6 +214,47 @@ export default memo(function FlowCanvas({
       canvasRef.current.height = windowSize.height * canvasHeightScale;
     }
   }, [windowSize]);
+
+  /** Handle GitHub molecule navigation and preview dialogs */
+  useEffect(() => {
+    const handleNavigateRequest = (event) => {
+      setMoleculeDialogData({
+        owner: event.detail.owner,
+        repoName: event.detail.repoName,
+        moleculeName: event.detail.moleculeName,
+      });
+      setNavigateDialogOpen(true);
+    };
+
+    const handlePreviewRequest = (event) => {
+      setMoleculeDialogData({
+        owner: event.detail.owner,
+        repoName: event.detail.repoName,
+        moleculeName: event.detail.moleculeName,
+      });
+      setPreviewDialogOpen(true);
+    };
+
+    window.addEventListener(
+      "github-molecule-navigate-request",
+      handleNavigateRequest,
+    );
+    window.addEventListener(
+      "github-molecule-preview-request",
+      handlePreviewRequest,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "github-molecule-navigate-request",
+        handleNavigateRequest,
+      );
+      window.removeEventListener(
+        "github-molecule-preview-request",
+        handlePreviewRequest,
+      );
+    };
+  }, []);
 
   const draw = () => {
     GlobalVariables.c.clearRect(
@@ -806,6 +858,22 @@ export default memo(function FlowCanvas({
           {userNotification}
         </div>
       )}
+
+      {/* GitHub molecule dialogs */}
+      <NavigateToMoleculeDialog
+        isOpen={navigateDialogOpen}
+        onClose={() => setNavigateDialogOpen(false)}
+        owner={moleculeDialogData.owner}
+        repoName={moleculeDialogData.repoName}
+        moleculeName={moleculeDialogData.moleculeName}
+      />
+      <PreviewMoleculeDialog
+        isOpen={previewDialogOpen}
+        onClose={() => setPreviewDialogOpen(false)}
+        owner={moleculeDialogData.owner}
+        repoName={moleculeDialogData.repoName}
+        moleculeName={moleculeDialogData.moleculeName}
+      />
     </>
   );
 });

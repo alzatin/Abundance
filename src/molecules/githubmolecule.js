@@ -74,16 +74,30 @@ export default class GitHubMolecule extends Molecule {
         this.parentRepo &&
         this.parentRepo.owner === GlobalVariables.currentUser
       ) {
-        // User owns this GitHub molecule - allow navigation with confirmation
+        // User owns this GitHub molecule - dispatch navigate request event
         const moleculeName = this.name || this.parentRepo.repoName;
-        const confirmMessage = `Navigate to ${moleculeName}?\n\nThis will take you to the project "${this.parentRepo.owner}/${this.parentRepo.repoName}" and leave your current project.\n\nDo you want to continue?`;
-
-        if (window.confirm(confirmMessage)) {
-          // User confirmed - navigate to the owned molecule's project
-          window.location.href = `/${this.parentRepo.owner}/${this.parentRepo.repoName}`;
-        }
+        window.dispatchEvent(
+          new CustomEvent("github-molecule-navigate-request", {
+            detail: {
+              owner: this.parentRepo.owner,
+              repoName: this.parentRepo.repoName,
+              moleculeName: moleculeName,
+            },
+          }),
+        );
+      } else if (this.parentRepo) {
+        // User doesn't own this molecule - dispatch preview request event
+        const moleculeName = this.name || this.parentRepo.repoName;
+        window.dispatchEvent(
+          new CustomEvent("github-molecule-preview-request", {
+            detail: {
+              owner: this.parentRepo.owner,
+              repoName: this.parentRepo.repoName,
+              moleculeName: moleculeName,
+            },
+          }),
+        );
       }
-      // else: User doesn't own this molecule - do nothing (can't navigate into it)
 
       clickProcessed = true;
     }
