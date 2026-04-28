@@ -42,6 +42,12 @@ export default class GitHubMolecule extends Molecule {
      */
     this.description = "Project imported from GitHub";
 
+    /**
+     * Timestamp (milliseconds since epoch) of when this molecule was last reloaded from GitHub
+     * @type {number}
+     */
+    this.lastReloadedFromGithubAt = null;
+
     this.gitHubUniqueID;
 
     this.setValues(values);
@@ -68,16 +74,30 @@ export default class GitHubMolecule extends Molecule {
         this.parentRepo &&
         this.parentRepo.owner === GlobalVariables.currentUser
       ) {
-        // User owns this GitHub molecule - allow navigation with confirmation
+        // User owns this GitHub molecule - dispatch navigate request event
         const moleculeName = this.name || this.parentRepo.repoName;
-        const confirmMessage = `Navigate to ${moleculeName}?\n\nThis will take you to the project "${this.parentRepo.owner}/${this.parentRepo.repoName}" and leave your current project.\n\nDo you want to continue?`;
-
-        if (window.confirm(confirmMessage)) {
-          // User confirmed - navigate to the owned molecule's project
-          window.location.href = `/${this.parentRepo.owner}/${this.parentRepo.repoName}`;
-        }
+        window.dispatchEvent(
+          new CustomEvent("github-molecule-navigate-request", {
+            detail: {
+              owner: this.parentRepo.owner,
+              repoName: this.parentRepo.repoName,
+              moleculeName: moleculeName,
+            },
+          }),
+        );
+      } else if (this.parentRepo) {
+        // User doesn't own this molecule - dispatch preview request event
+        const moleculeName = this.name || this.parentRepo.repoName;
+        window.dispatchEvent(
+          new CustomEvent("github-molecule-preview-request", {
+            detail: {
+              owner: this.parentRepo.owner,
+              repoName: this.parentRepo.repoName,
+              moleculeName: moleculeName,
+            },
+          }),
+        );
       }
-      // else: User doesn't own this molecule - do nothing (can't navigate into it)
 
       clickProcessed = true;
     }
@@ -118,6 +138,8 @@ export default class GitHubMolecule extends Molecule {
 
   createInputParams(setInputChanged, authorizedUserOcto, userScopes) {
     let inputParams = {};
+    this.setInputMoleculeChanged = setInputChanged; // Store for later use in reload button
+
     inputParams = super.createInputParams();
     inputParams["ParentInfo"] = {
       type: "string",
@@ -125,13 +147,20 @@ export default class GitHubMolecule extends Molecule {
       value: `${this.parentRepo.owner}/${this.parentRepo.repoName}`,
       disabled: true,
     };
-    inputParams["Last Modified"] = {
+    inputParams["Parent Last Modified"] = {
       type: "string",
       label: "Last Modified",
       value: formatOrdinalDate(this.parentRepo.dateModified),
       disabled: true,
     };
-    console.log(this.parentRepo.dateModified);
+    inputParams["Last Reloaded"] = {
+      type: "string",
+      label: "Last Reloaded From GitHub",
+      value: this.lastReloadedFromGithubAt
+        ? new Date(this.lastReloadedFromGithubAt).toLocaleString()
+        : "Unknown",
+      disabled: true,
+    };
     inputParams["Reload From Github"] = {
       type: "button",
       label: "Reload From Github",
@@ -144,15 +173,29 @@ export default class GitHubMolecule extends Molecule {
   }
 
   /**
+   * Override serialize to include lastReloadedFromGithubAt timestamp
+   */
+  serialize(offset = { x: 0, y: 0 }) {
+    const serialized = super.serialize(offset);
+
+    // Include last reload timestamp if it exists
+    if (this.lastReloadedFromGithubAt !== null) {
+      serialized.lastReloadedFromGithubAt = this.lastReloadedFromGithubAt;
+    }
+
+    return serialized;
+  }
+
+  /**
    * Reload this github molecule from github
    */
   async reloadMoleculeFromGithub(authorizedUserOcto, userScopes) {
     var githubMoleculeObjectPreReload = this.serialize();
+
     var githubMoleculeParentObjectConnectorsPreReload =
       this.parent.serialize().allConnectors;
 
     let gitObj = this.parentRepo;
-    let parentMolecule = this.parent;
 
     //Only delete and continue if you have permission to load
     if (

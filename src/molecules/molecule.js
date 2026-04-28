@@ -182,7 +182,7 @@ export default class Molecule extends Atom {
     GlobalVariables.c.fill();
   }
 
-  createInputParams() {
+  createInputParams(setInputChanged) {
     let inputParams = { ...super.createInputParams() };
 
     inputParams["molecule name" + this.uniqueID] = {
@@ -1501,6 +1501,7 @@ export default class Molecule extends Atom {
               parentRepo: gitObj,
               topLevel: false,
               ioValues: oldObject.ioValues,
+              lastReloadedFromGithubAt: Date.now(),
             };
           } else {
             let xPos = position
@@ -1520,6 +1521,7 @@ export default class Molecule extends Atom {
               x: xPos,
               y: yPos,
               topLevel: false,
+              lastReloadedFromGithubAt: Date.now(),
             };
           }
 

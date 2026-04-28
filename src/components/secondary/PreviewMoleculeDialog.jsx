@@ -2,14 +2,14 @@ import { useNavigate } from "react-router-dom";
 import GlobalVariables from "../../js/globalvariables.js";
 
 /**
- * Dialog to confirm navigation to an owned GitHub molecule project
+ * Dialog to preview a GitHub molecule project (for non-owners)
  * @param {boolean} isOpen - Whether the dialog is open
  * @param {function} onClose - Function to close the dialog
  * @param {string} owner - The owner of the GitHub molecule
  * @param {string} repoName - The repository name of the GitHub molecule
- * @param {string} moleculeName - The name of the molecule being navigated to
+ * @param {string} moleculeName - The name of the molecule being previewed
  */
-function NavigateToMoleculeDialog({
+function PreviewMoleculeDialog({
   isOpen,
   onClose,
   owner,
@@ -18,17 +18,25 @@ function NavigateToMoleculeDialog({
 }) {
   const navigate = useNavigate();
 
-  const handleNavigate = () => {
+  const handlePreview = () => {
+    // Store the current project info so we can return to it from preview
+    if (
+      GlobalVariables.currentAWSnode?.owner &&
+      GlobalVariables.currentAWSnode?.repoName
+    ) {
+      sessionStorage.setItem(
+        "previewOriginProject",
+        JSON.stringify({
+          owner: GlobalVariables.currentAWSnode.owner,
+          repoName: GlobalVariables.currentAWSnode.repoName,
+        }),
+      );
+    }
     onClose();
-    // Set GlobalVariables before navigating so FlowCanvas has the right project when it mounts
-    GlobalVariables.currentAWSnode = {
-      owner,
-      repoName,
-    };
-    navigate(`/${owner}/${repoName}`);
+    navigate(`/preview/${owner}/${repoName}`);
   };
 
-  const handleStay = () => {
+  const handleClose = () => {
     onClose();
   };
 
@@ -46,19 +54,20 @@ function NavigateToMoleculeDialog({
       }}
       className="share-dialog"
     >
-      <h3 style={{ margin: "0 0 15px 0" }}>Navigate to Another Project?</h3>
+      <h3 style={{ margin: "0 0 15px 0" }}>Preview Project?</h3>
 
       <p style={{ margin: "0 0 20px 0" }}>
-        You are about to navigate to the project{" "}
-        <strong>{moleculeName || repoName}</strong>.
+        View the project <strong>{moleculeName || repoName}</strong> in preview
+        mode.
       </p>
 
       <p style={{ margin: "0 0 20px 0", fontSize: "14px" }}>
-        This will leave your current project and take you to{" "}
+        This will take you to a read-only preview of{" "}
         <strong>
           {owner}/{repoName}
         </strong>
-        . Would you like to continue?
+        . You won't be able to edit it, but you can explore its structure. Would
+        you like to continue?
       </p>
 
       <div
@@ -70,7 +79,7 @@ function NavigateToMoleculeDialog({
         }}
       >
         <button
-          onClick={handleStay}
+          onClick={handleClose}
           autoFocus
           style={{
             padding: "8px 16px",
@@ -80,23 +89,23 @@ function NavigateToMoleculeDialog({
           Cancel
         </button>
         <button
-          onClick={handleNavigate}
+          onClick={handlePreview}
           style={{
             padding: "8px 16px",
             cursor: "pointer",
-            backgroundColor: "#4CAF50",
+            backgroundColor: "#2196F3",
             color: "white",
             border: "none",
             borderRadius: "4px",
           }}
         >
-          Navigate to Project
+          Preview Project
         </button>
       </div>
 
       <a
         className="closeButton"
-        onClick={handleStay}
+        onClick={handleClose}
         style={{ cursor: "pointer" }}
       >
         {"\u00D7"}
@@ -105,4 +114,4 @@ function NavigateToMoleculeDialog({
   );
 }
 
-export default NavigateToMoleculeDialog;
+export default PreviewMoleculeDialog;
