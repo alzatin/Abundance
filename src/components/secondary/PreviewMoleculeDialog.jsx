@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import GlobalVariables from "../../js/globalvariables.js";
 
 /**
  * Dialog to preview a GitHub molecule project (for non-owners)
@@ -18,6 +19,19 @@ function PreviewMoleculeDialog({
   const navigate = useNavigate();
 
   const handlePreview = () => {
+    // Store the current project info so we can return to it from preview
+    if (
+      GlobalVariables.currentAWSnode?.owner &&
+      GlobalVariables.currentAWSnode?.repoName
+    ) {
+      sessionStorage.setItem(
+        "previewOriginProject",
+        JSON.stringify({
+          owner: GlobalVariables.currentAWSnode.owner,
+          repoName: GlobalVariables.currentAWSnode.repoName,
+        }),
+      );
+    }
     onClose();
     navigate(`/preview/${owner}/${repoName}`);
   };
