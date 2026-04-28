@@ -2,6 +2,7 @@ import Atom from "../prototypes/atom.js";
 import Connector from "../prototypes/connector.js";
 import AttachmentPoint from "../prototypes/attachmentpoint.js";
 import GlobalVariables from "../js/globalvariables.js";
+import { fetchGitHubFileContent } from "../js/githubFileUtils.js";
 import {
   AddAtomCommand,
   ReplaceConnectionCommand,
@@ -347,20 +348,9 @@ export default class Molecule extends Atom {
                 },
               );
               GlobalVariables.topLevelMolecule.nodesOnTheScreen = []; // <-- clear the array
-              let rawFileContent;
-              // Handle large files (>1MB) using download_url
-              if (
-                !response.data.content ||
-                response.data.content.length === 0
-              ) {
-                const fileResponse = await fetch(response.data.download_url);
-                rawFileContent = await fileResponse.text();
-              } else {
-                // Handle small files using base64 content with UTF-8 encoding
-                rawFileContent = GlobalVariables.fromBinaryStr(
-                  atob(response.data.content),
-                );
-              }
+              const rawFileContent = await fetchGitHubFileContent(
+                response.data,
+              );
 
               let rawFile;
               try {
@@ -1454,17 +1444,7 @@ export default class Molecule extends Atom {
           repo: gitObj.repoName,
         })
         .then(async (response) => {
-          let rawFileContent;
-          // Handle large files (>1MB) using download_url
-          if (!response.data.content || response.data.content.length === 0) {
-            const fileResponse = await fetch(response.data.download_url);
-            rawFileContent = await fileResponse.text();
-          } else {
-            // Handle small files using base64 content with UTF-8 encoding
-            rawFileContent = GlobalVariables.fromBinaryStr(
-              atob(response.data.content),
-            );
-          }
+          const rawFileContent = await fetchGitHubFileContent(response.data);
 
           let rawFile;
           try {
