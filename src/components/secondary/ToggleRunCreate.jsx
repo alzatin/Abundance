@@ -69,7 +69,7 @@ function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
       try {
         const { owner, repoName } = JSON.parse(originProject);
         sessionStorage.removeItem("previewOriginProject");
-        window.location.assign(`/${owner}/${repoName}`);
+        navigate(`/${owner}/${repoName}`);
         return;
       } catch (e) {
         console.error("Error parsing origin project:", e);

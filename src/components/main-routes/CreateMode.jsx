@@ -75,7 +75,8 @@ function CreateMode() {
     searchGithubMolecules,
     saveProject: saveProjectFromContext,
   } = useProject();
-  const { uploadFile, deleteFile, fetchFileContent, fetchRawFileContent } = useFileImport();
+  const { uploadFile, deleteFile, fetchFileContent, fetchRawFileContent } =
+    useFileImport();
   const meshRef = useRef();
 
   // Make meshRef, file import functions, and save function available globally
@@ -96,6 +97,17 @@ function CreateMode() {
   }, [uploadFile, deleteFile, fetchFileContent, fetchRawFileContent]);
 
   const navigate = useNavigate();
+  const { owner, repoName } = useParams();
+
+  // Update GlobalVariables when route params change (triggers FlowCanvas to reload project)
+  useEffect(() => {
+    if (owner && repoName) {
+      GlobalVariables.currentAWSnode = {
+        owner,
+        repoName,
+      };
+    }
+  }, [owner, repoName]);
 
   /** State for user notification */
   const [userNotification, setUserNotificationRaw] = useState(null);
@@ -743,6 +755,7 @@ function CreateMode() {
             }}
           />
           <FlowCanvas
+            key={`${owner}-${repoName}`}
             {...{
               activeAtom,
               authorizedUserOcto,
@@ -771,13 +784,11 @@ function CreateMode() {
       );
     } else {
       // Fallback: navigate to run mode if repo is still missing
-      const { owner, repoName } = useParams();
       navigate(`/run/${owner}/${repoName}`);
     }
   } else {
     /** get repository from github by the id in the url */
     console.warn("You are not logged in");
-    const { owner, repoName } = useParams();
     //try reauthenticating
     authRedirectHandler({
       redirectType: "reauth",
