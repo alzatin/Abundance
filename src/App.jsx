@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 
 import GlobalVariables from "./js/globalvariables.js";
+import { fetchGitHubFileContent } from "./js/githubFileUtils.js";
 import { CadWorkerManager } from "./worker/cadWorkerManager.js";
 import LoginMode from "./components/main-routes/LoginMode.jsx";
 import RunMode from "./components/main-routes/RunMode.jsx";
@@ -492,19 +493,24 @@ function AppContent() {
         repo: project.repoName,
       })
       .then(async (response) => {
-        let rawFileContent;
-        // Handle large files (>1MB) using download_url
-        if (!response.data.content || response.data.content.length === 0) {
-          const fileResponse = await fetch(response.data.download_url);
-          rawFileContent = await fileResponse.text();
-        } else {
-          // Handle small files using base64 content with UTF-8 encoding
-          rawFileContent = GlobalVariables.fromBinaryStr(
-            atob(response.data.content),
-          );
+        let rawFileContent = await fetchGitHubFileContent(response.data);
+        let rawFile;
+        try {
+          rawFile = JSON.parse(rawFileContent);
+        } catch (parseError) {
+          if (import.meta.env.DEV) {
+            console.warn(
+              "project.abundance JSON.parse failed, retrying with cache bust:",
+              parseError?.message,
+              "contentLength:",
+              rawFileContent?.length ?? 0,
+            );
+          }
+          rawFileContent = await fetchGitHubFileContent(response.data, {
+            bustCache: true,
+          });
+          rawFile = JSON.parse(rawFileContent);
         }
-
-        let rawFile = JSON.parse(rawFileContent);
 
         // Reset ID counter to avoid collisions with existing IDs
         GlobalVariables.resetIdCounter(rawFile);

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useRef } from "react";
 import GlobalVariables from "../js/globalvariables.js";
+import { fetchGitHubFileContent } from "../js/githubFileUtils.js";
 import Molecule from "../molecules/molecule.js";
 import { licenses } from "../js/licenseOptions.js";
 import { re } from "mathjs";
@@ -606,21 +607,9 @@ export function ProjectProvider({ children, cad, loadProject }) {
         );
 
         let projectFileContent;
-        if (
-          !projectFileResponse.data.content ||
-          projectFileResponse.data.content.length === 0
-        ) {
-          // Handle large files using download_url
-          const contentResponse = await fetch(
-            projectFileResponse.data.download_url,
-          );
-          projectFileContent = await contentResponse.text();
-        } else {
-          // Decode base64 content
-          projectFileContent = GlobalVariables.fromBinaryStr(
-            atob(projectFileResponse.data.content),
-          );
-        }
+        projectFileContent = await fetchGitHubFileContent(
+          projectFileResponse.data,
+        );
 
         // Parse the JSON
         const projectData = JSON.parse(projectFileContent);
@@ -681,19 +670,9 @@ export function ProjectProvider({ children, cad, loadProject }) {
           },
         );
         let projectFileContent;
-        if (
-          !projectFileResponse.data.content ||
-          projectFileResponse.data.content.length === 0
-        ) {
-          const contentResponse = await fetch(
-            projectFileResponse.data.download_url,
-          );
-          projectFileContent = await contentResponse.text();
-        } else {
-          projectFileContent = GlobalVariables.fromBinaryStr(
-            atob(projectFileResponse.data.content),
-          );
-        }
+        projectFileContent = await fetchGitHubFileContent(
+          projectFileResponse.data,
+        );
         // Parse and update topLevelMolecule
         const projectData = JSON.parse(projectFileContent);
         GlobalVariables.topLevelMolecule = new Molecule(projectData);
@@ -896,21 +875,9 @@ export function ProjectProvider({ children, cad, loadProject }) {
         );
 
         let projectFileContent;
-        if (
-          !projectFileResponse.data.content ||
-          projectFileResponse.data.content.length === 0
-        ) {
-          // Handle large files using download_url
-          const contentResponse = await fetch(
-            projectFileResponse.data.download_url,
-          );
-          projectFileContent = await contentResponse.text();
-        } else {
-          // Decode base64 content
-          projectFileContent = GlobalVariables.fromBinaryStr(
-            atob(projectFileResponse.data.content),
-          );
-        }
+        projectFileContent = await fetchGitHubFileContent(
+          projectFileResponse.data,
+        );
 
         // Parse the JSON
         const projectData = JSON.parse(projectFileContent);
