@@ -21,6 +21,7 @@ export default memo(function FlowCanvas({
   saveProject,
   setSaveState,
   setSavePopUp,
+  isPreview = false,
 }) {
   /** State for github molecule search input */
   const [isHovering, setIsHovering] = useState(false);
@@ -589,7 +590,7 @@ export default memo(function FlowCanvas({
       longPressTimer.current = null;
     }
 
-    // if it's a right click show the circular menu
+    // if it's a right click show the circular menu (disabled in preview mode)
     var isRightMB;
     if ("which" in event) {
       // Gecko (Firefox), WebKit (Safari/Chrome) & Opera
@@ -600,6 +601,10 @@ export default memo(function FlowCanvas({
     }
     // if it's a right click show the circular menu
     if (isRightMB) {
+      // In preview mode, disable the circular menu
+      if (isPreview) {
+        return;
+      }
       var doubleClick = false;
       // Convert viewport coordinates to canvas-relative coordinates for correct positioning
       const canvasCoords = getCanvasCoordinates(event.clientX, event.clientY);
@@ -843,6 +848,26 @@ export default memo(function FlowCanvas({
           );
         })}
       </div>
+
+      {isPreview && (
+        <div
+          style={{
+            position: "absolute",
+            top: "20px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontSize: "24px",
+            fontWeight: "bold",
+            opacity: 0.3,
+            pointerEvents: "none",
+            zIndex: "4",
+            color: "var(---flowCanvas-background)",
+            letterSpacing: "2px",
+          }}
+        >
+          PREVIEW
+        </div>
+      )}
       <div>
         <div id="circle-menu1" className="cn-menu1" ref={circleMenu}></div>
       </div>
