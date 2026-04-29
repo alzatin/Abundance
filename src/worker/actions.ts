@@ -39,7 +39,11 @@ function handleNonReplicadMove(
   z: number,
   context: RequestContext,
 ) {
-  const nrs = toMove.nonReplicadSerialized;
+  let nrs = toMove.nonReplicadSerialized;
+  // Filter out empty objects from the array
+  if (Array.isArray(nrs)) {
+    nrs = nrs.filter((item) => item && Object.keys(item).length > 0);
+  }
   if (Array.isArray(nrs) && nrs.length > 0 && nrs[0].type === "Label") {
     const moveVec = [x, y, z];
     const addVec = (arr: number[], vec: number[]) =>
@@ -51,17 +55,19 @@ function handleNonReplicadMove(
         start: addVec(label.line.start, moveVec),
         end: addVec(label.line.end, moveVec),
       },
-      endSegments: label.endSegments ? {
-        ...label.endSegments,
-        start: {
-          p1: addVec(label.endSegments.start.p1, moveVec),
-          p2: addVec(label.endSegments.start.p2, moveVec),
-        },
-        end: {
-          p1: addVec(label.endSegments.end.p1, moveVec),
-          p2: addVec(label.endSegments.end.p2, moveVec),
-        },
-      } : undefined,
+      endSegments: label.endSegments
+        ? {
+            ...label.endSegments,
+            start: {
+              p1: addVec(label.endSegments.start.p1, moveVec),
+              p2: addVec(label.endSegments.start.p2, moveVec),
+            },
+            end: {
+              p1: addVec(label.endSegments.end.p1, moveVec),
+              p2: addVec(label.endSegments.end.p2, moveVec),
+            },
+          }
+        : undefined,
       text: {
         ...label.text,
         position: addVec(label.text.position, moveVec),
@@ -83,17 +89,19 @@ function handleNonReplicadMove(
         start: addVec(nrs.line.start, moveVec),
         end: addVec(nrs.line.end, moveVec),
       },
-      endSegments: nrs.endSegments ? {
-        ...nrs.endSegments,
-        start: {
-          p1: addVec(nrs.endSegments.start.p1, moveVec),
-          p2: addVec(nrs.endSegments.start.p2, moveVec),
-        },
-        end: {
-          p1: addVec(nrs.endSegments.end.p1, moveVec),
-          p2: addVec(nrs.endSegments.end.p2, moveVec),
-        },
-      } : undefined,
+      endSegments: nrs.endSegments
+        ? {
+            ...nrs.endSegments,
+            start: {
+              p1: addVec(nrs.endSegments.start.p1, moveVec),
+              p2: addVec(nrs.endSegments.start.p2, moveVec),
+            },
+            end: {
+              p1: addVec(nrs.endSegments.end.p1, moveVec),
+              p2: addVec(nrs.endSegments.end.p2, moveVec),
+            },
+          }
+        : undefined,
       text: {
         ...nrs.text,
         position: addVec(nrs.text.position, moveVec),
@@ -185,7 +193,11 @@ function handleNonReplicadRotate(
   y: number,
   z: number,
 ) {
-  const nrs = toRotate.nonReplicadSerialized;
+  let nrs = toRotate.nonReplicadSerialized;
+  // Filter out empty objects from the array
+  if (Array.isArray(nrs)) {
+    nrs = nrs.filter((item) => item && Object.keys(item).length > 0);
+  }
   const toRadians = (deg: number) => (deg * Math.PI) / 180;
 
   function rotatePoint(
@@ -229,17 +241,19 @@ function handleNonReplicadRotate(
           start: rotatePoint(line.start, x, y, z),
           end: rotatePoint(line.end, x, y, z),
         },
-        endSegments: endSegments ? {
-          ...endSegments,
-          start: {
-            p1: rotatePoint(endSegments.start.p1, x, y, z),
-            p2: rotatePoint(endSegments.start.p2, x, y, z),
-          },
-          end: {
-            p1: rotatePoint(endSegments.end.p1, x, y, z),
-            p2: rotatePoint(endSegments.end.p2, x, y, z),
-          },
-        } : undefined,
+        endSegments: endSegments
+          ? {
+              ...endSegments,
+              start: {
+                p1: rotatePoint(endSegments.start.p1, x, y, z),
+                p2: rotatePoint(endSegments.start.p2, x, y, z),
+              },
+              end: {
+                p1: rotatePoint(endSegments.end.p1, x, y, z),
+                p2: rotatePoint(endSegments.end.p2, x, y, z),
+              },
+            }
+          : undefined,
         text: {
           ...text,
           position: rotatePoint(text.position, x, y, z),
@@ -260,17 +274,19 @@ function handleNonReplicadRotate(
         start: rotatePoint(line.start, x, y, z),
         end: rotatePoint(line.end, x, y, z),
       },
-      endSegments: endSegments ? {
-        ...endSegments,
-        start: {
-          p1: rotatePoint(endSegments.start.p1, x, y, z),
-          p2: rotatePoint(endSegments.start.p2, x, y, z),
-        },
-        end: {
-          p1: rotatePoint(endSegments.end.p1, x, y, z),
-          p2: rotatePoint(endSegments.end.p2, x, y, z),
-        },
-      } : undefined,
+      endSegments: endSegments
+        ? {
+            ...endSegments,
+            start: {
+              p1: rotatePoint(endSegments.start.p1, x, y, z),
+              p2: rotatePoint(endSegments.start.p2, x, y, z),
+            },
+            end: {
+              p1: rotatePoint(endSegments.end.p1, x, y, z),
+              p2: rotatePoint(endSegments.end.p2, x, y, z),
+            },
+          }
+        : undefined,
       text: {
         ...text,
         position: rotatePoint(text.position, x, y, z),

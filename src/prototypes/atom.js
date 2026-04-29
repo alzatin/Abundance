@@ -1125,16 +1125,34 @@ export default class Atom extends ObservableEntity {
     // Dispose old label geometries first
     this.disposeLabelGeometry();
 
-    const nrs = atomValue.nonReplicadSerialized;
-    if (
-      nrs &&
-      ((Array.isArray(nrs) && nrs.length > 0 && nrs[0].type === "Label") ||
-        nrs.type === "Label")
-    ) {
-      this.nonReplicadGeom = this.reconstructLabelGeometry(nrs);
+    let nrs = atomValue.nonReplicadSerialized;
+
+    // Filter out empty objects from the array
+    if (Array.isArray(nrs)) {
+      nrs = nrs.filter((item) => item && Object.keys(item).length > 0);
+    }
+
+    // Check if we have valid data to process
+    if (!nrs || (Array.isArray(nrs) && nrs.length === 0)) {
+      // No geometry to process
+      this.nonReplicadGeom = {
+        geometry: [],
+        material: null,
+        hideMainMesh: false,
+      };
       return;
+    }
+
+    // Check if this is Label geometry
+    const hasLabels =
+      (Array.isArray(nrs) && nrs.length > 0 && nrs[0].type === "Label") ||
+      nrs.type === "Label";
+
+    if (hasLabels) {
+      this.nonReplicadGeom = this.reconstructLabelGeometry(nrs);
     } else {
-      //delete label geometry if it exists from a prior compute
+      // For non-Label geometry, pass it through as-is
+      // The nonReplicadGeometry context will handle rendering
       this.nonReplicadGeom = {
         geometry: [],
         material: null,
@@ -1170,7 +1188,10 @@ export default class Atom extends ObservableEntity {
       const argsDict = Object.fromEntries(
         this.inputs.map((input) => [input.name, input.getState().value]),
       );
-
+      console.log(
+        `[${this.getAtomPath()}] All inputs ready. Computing with args:`,
+        argsDict,
+      );
       // const inputVals = this.inputs.map((input) => {input.getValue());
       this.setProcessing();
 
