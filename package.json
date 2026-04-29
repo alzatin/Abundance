@@ -50,7 +50,6 @@
     "react-query": "^3.39.3",
     "react-router-dom": "^6.22.3",
     "react-select": "^5.8.0",
-    "react-three-fiber": "^6.0.13",
     "rehype-raw": "^7.0.0",
     "replicad": "^0.22.0",
     "replicad-decorate": "^0.1.2",
