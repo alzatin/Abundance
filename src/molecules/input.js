@@ -628,7 +628,9 @@ export default class Input extends Atom {
       return GlobalVariables.fetchFileContent(repoOwner, repoName, filePath);
     }
 
-    const octokit = new Octokit();
+    const octokit = new Octokit({
+      headers: { "X-GitHub-Api-Version": "2022-11-28" },
+    });
     return octokit.rest.repos.getContent({
       owner: repoOwner,
       repo: repoName,

@@ -321,7 +321,9 @@ export default class Molecule extends Atom {
   }
 
   async reloadFork() {
-    const octokit = new Octokit();
+    const octokit = new Octokit({
+      headers: { "X-GitHub-Api-Version": "2022-11-28" },
+    });
     let parent = GlobalVariables.currentAWSnode.parentRepo.split("/");
     let parentOwner = parent[0];
     let parentRepo = parent[1];
@@ -1436,7 +1438,9 @@ export default class Molecule extends Atom {
     if (authorizedUser) {
       octokit = authorizedUser;
     } else {
-      octokit = new Octokit();
+      octokit = new Octokit({
+        headers: { "X-GitHub-Api-Version": "2022-11-28" },
+      });
     }
     if (
       gitObj.privateRepo &&

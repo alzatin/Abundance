@@ -215,7 +215,7 @@ export default class GitHubMolecule extends Molecule {
     // Verify the repository is accessible before deleting the existing node.
     // If the repository has been deleted or is unreachable, keep the existing
     // molecule and show an error rather than silently removing it.
-    const octokit = authorizedUserOcto || new Octokit();
+    const octokit = authorizedUserOcto || new Octokit({ headers: { "X-GitHub-Api-Version": "2022-11-28" } });
     try {
       await octokit.request(
         "GET /repos/{owner}/{repo}/contents/project.abundance",

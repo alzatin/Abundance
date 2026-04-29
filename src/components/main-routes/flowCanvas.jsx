@@ -159,8 +159,8 @@ export default memo(function FlowCanvas({
             // Also load the project metadata from GitHub (without overwriting the molecules)
             if (authorizedUserOcto) {
               const octokit = authorizedUserOcto;
-              octokit
-                .request("GET /repos/{owner}/{repo}", {
+              octokit.rest.repos
+                .get({
                   owner: GlobalVariables.currentAWSnode.owner,
                   repo: GlobalVariables.currentAWSnode.repoName,
                 })
