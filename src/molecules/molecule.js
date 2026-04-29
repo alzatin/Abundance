@@ -445,6 +445,9 @@ export default class Molecule extends Atom {
       GlobalVariables.currentMolecule = this; //set this to be the currently displayed molecule
       this.enableAllChildren();
 
+      // Store the current output value so we can detect changes when navigating out
+      this.valueWhenNavigatedIn = this.value;
+
       /**
        * Deselects Atom
        * @type {boolean}
@@ -1004,14 +1007,19 @@ export default class Molecule extends Atom {
       GlobalVariables.currentMolecule = GlobalVariables.currentMolecule.parent; //set parent this to be the currently displayed molecule
       GlobalVariables.currentMolecule.enableAllChildren();
 
-      // Force propagation upstream since intermediate changes have been
-      // withheld. Only call setReady if we have a valid value.
-      const value = this.value;
+      // Only force propagation if the molecule's output value actually changed while inside it.
+      // If no changes occurred, don't trigger unnecessary recomputation.
+      const currentValue = this.value;
+      const valueChanged = currentValue !== this.valueWhenNavigatedIn;
 
-      this.setWaiting();
-      if (value !== null && value !== undefined) {
-        this.setReady(value);
+      if (valueChanged) {
+        // Force propagation upstream since intermediate changes have been withheld.
+        this.setWaiting();
+        if (currentValue !== null && currentValue !== undefined) {
+          this.setReady(currentValue);
+        }
       }
+
       this.selected = true;
       this.sendToRender();
       GlobalVariables.currentMolecule.getOutputAtom()?.sendToRender();
