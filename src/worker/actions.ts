@@ -51,6 +51,17 @@ function handleNonReplicadMove(
         start: addVec(label.line.start, moveVec),
         end: addVec(label.line.end, moveVec),
       },
+      endSegments: label.endSegments ? {
+        ...label.endSegments,
+        start: {
+          p1: addVec(label.endSegments.start.p1, moveVec),
+          p2: addVec(label.endSegments.start.p2, moveVec),
+        },
+        end: {
+          p1: addVec(label.endSegments.end.p1, moveVec),
+          p2: addVec(label.endSegments.end.p2, moveVec),
+        },
+      } : undefined,
       text: {
         ...label.text,
         position: addVec(label.text.position, moveVec),
@@ -72,6 +83,17 @@ function handleNonReplicadMove(
         start: addVec(nrs.line.start, moveVec),
         end: addVec(nrs.line.end, moveVec),
       },
+      endSegments: nrs.endSegments ? {
+        ...nrs.endSegments,
+        start: {
+          p1: addVec(nrs.endSegments.start.p1, moveVec),
+          p2: addVec(nrs.endSegments.start.p2, moveVec),
+        },
+        end: {
+          p1: addVec(nrs.endSegments.end.p1, moveVec),
+          p2: addVec(nrs.endSegments.end.p2, moveVec),
+        },
+      } : undefined,
       text: {
         ...nrs.text,
         position: addVec(nrs.text.position, moveVec),
@@ -199,7 +221,7 @@ function handleNonReplicadRotate(
 
   if (Array.isArray(nrs) && nrs.length > 0 && nrs[0].type === "Label") {
     return nrs.map((label) => {
-      const { line, text, rotation: prevRot } = label;
+      const { line, text, endSegments, rotation: prevRot } = label;
       return {
         ...label,
         line: {
@@ -207,6 +229,17 @@ function handleNonReplicadRotate(
           start: rotatePoint(line.start, x, y, z),
           end: rotatePoint(line.end, x, y, z),
         },
+        endSegments: endSegments ? {
+          ...endSegments,
+          start: {
+            p1: rotatePoint(endSegments.start.p1, x, y, z),
+            p2: rotatePoint(endSegments.start.p2, x, y, z),
+          },
+          end: {
+            p1: rotatePoint(endSegments.end.p1, x, y, z),
+            p2: rotatePoint(endSegments.end.p2, x, y, z),
+          },
+        } : undefined,
         text: {
           ...text,
           position: rotatePoint(text.position, x, y, z),
@@ -219,7 +252,7 @@ function handleNonReplicadRotate(
       };
     });
   } else if (nrs && nrs.type === "Label") {
-    const { line, text, rotation: prevRot } = nrs;
+    const { line, text, endSegments, rotation: prevRot } = nrs;
     return {
       ...nrs,
       line: {
@@ -227,6 +260,17 @@ function handleNonReplicadRotate(
         start: rotatePoint(line.start, x, y, z),
         end: rotatePoint(line.end, x, y, z),
       },
+      endSegments: endSegments ? {
+        ...endSegments,
+        start: {
+          p1: rotatePoint(endSegments.start.p1, x, y, z),
+          p2: rotatePoint(endSegments.start.p2, x, y, z),
+        },
+        end: {
+          p1: rotatePoint(endSegments.end.p1, x, y, z),
+          p2: rotatePoint(endSegments.end.p2, x, y, z),
+        },
+      } : undefined,
       text: {
         ...text,
         position: rotatePoint(text.position, x, y, z),
