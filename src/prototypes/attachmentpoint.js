@@ -146,6 +146,9 @@ export default class AttachmentPoint extends ObservableEntity {
      */
     this.parentMolecule = null;
 
+    this.name = "";
+    this.oldNames = [];
+
     for (var key in values) {
       /**
        * Assign values in values as this.x
