@@ -67,6 +67,12 @@ export default class Label extends Atom {
         defaultValue: "#3F3CDD",
         type: "input",
       },
+      {
+        name: "fontSize",
+        valueType: "number",
+        defaultValue: 10,
+        type: "input",
+      },
     ]);
 
     this.setValues(values);
@@ -89,9 +95,10 @@ export default class Label extends Atom {
    * @param {string} text - The text to render
    * @param {string} color - The hex color string for the text
    * @param {number} lineLength - Length of the label line to scale text proportionally
+   * @param {number} fontSize - Font size multiplier (1 = default)
    * @returns {THREE.Sprite}
    */
-  createTextSprite(text, color, lineLength = 10) {
+  createTextSprite(text, color, lineLength = 10, fontSize = 1) {
     const canvas = document.createElement("canvas");
     const size = 256;
     canvas.width = size;
@@ -101,7 +108,9 @@ export default class Label extends Atom {
     ctx.fillStyle = "rgba(0,0,0,0)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.font = "Bold 40px Arial";
+    const baseFontSize = 40;
+    const scaledFontSize = Math.round(baseFontSize * fontSize);
+    ctx.font = `Bold ${scaledFontSize}px Arial`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
@@ -121,18 +130,19 @@ export default class Label extends Atom {
     const material = new THREE.SpriteMaterial({
       map: texture,
       depthTest: false, // Render label text on top so it remains visible regardless of depth
-      sRGBTransfer: true,
     });
     const sprite = new THREE.Sprite(material);
-    // Scale based on line length
-    const scaleX = lineLength * 30;
-    const scaleY = lineLength * 60;
+    // Scale based on line length and font size
+    const scaleX = lineLength * 30 * fontSize;
+    const scaleY = lineLength * 60 * fontSize;
     console.log(
       "Text sprite scale:",
       scaleX,
       scaleY,
       "from lineLength:",
       lineLength,
+      "fontSize:",
+      fontSize,
     );
     sprite.scale.set(scaleX, scaleY, 1);
     return sprite;
@@ -153,6 +163,7 @@ export default class Label extends Atom {
     let startPoint = this.findIOValue("startPosition");
     let endPoint = this.findIOValue("endPosition");
     let text = this.findIOValue("text");
+    let fontSize = Number(this.findIOValue("fontSize") || 10);
 
     const start = new THREE.Vector3(
       Number(startPoint[0]) || 0,
@@ -254,7 +265,12 @@ export default class Label extends Atom {
     geometryArray.push(endSegLine);
 
     // --- Text sprite (positioned above the line like an underscore) ---
-    const sprite = this.createTextSprite(String(labelText), color, lineLength);
+    const sprite = this.createTextSprite(
+      String(labelText),
+      color,
+      lineLength,
+      fontSize,
+    );
     const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
     // Use the perpendicular direction already calculated for end segments
     // Position text above the line at a fixed offset distance
@@ -279,6 +295,7 @@ export default class Label extends Atom {
       end,
       labelText,
       color,
+      fontSize,
       mid,
       offsetVec,
     );
@@ -289,6 +306,7 @@ export default class Label extends Atom {
     end,
     labelText,
     color,
+    fontSize = 1,
     movement = { x: 0, y: 0, z: 0 },
     rotation = { x: 0, y: 0, z: 0 },
   ) {
@@ -337,6 +355,7 @@ export default class Label extends Atom {
 
     return {
       type: "Label",
+      fontSize: fontSize,
       line: {
         start: start.toArray(),
         end: end.toArray(),
@@ -359,7 +378,7 @@ export default class Label extends Atom {
         value: labelText,
         color: color,
         position: [mid.x + offset.x, mid.y + offset.y, mid.z + offset.z],
-        scale: [lineLength * 0.1, lineLength * 0.05, 1],
+        scale: [lineLength * 0.1 * fontSize, lineLength * 0.05 * fontSize, 1],
         font: "Bold 80px Arial",
       },
       movement: { ...movement }, // e.g. {x: 10, y: 0, z: 0}
@@ -392,6 +411,18 @@ export default class Label extends Atom {
               if (input.value !== value) {
                 input.setValue(value);
               }
+            },
+          };
+        } else if (input.name === "fontSize") {
+          inputParams[this.uniqueID + "fontSize"] = {
+            type: "range",
+            value: input.value,
+            label: "Font size",
+            min: 0.5,
+            max: 3,
+            step: 0.1,
+            onChange: (value) => {
+              input.setValue(value);
             },
           };
         } else if (input.name === "startPosition") {
