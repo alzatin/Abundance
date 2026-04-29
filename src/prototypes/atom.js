@@ -1105,7 +1105,6 @@ export default class Atom extends ObservableEntity {
       const material = new THREE.SpriteMaterial({
         map: texture,
         depthTest: false,
-        sRGBTransfer: true,
       });
       const sprite = new THREE.Sprite(material);
       sprite.scale.set(...serializedLabel.text.scale);
