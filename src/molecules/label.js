@@ -220,9 +220,9 @@ export default class Label extends Atom {
     const perpDir = new THREE.Vector3(-lineDir.y, lineDir.x, 0).normalize();
 
     // --- End segments perpendicular to the line ---
-    // Length of the segments (proportional to line length or fixed)
+    // Length of the segments (proportional to line length)
     const lineLength = start.distanceTo(end);
-    const endSegmentLength = Math.max(lineLength * 0.05, 1 * unitScale); // 5% of line length or 1 unit minimum
+    const endSegmentLength = Math.max(lineLength * 0.05, lineLength * 0.02); // 5% of line length, minimum 2%
 
     // Start perpendicular segment
     const startSegStart = new THREE.Vector3()
@@ -337,7 +337,7 @@ export default class Label extends Atom {
 
     // Calculate end segments
     const lineLength = start.distanceTo(end);
-    const endSegmentLength = Math.max(lineLength * 0.05, 1 * unitScale);
+    const endSegmentLength = Math.max(lineLength * 0.05, lineLength * 0.02); // 5% of line length, minimum 2%
 
     const startSegStart = new THREE.Vector3()
       .copy(start)
