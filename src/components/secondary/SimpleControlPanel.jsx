@@ -1618,6 +1618,29 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         />
                       </div>
                     );
+                  case "label":
+                    return (
+                      <div key={key} style={labelStyle}>
+                        <span
+                          style={{
+                            width: inputFullWidth ? 0 : 70,
+                            color: "var(--control-text-muted)",
+                            overflow: "clip",
+                          }}
+                        >
+                          {label}:
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 14,
+                            color: "var(--control-text-muted)",
+                            flex: "1 1 0",
+                          }}
+                        >
+                          {currentValue ?? config.value ?? ""}
+                        </span>
+                      </div>
+                    );
                   case "select":
                     return (
                       <div key={key} style={labelStyle}>
