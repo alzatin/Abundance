@@ -284,6 +284,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [activeEye, setActiveEye] = useState({});
   // Resizing state
+  const RESIZE_MIN_WIDTH = 200;
+  const RESIZE_MIN_HEIGHT = 120;
   const [panelSize, setPanelSize] = useState({
     width: minWidth,
     height: maxHeight,
@@ -347,8 +349,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     const dx = e.clientX - lastMousePos.current.x;
     const dy = e.clientY - lastMousePos.current.y;
     setPanelSize((prev) => {
-      let newWidth = Math.max(200, prev.width + dx);
-      let newHeight = Math.max(120, prev.height + dy);
+      let newWidth = Math.max(RESIZE_MIN_WIDTH, prev.width + dx);
+      let newHeight = Math.max(RESIZE_MIN_HEIGHT, prev.height + dy);
       return { width: newWidth, height: newHeight };
     });
     lastMousePos.current = { x: e.clientX, y: e.clientY };
@@ -359,6 +361,50 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     document.removeEventListener("mousemove", handleResizeMouseMove);
     document.removeEventListener("mouseup", handleResizeMouseUp);
   };
+
+  // Touch event handlers for resizing (mobile support)
+  const handleResizeTouchStart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resizingRef.current = true;
+    const touch = e.touches[0];
+    lastMousePos.current = { x: touch.clientX, y: touch.clientY };
+    document.addEventListener("touchmove", handleResizeTouchMove, {
+      passive: false,
+    });
+    document.addEventListener("touchend", handleResizeTouchEnd);
+  };
+
+  const handleResizeTouchMove = (e) => {
+    if (!resizingRef.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const dx = touch.clientX - lastMousePos.current.x;
+    const dy = touch.clientY - lastMousePos.current.y;
+    setPanelSize((prev) => {
+      let newWidth = Math.max(RESIZE_MIN_WIDTH, prev.width + dx);
+      let newHeight = Math.max(RESIZE_MIN_HEIGHT, prev.height + dy);
+      return { width: newWidth, height: newHeight };
+    });
+    lastMousePos.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleResizeTouchEnd = () => {
+    resizingRef.current = false;
+    document.removeEventListener("touchmove", handleResizeTouchMove);
+    document.removeEventListener("touchend", handleResizeTouchEnd);
+  };
+
+  // Cleanup resize listeners if the component unmounts during an active resize
+  React.useEffect(() => {
+    return () => {
+      document.removeEventListener("mousemove", handleResizeMouseMove);
+      document.removeEventListener("mouseup", handleResizeMouseUp);
+      document.removeEventListener("touchmove", handleResizeTouchMove);
+      document.removeEventListener("touchend", handleResizeTouchEnd);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls, [controls]);
 
@@ -1959,8 +2005,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
             position: "absolute",
             right: 0,
             bottom: 0,
-            width: 18,
-            height: 18,
+            width: 44,
+            height: 44,
             cursor: "nwse-resize",
             zIndex: 20,
             background: "transparent",
@@ -1968,8 +2014,10 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
             alignItems: "flex-end",
             justifyContent: "flex-end",
             userSelect: "none",
+            touchAction: "none",
           }}
           onMouseDown={handleResizeMouseDown}
+          onTouchStart={handleResizeTouchStart}
         >
           <svg width="18" height="18" style={{ pointerEvents: "none" }}>
             <path
