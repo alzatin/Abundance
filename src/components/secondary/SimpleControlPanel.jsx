@@ -81,6 +81,9 @@ const CaretDownIcon = ({ size = 12, collapsed }) => (
 );
 
 // CSS variable-driven styles
+const RESIZE_MIN_WIDTH = 200;
+const RESIZE_MIN_HEIGHT = 120;
+
 const panelVars = {
   "--panel-background": "var(--abundance-color-background)",
   "--panel-foreground": "#e0e5ef",
@@ -284,8 +287,6 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [activeEye, setActiveEye] = useState({});
   // Resizing state
-  const RESIZE_MIN_WIDTH = 200;
-  const RESIZE_MIN_HEIGHT = 120;
   const [panelSize, setPanelSize] = useState({
     width: minWidth,
     height: maxHeight,
@@ -294,6 +295,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   const contentRef = React.useRef();
   const resizingRef = React.useRef(false);
   const lastMousePos = React.useRef({ x: 0, y: 0 });
+  // Stores registered listener references so unmount cleanup removes the right functions
+  const resizeListenersRef = React.useRef({});
   // On mount, set initial height to fit content (up to maxHeight)
   React.useEffect(() => {
     if (
@@ -340,6 +343,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     e.stopPropagation();
     resizingRef.current = true;
     lastMousePos.current = { x: e.clientX, y: e.clientY };
+    resizeListenersRef.current.mouseMove = handleResizeMouseMove;
+    resizeListenersRef.current.mouseUp = handleResizeMouseUp;
     document.addEventListener("mousemove", handleResizeMouseMove);
     document.addEventListener("mouseup", handleResizeMouseUp);
   };
@@ -369,6 +374,8 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     resizingRef.current = true;
     const touch = e.touches[0];
     lastMousePos.current = { x: touch.clientX, y: touch.clientY };
+    resizeListenersRef.current.touchMove = handleResizeTouchMove;
+    resizeListenersRef.current.touchEnd = handleResizeTouchEnd;
     document.addEventListener("touchmove", handleResizeTouchMove, {
       passive: false,
     });
@@ -398,12 +405,17 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   // Cleanup resize listeners if the component unmounts during an active resize
   React.useEffect(() => {
     return () => {
-      document.removeEventListener("mousemove", handleResizeMouseMove);
-      document.removeEventListener("mouseup", handleResizeMouseUp);
-      document.removeEventListener("touchmove", handleResizeTouchMove);
-      document.removeEventListener("touchend", handleResizeTouchEnd);
+      const { mouseMove, mouseUp, touchMove, touchEnd } =
+        resizeListenersRef.current;
+      if (mouseMove)
+        document.removeEventListener("mousemove", mouseMove);
+      if (mouseUp)
+        document.removeEventListener("mouseup", mouseUp);
+      if (touchMove)
+        document.removeEventListener("touchmove", touchMove);
+      if (touchEnd)
+        document.removeEventListener("touchend", touchEnd);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [controlValues, setControlValue, { controls: registeredControls }] =
     useControls(controls, [controls]);
