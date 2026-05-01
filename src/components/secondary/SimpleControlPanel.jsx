@@ -398,7 +398,9 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
 
   const handleResizeTouchEnd = () => {
     resizingRef.current = false;
-    document.removeEventListener("touchmove", handleResizeTouchMove);
+    document.removeEventListener("touchmove", handleResizeTouchMove, {
+      passive: false,
+    });
     document.removeEventListener("touchend", handleResizeTouchEnd);
   };
 
@@ -412,7 +414,9 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
       if (mouseUp)
         document.removeEventListener("mouseup", mouseUp);
       if (touchMove)
-        document.removeEventListener("touchmove", touchMove);
+        document.removeEventListener("touchmove", touchMove, {
+          passive: false,
+        });
       if (touchEnd)
         document.removeEventListener("touchend", touchEnd);
     };
