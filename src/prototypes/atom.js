@@ -320,6 +320,12 @@ export default class Atom extends ObservableEntity {
     }
   }
 
+  /**
+   * Register this.onUpstreamChange as a subscriber to all inputs. If there are
+   * more than zero inputs call back onUpstreamChange once after all inputs
+   * are added and return True. Returns False if there were no inputs, and
+   * therefore onUpstreamChange wasn't called.
+   */
   _subscribeToInputs() {
     this.inputs.forEach((input) => {
       input.subscribe(
@@ -332,7 +338,9 @@ export default class Atom extends ObservableEntity {
     });
     if (this.inputs.length > 0) {
       this.onUpstreamChange();
+      return true;
     }
+    return false;
   }
 
   _addIOWithoutSubscribing(
@@ -971,7 +979,7 @@ export default class Atom extends ObservableEntity {
    */
   inputsAreReady() {
     return this.inputs.every((input) => {
-      return input.getState().status == Status.READY;
+      return input.getState().status == Status.READY || input.isOptional;
     });
   }
 
@@ -1279,7 +1287,16 @@ export default class Atom extends ObservableEntity {
     return predictedParams;
   }
 
-  createInputParams() {
+  createInputParams(setInputChanged) {
+    // Stash the React-side state setter so other code on this atom (e.g.
+    // `Code#updateCode` after re-parsing its `Inputs = [...]` block, or
+    // `Import#loadFile` after a file load completes) can ask the input
+    // panel to re-derive its controls. Subclasses no longer need to
+    // duplicate this assignment.
+    if (typeof setInputChanged === "function") {
+      this.setInputChanged = setInputChanged;
+    }
+
     let inputParams = {};
 
     /** Runs through active atom inputs and adds IO parameters to default param*/

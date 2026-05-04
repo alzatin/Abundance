@@ -1,6 +1,85 @@
 import Atom from "../prototypes/atom.js";
 import GlobalVariables from "../js/globalvariables.js";
 import { ValueChangeCommand } from "../js/undoCommands.js";
+import { parseCodeHeader } from "./utils/code-header-parser.js";
+import { proxy } from "comlink";
+
+/** Maximum number of console entries retained on a Code atom. Older
+ *  entries are dropped from the head of the list when the cap is hit. */
+const MAX_CONSOLE_ENTRIES = 500;
+
+/**
+ * Monaco instance captured by the code editor component once it mounts.
+ * Used by `Code#updateCode()` to transpile TypeScript atom source to
+ * JavaScript so the worker never has to deal with type annotations.
+ */
+let _monaco = null;
+
+/**
+ * Called by the code editor React component once Monaco has mounted so
+ * that Code atoms can reach the TypeScript language worker.
+ */
+export function setMonacoInstance(monaco) {
+  _monaco = monaco;
+}
+
+/**
+ * Transpile a TypeScript source string to JavaScript using Monaco's
+ * bundled TS language worker. Throws a descriptive Error on failure so the
+ * caller can surface the problem to the user; callers should catch and
+ * route to `setError()`.
+ */
+async function transpileTypeScript(tsSource) {
+  if (!tsSource) return "";
+  if (!_monaco) {
+    throw new Error(
+      "TypeScript transpiler not ready: open the code editor at least once before running.",
+    );
+  }
+  const uri = _monaco.Uri.parse(`file:///abundance-code-${Date.now()}.ts`);
+  const model = _monaco.editor.createModel(tsSource, "typescript", uri);
+  try {
+    const getWorker = await _monaco.languages.typescript.getTypeScriptWorker();
+    const worker = await getWorker(uri);
+    const output = await worker.getEmitOutput(uri.toString());
+    const jsFile = output.outputFiles.find((f) => f.name.endsWith(".js"));
+    if (jsFile && jsFile.text) return jsFile.text;
+
+    // Emit was skipped or produced no .js — gather diagnostics to tell the user why.
+    let details = "";
+    if (output.emitSkipped) {
+      details += " emitSkipped=true.";
+      // noEmit is the usual culprit; include the current compiler options to
+      // make misconfiguration obvious in the console.
+      try {
+        const opts =
+          _monaco.languages.typescript.typescriptDefaults.getCompilerOptions();
+        details += ` compilerOptions=${JSON.stringify(opts)}.`;
+      } catch {}
+    }
+    try {
+      const [syntactic, semantic] = await Promise.all([
+        worker.getSyntacticDiagnostics(uri.toString()),
+        worker.getSemanticDiagnostics(uri.toString()),
+      ]);
+      const msgs = [...syntactic, ...semantic]
+        .map((d) => {
+          const text =
+            typeof d.messageText === "string"
+              ? d.messageText
+              : d.messageText?.messageText || "";
+          return `TS${d.code}: ${text}`;
+        })
+        .filter(Boolean);
+      if (msgs.length) details += ` diagnostics: ${msgs.join("; ")}`;
+    } catch {}
+    throw new Error(
+      `TypeScript transpilation produced no JavaScript output.${details}`,
+    );
+  } finally {
+    model.dispose();
+  }
+}
 
 /**
  * The Code molecule type adds support for executing arbitrary jsxcad code.
@@ -29,10 +108,54 @@ export default class Code extends Atom {
      */
     this.description = "Defines a Replicad code block.";
     /**
-     * The code contained within the atom stored as a string.
+     * Default code for new TypeScript atoms. Inputs are declared as `run()`
+     * parameters; types map to `number`/`string`/`boolean`/`geometry`.
      * @type {string}
      */
-    this.code = `
+    const TS_DEFAULT_CODE = `
+/**
+ * This code atom implements a simple linear layout funtion which repeats
+ * shape count times in the positive X direction with offset space
+ * between each. Works for either 2D or 3D shapes. Negative offset
+ * and negative counts invert the direction.
+ * 
+ * Notice that defaults are set for both count and offset.
+ */
+function run(shape: Assembly, count: number = 1, offset: number = 5) {
+  if (count == 0) {
+    return []
+  }
+  const isReversed = count < 0;
+  if (isReversed) {
+    offset = -1 * offset
+  }
+  count = Math.abs(count)
+
+  const result = [shape]
+  for (let i = 1; i < count; i++) {
+    const movedCopy = new Assembly(shape).onLeafs((leaf) => {
+      if (leaf.is2D()) {
+        leaf.geometry = leaf.geometry.translate(offset * i, 0)
+      } else if (leaf.geometry instanceof replicad._3DShape) {
+        leaf.geometry = leaf.geometry.translate(offset * i, 0, 0)
+      }
+      return leaf;
+    })
+
+    if (movedCopy) {
+      result.push(movedCopy)
+    }
+  }
+
+  return result;
+}
+`;
+    /**
+     * Legacy default code for JavaScript atoms, kept so that projects loaded
+     * from before the interpreterVersion field existed continue to work.
+     * @type {string}
+     */
+    const JS_DEFAULT_CODE = `
 // Example Code
 const Inputs = [
   { inputName: "shape", type: "geometry", defaultValue: null },
@@ -64,26 +187,46 @@ return assembly;
     this.parent = values.parent || null;
     this.uniqueID = values.uniqueID || GlobalVariables.generateUniqueID();
 
-    // Only mark inputs as ready if they have defined values and are not sentinel objects
-    values.ioValues?.forEach((ioValue) => {
-      const ap = this._addIOWithoutSubscribing(ioValue.name, ioValue.valueType);
-      // Check if value is defined and not the NO_GEOMETRY sentinel
-      const isNoGeometry =
-        ioValue.ioValue && ioValue.ioValue == "__GEOMETRY_INPUT__";
-      if (
-        ioValue.ioValue !== undefined &&
-        ioValue.ioValue !== null &&
-        !isNoGeometry
-      ) {
-        ap.setReady(ioValue.ioValue);
+    /**
+     * The interpreter version for this code atom.
+     * 0 = JavaScript (legacy)
+     * 1 = TypeScript (default for new atoms)
+     * New atoms default to TypeScript. Atoms loaded from saves without this
+     * field are treated as JavaScript to preserve backwards compatibility.
+     * @type {number}
+     */
+    const isNewAtom =
+      values.code === undefined && values.interpreterVersion === undefined;
+    this.interpreterVersion = values.interpreterVersion ?? (isNewAtom ? 1 : 0);
+    this.code =
+      values.code ||
+      (this.interpreterVersion >= 1 ? TS_DEFAULT_CODE : JS_DEFAULT_CODE);
+
+    /**
+     * For TypeScript atoms, the transpiled JavaScript output produced by the
+     * Monaco TS worker at save time. Used by the worker to execute the code.
+     * Not tracked in undo history — regenerated on every save.
+     * @type {string}
+     */
+    this.compiledCode = values.compiledCode || "";
+
+    // Manually construct the output AP with an "any" value type.
+    this._addIOWithoutSubscribing("output", "any", null, "output");
+    // Parse inputs from the saved code to get their structure.
+    // Then set their .value based on the values.ioValues state (ie the deserialized AP state).
+    try {
+      this.parseInputs();
+    } catch (err) {
+      this.setError(err);
+      console.error("Failed to parse code header for inputs:", err);
+      return; // Don't subscribe since our input set is stale.
+    }
+    this.setValues(values);
+    this.inputs.forEach((input) => {
+      if (input.value) {
+        input.setReady(input.value); // mark ready if applicable now that values are loaded from save.
       }
     });
-    this._addIOWithoutSubscribing("output", "geometry", null, "output");
-
-    this.setValues([]);
-    this.code = values.code || this.code;
-
-    this.parseInputs();
     this._subscribeToInputs();
   }
 
@@ -122,15 +265,11 @@ return assembly;
       label: "Save Code",
       order: 8,
       onClick: () => {
+        // The InputPanel will be re-derived automatically once
+        // `updateCode` finishes parsing the new `Inputs = [...]` block
+        // and calls `this.setInputChanged(...)` (registered by
+        // Atom#createInputParams). No need to fire a stale signature here.
         this.saveCode();
-        setInputChanged(
-          this.inputs
-            .map(
-              (input) =>
-                `${input.name}:${input.defaultValue}:${input.valueType}`,
-            )
-            .join("|"),
-        );
       },
     };
     inputParams["Close Editor"] = {
@@ -146,8 +285,10 @@ return assembly;
 
   /**
    * Called when code editor save button is clicked. Updates the code and value of the atom.
+   * In TypeScript mode this also transpiles the source to JavaScript and
+   * stores it on `this.compiledCode` so the worker never sees TS syntax.
    */
-  updateCode(code) {
+  async updateCode(code) {
     if (!GlobalVariables.isUndoing) {
       const oldCode = this.code;
       GlobalVariables.pushUndoCommand(
@@ -165,9 +306,42 @@ return assembly;
     }
     this.code = code;
 
-    this.parseInputs();
-    this._subscribeToInputs();
-    this.onUpstreamChange();
+    if ((this.interpreterVersion ?? 0) >= 1) {
+      try {
+        this.compiledCode = await transpileTypeScript(code);
+      } catch (err) {
+        this.compiledCode = "";
+        this.setError(err);
+        console.error("TypeScript transpilation failed:", err);
+      }
+    } else {
+      this.compiledCode = "";
+    }
+
+    try {
+      this.parseInputs();
+    } catch (err) {
+      this.setError(err);
+      console.error("Failed to parse code header for inputs:", err);
+      return; // Don't subscribe since our input set is stale.
+    }
+    const alreadyCalledBack = this._subscribeToInputs();
+    if (!alreadyCalledBack) {
+      // Force a call back even if we don't have inputs. Some code atoms
+      // Generate a useful output even with no inputs.
+      this.onUpstreamChange();
+    }
+    // Notify the InputPanel that the input list may have changed (added,
+    // removed, renamed, retyped). The base recompute path also calls this
+    // on success, but parse-only changes (no upstream change, or zero
+    // inputs) wouldn't otherwise trigger a re-derive of the controls.
+    if (typeof this.setInputChanged === "function") {
+      this.setInputChanged(
+        this.inputs
+          .map((i) => `${i.name}:${i.defaultValue}:${i.valueType}`)
+          .join("|"),
+      );
+    }
     this.sendToRender();
   }
 
@@ -195,20 +369,109 @@ return assembly;
   }
 
   /**
-   * Grab the code as a text string and execute it.
+   * Grab the code as a text string and execute it. In TS mode we pass the
+   * pre-transpiled JavaScript so the worker never has to handle type syntax.
    */
-  compute(argumentsArray) {
-    return GlobalVariables.cad.code(
-      this.code,
-      argumentsArray,
+  compute(argsDict) {
+    const isTs = (this.interpreterVersion ?? 0) >= 1;
+    const codeToRun = isTs ? this.compiledCode || "" : this.code;
+    // Comlink proxy the worker can use to send log messages from the user's
+    // code.
+    const onLog = isTs
+      ? proxy((level, message, stack) => {
+          this.appendConsoleEntry({ level, message, stack });
+        })
+      : undefined;
+    const promise = GlobalVariables.cad.code(
+      codeToRun,
+      argsDict,
       this.getContext(),
+      this.interpreterVersion ?? 0,
+      this.uniqueID,
+      onLog,
     );
+    if (isTs) {
+      // Mark end of an execution of this code atom in the console UI
+      const finalize = (status) => {
+        this.appendConsoleEntry({
+          level: "divider",
+          message: status === "ok" ? "run finished" : "run errored",
+          stack: null,
+        });
+      };
+      promise.then(
+        () => finalize("ok"),
+        () => finalize("error"),
+      );
+    }
+    return promise;
+  }
+
+  /**
+   * Append a console entry captured from this atom's worker-side execution.
+   * Trims the buffer to `MAX_CONSOLE_ENTRIES` and notifies registered log
+   * subscribers (NOT general atom subscribers — logs must not trigger
+   * downstream recomputation).
+   */
+  appendConsoleEntry(entry) {
+    if (!Array.isArray(this.consoleEntries)) this.consoleEntries = [];
+    const nextId =
+      this.consoleEntries.length > 0
+        ? parseInt(this.consoleEntries[this.consoleEntries.length - 1].id) + 1
+        : "0";
+    this.consoleEntries.push({
+      ...entry,
+      timestamp: Date.now(),
+      id: `${nextId}`,
+    });
+    if (this.consoleEntries.length > MAX_CONSOLE_ENTRIES) {
+      this.consoleEntries.splice(
+        0,
+        this.consoleEntries.length - MAX_CONSOLE_ENTRIES,
+      );
+    }
+    this._notifyLogSubscribers();
+  }
+
+  /** Clear all captured console entries on this atom. */
+  clearConsoleEntries() {
+    this.consoleEntries = [];
+    this._notifyLogSubscribers();
+  }
+
+  /**
+   * Subscribe to console-log changes on this atom. This is intentionally
+   * separate from the regular atom subscription channel so that log
+   * activity does NOT trigger DAG recomputation in downstream atoms.
+   * @returns an unsubscribe function.
+   */
+  subscribeToLogs(callback) {
+    if (!this._logSubscribers) this._logSubscribers = new Set();
+    this._logSubscribers.add(callback);
+    return () => {
+      this._logSubscribers?.delete(callback);
+    };
+  }
+
+  _notifyLogSubscribers() {
+    if (!this._logSubscribers) return;
+    for (const cb of this._logSubscribers) {
+      try {
+        cb();
+      } catch (e) {
+        console.error("Log subscriber threw:", e);
+      }
+    }
   }
 
   /**
    * This function reads the string of inputs the user specifies and adds them to the atom.
    */
   parseInputs() {
+    if ((this.interpreterVersion ?? 0) >= 1) {
+      this.parseTsRunSignature();
+      return;
+    }
     // Match Inputs = [{inputName: ..., type: ..., defaultValue: ...}, ...]
     // Try to extract a const Inputs = [...] block
     // Only parse the first Inputs declaration (const Inputs = [...] or Inputs = [...])
@@ -366,6 +629,43 @@ return assembly;
   }
 
   /**
+   * Parse the parameters of the TypeScript `run(...)` function and register
+   * them as atom inputs.
+   *
+   * String parsing is delegated to `parseCodeHeader`. Throws an error if
+   * parsing fails.
+   */
+  parseTsRunSignature() {
+    let parsedArgs;
+    parsedArgs = parseCodeHeader(this.code);
+
+    const declaredNames = [];
+    for (const arg of parsedArgs) {
+      declaredNames.push(arg.name);
+      let existing = this.inputs.find((input) => input.name === arg.name);
+      if (!existing) {
+        existing = this._addIOWithoutSubscribing(
+          arg.name,
+          arg.type,
+          arg.defaultValue,
+          "input",
+        );
+      }
+      // Overwrite existing inputs properties based on latest version of code.
+      existing.valueType = arg.type;
+      existing.defaultValue = arg.defaultValue;
+      existing.isOptional = arg.isOptional;
+    }
+
+    // Remove inputs no longer declared in the run() signature.
+    [...this.inputs].forEach((input) => {
+      if (input.type === "input" && !declaredNames.includes(input.name)) {
+        this.removeIO(input.type, input.name, this);
+      }
+    });
+  }
+
+  /**
    * Edit the atom's code when it is double clicked
    * @param {number} x - The X coordinate of the click
    * @param {number} y - The Y coordinate of the click
@@ -389,6 +689,17 @@ return assembly;
     }
 
     return clickProcessed;
+  }
+
+  /**
+   * Updates the interpreter version for this code atom and re-serializes.
+   * @param {number} version - 0 for JavaScript, 1 for TypeScript
+   */
+  updateInterpreterVersion(version) {
+    this.interpreterVersion = version;
+    // Persist immediately so the next save/serialize picks it up.
+    // No recompute needed — only the editor mode changes.
+    this.sendToRender();
   }
 
   /**
@@ -422,9 +733,13 @@ return assembly;
     //Save the readme text to the serial stream
     var valuesObj = super.serialize(values);
 
-    valuesObj.codeVersion = 1;
-    // Use safe serialization to prevent large code from bloating the save file
-    Atom.safeSerializeValue(valuesObj, "code", this.code, this.name || "Code");
+    valuesObj.interpreterVersion = this.interpreterVersion ?? 0;
+    valuesObj.code = this.code;
+    //    Atom.safeSerializeValue(valuesObj, "code", this.code, this.name || "Code");
+
+    if (this.compiledCode) {
+      valuesObj.compiledCode = this.compiledCode;
+    }
 
     return valuesObj;
   }
