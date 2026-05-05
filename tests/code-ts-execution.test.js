@@ -120,8 +120,8 @@ describe("Code atom TS-mode execution (executeCode, interpreterVersion=1)", () =
 
     it("sets dimension='2D' on a Drawing returned from run()", async () => {
       // Regression: addAssemblyPartsToCache was missing the `dimension` field,
-      // causing 2D results to have dimension=undefined (treated as 2D by chance,
-      // but undefined !== "2D" which could break strict checks).
+      // causing results to have dimension=undefined, which util.is3D() treats
+      // as falsy/2D — correct for 2D but wrong for 3D shapes.
       const code = `function run() { return replicad.drawRectangle(5, 5); }`;
       const context = { project: "code-ts-dim-2d" };
       const result = await executeCode(code, {}, context, VERSION_TS, ATOM_ID);
@@ -152,7 +152,7 @@ describe("Code atom TS-mode execution (executeCode, interpreterVersion=1)", () =
       expect(is3D(result)).toBe(true);
     });
 
-    it("can be fused with another 3D shape without error (issue: code atom + extrude → fusion)", async () => {
+    it("successfully fuses code atom 3D output with extruded shape", async () => {
       // Regression test for the reported bug: fusing a code atom's 3D output
       // with an extruded shape threw "Fusion must be composed from only sketches
       // OR only solids" because the code atom result was missing `dimension`.
