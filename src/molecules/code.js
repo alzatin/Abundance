@@ -114,40 +114,38 @@ export default class Code extends Atom {
      */
     const TS_DEFAULT_CODE = `
 /**
- * This code atom implements a simple linear layout funtion which repeats
- * shape count times in the positive X direction with offset space
- * between each. Works for either 2D or 3D shapes. Negative offset
- * and negative counts invert the direction.
- * 
- * Notice that defaults are set for both count and offset.
+ * Example Code Atom — demonstrates the TypeScript API.
+ *
+ * Parameters declared in run() become this atom's inputs.
+ * Supported types: number, string, boolean, Assembly (for geometry).
+ * Parameters with = defaults are optional; others require a connection.
  */
-function run(shape: Assembly, count: number = 1, offset: number = 5) {
-  if (count == 0) {
-    return []
-  }
-  const isReversed = count < 0;
-  if (isReversed) {
-    offset = -1 * offset
-  }
-  count = Math.abs(count)
+function run(
+  shape: Assembly,            // geometry input – connects to another atom
+  radius: number = 5,         // number input with a default value
+  height: number = 10,        // number input with a default value
+  color: string = "#A3CE5B",  // string input with a default value
+  visible: boolean = true     // boolean input with a default value
+) {
+  // Use the replicad API to create a cylinder from a circle sketch
+  const cylinderGeom = replicad
+    .drawCircle(radius)
+    .sketchOnPlane()
+    .extrude(height);
 
-  const result = [shape]
-  for (let i = 1; i < count; i++) {
-    const movedCopy = new Assembly(shape).onLeafs((leaf) => {
-      if (leaf.is2D()) {
-        leaf.geometry = leaf.geometry.translate(offset * i, 0)
-      } else if (leaf.geometry instanceof replicad._3DShape) {
-        leaf.geometry = leaf.geometry.translate(offset * i, 0, 0)
-      }
-      return leaf;
-    })
+  // Wrap the geometry in an Assembly to attach display properties
+  const cylinder = new Assembly({
+    geometry: cylinderGeom,
+    color: color,
+    tags: ["example", "cylinder"],
+    bom: [\`Cylinder r=\${radius} h=\${height}\`],
+  });
 
-    if (movedCopy) {
-      result.push(movedCopy)
-    }
-  }
-
-  return result;
+  // Combine with the input shape if connected, apply visibility toggle
+  const results = [];
+  if (shape) results.push(shape);
+  if (visible) results.push(cylinder);
+  return results;
 }
 `;
     /**
