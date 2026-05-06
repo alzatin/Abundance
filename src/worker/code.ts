@@ -230,6 +230,11 @@ async function addAssemblyPartsToCache(
         plane: assembly.plane
           ? util.asSimplePlane(assembly.plane)
           : util.XYPlane,
+        // The Assembly class only has is2D()/is3D() methods, not a `dimension`
+        // property. Without this, util.is3D() sees `undefined` and treats even
+        // 3D code-atom outputs as 2D sketches, breaking fusion with extruded
+        // shapes ("Fusion must be composed from only sketches OR only solids").
+        dimension: assembly.is2D() ? "2D" : "3D",
       };
     } else {
       const children = await Promise.all(

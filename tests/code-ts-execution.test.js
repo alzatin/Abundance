@@ -8,8 +8,9 @@
 // Companion file: tests/code-ts-input-parsing.test.js (covers the
 // signature → AP descriptor pipeline via parseCodeHeader).
 import { describe, it, expect, beforeAll } from "vitest";
-import { init } from "../src/worker/util.ts";
+import { init, is3D } from "../src/worker/util.ts";
 import { executeCode } from "../src/worker/code.ts";
+import { fusion } from "../src/worker/interaction.ts";
 
 const VERSION_TS = 1;
 const ATOM_ID = "test-code-atom";
@@ -115,6 +116,69 @@ describe("Code atom TS-mode execution (executeCode, interpreterVersion=1)", () =
       expect(result.color).toBe("#ff0000");
       expect(result.tags).toEqual(["red"]);
       expect(result.geometry).toBeTypeOf("string");
+    });
+
+    it("sets dimension='2D' on a Drawing returned from run()", async () => {
+      // Regression: addAssemblyPartsToCache was missing the `dimension` field,
+      // causing results to have dimension=undefined, which util.is3D() treats
+      // as falsy/2D — correct for 2D but wrong for 3D shapes.
+      const code = `function run() { return replicad.drawRectangle(5, 5); }`;
+      const context = { project: "code-ts-dim-2d" };
+      const result = await executeCode(code, {}, context, VERSION_TS, ATOM_ID);
+      expect(result.dimension).toBe("2D");
+      expect(is3D(result)).toBe(false);
+    });
+
+    it("sets dimension='3D' on a 3D shape returned from run()", async () => {
+      // Regression: addAssemblyPartsToCache spread `...assembly` (an Assembly
+      // class instance) which has no `dimension` field — only is2D()/is3D()
+      // methods. This caused 3D code-atom outputs to have dimension=undefined,
+      // which util.is3D() treated as falsy → "2D", triggering the
+      // "Fusion must be composed from only sketches OR only solids" error when
+      // fusing a code-atom 3D result with an extruded shape.
+      const code = `function run(r, h) {
+        const sketch = replicad.drawCircle(r).sketchOnPlane();
+        return sketch.extrude(h);
+      }`;
+      const context = { project: "code-ts-dim-3d" };
+      const result = await executeCode(
+        code,
+        { r: 5, h: 10 },
+        context,
+        VERSION_TS,
+        ATOM_ID,
+      );
+      expect(result.dimension).toBe("3D");
+      expect(is3D(result)).toBe(true);
+    });
+
+    it("successfully fuses code atom 3D output with extruded shape", async () => {
+      // Regression test for the reported bug: fusing a code atom's 3D output
+      // with an extruded shape threw "Fusion must be composed from only sketches
+      // OR only solids" because the code atom result was missing `dimension`.
+      const code = `function run(r, h) {
+        const sketch = replicad.drawCircle(r).sketchOnPlane();
+        return sketch.extrude(h);
+      }`;
+      const context = { project: "code-ts-fusion-regression" };
+      const codeResult = await executeCode(
+        code,
+        { r: 3, h: 5 },
+        context,
+        VERSION_TS,
+        ATOM_ID,
+      );
+
+      // Build a second 3D shape the normal way (simulates an Extrude atom).
+      const { rectangle } = await import("../src/worker/shapes.ts");
+      const { extrude } = await import("../src/worker/actions.ts");
+      const rect = await rectangle(6, 6, context);
+      const box = await extrude(rect, 5, context);
+
+      // This must NOT throw.
+      const fused = await fusion([codeResult, box], context);
+      expect(fused).toBeDefined();
+      expect(is3D(fused)).toBe(true);
     });
   });
 
