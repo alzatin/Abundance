@@ -114,37 +114,129 @@ export default class Code extends Atom {
      */
     const TS_DEFAULT_CODE = `
 /**
- * Example Code Atom — demonstrates the TypeScript API.
+ * =========================================================================
+ *  ABUNDANCE CODE ATOM — Quick Reference
+ * =========================================================================
  *
- * Parameters declared in run() become this atom's inputs.
- * Supported types: number, string, boolean, Assembly (for geometry).
- * Parameters with = defaults are optional; others require a connection.
+ *  HOW INPUTS WORK
+ *  ---------------
+ *  Every parameter of run() becomes an input port on this atom.
+ *  Four types are supported:
+ *
+ *    number   -> numeric input / slider
+ *    string   -> text input  (great for hex color codes, labels, etc.)
+ *    boolean  -> true/false toggle
+ *    Assembly -> geometry -- wire this to the output of another atom
+ *
+ *  Give a parameter a default value ( = x ) to make it optional.
+ *  Mark it with ? (name?: Assembly) to make it optional with no default.
+ *  Parameters without a default must be connected before the atom runs.
+ *
+ *  RETURN VALUE
+ *  ------------
+ *  Return an Assembly, an Assembly[], or a primitive (number/string/boolean).
+ *  Returning an Assembly[] lets downstream atoms (BOM, cut layout...)
+ *  see each piece independently.
+ *
+ *  GEOMETRY API  (replicad is available as a global)
+ *  -------------------------------------------------
+ *  Create 2-D sketches
+ *    replicad.drawCircle(radius)
+ *    replicad.drawRectangle(width, height)
+ *    replicad.drawRoundedRectangle(width, height, cornerRadius)
+ *
+ *  Turn a 2-D sketch into a 3-D solid
+ *    sketch.sketchOnPlane().extrude(distance)
+ *    sketch.sketchOnPlane().revolve()          // rotate 360 deg around Z
+ *
+ *  Create 3-D primitives directly
+ *    replicad.makeBaseBox(width, depth, height)
+ *    replicad.makeSphere(radius)
+ *    replicad.makeCylinder(radius, height)
+ *
+ *  Boolean operations
+ *    solidA.fuse(solidB)                       // union
+ *    solidA.cut(solidB)                        // difference (cut a hole)
+ *    solidA.intersect(solidB)                  // intersection
+ *
+ *  Post-processing
+ *    solid.fillet(radius)                      // round ALL edges
+ *    solid.fillet(r, e => e.inPlane("XY", z))  // round only top-face edges
+ *    solid.chamfer(distance)                   // bevel ALL edges
+ *    solid.translate(x, y, z)                  // move the solid
+ *    solid.rotate(angle, [0, 0, 1])            // rotate around Z axis
+ *
+ *  ASSEMBLY CLASS
+ *  --------------
+ *  Wrap any replicad solid in an Assembly to attach display metadata:
+ *    new Assembly({ geometry, color, tags, bom })
+ *      geometry -> replicad solid / drawing returned by the API above
+ *      color    -> hex string shown in the 3-D viewport  ("#A3CE5B")
+ *      tags     -> string[] used for filtering in cut layout / BOM
+ *      bom      -> string[] lines added to the Bill of Materials panel
+ *
+ *  AI PROMPT TIP
+ *  -------------
+ *  Copy the code in this editor into ChatGPT / Claude and say something like:
+ *    "Modify this Abundance Code Atom to create a gear with 12 teeth"
+ *    "Change this to make a hexagonal nut instead of a round plate"
+ *  The comments above give the AI all the context it needs to produce
+ *  valid, working Abundance TypeScript code.
+ * =========================================================================
+ */
+
+/**
+ * A rectangular mounting plate with a circular hole in the centre.
+ * All parameters have defaults so the atom produces geometry immediately
+ * after creation — no connections required to get started.
  */
 function run(
-  shape: Assembly,            // geometry input – connects to another atom
-  radius: number = 5,         // number input with a default value
-  height: number = 10,        // number input with a default value
-  color: string = "#A3CE5B",  // string input with a default value
-  visible: boolean = true     // boolean input with a default value
+  width: number = 40,        // plate width       (mm)
+  depth: number = 30,        // plate depth       (mm)
+  thickness: number = 5,     // plate thickness   (mm)
+  holeRadius: number = 6,    // centre hole radius (mm)
+  color: string = "#5B9BD5", // hex color shown in the 3-D viewport
+  addFillet: boolean = true, // when true, rounds the top edges of the plate
+  extra?: Assembly           // optional: connect another atom to add its geometry
 ) {
-  // Use the replicad API to create a cylinder from a circle sketch
-  const cylinderGeom = replicad
-    .drawCircle(radius)
-    .sketchOnPlane()
-    .extrude(height);
+  // ── Step 1: Create the base solid ────────────────────────────────────────
+  // makeBaseBox(width, depth, height) places a box with one corner at the
+  // origin.  Translate it so the hole will be centred at (0, 0).
+  let plate = replicad
+    .makeBaseBox(width, depth, thickness)
+    .translate(-width / 2, -depth / 2, 0);
 
-  // Wrap the geometry in an Assembly to attach display properties
-  const cylinder = new Assembly({
-    geometry: cylinderGeom,
+  // ── Step 2: Cut a through-hole in the centre ──────────────────────────────
+  // Extrude a circle slightly taller than the plate so the cut goes all the
+  // way through.  Start 1 mm below the bottom face to avoid coplanar issues.
+  const holeCutter = replicad
+    .drawCircle(holeRadius)
+    .sketchOnPlane()
+    .extrude(thickness + 2)
+    .translate(0, 0, -1);
+
+  plate = plate.cut(holeCutter);
+
+  // ── Step 3: Optional fillet on the top-face edges ────────────────────────
+  // inPlane("XY", thickness) selects only the edges that lie in the
+  // horizontal plane at z = thickness (i.e. the top face of the plate).
+  if (addFillet) {
+    plate = plate.fillet(1.5, (e) => e.inPlane("XY", thickness));
+  }
+
+  // ── Step 4: Wrap in an Assembly to set display properties ─────────────────
+  const plateAssembly = new Assembly({
+    geometry: plate,
     color: color,
-    tags: ["example", "cylinder"],
-    bom: [\`Cylinder r=\${radius} h=\${height}\`],
+    tags: ["plate", "mounting-plate"],
+    bom: [\`Mounting plate \${width}×\${depth}×\${thickness} mm\`],
   });
 
-  // Combine with the input shape if connected, apply visibility toggle
-  const results = [];
-  if (shape) results.push(shape);
-  if (visible) results.push(cylinder);
+  // ── Step 5: Combine with any upstream geometry ────────────────────────────
+  // Returning an array lets each piece stay independent for the BOM and
+  // cut-layout atoms.  If nothing is connected, \`extra\` is undefined.
+  const results: Assembly[] = [plateAssembly];
+  if (extra) results.push(extra);
   return results;
 }
 `;
