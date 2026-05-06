@@ -16,7 +16,7 @@ import {
   filter,
 } from "./indexeddbUtils";
 
-type ReplicadObject = replicad.Shape3D | replicad.Drawing | replicad.Wire;
+type ReplicadObject = replicad.Shape3D | replicad.Drawing | replicad.Wire | replicad.Vertex;
 
 type RequestContext = {
   project: string;
@@ -423,10 +423,10 @@ class GeometryProvider {
     const filletId = this._makeId("fillet", id, radius);
     await this.createIfAbsent(filletId, context, async () => {
       const geometry = await this.get(id, context);
-      if (geometry instanceof replicad.Wire) {
-        throw new Error("Cannot fillet a wire");
+      if (geometry instanceof replicad.Wire || geometry instanceof replicad.Vertex) {
+        throw new Error("Cannot fillet a wire or Point3D");
       }
-      return geometry.fillet(radius);
+      return (geometry as replicad.Shape3D | replicad.Drawing).fillet(radius);
     });
     return filletId;
   }
@@ -439,10 +439,10 @@ class GeometryProvider {
     const chamferId = this._makeId("chamfer", id, size);
     await this.createIfAbsent(chamferId, context, async () => {
       const geometry = await this.get(id, context);
-      if (geometry instanceof replicad.Wire) {
-        throw new Error("Cannot chamfer a wire");
+      if (geometry instanceof replicad.Wire || geometry instanceof replicad.Vertex) {
+        throw new Error("Cannot chamfer a wire or Point3D");
       }
-      return geometry.chamfer(size);
+      return (geometry as replicad.Shape3D | replicad.Drawing).chamfer(size);
     });
     return chamferId;
   }

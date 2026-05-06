@@ -76,9 +76,30 @@ export function makeAbundanceFramework(replicad) {
       const g = this.geometry;
       return !!g && !("_wrapped" in g);
     }
-    /** True when this assembly's first leaf is a 3D replicad shape. */
+    /** True when this assembly's first leaf is a replicad Wire (1D curve). */
+    isWire() {
+      if (Array.isArray(this.geometry)) {
+        return this.geometry.length > 0 && this.geometry[0].isWire();
+      }
+      return this.geometry instanceof replicad.Wire;
+    }
+    /** True when this assembly's first leaf is a replicad Shell (open surface). */
+    isSurface() {
+      if (Array.isArray(this.geometry)) {
+        return this.geometry.length > 0 && this.geometry[0].isSurface();
+      }
+      return this.geometry instanceof replicad.Shell;
+    }
+    /** True when this assembly's first leaf is a replicad Vertex (Point3D). */
+    isPoint3D() {
+      if (Array.isArray(this.geometry)) {
+        return this.geometry.length > 0 && this.geometry[0].isPoint3D();
+      }
+      return this.geometry instanceof replicad.Vertex;
+    }
+    /** True when this assembly's first leaf is a 3D replicad solid (not a Wire, Surface, or Point3D). */
     is3D() {
-      return !this.is2D();
+      return !this.is2D() && !this.isWire() && !this.isSurface() && !this.isPoint3D();
     }
     toJSON() {
       let geomString = "unknown";

@@ -79,7 +79,7 @@ interface AbundanceBranch {
 
 interface AbundanceLeaf {
   geometry: string;
-  dimension: "2D" | "3D" | "Wire";
+  dimension: "2D" | "3D" | "Wire" | "Surface" | "Point3D";
   plane: SimplePlane;
   color: string;
   tags: string[];
@@ -94,8 +94,24 @@ function is3D(part: AbundanceObject): boolean {
   if (isAssembly(part)) {
     return part.geometry.some((input: any) => is3D(input));
   } else {
-    // leaf
+    // leaf — Surface, Wire, and Point3D are not solids for boolean purposes
     return part.dimension === "3D";
+  }
+}
+
+function isSurface(part: AbundanceObject): boolean {
+  if (isAssembly(part)) {
+    return part.geometry.some((input: any) => isSurface(input));
+  } else {
+    return part.dimension === "Surface";
+  }
+}
+
+function isPoint3D(part: AbundanceObject): boolean {
+  if (isAssembly(part)) {
+    return part.geometry.some((input: any) => isPoint3D(input));
+  } else {
+    return part.dimension === "Point3D";
   }
 }
 
@@ -329,6 +345,8 @@ export {
   isAbundanceObject,
   isAssembly,
   isLeaf,
+  isPoint3D,
+  isSurface,
   isWireGeometry,
   replicad,
   SimplePlane,

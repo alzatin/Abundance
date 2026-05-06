@@ -17,6 +17,15 @@ async function extrude(
   if (util.is3D(toExtrude)) {
     throw new Error("Cannot extrude a 3D geometry.");
   }
+  if (util.isWireGeometry(toExtrude)) {
+    throw new Error("Cannot extrude a Wire. Use a sweep operation to create a surface from a Wire profile.");
+  }
+  if (util.isSurface(toExtrude)) {
+    throw new Error("Cannot extrude a Surface geometry.");
+  }
+  if (util.isPoint3D(toExtrude)) {
+    throw new Error("Cannot extrude a Point3D.");
+  }
   await util.init();
   return util.actOnLeafs(toExtrude, async (leaf: AbundanceLeaf) => {
     return {
@@ -134,7 +143,7 @@ async function move(
     z,
     context,
   );
-  if (util.is3D(toMove)) {
+  if (util.is3D(toMove) || util.isWireGeometry(toMove) || util.isSurface(toMove) || util.isPoint3D(toMove)) {
     return util.actOnLeafs(
       toMove,
       async (leaf: AbundanceLeaf) => {
@@ -316,7 +325,7 @@ async function rotate(
   if (toRotate.nonReplicadSerialized) {
     toRotate.nonReplicadSerialized = handleNonReplicadRotate(toRotate, x, y, z);
   }
-  if (util.is3D(toRotate)) {
+  if (util.is3D(toRotate) || util.isWireGeometry(toRotate) || util.isSurface(toRotate) || util.isPoint3D(toRotate)) {
     return util.actOnLeafs(
       toRotate,
       async (leaf: AbundanceLeaf) => {
