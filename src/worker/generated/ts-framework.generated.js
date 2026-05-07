@@ -69,9 +69,9 @@ export function makeAbundanceFramework(replicad) {
      * leaf yielded by depth-first traversal; a branch with no leaves is
      * considered 3D.
      */
-    isDrawing2D() {
+    is2D() {
       if (Array.isArray(this.geometry)) {
-        return this.geometry.length > 0 && this.geometry[0].isDrawing2D();
+        return this.geometry.length > 0 && this.geometry[0].is2D();
       }
       const g = this.geometry;
       return !!g && !("_wrapped" in g);
@@ -83,17 +83,16 @@ export function makeAbundanceFramework(replicad) {
       }
       return this.geometry instanceof replicad.Wire;
     }
-    /** True when this assembly's first leaf is a replicad Shell (open surface). */
-    isSurface() {
+    isPoint() {
       if (Array.isArray(this.geometry)) {
-        return this.geometry.length > 0 && this.geometry[0].isSurface();
+        return this.geometry.length > 0 && this.geometry[0].isPoint();
       }
-      return this.geometry instanceof replicad.Shell;
+      return this.geometry instanceof replicad.Vertex;
     }
     /** True when this assembly's first leaf is a 3D replicad solid (not a Wire or Point3D). */
-    isSolid3D() {
+    is3D() {
       if (Array.isArray(this.geometry)) {
-        return this.geometry.length > 0 && this.geometry[0].isSolid3D();
+        return this.geometry.length > 0 && this.geometry[0].is3D();
       }
       return replicad.isShape3D(this.geometry);
     }
