@@ -62,10 +62,14 @@ describe("isWireGeometry()", () => {
     expect(isWireGeometry(makeLeaf("Point3D"))).toBe(false);
   });
   it("returns true for branch containing a Wire leaf", () => {
-    expect(isWireGeometry(makeBranch([makeLeaf("Wire"), makeLeaf("Wire")]))).toBe(true);
+    expect(
+      isWireGeometry(makeBranch([makeLeaf("Wire"), makeLeaf("Wire")])),
+    ).toBe(true);
   });
   it("returns false for branch with no Wire leaves", () => {
-    expect(isWireGeometry(makeBranch([makeLeaf("3D"), makeLeaf("3D")]))).toBe(false);
+    expect(isWireGeometry(makeBranch([makeLeaf("3D"), makeLeaf("3D")]))).toBe(
+      false,
+    );
   });
 });
 
@@ -86,7 +90,9 @@ describe("isSurface()", () => {
     expect(isSurface(makeLeaf("2D"))).toBe(false);
   });
   it("returns true for branch containing a Surface leaf", () => {
-    expect(isSurface(makeBranch([makeLeaf("Surface"), makeLeaf("3D")]))).toBe(true);
+    expect(isSurface(makeBranch([makeLeaf("Surface"), makeLeaf("3D")]))).toBe(
+      true,
+    );
   });
 });
 
@@ -196,14 +202,14 @@ describe("interaction rejection for new primitive types", () => {
       ).rejects.toThrow("fusion()");
     });
     it("throws for Surface inputs", async () => {
-      await expect(
-        fusion([makeLeaf("Surface")], {}),
-      ).rejects.toThrow("fusion()");
+      await expect(fusion([makeLeaf("Surface")], {})).rejects.toThrow(
+        "fusion()",
+      );
     });
     it("throws for Point3D inputs", async () => {
-      await expect(
-        fusion([makeLeaf("Point3D")], {}),
-      ).rejects.toThrow("fusion()");
+      await expect(fusion([makeLeaf("Point3D")], {})).rejects.toThrow(
+        "fusion()",
+      );
     });
   });
 

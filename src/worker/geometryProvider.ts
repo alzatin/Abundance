@@ -16,7 +16,11 @@ import {
   filter,
 } from "./indexeddbUtils";
 
-type ReplicadObject = replicad.Shape3D | replicad.Drawing | replicad.Wire | replicad.Vertex;
+type ReplicadObject =
+  | replicad.Shape3D
+  | replicad.Drawing
+  | replicad.Wire
+  | replicad.Vertex;
 
 type RequestContext = {
   project: string;
@@ -423,7 +427,10 @@ class GeometryProvider {
     const filletId = this._makeId("fillet", id, radius);
     await this.createIfAbsent(filletId, context, async () => {
       const geometry = await this.get(id, context);
-      if (geometry instanceof replicad.Wire || geometry instanceof replicad.Vertex) {
+      if (
+        geometry instanceof replicad.Wire ||
+        geometry instanceof replicad.Vertex
+      ) {
         throw new Error("Cannot fillet a wire or Point3D");
       }
       return (geometry as replicad.Shape3D | replicad.Drawing).fillet(radius);
@@ -439,7 +446,10 @@ class GeometryProvider {
     const chamferId = this._makeId("chamfer", id, size);
     await this.createIfAbsent(chamferId, context, async () => {
       const geometry = await this.get(id, context);
-      if (geometry instanceof replicad.Wire || geometry instanceof replicad.Vertex) {
+      if (
+        geometry instanceof replicad.Wire ||
+        geometry instanceof replicad.Vertex
+      ) {
         throw new Error("Cannot chamfer a wire or Point3D");
       }
       return (geometry as replicad.Shape3D | replicad.Drawing).chamfer(size);
