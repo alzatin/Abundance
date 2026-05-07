@@ -77,7 +77,7 @@ declare global {
        * leaf yielded by depth-first traversal; a branch with no leaves is
        * considered 3D.
        */
-      is2D(): this is Assembly<_replicad.Drawing>;
+      isDrawing2D(): boolean;
       /** True when this assembly's first leaf is a replicad Wire (1D curve). */
       isWire(): boolean;
       /** True when this assembly's first leaf is a replicad Shell (open surface). */
@@ -85,7 +85,7 @@ declare global {
       /** True when this assembly's first leaf is a replicad Vertex (Point3D). */
       isPoint3D(): boolean;
       /** True when this assembly's first leaf is a 3D replicad solid (not a Wire, Surface, or Point3D). */
-      is3D(): this is Assembly<_replicad.AnyShape>;
+      isSolid3D(): boolean;
       toJSON(): string;
   }
   /**

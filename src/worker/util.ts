@@ -87,6 +87,27 @@ interface AbundanceLeaf {
   nonReplicadSerialized?: any;
 }
 
+function dimensionLabel(
+  geom: any,
+): "2D" | "3D" | "Wire" | "Surface" | "Point3D" {
+  if (geom instanceof replicad.Drawing) {
+    return "2D";
+  } else if (geom instanceof replicad.Wire) {
+    return "Wire";
+  } else if (geom instanceof replicad.Shell) {
+    return "Surface";
+  } else if (geom instanceof replicad.Vertex) {
+    return "Point3D";
+  } else if (replicad.isShape3D(geom)) {
+    return "3D";
+  } else {
+    throw new Error(
+      "Unsupported geometry type: " +
+        (geom && geom.constructor ? geom.constructor.name : typeof geom),
+    );
+  }
+}
+
 function is3D(part: AbundanceObject): boolean {
   if (part === undefined || part.geometry === undefined) {
     return false;
@@ -334,6 +355,7 @@ export {
   asReplicadPlane,
   asSimplePlane,
   defaultColor,
+  dimensionLabel,
   flattenAssembly,
   generateUniqueID,
   geometryProvider,

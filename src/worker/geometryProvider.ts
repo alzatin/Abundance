@@ -9,6 +9,7 @@ import {
 import {
   getShape,
   putShape,
+  deleteShape,
   deleteProjectCache,
   shapeExists,
   getAllProjectIds,

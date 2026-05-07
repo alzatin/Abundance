@@ -170,7 +170,6 @@ function extractRunParamNames(code: string): string[] {
  */
 function defaultProps() {
   return {
-    color: "#ffffff",
     tags: [] as string[],
     bom: [] as string[],
     plane: util.replicad.makePlane(),
@@ -195,11 +194,11 @@ function convertCodeAtomResult(
   if (value == null) return value;
   if (isPrimitive(value)) return value;
 
-  if (isReplicadAnyShape(value) || value instanceof replicad.Drawing) {
-    return new Assembly({ geometry: value, ...defaultProps() });
+  if (Array.isArray(value) && value.every(isPrimitive)) {
+    return value;
   }
 
-  if (Array.isArray(value) && value.every(isPrimitive)) {
+  if (isAssembly(value)) {
     return value;
   }
 
@@ -216,11 +215,21 @@ function convertCodeAtomResult(
     });
   }
 
-  if (isAssembly(value)) {
-    return value;
+  let simpleReplicadGeomDim = undefined;
+  try {
+    simpleReplicadGeomDim = util.dimensionLabel(value);
+    const isFacelessType =
+      simpleReplicadGeomDim === "Point3D" || simpleReplicadGeomDim === "Wire";
+    return new Assembly({
+      geometry: value,
+      dimension: simpleReplicadGeomDim,
+      color: isFacelessType ? "#3c5a6e" : util.defaultColor,
+      ...defaultProps(),
+    });
+  } catch (e) {
+    console.error(e);
+    throw new Error("Unsupported return type: " + value.constructor.name);
   }
-
-  throw new Error("Unsupported return type: " + value.constructor.name);
 }
 
 /**
@@ -236,21 +245,16 @@ async function addAssemblyPartsToCache(
     assembly: Assembly<AnyGeom>,
   ): Promise<AbundanceObject> => {
     if (assembly.isLeaf()) {
-      if (
-        !(assembly.geometry instanceof replicad.Drawing) &&
-        !replicad.isShape3D(assembly.geometry)
-      ) {
-        const typeName =
-          assembly.geometry && assembly.geometry.constructor
-            ? assembly.geometry.constructor.name
-            : typeof assembly.geometry;
-        throw new Error(
-          "Leaf geometry must be Shape3D or Drawing. But received " +
-            typeName +
-            (typeName === "Edge"
-              ? " (note: makeCircle returns Edge, consider drawCircle instead)"
-              : ""),
-        );
+      let dimensionLabel;
+      try {
+        dimensionLabel = util.dimensionLabel(assembly.geometry);
+      } catch (e: any) {
+        if (assembly.geometry instanceof replicad.Edge) {
+          e.message +=
+            " Raw Edges not supported. Consider returning a drawing, eg drawCircle instead of makeCircle. " +
+            " Or return a wire via replicad.assembleWire([edge, edge2, ...]) instead";
+        }
+        throw e;
       }
       return {
         ...assembly,
@@ -263,11 +267,7 @@ async function addAssemblyPartsToCache(
         plane: assembly.plane
           ? util.asSimplePlane(assembly.plane)
           : util.XYPlane,
-        // The Assembly class only has is2D()/is3D() methods, not a `dimension`
-        // property. Without this, util.is3D() sees `undefined` and treats even
-        // 3D code-atom outputs as 2D sketches, breaking fusion with extruded
-        // shapes ("Fusion must be composed from only sketches OR only solids").
-        dimension: assembly.is2D() ? "2D" : "3D",
+        dimension: dimensionLabel,
       };
     } else {
       const children = await Promise.all(
@@ -581,12 +581,14 @@ async function executeTsCode(
     }
 
     // Ensure not a mix of 2d and 3d parts.
-    const leafDims: boolean[] = [];
+    const leafDims: string[] = [];
     rawResult.onLeafs((leaf: Assembly<LeafGeom>) => {
-      leafDims.push(leaf.is2D());
+      leafDims.push(leaf.dimension);
     });
-    if (leafDims.includes(true) && leafDims.includes(false)) {
-      throw new Error("Mix of 2D and 3D parts is not allowed.");
+    if (new Set(leafDims).size > 1) {
+      throw new Error(
+        `Assemblies may not mix types. Found: ${leafDims.join(", ")}.`,
+      );
     }
 
     // Promote raw geometries into the cache as singletons.

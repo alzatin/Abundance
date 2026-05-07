@@ -12,7 +12,7 @@ export function makeAbundanceFramework(replicad) {
       // `geometry: any` to `geometry: G` so callers see the generic parameter
       // narrowed to the proper replicad union. See scripts/build-ts-framework.mjs.
       __publicField(this, "geometry", []);
-      __publicField(this, "color", "#ffffff");
+      __publicField(this, "color", "#aad7f2");
       __publicField(this, "tags", []);
       __publicField(this, "bom", []);
       __publicField(this, "plane", replicad.makePlane());
@@ -69,9 +69,9 @@ export function makeAbundanceFramework(replicad) {
      * leaf yielded by depth-first traversal; a branch with no leaves is
      * considered 3D.
      */
-    is2D() {
+    isDrawing2D() {
       if (Array.isArray(this.geometry)) {
-        return this.geometry.length > 0 && this.geometry[0].is2D();
+        return this.geometry.length > 0 && this.geometry[0].isDrawing2D();
       }
       const g = this.geometry;
       return !!g && !("_wrapped" in g);
@@ -98,8 +98,11 @@ export function makeAbundanceFramework(replicad) {
       return this.geometry instanceof replicad.Vertex;
     }
     /** True when this assembly's first leaf is a 3D replicad solid (not a Wire, Surface, or Point3D). */
-    is3D() {
-      return !this.is2D() && !this.isWire() && !this.isSurface() && !this.isPoint3D();
+    isSolid3D() {
+      if (Array.isArray(this.geometry)) {
+        return this.geometry.length > 0 && this.geometry[0].isSolid3D();
+      }
+      return replicad.isShape3D(this.geometry) && !(this.geometry instanceof replicad.Shell);
     }
     toJSON() {
       let geomString = "unknown";

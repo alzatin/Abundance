@@ -353,19 +353,23 @@ export default React.memo(
                   </bufferGeometry>
                   <pointsMaterial
                     color={m.color}
-                    size={8}
+                    size={5}
                     sizeAttenuation={false}
                   />
                 </points>
               ) : m.isWire ? (
                 // Wire — render as lines only, no body mesh
-                <lineSegments key={"wirelines" + index} geometry={m.lines}>
-                  <lineBasicMaterial
-                    color={m.color}
-                    opacity={1}
-                    linewidth={8}
-                  />
-                </lineSegments>
+                <>
+                  <lineSegments key={"wirelines" + index} geometry={m.lines} />
+                  <lineSegments key={"wirelinesdark" + index} geometry={m.lines}>
+                    <lineBasicMaterial
+                      color={"#3c5a6e"}
+                      opacity={"1"}
+                      linewidth={8}
+                    />
+                  </lineSegments>
+                </>
+              
               ) : (
                 // Normal solid / surface / 2D geometry
                 <>
