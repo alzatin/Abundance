@@ -15,7 +15,6 @@ import {
   PerspectiveCamera,
   Vector3,
   Box3,
-  DoubleSide,
 } from "three";
 import {
   syncFaces,
@@ -50,7 +49,6 @@ export default React.memo(
             pointPosition: m.point,
             color: m.color,
             solid: false,
-            surface: false,
             isWire: false,
           });
           return;
@@ -78,7 +76,6 @@ export default React.memo(
             lines: thisLines,
             color: thisColor,
             solid: false,
-            surface: false,
             isWire: isWireType,
           });
         } else {
@@ -87,7 +84,6 @@ export default React.memo(
             lines: thisLines,
             color: thisColor,
             solid: isSolid,
-            surface: !!m.surface,
             isWire: isWireType,
           });
         }
@@ -371,7 +367,7 @@ export default React.memo(
                 </>
               
               ) : (
-                // Normal solid / surface / 2D geometry
+                // Normal solid / 2D geometry
                 <>
                   {!isSolid ? (
                     <mesh geometry={m.body} key={"mesh" + m.color}>
@@ -383,7 +379,6 @@ export default React.memo(
                           polygonOffset
                           polygonOffsetFactor={2.0}
                           polygonOffsetUnits={1.0}
-                          side={m.surface ? DoubleSide : undefined}
                         />
                       ) : m.color == "#E6F3FF" ? (
                         <meshPhysicalMaterial

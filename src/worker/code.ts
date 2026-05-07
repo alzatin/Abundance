@@ -53,7 +53,7 @@ import { makeAbundanceFramework } from "./generated/ts-framework.generated.js";
 // so it's safe to bind these at module load time. The factory itself just
 // declares the class; replicad is only dereferenced when Assembly methods
 // are actually invoked, by which time `init()` has run.
-const { Assembly, __promoteInput } = makeAbundanceFramework(
+const { Assembly } = makeAbundanceFramework(
   util.replicad as any,
 );
 type Assembly<G = any> = InstanceType<typeof Assembly> & { geometry: G };
@@ -114,16 +114,6 @@ function isPrimitive(value: any): value is Primitive {
  */
 function isAssembly(value: any): boolean {
   return !!value && value.__abundance === "Assembly";
-}
-
-function isReplicadAnyShape(value: any): value is replicad.AnyShape {
-  return (
-    replicad.isShape3D(value) ||
-    value instanceof replicad.Wire ||
-    value instanceof replicad.Face ||
-    value instanceof replicad.Edge ||
-    value instanceof replicad.Vertex
-  );
 }
 
 /**

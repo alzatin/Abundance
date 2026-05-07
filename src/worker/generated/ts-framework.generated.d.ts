@@ -82,9 +82,7 @@ declare global {
       isWire(): boolean;
       /** True when this assembly's first leaf is a replicad Shell (open surface). */
       isSurface(): boolean;
-      /** True when this assembly's first leaf is a replicad Vertex (Point3D). */
-      isPoint3D(): boolean;
-      /** True when this assembly's first leaf is a 3D replicad solid (not a Wire, Surface, or Point3D). */
+      /** True when this assembly's first leaf is a 3D replicad solid (not a Wire or Point3D). */
       isSolid3D(): boolean;
       toJSON(): string;
   }

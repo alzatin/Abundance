@@ -18,7 +18,6 @@ type DisplayMesh = {
     }[];
   };
   color: string;
-  surface?: boolean;
   point?: [number, number, number];
 };
 
@@ -282,8 +281,7 @@ async function generateDisplayMesh(
             color: meshObj.color,
           });
         } else {
-          // Shape3D or Shell (Surface) — mesh normally; flag Surface for double-sided rendering
-          const isShell = meshObj.geometry instanceof replicad.Shell;
+          // Shape3D — mesh normally
           finalMeshes.push({
             cameraZoom: cameraZoom,
             faces: meshObj.geometry.mesh({
@@ -295,7 +293,6 @@ async function generateDisplayMesh(
               angularTolerance: 0.5,
             }),
             color: meshObj.color,
-            ...(isShell ? { surface: true } : {}),
           });
         }
       } catch (e) {

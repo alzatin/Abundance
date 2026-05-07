@@ -2,7 +2,6 @@ import {
   init,
   is3D,
   isWireGeometry,
-  isSurface,
   isPoint3D,
   defaultColor,
   XYPlane,
@@ -55,9 +54,6 @@ describe("isWireGeometry()", () => {
   it("returns false for 3D leaf", () => {
     expect(isWireGeometry(makeLeaf("3D"))).toBe(false);
   });
-  it("returns false for Surface leaf", () => {
-    expect(isWireGeometry(makeLeaf("Surface"))).toBe(false);
-  });
   it("returns false for Point3D leaf", () => {
     expect(isWireGeometry(makeLeaf("Point3D"))).toBe(false);
   });
@@ -73,29 +69,6 @@ describe("isWireGeometry()", () => {
   });
 });
 
-describe("isSurface()", () => {
-  it("returns true for Surface leaf", () => {
-    expect(isSurface(makeLeaf("Surface"))).toBe(true);
-  });
-  it("returns false for 3D leaf", () => {
-    expect(isSurface(makeLeaf("3D"))).toBe(false);
-  });
-  it("returns false for Wire leaf", () => {
-    expect(isSurface(makeLeaf("Wire"))).toBe(false);
-  });
-  it("returns false for Point3D leaf", () => {
-    expect(isSurface(makeLeaf("Point3D"))).toBe(false);
-  });
-  it("returns false for 2D leaf", () => {
-    expect(isSurface(makeLeaf("2D"))).toBe(false);
-  });
-  it("returns true for branch containing a Surface leaf", () => {
-    expect(isSurface(makeBranch([makeLeaf("Surface"), makeLeaf("3D")]))).toBe(
-      true,
-    );
-  });
-});
-
 describe("isPoint3D()", () => {
   it("returns true for Point3D leaf", () => {
     expect(isPoint3D(makeLeaf("Point3D"))).toBe(true);
@@ -105,9 +78,6 @@ describe("isPoint3D()", () => {
   });
   it("returns false for Wire leaf", () => {
     expect(isPoint3D(makeLeaf("Wire"))).toBe(false);
-  });
-  it("returns false for Surface leaf", () => {
-    expect(isPoint3D(makeLeaf("Surface"))).toBe(false);
   });
   it("returns false for 2D leaf", () => {
     expect(isPoint3D(makeLeaf("2D"))).toBe(false);
@@ -127,9 +97,6 @@ describe("is3D()", () => {
   it("returns false for Wire leaf", () => {
     expect(is3D(makeLeaf("Wire"))).toBe(false);
   });
-  it("returns false for Surface leaf", () => {
-    expect(is3D(makeLeaf("Surface"))).toBe(false);
-  });
   it("returns false for Point3D leaf", () => {
     expect(is3D(makeLeaf("Point3D"))).toBe(false);
   });
@@ -143,11 +110,6 @@ describe("extrude() rejects new primitive types", () => {
   it("throws when extruding a Wire", async () => {
     await expect(extrude(makeLeaf("Wire"), 10, {})).rejects.toThrow(
       "Cannot extrude a Wire",
-    );
-  });
-  it("throws when extruding a Surface", async () => {
-    await expect(extrude(makeLeaf("Surface"), 10, {})).rejects.toThrow(
-      "Cannot extrude a Surface",
     );
   });
   it("throws when extruding a Point3D", async () => {
@@ -173,11 +135,6 @@ describe("interaction rejection for new primitive types", () => {
         difference(makeLeaf("Wire"), makeLeaf("3D"), {}),
       ).rejects.toThrow("difference() target");
     });
-    it("throws when target is a Surface", async () => {
-      await expect(
-        difference(makeLeaf("Surface"), makeLeaf("3D"), {}),
-      ).rejects.toThrow("difference() target");
-    });
     it("throws when target is a Point3D", async () => {
       await expect(
         difference(makeLeaf("Point3D"), makeLeaf("3D"), {}),
@@ -188,11 +145,6 @@ describe("interaction rejection for new primitive types", () => {
         difference(makeLeaf("3D"), makeLeaf("Wire"), {}),
       ).rejects.toThrow("difference() cutter");
     });
-    it("throws when cutter is a Surface", async () => {
-      await expect(
-        difference(makeLeaf("3D"), makeLeaf("Surface"), {}),
-      ).rejects.toThrow("difference() cutter");
-    });
   });
 
   describe("fusion()", () => {
@@ -200,11 +152,6 @@ describe("interaction rejection for new primitive types", () => {
       await expect(
         fusion([makeLeaf("Wire"), makeLeaf("Wire")], {}),
       ).rejects.toThrow("fusion()");
-    });
-    it("throws for Surface inputs", async () => {
-      await expect(fusion([makeLeaf("Surface")], {})).rejects.toThrow(
-        "fusion()",
-      );
     });
     it("throws for Point3D inputs", async () => {
       await expect(fusion([makeLeaf("Point3D")], {})).rejects.toThrow(
@@ -219,11 +166,6 @@ describe("interaction rejection for new primitive types", () => {
         loftShapes([makeLeaf("Wire"), makeLeaf("2D")], {}),
       ).rejects.toThrow("2D sketches");
     });
-    it("throws for Surface inputs", async () => {
-      await expect(
-        loftShapes([makeLeaf("Surface"), makeLeaf("2D")], {}),
-      ).rejects.toThrow("2D sketches");
-    });
     it("throws for Point3D inputs", async () => {
       await expect(
         loftShapes([makeLeaf("Point3D"), makeLeaf("2D")], {}),
@@ -235,11 +177,6 @@ describe("interaction rejection for new primitive types", () => {
     it("throws when shape1 is a Wire", async () => {
       await expect(
         intersect(makeLeaf("Wire"), makeLeaf("3D"), {}),
-      ).rejects.toThrow("intersect()");
-    });
-    it("throws when shape2 is a Surface", async () => {
-      await expect(
-        intersect(makeLeaf("3D"), makeLeaf("Surface"), {}),
       ).rejects.toThrow("intersect()");
     });
     it("throws when shape1 is a Point3D", async () => {

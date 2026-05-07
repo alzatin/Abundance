@@ -79,7 +79,7 @@ interface AbundanceBranch {
 
 interface AbundanceLeaf {
   geometry: string;
-  dimension: "2D" | "3D" | "Wire" | "Surface" | "Point3D";
+  dimension: "2D" | "3D" | "Wire" | "Point3D";
   plane: SimplePlane;
   color: string;
   tags: string[];
@@ -87,15 +87,11 @@ interface AbundanceLeaf {
   nonReplicadSerialized?: any;
 }
 
-function dimensionLabel(
-  geom: any,
-): "2D" | "3D" | "Wire" | "Surface" | "Point3D" {
+function dimensionLabel(geom: any): "2D" | "3D" | "Wire" | "Point3D" {
   if (geom instanceof replicad.Drawing) {
     return "2D";
   } else if (geom instanceof replicad.Wire) {
     return "Wire";
-  } else if (geom instanceof replicad.Shell) {
-    return "Surface";
   } else if (geom instanceof replicad.Vertex) {
     return "Point3D";
   } else if (replicad.isShape3D(geom)) {
@@ -115,16 +111,8 @@ function is3D(part: AbundanceObject): boolean {
   if (isAssembly(part)) {
     return part.geometry.some((input: any) => is3D(input));
   } else {
-    // leaf — Surface, Wire, and Point3D are not solids for boolean purposes
+    // leaf — Wire and Point3D are not solids for boolean purposes
     return part.dimension === "3D";
-  }
-}
-
-function isSurface(part: AbundanceObject): boolean {
-  if (isAssembly(part)) {
-    return part.geometry.some((input: any) => isSurface(input));
-  } else {
-    return part.dimension === "Surface";
   }
 }
 
@@ -368,7 +356,6 @@ export {
   isAssembly,
   isLeaf,
   isPoint3D,
-  isSurface,
   isWireGeometry,
   replicad,
   SimplePlane,

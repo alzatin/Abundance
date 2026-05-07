@@ -321,7 +321,6 @@ Allowed input types are:
     - 3D solid  (.is3D() → true)
     - 2D sketch (.is2D() → true)
     - Wire curve (.isWire() → true)
-    - Surface shell (.isSurface() → true)
     - Point3D vertex (.isPoint3D() → true)
   See Abundance Methods panel for full API.
 

@@ -151,23 +151,12 @@ export class Assembly<G = any> {
     return this.geometry instanceof replicad.Shell;
   }
 
-  /** True when this assembly's first leaf is a replicad Vertex (Point3D). */
-  isPoint3D(): boolean {
-    if (Array.isArray(this.geometry)) {
-      return this.geometry.length > 0 && this.geometry[0].isPoint3D();
-    }
-    return this.geometry instanceof replicad.Vertex;
-  }
-
-  /** True when this assembly's first leaf is a 3D replicad solid (not a Wire, Surface, or Point3D). */
+  /** True when this assembly's first leaf is a 3D replicad solid (not a Wire or Point3D). */
   isSolid3D(): boolean {
     if (Array.isArray(this.geometry)) {
       return this.geometry.length > 0 && this.geometry[0].isSolid3D();
     }
-    return (
-      replicad.isShape3D(this.geometry) &&
-      !(this.geometry instanceof replicad.Shell)
-    );
+    return replicad.isShape3D(this.geometry);
   }
 
   toJSON() {

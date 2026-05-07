@@ -20,13 +20,9 @@ async function loftShapes(
   await util.init();
   const sketchAndPlane = await Promise.all(
     sketches.map(async (sketch) => {
-      if (
-        util.isWireGeometry(sketch) ||
-        util.isSurface(sketch) ||
-        util.isPoint3D(sketch)
-      ) {
+      if (util.isWireGeometry(sketch) || util.isPoint3D(sketch)) {
         throw new Error(
-          "Parts to be lofted must be 2D sketches, not Wire, Surface, or Point3D.",
+          "Parts to be lofted must be 2D sketches, not Wire or Point3D.",
         );
       }
       if (util.is3D(sketch)) {
@@ -67,22 +63,14 @@ async function difference(
   context: RequestContext,
 ): Promise<AbundanceObject> {
   await util.init();
-  if (
-    util.isWireGeometry(target) ||
-    util.isSurface(target) ||
-    util.isPoint3D(target)
-  ) {
+  if (util.isWireGeometry(target) || util.isPoint3D(target)) {
     throw new Error(
-      "difference() target must be a 3D solid or 2D sketch, not Wire, Surface, or Point3D.",
+      "difference() target must be a 3D solid or 2D sketch, not Wire or Point3D.",
     );
   }
-  if (
-    util.isWireGeometry(cutter) ||
-    util.isSurface(cutter) ||
-    util.isPoint3D(cutter)
-  ) {
+  if (util.isWireGeometry(cutter) || util.isPoint3D(cutter)) {
     throw new Error(
-      "difference() cutter must be a 3D solid or 2D sketch, not Wire, Surface, or Point3D.",
+      "difference() cutter must be a 3D solid or 2D sketch, not Wire or Point3D.",
     );
   }
   if (
@@ -109,14 +97,11 @@ async function shrinkWrapSketches(
   const BOM: any[] = [];
   if (
     sketches.some(
-      (sketch) =>
-        util.isWireGeometry(sketch) ||
-        util.isSurface(sketch) ||
-        util.isPoint3D(sketch),
+      (sketch) => util.isWireGeometry(sketch) || util.isPoint3D(sketch),
     )
   ) {
     throw new Error(
-      "Parts to be shrink wrapped must be 2D sketches, not Wire, Surface, or Point3D.",
+      "Parts to be shrink wrapped must be 2D sketches, not Wire or Point3D.",
     );
   }
   if (sketches.some((sketch) => util.is3D(sketch))) {
@@ -172,14 +157,12 @@ async function intersect(
   await util.init();
   if (
     util.isWireGeometry(shape1) ||
-    util.isSurface(shape1) ||
     util.isPoint3D(shape1) ||
     util.isWireGeometry(shape2) ||
-    util.isSurface(shape2) ||
     util.isPoint3D(shape2)
   ) {
     throw new Error(
-      "intersect() requires 3D solids or 2D sketches, not Wire, Surface, or Point3D.",
+      "intersect() requires 3D solids or 2D sketches, not Wire or Point3D.",
     );
   }
   return util.actOnLeafs(shape1, async (leaf: AbundanceLeaf) => {
@@ -212,13 +195,9 @@ async function fusion(
 ): Promise<AbundanceLeaf> {
   await util.init();
   for (const shape of shapes) {
-    if (
-      util.isWireGeometry(shape) ||
-      util.isSurface(shape) ||
-      util.isPoint3D(shape)
-    ) {
+    if (util.isWireGeometry(shape) || util.isPoint3D(shape)) {
       throw new Error(
-        "fusion() requires 3D solids or 2D sketches, not Wire, Surface, or Point3D.",
+        "fusion() requires 3D solids or 2D sketches, not Wire or Point3D.",
       );
     }
   }
