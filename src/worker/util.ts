@@ -104,24 +104,33 @@ function dimensionLabel(geom: any): "2D" | "3D" | "Wire" | "Point3D" {
   }
 }
 
-function is3D(part: AbundanceObject): boolean {
-  if (part === undefined || part.geometry === undefined) {
-    return false;
-  }
+function _checkFirstDimIs(
+  part: AbundanceObject,
+  dimension: "2D" | "3D" | "Wire" | "Point3D",
+): boolean {
   if (isAssembly(part)) {
-    return part.geometry.some((input: any) => is3D(input));
+    return part.geometry.some((input: AbundanceObject) =>
+      _checkFirstDimIs(input, dimension),
+    );
   } else {
-    // leaf — Wire and Point3D are not solids for boolean purposes
-    return part.dimension === "3D";
+    return part && part.dimension === dimension;
   }
 }
 
+function is2D(part: AbundanceObject): boolean {
+  return _checkFirstDimIs(part, "2D");
+}
+
+function is3D(part: AbundanceObject): boolean {
+  return _checkFirstDimIs(part, "3D");
+}
+
 function isPoint3D(part: AbundanceObject): boolean {
-  if (isAssembly(part)) {
-    return part.geometry.some((input: any) => isPoint3D(input));
-  } else {
-    return part.dimension === "Point3D";
-  }
+  return _checkFirstDimIs(part, "Point3D");
+}
+
+function isWireGeometry(part: AbundanceObject): boolean {
+  return _checkFirstDimIs(part, "Wire");
 }
 
 async function getBounds(
@@ -269,14 +278,6 @@ function generateUniqueID(): string {
   return uuidv4();
 }
 
-function isWireGeometry(inputs: AbundanceObject): boolean {
-  if (isAssembly(inputs)) {
-    return inputs.geometry.some((input: any) => isWireGeometry(input));
-  } else {
-    return inputs.dimension === "Wire";
-  }
-}
-
 function isAssembly(part: AbundanceObject): part is AbundanceBranch {
   return Array.isArray(part.geometry);
 }
@@ -351,6 +352,7 @@ export {
   hashFileContents,
   hashString,
   init,
+  is2D,
   is3D,
   isAbundanceObject,
   isAssembly,

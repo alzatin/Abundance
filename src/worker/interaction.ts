@@ -280,6 +280,21 @@ async function assembly(
   if (!Array.isArray(geometries) || geometries.length === 0) {
     throw new Error("inputIDs must be a non-empty array");
   }
+
+  // Dimension assertions:
+  // Allowed inputs -> all 2d, all 3d, or just wires/points
+
+  const all3D = geometries.every((geom) => util.is3D(geom));
+  const all2D = geometries.every((geom) => util.is2D(geom));
+  const allWireOrPoint = geometries.every(
+    (geom) => util.isWireGeometry(geom) || util.isPoint3D(geom),
+  );
+  if (!(all2D || all3D || allWireOrPoint)) {
+    throw new Error(
+      "Input geometries must be all 2D, all 3D, or just wires/points.",
+    );
+  }
+
   await util.init();
 
   let startedBatch = false;
@@ -318,38 +333,27 @@ async function assembly(
   const bomAssembly: any[] = [];
   const nonReplicadGeoms: any[] = [];
 
-  let all3D = false;
-  let all2D = false;
   if (geometries.length > 1) {
-    all3D = geometries.every((geom) => util.is3D(geom));
-    all2D = geometries.every((geom) => !util.is3D(geom));
-
-    if (all3D || all2D) {
-      // Always clear arrays before populating
-      bomAssembly.length = 0;
-      nonReplicadGeoms.length = 0;
-      for (let i = 0; i < geometries.length; i++) {
-        const geometry = geometries[i];
-        assembly.push(
-          await cutAssembly(geometry, geometries.slice(i + 1), context),
-        );
-      }
-      // Gather all nonReplicadSerialized and bom from input geometries
-      for (const geometry of geometries) {
-        if (
-          Array.isArray(geometry.nonReplicadSerialized) &&
-          geometry.nonReplicadSerialized.length > 0
-        ) {
-          nonReplicadGeoms.push(...geometry.nonReplicadSerialized);
-        }
-        if (Array.isArray(geometry.bom) && geometry.bom.length > 0) {
-          bomAssembly.push(...geometry.bom);
-        }
-      }
-    } else {
-      throw new Error(
-        "Assemblies must be composed from only sketches OR only solids",
+    // Always clear arrays before populating
+    bomAssembly.length = 0;
+    nonReplicadGeoms.length = 0;
+    for (let i = 0; i < geometries.length; i++) {
+      const geometry = geometries[i];
+      assembly.push(
+        await cutAssembly(geometry, geometries.slice(i + 1), context),
       );
+    }
+    // Gather all nonReplicadSerialized and bom from input geometries
+    for (const geometry of geometries) {
+      if (
+        Array.isArray(geometry.nonReplicadSerialized) &&
+        geometry.nonReplicadSerialized.length > 0
+      ) {
+        nonReplicadGeoms.push(...geometry.nonReplicadSerialized);
+      }
+      if (Array.isArray(geometry.bom) && geometry.bom.length > 0) {
+        bomAssembly.push(...geometry.bom);
+      }
     }
   } else {
     // Always clear arrays before populating
@@ -376,7 +380,6 @@ async function assembly(
     tags: [],
     color: util.defaultColor,
     bom: bomAssembly,
-    dimension: all3D ? "3D" : "2D",
     nonReplicadSerialized: nonReplicadGeoms,
   };
   if (startedBatch) {
