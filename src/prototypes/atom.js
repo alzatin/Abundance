@@ -193,7 +193,7 @@ export default class Atom extends ObservableEntity {
         //Find the matching IO and set it to be the saved value
         const matchingSavedVal = this.ioValues?.find(
           (savedVal) =>
-            savedVal.name === ap.name || ap.oldNames?.includes(savedVal.name)
+            savedVal.name === ap.name || ap.oldNames?.includes(savedVal.name),
         );
 
         if (matchingSavedVal && ap.type == "input") {
@@ -1205,10 +1205,10 @@ export default class Atom extends ObservableEntity {
       const argsDict = Object.fromEntries(
         this.inputs.map((input) => [input.name, input.getState().value]),
       );
-      console.log(
-        `[${this.getAtomPath()}] All inputs ready. Computing with args:`,
-        argsDict,
-      );
+      // console.log(
+      //   `[${this.getAtomPath()}] All inputs ready. Computing with args:`,
+      //   argsDict,
+      // );
       // const inputVals = this.inputs.map((input) => {input.getValue());
       this.setProcessing();
 
@@ -1790,18 +1790,19 @@ export default class Atom extends ObservableEntity {
    */
   evaluateMathExpression(substitutedEquation) {
     const variables = this.extractVariablesFromEquation(substitutedEquation);
-    const unresolved = [];
+    const notFound = [];
+    const nonFinite = [];
     const resolvedValues = {};
     const BUILTIN_CONSTS = new Set(["pi", "e", "tau", "Infinity", "NaN"]);
     if (variables.length > 0) {
       // Get inputs from all ancestors up the chain, not just immediate parent
       const parentInputs = this.getInputsFromAncestors();
-
       for (const variable of variables) {
         if (BUILTIN_CONSTS.has(variable)) {
           continue; // let evaluator handle it
         }
         let value = null;
+        let wasFound = false;
         // Try parent inputs first (now includes all ancestors)
         for (let j = 0; j < parentInputs.length; j++) {
           if (parentInputs[j].name === variable) {
@@ -1809,59 +1810,78 @@ export default class Atom extends ObservableEntity {
               typeof parentInputs[j].getValue === "function"
                 ? parentInputs[j].getValue()
                 : parentInputs[j].value;
+            wasFound = true;
+
             break;
           }
         }
         // Then this atom's inputs
-        if (value === null || value === undefined) {
+        if (!wasFound) {
           for (let i = 0; i < this.inputs.length; i++) {
             if (this.inputs[i].name === variable) {
               value = this.findIOValue(this.inputs[i].name);
+              wasFound = true;
               break;
             }
           }
         }
-        let num = Number(value);
-        if (
-          value === null ||
-          value === undefined ||
-          (typeof value === "string" && value.trim() === "") ||
-          !Number.isFinite(num)
-        ) {
-          unresolved.push(variable);
+
+        // If variable was never found in any inputs
+        if (!wasFound) {
+          notFound.push(variable);
         } else {
-          resolvedValues[variable] = num;
+          // Variable was found, but check if it resolves to a finite number
+          let num = Number(value);
+          if (
+            value === null ||
+            value === undefined ||
+            (typeof value === "string" && value.trim() === "") ||
+            !Number.isFinite(num)
+          ) {
+            nonFinite.push({ name: variable, value });
+          } else {
+            resolvedValues[variable] = num;
+          }
         }
       }
     }
-    if (unresolved.length) {
-      const msg = `Variable(s) not found: ${unresolved.join(
+    // Check for errors and throw appropriate message
+    if (notFound.length) {
+      const msg = `Variable(s) not found: ${notFound.join(
         ", ",
       )}. Make sure the variables you are using exist as inputs in ${this.getAtomPath()}`;
       console.warn(msg);
       throw new Error(msg);
-    } else {
-      this.clearAlert();
-      // Substitute all resolved variables
-      for (const variable of Object.keys(resolvedValues)) {
-        const safeVar = variable.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const variablePattern = new RegExp(`\\b${safeVar}\\b`, "gu");
-        substitutedEquation = substitutedEquation.replace(
-          variablePattern,
-          String(resolvedValues[variable]),
-        );
-      }
+    }
+    if (nonFinite.length) {
+      const details = nonFinite
+        .map((item) => `"${item.name}" (value: ${JSON.stringify(item.value)})`)
+        .join(", ");
+      const msg = `Variable(s) could not be resolved to finite number: ${details}. Ensure equations in input values are fully resolvable in ${this.getAtomPath()}`;
+      console.warn(msg);
+      throw new Error(msg);
+    }
 
-      // Safely evaluate the mathematical expression with error handling
-      try {
-        const result = GlobalVariables.limitedEvaluate(substitutedEquation);
-        return result;
-      } catch (error) {
-        // Handle mathematical expression parsing errors gracefully
-        const msg = `Invalid mathematical expression: "${substitutedEquation}". ${error.message}`;
-        console.warn("Mathematical expression evaluation failed:", msg);
-        throw new Error(msg);
-      }
+    this.clearAlert();
+    // Substitute all resolved variables
+    for (const variable of Object.keys(resolvedValues)) {
+      const safeVar = variable.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const variablePattern = new RegExp(`\\b${safeVar}\\b`, "gu");
+      substitutedEquation = substitutedEquation.replace(
+        variablePattern,
+        String(resolvedValues[variable]),
+      );
+    }
+
+    // Safely evaluate the mathematical expression with error handling
+    try {
+      const result = GlobalVariables.limitedEvaluate(substitutedEquation);
+      return result;
+    } catch (error) {
+      // Handle mathematical expression parsing errors gracefully
+      const msg = `Invalid mathematical expression: "${substitutedEquation}". ${error.message}`;
+      console.warn("Mathematical expression evaluation failed:", msg);
+      throw new Error(msg);
     }
   }
 
