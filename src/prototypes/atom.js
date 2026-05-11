@@ -1074,8 +1074,8 @@ export default class Atom extends ObservableEntity {
 
       // --- Text Sprite ---
       const canvas = document.createElement("canvas");
-      canvas.width = 512;
-      canvas.height = 256;
+      canvas.width = 2048; // Large width to accommodate longer text, will be scaled down by sprite scale
+      canvas.height = 1024;
       const ctx = canvas.getContext("2d");
       ctx.font = serializedLabel.text.font;
       ctx.textAlign = "center";

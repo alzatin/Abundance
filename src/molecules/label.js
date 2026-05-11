@@ -70,7 +70,7 @@ export default class Label extends Atom {
       {
         name: "fontSize",
         valueType: "number",
-        defaultValue: 10,
+        defaultValue: 40,
         type: "input",
       },
     ]);
@@ -100,9 +100,8 @@ export default class Label extends Atom {
    */
   createTextSprite(text, color, lineLength = 10, fontSize = 1) {
     const canvas = document.createElement("canvas");
-    const size = 256;
-    canvas.width = size;
-    canvas.height = size / 2;
+    canvas.width = 2048; // Large width to accommodate longer text, will be scaled down by sprite scale
+    canvas.height = 1024;
     const ctx = canvas.getContext("2d");
 
     ctx.fillStyle = "rgba(0,0,0,0)";
@@ -116,7 +115,7 @@ export default class Label extends Atom {
 
     // Draw stroke (text color)
     ctx.strokeStyle = color;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = fontSize * 0.4; // Line width for text stroke, scaled with font size
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
@@ -135,15 +134,7 @@ export default class Label extends Atom {
     // Scale based on line length and font size
     const scaleX = lineLength * 30 * fontSize;
     const scaleY = lineLength * 60 * fontSize;
-    console.log(
-      "Text sprite scale:",
-      scaleX,
-      scaleY,
-      "from lineLength:",
-      lineLength,
-      "fontSize:",
-      fontSize,
-    );
+
     sprite.scale.set(scaleX, scaleY, 1);
     return sprite;
   }
@@ -274,7 +265,7 @@ export default class Label extends Atom {
     const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
     // Use the perpendicular direction already calculated for end segments
     // Position text above the line at a fixed offset distance
-    const OFFSET_DIST = 2.5 * unitScale;
+    const OFFSET_DIST = 2.5; //* unitScale;
     const offsetVec = perpDir.clone().multiplyScalar(OFFSET_DIST);
     sprite.position.set(
       mid.x + offsetVec.x,
@@ -306,7 +297,7 @@ export default class Label extends Atom {
     end,
     labelText,
     color,
-    fontSize = 1,
+    fontSize = 10,
     movement = { x: 0, y: 0, z: 0 },
     rotation = { x: 0, y: 0, z: 0 },
   ) {
@@ -332,7 +323,7 @@ export default class Label extends Atom {
 
     // For text, use perpendicular in XY plane
     const perpDir = new THREE.Vector3(-lineDir.y, lineDir.x, 0).normalize();
-    const OFFSET_DIST = 2.5 * unitScale;
+    const OFFSET_DIST = 2.5; //* unitScale;
     const offset = perpDir.clone().multiplyScalar(OFFSET_DIST);
 
     // Calculate end segments
@@ -379,7 +370,8 @@ export default class Label extends Atom {
         color: color,
         position: [mid.x + offset.x, mid.y + offset.y, mid.z + offset.z],
         scale: [lineLength * 0.1 * fontSize, lineLength * 0.05 * fontSize, 1],
-        font: "Bold 80px Arial",
+        font: `Bold ${fontSize}px Arial`,
+        linewidth: fontSize * 0.4, // Line width for text stroke, scaled with font size
       },
       movement: { ...movement }, // e.g. {x: 10, y: 0, z: 0}
       rotation: { ...rotation }, // e.g. {x: 0, y: 0, z: Math.PI/2}
