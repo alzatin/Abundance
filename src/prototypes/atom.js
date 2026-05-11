@@ -291,16 +291,47 @@ export default class Atom extends ObservableEntity {
             break;
         }
 
-        //Draw Alert block
+        // Wrap text to maximum width
+        const fullMessage = prefix + this.alert.message;
+        const maxWidth = 300; // Maximum width in pixels
+        const padding = 20;
+        const lineHeight = parseInt(GlobalVariables.c.font) + 4;
+
+        // Helper function to wrap text
+        const wrapText = (text, maxPixelWidth) => {
+          const lines = [];
+          const words = text.split(" ");
+          let currentLine = "";
+
+          for (let word of words) {
+            const testLine = currentLine ? currentLine + " " + word : word;
+            const lineWidth = GlobalVariables.c.measureText(testLine).width;
+
+            if (lineWidth > maxPixelWidth && currentLine) {
+              lines.push(currentLine);
+              currentLine = word;
+            } else {
+              currentLine = testLine;
+            }
+          }
+          if (currentLine) {
+            lines.push(currentLine);
+          }
+
+          return lines;
+        };
+
+        const wrappedLines = wrapText(fullMessage, maxWidth);
+        const boxHeight = -(wrappedLines.length * lineHeight + padding);
+
+        // Draw Alert block
         GlobalVariables.c.beginPath();
-        const padding = 10;
         GlobalVariables.c.fillStyle = this.color;
         GlobalVariables.c.rect(
           xInPixels + radiusInPixels - padding / 2,
           yInPixels - radiusInPixels + padding / 2,
-          GlobalVariables.c.measureText(prefix + this.alert.message).width +
-            padding,
-          -(parseInt(GlobalVariables.c.font) + padding),
+          maxWidth + padding,
+          boxHeight,
         );
         GlobalVariables.c.fill();
         GlobalVariables.c.strokeStyle = "black";
@@ -308,13 +339,16 @@ export default class Atom extends ObservableEntity {
         GlobalVariables.c.stroke();
         GlobalVariables.c.closePath();
 
+        // Draw wrapped text lines
         GlobalVariables.c.beginPath();
         GlobalVariables.c.fillStyle = "black";
-        GlobalVariables.c.fillText(
-          prefix + this.alert.message,
-          xInPixels + radiusInPixels,
-          yInPixels - radiusInPixels,
-        );
+        wrappedLines.forEach((line, index) => {
+          GlobalVariables.c.fillText(
+            line,
+            xInPixels + radiusInPixels,
+            yInPixels - radiusInPixels + index * lineHeight + boxHeight / 2,
+          );
+        });
         GlobalVariables.c.closePath();
       }
     }
