@@ -346,7 +346,10 @@
   color: #ccc;
   font-size: 0.75rem;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .code-version-btn:hover {
@@ -828,13 +831,14 @@
   padding: 0 5px;
 }
 .featured-project-div {
-  width: 50%;
+  position: relative;
+  width: 100%;
   display: flex;
   margin: 5px;
   background-color: var(--loginPopup-projectColor);
-  height: 80px;
+  height: 100px;
   padding: 15px;
-  font-size: 13px;
+  font-size: 20px;
   border: 1px solid var(--loginPopup-border);
 }
 .featured-project-div:hover {
