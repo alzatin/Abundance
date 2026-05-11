@@ -1681,6 +1681,16 @@ export default class Atom extends ObservableEntity {
   }
 
   /**
+   * Create parameters for export menu. Base implementation returns empty object.
+   * Override in subclasses that support export functionality (e.g., Molecule).
+   * @param {function} setInputChanged - Callback to trigger re-render of input panel
+   * @returns {object} Object of export menu parameters
+   */
+  createExportMenuInputs(setInputChanged) {
+    return {};
+  }
+
+  /**
    * Ensure that inputs exist for all variables in the given equation.
    * This method adds missing inputs dynamically but doesn't remove existing ones.
    * NOTE: Only Equation and Code atoms are allowed to dynamically add new inputs.

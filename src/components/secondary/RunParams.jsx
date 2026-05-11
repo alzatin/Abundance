@@ -73,7 +73,7 @@ export default function RunParams({
         ),
       ),
     };
-    exportParams = activeAtom?.createExportMenuInputs(setInputChanged);
+    exportParams = activeAtom.createExportMenuInputs(setInputChanged);
 
     inputParams["molecule name" + activeAtom.uniqueID + "units"] = {
       type: "label",
