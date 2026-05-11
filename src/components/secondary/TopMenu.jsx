@@ -258,8 +258,9 @@ function TopMenu({
       {
         id: "Save Project",
         buttonFunc: () => {
-          setSavePopUp(true);
-          saveProject(setSaveState, "User Save");
+          saveProject(setSaveState, "User Save", false, () =>
+            setSavePopUp(true),
+          );
         },
       },
       {
