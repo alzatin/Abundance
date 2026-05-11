@@ -276,6 +276,11 @@ function CreateMode() {
 
   useEffect(() => {
     const myInterval = setInterval(() => {
+      // Skip auto-save when disabled via settings
+      const isAutoSaveDisabled =
+        localStorage.getItem("autoSaveDisabled") === "true";
+      if (isAutoSaveDisabled) return;
+
       // Skip auto-save when any popup is visible to avoid committing
       // unintended changes while the user is navigating away
       if (
