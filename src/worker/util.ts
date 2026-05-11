@@ -4,15 +4,14 @@ import opencascadeWasm from "replicad-opencascadejs/src/replicad_single.wasm?url
 import { v4 as uuidv4 } from "uuid";
 import { GeometryProvider, RequestContext } from "./geometryProvider";
 
-let defaultColor: string = "#aad7f2";
+const defaultColor: string = "#aad7f2";
 let loaded: boolean = false;
 let geometryProvider: GeometryProvider | undefined = undefined;
 let ocModule: any = undefined;
 
 const init = async (logMetrics: boolean = true): Promise<boolean> => {
   if (loaded) return Promise.resolve(true);
-  const start = performance.now();
-  //@ts-ignore
+  //@ts-expect-error - opencascade doesn't have types
   const OC = await opencascade({
     locateFile: () => opencascadeWasm,
   });
@@ -199,8 +198,8 @@ async function actOnLeafs(
       };
     }
   } else {
-    let children = assembly.geometry as AbundanceObject[];
-    let transformedAssembly: any[] = [];
+    const children = assembly.geometry as AbundanceObject[];
+    const transformedAssembly: any[] = [];
     for (const subAssembly of children) {
       const result = await actOnLeafs(subAssembly, action);
       if (result != undefined && result.geometry?.length > 0) {
@@ -222,7 +221,7 @@ async function actOnLeafs(
  * Gets all leafs from an assembly as a flat list.
  */
 function flattenAssembly(assembly: AbundanceObject): AbundanceLeaf[] {
-  var flattened: AbundanceLeaf[] = [];
+  const flattened: AbundanceLeaf[] = [];
   if (assembly == undefined || assembly.geometry == undefined) {
     console.trace("attempted to flatten empty assembly");
     return flattened;
@@ -295,41 +294,6 @@ async function hashFileContents(file: File): Promise<string> {
     hash = hashString(String.fromCharCode(...new Uint8Array(arrayBuffer)));
   }
   return hash;
-}
-
-/**
- * Compares two abundance objects. Return true only if they are of identical
- * structure and reference identical geometries.
- */
-function abundanceEquals(a: AbundanceObject, b: AbundanceObject): boolean {
-  if (isLeaf(a) && isLeaf(b)) {
-    return (
-      a.geometry === b.geometry &&
-      a.dimension === b.dimension &&
-      JSON.stringify(a.plane) === JSON.stringify(b.plane) &&
-      a.color === b.color &&
-      JSON.stringify(a.tags) === JSON.stringify(b.tags) &&
-      JSON.stringify(a.bom) === JSON.stringify(b.bom)
-    );
-  } else if (isAssembly(a) && isAssembly(b)) {
-    if (a.geometry.length === b.geometry.length) {
-      for (let i = 0; i < a.geometry.length; i++) {
-        if (!abundanceEquals(a.geometry[i], b.geometry[i])) {
-          return false;
-        }
-      }
-      return (
-        JSON.stringify(a.plane) === JSON.stringify(b.plane) &&
-        a.color === b.color &&
-        JSON.stringify(a.tags) === JSON.stringify(b.tags) &&
-        JSON.stringify(a.bom) === JSON.stringify(b.bom)
-      );
-    } else {
-      return false;
-    }
-  } else {
-    return false;
-  }
 }
 
 /**

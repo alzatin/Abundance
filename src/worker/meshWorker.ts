@@ -31,8 +31,12 @@ function getLargestBoundingBox(meshArray: ReplicadObject[]):
       depth: number;
     }
   | undefined {
-  let overallMin: [number, number, number] = [Infinity, Infinity, Infinity];
-  let overallMax: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+  const overallMin: [number, number, number] = [Infinity, Infinity, Infinity];
+  const overallMax: [number, number, number] = [
+    -Infinity,
+    -Infinity,
+    -Infinity,
+  ];
 
   try {
     if (!Array.isArray(meshArray)) {
@@ -43,7 +47,7 @@ function getLargestBoundingBox(meshArray: ReplicadObject[]):
       if (!mesh.boundingBox || !Array.isArray(mesh.boundingBox.bounds)) {
         console.error(
           `mesh[${idx}] missing boundingBox or bounds:`,
-          mesh.boundingBox
+          mesh.boundingBox,
         );
         throw new Error("Invalid mesh geometry or boundingBox structure");
       }
@@ -60,13 +64,13 @@ function getLargestBoundingBox(meshArray: ReplicadObject[]):
       ) {
         console.error(
           `mesh[${idx}] boundingBox bounds not properly defined:`,
-          boundingBox
+          boundingBox,
         );
         throw new Error("boundingBox bounds are not properly defined");
       }
 
-      let min = boundingBox[0];
-      let max = boundingBox[1];
+      const min = boundingBox[0];
+      const max = boundingBox[1];
 
       // Update overall minimum coordinates
       overallMin[0] = Math.min(overallMin[0], min[0]);
@@ -119,14 +123,14 @@ function calculateZoom(boundingBox: {
     const exampleDiagonal = Math.sqrt(
       Math.pow(exampleBoundingBox.width, 2) +
         Math.pow(exampleBoundingBox.height, 2) +
-        Math.pow(exampleBoundingBox.depth, 2)
+        Math.pow(exampleBoundingBox.depth, 2),
     );
 
     // Calculate the diagonal length of the input bounding box
     const diagonal = Math.sqrt(
       Math.pow(boundingBox.width, 2) +
         Math.pow(boundingBox.height, 2) +
-        Math.pow(boundingBox.depth, 2)
+        Math.pow(boundingBox.depth, 2),
     );
 
     // Calculate the zoom level based on the proportional relationship
@@ -137,17 +141,18 @@ function calculateZoom(boundingBox: {
     const zoom = (exampleZoom * exampleDiagonal * marginFactor) / diagonal;
     return zoom;
   } catch (e) {
-    throw new Error("Error calculating zoom level");
+    console.error("Error calculating zoom level:", e);
+    throw e;
   }
 }
 
 function generateCameraPosition(meshArray: ReplicadObject[]): number {
   // Get the largest bounding box from the mesh array
-  let largestBoundingBox = getLargestBoundingBox(meshArray);
+  const largestBoundingBox = getLargestBoundingBox(meshArray);
   if (largestBoundingBox == undefined) {
     throw new Error("Could not determine largest bounding box");
   }
-  let zoom = calculateZoom(largestBoundingBox);
+  const zoom = calculateZoom(largestBoundingBox);
   if (zoom == 0) {
     throw new Error("Calculated zoom level is zero");
   }
@@ -160,11 +165,16 @@ function generateCameraPosition(meshArray: ReplicadObject[]): number {
  * @returns {Promise} A promise that resolves to the default text mesh
  */
 async function generateDefaultMesh(
-  context: RequestContext
+  context: RequestContext,
 ): Promise<DisplayMesh[]> {
   if (defaultMesh == undefined) {
     const s = performance.now();
-    const textAssembly = await text("No output to display", 28, "ROBOTO", context);
+    const textAssembly = await text(
+      "No output to display",
+      28,
+      "ROBOTO",
+      context,
+    );
     const leaves = util.flattenAssembly(textAssembly);
     const meshParts: DisplayMesh[] = [];
     for (const leaf of leaves) {
@@ -192,7 +202,7 @@ async function generateDefaultMesh(
 
 async function generateDisplayMesh(
   id: AbundanceObject,
-  context: RequestContext
+  context: RequestContext,
 ): Promise<{ id: AbundanceObject; mesh: DisplayMesh[] }> {
   try {
     await started;
@@ -206,13 +216,13 @@ async function generateDisplayMesh(
     // Flatten the assembly to remove hierarchy
     const flattened = util.flattenAssembly(geom);
 
-    let meshArray: { color: string; geometry: ReplicadObject }[] = [];
+    const meshArray: { color: string; geometry: ReplicadObject }[] = [];
 
     for (let i = 0; i < flattened.length; i++) {
       const displayObject = flattened[i];
       const geom = await util.geometryProvider!.get(
         displayObject.geometry,
-        context
+        context,
       );
       meshArray.push({
         color: displayObject.color,
@@ -228,11 +238,11 @@ async function generateDisplayMesh(
       cameraZoom = 1;
     }
 
-    let finalMeshes = [];
+    const finalMeshes = [];
     // Iterate through the meshArray and create final meshes with faces, edges and color to pass to display
     for (const [index, meshObj] of meshArray.entries()) {
       try {
-        let sketchPlane = util.asReplicadPlane(geom.plane);
+        const sketchPlane = util.asReplicadPlane(geom.plane);
         if (meshObj.geometry instanceof replicad.Drawing) {
           const threeDShape = meshObj.geometry
             .sketchOnPlane(sketchPlane)
@@ -264,14 +274,14 @@ async function generateDisplayMesh(
         const msg = e instanceof Error ? e.message : String(e);
         console.error(
           `Error meshing geometry part ${index} (color: ${meshObj.color}): ${msg}`,
-          e
+          e,
         );
         // Skip this part and continue so other parts still display
       }
     }
     if (finalMeshes.length === 0 && meshArray.length > 0) {
       console.error(
-        "All geometry parts failed to mesh — falling back to default mesh"
+        "All geometry parts failed to mesh — falling back to default mesh",
       );
       return { id: id, mesh: await generateDefaultMesh(context) };
     }
