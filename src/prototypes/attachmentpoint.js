@@ -122,6 +122,12 @@ export default class AttachmentPoint extends ObservableEntity {
     this.defaultValue = this.valueType == "number" ? 10 : null;
 
     /**
+     * Whether this AP is optional. Optional APs don't block their parent molecule from computing
+     * even if they're in a WAITING state.
+     */
+    this.isOptional = false;
+
+    /**
      * Internal storage for currentEquation
      * @type {string}
      * @private
@@ -145,6 +151,9 @@ export default class AttachmentPoint extends ObservableEntity {
      * @type {object}
      */
     this.parentMolecule = null;
+
+    this.name = "";
+    this.oldNames = [];
 
     for (var key in values) {
       /**
@@ -985,18 +994,11 @@ export default class AttachmentPoint extends ObservableEntity {
     if (this.type == "input") {
       this.valueType = type; // TODO: do we need to force a propagation if this changed?
       if (this.valueType == "geometry") {
-        // For geometries, if the value is explicitly null (e.g., from defaultValue: null),
-        // use NO_GEOMETRY sentinel and set status to READY so code atoms can execute with optional inputs.
-        // Otherwise, set status to WAITING until a geometry connection is made.
-        if (newValue === null) {
-          this.value = NO_GEOMETRY;
-          this.setStatus(Status.READY, NO_GEOMETRY);
-        } else {
-          this.value = newValue;
-          this.setWaiting();
-        }
         // No name-based subscription for geometry types
         this.unsubscribeAllNameSubscriptions();
+
+        this.value = newValue;
+        this.setWaiting();
       } else {
         // Check if newValue is a string that might contain variable references
         if (typeof newValue === "string") {
