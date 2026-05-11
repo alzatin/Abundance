@@ -114,13 +114,13 @@ export default memo(function FlowCanvas({
               GlobalVariables.currentMolecule =
                 GlobalVariables.topLevelMolecule;
               // Only save if project matches
-              setSavePopUp(true);
               saveProject(
                 setSaveState,
                 "auto-save after reauthentication",
+                false,
+                () => setSavePopUp(true),
               ).then(() => {
                 localStorage.removeItem("pendingProjectSave");
-                setSavePopUp(false);
               });
             }
             loadAndDeserialize();

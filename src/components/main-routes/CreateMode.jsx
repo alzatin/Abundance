@@ -141,13 +141,19 @@ function CreateMode() {
   }, []);
 
   // Wrapper function that calls saveProject with CreateMode-specific parameters
-  const saveProject = (setSaveProgress, typeSave, forceSave = false) => {
+  const saveProject = (
+    setSaveProgress,
+    typeSave,
+    forceSave = false,
+    onSaveStart = null,
+  ) => {
     return saveProjectFromContext(
       setSaveProgress,
       typeSave,
       forceSave,
       meshRef,
       setUserNotification,
+      onSaveStart,
     );
   };
 
@@ -289,8 +295,7 @@ function CreateMode() {
         duplicateDialogRef.current
       )
         return;
-      setSavePopUp(true);
-      saveProject(setSaveState, "Auto Save");
+      saveProject(setSaveState, "Auto Save", false, () => setSavePopUp(true));
     }, 300000);
 
     //Clearing the interval
@@ -334,8 +339,7 @@ function CreateMode() {
         !settingsPopUpRef.current &&
         !duplicateDialogRef.current
       ) {
-        setSavePopUp(true);
-        saveProject(setSaveState, "User Save");
+        saveProject(setSaveState, "User Save", true, () => setSavePopUp(true));
       }
     }
 
@@ -552,7 +556,9 @@ function CreateMode() {
       setBackgroundUsdzSha(result.data.content.sha);
       setShowBackgroundModel(true);
 
-      saveProject(setSaveState, "Background 3D Model Upload Save");
+      saveProject(setSaveState, "Background 3D Model Upload Save", false, () =>
+        setSavePopUp(true),
+      );
       setNotification(
         `Background 3D model uploaded: ${backgroundFileName}`,
         "notice",

@@ -51,8 +51,7 @@ const SettingsPopUp = ({
     // Trigger a save to persist the description and topics changes
     // Use forceSave=true to bypass the "no changes" check since description/topics
     // are not part of the molecule serialization
-    setSavePopUp(true);
-    saveProject(setSaveState, "Settings Save", true);
+    saveProject(setSaveState, "Settings Save", true, () => setSavePopUp(true));
   };
   const [value, setValue] = React.useState(0);
 
