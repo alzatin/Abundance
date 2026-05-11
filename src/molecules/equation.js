@@ -286,10 +286,31 @@ export default class Equation extends Atom {
   }
 
   inputsAreReady() {
-    return (
-      this.currentEquation &&
-      this.inputs.every((input) => input.getState().status == Status.READY)
-    );
+    // First check: must have equation and all direct inputs ready
+    if (!this.currentEquation) {
+      return false;
+    }
+    
+    if (!this.inputs.every((input) => input.getState().status == Status.READY)) {
+      return false;
+    }
+    
+    // Second check: verify parent inputs referenced in equation are also READY
+    const variables = this.extractVariablesFromEquation(this.currentEquation);
+    const parentInputs = this.getInputsFromAncestors();
+    
+    for (const variable of variables) {
+      const parentInput = parentInputs.find((p) => p.name === variable);
+      if (parentInput) {
+        // Parent input is referenced in equation - it must be READY
+        const status = parentInput.getState?.() ? parentInput.getState().status : parentInput.status;
+        if (status !== Status.READY) {
+          return false;
+        }
+      }
+    }
+    
+    return true;
   }
 
   compute(_) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import { Link } from "react-router-dom";
 import globalvariables from "../../js/globalvariables.js";
@@ -124,23 +124,14 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
           : "byName";
 
   // Use persistent settings from context
-  //looking for highest ranking project and tool
-  let highestRankingNode = null;
-  let highestRankingToolNode = null;
-
-  if (projectToShow == "featured" && nodes.length > 0) {
-    const filteredNodes = nodes.filter((node) => {
-      return !node.topics.includes("abundance-tool");
-    });
-    const sortedNodes = filteredNodes.sort((a, b) => b.ranking - a.ranking);
-    highestRankingNode = sortedNodes[0];
-
-    const toolNodes = nodes.filter((node) =>
-      node.topics.includes("abundance-tool"),
-    );
-    const sortedToolNodes = toolNodes.sort((a, b) => b.ranking - a.ranking);
-    highestRankingToolNode = sortedToolNodes[0];
-  }
+  // Pick a random featured project from all available nodes - memoized to prevent re-render loop
+  const randomFeaturedNode = useMemo(() => {
+    if (projectToShow == "featured" && nodes.length > 0) {
+      const randomIndex = Math.floor(Math.random() * nodes.length);
+      return nodes[randomIndex];
+    }
+    return null;
+  }, [projectToShow, nodes.length]);
 
   // Apply fork filter
   if (!filters.showForks) {
@@ -254,13 +245,8 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
       <div className="projects-and-filters-container">
         <div className="project-items-wrapper">
           <div className="project-items-div">
-            {projectToShow == "featured" &&
-            highestRankingNode &&
-            highestRankingToolNode ? (
-              <FeaturedHighlight
-                highestRankingNode={highestRankingNode}
-                highestRankingToolNode={highestRankingToolNode}
-              />
+            {projectToShow == "featured" && randomFeaturedNode ? (
+              <FeaturedHighlight randomFeaturedNode={randomFeaturedNode} />
             ) : null}
             {nodes.length > 0 ? (
               <ProjectDiv
@@ -288,69 +274,38 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
   );
 };
 
-const FeaturedHighlight = ({ highestRankingNode, highestRankingToolNode }) => (
+const FeaturedHighlight = ({ randomFeaturedNode }) => (
   <div id="featured-div">
     <Link
       onClick={() => {
-        GlobalVariables.currentAWSnode = highestRankingNode;
+        GlobalVariables.currentAWSnode = randomFeaturedNode;
       }}
-      id="left-featured-div"
+      id="featured-project-highlight"
       className="featured-project-div"
-      key={highestRankingNode.owner + highestRankingNode.repoName}
+      key={randomFeaturedNode.owner + randomFeaturedNode.repoName}
       to={
-        highestRankingNode.owner == globalvariables.currentUser
-          ? `/${highestRankingNode.owner}/${highestRankingNode.repoName}`
-          : `/run/${highestRankingNode.owner}/${highestRankingNode.repoName}`
+        randomFeaturedNode.owner == globalvariables.currentUser
+          ? `/${randomFeaturedNode.owner}/${randomFeaturedNode.repoName}`
+          : `/run/${randomFeaturedNode.owner}/${randomFeaturedNode.repoName}`
       }
     >
-      <div style={{ flexBasis: "60%" }}>
+      <div style={{ flexBasis: "50%" }}>
         <p className="project_name">
-          {convertToDisplayName(highestRankingNode.repoName)}
+          {convertToDisplayName(randomFeaturedNode.repoName)}
         </p>
-        <p className="project_name">By {highestRankingNode.owner}</p>
+        <p className="project_name">By {randomFeaturedNode.owner}</p>
       </div>
       <img
         className="project_image"
-        src={highestRankingNode.svgURL}
+        style={{ left: "80%" }}
+        src={randomFeaturedNode.svgURL}
         onError={({ currentTarget }) => {
           currentTarget.onerror = null; // prevents looping
           currentTarget.src =
             import.meta.env.VITE_APP_PATH_FOR_PICS +
             "/imgs/defaultThumbnail.svg";
         }}
-        alt={highestRankingNode.repoName}
-      ></img>
-    </Link>
-
-    <Link
-      id="right-featured-div"
-      onClick={() => {
-        GlobalVariables.currentAWSnode = highestRankingToolNode;
-      }}
-      className="featured-project-div"
-      key={highestRankingToolNode?.owner + highestRankingToolNode?.repoName}
-      to={
-        highestRankingToolNode?.owner == globalvariables.currentUser
-          ? `/${highestRankingToolNode?.owner}/${highestRankingToolNode?.repoName}`
-          : `/run/${highestRankingToolNode?.owner}/${highestRankingToolNode?.repoName}`
-      }
-    >
-      <div style={{ flexBasis: "60%" }}>
-        <p className="project_name">
-          {convertToDisplayName(highestRankingToolNode?.repoName)}
-        </p>
-        <p className="project_name">By {highestRankingToolNode?.owner}</p>
-      </div>
-      <img
-        className="project_image"
-        src={highestRankingToolNode?.svgURL}
-        onError={({ currentTarget }) => {
-          currentTarget.onerror = null; // prevents looping
-          currentTarget.src =
-            import.meta.env.VITE_APP_PATH_FOR_PICS +
-            "/imgs/defaultThumbnail.svg";
-        }}
-        alt={highestRankingToolNode.repoName}
+        alt={randomFeaturedNode.repoName}
       ></img>
     </Link>
   </div>
@@ -891,31 +846,44 @@ const ProjectDiv = ({
     };
   }, [contextMenu.visible]);
 
+  // Stable sort to prevent unnecessary re-renders
+  const sortedNodes = useMemo(
+    () => nodes.sort(sorters[orderType]),
+    [nodes, orderType, sorters],
+  );
+
+  // Memoized project link item component
+  const ProjectLinkItem = React.memo(({ node }) => {
+    const handleLinkClick = (e) => {
+      if (node.notFound) {
+        e.preventDefault();
+      }
+    };
+
+    return (
+      <Link
+        to={
+          node.owner == globalvariables.currentUser
+            ? `/${node.owner}/${node.repoName}`
+            : `/run/${node.owner}/${node.repoName}`
+        }
+        onClick={handleLinkClick}
+      >
+        {browseType == "list" ? (
+          <ListItem {...{ node }} />
+        ) : (
+          <ThumbItem {...{ node }} />
+        )}
+      </Link>
+    );
+  });
+
   return (
     <>
       <div className="project-item-div">
         {browseType == "list" ? <ListItem node={dummyNode} /> : null}
-        {nodes.sort(sorters[orderType]).map((node) => (
-          <Link
-            key={node.owner + node.repoName}
-            to={
-              node.owner == globalvariables.currentUser
-                ? `/${node.owner}/${node.repoName}`
-                : `/run/${node.owner}/${node.repoName}`
-            }
-            onClick={(e) => {
-              // Prevent navigation if project is not found
-              if (node.notFound) {
-                e.preventDefault();
-              }
-            }}
-          >
-            {browseType == "list" ? (
-              <ListItem {...{ node }} />
-            ) : (
-              <ThumbItem {...{ node }} />
-            )}
-          </Link>
+        {sortedNodes.map((node) => (
+          <ProjectLinkItem key={node.owner + node.repoName} node={node} />
         ))}
       </div>
       {/* Context menu dropdown */}
