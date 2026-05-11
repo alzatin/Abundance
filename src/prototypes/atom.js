@@ -732,8 +732,6 @@ export default class Atom extends ObservableEntity {
     if (this.output) {
       this.output.deleteSelf(silent);
     }
-    /* Remove from worker library */
-    GlobalVariables.cad.deleteFromLibrary(this.uniqueID).then(() => {});
 
     this.parent.nodesOnTheScreen.splice(
       this.parent.nodesOnTheScreen.indexOf(this),
@@ -1261,9 +1259,6 @@ export default class Atom extends ObservableEntity {
         .catch(this.alertingErrorHandler());
     } else {
       this.setWaiting();
-      GlobalVariables.cad
-        .deleteFromLibrary(this.uniqueID)
-        .catch(this.alertingErrorHandler());
     }
   }
 
