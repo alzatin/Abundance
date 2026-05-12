@@ -179,7 +179,7 @@ export default class Readme extends Atom {
         (typeof inputValue !== "object" || Array.isArray(inputValue))
       ) {
         const valueStr = String(inputValue);
-        readMeTextWithValue = this.readMeText + "\n\n**Value:** " + valueStr;
+        readMeTextWithValue = this.readMeText + "\n\n" + valueStr;
       }
 
       return this.generateProjectThumbnail()
