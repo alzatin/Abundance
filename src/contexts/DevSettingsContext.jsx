@@ -16,10 +16,7 @@ export const useDevSettings = () => {
  */
 export const DevSettingsProvider = ({ children }) => {
   const [devSettings, setDevSettings] = useState({
-    showDebugInfo: false,
-    enableConsoleLogging: false,
-    simulateSlowNetwork: false,
-    showPerformanceMetrics: false,
+    allowGitHubMoleculeNavigation: false,
   });
 
   const [showDevModal, setShowDevModal] = useState(false);
@@ -57,10 +54,8 @@ export const DevSettingsProvider = ({ children }) => {
 
   const resetSettings = () => {
     const defaultSettings = {
-      showDebugInfo: false,
-      enableConsoleLogging: false,
-      simulateSlowNetwork: false,
       showPerformanceMetrics: false,
+      allowGitHubMoleculeNavigation: false,
     };
     setDevSettings(defaultSettings);
     localStorage.removeItem("dev-settings");

@@ -66,6 +66,14 @@ export default class GitHubMolecule extends Molecule {
 
     var clickProcessed = false;
 
+    // Check if GitHub molecule navigation is enabled in dev settings
+    const devSettings = JSON.parse(
+      localStorage.getItem("dev-settings") || "{}",
+    );
+    if (!devSettings.allowGitHubMoleculeNavigation) {
+      return clickProcessed; // Do nothing if navigation is disabled
+    }
+
     var distFromClick = GlobalVariables.distBetweenPoints(x, this.x, y, this.y);
 
     if (distFromClick < this.radius * 2) {

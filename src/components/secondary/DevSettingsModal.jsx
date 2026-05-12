@@ -19,24 +19,9 @@ const DevSettingsModal = () => {
 
   const settings = [
     {
-      key: "showDebugInfo",
-      label: "Show Debug Info",
-      description: "Display debug information in the UI",
-    },
-    {
-      key: "enableConsoleLogging",
-      label: "Enable Console Logging",
-      description: "Enable verbose console logging",
-    },
-    {
-      key: "simulateSlowNetwork",
-      label: "Simulate Slow Network",
-      description: "Simulate slow network conditions",
-    },
-    {
-      key: "showPerformanceMetrics",
-      label: "Show Performance Metrics",
-      description: "Display performance metrics and render times",
+      key: "allowGitHubMoleculeNavigation",
+      label: "Allow GitHub Molecule Navigation",
+      description: "Enable double-click navigation into GitHub molecules",
     },
   ];
 
