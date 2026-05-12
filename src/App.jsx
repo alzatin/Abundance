@@ -39,6 +39,8 @@ import {
 
 import { TutorialProvider } from "./tutorial/TutorialManager";
 import { ProgressBarProvider } from "./components/secondary/ProgressBarManager.jsx";
+import { DevSettingsProvider } from "./contexts/DevSettingsContext.jsx";
+import DevSettingsModal from "./components/secondary/DevSettingsModal.jsx";
 
 /*Import style scripts*/
 import "./styles/maslowCreate.css";
@@ -597,7 +599,8 @@ function AppContent() {
       {/* Error notification */}
       {errorNotification && (
         <div className={errorClass}>{errorNotification}</div>
-      )}
+      )}{" "}
+      <DevSettingsModal />{" "}
       <Routes>
         <Route
           exact
@@ -652,21 +655,23 @@ function AppContent() {
 export default function ReplicadApp() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AppStateProvider>
-          <BrowseSettingsProvider>
-            <FileImportProvider>
-              <TutorialProvider>
-                <RenderingProvider>
-                  <ProgressBarProvider>
-                    <AppContent />
-                  </ProgressBarProvider>
-                </RenderingProvider>
-              </TutorialProvider>
-            </FileImportProvider>
-          </BrowseSettingsProvider>
-        </AppStateProvider>
-      </AuthProvider>
+      <DevSettingsProvider>
+        <AuthProvider>
+          <AppStateProvider>
+            <BrowseSettingsProvider>
+              <FileImportProvider>
+                <TutorialProvider>
+                  <RenderingProvider>
+                    <ProgressBarProvider>
+                      <AppContent />
+                    </ProgressBarProvider>
+                  </RenderingProvider>
+                </TutorialProvider>
+              </FileImportProvider>
+            </BrowseSettingsProvider>
+          </AppStateProvider>
+        </AuthProvider>
+      </DevSettingsProvider>
     </QueryClientProvider>
   );
 }
