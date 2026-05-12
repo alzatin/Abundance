@@ -191,13 +191,13 @@ export default class Code extends Atom {
  * after creation — no connections required to get started.
  */
 function run(
-  width: number = 40,        // plate width       (mm)
-  depth: number = 30,        // plate depth       (mm)
-  thickness: number = 5,     // plate thickness   (mm)
-  holeRadius: number = 6,    // centre hole radius (mm)
-  color: string = "#5B9BD5", // hex color shown in the 3-D viewport
-  addFillet: boolean = true, // when true, rounds the top edges of the plate
-  extra?: Assembly           // optional: connect another atom to add its geometry
+  width: number = 40,        
+  depth: number = 30,       
+  thickness: number = 5,    
+  holeRadius: number = 6,   
+  color: string = "#5B9BD5", 
+  addFillet: boolean = true, 
+  extra?: Assembly           
 ) {
   // ── Step 1: Create the base solid ────────────────────────────────────────
   // makeBaseBox(width, depth, height) places a box with one corner at the

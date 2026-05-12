@@ -1607,8 +1607,9 @@ export default class Atom extends ObservableEntity {
                             return;
                           const result = atom.evaluateEquation(val);
                           if (Number.isFinite(result)) inp.setValue(result);
-                        } catch {
-                          inp.setValue(NaN);
+                        } catch (err) {
+                          // Invalid equation - don't update the value to NaN
+                          // Keep the previous value instead
                         }
                       }
                     },
@@ -1640,8 +1641,8 @@ export default class Atom extends ObservableEntity {
                   }
                 }
               } catch (err) {
-                console.warn("setting value to NaN");
-                input.setValue(NaN);
+                // Invalid equation - don't update the value, which prevents NaN from propagating
+                // The error is shown to user via alertingErrorHandler, and the value remains unchanged
                 this.alertingErrorHandler()(err);
               }
             },
