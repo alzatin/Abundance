@@ -635,17 +635,27 @@ const ProjectDiv = ({
     }
   };
 
+  // Memoize image URLs to avoid rebuilding on every render
+  const imageUrlMap = useMemo(() => {
+    const map = new Map();
+    nodes.forEach((node) => {
+      if (!node?.svgURL || failedImages.has(node.svgURL)) {
+        map.set(
+          node.svgURL || `${node.owner}/${node.repoName}`,
+          import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/defaultThumbnail.svg",
+        );
+      } else {
+        const separator = node.svgURL.includes("?") ? "&" : "?";
+        map.set(node.svgURL, `${node.svgURL}${separator}cb=${svgCacheBuster}`);
+      }
+    });
+    return map;
+  }, [nodes, svgCacheBuster, failedImages]);
+
   const getImageSrc = (node) => {
-    if (!node?.svgURL || failedImages.has(node.svgURL)) {
-      return (
-        import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/defaultThumbnail.svg"
-      );
-    }
     return (
-      node.svgURL +
-      (node.svgURL.includes("?") ? "&" : "?") +
-      "cb=" +
-      svgCacheBuster
+      imageUrlMap.get(node.svgURL || `${node.owner}/${node.repoName}`) ||
+      import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/defaultThumbnail.svg"
     );
   };
 
