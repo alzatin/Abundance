@@ -735,12 +735,16 @@
   scrollbar-width: thin;
 }
 
+.project-item-div.featured-active {
+  height: calc(100vh - 400px);
+}
+
 .project-items-div {
   display: flex;
   flex-direction: column;
 }
 .project_name {
-  font-size: 1.2em;
+  /*font-size: 1.2em;*/
   font-family: "Roboto", sans-serif;
   color: var(--loginPopup-text);
   text-overflow: ellipsis;
@@ -837,12 +841,12 @@
   margin: 5px;
   background-color: var(--loginPopup-projectColor);
   height: 100px;
-  padding: 15px;
-  font-size: 20px;
-  border: 1px solid var(--loginPopup-border);
+  padding: 10px;
+
+  border: 3px solid var(--abundance-color-mainPurple);
 }
 .featured-project-div:hover {
-  border: 1px solid rgba(192, 105, 247, 0.546);
+  border: 3px solid rgba(192, 105, 247, 0.546);
 }
 .basic-multi-select {
   margin: 15px 0px 15px 0px;
