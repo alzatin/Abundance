@@ -244,7 +244,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
       </div>
       <div className="projects-and-filters-container">
         <div className="project-items-wrapper">
-          <div className="project-items-div">
+          <div className={`project-items-div`}>
             {projectToShow == "featured" && randomFeaturedNode ? (
               <FeaturedHighlight randomFeaturedNode={randomFeaturedNode} />
             ) : null}
@@ -258,6 +258,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
                   svgCacheBuster,
                   failedImages,
                   setFailedImages,
+                  projectToShow,
                 }}
               />
             ) : (
@@ -274,42 +275,236 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
   );
 };
 
-const FeaturedHighlight = ({ randomFeaturedNode }) => (
-  <div id="featured-div">
-    <Link
-      onClick={() => {
-        GlobalVariables.currentAWSnode = randomFeaturedNode;
-      }}
-      id="featured-project-highlight"
-      className="featured-project-div"
-      key={randomFeaturedNode.owner + randomFeaturedNode.repoName}
-      to={
-        randomFeaturedNode.owner == globalvariables.currentUser
-          ? `/${randomFeaturedNode.owner}/${randomFeaturedNode.repoName}`
-          : `/run/${randomFeaturedNode.owner}/${randomFeaturedNode.repoName}`
+const FeaturedHighlight = ({ randomFeaturedNode }) => {
+  const [showQuickView, setShowQuickView] = useState(false);
+  const [panelOnLeft, setPanelOnLeft] = useState(false);
+  const hoverTimerRef = useRef(null);
+  const projectRef = useRef(null);
+
+  const PANEL_WIDTH = 300;
+  const PANEL_MARGIN = 20;
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
       }
-    >
-      <div style={{ flexBasis: "50%" }}>
-        <p className="project_name">
-          {convertToDisplayName(randomFeaturedNode.repoName)}
-        </p>
-        <p className="project_name">By {randomFeaturedNode.owner}</p>
-      </div>
-      <img
-        className="project_image"
-        style={{ left: "80%" }}
-        src={randomFeaturedNode.svgURL}
-        onError={({ currentTarget }) => {
-          currentTarget.onerror = null; // prevents looping
-          currentTarget.src =
-            import.meta.env.VITE_APP_PATH_FOR_PICS +
-            "/imgs/defaultThumbnail.svg";
+    };
+  }, []);
+
+  const handleEyeMouseEnter = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+    }
+    hoverTimerRef.current = setTimeout(() => {
+      if (projectRef.current) {
+        const rect = projectRef.current.getBoundingClientRect();
+        const spaceOnRight = window.innerWidth - rect.right;
+        setPanelOnLeft(spaceOnRight < PANEL_WIDTH + PANEL_MARGIN);
+      }
+      setShowQuickView(true);
+    }, 500);
+  };
+
+  const handleEyeMouseLeave = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    setShowQuickView(false);
+  };
+
+  return (
+    <div id="featured-div">
+      <Link
+        onClick={() => {
+          GlobalVariables.currentAWSnode = randomFeaturedNode;
         }}
-        alt={randomFeaturedNode.repoName}
-      ></img>
-    </Link>
-  </div>
-);
+        id="featured-project-highlight"
+        className="featured-project-div"
+        key={randomFeaturedNode.owner + randomFeaturedNode.repoName}
+        to={
+          randomFeaturedNode.owner == globalvariables.currentUser
+            ? `/${randomFeaturedNode.owner}/${randomFeaturedNode.repoName}`
+            : `/run/${randomFeaturedNode.owner}/${randomFeaturedNode.repoName}`
+        }
+        ref={projectRef}
+      >
+        <div style={{ position: "relative", left: "5%", top: "5%" }}>
+          <p className="project_name">
+            {convertToDisplayName(randomFeaturedNode.repoName)}
+          </p>
+          <p className="project_name">By {randomFeaturedNode.owner}</p>
+        </div>
+        <img
+          className="project_image"
+          style={{ left: "80%", top: "30%" }}
+          src={randomFeaturedNode.svgURL}
+          onError={({ currentTarget }) => {
+            currentTarget.onerror = null; // prevents looping
+            currentTarget.src =
+              import.meta.env.VITE_APP_PATH_FOR_PICS +
+              "/imgs/defaultThumbnail.svg";
+          }}
+          alt={randomFeaturedNode.repoName}
+        ></img>
+
+        {/* Ranking and Eye Icon Overlay */}
+        <div
+          style={{
+            display: "flex",
+            height: "100%",
+            position: "absolute",
+            top: "1rem",
+            right: "1rem",
+            flexDirection: "column",
+          }}
+        >
+          {/* Ranking */}
+          <div
+            className="ranking-icon"
+            style={{
+              display: "flex",
+              justifyContent: "flex-start",
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              style={{
+                transform: "scale(.7)",
+                fill: "#5a0562",
+                alignSelf: "center",
+              }}
+              width="16"
+              height="16"
+            >
+              <path d="M8 .2l4.9 15.2L0 6h16L3.1 15.4z" />
+            </svg>
+            <p
+              style={{
+                fontSize: ".7em",
+                display: "inline",
+                alignSelf: "center",
+              }}
+            >
+              {randomFeaturedNode.ranking}
+            </p>
+          </div>
+
+          {/* Eye icon overlay */}
+          <div
+            className="thumb-eye-icon"
+            onMouseEnter={handleEyeMouseEnter}
+            onMouseLeave={handleEyeMouseLeave}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              marginTop: "5px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ aspectRatio: "1 / 1" }}
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </div>
+
+          {/* Quick view panel */}
+          {showQuickView && (
+            <div
+              className={`thumb-quick-view-panel ${panelOnLeft ? "panel-on-left" : ""}`}
+              onMouseEnter={() => {
+                if (hoverTimerRef.current) {
+                  clearTimeout(hoverTimerRef.current);
+                  hoverTimerRef.current = null;
+                }
+              }}
+              onMouseLeave={handleEyeMouseLeave}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="GitInfoLeft">
+                <img
+                  src={randomFeaturedNode.svgURL}
+                  onError={({ currentTarget }) => {
+                    currentTarget.onerror = null;
+                    currentTarget.src =
+                      import.meta.env.VITE_APP_PATH_FOR_PICS +
+                      "/imgs/defaultThumbnail.svg";
+                  }}
+                  alt={randomFeaturedNode.repoName}
+                />
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ transform: "scale(.7)" }}
+                    width="16"
+                    height="16"
+                  >
+                    <path d="M8 .2l4.9 15.2L0 6h16L3.1 15.4z" />
+                  </svg>
+                  <p style={{ fontSize: "0.5em" }}>
+                    {randomFeaturedNode.ranking}
+                  </p>
+                </div>
+              </div>
+              <div className="GitInfo">
+                <div>
+                  <strong>Project Name: </strong>
+                  <span>
+                    {convertToDisplayName(randomFeaturedNode.repoName)}
+                  </span>
+                </div>
+                <div>
+                  <strong>Creator: </strong>
+                  <span>{randomFeaturedNode.owner}</span>
+                </div>
+                <div>
+                  <strong>Description: </strong>
+                  <span>
+                    {randomFeaturedNode.description || "No description"}
+                  </span>
+                </div>
+                <div>
+                  <strong>Tags: </strong>
+                  {randomFeaturedNode.topics &&
+                  randomFeaturedNode.topics.length > 0 ? (
+                    randomFeaturedNode.topics.map((tag, idx) => (
+                      <span key={tag + idx} className="bubble-tag">
+                        {tag}
+                      </span>
+                    ))
+                  ) : (
+                    <span>None</span>
+                  )}
+                </div>
+                <div>
+                  <strong>Created: </strong>
+                  <span>
+                    {new Date(
+                      randomFeaturedNode.dateCreated,
+                    ).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </Link>
+    </div>
+  );
+};
 
 const ProjectDiv = ({
   nodes,
@@ -319,6 +514,7 @@ const ProjectDiv = ({
   svgCacheBuster,
   failedImages,
   setFailedImages,
+  projectToShow,
 }) => {
   const { renameProject } = useProject();
   const navigate = useNavigate();
@@ -880,7 +1076,9 @@ const ProjectDiv = ({
 
   return (
     <>
-      <div className="project-item-div">
+      <div
+        className={`project-item-div ${projectToShow === "featured" ? "featured-active" : ""}`}
+      >
         {browseType == "list" ? <ListItem node={dummyNode} /> : null}
         {sortedNodes.map((node) => (
           <ProjectLinkItem key={node.owner + node.repoName} node={node} />
