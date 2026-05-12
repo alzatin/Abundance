@@ -30,6 +30,7 @@ import {
   useProject,
   useFileImport,
 } from "../../contexts/index.js";
+import { useDevSettings } from "../../contexts/DevSettingsContext.jsx";
 /**
  * Create mode component appears displays flow canvas, renderer and sidebar when
  * a user has been authorized access to a project.
@@ -49,6 +50,7 @@ function CreateMode() {
     redirectType,
     setNotification,
   } = useAppState();
+  const { setShowDevModal } = useDevSettings();
   const {
     setMesh,
     setWireMesh,
@@ -244,6 +246,7 @@ function CreateMode() {
     "(CTRL+SHIFT)+U": "Go-Up",
     "(CTRL+SHIFT)+W": "Wireframe",
     "(CTRL+SHIFT)+A": "Show-Top-Level-Mesh",
+    "(CTRL+SHIFT)+D": "Dev-Settings",
   };
 
   // Initialize state with undefined width/height so server and client renders match
@@ -378,6 +381,12 @@ function CreateMode() {
         key: "A",
         action: () => {
           setShowTopLevelWireframe(!showTopLevelWireframeRef.current);
+        },
+      },
+      {
+        key: "D",
+        action: () => {
+          setShowDevModal(true);
         },
       },
     ];
