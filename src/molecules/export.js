@@ -117,7 +117,7 @@ export default class Export extends Atom {
     // custom param panel below.
     super.createInputParams(setInputChanged);
     let inputParams = {};
-    const exportOptions = ["STL", "SVG", "STEP"];
+    const exportOptions = ["STL", "SVG", "STEP", "TXT"];
 
     /** Runs through active atom inputs and adds IO parameters to default param*/
 

@@ -106,17 +106,30 @@ function findFlatFaces(
 }
 
 /**
- * Prepares geometry for visualization export in various file formats (STL, STEP, SVG).
- * @param {AbundanceObject} input - The geometry to export
- * @param {string} fileType - The file type for export ("STL", "STEP", or "SVG")
+ * Prepares geometry for visualization export in various file formats (STL, STEP, SVG, TXT).
+ * @param {AbundanceObject|string} input - The geometry to export (AbundanceObject for 3D formats, string for TXT)
+ * @param {string} fileType - The file type for export ("STL", "STEP", "SVG", or "TXT")
  * @returns {Promise<targetID>} A promise that resolves to ID of the result when the export preparation is completed successfully
  */
 function visExport(
-  input: AbundanceObject,
+  input: AbundanceObject | string,
   fileType: string,
   context: RequestContext,
 ): Promise<AbundanceObject> {
   return started.then(async () => {
+    // TXT format doesn't need geometry processing, just return input as-is
+    if (fileType == "TXT") {
+      if (typeof input === "string") {
+        return input as any;
+      }
+      throw new Error("TXT export requires string input");
+    }
+    if (typeof input === "string") {
+      throw new Error(
+        "String input is not valid for this export format. Use TXT export for string data.",
+      );
+    }
+
     const geometryToExport = extractKeepOut(input);
     if (!geometryToExport) {
       throw new Error(
@@ -157,28 +170,46 @@ function visExport(
 }
 
 /**
- * Exports geometry to downloadable file formats (STL, STEP, SVG).
- * @param {AbundanceObject} input - The geometry to export
- * @param {string} fileType - The file type for export ("STL", "STEP", or "SVG")
+ * Exports geometry to downloadable file formats (STL, STEP, SVG, TXT).
+ * @param {AbundanceObject|string} input - The geometry to export (AbundanceObject for 3D formats, string for TXT)
+ * @param {string} fileType - The file type for export ("STL", "STEP", "SVG", or "TXT")
  * @param {number} svgResolution - The resolution for SVG export
  * @param {string} units - The units for scaling ("Inches", "MM", or other)
  * @returns {Promise<Blob>} A promise that resolves to a Blob containing the exported file data
  */
 async function downExport(
-  input: AbundanceObject,
+  input: AbundanceObject | string,
   fileType: string,
   svgResolution: number,
   units: string,
   context: RequestContext,
 ): Promise<Blob> {
   await started;
-  // as with visexport, fuse the result before exporting.
+  // TXT export
+  if (fileType == "TXT") {
+    if (typeof input === "string") {
+      const blob = new Blob([input], { type: "text/plain;charset=utf-8" });
+      return blob;
+    }
+    throw new Error(
+      "TXT export requires string input (e.g., from a cutlist or text atom)",
+    );
+  }
+  console.log(input);
+  if (typeof input === "string") {
+    throw new Error(
+      "String input is not valid for this export format. Use TXT export for string data.",
+    );
+  }
+  // For 3D exports (STL, STEP) and SVG, we need to process the geometry
   const geometryToExport = extractKeepOut(input);
   if (!geometryToExport) {
     throw new Error(
       "Geometry To Export has no geometry after keepout is applied",
     );
   }
+
+  // As with visexport, fuse the result before exporting.
   const fusedGeometry = await fuseAssembly(geometryToExport, context);
   const geom = await util.geometryProvider!.get(
     fusedGeometry.geometry,
