@@ -395,10 +395,14 @@ export default class Label extends Atom {
     if (this.inputs) {
       this.inputs.forEach((input) => {
         if (input.name === "text") {
+          const checkConnector = () => {
+            return input.connectors.length > 0;
+          };
           inputParams[this.uniqueID + "text"] = {
             type: "string",
             value: input.value,
             label: "Label text",
+            disabled: checkConnector(),
             onChange: async (value) => {
               if (input.value !== value) {
                 input.setValue(value);
