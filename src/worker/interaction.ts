@@ -18,39 +18,104 @@ async function loftShapes(
   context: RequestContext,
 ): Promise<AbundanceObject> {
   await util.init();
-  const sketchAndPlane = await Promise.all(
-    sketches.map(async (sketch) => {
-      if (util.isWireGeometry(sketch) || util.isPoint3D(sketch)) {
-        throw new Error(
-          "Parts to be lofted must be 2D sketches, not Wire or Point3D.",
-        );
-      }
-      if (util.is3D(sketch)) {
+  const loftArgsDeep = await Promise.all(
+    sketches.map(async (geom, index) => {
+      if (util.is3D(geom)) {
         throw new Error("Parts to be lofted must be sketches");
       }
-      const result = await fuseAssembly(sketch, context);
-      return {
-        geometry: result.geometry,
-        plane: result.plane,
-      };
+      if (util.is2D(geom)) {
+        // Drawing assemblies should be fused before lofting.
+        const result = await fuseAssembly(geom, context);
+        return {
+          type: "sketch",
+          geometry: result.geometry,
+          plane: result.plane,
+        };
+      }
+      // Wires and points
+      if (util.isWireGeometry(geom) || util.isPoint3D(geom)) {
+        return util.flattenAssembly(geom).map((leaf) => {
+          return {
+            type: util.isPoint3D(leaf) ? "point" : "wire",
+            geometry: leaf.geometry,
+            plane: leaf.plane,
+          };
+        });
+      }
+      throw new Error("Unsupported geometry type for lofting. input #" + index);
     }),
   );
 
-  const sketchList = sketchAndPlane.map((sp) => sp.geometry);
-  const planes = sketchAndPlane.map((sp) => sp.plane);
+  const sketchAndPlane = loftArgsDeep.flat();
+  // Structural checks. Not all mixtures of inputs are allowed.
+  if (
+    sketchAndPlane.some((sp) => sp.type === "wire") &&
+    sketchAndPlane.some((sp) => sp.type === "sketch")
+  ) {
+    throw new Error("Cannot loft a mixture of wires and sketches");
+  }
 
-  return {
-    geometry: await util.geometryProvider!.loftSketches(
-      sketchList,
-      planes,
-      context,
-    ),
-    dimension: "3D",
-    tags: [],
-    plane: util.XYPlane,
-    color: util.defaultColor,
-    bom: [],
-  };
+  // Points act as breaks in the loft structure since replicad only supports
+  // point as the start/end of a loft. We try to handle this invisibly for users.
+  const loftSegments: {
+    type: string;
+    geometry: string;
+    plane: util.SimplePlane;
+  }[][] = [];
+  loftSegments.push([sketchAndPlane[0]]);
+  for (let i = 1; i < sketchAndPlane.length; i++) {
+    loftSegments[loftSegments.length - 1].push(sketchAndPlane[i]);
+    if (sketchAndPlane[i].type === "point" && i != sketchAndPlane.length - 1) {
+      // A point not at the start or end of the loft arg list.
+      loftSegments.push([sketchAndPlane[i]]);
+    }
+  }
+
+  const results = [];
+  for (const segment of loftSegments) {
+    // Structure check
+    if (segment.every((g) => g.type === "point")) {
+      throw new Error(
+        "Loft cannot have consecutive points with no sketches/wires in between",
+      );
+    }
+
+    const startPoint = segment[0].type == "point" ? segment[0] : undefined;
+    const endpoint =
+      segment[segment.length - 1].type == "point"
+        ? segment[segment.length - 1]
+        : undefined;
+    const targets = segment.filter((g) => g.type !== "point");
+    let geometry;
+    if (targets[0].type === "wire") {
+      geometry = await util.geometryProvider!.loftWires(
+        targets.map((t) => t.geometry),
+        startPoint ? startPoint.geometry : undefined,
+        endpoint ? endpoint.geometry : undefined,
+        context,
+      );
+    } else {
+      geometry = await util.geometryProvider!.loftSketches(
+        targets.map((t) => t.geometry),
+        targets.map((t) => t.plane),
+        startPoint ? startPoint.geometry : undefined,
+        endpoint ? endpoint.geometry : undefined,
+        context,
+      );
+    }
+    results.push({
+      geometry: geometry,
+      dimension: "3D",
+      tags: [],
+      plane: util.XYPlane,
+      color: util.defaultColor,
+      bom: [],
+    });
+  }
+  if (results.length === 1) {
+    return results[0] as AbundanceObject;
+  }
+  return assembly(results as AbundanceObject[], context);
 }
 
 /**
