@@ -338,7 +338,7 @@ export default React.memo(
             <group key={"group" + m.color + index}>
               {m.pointPosition ? (
                 // Point3D — render as a fixed screen-space sprite point
-                <points key={"point" + index}>
+                <points key={"point" + JSON.stringify(m.pointPosition) + index}>
                   <bufferGeometry>
                     <bufferAttribute
                       attach="attributes-position"
