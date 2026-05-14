@@ -79,7 +79,7 @@ interface AbundanceBranch {
 
 interface AbundanceLeaf {
   geometry: string;
-  dimension: "2D" | "3D" | "Wire";
+  dimension: "2D" | "3D" | "Wire" | "Point3D";
   plane: SimplePlane;
   color: string;
   tags: string[];
@@ -87,16 +87,50 @@ interface AbundanceLeaf {
   nonReplicadSerialized?: any;
 }
 
-function is3D(part: AbundanceObject): boolean {
-  if (part === undefined || part.geometry === undefined) {
-    return false;
-  }
-  if (isAssembly(part)) {
-    return part.geometry.some((input: any) => is3D(input));
+function dimensionLabel(geom: any): "2D" | "3D" | "Wire" | "Point3D" {
+  if (geom instanceof replicad.Drawing) {
+    return "2D";
+  } else if (geom instanceof replicad.Wire) {
+    return "Wire";
+  } else if (geom instanceof replicad.Vertex) {
+    return "Point3D";
+  } else if (replicad.isShape3D(geom)) {
+    return "3D";
   } else {
-    // leaf
-    return part.dimension === "3D";
+    throw new Error(
+      "Unsupported geometry type: " +
+        (geom && geom.constructor ? geom.constructor.name : typeof geom),
+    );
   }
+}
+
+function _checkFirstDimIs(
+  part: AbundanceObject,
+  dimension: "2D" | "3D" | "Wire" | "Point3D",
+): boolean {
+  if (isAssembly(part)) {
+    return part.geometry.some((input: AbundanceObject) =>
+      _checkFirstDimIs(input, dimension),
+    );
+  } else {
+    return part && part.dimension === dimension;
+  }
+}
+
+function is2D(part: AbundanceObject): boolean {
+  return _checkFirstDimIs(part, "2D");
+}
+
+function is3D(part: AbundanceObject): boolean {
+  return _checkFirstDimIs(part, "3D");
+}
+
+function isPoint3D(part: AbundanceObject): boolean {
+  return _checkFirstDimIs(part, "Point3D");
+}
+
+function isWireGeometry(part: AbundanceObject): boolean {
+  return _checkFirstDimIs(part, "Wire");
 }
 
 async function getBounds(
@@ -244,14 +278,6 @@ function generateUniqueID(): string {
   return uuidv4();
 }
 
-function isWireGeometry(inputs: AbundanceObject): boolean {
-  if (isAssembly(inputs)) {
-    return inputs.geometry.some((input: any) => isWireGeometry(input));
-  } else {
-    return inputs.dimension === "Wire";
-  }
-}
-
 function isAssembly(part: AbundanceObject): part is AbundanceBranch {
   return Array.isArray(part.geometry);
 }
@@ -318,6 +344,7 @@ export {
   asReplicadPlane,
   asSimplePlane,
   defaultColor,
+  dimensionLabel,
   flattenAssembly,
   generateUniqueID,
   geometryProvider,
@@ -325,10 +352,12 @@ export {
   hashFileContents,
   hashString,
   init,
+  is2D,
   is3D,
   isAbundanceObject,
   isAssembly,
   isLeaf,
+  isPoint3D,
   isWireGeometry,
   replicad,
   SimplePlane,
