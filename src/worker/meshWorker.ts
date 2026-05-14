@@ -261,8 +261,8 @@ async function generateDisplayMesh(
           finalMeshes.push({
             cameraZoom: cameraZoom,
             edges: meshObj.geometry.meshEdges({
-              tolerance: 0.1,
-              angularTolerance: 0.5,
+              tolerance: 0.03,
+              angularTolerance: 0.1,
             }),
             color: meshObj.color,
           });

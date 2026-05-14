@@ -18,9 +18,7 @@ async function extrude(
     throw new Error("Cannot extrude a 3D geometry.");
   }
   if (util.isWireGeometry(toExtrude)) {
-    throw new Error(
-      "Cannot extrude a Wire. Use a sweep operation to create a surface from a Wire profile.",
-    );
+    throw new Error("Cannot extrude a Wire.");
   }
   if (util.isPoint3D(toExtrude)) {
     throw new Error("Cannot extrude a Point3D.");
