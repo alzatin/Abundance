@@ -872,7 +872,8 @@ export default class Atom extends ObservableEntity {
 
       if (
         typeof ap.getValue() == "number" ||
-        typeof ap.getValue() == "string"
+        typeof ap.getValue() == "string" ||
+        typeof ap.getValue() == "boolean"
       ) {
         // Only save values that differ from defaults or have custom equations
         const currentValue = ap.getValue();
@@ -897,19 +898,6 @@ export default class Atom extends ObservableEntity {
         // ALWAYS save values (even if they match defaults) because they define
         // the molecule's interface. Input attachments have type="input".
         const isMoleculeInput = ap.type === "input";
-
-        // Debug logging for Input-type attachments
-        /*if (isMoleculeInput || ap.name === "Wood Thickness") {
-          console.log(
-            `[Serialize Debug] AP="${ap.name}", type="${ap.type}", valueType="${
-              ap.valueType
-            }", currentValue=${currentValue}, defaultValue=${
-              ap.defaultValue
-            }, isMoleculeInput=${isMoleculeInput}, willSave=${
-              isDifferentFromDefault || hasCustomEquation || isMoleculeInput
-            }`,
-          );
-        }*/
 
         // Save if value changed from default OR has custom equation OR is a molecule input
         if (isDifferentFromDefault || hasCustomEquation || isMoleculeInput) {
@@ -1237,11 +1225,6 @@ export default class Atom extends ObservableEntity {
       const argsDict = Object.fromEntries(
         this.inputs.map((input) => [input.name, input.getState().value]),
       );
-      // console.log(
-      //   `[${this.getAtomPath()}] All inputs ready. Computing with args:`,
-      //   argsDict,
-      // );
-      // const inputVals = this.inputs.map((input) => {input.getValue());
       this.setProcessing();
 
       this.compute(argsDict)
