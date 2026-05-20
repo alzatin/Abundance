@@ -622,19 +622,9 @@ async function recursiveCut(
 
   let resultGeomId: string = partToCut.geometry;
   for (const cuttingPart of util.flattenAssembly(cuttingParts)) {
-    const toCutGeom = await util.geometryProvider!.get(resultGeomId, context);
     if (partToCut.dimension != cuttingPart.dimension) {
       continue;
       // skip this leaf. can't cut 2D with 3D or vice versa
-    }
-    const cuttingPartGeom = await util.geometryProvider!.get(
-      cuttingPart.geometry,
-      context,
-    );
-    //@ts-expect-error - typescript error about compound types that seems incorrect
-    if (toCutGeom.boundingBox.isOut(cuttingPartGeom.boundingBox)) {
-      continue;
-      // skip this leaf. bounding boxes don't intersect
     }
     // --- Coplanarity check for 2D shapes ---
     if (

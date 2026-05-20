@@ -15,6 +15,7 @@ import {
   StoredGeometryRecord,
   filter,
 } from "./indexeddbUtils";
+import { GCWithScope } from "replicad";
 
 type ReplicadObject =
   | replicad.Shape3D
@@ -27,6 +28,11 @@ type RequestContext = {
   operationId?: string;
   persistIntermediates?: boolean;
   [key: string]: any; // Allows for additional props
+};
+
+type CutResult = {
+  didChange: boolean;
+  result: replicad.Shape3D;
 };
 
 /**
@@ -604,14 +610,62 @@ class GeometryProvider {
 
     const args = [toCutGeom, cutterGeom];
     const resultId = this._makeId("cut", toCut, cutter);
-    if (this.areAllDrawings(args) || this.areAll3DShapes(args)) {
+    if (this.areAllDrawings(args)) {
+      if (args[0].boundingBox.isOut(args[1].boundingBox)) {
+        return toCut;
+      }
       await this.createIfAbsent(resultId, context, async () => {
-        //@ts-ignore
         return args[0].cut(args[1]);
       });
       return resultId;
     }
+    if (this.areAll3DShapes(args)) {
+      if (args[0].boundingBox.isOut(args[1].boundingBox)) {
+        return toCut;
+      }
+      // Special case for 3D Objects. Return the original object if
+      // the cut resulted in no change.
+      const id = await this.createIfAbsent(resultId, context, async () => {
+        const res = this._customCut(args[0], args[1]);
+        if (res.didChange) {
+          return res.result;
+        } else {
+          return undefined;
+        }
+      });
+      return id === undefined ? toCut : id;
+    }
     return toCut;
+  }
+
+  /**
+   * Same as replicad's cut operation for Shape3ds but also includes
+   * a boolean indicating whether the cut resulted in a change to the
+   * input geometry. Note that geometries which share a face usually will
+   * indicate true even if the final geometry is logically equivalent.
+   */
+  _customCut(part1: replicad.Shape3D, part2: replicad.Shape3D): CutResult {
+    const r = GCWithScope();
+    const progress = r(new part1.oc.Message_ProgressRange_1());
+    const cutter = r(
+      new part1.oc.BRepAlgoAPI_Cut_3(part1.wrapped, part2.wrapped, progress),
+    );
+    part1.wrapped.Modified_2(false);
+    cutter.Build(progress);
+    cutter.SimplifyResult(true, true, 1e-3);
+
+    const newShape = replicad.cast(cutter.Shape());
+    if (!replicad.isShape3D(newShape))
+      throw new Error("Could not cut as a 3d shape");
+    const mod =
+      cutter.HasModified() ||
+      cutter.HasGenerated() ||
+      cutter.IsDeleted(part1.wrapped);
+    //console.trace(
+    //  `mod: ${cutter.HasModified()} gen: ${cutter.HasGenerated()} del: ${cutter.IsDeleted(part1.wrapped)}`,
+    //);
+
+    return { didChange: mod, result: newShape };
   }
 
   /**
