@@ -222,6 +222,28 @@ function mergeBounds(bounds: AbundanceBounds[]): AbundanceBounds {
 }
 
 /**
+ * Checks if two bounding boxes overlap.
+ * Returns true if boxes intersect or touch, false if they are completely separated.
+ */
+function boundsOverlap(
+  bounds1: AbundanceBounds | undefined,
+  bounds2: AbundanceBounds | undefined,
+): boolean {
+  if (!bounds1 || !bounds2) {
+    return true; // If either is undefined, assume they might overlap
+  }
+
+  return !(
+    bounds1.max[0] < bounds2.min[0] || // bounds1 is completely to the left
+    bounds1.min[0] > bounds2.max[0] || // bounds1 is completely to the right
+    bounds1.max[1] < bounds2.min[1] || // bounds1 is completely below
+    bounds1.min[1] > bounds2.max[1] || // bounds1 is completely above
+    bounds1.max[2] < bounds2.min[2] || // bounds1 is completely in front
+    bounds1.min[2] > bounds2.max[2] // bounds1 is completely behind
+  );
+}
+
+/**
  * Eagerly computes bounding boxes for an assembly by merging existing child bounds.
  * This is more efficient than withAssemblyBoundingBoxes() because it doesn't recursively
  * traverse the tree - it assumes all children already have valid bounds from prior operations.
@@ -492,6 +514,7 @@ export {
   actOnLeafsSync,
   asReplicadPlane,
   asSimplePlane,
+  boundsOverlap,
   computeAssemblyBounds,
   defaultColor,
   dimensionLabel,

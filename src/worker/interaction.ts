@@ -576,8 +576,17 @@ async function cutAssembly(
     // if part to cut is a single part send to cutting function with cutting parts
     let partCutCopy = partToCut;
     for (const cuttingPart of cuttingParts) {
-      // for each cutting part cut the part
-      partCutCopy = await recursiveCut(partCutCopy, cuttingPart, context);
+      // Check if bounding boxes overlap before attempting cut
+      // If they don't overlap, skip the cut operation entirely
+      if (util.boundsOverlap(partToCut.boundingBox, cuttingPart.boundingBox)) {
+        // for each cutting part cut the part
+        partCutCopy = await recursiveCut(partCutCopy, cuttingPart, context);
+      } else {
+        // Bounding boxes don't overlap - skipping cut operation
+        console.log(
+          "⏭️ Skipping cut operation (non-overlapping bounding boxes)",
+        );
+      }
     }
     // return new cut part, expand compound solid if it was cut into disconnected
     // parts
