@@ -246,7 +246,7 @@ function CreateMode() {
     "(CTRL+SHIFT)+U": "Go-Up",
     "(CTRL+SHIFT)+W": "Wireframe",
     "(CTRL+SHIFT)+A": "Show-Top-Level-Mesh",
-    "(CTRL+SHIFT)+D": "Dev-Settings",
+    //"(CTRL+SHIFT)+D": "Dev-Settings", Hidden
   };
 
   // Initialize state with undefined width/height so server and client renders match
