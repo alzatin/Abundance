@@ -66,6 +66,16 @@ interface SimplePlane {
   normal: [number, number, number];
 }
 
+interface AbundanceBounds {
+  min: [number, number, number];
+  max: [number, number, number];
+}
+
+const EMPTY_BOUNDS: AbundanceBounds = {
+  min: [Infinity, Infinity, Infinity],
+  max: [-Infinity, -Infinity, -Infinity],
+};
+
 type AbundanceObject = AbundanceLeaf | AbundanceBranch;
 
 interface AbundanceBranch {
@@ -74,7 +84,9 @@ interface AbundanceBranch {
   color: string;
   tags: string[];
   bom: string[];
+  dimension?: "2D" | "3D" | "Wire" | "Point3D";
   nonReplicadSerialized?: any;
+  boundingBox?: AbundanceBounds;
 }
 
 interface AbundanceLeaf {
@@ -85,6 +97,7 @@ interface AbundanceLeaf {
   tags: string[];
   bom: string[];
   nonReplicadSerialized?: any;
+  boundingBox?: AbundanceBounds;
 }
 
 function dimensionLabel(geom: any): "2D" | "3D" | "Wire" | "Point3D" {
@@ -175,6 +188,141 @@ async function getBounds(
     console.error("GetBounds error:", error);
     throw new Error(`GetBounds failed: ${error.message}`);
   }
+}
+
+/**
+ * Merges multiple bounding boxes into a single bounding box.
+ * Returns a new bounding box that encompasses all input bounds.
+ */
+function mergeBounds(bounds: AbundanceBounds[]): AbundanceBounds {
+  if (bounds.length === 0) {
+    return EMPTY_BOUNDS;
+  }
+
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity;
+  let maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity;
+
+  for (const bound of bounds) {
+    minX = Math.min(minX, bound.min[0]);
+    minY = Math.min(minY, bound.min[1]);
+    minZ = Math.min(minZ, bound.min[2]);
+    maxX = Math.max(maxX, bound.max[0]);
+    maxY = Math.max(maxY, bound.max[1]);
+    maxZ = Math.max(maxZ, bound.max[2]);
+  }
+
+  return {
+    min: [minX, minY, minZ],
+    max: [maxX, maxY, maxZ],
+  };
+}
+
+/**
+ * Eagerly computes bounding boxes for an assembly by merging existing child bounds.
+ * This is more efficient than withAssemblyBoundingBoxes() because it doesn't recursively
+ * traverse the tree - it assumes all children already have valid bounds from prior operations.
+ *
+ * Use this when creating assemblies or after operations where you know children have bounds.
+ */
+function computeAssemblyBounds(geometry: AbundanceObject): AbundanceObject {
+  if (isLeaf(geometry)) {
+    return geometry;
+  }
+
+  const childBounds = (geometry.geometry as AbundanceObject[])
+    .map((child) => child.boundingBox)
+    .filter((bounds): bounds is AbundanceBounds => bounds !== undefined);
+
+  const boundingBox =
+    childBounds.length > 0 ? mergeBounds(childBounds) : EMPTY_BOUNDS;
+
+  return {
+    ...geometry,
+    boundingBox,
+  };
+}
+
+/**
+ * Computes and caches bounding boxes for geometries.
+ *
+ * Optimization: If a geometry and all its children already have valid bounds,
+ * this function returns immediately without recursive traversal (unless forceRecompute=true).
+ *
+ * When to use forceRecompute=true:
+ * - When geometry children have been modified and bounds are stale
+ * - When bounds need to be recalculated for performance analysis
+ * - Normally, you should NOT use this - leaves bounds are only computed once,
+ *   and assembly bounds are eagerly computed when assemblies are created
+ *
+ * Normal usage: forceRecompute=false (default) - reuses existing bounds when available
+ */
+async function withAssemblyBoundingBoxes(
+  geometry: AbundanceObject,
+  context: RequestContext,
+  forceRecompute: boolean = false,
+): Promise<AbundanceObject> {
+  if (isLeaf(geometry)) {
+    if (geometry.boundingBox && !forceRecompute) {
+      return geometry;
+    }
+    let bounds: AbundanceBounds | undefined = undefined;
+    try {
+      const boundsResult = await getBounds(geometry, context);
+      bounds = {
+        min: boundsResult.min as [number, number, number],
+        max: boundsResult.max as [number, number, number],
+      };
+    } catch (_) {
+      // Bounds metadata is an optimization; keep geometry operation non-fatal.
+    }
+    return {
+      ...geometry,
+      ...(bounds ? { boundingBox: bounds } : {}),
+    };
+  }
+
+  // Optimization: if assembly already has bounds and all children have bounds, just return
+  // unless we're forced to recompute
+  if (!forceRecompute && geometry.boundingBox) {
+    const childBounds = (geometry.geometry as AbundanceObject[])
+      .map((child) => child.boundingBox)
+      .filter((bounds): bounds is AbundanceBounds => bounds !== undefined);
+
+    // All children have bounds, so assembly bounds are valid
+    if (childBounds.length === geometry.geometry.length) {
+      return geometry;
+    }
+  }
+
+  const childWithBounds = await Promise.all(
+    (geometry.geometry as AbundanceObject[]).map((child) =>
+      withAssemblyBoundingBoxes(child, context, forceRecompute),
+    ),
+  );
+  if (childWithBounds.length === 0) {
+    return {
+      ...geometry,
+      geometry: [],
+      boundingBox: EMPTY_BOUNDS,
+    };
+  }
+
+  const childBounds = childWithBounds
+    .map((child) => child.boundingBox)
+    .filter((bounds): bounds is AbundanceBounds => bounds !== undefined);
+
+  const boundingBox =
+    childBounds.length > 0 ? mergeBounds(childBounds) : EMPTY_BOUNDS;
+
+  return {
+    ...geometry,
+    geometry: childWithBounds,
+    boundingBox,
+  };
 }
 
 function isAbundanceObject(obj: any): obj is AbundanceObject {
@@ -337,12 +485,14 @@ function hashString(str: string): string {
 }
 
 export {
+  AbundanceBounds,
   AbundanceLeaf,
   AbundanceObject,
   actOnLeafs,
   actOnLeafsSync,
   asReplicadPlane,
   asSimplePlane,
+  computeAssemblyBounds,
   defaultColor,
   dimensionLabel,
   flattenAssembly,
@@ -359,9 +509,11 @@ export {
   isLeaf,
   isPoint3D,
   isWireGeometry,
+  mergeBounds,
   replicad,
   SimplePlane,
   NonReplicadGeom,
+  withAssemblyBoundingBoxes,
   XYPlane,
   startHeapMonitor,
 };
