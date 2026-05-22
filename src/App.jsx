@@ -65,7 +65,7 @@ const pool = workerpool.pool(RenderURL, {
 // CadWorkerManager wraps the comlink worker with a 360-second per-call timeout.
 // If the worker hangs it is automatically terminated and restarted, so the UI
 // never gets permanently stuck waiting for a computation that will never return.
-const cad = new CadWorkerManager(cadWorker, 360_000);
+const cad = new CadWorkerManager(cadWorker, 1_080_000);
 
 /**
  * Inner app component that has access to all contexts
