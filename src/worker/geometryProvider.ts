@@ -647,10 +647,12 @@ class GeometryProvider {
   _customCut(part1: replicad.Shape3D, part2: replicad.Shape3D): CutResult {
     const r = GCWithScope();
     const progress = r(new part1.oc.Message_ProgressRange_1());
+    // Note that part1.oc isn't significant here. could equally be part2.oc
+    // we just need a reference to OpenCascade to make the differencing operation.
+    // The argument order is what controls which part is cut vs cutting.
     const cutter = r(
       new part1.oc.BRepAlgoAPI_Cut_3(part1.wrapped, part2.wrapped, progress),
     );
-    part1.wrapped.Modified_2(false);
     cutter.Build(progress);
     cutter.SimplifyResult(true, true, 1e-3);
 
@@ -660,10 +662,10 @@ class GeometryProvider {
     const mod =
       cutter.HasModified() ||
       cutter.HasGenerated() ||
-      cutter.IsDeleted(part1.wrapped);
-    //console.trace(
-    //  `mod: ${cutter.HasModified()} gen: ${cutter.HasGenerated()} del: ${cutter.IsDeleted(part1.wrapped)}`,
-    //);
+      cutter.IsDeleted(part2.wrapped);
+    /*console.trace(
+      `mod: ${cutter.HasModified()} gen: ${cutter.HasGenerated()} del: ${cutter.IsDeleted(part1.wrapped)} del p2: ${cutter.IsDeleted(part2.wrapped)}`,
+    );*/
 
     return { didChange: mod, result: newShape };
   }
