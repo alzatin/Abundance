@@ -298,6 +298,19 @@ class GeometryProvider {
     return id;
   }
 
+  async drawVertex(
+    x: number,
+    y: number,
+    z: number,
+    context: RequestContext,
+  ): Promise<string> {
+    const id = this._makeId("vertex", x, y, z);
+    await this.createIfAbsent(id, context, () => {
+      return Promise.resolve(replicad.makeVertex([x, y, z]));
+    });
+    return id;
+  }
+
   async drawPolysides(
     radius: number,
     numberOfSides: number,
