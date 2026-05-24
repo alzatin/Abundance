@@ -344,7 +344,6 @@ export default class Input extends Atom {
    * Override setReady to trigger propagation when input value changes
    */
   setReady(value) {
-    console.log("setready in input atom", this.value);
     const previousValue = this.value;
     super.setReady(value);
 
