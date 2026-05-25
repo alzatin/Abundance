@@ -414,7 +414,6 @@ function ArrayInputControl({
   );
 }
 
-
 /**
  * @param {{
  *   controls: Record<string, any>,
@@ -445,6 +444,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
   // Collapsed panel state
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [activeEye, setActiveEye] = useState({});
+  const [groupStates, setGroupStates] = useState({});
   // Resizing state
   const [panelSize, setPanelSize] = useState({
     width: minWidth,
@@ -568,16 +568,13 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
     return () => {
       const { mouseMove, mouseUp, touchMove, touchEnd } =
         resizeListenersRef.current;
-      if (mouseMove)
-        document.removeEventListener("mousemove", mouseMove);
-      if (mouseUp)
-        document.removeEventListener("mouseup", mouseUp);
+      if (mouseMove) document.removeEventListener("mousemove", mouseMove);
+      if (mouseUp) document.removeEventListener("mouseup", mouseUp);
       if (touchMove)
         document.removeEventListener("touchmove", touchMove, {
           passive: false,
         });
-      if (touchEnd)
-        document.removeEventListener("touchend", touchEnd);
+      if (touchEnd) document.removeEventListener("touchend", touchEnd);
     };
   }, []);
   const [controlValues, setControlValue, { controls: registeredControls }] =
@@ -676,6 +673,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
       prevControlKeys.current = newKeys;
     }
     setLocalValues({});
+    setGroupStates({});
   }, [controls]);
   // Only focus input on keyboard event, not on mount/controls change
   const [shouldFocus, setShouldFocus] = React.useState(false);
@@ -852,6 +850,20 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
             <div ref={contentRef} style={getControlListStyle(panelSize.height)}>
               {controlKeys.map((key, idx) => {
                 const config = controls[key];
+
+                // Skip controls that are children of groups
+                if (config.type !== "group") {
+                  const isGroupChild = controlKeys.some((groupKey) => {
+                    const groupConfig = controls[groupKey];
+                    return (
+                      groupConfig?.type === "group" &&
+                      Array.isArray(groupConfig.children) &&
+                      groupConfig.children.includes(key)
+                    );
+                  });
+                  if (isGroupChild) return null;
+                }
+
                 const label = config.label;
                 const inputFullWidth = !label;
                 const handleChange = (value) => {
@@ -2192,6 +2204,208 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                             {currentValue || ""}
                           </ReactMarkdown>
                         </div>
+                      </div>
+                    );
+                  case "group":
+                    const groupCollapsed =
+                      groupStates?.[key] ?? config.defaultCollapsed ?? false;
+                    const toggleGroup = () => {
+                      setGroupStates((prev) => ({
+                        ...prev,
+                        [key]: !prev[key],
+                      }));
+                    };
+                    return (
+                      <div key={key} style={{ margin: "8px 0" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            padding: "6px 8px",
+                            backgroundColor: "#292e3b",
+                            border: "1px solid var(--panel-separator)",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            userSelect: "none",
+                          }}
+                          onClick={toggleGroup}
+                        >
+                          <CaretDownIcon size={12} collapsed={groupCollapsed} />
+                          <span
+                            style={{
+                              marginLeft: "6px",
+                              fontWeight: 600,
+                              fontSize: "13px",
+                              color: "var(--control-text)",
+                            }}
+                          >
+                            {config.label || "Group"}
+                          </span>
+                        </div>
+                        {!groupCollapsed && config.children && (
+                          <div
+                            style={{
+                              marginLeft: "12px",
+                              marginTop: "6px",
+                              borderLeft: "2px solid var(--panel-separator)",
+                              paddingLeft: "8px",
+                            }}
+                          >
+                            {config.children.map((childKey) => {
+                              const childConfig = controls[childKey];
+                              if (!childConfig) return null;
+
+                              // Render child controls using the same logic as main controls
+                              const childLabel = childConfig.label;
+                              const childInputFullWidth = !childLabel;
+                              const childHandleChange = (value) => {
+                                if (
+                                  childConfig.type === "string" ||
+                                  childConfig.type === "number" ||
+                                  childConfig.type === "range" ||
+                                  childConfig.type === "point"
+                                ) {
+                                  handleLocalChange(childKey, value);
+                                } else {
+                                  setControlValue(childKey, value);
+                                  if (
+                                    typeof childConfig.onChange === "function"
+                                  ) {
+                                    childConfig.onChange(value, childKey);
+                                  }
+                                }
+                              };
+
+                              const childCurrentValue =
+                                localValues.hasOwnProperty(childKey)
+                                  ? localValues[childKey]
+                                  : (controlValues[childKey] ??
+                                    childConfig.value);
+                              const childIsDisabled = childConfig.disabled;
+
+                              return (
+                                <div
+                                  key={childKey}
+                                  style={{
+                                    ...labelStyle,
+                                    marginTop: "6px",
+                                  }}
+                                >
+                                  {childConfig.type === "spacer" ? (
+                                    <hr
+                                      style={{
+                                        border: 0,
+                                        borderTop:
+                                          "1px solid var(--panel-separator)",
+                                        margin: "6px 0",
+                                        width: "100%",
+                                      }}
+                                    />
+                                  ) : (
+                                    <>
+                                      <span
+                                        style={{
+                                          width: childInputFullWidth ? 0 : 80,
+                                          color: childIsDisabled
+                                            ? inputDisabledStyle.color
+                                            : undefined,
+                                        }}
+                                      >
+                                        {childLabel}
+                                        {childLabel ? ":" : ""}
+                                      </span>
+                                      {childConfig.type === "string" && (
+                                        <input
+                                          type="text"
+                                          value={childCurrentValue ?? ""}
+                                          onChange={(e) =>
+                                            childHandleChange(e.target.value)
+                                          }
+                                          onBlur={() =>
+                                            commitChange(
+                                              childKey,
+                                              childCurrentValue,
+                                              childConfig,
+                                            )
+                                          }
+                                          style={{
+                                            ...inputStyle,
+                                            ...(childIsDisabled
+                                              ? inputDisabledStyle
+                                              : {}),
+                                          }}
+                                          disabled={childIsDisabled}
+                                        />
+                                      )}
+                                      {childConfig.type === "number" && (
+                                        <input
+                                          type="number"
+                                          value={childCurrentValue ?? 0}
+                                          onChange={(e) =>
+                                            childHandleChange(
+                                              e.target.value === ""
+                                                ? ""
+                                                : Number(e.target.value),
+                                            )
+                                          }
+                                          onBlur={() =>
+                                            commitChange(
+                                              childKey,
+                                              childCurrentValue,
+                                              childConfig,
+                                            )
+                                          }
+                                          style={{
+                                            ...inputStyle,
+                                            ...(childIsDisabled
+                                              ? inputDisabledStyle
+                                              : {}),
+                                          }}
+                                          disabled={childIsDisabled}
+                                        />
+                                      )}
+                                      {childConfig.type === "boolean" && (
+                                        <input
+                                          type="checkbox"
+                                          checked={childCurrentValue ?? false}
+                                          onChange={(e) =>
+                                            childHandleChange(e.target.checked)
+                                          }
+                                          style={{
+                                            ...inputStyle,
+                                            width: "auto",
+                                          }}
+                                          disabled={childIsDisabled}
+                                        />
+                                      )}
+                                      {childConfig.type === "select" && (
+                                        <select
+                                          value={childCurrentValue ?? ""}
+                                          onChange={(e) =>
+                                            childHandleChange(e.target.value)
+                                          }
+                                          style={{
+                                            ...selectStyle,
+                                            ...(childIsDisabled
+                                              ? inputDisabledStyle
+                                              : {}),
+                                          }}
+                                          disabled={childIsDisabled}
+                                        >
+                                          {childConfig.options?.map((opt) => (
+                                            <option key={opt} value={opt}>
+                                              {opt}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   default:

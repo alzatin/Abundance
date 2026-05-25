@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
+import GlobalVariables from "../../js/globalvariables.js";
+import { useControls } from "../../hooks/useControls";
+import { useRendering } from "../../contexts/index.js";
 
 // Grid/Axis icon for RenderMenu
 const GridAxisIcon = ({ size = 22 }) => (
@@ -32,8 +35,6 @@ const GridAxisIcon = ({ size = 22 }) => (
     />
   </svg>
 );
-import { useControls } from "../../hooks/useControls";
-import { useRendering } from "../../contexts/index.js";
 
 export default function RenderMenu({
   position,
@@ -60,6 +61,52 @@ export default function RenderMenu({
     activeAtom,
   } = useRendering();
   const [inputChanged, setInputChanged] = useState("");
+  const [availableTags, setAvailableTags] = useState([]);
+
+  // Get available tags by walking the top-level geometry
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        if (GlobalVariables.topLevelMolecule?.value) {
+          // Call the worker's extractAllTags function to get tags from the top-level geometry
+          const tags = await GlobalVariables.cad.extractAllTags(
+            GlobalVariables.topLevelMolecule.value,
+          );
+          // Filter out "Select Tag" which is added by extractAllTags
+          const filteredTags = tags.filter((tag) => tag !== "Select Tag");
+          console.log("Tags from top-level geometry:", filteredTags);
+          setAvailableTags(filteredTags);
+        }
+      } catch (err) {
+        console.error("Error fetching tags:", err);
+        setAvailableTags([]);
+      }
+    };
+
+    fetchTags();
+  }, [GlobalVariables.topLevelMolecule?.value]);
+
+  // Log available tags for debugging
+  useEffect(() => {
+    console.log("RenderMenu - Available tags:", availableTags);
+    console.log("Total tags:", availableTags.length);
+  }, [availableTags]);
+
+  // Create tag toggle controls
+  const tagControls = {};
+  availableTags.forEach((tag) => {
+    tagControls[`tag-${tag}`] = {
+      type: "boolean",
+      label: tag,
+      value: false,
+      onChange: (value) => {
+        console.log(`Tag "${tag}" toggled to:`, value);
+      },
+    };
+  });
+
+  // Children keys for the tag group
+  const tagChildrenKeys = availableTags.map((tag) => `tag-${tag}`);
 
   /** Creates Leva panel with grid settings */
   const renderSettings = {
@@ -114,6 +161,13 @@ export default function RenderMenu({
         setShowTopLevelWireframe(value);
       },
     },
+    tagsGroup: {
+      type: "group",
+      label: "Tags",
+      defaultCollapsed: true,
+      children: tagChildrenKeys,
+    },
+    ...tagControls,
   };
 
   const [
@@ -125,6 +179,7 @@ export default function RenderMenu({
     backgroundUsdzFile,
     showBackgroundModel,
     showTopLevelWireframe,
+    availableTags,
   ]);
 
   const screenHeight = window.innerHeight;
