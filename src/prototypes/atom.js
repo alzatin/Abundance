@@ -852,10 +852,7 @@ export default class Atom extends ObservableEntity {
       }
 
       // Handle point2d and point3d values (which are arrays)
-      if (
-        (ap.valueType === "point2d" || ap.valueType === "point3d") &&
-        Array.isArray(ap.getValue())
-      ) {
+      if (ap.valueType === "point3d" && Array.isArray(ap.getValue())) {
         const currentValue = ap.getValue();
         const isDifferentFromDefault =
           !Array.isArray(ap.defaultValue) ||

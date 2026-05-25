@@ -1067,7 +1067,6 @@ export default class Input extends Atom {
         "array",
         "boolean",
         "range",
-        "point2d",
         "point3d",
         "import",
       ],
@@ -1322,8 +1321,8 @@ export default class Input extends Atom {
       superSerialObject.max = this.max;
     }
 
-    // Save point coordinates if type is point2d or point3d
-    if (this.type === "point2d" || this.type === "point3d") {
+    // Save point coordinates if type is  point3d
+    if (this.type === "point3d") {
       superSerialObject.pointValue = this.pointValue;
     }
 
