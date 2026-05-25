@@ -852,10 +852,7 @@ export default class Atom extends ObservableEntity {
       }
 
       // Handle point2d and point3d values (which are arrays)
-      if (
-        (ap.valueType === "point2d" || ap.valueType === "point3d") &&
-        Array.isArray(ap.getValue())
-      ) {
+      if (ap.valueType === "point3d" && Array.isArray(ap.getValue())) {
         const currentValue = ap.getValue();
         const isDifferentFromDefault =
           !Array.isArray(ap.defaultValue) ||
@@ -1319,6 +1316,17 @@ export default class Atom extends ObservableEntity {
     return predictedParams;
   }
 
+  computePoint(input, pointValue) {
+    GlobalVariables.cad
+      .vertex(pointValue[0], pointValue[1], pointValue[2], this.getContext())
+      .then((vertex) => {
+        input.setValue(pointValue);
+      })
+      .catch((err) => {
+        console.error("Error computing point geometry:", err);
+      });
+  }
+
   createInputParams(setInputChanged) {
     // Stash the React-side state setter so other code on this atom (e.g.
     // `Code#updateCode` after re-parsing its `Inputs = [...]` block, or
@@ -1439,6 +1447,7 @@ export default class Atom extends ObservableEntity {
             step: 0.1,
             disabled: hasConnector,
             onChange: (value) => {
+              console.log(value);
               if (!GlobalVariables.isUndoing && this.parent) {
                 const oldVal = input.value ? [...input.value] : [0, 0, 0];
                 const inputName = input.name;
@@ -1456,7 +1465,7 @@ export default class Atom extends ObservableEntity {
                   ),
                 );
               }
-              input.setValue([value[0], value[1], value[2]]);
+              this.computePoint(input, value);
             },
           };
         } else if (input.valueType === "array") {

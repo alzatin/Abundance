@@ -20,7 +20,7 @@ import {
   loftShapes,
   shrinkWrapSketches,
 } from "./interaction";
-import { circle, rectangle, regularPolygon, text } from "./shapes";
+import { circle, rectangle, regularPolygon, text, vertex } from "./shapes";
 import {
   bom,
   color,
@@ -659,7 +659,9 @@ async function generateThumbnail(
       projectionShape = prettyProjection(fusedGeometry);
       svg = projectionShape.visible.toSVG();
     } else if (fusedGeometry instanceof replicad.Vertex) {
-      throw new Error("Cannot generate an SVG projection for a Point3D geometry.");
+      throw new Error(
+        "Cannot generate an SVG projection for a Point3D geometry.",
+      );
     } else {
       projectionShape = util.replicad.drawProjection(
         (fusedGeometry as replicad.Drawing).sketchOnPlane("XY").extrude(0.0001),
@@ -788,6 +790,7 @@ if (
     assembly,
     loftShapes,
     text,
+    vertex,
     resetView,
     visualizeGcodeIncremental,
     visualizeGcodeIncrementalForced,
@@ -840,6 +843,7 @@ export {
   sweepCache,
   tag,
   text,
+  vertex,
   visExport,
   visualizeGcodeIncremental,
   visualizeGcodeIncrementalForced,

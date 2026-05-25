@@ -10,6 +10,30 @@ import { RequestContext } from "./geometryProvider";
  */
 
 /**
+ * Creates a point (vertex) geometry at the specified 3D coordinates.
+ * @param {number} x - The X coordinate of the point
+ * @param {number} y - The Y coordinate of the point
+ * @param {number} z - The Z coordinate of the point
+ * @returns AbundanceLeaf containing a point
+ */
+async function vertex(
+  x: number,
+  y: number,
+  z: number,
+  context: RequestContext,
+): Promise<AbundanceLeaf> {
+  await util.init();
+  return {
+    geometry: await util.geometryProvider!.drawVertex(x, y, z, context),
+    dimension: "Point3D",
+    tags: [],
+    plane: util.XYPlane,
+    color: util.defaultColor,
+    bom: [],
+  };
+}
+
+/**
  * Creates a circle geometry with the specified diameter and stores it in the library.
  * @param {number} diameter - The diameter of the circle
  * @returns Assembly containing a circle on the XY plane
@@ -216,4 +240,4 @@ async function textGeom(
   }
 }
 
-export { circle, rectangle, regularPolygon, textGeom as text };
+export { vertex, circle, rectangle, regularPolygon, textGeom as text };

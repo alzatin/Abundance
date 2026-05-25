@@ -1067,7 +1067,6 @@ export default class Input extends Atom {
         "array",
         "boolean",
         "range",
-        "point2d",
         "point3d",
         "import",
       ],
@@ -1232,167 +1231,6 @@ export default class Input extends Atom {
       };
     }
 
-    // If type is point2d, add controls for x and y coordinates
-    if (this.type === "point2d") {
-      // Initialize pointValue if not set
-      if (this.pointValue === null) {
-        this.pointValue = [0, 0];
-      }
-
-      inputParams[this.uniqueID + "pointX"] = {
-        type: "number",
-        value: this.pointValue[0],
-        label: "X Coordinate",
-        step: 0.1,
-        disabled: false,
-        onChange: (val) => {
-          if (!GlobalVariables.isUndoing && this.parent) {
-            const oldX = this.pointValue[0];
-            GlobalVariables.pushUndoCommand(
-              new ValueChangeCommand(
-                this.uniqueID,
-                this.parent,
-                "point2dX",
-                oldX,
-                (atom, oldVal) => {
-                  if (atom.pointValue) atom.pointValue[0] = oldVal;
-                  if (typeof atom.setInputChanged === "function")
-                    atom.setInputChanged(oldVal);
-                },
-                `Change X coordinate`,
-              ),
-            );
-          }
-          this.pointValue[0] = val;
-          this.setInputChanged(val);
-        },
-      };
-
-      inputParams[this.uniqueID + "pointY"] = {
-        type: "number",
-        value: this.pointValue[1],
-        label: "Y Coordinate",
-        step: 0.1,
-        disabled: false,
-        onChange: (val) => {
-          if (!GlobalVariables.isUndoing && this.parent) {
-            const oldY = this.pointValue[1];
-            GlobalVariables.pushUndoCommand(
-              new ValueChangeCommand(
-                this.uniqueID,
-                this.parent,
-                "point2dY",
-                oldY,
-                (atom, oldVal) => {
-                  if (atom.pointValue) atom.pointValue[1] = oldVal;
-                  if (typeof atom.setInputChanged === "function")
-                    atom.setInputChanged(oldVal);
-                },
-                `Change Y coordinate`,
-              ),
-            );
-          }
-          this.pointValue[1] = val;
-          this.setInputChanged(val);
-        },
-      };
-    }
-
-    // If type is point3d, add controls for x, y, and z coordinates
-    if (this.type === "point3d") {
-      // Initialize pointValue if not set
-      if (this.pointValue === null) {
-        this.pointValue = [0, 0, 0];
-      }
-
-      inputParams[this.uniqueID + "pointX"] = {
-        type: "number",
-        value: this.pointValue[0],
-        label: "X Coordinate",
-        step: 0.1,
-        disabled: false,
-        onChange: (val) => {
-          if (!GlobalVariables.isUndoing && this.parent) {
-            const oldX = this.pointValue[0];
-            GlobalVariables.pushUndoCommand(
-              new ValueChangeCommand(
-                this.uniqueID,
-                this.parent,
-                "point3dX",
-                oldX,
-                (atom, oldVal) => {
-                  if (atom.pointValue) atom.pointValue[0] = oldVal;
-                  if (typeof atom.setInputChanged === "function")
-                    atom.setInputChanged(oldVal);
-                },
-                `Change X coordinate`,
-              ),
-            );
-          }
-          this.pointValue[0] = val;
-          this.setInputChanged(val);
-        },
-      };
-
-      inputParams[this.uniqueID + "pointY"] = {
-        type: "number",
-        value: this.pointValue[1],
-        label: "Y Coordinate",
-        step: 0.1,
-        disabled: false,
-        onChange: (val) => {
-          if (!GlobalVariables.isUndoing && this.parent) {
-            const oldY = this.pointValue[1];
-            GlobalVariables.pushUndoCommand(
-              new ValueChangeCommand(
-                this.uniqueID,
-                this.parent,
-                "point3dY",
-                oldY,
-                (atom, oldVal) => {
-                  if (atom.pointValue) atom.pointValue[1] = oldVal;
-                  if (typeof atom.setInputChanged === "function")
-                    atom.setInputChanged(oldVal);
-                },
-                `Change Y coordinate`,
-              ),
-            );
-          }
-          this.pointValue[1] = val;
-          this.setInputChanged(val);
-        },
-      };
-
-      inputParams[this.uniqueID + "pointZ"] = {
-        type: "number",
-        value: this.pointValue[2],
-        label: "Z Coordinate",
-        step: 0.1,
-        disabled: false,
-        onChange: (val) => {
-          if (!GlobalVariables.isUndoing && this.parent) {
-            const oldZ = this.pointValue[2];
-            GlobalVariables.pushUndoCommand(
-              new ValueChangeCommand(
-                this.uniqueID,
-                this.parent,
-                "point3dZ",
-                oldZ,
-                (atom, oldVal) => {
-                  if (atom.pointValue) atom.pointValue[2] = oldVal;
-                  if (typeof atom.setInputChanged === "function")
-                    atom.setInputChanged(oldVal);
-                },
-                `Change Z coordinate`,
-              ),
-            );
-          }
-          this.pointValue[2] = val;
-          this.setInputChanged(val);
-        },
-      };
-    }
-
     // If type is import, add controls for file upload
     if (this.type === "import") {
       if (this.fileName === null) {
@@ -1483,8 +1321,8 @@ export default class Input extends Atom {
       superSerialObject.max = this.max;
     }
 
-    // Save point coordinates if type is point2d or point3d
-    if (this.type === "point2d" || this.type === "point3d") {
+    // Save point coordinates if type is  point3d
+    if (this.type === "point3d") {
       superSerialObject.pointValue = this.pointValue;
     }
 
