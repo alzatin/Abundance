@@ -232,20 +232,36 @@ export default class Molecule extends Atom {
     return inputParams;
   }
 
-  previewHandler(gcodeAtom) {
+  previewHandler(atom) {
     // Track preview state on the atom
-    if (!gcodeAtom._isPreviewing) {
-      if (gcodeAtom.gcodeString) {
-        gcodeAtom.sendToRender();
-        gcodeAtom._isPreviewing = true;
-      } else {
-        console.error("G-code is not available yet");
-        // Dispatch a custom event
-        const event = new CustomEvent("user-notification", {
-          detail: { message: "G-code is not available yet" },
-        });
-        window.dispatchEvent(event);
-        return;
+    if (!atom._isPreviewing) {
+      // Handle Gcode atoms
+      if (atom.atomType === "Gcode") {
+        if (atom.gcodeString) {
+          atom.sendToRender();
+          atom._isPreviewing = true;
+        } else {
+          console.error("G-code is not available yet");
+          const event = new CustomEvent("user-notification", {
+            detail: { message: "G-code is not available yet" },
+          });
+          window.dispatchEvent(event);
+          return;
+        }
+      }
+      // Handle Export atoms
+      else if (atom.atomType === "Export") {
+        if (atom.value) {
+          atom.sendToRender();
+          atom._isPreviewing = true;
+        } else {
+          console.error("Export is not ready yet");
+          const event = new CustomEvent("user-notification", {
+            detail: { message: "Export is not ready yet" },
+          });
+          window.dispatchEvent(event);
+          return;
+        }
       }
     } else {
       // Send the top-level molecule to render and reset preview state
@@ -255,7 +271,7 @@ export default class Molecule extends Atom {
       ) {
         GlobalVariables.topLevelMolecule.sendToRender();
       }
-      gcodeAtom._isPreviewing = false;
+      atom._isPreviewing = false;
     }
   }
 
@@ -292,12 +308,14 @@ export default class Molecule extends Atom {
       this.collectExportAndGcodeAtoms();
 
     exportAtoms.forEach((atom) => {
+      atom.setInputChanged = setInputChanged;
       const partName =
         atom.inputs.filter((input) => input.name === "Part Name")[0]?.value ||
         "Unnamed Part";
-      exportParams[`Export ${partName}`] = {
+      exportParams[`${atom.uniqueID}-export`] = {
         type: "button",
         label: `Export ${partName}`,
+        disabled: false,
         onClick: () => {
           atom.exportFile();
           // Dispatch a custom event
@@ -306,12 +324,13 @@ export default class Molecule extends Atom {
           });
           window.dispatchEvent(event);
         },
+        eyeIcon: () => this.previewHandler(atom),
       };
     });
 
     gcodeAtoms.forEach((atom) => {
       atom.setInputChanged = setInputChanged;
-      exportParams[`Download Gcode – ${atom.partName}`] = {
+      exportParams[`${atom.uniqueID}-gcode`] = {
         type: "button",
         label: `Download Gcode – ${atom.partName}`,
         disabled: atom.status !== Status.READY,
