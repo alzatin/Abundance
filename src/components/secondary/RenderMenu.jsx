@@ -84,7 +84,7 @@ export default function RenderMenu({
     tagControls[`tag-${tag}`] = {
       type: "boolean",
       label: tag,
-      value: false,
+      value: true,
       onChange: (value) => {
         console.log(`Tag "${tag}" toggled to:`, value);
       },
@@ -96,6 +96,13 @@ export default function RenderMenu({
 
   /** Creates Leva panel with grid settings */
   const renderSettings = {
+    tagsGroup: {
+      type: "group",
+      label: "Tags",
+      defaultCollapsed: true,
+      children: tagChildrenKeys,
+    },
+    ...tagControls,
     grid: {
       value: gridParam,
       label: "Grid",
@@ -147,13 +154,6 @@ export default function RenderMenu({
         setShowTopLevelWireframe(value);
       },
     },
-    tagsGroup: {
-      type: "group",
-      label: "Tags",
-      defaultCollapsed: true,
-      children: tagChildrenKeys,
-    },
-    ...tagControls,
   };
 
   const [
