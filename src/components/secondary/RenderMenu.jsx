@@ -63,28 +63,14 @@ export default function RenderMenu({
   const [inputChanged, setInputChanged] = useState("");
   const [availableTags, setAvailableTags] = useState([]);
 
-  // Get available tags by walking the top-level geometry
+  // Get available tags from cached molecule tags
   useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        if (GlobalVariables.topLevelMolecule?.value) {
-          // Call the worker's extractAllTags function to get tags from the top-level geometry
-          const tags = await GlobalVariables.cad.extractAllTags(
-            GlobalVariables.topLevelMolecule.value,
-          );
-          // Filter out "Select Tag" which is added by extractAllTags
-          const filteredTags = tags.filter((tag) => tag !== "Select Tag");
-          console.log("Tags from top-level geometry:", filteredTags);
-          setAvailableTags(filteredTags);
-        }
-      } catch (err) {
-        console.error("Error fetching tags:", err);
-        setAvailableTags([]);
-      }
-    };
-
-    fetchTags();
-  }, [GlobalVariables.topLevelMolecule?.value]);
+    if (GlobalVariables.topLevelMolecule?.projectAvailableTags) {
+      setAvailableTags(GlobalVariables.topLevelMolecule.projectAvailableTags);
+    } else {
+      setAvailableTags([]);
+    }
+  }, [GlobalVariables.topLevelMolecule?.projectAvailableTags]);
 
   // Log available tags for debugging
   useEffect(() => {

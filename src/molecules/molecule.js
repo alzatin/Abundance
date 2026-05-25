@@ -880,6 +880,25 @@ export default class Molecule extends Atom {
     return bomParams;
   }
 
+  /**
+   * Extract all tags from the molecule's current geometry and cache them in projectAvailableTags.
+   * This is called once when the molecule becomes ready to avoid repeated worker calls.
+   * @returns {Promise<void>}
+   */
+  async extractAndCacheTags() {
+    try {
+      if (this.value) {
+        const tags = await GlobalVariables.cad.extractAllTags(this.value);
+        // Filter out "Select Tag" which is added by extractAllTags
+        this.projectAvailableTags = tags.filter((tag) => tag !== "Select Tag");
+        console.log("Tags extracted and cached:", this.projectAvailableTags);
+      }
+    } catch (err) {
+      console.error("Error extracting tags:", err);
+      this.projectAvailableTags = [];
+    }
+  }
+
   getOutputAtom() {
     return this.nodesOnTheScreen.find(
       (atom) => atom.atomType === "Output" && atom.parent === this,
@@ -932,6 +951,10 @@ export default class Molecule extends Atom {
           .catch((err) => {
             console.warn("Error loading README:", err);
           });
+        // Extract and cache tags once when molecule becomes ready
+        this.extractAndCacheTags().catch((err) => {
+          console.error("Error in extractAndCacheTags:", err);
+        });
       } else {
         // Enable child atoms in dependency order to ensure atoms can subscribe to variable equations.
         // Do this on EVERY upstream change, not just when all inputs are ready.
