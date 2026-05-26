@@ -11,6 +11,7 @@ import {
 
 import GlobalVariables from "./js/globalvariables.js";
 import { fetchGitHubFileContent } from "./js/githubFileUtils.js";
+import { filterGeometryByTags } from "./utils/geometryFilterByTags.js";
 import { CadWorkerManager } from "./worker/cadWorkerManager.js";
 import LoginMode from "./components/main-routes/LoginMode.jsx";
 import RunMode from "./components/main-routes/RunMode.jsx";
@@ -87,6 +88,7 @@ function AppContent() {
     setGcodeParts,
     nonReplicadGeometry,
     setNonReplicadGeometry,
+    activeTags,
   } = useRendering();
 
   const {
@@ -261,6 +263,7 @@ function AppContent() {
   const topLevelMesh = React.useRef(undefined); // {id: molecule.uniqueID, mesh: generated mesh}
 
   function makeMesh() {
+    console.log("[makeMesh] Called with activeTags:", activeTags);
     setOutdatedMesh(true);
     pool.proxy().then((worker) => {
       // No-op condition
@@ -269,9 +272,15 @@ function AppContent() {
         JSON.stringify(targetMesh.current) ===
           JSON.stringify(inFlightMeshRender.current?.value)
       ) {
+        console.log("[makeMesh] Skipping - no targetMesh or already in flight");
         return;
       }
-      console.debug("starting mesh generation for: ", targetMesh.current);
+      console.debug(
+        "[makeMesh] Starting mesh generation for: ",
+        targetMesh.current,
+      );
+
+      // Display geometry unfiltered - tag filtering only applies to top-level background view
       const genTask = worker.generateDisplayMesh(
         targetMesh.current,
         GlobalVariables.topLevelMolecule.getContext(),
@@ -349,28 +358,44 @@ function AppContent() {
       }
 
       if (backgroundMolecule) {
+        console.log("Setting background molecule with value:", moleculeValue);
         if (
           backgroundMesh.current &&
           JSON.stringify(backgroundMesh.current.id) ===
             JSON.stringify(moleculeValue)
         ) {
+          console.log(
+            "Reusing cached background mesh for molecule:",
+            moleculeValue,
+          );
           setWireMesh(backgroundMesh.current.mesh);
         } else {
           backgroundMesh.current = { id: moleculeValue, mesh: undefined };
           pool.proxy().then((worker) => {
-            worker.generateDisplayMesh(moleculeValue, context).then((m) => {
-              backgroundMesh.current.mesh = m.mesh;
-              setWireMesh(m.mesh);
-              // Also update top-level wireframe if this is the top-level molecule's mesh
-              if (
-                GlobalVariables.topLevelMolecule &&
-                JSON.stringify(moleculeValue) ===
-                  JSON.stringify(GlobalVariables.topLevelMolecule.value)
-              ) {
-                setTopLevelWireMesh(m.mesh);
-              }
-              setOutdatedMesh(false);
-            });
+            const filteredGeometryBg = filterGeometryByTags(
+              moleculeValue,
+              activeTags,
+            );
+            console.log(
+              "background mole filteredGeometryBg:",
+              filteredGeometryBg,
+            );
+            worker
+              .generateDisplayMesh(filteredGeometryBg, context)
+              .then((m) => {
+                console.log(m);
+                backgroundMesh.current.mesh = m.mesh;
+                setWireMesh(m.mesh);
+                // Also update top-level wireframe if this is the top-level molecule's mesh
+                if (
+                  GlobalVariables.topLevelMolecule &&
+                  JSON.stringify(moleculeValue) ===
+                    JSON.stringify(GlobalVariables.topLevelMolecule.value)
+                ) {
+                  setTopLevelWireMesh(m.mesh);
+                }
+                setOutdatedMesh(false);
+              });
           });
         }
         // We're showing wireframe background
@@ -402,6 +427,7 @@ function AppContent() {
           setIsViewingOutputMesh(true);
         } else {
           // General case - generate the mesh for selected atom
+          console.log("Setting target mesh to: ", targetMesh.current);
           //Check if mesh should be hidden (a.e gcode)
           if (!nonReplicadGeometryFromAtom?.hideMainMesh) {
             makeMesh();
@@ -444,7 +470,31 @@ function AppContent() {
     setTopLevelWireMesh,
     setIsViewingOutputMesh,
     setErrorNotification,
+    activeTags,
   ]);
+
+  // Tag filtering is only applied to top-level background mesh rendering,
+  // not to individual atom displays. The writeToDisplay function handles this.
+  // When tags change, invalidate the cached background mesh so it's regenerated with new filtering
+  useEffect(() => {
+    console.log(
+      "[activeTags effect] Tags changed, invalidating cached background mesh",
+    );
+    backgroundMesh.current = undefined;
+
+    // Trigger background molecule re-render if one is currently displayed
+    if (
+      GlobalVariables.topLevelMolecule &&
+      GlobalVariables.topLevelMolecule.value
+    ) {
+      console.log("[activeTags effect] Re-rendering background molecule");
+      GlobalVariables.writeToDisplay(
+        GlobalVariables.topLevelMolecule.value,
+        GlobalVariables.topLevelMolecule.getContext(),
+        true, // backgroundMolecule = true
+      );
+    }
+  }, [activeTags]);
 
   /**
    * Load a project from the repository

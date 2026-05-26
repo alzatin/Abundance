@@ -58,6 +58,8 @@ export default function RenderMenu({
     setShowBackgroundModel,
     showTopLevelWireframe,
     setShowTopLevelWireframe,
+    activeTags,
+    setActiveTags,
     activeAtom,
   } = useRendering();
   const [inputChanged, setInputChanged] = useState("");
@@ -72,6 +74,18 @@ export default function RenderMenu({
     }
   }, [GlobalVariables.topLevelMolecule?.projectAvailableTags]);
 
+  // Initialize activeTags with all available tags on first load
+  useEffect(() => {
+    if (availableTags.length > 0 && activeTags.size === 0) {
+      const allTagsSet = new Set(availableTags);
+      setActiveTags(allTagsSet);
+      console.log(
+        "Initialized activeTags with all available tags:",
+        allTagsSet,
+      );
+    }
+  }, [availableTags]); // Only depend on availableTags changes
+
   // Log available tags for debugging
   useEffect(() => {
     console.log("RenderMenu - Available tags:", availableTags);
@@ -84,9 +98,21 @@ export default function RenderMenu({
     tagControls[`tag-${tag}`] = {
       type: "boolean",
       label: tag,
-      value: true,
-      onChange: (value) => {
-        console.log(`Tag "${tag}" toggled to:`, value);
+      value: activeTags.has(tag),
+      onChange: (isActive) => {
+        const newActiveTags = new Set(activeTags);
+        if (isActive) {
+          newActiveTags.add(tag);
+        } else {
+          newActiveTags.delete(tag);
+        }
+        setActiveTags(newActiveTags);
+        console.log(
+          `Tag "${tag}" toggled to:`,
+          isActive,
+          "Active tags:",
+          newActiveTags,
+        );
       },
     };
   });
@@ -99,7 +125,7 @@ export default function RenderMenu({
     tagsGroup: {
       type: "group",
       label: "Tags",
-      defaultCollapsed: true,
+      defaultCollapsed: false,
       children: tagChildrenKeys,
     },
     ...tagControls,
@@ -166,6 +192,7 @@ export default function RenderMenu({
     showBackgroundModel,
     showTopLevelWireframe,
     availableTags,
+    activeTags,
   ]);
 
   const screenHeight = window.innerHeight;
