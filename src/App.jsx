@@ -263,7 +263,6 @@ function AppContent() {
   const topLevelMesh = React.useRef(undefined); // {id: molecule.uniqueID, mesh: generated mesh}
 
   function makeMesh() {
-    console.log("[makeMesh] Called with activeTags:", activeTags);
     setOutdatedMesh(true);
     pool.proxy().then((worker) => {
       // No-op condition
@@ -358,16 +357,11 @@ function AppContent() {
       }
 
       if (backgroundMolecule) {
-        console.log("Setting background molecule with value:", moleculeValue);
         if (
           backgroundMesh.current &&
           JSON.stringify(backgroundMesh.current.id) ===
             JSON.stringify(moleculeValue)
         ) {
-          console.log(
-            "Reusing cached background mesh for molecule:",
-            moleculeValue,
-          );
           setWireMesh(backgroundMesh.current.mesh);
         } else {
           backgroundMesh.current = { id: moleculeValue, mesh: undefined };
@@ -376,10 +370,7 @@ function AppContent() {
               moleculeValue,
               activeTags,
             );
-            console.log(
-              "background mole filteredGeometryBg:",
-              filteredGeometryBg,
-            );
+
             worker
               .generateDisplayMesh(filteredGeometryBg, context)
               .then((m) => {
@@ -427,7 +418,6 @@ function AppContent() {
           setIsViewingOutputMesh(true);
         } else {
           // General case - generate the mesh for selected atom
-          console.log("Setting target mesh to: ", targetMesh.current);
           //Check if mesh should be hidden (a.e gcode)
           if (!nonReplicadGeometryFromAtom?.hideMainMesh) {
             makeMesh();
@@ -473,11 +463,10 @@ function AppContent() {
     activeTags,
   ]);
 
-  // Tag filtering is only applied to top-level background mesh rendering,
-  // not to individual atom displays. The writeToDisplay function handles this.
+  // TAG FILTERING
   // When tags change, invalidate the cached background mesh so it's regenerated with new filtering
   useEffect(() => {
-    console.log("[activeTags effect] Tags changed, invalidating cached meshes");
+    //console.log("[activeTags effect] Tags changed, invalidating cached meshes");
     backgroundMesh.current = undefined;
     topLevelMesh.current = undefined; // Also invalidate top-level wireframe cache
 
@@ -486,14 +475,40 @@ function AppContent() {
       GlobalVariables.topLevelMolecule &&
       GlobalVariables.topLevelMolecule.value
     ) {
-      console.log("[activeTags effect] Re-rendering background molecule");
-      GlobalVariables.writeToDisplay(
-        GlobalVariables.topLevelMolecule.value,
-        GlobalVariables.topLevelMolecule.getContext(),
-        true, // backgroundMolecule = true
-      );
+      const moleculeValue = GlobalVariables.topLevelMolecule.value;
+      const context = GlobalVariables.topLevelMolecule.getContext();
+
+      // Always update background/wireframe
+      GlobalVariables.writeToDisplay(moleculeValue, context, true);
+
+      // If the top-level output is currently being viewed as the main mesh,
+      // also regenerate and update the main mesh with filtered geometry
+      if (
+        targetMesh.current &&
+        JSON.stringify(targetMesh.current) === JSON.stringify(moleculeValue)
+      ) {
+        pool
+          .proxy()
+          .then((worker) => {
+            const filteredGeometry = filterGeometryByTags(
+              moleculeValue,
+              activeTags,
+            );
+            return worker.generateDisplayMesh(filteredGeometry, context);
+          })
+          .then((m) => {
+            setMesh(m.mesh);
+            setOutdatedMesh(false);
+          })
+          .catch((e) => {
+            console.error(
+              "[activeTags effect] Error regenerating main mesh:",
+              e,
+            );
+          });
+      }
     }
-  }, [activeTags]);
+  }, [activeTags, setMesh, setOutdatedMesh, pool]);
 
   /**
    * Load a project from the repository

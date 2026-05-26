@@ -65,51 +65,35 @@ export default function RenderMenu({
   const [inputChanged, setInputChanged] = useState("");
   const [availableTags, setAvailableTags] = useState([]);
 
-  // Get available tags from cached molecule tags
+  // Sync available tags from molecule and keep activeTags in sync
   useEffect(() => {
-    if (GlobalVariables.topLevelMolecule?.projectAvailableTags) {
-      setAvailableTags(GlobalVariables.topLevelMolecule.projectAvailableTags);
-    } else {
-      setAvailableTags([]);
+    // Get available tags from cached molecule
+    const currentAvailableTags =
+      GlobalVariables.topLevelMolecule?.projectAvailableTags || [];
+    setAvailableTags(currentAvailableTags);
+
+    // Sync activeTags to match available tags (add new ones, remove old ones)
+    if (currentAvailableTags.length > 0) {
+      const availableTagsSet = new Set(currentAvailableTags);
+      const updatedActiveTags = new Set(availableTagsSet);
+
+      const tagsToAdd = currentAvailableTags.filter(
+        (tag) => !activeTags.has(tag),
+      );
+      const tagsToRemove = Array.from(activeTags).filter(
+        (tag) => !availableTagsSet.has(tag),
+      );
+
+      if (tagsToAdd.length > 0 || tagsToRemove.length > 0) {
+        setActiveTags(updatedActiveTags);
+      } else if (activeTags.size === 0) {
+        // First load: initialize with all available tags
+        setActiveTags(availableTagsSet);
+      }
     }
   }, [GlobalVariables.topLevelMolecule?.projectAvailableTags]);
 
-  // Initialize activeTags with all available tags on first load
-  useEffect(() => {
-    if (availableTags.length > 0) {
-      // Find tags that are in availableTags but not in activeTags
-      const newTags = availableTags.filter((tag) => !activeTags.has(tag));
-
-      if (newTags.length > 0) {
-        // Add new tags to activeTags (they should be active by default)
-        const updatedActiveTags = new Set(activeTags);
-        newTags.forEach((tag) => updatedActiveTags.add(tag));
-        setActiveTags(updatedActiveTags);
-        console.log(
-          "New tags added to activeTags:",
-          newTags,
-          "Updated activeTags:",
-          updatedActiveTags,
-        );
-      } else if (activeTags.size === 0) {
-        // First load: initialize with all available tags
-        const allTagsSet = new Set(availableTags);
-        setActiveTags(allTagsSet);
-        console.log(
-          "Initialized activeTags with all available tags:",
-          allTagsSet,
-        );
-      }
-    }
-  }, [availableTags]); // Only depend on availableTags changes
-
-  // Log available tags for debugging
-  useEffect(() => {
-    console.log("RenderMenu - Available tags:", availableTags);
-    console.log("Total tags:", availableTags.length);
-  }, [availableTags]);
-
-  // Create tag toggle controls
+  // Create tag toggle controls for menu
   const tagControls = {};
   availableTags.forEach((tag) => {
     tagControls[`tag-${tag}`] = {
@@ -124,12 +108,6 @@ export default function RenderMenu({
           newActiveTags.delete(tag);
         }
         setActiveTags(newActiveTags);
-        console.log(
-          `Tag "${tag}" toggled to:`,
-          isActive,
-          "Active tags:",
-          newActiveTags,
-        );
       },
     };
   });
