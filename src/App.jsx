@@ -477,10 +477,9 @@ function AppContent() {
   // not to individual atom displays. The writeToDisplay function handles this.
   // When tags change, invalidate the cached background mesh so it's regenerated with new filtering
   useEffect(() => {
-    console.log(
-      "[activeTags effect] Tags changed, invalidating cached background mesh",
-    );
+    console.log("[activeTags effect] Tags changed, invalidating cached meshes");
     backgroundMesh.current = undefined;
+    topLevelMesh.current = undefined; // Also invalidate top-level wireframe cache
 
     // Trigger background molecule re-render if one is currently displayed
     if (

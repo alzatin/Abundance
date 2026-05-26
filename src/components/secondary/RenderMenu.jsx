@@ -76,13 +76,30 @@ export default function RenderMenu({
 
   // Initialize activeTags with all available tags on first load
   useEffect(() => {
-    if (availableTags.length > 0 && activeTags.size === 0) {
-      const allTagsSet = new Set(availableTags);
-      setActiveTags(allTagsSet);
-      console.log(
-        "Initialized activeTags with all available tags:",
-        allTagsSet,
-      );
+    if (availableTags.length > 0) {
+      // Find tags that are in availableTags but not in activeTags
+      const newTags = availableTags.filter((tag) => !activeTags.has(tag));
+
+      if (newTags.length > 0) {
+        // Add new tags to activeTags (they should be active by default)
+        const updatedActiveTags = new Set(activeTags);
+        newTags.forEach((tag) => updatedActiveTags.add(tag));
+        setActiveTags(updatedActiveTags);
+        console.log(
+          "New tags added to activeTags:",
+          newTags,
+          "Updated activeTags:",
+          updatedActiveTags,
+        );
+      } else if (activeTags.size === 0) {
+        // First load: initialize with all available tags
+        const allTagsSet = new Set(availableTags);
+        setActiveTags(allTagsSet);
+        console.log(
+          "Initialized activeTags with all available tags:",
+          allTagsSet,
+        );
+      }
     }
   }, [availableTags]); // Only depend on availableTags changes
 
