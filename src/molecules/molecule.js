@@ -891,7 +891,6 @@ export default class Molecule extends Atom {
         const tags = await GlobalVariables.cad.extractAllTags(this.value);
         // Filter out "Select Tag" which is added by extractAllTags
         this.projectAvailableTags = tags.filter((tag) => tag !== "Select Tag");
-        console.log("Tags extracted and cached:", this.projectAvailableTags);
       }
     } catch (err) {
       console.error("Error extracting tags:", err);
