@@ -117,13 +117,13 @@ export default function RenderMenu({
 
   /** Creates Leva panel with grid settings */
   const renderSettings = {
-    tagsGroup: {
+    /*tagsGroup: {
       type: "group",
       label: "Tags",
       defaultCollapsed: false,
       children: tagChildrenKeys,
     },
-    ...tagControls,
+    ...tagControls,*/
     grid: {
       value: gridParam,
       label: "Grid",
