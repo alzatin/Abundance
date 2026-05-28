@@ -1320,7 +1320,7 @@ export default class Atom extends ObservableEntity {
     GlobalVariables.cad
       .vertex(pointValue[0], pointValue[1], pointValue[2], this.getContext())
       .then((vertex) => {
-        input.setValue(pointValue);
+        input.setValue(vertex);
       })
       .catch((err) => {
         console.error("Error computing point geometry:", err);
