@@ -37,6 +37,9 @@ export function RenderingProvider({ children }) {
   const [showTopLevelWireframe, setShowTopLevelWireframe] = useState(false);
   const [topLevelWireMesh, setTopLevelWireMesh] = useState(null);
 
+  // Tag visibility state - Set of tag names that are currently visible
+  const [activeTags, setActiveTags] = useState(new Set());
+
   // Track if we're currently viewing the output mesh directly
   const [isViewingOutputMesh, setIsViewingOutputMesh] = useState(false);
 
@@ -88,6 +91,10 @@ export function RenderingProvider({ children }) {
     setShowTopLevelWireframe,
     topLevelWireMesh,
     setTopLevelWireMesh,
+
+    // Tag visibility
+    activeTags,
+    setActiveTags,
 
     // Output mesh viewing state
     isViewingOutputMesh,

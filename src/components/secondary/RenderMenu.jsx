@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SimpleControlPanel } from "./SimpleControlPanel";
+import GlobalVariables from "../../js/globalvariables.js";
+import { useControls } from "../../hooks/useControls";
+import { useRendering } from "../../contexts/index.js";
 
 // Grid/Axis icon for RenderMenu
 const GridAxisIcon = ({ size = 22 }) => (
@@ -32,8 +35,6 @@ const GridAxisIcon = ({ size = 22 }) => (
     />
   </svg>
 );
-import { useControls } from "../../hooks/useControls";
-import { useRendering } from "../../contexts/index.js";
 
 export default function RenderMenu({
   position,
@@ -57,12 +58,72 @@ export default function RenderMenu({
     setShowBackgroundModel,
     showTopLevelWireframe,
     setShowTopLevelWireframe,
+    activeTags,
+    setActiveTags,
     activeAtom,
   } = useRendering();
   const [inputChanged, setInputChanged] = useState("");
+  const [availableTags, setAvailableTags] = useState([]);
+
+  // Sync available tags from molecule and keep activeTags in sync
+  useEffect(() => {
+    // Get available tags from cached molecule
+    const currentAvailableTags =
+      GlobalVariables.topLevelMolecule?.projectAvailableTags || [];
+    setAvailableTags(currentAvailableTags);
+
+    // Sync activeTags to match available tags (add new ones, remove old ones)
+    if (currentAvailableTags.length > 0) {
+      const availableTagsSet = new Set(currentAvailableTags);
+      const updatedActiveTags = new Set(availableTagsSet);
+
+      const tagsToAdd = currentAvailableTags.filter(
+        (tag) => !activeTags.has(tag),
+      );
+      const tagsToRemove = Array.from(activeTags).filter(
+        (tag) => !availableTagsSet.has(tag),
+      );
+
+      if (tagsToAdd.length > 0 || tagsToRemove.length > 0) {
+        setActiveTags(updatedActiveTags);
+      } else if (activeTags.size === 0) {
+        // First load: initialize with all available tags
+        setActiveTags(availableTagsSet);
+      }
+    }
+  }, [GlobalVariables.topLevelMolecule?.projectAvailableTags]);
+
+  // Create tag toggle controls for menu
+  const tagControls = {};
+  availableTags.forEach((tag) => {
+    tagControls[`tag-${tag}`] = {
+      type: "boolean",
+      label: tag,
+      value: activeTags.has(tag),
+      onChange: (isActive) => {
+        const newActiveTags = new Set(activeTags);
+        if (isActive) {
+          newActiveTags.add(tag);
+        } else {
+          newActiveTags.delete(tag);
+        }
+        setActiveTags(newActiveTags);
+      },
+    };
+  });
+
+  // Children keys for the tag group
+  const tagChildrenKeys = availableTags.map((tag) => `tag-${tag}`);
 
   /** Creates Leva panel with grid settings */
   const renderSettings = {
+    tagsGroup: {
+      type: "group",
+      label: "Tags",
+      defaultCollapsed: false,
+      children: tagChildrenKeys,
+    },
+    ...tagControls,
     grid: {
       value: gridParam,
       label: "Grid",
@@ -125,6 +186,8 @@ export default function RenderMenu({
     backgroundUsdzFile,
     showBackgroundModel,
     showTopLevelWireframe,
+    availableTags,
+    activeTags,
   ]);
 
   const screenHeight = window.innerHeight;
