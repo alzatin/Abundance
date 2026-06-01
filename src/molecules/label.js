@@ -196,12 +196,6 @@ export default class Label extends Atom {
 
     let startPointInput = this.findIOValue("startPosition");
     let endPointInput = this.findIOValue("endPosition");
-    console.log(
-      "Label atom inputs - startPoint:",
-      startPointInput,
-      "endPoint:",
-      endPointInput,
-    );
     let text = this.findIOValue("text");
     let fontSize = Number(this.findIOValue("fontSize") || 10);
 
