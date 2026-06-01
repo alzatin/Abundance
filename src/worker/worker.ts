@@ -31,7 +31,7 @@ import {
   extractTag,
   tag,
 } from "./tags";
-import type { AbundanceObject, AbundanceLeaf } from "./util";
+import { AbundanceObject, AbundanceLeaf, geometryProvider } from "./util";
 import * as util from "./util";
 
 // --- Type Definitions ---
@@ -104,7 +104,6 @@ function findFlatFaces(
     return filteredZValues;
   });
 }
-
 /**
  * Prepares geometry for visualization export in various file formats (STL, STEP, SVG, TXT).
  * @param {AbundanceObject|string} input - The geometry to export (AbundanceObject for 3D formats, string for TXT)
@@ -733,6 +732,17 @@ async function sweepCache(
   return util.geometryProvider!.sweepCache(idsToRetainSet, context);
 }
 
+// Expose a function to get a point as a tuple of [x, y, z] coordinates
+async function getAsPoint3D(
+  geometry: string,
+  context: RequestContext,
+): Promise<[number, number, number]> {
+  await started;
+  return (
+    await util.geometryProvider!._getAsPoint(geometry, context)
+  ).asTuple();
+}
+
 /**
  * Extracts all geometry except those tagged as "keepout".
  * Throws an error if no geometry remains after removing keepout geometry.
@@ -799,6 +809,7 @@ if (
     isAssembly,
     extractParts,
     sweepCache,
+    getAsPoint3D,
   });
 }
 
@@ -848,4 +859,5 @@ export {
   visualizeGcodeIncremental,
   visualizeGcodeIncrementalForced,
   visualizeGcodeAsAssembly,
+  getAsPoint3D,
 };

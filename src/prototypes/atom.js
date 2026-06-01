@@ -1316,17 +1316,6 @@ export default class Atom extends ObservableEntity {
     return predictedParams;
   }
 
-  computePoint(input, pointValue) {
-    GlobalVariables.cad
-      .vertex(pointValue[0], pointValue[1], pointValue[2], this.getContext())
-      .then((vertex) => {
-        input.setValue(vertex);
-      })
-      .catch((err) => {
-        console.error("Error computing point geometry:", err);
-      });
-  }
-
   createInputParams(setInputChanged) {
     // Stash the React-side state setter so other code on this atom (e.g.
     // `Code#updateCode` after re-parsing its `Inputs = [...]` block, or
@@ -1403,36 +1392,6 @@ export default class Atom extends ObservableEntity {
               }
             },
           };
-        } else if (input.valueType === "point2d") {
-          // Handle 2D point inputs
-          const displayValue = hasConnector ? input.getValue() : input.value;
-          inputParams[this.uniqueID + input.name] = {
-            type: "point",
-            value: [displayValue?.[0] ?? 0, displayValue?.[1] ?? 0],
-            label: input.name,
-            step: 0.1,
-            disabled: hasConnector,
-            onChange: (value) => {
-              if (!GlobalVariables.isUndoing && this.parent) {
-                const oldVal = input.value ? [...input.value] : [0, 0];
-                const inputName = input.name;
-                GlobalVariables.pushUndoCommand(
-                  new ValueChangeCommand(
-                    this.uniqueID,
-                    this.parent,
-                    inputName,
-                    oldVal,
-                    (atom, val) => {
-                      const inp = atom.inputs.find((i) => i.name === inputName);
-                      if (inp) inp.setValue(val);
-                    },
-                    `Change ${this.name} "${input.name}"`,
-                  ),
-                );
-              }
-              input.setValue([value[0], value[1]]);
-            },
-          };
         } else if (input.valueType === "point3d") {
           // Handle 3D point inputs
           const displayValue = hasConnector ? input.getValue() : input.value;
@@ -1465,7 +1424,7 @@ export default class Atom extends ObservableEntity {
                   ),
                 );
               }
-              this.computePoint(input, value);
+              input.setValue([value[0], value[1], value[2]]);
             },
           };
         } else if (input.valueType === "array") {
