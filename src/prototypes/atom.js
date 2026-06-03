@@ -1323,7 +1323,6 @@ export default class Atom extends ObservableEntity {
    * @returns {array} [x, y, z] coordinates
    */
   async extractCoordinates(value) {
-    console.log("Extracting coordinates from value:", value);
     // If it's already an array, return it
     if (Array.isArray(value)) {
       return [
