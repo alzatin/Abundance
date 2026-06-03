@@ -1357,6 +1357,7 @@ export default class Atom extends ObservableEntity {
       // Final fallback
       return [0, 0, 0];
     }
+    return [0, 0, 0];
   }
 
   createInputParams(setInputChanged) {
@@ -1436,10 +1437,10 @@ export default class Atom extends ObservableEntity {
             },
           };
         } else if (input.valueType === "point3d") {
-          // Handle 3D point inputs
           const displayValue = hasConnector
-            ? this.extractCoordinates(input.value)
+            ? this.extractCoordinates(input.currentEquation)
             : input.value;
+
           inputParams[this.uniqueID + input.name] = {
             type: "point",
             value: [
@@ -1453,7 +1454,9 @@ export default class Atom extends ObservableEntity {
             onChange: (value) => {
               console.log(value);
               if (!GlobalVariables.isUndoing && this.parent) {
-                const oldVal = input.value ? [...input.value] : [0, 0, 0];
+                const oldVal = Array.isArray(input.value)
+                  ? [...input.value]
+                  : [0, 0, 0];
                 const inputName = input.name;
                 GlobalVariables.pushUndoCommand(
                   new ValueChangeCommand(
