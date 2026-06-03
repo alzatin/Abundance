@@ -3,6 +3,7 @@ import { SimpleControlPanel } from "./SimpleControlPanel";
 import GlobalVariables from "../../js/globalvariables.js";
 import { useControls } from "../../hooks/useControls";
 import { useRendering } from "../../contexts/index.js";
+import { useAppState } from "../../contexts/index.js";
 
 // Grid/Axis icon for RenderMenu
 const GridAxisIcon = ({ size = 22 }) => (
@@ -60,10 +61,11 @@ export default function RenderMenu({
     setShowTopLevelWireframe,
     activeTags,
     setActiveTags,
-    activeAtom,
   } = useRendering();
   const [inputChanged, setInputChanged] = useState("");
   const [availableTags, setAvailableTags] = useState([]);
+
+  const { activeAtom } = useAppState();
 
   // Sync available tags from molecule and keep activeTags in sync
   useEffect(() => {
@@ -95,35 +97,38 @@ export default function RenderMenu({
 
   // Create tag toggle controls for menu
   const tagControls = {};
-  availableTags.forEach((tag) => {
-    tagControls[`tag-${tag}`] = {
-      type: "boolean",
-      label: tag,
-      value: activeTags.has(tag),
-      onChange: (isActive) => {
-        const newActiveTags = new Set(activeTags);
-        if (isActive) {
-          newActiveTags.add(tag);
-        } else {
-          newActiveTags.delete(tag);
-        }
-        setActiveTags(newActiveTags);
-      },
-    };
-  });
+
+  if (activeAtom?.topLevel) {
+    availableTags.forEach((tag) => {
+      tagControls[`tag-${tag}`] = {
+        type: "boolean",
+        label: tag,
+        value: activeTags.has(tag),
+        onChange: (isActive) => {
+          const newActiveTags = new Set(activeTags);
+          if (isActive) {
+            newActiveTags.add(tag);
+          } else {
+            newActiveTags.delete(tag);
+          }
+          setActiveTags(newActiveTags);
+        },
+      };
+    });
+  }
 
   // Children keys for the tag group
   const tagChildrenKeys = availableTags.map((tag) => `tag-${tag}`);
 
   /** Creates Leva panel with grid settings */
   const renderSettings = {
-    /*tagsGroup: {
+    tagsGroup: {
       type: "group",
       label: "Tags",
       defaultCollapsed: false,
       children: tagChildrenKeys,
     },
-    ...tagControls,*/
+    ...tagControls,
     grid: {
       value: gridParam,
       label: "Grid",
@@ -188,6 +193,7 @@ export default function RenderMenu({
     showTopLevelWireframe,
     availableTags,
     activeTags,
+    activeAtom,
   ]);
 
   const screenHeight = window.innerHeight;
