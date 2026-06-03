@@ -4,7 +4,9 @@
  * Rules:
  * - If activeTags is empty or all tags are OFF, show only untagged geometry (tags array is empty)
  * - If a tag is active, show geometry tagged with that tag
- * - For AbundanceBranch: recurse into children and filter them (don't hide whole branch)
+ * - For AbundanceBranch:
+ *   - If branch is tagged and any tag is inactive, hide entire branch (assembly-level filtering)
+ *   - If branch is untagged, recurse into children and show branch if any children match
  * - For AbundanceLeaf: check if leaf's tags match active tags
  *
  * @param {AbundanceLeaf|AbundanceBranch} geometry - The geometry tree to filter
@@ -27,7 +29,23 @@ function filterGeometryRecursive(geometry, activeTags, showUntaggedOnly) {
   const isBranch = Array.isArray(geometry.geometry);
 
   if (isBranch) {
-    // AbundanceBranch: recursively filter children
+    // AbundanceBranch: first check if the branch itself is tagged and inactive
+    const branchTags = geometry.tags || [];
+
+    // If branch has tags and any are inactive, hide the entire branch
+    if (branchTags.length > 0 && !showUntaggedOnly) {
+      const hasInactiveTag = branchTags.some((tag) => !activeTags.has(tag));
+      if (hasInactiveTag) {
+        return null;
+      }
+    }
+
+    // If showUntaggedOnly and branch has tags, hide it
+    if (showUntaggedOnly && branchTags.length > 0) {
+      return null;
+    }
+
+    // Branch is visible (either untagged or has active tags), now filter children
     const filteredChildren = geometry.geometry
       .map((child) =>
         filterGeometryRecursive(child, activeTags, showUntaggedOnly),
