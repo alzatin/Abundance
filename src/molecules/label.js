@@ -469,24 +469,6 @@ export default class Label extends Atom {
             },
           };
         } else if (input.name === "startPosition") {
-          // Async coordinate extraction - get geometryProvider and context
-          const geometryProvider = GlobalVariables.cad?.geometryProvider;
-          const context = GlobalVariables.cad?.currentContext || {
-            project: "default",
-          };
-
-          // Extract coordinates (works with both arrays and Point3D objects)
-          this.extractCoordinates(input.value, geometryProvider, context).then(
-            (displayValue) => {
-              // Update the input params asynchronously
-              inputParams[this.uniqueID + "startPosition"].value = [
-                displayValue[0],
-                displayValue[1],
-                displayValue[2],
-              ];
-            },
-          );
-
           inputParams[this.uniqueID + "startPosition"] = {
             type: "point",
             value: Array.isArray(input.value)
@@ -500,29 +482,11 @@ export default class Label extends Atom {
             },
           };
         } else if (input.name === "endPosition") {
-          // Async coordinate extraction - get geometryProvider and context
-          const geometryProvider = GlobalVariables.cad?.geometryProvider;
-          const context = GlobalVariables.cad?.currentContext || {
-            project: "default",
-          };
-
-          // Extract coordinates (works with both arrays and Point3D objects)
-          this.extractCoordinates(input.value, geometryProvider, context).then(
-            (displayValue) => {
-              // Update the input params asynchronously
-              inputParams[this.uniqueID + "endPosition"].value = [
-                displayValue[0],
-                displayValue[1],
-                displayValue[2],
-              ];
-            },
-          );
-
           inputParams[this.uniqueID + "endPosition"] = {
             type: "point",
             value: Array.isArray(input.value)
               ? [input.value[0], input.value[1], input.value[2]]
-              : [10, 10, 0], // Default while async lookup completes
+              : [0, 0, 0],
             label: "End position",
             step: 0.1,
             disabled: checkConnector(),
