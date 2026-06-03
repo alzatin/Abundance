@@ -98,8 +98,7 @@ export default function RenderMenu({
   // Create tag toggle controls for menu
   const tagControls = {};
 
-  if (activeAtom.topLevel) {
-    console.log(activeAtom.topLevel);
+  if (activeAtom?.topLevel) {
     availableTags.forEach((tag) => {
       tagControls[`tag-${tag}`] = {
         type: "boolean",
