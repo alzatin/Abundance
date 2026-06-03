@@ -140,49 +140,6 @@ export default class Label extends Atom {
   }
 
   /**
-   * Extract [x, y, z] coordinates from either an array or an Abundance Point3D object
-   * Handles both direct coordinates and hash-based geometry IDs via geometryProvider lookup
-   * @param {array|object} value - Either [x, y, z] array or Abundance Point3D object
-   * @returns {array} [x, y, z] coordinates
-   */
-  async extractCoordinates(value) {
-    // If it's already an array, return it
-    if (Array.isArray(value)) {
-      return [
-        Number(value[0]) || 0,
-        Number(value[1]) || 0,
-        Number(value[2]) || 0,
-      ];
-    }
-
-    // If it's a Point3D geometry object
-    if (value && typeof value === "object" && value.dimension === "Point3D") {
-      // If we have geometryProvider and context, use them for hash ID lookup
-      try {
-        const vertex = await GlobalVariables.cad.getAsPoint3D(
-          value.geometry,
-          this.getContext(),
-        );
-        const coords = vertex;
-        return [
-          Number(coords[0]) || 0,
-          Number(coords[1]) || 0,
-          Number(coords[2]) || 0,
-        ];
-      } catch (err) {
-        console.warn(
-          "Failed to lookup vertex from geometry provider:",
-          value.geometry,
-          err,
-        );
-        // Fall through to fallback methods below
-      }
-      // Final fallback
-      return [0, 0, 0];
-    }
-  }
-
-  /**
    * Build the ThreeJS geometries (line + text sprite) and store them in
    * this.nonReplicadGeom so they get sent to the renderer.
    * @param {THREE.Vector3} start - Start point of the line
