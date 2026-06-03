@@ -140,6 +140,49 @@ export default class Label extends Atom {
   }
 
   /**
+   * Extract [x, y, z] coordinates from either an array or an Abundance Point3D object
+   * Handles both direct coordinates and hash-based geometry IDs via geometryProvider lookup
+   * @param {array|object} value - Either [x, y, z] array or Abundance Point3D object
+   * @returns {array} [x, y, z] coordinates
+   */
+  async extractCoordinates(value) {
+    // If it's already an array, return it
+    if (Array.isArray(value)) {
+      return [
+        Number(value[0]) || 0,
+        Number(value[1]) || 0,
+        Number(value[2]) || 0,
+      ];
+    }
+
+    // If it's a Point3D geometry object
+    if (value && typeof value === "object" && value.dimension === "Point3D") {
+      // If we have geometryProvider and context, use them for hash ID lookup
+      try {
+        const vertex = await GlobalVariables.cad.getAsPoint3D(
+          value.geometry,
+          this.getContext(),
+        );
+        const coords = vertex;
+        return [
+          Number(coords[0]) || 0,
+          Number(coords[1]) || 0,
+          Number(coords[2]) || 0,
+        ];
+      } catch (err) {
+        console.warn(
+          "Failed to lookup vertex from geometry provider:",
+          value.geometry,
+          err,
+        );
+        // Fall through to fallback methods below
+      }
+      // Final fallback
+      return [0, 0, 0];
+    }
+  }
+
+  /**
    * Build the ThreeJS geometries (line + text sprite) and store them in
    * this.nonReplicadGeom so they get sent to the renderer.
    * @param {THREE.Vector3} start - Start point of the line
@@ -147,14 +190,18 @@ export default class Label extends Atom {
    * @param {string} labelText - The text to display
    * @param {string} color - The hex color string for the line and text
    */
-  buildLabelGeometry() {
+  async buildLabelGeometry() {
     // Dispose of old geometry before creating new one
     this.disposeLabelGeometry();
 
-    let startPoint = this.findIOValue("startPosition");
-    let endPoint = this.findIOValue("endPosition");
+    let startPointInput = this.findIOValue("startPosition");
+    let endPointInput = this.findIOValue("endPosition");
     let text = this.findIOValue("text");
     let fontSize = Number(this.findIOValue("fontSize") || 10);
+
+    // Extract coordinates from either arrays or Abundance Point3D objects
+    const startPoint = await this.extractCoordinates(startPointInput);
+    const endPoint = await this.extractCoordinates(endPointInput);
 
     const start = new THREE.Vector3(
       Number(startPoint[0]) || 0,
@@ -383,8 +430,8 @@ export default class Label extends Atom {
    * @param {object} inputs - The resolved input values
    * @returns {Promise} The input geometry unchanged
    */
-  compute() {
-    this.serializedLabel = this.buildLabelGeometry();
+  async compute() {
+    this.serializedLabel = await this.buildLabelGeometry();
     let geom = this.findIOValue("geometry");
     return GlobalVariables.cad.addNonReplicadGeom(geom, this.serializedLabel);
   }
@@ -394,10 +441,10 @@ export default class Label extends Atom {
 
     if (this.inputs) {
       this.inputs.forEach((input) => {
+        const checkConnector = () => {
+          return input.connectors.length > 0;
+        };
         if (input.name === "text") {
-          const checkConnector = () => {
-            return input.connectors.length > 0;
-          };
           inputParams[this.uniqueID + "text"] = {
             type: "string",
             value: input.value,
@@ -424,9 +471,12 @@ export default class Label extends Atom {
         } else if (input.name === "startPosition") {
           inputParams[this.uniqueID + "startPosition"] = {
             type: "point",
-            value: [input.value[0], input.value[1], input.value[2]],
+            value: Array.isArray(input.value)
+              ? [input.value[0], input.value[1], input.value[2]]
+              : [0, 0, 0], // Default while async lookup completes
             label: "Start position",
             step: 0.1,
+            disabled: checkConnector(),
             onChange: (value) => {
               input.setValue([value[0], value[1], value[2]]);
             },
@@ -434,9 +484,12 @@ export default class Label extends Atom {
         } else if (input.name === "endPosition") {
           inputParams[this.uniqueID + "endPosition"] = {
             type: "point",
-            value: [input.value[0], input.value[1], input.value[2]],
+            value: Array.isArray(input.value)
+              ? [input.value[0], input.value[1], input.value[2]]
+              : [0, 0, 0],
             label: "End position",
             step: 0.1,
+            disabled: checkConnector(),
             onChange: (value) => {
               input.setValue([value[0], value[1], value[2]]);
             },

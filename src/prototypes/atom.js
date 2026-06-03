@@ -851,7 +851,7 @@ export default class Atom extends ObservableEntity {
         return;
       }
 
-      // Handle point2d and point3d values (which are arrays)
+      // Handle point3d values, save as arrays
       if (ap.valueType === "point3d" && Array.isArray(ap.getValue())) {
         const currentValue = ap.getValue();
         const isDifferentFromDefault =
@@ -1316,15 +1316,48 @@ export default class Atom extends ObservableEntity {
     return predictedParams;
   }
 
-  computePoint(input, pointValue) {
-    GlobalVariables.cad
-      .vertex(pointValue[0], pointValue[1], pointValue[2], this.getContext())
-      .then((vertex) => {
-        input.setValue(vertex);
-      })
-      .catch((err) => {
-        console.error("Error computing point geometry:", err);
-      });
+  /**
+   * Extract [x, y, z] coordinates from either an array or an Abundance Point3D object
+   * Handles both direct coordinates and hash-based geometry IDs via geometryProvider lookup
+   * @param {array|object} value - Either [x, y, z] array or Abundance Point3D object
+   * @returns {array} [x, y, z] coordinates
+   */
+  async extractCoordinates(value) {
+    console.log("Extracting coordinates from value:", value);
+    // If it's already an array, return it
+    if (Array.isArray(value)) {
+      return [
+        Number(value[0]) || 0,
+        Number(value[1]) || 0,
+        Number(value[2]) || 0,
+      ];
+    }
+
+    // If it's a Point3D geometry object
+    if (value && typeof value === "object" && value.dimension === "Point3D") {
+      // If we have geometryProvider and context, use them for hash ID lookup
+      try {
+        const vertex = await GlobalVariables.cad.getAsPoint3D(
+          value.geometry,
+          this.getContext(),
+        );
+        const coords = vertex;
+        return [
+          Number(coords[0]) || 0,
+          Number(coords[1]) || 0,
+          Number(coords[2]) || 0,
+        ];
+      } catch (err) {
+        console.warn(
+          "Failed to lookup vertex from geometry provider:",
+          value.geometry,
+          err,
+        );
+        // Fall through to fallback methods below
+      }
+      // Final fallback
+      return [0, 0, 0];
+    }
   }
 
   createInputParams(setInputChanged) {
@@ -1403,39 +1436,11 @@ export default class Atom extends ObservableEntity {
               }
             },
           };
-        } else if (input.valueType === "point2d") {
-          // Handle 2D point inputs
-          const displayValue = hasConnector ? input.getValue() : input.value;
-          inputParams[this.uniqueID + input.name] = {
-            type: "point",
-            value: [displayValue?.[0] ?? 0, displayValue?.[1] ?? 0],
-            label: input.name,
-            step: 0.1,
-            disabled: hasConnector,
-            onChange: (value) => {
-              if (!GlobalVariables.isUndoing && this.parent) {
-                const oldVal = input.value ? [...input.value] : [0, 0];
-                const inputName = input.name;
-                GlobalVariables.pushUndoCommand(
-                  new ValueChangeCommand(
-                    this.uniqueID,
-                    this.parent,
-                    inputName,
-                    oldVal,
-                    (atom, val) => {
-                      const inp = atom.inputs.find((i) => i.name === inputName);
-                      if (inp) inp.setValue(val);
-                    },
-                    `Change ${this.name} "${input.name}"`,
-                  ),
-                );
-              }
-              input.setValue([value[0], value[1]]);
-            },
-          };
         } else if (input.valueType === "point3d") {
           // Handle 3D point inputs
-          const displayValue = hasConnector ? input.getValue() : input.value;
+          const displayValue = hasConnector
+            ? this.extractCoordinates(input.value)
+            : input.value;
           inputParams[this.uniqueID + input.name] = {
             type: "point",
             value: [
@@ -1465,7 +1470,7 @@ export default class Atom extends ObservableEntity {
                   ),
                 );
               }
-              this.computePoint(input, value);
+              input.setValue([value[0], value[1], value[2]]);
             },
           };
         } else if (input.valueType === "array") {
