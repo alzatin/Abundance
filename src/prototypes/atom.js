@@ -1438,7 +1438,7 @@ export default class Atom extends ObservableEntity {
           };
         } else if (input.valueType === "point3d") {
           const displayValue = hasConnector
-            ? this.extractCoordinates(input.currentEquation)
+            ? this.extractCoordinates(input.value)
             : input.value;
 
           inputParams[this.uniqueID + input.name] = {
