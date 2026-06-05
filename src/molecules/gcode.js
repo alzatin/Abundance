@@ -12,6 +12,12 @@ import { Group } from "three";
  */
 export default class Gcode extends Atom {
   /**
+   * Static lock to serialize Kirimoto operations across all Gcode instances
+   * Prevents concurrent Kirimoto calls from cancelling each other
+   * @type {Promise}
+   */
+  static kirimotoLock = Promise.resolve();
+  /**
    * The constructor function.
    * @param {object} values An array of values passed in which will be assigned to the class as this.x
    */
@@ -637,12 +643,31 @@ export default class Gcode extends Atom {
 
   /**
    * Generate G-code for a single part
+   * Uses a global lock to serialize Kirimoto calls, preventing cancellations
    * @param {string} stlURL - URL to the STL blob
    * @param {Array} center - Center coordinates [x, y, z]
    * @param {number} partNumber - Part number for naming
    * @returns {Promise<string>} Generated G-code
    */
   _generateGcodeForPart(stlURL, center, partNumber, flats = []) {
+    return new Promise((resolve, reject) => {
+      // Queue this Kirimoto operation behind any existing ones
+      // This prevents concurrent calls from cancelling each other
+      Gcode.kirimotoLock = Gcode.kirimotoLock
+        .then(() =>
+          this._executeKirimotoGeneration(stlURL, center, partNumber, flats),
+        )
+        .then(resolve)
+        .catch(reject);
+    });
+  }
+
+  /**
+   * Execute the actual Kirimoto G-code generation
+   * This is the critical section that must be serialized
+   * @private
+   */
+  _executeKirimotoGeneration(stlURL, center, partNumber, flats) {
     return new Promise((resolve, reject) => {
       const partGcodeCallback = (gcode) => {
         resolve(gcode);
