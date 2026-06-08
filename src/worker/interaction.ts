@@ -140,25 +140,13 @@ async function difference(
     );
   }
 
-  // Filter out keepout geometries from both target and cutter
-  const filteredTarget = extractKeepOut(target);
-  if (filteredTarget === false) {
-    throw new Error("difference() target is entirely keepout geometry");
-  }
-
-  const filteredCutter = extractKeepOut(cutter);
-  if (filteredCutter === false) {
-    // All cutter geometry is keepout - return target unchanged
-    return filteredTarget;
-  }
-
   if (
-    (util.is3D(filteredTarget) && util.is3D(filteredCutter)) ||
-    (!util.is3D(filteredTarget) && !util.is3D(filteredCutter))
+    (util.is3D(target) && util.is3D(cutter)) ||
+    (!util.is3D(target) && !util.is3D(cutter))
   ) {
     // Process each leaf of target independently
-    return util.actOnLeafs(filteredTarget, async (leaf: AbundanceLeaf) => {
-      return await recursiveCut(leaf, filteredCutter, context);
+    return util.actOnLeafs(target, async (leaf: AbundanceLeaf) => {
+      return await recursiveCut(leaf, cutter, context);
     });
   } else {
     throw new Error("Both inputs must be either 3D or 2D");
@@ -245,19 +233,8 @@ async function intersect(
     );
   }
 
-  // Filter out keepout geometries from both shapes
-  const filteredShape1 = extractKeepOut(shape1);
-  if (filteredShape1 === false) {
-    throw new Error("intersect() shape1 is entirely keepout geometry");
-  }
-
-  const filteredShape2 = extractKeepOut(shape2);
-  if (filteredShape2 === false) {
-    throw new Error("intersect() shape2 is entirely keepout geometry");
-  }
-
-  return util.actOnLeafs(filteredShape1, async (leaf: AbundanceLeaf) => {
-    const shapeToIntersectWith = await fuseAssembly(filteredShape2, context);
+  return util.actOnLeafs(shape1, async (leaf: AbundanceLeaf) => {
+    const shapeToIntersectWith = await fuseAssembly(shape2, context);
     const resultGeom = await util.geometryProvider!.intersect(
       leaf.geometry,
       shapeToIntersectWith.geometry,
