@@ -25,7 +25,7 @@ async function extrude(
   }
   await util.init();
   return util.actOnLeafs(toExtrude, async (leaf: AbundanceLeaf) => {
-    return {
+    const transformed = {
       ...leaf,
       geometry: await util.geometryProvider!.extrude(
         leaf.geometry,
@@ -35,6 +35,9 @@ async function extrude(
       ),
       dimension: "3D",
     };
+    // Delete boundingBox - extrude creates entirely new geometry with different bounds
+    delete transformed.boundingBox;
+    return transformed;
   });
 }
 
@@ -148,7 +151,7 @@ async function move(
     return util.actOnLeafs(
       toMove,
       async (leaf: AbundanceLeaf) => {
-        return {
+        const transformed = {
           ...leaf,
           geometry: await util.geometryProvider!.move(
             leaf.geometry,
@@ -158,6 +161,10 @@ async function move(
             context,
           ),
         };
+        // Delete boundingBox - it's stale after transform
+        // The box will be recomputed fresh when needed
+        delete transformed.boundingBox;
+        return transformed;
       },
       toMove.plane,
       toMove.nonReplicadSerialized,
@@ -334,7 +341,7 @@ async function rotate(
     return util.actOnLeafs(
       toRotate,
       async (leaf: AbundanceLeaf) => {
-        return {
+        const transformed = {
           ...leaf,
           geometry: await util.geometryProvider!.rotate(
             leaf.geometry,
@@ -344,13 +351,16 @@ async function rotate(
             context,
           ),
         };
+        // Delete boundingBox - it's stale after transform
+        delete transformed.boundingBox;
+        return transformed;
       },
       toRotate.plane,
       toRotate.nonReplicadSerialized,
     );
   } else {
     return util.actOnLeafs(toRotate, async (leaf: AbundanceLeaf) => {
-      return {
+      const transformed = {
         ...leaf,
         geometry: await util.geometryProvider!.rotate(
           leaf.geometry,
@@ -363,6 +373,9 @@ async function rotate(
           util.asReplicadPlane(leaf.plane).pivot(x, "X").pivot(y, "Y"),
         ),
       };
+      // Delete boundingBox - it's stale after transform
+      delete transformed.boundingBox;
+      return transformed;
     });
   }
 }
@@ -379,7 +392,7 @@ async function scale(
   return util.actOnLeafs(
     geom,
     async (leaf: AbundanceLeaf) => {
-      return {
+      const transformed = {
         ...leaf,
         geometry: await util.geometryProvider!.scale(
           leaf.geometry,
@@ -387,6 +400,9 @@ async function scale(
           context,
         ),
       };
+      // Delete boundingBox - it's stale after transform
+      delete transformed.boundingBox;
+      return transformed;
     },
     geom.plane,
   );
@@ -404,7 +420,7 @@ async function fillet(
   return util.actOnLeafs(
     geom,
     async (leaf: AbundanceLeaf) => {
-      return {
+      const transformed = {
         ...leaf,
         geometry: await util.geometryProvider!.fillet(
           leaf.geometry,
@@ -412,6 +428,9 @@ async function fillet(
           context,
         ),
       };
+      // Delete boundingBox - geometry shape has changed
+      delete transformed.boundingBox;
+      return transformed;
     },
     geom.plane,
   );
@@ -430,7 +449,7 @@ async function chamfer(
   return util.actOnLeafs(
     geom,
     async (leaf: AbundanceLeaf) => {
-      return {
+      const transformed = {
         ...leaf,
         geometry: await util.geometryProvider!.chamfer(
           leaf.geometry,
@@ -438,6 +457,9 @@ async function chamfer(
           context,
         ),
       };
+      // Delete boundingBox - geometry shape has changed
+      delete transformed.boundingBox;
+      return transformed;
     },
     geom.plane,
   );
