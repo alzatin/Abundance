@@ -371,20 +371,22 @@ function AppContent() {
               activeTags,
             );
 
-            worker.generateDisplayMesh(moleculeValue, context).then((m) => {
-              console.log(m);
-              backgroundMesh.current.mesh = m.mesh;
-              setWireMesh(m.mesh);
-              // Also update top-level wireframe if this is the top-level molecule's mesh
-              if (
-                GlobalVariables.topLevelMolecule &&
-                JSON.stringify(moleculeValue) ===
-                  JSON.stringify(GlobalVariables.topLevelMolecule.value)
-              ) {
-                setTopLevelWireMesh(m.mesh);
-              }
-              setOutdatedMesh(false);
-            });
+            worker
+              .generateDisplayMesh(filteredGeometryBg, context)
+              .then((m) => {
+                console.log(m);
+                backgroundMesh.current.mesh = m.mesh;
+                setWireMesh(m.mesh);
+                // Also update top-level wireframe if this is the top-level molecule's mesh
+                if (
+                  GlobalVariables.topLevelMolecule &&
+                  JSON.stringify(moleculeValue) ===
+                    JSON.stringify(GlobalVariables.topLevelMolecule.value)
+                ) {
+                  setTopLevelWireMesh(m.mesh);
+                }
+                setOutdatedMesh(false);
+              });
           });
         }
         // We're showing wireframe background
@@ -492,7 +494,7 @@ function AppContent() {
               moleculeValue,
               activeTags,
             );
-            return worker.generateDisplayMesh(moleculeValue, context);
+            return worker.generateDisplayMesh(filteredGeometry, context);
           })
           .then((m) => {
             setMesh(m.mesh);
