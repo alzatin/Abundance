@@ -69,16 +69,6 @@ export default class Gcode extends Atom {
      * @type {number}
      */
     this.progress = 1.0;
-    /**
-     * Flag to track if gcode generation is in progress
-     * @type {boolean}
-     */
-    this.isGenerating = false;
-    /**
-     * Flag to track if a new generation is requested while one is running
-     * @type {boolean}
-     */
-    this.pendingGeneration = false;
     this.parent = values?.parent;
     this.partName = this.parent?.name ?? "output";
     this.tools = [
@@ -182,23 +172,12 @@ export default class Gcode extends Atom {
   /**
    * Generates gcode using Kirimoto with the current parameters
    * Handles both single parts and assemblies
+   * Uses global serialization lock to prevent concurrent Kirimoto calls
    */
   async _generateGcode() {
-    // Prevent multiple concurrent gcode generation processes
-    if (this.isGenerating) {
-      // If a run is in progress, queue a pending run
-      this.pendingGeneration = true;
-      console.warn(
-        "G-code generation already in progress, queuing pending run",
-      );
-      return;
-    }
-
     // Initialize progress tracking
     this.progress = 0.0;
     this.processing = true;
-    this.isGenerating = true;
-    this.pendingGeneration = false;
 
     try {
       // Get the current input ID
@@ -225,16 +204,7 @@ export default class Gcode extends Atom {
       this.processing = false;
       //this.sendToRender();
     } finally {
-      // Always reset the flag when generation completes
-      this.isGenerating = false;
       console.log("G-code generated successfully in " + this.getAtomPath());
-      // If a pending run was queued, run again
-      if (this.pendingGeneration) {
-        this.pendingGeneration = false;
-        setTimeout(() => {
-          this._generateGcode();
-        }, 0);
-      }
     }
   }
 
