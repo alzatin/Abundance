@@ -272,34 +272,46 @@ async function fusion(
   context: RequestContext,
 ): Promise<AbundanceLeaf> {
   await util.init();
-  for (const shape of shapes) {
+
+  // Filter out keepout geometries from all shapes
+  const filteredShapes = shapes
+    .map((shape) => extractKeepOut(shape))
+    .filter((shape) => shape !== false) as AbundanceObject[];
+
+  if (filteredShapes.length === 0) {
+    throw new Error("All input shapes to fusion are keepout geometry");
+  }
+
+  for (const shape of filteredShapes) {
     if (util.isWireGeometry(shape) || util.isPoint3D(shape)) {
       throw new Error(
         "fusion() requires 3D solids or 2D sketches, not Wire or Point3D.",
       );
     }
   }
-  const all2D = shapes.every((shape) => !util.is3D(shape));
-  const all3D = shapes.every((shape) => util.is3D(shape));
+  const all2D = filteredShapes.every((shape) => !util.is3D(shape));
+  const all3D = filteredShapes.every((shape) => util.is3D(shape));
   if (!all2D && !all3D) {
     throw new Error(
       "Fusion must be composed from only sketches OR only solids",
     );
   }
 
-  if (shapes.length === 0) {
+  if (filteredShapes.length === 0) {
     throw new Error("No shapes provided for fusion");
   }
-  const fuseAssemblyd = await fuseAssembly(shapes[0], context);
+  const fuseAssemblyd = await fuseAssembly(filteredShapes[0], context);
   let fusedGeometry = fuseAssemblyd.geometry;
-  const bomAssembly = shapes[0].bom ? shapes[0].bom.slice() : [];
-  for (let i = 1; i < shapes.length; i++) {
+  const bomAssembly = filteredShapes[0].bom
+    ? filteredShapes[0].bom.slice()
+    : [];
+  for (let i = 1; i < filteredShapes.length; i++) {
     fusedGeometry = await util.geometryProvider!.fuse(
       fusedGeometry,
-      (await fuseAssembly(shapes[i], context)).geometry,
+      (await fuseAssembly(filteredShapes[i], context)).geometry,
       context,
     );
-    bomAssembly.push(...(shapes[i].bom || []));
+    bomAssembly.push(...(filteredShapes[i].bom || []));
   }
   return {
     // TODO: requires a real fix.
