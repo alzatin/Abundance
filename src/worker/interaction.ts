@@ -2,6 +2,7 @@ import { Drawing } from "replicad";
 import * as util from "./util";
 import { AbundanceLeaf, AbundanceObject } from "./util";
 import { RequestContext } from "./geometryProvider";
+import { extractKeepOut } from "./tags";
 /**
  * All methods in this file take multiple geometries and combine them in some way.
  *
@@ -230,8 +231,20 @@ async function intersect(
       "intersect() requires 3D solids or 2D sketches, not Wire or Point3D.",
     );
   }
-  return util.actOnLeafs(shape1, async (leaf: AbundanceLeaf) => {
-    const shapeToIntersectWith = await fuseAssembly(shape2, context);
+
+  // Filter out keepout geometries from both shapes
+  const filteredShape1 = extractKeepOut(shape1);
+  if (filteredShape1 === false) {
+    throw new Error("intersect() shape1 is entirely keepout geometry");
+  }
+
+  const filteredShape2 = extractKeepOut(shape2);
+  if (filteredShape2 === false) {
+    throw new Error("intersect() shape2 is entirely keepout geometry");
+  }
+
+  return util.actOnLeafs(filteredShape1, async (leaf: AbundanceLeaf) => {
+    const shapeToIntersectWith = await fuseAssembly(filteredShape2, context);
     const resultGeom = await util.geometryProvider!.intersect(
       leaf.geometry,
       shapeToIntersectWith.geometry,
@@ -495,7 +508,6 @@ async function assembly(
   if (startedBatch) {
     await util.geometryProvider!.endBatchOperation(context, result);
   }
-
   return result;
 }
 
