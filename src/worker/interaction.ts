@@ -2,6 +2,7 @@ import { Drawing } from "replicad";
 import * as util from "./util";
 import { AbundanceLeaf, AbundanceObject } from "./util";
 import { RequestContext } from "./geometryProvider";
+import { extractKeepOut } from "./tags";
 /**
  * All methods in this file take multiple geometries and combine them in some way.
  *
@@ -138,13 +139,26 @@ async function difference(
       "difference() cutter must be a 3D solid or 2D sketch, not Wire or Point3D.",
     );
   }
+
+  // Filter out keepout geometries from both target and cutter
+  const filteredTarget = extractKeepOut(target);
+  if (filteredTarget === false) {
+    throw new Error("difference() target is entirely keepout geometry");
+  }
+
+  const filteredCutter = extractKeepOut(cutter);
+  if (filteredCutter === false) {
+    // All cutter geometry is keepout - return target unchanged
+    return filteredTarget;
+  }
+
   if (
-    (util.is3D(target) && util.is3D(cutter)) ||
-    (!util.is3D(target) && !util.is3D(cutter))
+    (util.is3D(filteredTarget) && util.is3D(filteredCutter)) ||
+    (!util.is3D(filteredTarget) && !util.is3D(filteredCutter))
   ) {
     // Process each leaf of target independently
-    return util.actOnLeafs(target, async (leaf: AbundanceLeaf) => {
-      return await recursiveCut(leaf, cutter, context);
+    return util.actOnLeafs(filteredTarget, async (leaf: AbundanceLeaf) => {
+      return await recursiveCut(leaf, filteredCutter, context);
     });
   } else {
     throw new Error("Both inputs must be either 3D or 2D");
@@ -230,8 +244,20 @@ async function intersect(
       "intersect() requires 3D solids or 2D sketches, not Wire or Point3D.",
     );
   }
-  return util.actOnLeafs(shape1, async (leaf: AbundanceLeaf) => {
-    const shapeToIntersectWith = await fuseAssembly(shape2, context);
+
+  // Filter out keepout geometries from both shapes
+  const filteredShape1 = extractKeepOut(shape1);
+  if (filteredShape1 === false) {
+    throw new Error("intersect() shape1 is entirely keepout geometry");
+  }
+
+  const filteredShape2 = extractKeepOut(shape2);
+  if (filteredShape2 === false) {
+    throw new Error("intersect() shape2 is entirely keepout geometry");
+  }
+
+  return util.actOnLeafs(filteredShape1, async (leaf: AbundanceLeaf) => {
+    const shapeToIntersectWith = await fuseAssembly(filteredShape2, context);
     const resultGeom = await util.geometryProvider!.intersect(
       leaf.geometry,
       shapeToIntersectWith.geometry,
@@ -259,34 +285,46 @@ async function fusion(
   context: RequestContext,
 ): Promise<AbundanceLeaf> {
   await util.init();
-  for (const shape of shapes) {
+
+  // Filter out keepout geometries from all shapes
+  const filteredShapes = shapes
+    .map((shape) => extractKeepOut(shape))
+    .filter((shape) => shape !== false) as AbundanceObject[];
+
+  if (filteredShapes.length === 0) {
+    throw new Error("All input shapes to fusion are keepout geometry");
+  }
+
+  for (const shape of filteredShapes) {
     if (util.isWireGeometry(shape) || util.isPoint3D(shape)) {
       throw new Error(
         "fusion() requires 3D solids or 2D sketches, not Wire or Point3D.",
       );
     }
   }
-  const all2D = shapes.every((shape) => !util.is3D(shape));
-  const all3D = shapes.every((shape) => util.is3D(shape));
+  const all2D = filteredShapes.every((shape) => !util.is3D(shape));
+  const all3D = filteredShapes.every((shape) => util.is3D(shape));
   if (!all2D && !all3D) {
     throw new Error(
       "Fusion must be composed from only sketches OR only solids",
     );
   }
 
-  if (shapes.length === 0) {
+  if (filteredShapes.length === 0) {
     throw new Error("No shapes provided for fusion");
   }
-  const fuseAssemblyd = await fuseAssembly(shapes[0], context);
+  const fuseAssemblyd = await fuseAssembly(filteredShapes[0], context);
   let fusedGeometry = fuseAssemblyd.geometry;
-  const bomAssembly = shapes[0].bom ? shapes[0].bom.slice() : [];
-  for (let i = 1; i < shapes.length; i++) {
+  const bomAssembly = filteredShapes[0].bom
+    ? filteredShapes[0].bom.slice()
+    : [];
+  for (let i = 1; i < filteredShapes.length; i++) {
     fusedGeometry = await util.geometryProvider!.fuse(
       fusedGeometry,
-      (await fuseAssembly(shapes[i], context)).geometry,
+      (await fuseAssembly(filteredShapes[i], context)).geometry,
       context,
     );
-    bomAssembly.push(...(shapes[i].bom || []));
+    bomAssembly.push(...(filteredShapes[i].bom || []));
   }
   return {
     // TODO: requires a real fix.
@@ -495,7 +533,6 @@ async function assembly(
   if (startedBatch) {
     await util.geometryProvider!.endBatchOperation(context, result);
   }
-
   return result;
 }
 
