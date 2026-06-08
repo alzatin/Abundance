@@ -139,13 +139,26 @@ async function difference(
       "difference() cutter must be a 3D solid or 2D sketch, not Wire or Point3D.",
     );
   }
+
+  // Filter out keepout geometries from both target and cutter
+  const filteredTarget = extractKeepOut(target);
+  if (filteredTarget === false) {
+    throw new Error("difference() target is entirely keepout geometry");
+  }
+
+  const filteredCutter = extractKeepOut(cutter);
+  if (filteredCutter === false) {
+    // All cutter geometry is keepout - return target unchanged
+    return filteredTarget;
+  }
+
   if (
-    (util.is3D(target) && util.is3D(cutter)) ||
-    (!util.is3D(target) && !util.is3D(cutter))
+    (util.is3D(filteredTarget) && util.is3D(filteredCutter)) ||
+    (!util.is3D(filteredTarget) && !util.is3D(filteredCutter))
   ) {
     // Process each leaf of target independently
-    return util.actOnLeafs(target, async (leaf: AbundanceLeaf) => {
-      return await recursiveCut(leaf, cutter, context);
+    return util.actOnLeafs(filteredTarget, async (leaf: AbundanceLeaf) => {
+      return await recursiveCut(leaf, filteredCutter, context);
     });
   } else {
     throw new Error("Both inputs must be either 3D or 2D");
