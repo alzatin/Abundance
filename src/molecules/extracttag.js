@@ -109,6 +109,7 @@ export default class ExtractTag extends Atom {
       onChange: (value) => {
         if (this.tag != value && value != "Select Tag") {
           this.tag = value;
+          this.name = `Extract ${value}`;
           this.onUpstreamChange();
         }
       },
