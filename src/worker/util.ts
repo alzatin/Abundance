@@ -410,14 +410,22 @@ async function actOnLeafs(
         transformedAssembly.push(result);
       }
     }
-    return {
+
+    // Delete boundingBox after transformation - it's now stale!
+    // Child geometries have changed (new IDs from transforms), so old child bounds are invalid
+    // By deleting it, withAssemblyBoundingBoxes() will be forced to recompute fresh bounds
+    // based on the new geometry positions
+    const result = {
       geometry: transformedAssembly,
       plane: plane,
       color: assembly.color,
       tags: assembly.tags,
       bom: assembly.bom,
       nonReplicadSerialized: nonReplicadSerialized,
+      // ← boundingBox intentionally NOT included
     };
+
+    return result;
   }
 }
 
