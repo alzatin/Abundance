@@ -89,6 +89,7 @@ function AppContent() {
     nonReplicadGeometry,
     setNonReplicadGeometry,
     activeTags,
+    setActiveTags,
   } = useRendering();
 
   const {
@@ -341,6 +342,7 @@ function AppContent() {
         );
         moleculeValue = { geometry: [] }; // use a non-null structure which still generates the default mesh
       }
+
       /* Handle non-Replicad geometry - if otherGeometry is provided*/
       if (
         nonReplicadGeometryFromAtom &&
@@ -366,27 +368,20 @@ function AppContent() {
         } else {
           backgroundMesh.current = { id: moleculeValue, mesh: undefined };
           pool.proxy().then((worker) => {
-            const filteredGeometryBg = filterGeometryByTags(
-              moleculeValue,
-              activeTags,
-            );
-
-            worker
-              .generateDisplayMesh(filteredGeometryBg, context)
-              .then((m) => {
-                console.log(m);
-                backgroundMesh.current.mesh = m.mesh;
-                setWireMesh(m.mesh);
-                // Also update top-level wireframe if this is the top-level molecule's mesh
-                if (
-                  GlobalVariables.topLevelMolecule &&
-                  JSON.stringify(moleculeValue) ===
-                    JSON.stringify(GlobalVariables.topLevelMolecule.value)
-                ) {
-                  setTopLevelWireMesh(m.mesh);
-                }
-                setOutdatedMesh(false);
-              });
+            worker.generateDisplayMesh(moleculeValue, context).then((m) => {
+              console.log(m);
+              backgroundMesh.current.mesh = m.mesh;
+              setWireMesh(m.mesh);
+              // Also update top-level wireframe if this is the top-level molecule's mesh
+              if (
+                GlobalVariables.topLevelMolecule &&
+                JSON.stringify(moleculeValue) ===
+                  JSON.stringify(GlobalVariables.topLevelMolecule.value)
+              ) {
+                setTopLevelWireMesh(m.mesh);
+              }
+              setOutdatedMesh(false);
+            });
           });
         }
         // We're showing wireframe background
@@ -401,6 +396,9 @@ function AppContent() {
         }
       } else {
         targetMesh.current = moleculeValue;
+        setActiveTags(
+          new Set(GlobalVariables.topLevelMolecule?.projectAvailableTags || []),
+        ); // Trigger re-application of tag filtering to ensure correct tags are applied for new geometry
 
         if (
           !nonReplicadGeometryFromAtom?.hideMainMesh &&
@@ -410,6 +408,7 @@ function AppContent() {
         ) {
           // Special case where we're trying to show the output and have already prepared it as the
           // wireframe background.
+
           setMesh(backgroundMesh.current.mesh);
           setOutdatedMesh(false);
           setPlane(targetMesh.current?.plane);
@@ -466,7 +465,6 @@ function AppContent() {
   // TAG FILTERING
   // When tags change, invalidate the cached background mesh so it's regenerated with new filtering
   useEffect(() => {
-    //console.log("[activeTags effect] Tags changed, invalidating cached meshes");
     backgroundMesh.current = undefined;
     topLevelMesh.current = undefined; // Also invalidate top-level wireframe cache
 
@@ -477,9 +475,10 @@ function AppContent() {
     ) {
       const moleculeValue = GlobalVariables.topLevelMolecule.value;
       const context = GlobalVariables.topLevelMolecule.getContext();
+      setOutdatedMesh(true);
 
       // Always update background/wireframe
-      GlobalVariables.writeToDisplay(moleculeValue, context, true);
+      //GlobalVariables.writeToDisplay(moleculeValue, context, true);
 
       // If the top-level output is currently being viewed as the main mesh,
       // also regenerate and update the main mesh with filtered geometry
@@ -487,6 +486,9 @@ function AppContent() {
         targetMesh.current &&
         JSON.stringify(targetMesh.current) === JSON.stringify(moleculeValue)
       ) {
+        console.log(
+          "[activeTags effect] Regenerating main mesh for top-level molecule with new tags",
+        );
         pool
           .proxy()
           .then((worker) => {
@@ -508,7 +510,7 @@ function AppContent() {
           });
       }
     }
-  }, [activeTags, setMesh, setOutdatedMesh, pool]);
+  }, [activeTags]);
 
   /**
    * Load a project from the repository

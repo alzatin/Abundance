@@ -122,7 +122,7 @@ export default function RenderMenu({
 
   /** Creates Leva panel with grid settings */
   const renderSettings = {
-    ...(availableTags.length > 0 && {
+    ...(activeAtom?.topLevel && {
       tagsGroup: {
         type: "group",
         label: "Tags",
