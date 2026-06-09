@@ -194,6 +194,29 @@ export default class Export extends Atom {
       },
     };
 
+    const flowCanvas = document.getElementById("flow-canvas");
+    if (
+      GlobalVariables.isMobile() &&
+      flowCanvas &&
+      flowCanvas.style.display !== "none" //in runMode don't show delete button
+    ) {
+      inputParams[this.uniqueID + "delete"] = {
+        type: "button",
+        label: "Delete Selected",
+        onClick: () => {
+          flowCanvas.focus();
+          const event = new KeyboardEvent("keydown", {
+            bubbles: true,
+            cancelable: true,
+            key: "Delete",
+            code: "Delete",
+            keyCode: 46,
+          });
+          flowCanvas.dispatchEvent(event);
+        },
+      };
+    }
+
     return inputParams;
   }
 
