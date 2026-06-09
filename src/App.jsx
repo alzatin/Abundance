@@ -262,6 +262,7 @@ function AppContent() {
   const targetMesh = React.useRef(undefined); // id of most recently displayed mesh
   const backgroundMesh = React.useRef(undefined); // {id: atom.value, mesh: generated mesh}
   const topLevelMesh = React.useRef(undefined); // {id: molecule.uniqueID, mesh: generated mesh}
+  const filteredMeshCache = React.useRef(new Map()); // Cache: "tag1,tag2" -> mesh for filtered combinations
 
   function makeMesh() {
     setOutdatedMesh(true);
@@ -329,6 +330,7 @@ function AppContent() {
       setMesh([]);
       setWireMesh([]);
       setNonReplicadGeometry(null);
+      filteredMeshCache.current.clear(); // Clear mesh cache when resetting view
     };
     GlobalVariables.writeToDisplay = (
       moleculeValue,
@@ -465,30 +467,30 @@ function AppContent() {
   // TAG FILTERING
   // When tags change, invalidate the cached background mesh so it's regenerated with new filtering
   useEffect(() => {
-    backgroundMesh.current = undefined;
-    topLevelMesh.current = undefined; // Also invalidate top-level wireframe cache
-
     // Trigger background molecule re-render if one is currently displayed
-    if (
-      GlobalVariables.topLevelMolecule &&
-      GlobalVariables.topLevelMolecule.value
-    ) {
+    if (activeAtom?.topLevel) {
+      backgroundMesh.current = undefined;
+      topLevelMesh.current = undefined; // Also invalidate top-level wireframe cache
+
       const moleculeValue = GlobalVariables.topLevelMolecule.value;
       const context = GlobalVariables.topLevelMolecule.getContext();
       setOutdatedMesh(true);
 
-      // Always update background/wireframe
-      //GlobalVariables.writeToDisplay(moleculeValue, context, true);
-
       // If the top-level output is currently being viewed as the main mesh,
-      // also regenerate and update the main mesh with filtered geometry
+      // check cache first, then regenerate if needed
       if (
         targetMesh.current &&
         JSON.stringify(targetMesh.current) === JSON.stringify(moleculeValue)
       ) {
-        console.log(
-          "[activeTags effect] Regenerating main mesh for top-level molecule with new tags",
-        );
+        // Create a cache key from the active tags
+        const tagKey = Array.from(activeTags).sort().join(",");
+
+        // Check if we have this mesh combination cached
+        if (filteredMeshCache.current.has(tagKey)) {
+          setMesh(filteredMeshCache.current.get(tagKey));
+          setOutdatedMesh(false);
+          return;
+        }
         pool
           .proxy()
           .then((worker) => {
@@ -499,6 +501,8 @@ function AppContent() {
             return worker.generateDisplayMesh(filteredGeometry, context);
           })
           .then((m) => {
+            // Cache the generated mesh
+            filteredMeshCache.current.set(tagKey, m.mesh);
             setMesh(m.mesh);
             setOutdatedMesh(false);
           })
