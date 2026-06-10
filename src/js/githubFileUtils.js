@@ -1,4 +1,5 @@
 import GlobalVariables from "./globalvariables.js";
+import { decodeProjectContentFromGitHub } from "./projectContentCodec.js";
 
 /**
  * Fetches the text content of a file from a GitHub contents API response.
@@ -44,8 +45,16 @@ export async function fetchGitHubFileContent(
         `download_url returned ${fileResponse.status} ${fileResponse.statusText}`,
       );
     }
-    return await fileResponse.text();
+    const textContent = await fileResponse.text();
+    if (responseData.path === "project.abundance") {
+      return decodeProjectContentFromGitHub(textContent);
+    }
+    return textContent;
   }
 
-  return GlobalVariables.fromBinaryStr(atob(responseData.content));
+  const decodedText = GlobalVariables.fromBinaryStr(atob(responseData.content));
+  if (responseData.path === "project.abundance") {
+    return decodeProjectContentFromGitHub(decodedText);
+  }
+  return decodedText;
 }
