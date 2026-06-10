@@ -47,7 +47,7 @@ export default class Export extends Atom {
 
     this.addAllIOs([
       { name: "geometry", valueType: "geometry" },
-      { name: "File Type", valueType: "string", defaultValue: "STL" },
+      { name: "File Type", valueType: "string", defaultValue: "STEP" },
       {
         name: "Resolution (dpi)",
         valueType: "number",
@@ -117,7 +117,7 @@ export default class Export extends Atom {
     // custom param panel below.
     super.createInputParams(setInputChanged);
     let inputParams = {};
-    const exportOptions = ["STL", "SVG", "STEP", "TXT"];
+    const exportOptions = ["STEP", "STL", "SVG", "TXT"];
 
     /** Runs through active atom inputs and adds IO parameters to default param*/
 
