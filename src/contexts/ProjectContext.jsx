@@ -10,7 +10,6 @@ import { useAppState } from "./AppStateContext.jsx";
 import { useNavigate } from "react-router-dom";
 
 const ProjectContext = createContext();
-const SAVE_DEBUG_MARKER = "SAVE_DEBUG_2026_06_10_V3";
 
 /**
  * Context provider for project-level operations and state.
@@ -1026,12 +1025,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
     setErrorNotification,
   ) {
     try {
-      console.warn(`[${SAVE_DEBUG_MARKER}] createCommit entered`, {
-        owner,
-        repo,
-        base,
-        saveType,
-      });
       updateSaveProgress(35);
       if (!base) {
         const repoResponse = await octokit.request(
@@ -1074,13 +1067,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
           const files = Object.entries(changes.files);
           let processed = 0;
 
-          console.warn(`[${SAVE_DEBUG_MARKER}] commitViaContentsApi start`, {
-            owner,
-            repo,
-            branch: base,
-            fileCount: files.length,
-          });
-
           for (const [path, fileContent] of files) {
             let attempt = 0;
             const maxAttempts = 3;
@@ -1092,11 +1078,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
               try {
                 if (fileContent == null) {
                   if (existingSha) {
-                    console.warn(`[${SAVE_DEBUG_MARKER}] deleteFile`, {
-                      path,
-                      hasExistingSha: true,
-                      attempt,
-                    });
                     await octokit.rest.repos.deleteFile({
                       owner,
                       repo,
@@ -1107,15 +1088,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
                     });
                   }
                 } else {
-                  console.warn(
-                    `[${SAVE_DEBUG_MARKER}] createOrUpdateFileContents`,
-                    {
-                      path,
-                      mode: existingSha ? "update" : "create",
-                      contentLength: fileContent.length,
-                      attempt,
-                    },
-                  );
                   const encodedContent = window.btoa(
                     GlobalVariables.toBinaryStr(fileContent),
                   );
@@ -1135,10 +1107,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
               } catch (error) {
                 // Another commit updated the branch; refresh SHA and retry.
                 if (error?.status === 409 && attempt < maxAttempts) {
-                  console.warn(
-                    `[${SAVE_DEBUG_MARKER}] conflict retry for ${path}`,
-                    { attempt, maxAttempts },
-                  );
                   continue;
                 }
                 throw error;
@@ -1150,12 +1118,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
               50 + Math.floor((processed / Math.max(files.length, 1)) * 20);
             updateSaveProgress(perFileProgress);
           }
-
-          console.warn(`[${SAVE_DEBUG_MARKER}] commitViaContentsApi done`, {
-            owner,
-            repo,
-            branch: base,
-          });
         };
 
         await commitViaContentsApi();
@@ -1203,7 +1165,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
         console.warn("Project saved on git and aws updated");
       }
     } catch (error) {
-      console.error(`[${SAVE_DEBUG_MARKER}] createCommit error`, error);
       console.error("Error during commit creation:", error);
 
       // Check if this is an authentication error
@@ -1241,13 +1202,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
     setErrorNotification = null,
     onSaveStart = null,
   ) => {
-    console.warn(`[${SAVE_DEBUG_MARKER}] saveProject called`, {
-      typeSave,
-      forceSave,
-      hasMeshRef: !!meshRef,
-      saveInProgress: saveInProgress.current,
-    });
-
     // Create a wrapper for setSaveProgress that prevents regression
     // This ensures the progress bar never goes backwards
     // Exception: always allow resetting to 0 (intentional error/reset state)
@@ -1272,14 +1226,10 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
       if (saveInProgress.current) {
         if (typeSave === "Auto Save") {
-          console.warn(
-            `[${SAVE_DEBUG_MARKER}] Auto Save skipped because another save is in progress`,
-          );
           return;
         }
 
         const message = "Save already in progress. Please wait for it to finish.";
-        console.warn(`[${SAVE_DEBUG_MARKER}] ${message}`);
         setNotification(message, "warning");
         setTimeout(() => setNotification(null), 3000);
         return;
@@ -1287,7 +1237,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
       saveInProgress.current = true;
       saveLockAcquired = true;
-      console.warn(`[${SAVE_DEBUG_MARKER}] save lock acquired`, { typeSave });
 
       // Block the save if the project is still loading/deserializing to prevent
       // saving an incomplete project structure that would wipe out atoms on load
@@ -1351,12 +1300,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
       const rawProjectContent = JSON.stringify(jsonRepOfProject, null, 2);
       const encodedProject = encodeProjectContentForGitHub(rawProjectContent);
       const projectContent = encodedProject.content;
-      if (encodedProject.isCompressed) {
-        console.warn(`[${SAVE_DEBUG_MARKER}] project.abundance compressed`, {
-          rawBytes: encodedProject.rawBytes,
-          storedBytes: encodedProject.storedBytes,
-        });
-      }
       // format and compile the BOM
       let bomContent = GlobalVariables.topLevelMolecule.formatBom();
       var readmeHeader =
@@ -1492,7 +1435,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
     } finally {
       if (saveLockAcquired) {
         saveInProgress.current = false;
-        console.warn(`[${SAVE_DEBUG_MARKER}] save lock released`, { typeSave });
       }
     }
   };
