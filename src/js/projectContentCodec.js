@@ -7,13 +7,13 @@ const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
 function uint8ToBase64(uint8Array) {
-  let binary = "";
   const chunkSize = 0x8000;
+  const chunks = [];
   for (let i = 0; i < uint8Array.length; i += chunkSize) {
     const chunk = uint8Array.subarray(i, i + chunkSize);
-    binary += String.fromCharCode(...chunk);
+    chunks.push(String.fromCharCode(...chunk));
   }
-  return btoa(binary);
+  return btoa(chunks.join(""));
 }
 
 function base64ToUint8(base64) {
