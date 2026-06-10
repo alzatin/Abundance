@@ -1048,25 +1048,42 @@ export function ProjectProvider({ children, cad, loadProject }) {
         let latestCommitSha = commitsResponse.data[0].sha;
         const treeSha = commitsResponse.data[0].commit.tree.sha;
 
-        const treeResponse = await octokit.rest.git.createTree({
-          owner,
-          repo,
-          base_tree: treeSha,
-          tree: Object.keys(changes.files).map((path) => {
+        // Upload each file as an individual blob first, then reference by SHA in the
+        // tree. This avoids sending large file content directly in the createTree
+        // request body, which can cause 400 errors (with missing CORS headers) when
+        // the payload exceeds GitHub's CDN/proxy size limits.
+        const treeEntries = await Promise.all(
+          Object.keys(changes.files).map(async (path) => {
             if (changes.files[path] != null) {
+              const blobResponse = await octokit.rest.git.createBlob({
+                owner,
+                repo,
+                content: changes.files[path],
+                encoding: "utf-8",
+              });
               return {
                 path,
                 mode: "100644",
-                content: changes.files[path],
+                type: "blob",
+                sha: blobResponse.data.sha,
               };
             } else {
+              // sha: null tells GitHub to delete the file
               return {
                 path,
                 mode: "100644",
+                type: "blob",
                 sha: null,
               };
             }
           }),
+        );
+
+        const treeResponse = await octokit.rest.git.createTree({
+          owner,
+          repo,
+          base_tree: treeSha,
+          tree: treeEntries,
         });
 
         updateSaveProgress(60);
