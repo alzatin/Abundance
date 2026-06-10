@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useRef } from "react";
 import GlobalVariables from "../js/globalvariables.js";
 import { fetchGitHubFileContent } from "../js/githubFileUtils.js";
+import { encodeProjectContentForGitHub } from "../js/projectContentCodec.js";
 import Molecule from "../molecules/molecule.js";
 import { licenses } from "../js/licenseOptions.js";
 import { re } from "mathjs";
@@ -24,6 +25,9 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
   // Track current save progress to prevent regression
   const currentSaveProgress = useRef(0);
+
+  // Prevent concurrent save operations from racing on GitHub file SHAs.
+  const saveInProgress = useRef(false);
 
   var navigate = useNavigate();
 
@@ -1037,76 +1041,86 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
         base = repoResponse.data.default_branch;
 
-        const commitsResponse = await octokit.rest.repos.listCommits({
-          owner,
-          repo,
-          sha: base,
-          per_page: 1,
-        });
-
         updateSaveProgress(50);
-        let latestCommitSha = commitsResponse.data[0].sha;
-        const treeSha = commitsResponse.data[0].commit.tree.sha;
 
-        // Upload each file as an individual blob first, then reference by SHA in the
-        // tree. This avoids sending large file content directly in the createTree
-        // request body, which can cause 400 errors (with missing CORS headers) when
-        // the payload exceeds GitHub's CDN/proxy size limits.
-        const treeEntries = await Promise.all(
-          Object.keys(changes.files).map(async (path) => {
-            if (changes.files[path] != null) {
-              const blobResponse = await octokit.rest.git.createBlob({
-                owner,
-                repo,
-                content: changes.files[path],
-                encoding: "utf-8",
-              });
-              return {
-                path,
-                mode: "100644",
-                type: "blob",
-                sha: blobResponse.data.sha,
-              };
-            } else {
-              // sha: null tells GitHub to delete the file
-              return {
-                path,
-                mode: "100644",
-                type: "blob",
-                sha: null,
-              };
+        const getExistingFileSha = async (path) => {
+          try {
+            const existingFile = await octokit.rest.repos.getContent({
+              owner,
+              repo,
+              path,
+              ref: base,
+            });
+            if (Array.isArray(existingFile.data)) {
+              return null;
             }
-          }),
-        );
+            return existingFile.data.sha;
+          } catch (error) {
+            if (error?.status === 404) {
+              return null;
+            }
+            throw error;
+          }
+        };
 
-        const treeResponse = await octokit.rest.git.createTree({
-          owner,
-          repo,
-          base_tree: treeSha,
-          tree: treeEntries,
-        });
+        const commitViaContentsApi = async () => {
+          const files = Object.entries(changes.files);
+          let processed = 0;
 
-        updateSaveProgress(60);
-        const newTreeSha = treeResponse.data.sha;
+          for (const [path, fileContent] of files) {
+            let attempt = 0;
+            const maxAttempts = 3;
 
-        const commitResponse = await octokit.rest.git.createCommit({
-          owner,
-          repo,
-          message: changes.commit,
-          tree: newTreeSha,
-          parents: [latestCommitSha],
-        });
+            while (attempt < maxAttempts) {
+              attempt += 1;
+              const existingSha = await getExistingFileSha(path);
 
-        updateSaveProgress(70);
-        latestCommitSha = commitResponse.data.sha;
+              try {
+                if (fileContent == null) {
+                  if (existingSha) {
+                    await octokit.rest.repos.deleteFile({
+                      owner,
+                      repo,
+                      path,
+                      message: changes.commit,
+                      sha: existingSha,
+                      branch: base,
+                    });
+                  }
+                } else {
+                  const encodedContent = window.btoa(
+                    GlobalVariables.toBinaryStr(fileContent),
+                  );
 
-        await octokit.rest.git.updateRef({
-          owner,
-          repo,
-          sha: latestCommitSha,
-          ref: "heads/" + base,
-          force: true,
-        });
+                  await octokit.rest.repos.createOrUpdateFileContents({
+                    owner,
+                    repo,
+                    path,
+                    message: changes.commit,
+                    content: encodedContent,
+                    branch: base,
+                    ...(existingSha ? { sha: existingSha } : {}),
+                  });
+                }
+
+                break;
+              } catch (error) {
+                // Another commit updated the branch; refresh SHA and retry.
+                if (error?.status === 409 && attempt < maxAttempts) {
+                  continue;
+                }
+                throw error;
+              }
+            }
+
+            processed += 1;
+            const perFileProgress =
+              50 + Math.floor((processed / Math.max(files.length, 1)) * 20);
+            updateSaveProgress(perFileProgress);
+          }
+        };
+
+        await commitViaContentsApi();
 
         updateSaveProgress(80);
 
@@ -1205,9 +1219,25 @@ export function ProjectProvider({ children, cad, loadProject }) {
       }
     };
 
+    let saveLockAcquired = false;
     try {
       // Reset progress tracker for this save operation
       currentSaveProgress.current = 0;
+
+      if (saveInProgress.current) {
+        if (typeSave === "Auto Save") {
+          return;
+        }
+
+        const message = "Save already in progress. Please wait for it to finish.";
+        setNotification(message, "warning");
+        setTimeout(() => setNotification(null), 3000);
+        return;
+      }
+
+      saveInProgress.current = true;
+      saveLockAcquired = true;
+
       // Block the save if the project is still loading/deserializing to prevent
       // saving an incomplete project structure that would wipe out atoms on load
       if (GlobalVariables.projectIsLoading) {
@@ -1255,8 +1285,6 @@ export function ProjectProvider({ children, cad, loadProject }) {
         }
       }
 
-      lastSaveData.current = jsonRepOfProject; //Save the data so we can compare it next time
-
       updateSaveProgress(5); //Set the state to 5% to show the progress bar
 
       let finalSVG;
@@ -1269,7 +1297,9 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
       updateSaveProgress(10);
       // Reuse the already serialized project data instead of serializing again
-      const projectContent = JSON.stringify(jsonRepOfProject, null, 2);
+      const rawProjectContent = JSON.stringify(jsonRepOfProject, null, 2);
+      const encodedProject = encodeProjectContentForGitHub(rawProjectContent);
+      const projectContent = encodedProject.content;
       // format and compile the BOM
       let bomContent = GlobalVariables.topLevelMolecule.formatBom();
       var readmeHeader =
@@ -1372,6 +1402,9 @@ export function ProjectProvider({ children, cad, loadProject }) {
         setErrorNotification,
       );
 
+      // Save snapshot only after a successful remote commit.
+      lastSaveData.current = jsonRepOfProject;
+
       if (typeSave !== "Auto Save") {
         const geomIds = GlobalVariables.topLevelMolecule.deepGeomList();
         // Sweep is best-effort and can take a long time (up to a minute). Don't await, just let it run
@@ -1399,6 +1432,10 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
       // Reset progress on error (guard allows 0 anytime as intentional reset)
       updateSaveProgress(0);
+    } finally {
+      if (saveLockAcquired) {
+        saveInProgress.current = false;
+      }
     }
   };
 
