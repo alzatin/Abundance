@@ -398,6 +398,7 @@ function AppContent() {
         }
       } else {
         targetMesh.current = moleculeValue;
+        filteredMeshCache.current.clear(); // Clear cached meshes when switching molecules
         setActiveTags(
           new Set(GlobalVariables.topLevelMolecule?.projectAvailableTags || []),
         ); // Trigger re-application of tag filtering to ensure correct tags are applied for new geometry
@@ -464,57 +465,44 @@ function AppContent() {
     activeTags,
   ]);
 
-  // TAG FILTERING
-  // When tags change, invalidate the cached background mesh so it's regenerated with new filtering
+  // TAG FILTERING - Apply tag filtering when tags change
   useEffect(() => {
-    // Trigger background molecule re-render if one is currently displayed
-    if (activeAtom?.topLevel) {
-      backgroundMesh.current = undefined;
-      topLevelMesh.current = undefined; // Also invalidate top-level wireframe cache
+    // Only filter if we're viewing the top-level molecule
+    if (activeAtom === GlobalVariables.topLevelMolecule && activeAtom?.value) {
+      const moleculeValue = activeAtom.value;
+      const context = activeAtom.getContext();
 
-      const moleculeValue = GlobalVariables.topLevelMolecule.value;
-      const context = GlobalVariables.topLevelMolecule.getContext();
-      setOutdatedMesh(true);
+      // Create a cache key from the active tags
+      const tagKey = Array.from(activeTags).sort().join(",");
 
-      // If the top-level output is currently being viewed as the main mesh,
-      // check cache first, then regenerate if needed
-      if (
-        targetMesh.current &&
-        JSON.stringify(targetMesh.current) === JSON.stringify(moleculeValue)
-      ) {
-        // Create a cache key from the active tags
-        const tagKey = Array.from(activeTags).sort().join(",");
-
-        // Check if we have this mesh combination cached
-        if (filteredMeshCache.current.has(tagKey)) {
-          setMesh(filteredMeshCache.current.get(tagKey));
-          setOutdatedMesh(false);
-          return;
-        }
-        pool
-          .proxy()
-          .then((worker) => {
-            const filteredGeometry = filterGeometryByTags(
-              moleculeValue,
-              activeTags,
-            );
-            return worker.generateDisplayMesh(filteredGeometry, context);
-          })
-          .then((m) => {
-            // Cache the generated mesh
-            filteredMeshCache.current.set(tagKey, m.mesh);
-            setMesh(m.mesh);
-            setOutdatedMesh(false);
-          })
-          .catch((e) => {
-            console.error(
-              "[activeTags effect] Error regenerating main mesh:",
-              e,
-            );
-          });
+      // Check if we have this mesh combination cached
+      if (filteredMeshCache.current.has(tagKey)) {
+        setMesh(filteredMeshCache.current.get(tagKey));
+        setOutdatedMesh(false);
+        return;
       }
+
+      // Generate filtered mesh
+      pool
+        .proxy()
+        .then((worker) => {
+          const filteredGeometry = filterGeometryByTags(
+            moleculeValue,
+            activeTags,
+          );
+          return worker.generateDisplayMesh(filteredGeometry, context);
+        })
+        .then((m) => {
+          // Cache the generated mesh
+          filteredMeshCache.current.set(tagKey, m.mesh);
+          setMesh(m.mesh);
+          setOutdatedMesh(false);
+        })
+        .catch((e) => {
+          console.error("[activeTags effect] Error regenerating mesh:", e);
+        });
     }
-  }, [activeTags]);
+  }, [activeTags, activeAtom, pool]);
 
   /**
    * Load a project from the repository
