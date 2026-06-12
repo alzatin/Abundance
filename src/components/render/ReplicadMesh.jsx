@@ -6,7 +6,7 @@ import React, {
   forwardRef,
 } from "react";
 import { useThree } from "@react-three/fiber";
-import { BufferGeometry } from "three";
+import { BufferGeometry, BufferAttribute, DoubleSide } from "three";
 import {
   Scene,
   Mesh,
@@ -64,6 +64,16 @@ export default React.memo(
         if (m.edges) syncLines(lines, m.edges);
         else if (m.faces) syncLinesFromFaces(lines, body);
 
+        // Per-vertex colours from a meshOverride. The override travels as a
+        // plain number[] so it round-trips through JSON cache; wrap into a
+        // Float32Array here for the BufferAttribute.
+        if (m.vertexColors && m.faces) {
+          body.setAttribute(
+            "color",
+            new BufferAttribute(new Float32Array(m.vertexColors), 3),
+          );
+        }
+
         const thisBody = body;
         const thisLines = lines;
         const thisColor = m.color;
@@ -77,6 +87,7 @@ export default React.memo(
             color: thisColor,
             solid: false,
             isWire: isWireType,
+            hasVertexColors: !!m.vertexColors,
           });
         } else {
           meshArray.push({
@@ -85,6 +96,7 @@ export default React.memo(
             color: thisColor,
             solid: isSolid,
             isWire: isWireType,
+            hasVertexColors: !!m.vertexColors,
           });
         }
       });
@@ -372,7 +384,16 @@ export default React.memo(
                   {!isSolid ? (
                     <mesh geometry={m.body} key={"mesh" + m.color}>
                       {/*the offsets are here to avoid z fighting between the mesh and the lines*/}
-                      {m.color != "#D9544D" && m.color != "#E6F3FF" ? (
+                      {m.hasVertexColors ? (
+                        <meshBasicMaterial
+                          key={"material-heatmap" + m.color}
+                          vertexColors
+                          side={DoubleSide}
+                          polygonOffset
+                          polygonOffsetFactor={2.0}
+                          polygonOffsetUnits={1.0}
+                        />
+                      ) : m.color != "#D9544D" && m.color != "#E6F3FF" ? (
                         <meshMatcapMaterial
                           color={m.color}
                           key={"material" + m.color}

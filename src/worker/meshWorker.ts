@@ -19,6 +19,10 @@ type DisplayMesh = {
   };
   color: string;
   point?: [number, number, number];
+  // Per-vertex RGB triples in [0,1], aligned with faces.vertices. Set
+  // when an atom supplies a pre-baked metadata.meshOverride. Plain array
+  // so it survives JSON serialization through the assembly cache.
+  vertexColors?: number[];
 };
 
 let defaultMesh: any = undefined;
@@ -222,7 +226,13 @@ async function generateDisplayMesh(
       return { id: id, mesh: await generateDefaultMesh(context) };
     }
 
-    const meshArray: { color: string; geometry: ReplicadObject }[] = [];
+    const meshArray: {
+      sourceId: string;
+      color: string;
+      geometry: ReplicadObject;
+      metadata?: Record<string, any>;
+      plane: typeof geom.plane;
+    }[] = [];
 
     for (let i = 0; i < flattened.length; i++) {
       const displayObject = flattened[i];
@@ -231,8 +241,11 @@ async function generateDisplayMesh(
         context,
       );
       meshArray.push({
+        sourceId: displayObject.geometry,
         color: displayObject.color,
         geometry: geom,
+        metadata: displayObject.metadata,
+        plane: displayObject.plane,
       });
     }
 
@@ -254,6 +267,22 @@ async function generateDisplayMesh(
     // Iterate through the meshArray and create final meshes with faces, edges and color to pass to display
     for (const [index, meshObj] of meshArray.entries()) {
       try {
+        // Generic atom-supplied mesh: short-circuits all tessellation. The
+        // atom owns the full render contract (faces, edges, optional vertex
+        // colours); meshWorker stays domain-agnostic.
+        const override = meshObj.metadata?.meshOverride;
+        if (override && override.faces && override.id == meshObj.sourceId) {
+          finalMeshes.push({
+            cameraZoom: cameraZoom,
+            faces: override.faces,
+            edges: override.edges,
+            color: meshObj.color,
+            ...(override.vertexColors
+              ? { vertexColors: override.vertexColors }
+              : {}),
+          });
+          continue;
+        }
         if (meshObj.geometry instanceof replicad.Vertex) {
           // Point3D — emit a point coordinate, no mesh geometry
           finalMeshes.push({
@@ -272,17 +301,22 @@ async function generateDisplayMesh(
             color: meshObj.color,
           });
         } else if (meshObj.geometry instanceof replicad.Drawing) {
-          const sketchPlane = util.asReplicadPlane(geom.plane);
+          const sketchPlane = util.asReplicadPlane(meshObj.plane);
           const threeDShape = meshObj.geometry
             .sketchOnPlane(sketchPlane)
             .extrude(0.0001);
+          const faces = threeDShape.mesh({
+            tolerance: 0.1,
+            angularTolerance: 0.5,
+          });
+          const edges = threeDShape.meshEdges({
+            tolerance: 0.1,
+            angularTolerance: 0.5,
+          });
           finalMeshes.push({
             cameraZoom: cameraZoom,
-            faces: threeDShape.mesh({ tolerance: 0.1, angularTolerance: 0.5 }),
-            edges: threeDShape.meshEdges({
-              tolerance: 0.1,
-              angularTolerance: 0.5,
-            }),
+            faces,
+            edges,
             color: meshObj.color,
           });
         } else {
