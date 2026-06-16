@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import AttachmentPoint from "../src/prototypes/attachmentpoint";
 
 describe("Move to molecule output connection", () => {
   function createMockMolecule() {
@@ -30,7 +31,10 @@ describe("Move to molecule output connection", () => {
         }
 
         return atoms.reduce((rightmostAtom, atom) => {
-          if (!atom?.output || atom.output.valueType !== targetInput.valueType) {
+          if (
+            !atom?.output ||
+            !AttachmentPoint.areTypesCompatible(atom.output, targetInput)
+          ) {
             return rightmostAtom;
           }
 
