@@ -704,6 +704,16 @@ export default class Molecule extends Atom {
               targetMolecule.placeConnector(connectorData);
             });
           }
+
+          const movedAtoms = remappedData.allAtoms
+            .map((atomData) =>
+              targetMolecule.nodesOnTheScreen.find(
+                (atom) => atom.uniqueID === atomData.uniqueID,
+              ),
+            )
+            .filter(Boolean);
+
+          targetMolecule.connectRightmostAtomToOutput(movedAtoms);
         })
         .catch((error) => {
           console.warn("Error placing atoms or connectors:", error);
@@ -1708,6 +1718,76 @@ export default class Molecule extends Atom {
         return input.valueType === "geometry" && input.connectors.length === 0;
       }) || null
     );
+  }
+
+  /**
+   * Finds the output atom inside this molecule
+   * @returns {object|null} The output atom, if present
+   */
+  findOutputAtom() {
+    return (
+      this.nodesOnTheScreen.find((atom) => atom.atomType === "Output") || null
+    );
+  }
+
+  /**
+   * Finds the rightmost atom whose output is compatible with the provided input
+   * @param {Array} atoms - Candidate atoms to consider
+   * @param {object} targetInput - The input attachment point to connect to
+   * @returns {object|null} The rightmost compatible atom, if present
+   */
+  findRightmostCompatibleOutputAtom(atoms, targetInput) {
+    if (!Array.isArray(atoms) || !targetInput) {
+      return null;
+    }
+
+    return atoms.reduce((rightmostAtom, atom) => {
+      if (
+        !atom?.output ||
+        !AttachmentPoint.areTypesCompatible(atom.output, targetInput)
+      ) {
+        return rightmostAtom;
+      }
+
+      if (!rightmostAtom) {
+        return atom;
+      }
+
+      const atomX = atom.output?.x ?? atom.x;
+      const rightmostX = rightmostAtom.output?.x ?? rightmostAtom.x;
+
+      return atomX > rightmostX ? atom : rightmostAtom;
+    }, null);
+  }
+
+  /**
+   * Connects the rightmost compatible atom to this molecule's output atom
+   * @param {Array} movedAtoms - Atoms that were moved into this molecule
+   */
+  connectRightmostAtomToOutput(movedAtoms) {
+    const outputAtom = this.findOutputAtom();
+    if (!outputAtom) {
+      return;
+    }
+
+    const outputInput = this.findFirstAvailableGeometryInput(outputAtom);
+    if (!outputInput) {
+      return;
+    }
+
+    const sourceAtom = this.findRightmostCompatibleOutputAtom(
+      movedAtoms,
+      outputInput,
+    );
+    if (!sourceAtom) {
+      return;
+    }
+
+    this.placeConnector({
+      ap1ID: sourceAtom.uniqueID,
+      ap2ID: outputAtom.uniqueID,
+      ap2Name: outputInput.name,
+    });
   }
 
   /**
