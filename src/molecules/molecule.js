@@ -1753,8 +1753,9 @@ export default class Molecule extends Atom {
         return atom;
       }
 
-      // During placement/loading an atom can exist before its output attachment
-      // point has been fully positioned, so fall back to the atom position.
+      // During placement/loading an atom can exist before its output
+      // attachment point is present or before its x position is computed, so
+      // fall back to the atom position.
       const atomX = atom.output?.x ?? atom.x;
       const rightmostX = rightmostAtom.output?.x ?? rightmostAtom.x;
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-// Keep this local copy in sync with AttachmentPoint.areTypesCompatible().
+// Keep this local copy in sync with AttachmentPoint.areTypesCompatible()
+// in /src/prototypes/attachmentpoint.js.
 // Importing AttachmentPoint here pulls in the browser-only GlobalVariables
 // singleton, so this focused test mirrors the current production rules instead.
 function areTypesCompatible(outputAP, inputAP) {
@@ -216,5 +217,17 @@ describe("Move to molecule output connection", () => {
     molecule.connectRightmostAtomToOutput([leftAtom, rightAtom]);
 
     expect(molecule.connectorData?.ap1ID).toBe("right-atom");
+  });
+
+  it("keeps the first compatible atom when x coordinates are tied", () => {
+    const molecule = createMockMolecule();
+    molecule.nodesOnTheScreen.push(createOutputAtom());
+
+    const firstAtom = createMovedAtom("first-atom", 0.5);
+    const secondAtom = createMovedAtom("second-atom", 0.5);
+
+    molecule.connectRightmostAtomToOutput([firstAtom, secondAtom]);
+
+    expect(molecule.connectorData?.ap1ID).toBe("first-atom");
   });
 });
