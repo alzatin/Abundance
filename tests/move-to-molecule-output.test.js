@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import AttachmentPoint from "../src/prototypes/attachmentpoint";
+
+function areTypesCompatible(outputAP, inputAP) {
+  if (!outputAP.valueType || !inputAP.valueType) {
+    return true;
+  }
+
+  if (outputAP.valueType === "any" || inputAP.valueType === "any") {
+    return true;
+  }
+
+  if (outputAP.valueType === inputAP.valueType) {
+    return true;
+  }
+
+  return false;
+}
 
 describe("Move to molecule output connection", () => {
   function createMockMolecule() {
@@ -33,7 +48,7 @@ describe("Move to molecule output connection", () => {
         return atoms.reduce((rightmostAtom, atom) => {
           if (
             !atom?.output ||
-            !AttachmentPoint.areTypesCompatible(atom.output, targetInput)
+            !areTypesCompatible(atom.output, targetInput)
           ) {
             return rightmostAtom;
           }
@@ -146,5 +161,35 @@ describe("Move to molecule output connection", () => {
     molecule.connectRightmostAtomToOutput([movedAtom]);
 
     expect(molecule.connectorData).toBeNull();
+  });
+
+  it("finds the first available geometry input on the output atom", () => {
+    const molecule = createMockMolecule();
+    const outputAtom = createOutputAtom();
+
+    expect(molecule.findFirstAvailableGeometryInput(outputAtom)).toEqual(
+      outputAtom.inputs[0],
+    );
+  });
+
+  it("returns null when there is no available geometry input", () => {
+    const molecule = createMockMolecule();
+
+    expect(molecule.findFirstAvailableGeometryInput({})).toBeNull();
+    expect(
+      molecule.findFirstAvailableGeometryInput(createOutputAtom([{ id: "used" }])),
+    ).toBeNull();
+  });
+
+  it("returns null when there are no moved atoms to connect", () => {
+    const molecule = createMockMolecule();
+    molecule.nodesOnTheScreen.push(createOutputAtom());
+
+    expect(
+      molecule.findRightmostCompatibleOutputAtom(
+        [],
+        molecule.nodesOnTheScreen[0].inputs[0],
+      ),
+    ).toBeNull();
   });
 });
