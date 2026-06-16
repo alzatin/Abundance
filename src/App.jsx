@@ -263,6 +263,7 @@ function AppContent() {
   const backgroundMesh = React.useRef(undefined); // {id: atom.value, mesh: generated mesh}
   const topLevelMesh = React.useRef(undefined); // {id: molecule.uniqueID, mesh: generated mesh}
   const filteredMeshCache = React.useRef(new Map()); // Cache: "tag1,tag2" -> mesh for filtered combinations
+  const previousTagsRef = React.useRef(new Set()); // Track previous tags to avoid unnecessary recalculation
 
   function makeMesh() {
     setOutdatedMesh(true);
@@ -467,7 +468,20 @@ function AppContent() {
 
   // TAG FILTERING - Apply tag filtering when tags change
   useEffect(() => {
-    // Only filter if we're viewing the top-level molecule
+    // Check if tags actually changed
+    const tagsChanged =
+      activeTags.size !== previousTagsRef.current.size ||
+      Array.from(activeTags).some((tag) => !previousTagsRef.current.has(tag));
+
+    // Update previous tags ref
+    previousTagsRef.current = new Set(activeTags);
+
+    // Skip if tags didn't actually change
+    if (!tagsChanged) {
+      return;
+    }
+
+    // Only filter if we're viewing the top-level molecule AND not in export/gcode preview mode
     if (activeAtom === GlobalVariables.topLevelMolecule && activeAtom?.value) {
       const moleculeValue = activeAtom.value;
       const context = activeAtom.getContext();
@@ -502,7 +516,7 @@ function AppContent() {
           console.error("[activeTags effect] Error regenerating mesh:", e);
         });
     }
-  }, [activeTags, activeAtom, pool]);
+  }, [activeTags]);
 
   /**
    * Load a project from the repository
