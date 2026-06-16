@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+// Keep this local copy in sync with AttachmentPoint.areTypesCompatible().
+// Importing AttachmentPoint here pulls in the browser-only GlobalVariables
+// singleton, so this focused test mirrors the current production rules instead.
 function areTypesCompatible(outputAP, inputAP) {
   if (!outputAP.valueType || !inputAP.valueType) {
     return true;

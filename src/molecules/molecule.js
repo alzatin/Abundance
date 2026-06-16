@@ -1753,8 +1753,8 @@ export default class Molecule extends Atom {
         return atom;
       }
 
-      // Some tests and partially initialized atoms may not have output.x yet,
-      // so fall back to the atom position to keep rightmost selection stable.
+      // During placement/loading an atom can exist before its output attachment
+      // point has been fully positioned, so fall back to the atom position.
       const atomX = atom.output?.x ?? atom.x;
       const rightmostX = rightmostAtom.output?.x ?? rightmostAtom.x;
 
