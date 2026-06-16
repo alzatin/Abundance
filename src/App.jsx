@@ -15,6 +15,7 @@ import { filterGeometryByTags } from "./utils/geometryFilterByTags.js";
 import { CadWorkerManager } from "./worker/cadWorkerManager.js";
 import LoginMode from "./components/main-routes/LoginMode.jsx";
 import RunMode from "./components/main-routes/RunMode.jsx";
+import EmptyMode from "./components/main-routes/EmptyMode.jsx";
 import CreateMode from "./components/main-routes/CreateMode.jsx";
 import PreviewCreateMode from "./components/main-routes/PreviewCreateMode.jsx";
 import UserGuidePage from "./components/main-routes/UserGuidePage.jsx";
@@ -695,6 +696,14 @@ function AppContent() {
           }
         />
         <Route path="/user-guide" element={<UserGuidePage />} />
+        <Route
+          path="/pull"
+          element={
+            <ProjectProvider cad={cad} loadProject={loadProject}>
+              <EmptyMode processing={processing} setProcessing={setProcessing} />
+            </ProjectProvider>
+          }
+        />
         <Route
           path="/run/:owner/:repoName"
           element={
