@@ -142,13 +142,13 @@ function ShareDialog({
             }}
           >
             <p style={{ margin: "0", flexBasis: "40%" }}>Export as:</p>
-            <button autoFocus onClick={() => handleExport("STEP")}>
-              {" "}
-              STEP
-            </button>
             <button autoFocus onClick={() => handleExport("STL")}>
               {" "}
               STL
+            </button>
+            <button autoFocus onClick={() => handleExport("STEP")}>
+              {" "}
+              STEP
             </button>
             <button autoFocus onClick={() => handleExport("SVG")}>
               {" "}
