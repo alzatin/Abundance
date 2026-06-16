@@ -16,6 +16,8 @@ function areTypesCompatible(outputAP, inputAP) {
   return false;
 }
 
+const OUTPUT_X_OFFSET = 0.02;
+
 describe("Move to molecule output connection", () => {
   function createMockMolecule() {
     return {
@@ -100,7 +102,7 @@ describe("Move to molecule output connection", () => {
         valueType === null
           ? null
           : {
-              x: x + 0.02,
+              x: x + OUTPUT_X_OFFSET,
               valueType,
             },
     };
@@ -191,5 +193,25 @@ describe("Move to molecule output connection", () => {
         molecule.nodesOnTheScreen[0].inputs[0],
       ),
     ).toBeNull();
+  });
+
+  it("falls back to atom x coordinates when output x is unavailable", () => {
+    const molecule = createMockMolecule();
+    molecule.nodesOnTheScreen.push(createOutputAtom());
+
+    const leftAtom = {
+      uniqueID: "left-atom",
+      x: 0.3,
+      output: { valueType: "geometry" },
+    };
+    const rightAtom = {
+      uniqueID: "right-atom",
+      x: 0.8,
+      output: { valueType: "geometry" },
+    };
+
+    molecule.connectRightmostAtomToOutput([leftAtom, rightAtom]);
+
+    expect(molecule.connectorData?.ap1ID).toBe("right-atom");
   });
 });
