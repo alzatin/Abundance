@@ -468,8 +468,6 @@ function AppContent() {
 
   // TAG FILTERING - Apply tag filtering when tags change
   useEffect(() => {
-    console.log("tags use effect running");
-
     // Check if tags actually changed
     const tagsChanged =
       activeTags.size !== previousTagsRef.current.size ||
@@ -480,13 +478,11 @@ function AppContent() {
 
     // Skip if tags didn't actually change
     if (!tagsChanged) {
-      console.log("Tags haven't changed, skipping effect");
       return;
     }
 
     // Only filter if we're viewing the top-level molecule AND not in export/gcode preview mode
     if (activeAtom === GlobalVariables.topLevelMolecule && activeAtom?.value) {
-      console.log("Applying tag filter for tags: ", activeTags);
       const moleculeValue = activeAtom.value;
       const context = activeAtom.getContext();
 
