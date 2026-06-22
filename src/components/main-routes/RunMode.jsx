@@ -57,6 +57,59 @@ function useWindowSize() {
   return windowSize;
 }
 
+/**
+ * Update document meta tags for social media link previews.
+ * @param {object} project - The AWS project node with repoName, owner, description, svgURL
+ */
+function updateProjectMetaTags(project) {
+  const setMeta = (attr, attrValue, content) => {
+    let el = document.querySelector(`meta[${attr}="${attrValue}"]`);
+    if (!el) {
+      el = document.createElement("meta");
+      el.setAttribute(attr, attrValue);
+      document.head.appendChild(el);
+    }
+    el.setAttribute("content", content);
+  };
+
+  const title = project.repoName
+    ? `${project.repoName} by ${project.owner} - Abundance`
+    : "Abundance - BETA";
+  const description =
+    project.description ||
+    `View ${project.repoName} in Abundance, a web-based CAD platform.`;
+  const imageUrl = project.svgURL || "/public/imgs/abundance_logo.png";
+  const pageUrl = window.location.href;
+
+  document.title = title;
+  setMeta("property", "og:title", title);
+  setMeta("property", "og:description", description);
+  setMeta("property", "og:image", imageUrl);
+  setMeta("property", "og:url", pageUrl);
+  setMeta("name", "twitter:title", title);
+  setMeta("name", "twitter:description", description);
+  setMeta("name", "twitter:image", imageUrl);
+}
+
+/**
+ * Reset document meta tags back to default Abundance values.
+ */
+function resetMetaTags() {
+  const setMeta = (attr, attrValue, content) => {
+    const el = document.querySelector(`meta[${attr}="${attrValue}"]`);
+    if (el) el.setAttribute("content", content);
+  };
+
+  document.title = "Abundance - BETA";
+  setMeta("property", "og:title", "Abundance - BETA");
+  setMeta("property", "og:description", "A web-based CAD platform for cooperative design.");
+  setMeta("property", "og:image", "/public/imgs/abundance_logo.png");
+  setMeta("property", "og:url", "https://abundance.maslowcnc.com/");
+  setMeta("name", "twitter:title", "Abundance - BETA");
+  setMeta("name", "twitter:description", "A web-based CAD platform for cooperative design.");
+  setMeta("name", "twitter:image", "/public/imgs/abundance_logo.png");
+}
+
 function runMode({ processing, setProcessing }) {
   // Get context values
   const { authorizedUserOcto, authRedirectHandler } = useAuth();
@@ -198,6 +251,7 @@ function runMode({ processing, setProcessing }) {
       GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
       GlobalVariables.currentMolecule.selected = true;
       setActiveAtom(GlobalVariables.currentMolecule);
+      updateProjectMetaTags(GlobalVariables.currentAWSnode);
     } else {
       /*resetting viewport*/
       GlobalVariables.resetView(); // TODO(tristan): possibly also need to writeToDisplay here.
@@ -208,6 +262,7 @@ function runMode({ processing, setProcessing }) {
         .then((data) => {
           if (data && data.item) {
             GlobalVariables.currentAWSnode = data.item;
+            updateProjectMetaTags(data.item);
 
             //Load a blank project
             GlobalVariables.topLevelMolecule = new Molecule({
@@ -238,6 +293,10 @@ function runMode({ processing, setProcessing }) {
     ) {
       setOwned(true);
     }
+
+    return () => {
+      resetMetaTags();
+    };
   }, []);
   const screenHeight = window.innerHeight;
   const screenWidth = window.innerWidth;
