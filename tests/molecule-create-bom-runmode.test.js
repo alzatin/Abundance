@@ -30,7 +30,7 @@ function createRunModeBomParams(compiledBom = []) {
     if (sourceLink) {
       bomParams[`${item.BOMitemName} Source`] = {
         type: "button",
-        label: `Open ${item.BOMitemName} Link`,
+        label: "Link",
       };
     }
   });
@@ -54,7 +54,7 @@ describe("Molecule createBom run mode usability", () => {
 
     expect(bomParams["Bolt Source"]).toBeDefined();
     expect(bomParams["Bolt Source"].type).toBe("button");
-    expect(bomParams["Bolt Source"].label).toBe("Open Bolt Link");
+    expect(bomParams["Bolt Source"].label).toBe("Link");
   });
 
   it("does not add a source-link button when a BOM source is empty", () => {

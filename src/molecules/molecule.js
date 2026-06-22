@@ -888,7 +888,7 @@ export default class Molecule extends Atom {
           if (sourceLink) {
             bomParams[`${item.BOMitemName} Source`] = {
               type: "button",
-              label: `Open ${item.BOMitemName} Link`,
+              label: "Link",
               onClick: () => {
                 if (typeof window !== "undefined") {
                   window.open(sourceLink, "_blank", "noopener,noreferrer");
