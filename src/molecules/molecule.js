@@ -879,23 +879,13 @@ export default class Molecule extends Atom {
     if (bomToShow) {
       if (bomToShow.length > 0) {
         bomToShow.map((item) => {
+          const sourceLink = normalizedBomSourceLink(item.source);
           bomParams[item.BOMitemName] = {
             type: "label",
             value: item.numberNeeded,
             label: item.BOMitemName,
+            sourceLink: sourceLink || undefined,
           };
-          const sourceLink = normalizedBomSourceLink(item.source);
-          if (sourceLink) {
-            bomParams[`${item.BOMitemName} Source`] = {
-              type: "button",
-              label: "Link",
-              onClick: () => {
-                if (typeof window !== "undefined") {
-                  window.open(sourceLink, "_blank", "noopener,noreferrer");
-                }
-              },
-            };
-          }
         });
 
         bomParams["Download List of Materials"] = {

@@ -1826,6 +1826,34 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                         >
                           {currentValue ?? config.value ?? ""}
                         </span>
+                        {config.sourceLink && (
+                          <button
+                            type="button"
+                            style={{
+                              fontWeight: 600,
+                              background: "#3e7aff",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: 4,
+                              padding: "4px 12px",
+                              fontSize: 14,
+                              cursor: "pointer",
+                              flex: "0 0 auto",
+                            }}
+                            title={`Link to ${label}`}
+                            onClick={() => {
+                              if (typeof window !== "undefined") {
+                                window.open(
+                                  config.sourceLink,
+                                  "_blank",
+                                  "noopener,noreferrer",
+                                );
+                              }
+                            }}
+                          >
+                            Link
+                          </button>
+                        )}
                       </div>
                     );
                   case "select":
