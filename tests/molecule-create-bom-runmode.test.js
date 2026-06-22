@@ -24,7 +24,7 @@ function createRunModeBomParams(compiledBom = []) {
     bomParams[item.BOMitemName] = {
       type: "label",
       value: item.numberNeeded,
-      label: item.BOMitemName + " x",
+      label: item.BOMitemName,
     };
     const sourceLink = normalizedBomSourceLink(item.source);
     if (sourceLink) {
@@ -50,7 +50,7 @@ describe("Molecule createBom run mode usability", () => {
 
     expect(bomParams.Bolt.type).toBe("label");
     expect(bomParams.Bolt.value).toBe(4);
-    expect(bomParams.Bolt.label).toBe("Bolt x");
+    expect(bomParams.Bolt.label).toBe("Bolt");
 
     expect(bomParams["Bolt Source"]).toBeDefined();
     expect(bomParams["Bolt Source"].type).toBe("button");

@@ -882,7 +882,7 @@ export default class Molecule extends Atom {
           bomParams[item.BOMitemName] = {
             type: "label",
             value: item.numberNeeded,
-            label: item.BOMitemName + " x",
+            label: item.BOMitemName,
           };
           const sourceLink = normalizedBomSourceLink(item.source);
           if (sourceLink) {
