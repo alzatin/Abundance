@@ -858,16 +858,33 @@ export default class Molecule extends Atom {
   createBom(setInputChanged) {
     this.setInputChanged = setInputChanged;
     let bomParams = {};
+    const normalizedBomSourceLink = (sourceLink) => {
+      if (typeof sourceLink !== "string") {
+        return "";
+      }
+      const trimmedSourceLink = sourceLink.trim();
+      if (trimmedSourceLink === "") {
+        return "";
+      }
+      if (
+        trimmedSourceLink.startsWith("http://") ||
+        trimmedSourceLink.startsWith("https://")
+      ) {
+        return trimmedSourceLink;
+      }
+      return `https://${trimmedSourceLink}`;
+    };
     // Show this molecule’s compiled BOM (top-level = full project; nested = local)
     const bomToShow = this.compiledBom;
     if (bomToShow) {
       if (bomToShow.length > 0) {
         bomToShow.map((item) => {
+          const sourceLink = normalizedBomSourceLink(item.source);
           bomParams[item.BOMitemName] = {
-            type: "number",
+            type: "label",
             value: item.numberNeeded,
-            label: item.BOMitemName + " x",
-            disabled: true,
+            label: item.BOMitemName,
+            sourceLink: sourceLink || undefined,
           };
         });
 
