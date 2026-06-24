@@ -449,7 +449,7 @@ If you are not the owner of a project or are not logged in, you can still see a 
    ```bash
    # Uncomment these lines for local development:
    VITE_APP_DEV = "/"
-   VITE_REDIRECT_URI = "http://localhost:4444/callback"
+   VITE_REDIRECT_URI = "http://localhost:4444/"
    VITE_GH_OAUTH_CLIENT_ID = "Ov23liN8Q3iGPXSUHUsH"
    ```
 
@@ -567,7 +567,7 @@ lsof -ti:4444 | xargs kill -9
 
 **Problem:** OAuth login not working locally
 - Verify `.env` has correct local development settings
-- Ensure `VITE_REDIRECT_URI` matches your local callback URL (for example `http://localhost:4444/callback`)
+- Ensure `VITE_REDIRECT_URI` matches your local URL
 
 ### Common Warnings
 
@@ -605,4 +605,5 @@ We welcome contributions! Here's how you can help:
 ---
 
 **Built with ❤️ by the Maslow CNC community** 
+
 
