@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Octokit } from "octokit";
 import GlobalVariables from "../js/globalvariables.js";
+import { getOAuthRedirectUri } from "../js/authRedirect.js";
 
 const AuthContext = createContext();
 
@@ -130,10 +131,15 @@ export function AuthProvider({ children }) {
     returnTo,
     privateRepo = false,
   } = {}) => {
+    const redirectUri = getOAuthRedirectUri(
+      import.meta.env.VITE_REDIRECT_URI,
+      window.origin,
+    );
+
     // Helper to build the GitHub OAuth URL
     function buildOAuthUrl({ client_id, scope, csrfToken, stateObj }) {
       const state = encodeURIComponent(JSON.stringify(stateObj));
-      return `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=${scope}&redirect_uri=${window.origin}/callback&state=${state}`;
+      return `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=${scope}&redirect_uri=${redirectUri}&state=${state}`;
     }
     // Save project if provided (for re-auth)
     if (currentProjectRep) {
