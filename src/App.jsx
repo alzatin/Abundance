@@ -135,11 +135,11 @@ function applyWorkerTaskUi(
     setRenderStage("Rendering");
     setRenderProgress(80);
   } else if (molecule) {
-    setRenderStage("Building");
     const [ready, total] = molecule.getCompletionTuple();
     const progress = total > 0 ? ready / total : 1;
     const buildingProgress = 30 + progress * 50;
     setRenderProgress(Math.round(buildingProgress));
+    setRenderStage(`Building ${ready}/${total}`);
   } else {
     setRenderStage("Building");
     setRenderProgress(50);
@@ -185,11 +185,11 @@ function updateRenderUiFromMolecule(
       setRenderStage("Waiting for input");
       setRenderProgress(0);
     } else {
-      setRenderStage("Building");
       const [ready, total] = molecule.getCompletionTuple();
       const progress = total > 0 ? ready / total : 1;
       const buildingProgress = 30 + progress * 50;
       setRenderProgress(Math.round(buildingProgress));
+      setRenderStage(`Building ${ready}/${total}`);
     }
     setComputingLabel(activeLabel);
     return;
@@ -214,11 +214,11 @@ function updateRenderUiFromMolecule(
   // Stage 2: build in progress.
   if (moleculeStatus === "waiting" || moleculeStatus === "processing") {
     setRenderBarVisible(true);
-    setRenderStage("Building");
     const [ready, total] = molecule.getCompletionTuple();
     const progress = total > 0 ? ready / total : 1;
     const buildingProgress = 30 + progress * 50;
     setRenderProgress(Math.round(buildingProgress));
+    setRenderStage(`Building ${ready}/${total}`);
     setComputingLabel(activeLabel || `${molecule.name || "project"}/building`);
     return;
   }
@@ -232,7 +232,6 @@ function updateRenderUiFromMolecule(
     return;
   }
 
-  // Idle / non-active states: hide UI instead of showing a stuck rendering bar.
   setRenderBarVisible(false);
   setRenderProgress(0);
   setRenderStage("");
