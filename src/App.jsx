@@ -161,6 +161,7 @@ function AppContent() {
           setRenderProgress(100);
           setRenderStage("Rendering");
           setComputingLabel(null);
+          clearInterval(interval);
           return;
         }
 
