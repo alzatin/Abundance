@@ -6,6 +6,7 @@ import { DeleteAtomsCommand } from "../../js/undoCommands.js";
 import { useNavigate } from "react-router-dom";
 import NavigateToMoleculeDialog from "../secondary/NavigateToMoleculeDialog.jsx";
 import PreviewMoleculeDialog from "../secondary/PreviewMoleculeDialog.jsx";
+import { useRendering } from "../../contexts/index.js";
 
 export default memo(function FlowCanvas({
   loadProject,
@@ -23,6 +24,8 @@ export default memo(function FlowCanvas({
   setSavePopUp,
   isPreview = false,
 }) {
+  const { computingLabel } = useRendering();
+
   /** State for github molecule search input */
   const [isHovering, setIsHovering] = useState(false);
   const [search, setSearch] = useState("");
@@ -268,6 +271,24 @@ export default memo(function FlowCanvas({
     GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
       atom.update();
     });
+
+    if (computingLabel && GlobalVariables.canvas?.current) {
+      const canvas = GlobalVariables.canvas.current;
+      const paddingRight = 10;
+      const paddingBottom = 10;
+
+      GlobalVariables.c.save();
+      GlobalVariables.c.font = "11px monospace";
+      GlobalVariables.c.fillStyle = "#666";
+      GlobalVariables.c.textAlign = "right";
+      GlobalVariables.c.textBaseline = "bottom";
+      GlobalVariables.c.fillText(
+        computingLabel,
+        canvas.width - paddingRight,
+        canvas.height - paddingBottom,
+      );
+      GlobalVariables.c.restore();
+    }
   };
 
   /**

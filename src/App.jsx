@@ -69,6 +69,28 @@ const pool = workerpool.pool(RenderURL, {
 const cad = new CadWorkerManager(cadWorker, 1_080_000);
 
 /**
+ * Recursively search the molecule tree for an atom currently in "processing"
+ * status. Returns a label like "moleculeName/atomType", or just "atomType" if
+ * the immediate parent is the top-level molecule (no name).
+ */
+function findProcessingAtom(molecule) {
+  const nodes = molecule.nodesOnTheScreen || [];
+  for (const atom of nodes) {
+    if (atom.getState && atom.getState().status === "processing") {
+      const atomLabel = atom.atomType || atom.name || "computing";
+      const parentName = molecule.name;
+      return parentName ? `${parentName}/${atomLabel}` : atomLabel;
+    }
+    // Recurse into any nested molecule-like node that has child atoms.
+    if (atom.nodesOnTheScreen && Array.isArray(atom.nodesOnTheScreen)) {
+      const result = findProcessingAtom(atom);
+      if (result) return result;
+    }
+  }
+  return null;
+}
+
+/**
  * Inner app component that has access to all contexts
  */
 function AppContent() {
@@ -90,6 +112,7 @@ function AppContent() {
     setNonReplicadGeometry,
     activeTags,
     setActiveTags,
+    setComputingLabel,
   } = useRendering();
 
   const {
@@ -137,7 +160,7 @@ function AppContent() {
         if (molecule.getState().status === "ready") {
           setRenderProgress(100);
           setRenderStage("Rendering");
-          clearInterval(interval);
+          setComputingLabel(null);
           return;
         }
 
@@ -158,6 +181,7 @@ function AppContent() {
         if (hasWaitingInputs) {
           setRenderStage("Waiting for input");
           setRenderProgress(0); // First third
+          setComputingLabel(null);
           return;
         }
 
@@ -171,12 +195,15 @@ function AppContent() {
           // Map progress from 0-100% of atoms completed to 30-80% of overall progress
           const buildingProgress = 30 + progress * 50;
           setRenderProgress(Math.round(buildingProgress));
+          // Find and display the currently processing atom
+          setComputingLabel(findProcessingAtom(molecule));
           return;
         }
 
         // Stage 3: Rendering - mesh is being made and sent to render
         setRenderStage("Rendering");
         setRenderProgress(80); // Almost complete, will go to 100 when ready
+        setComputingLabel(null);
       }
     }, 500); // Poll every 500ms
 
