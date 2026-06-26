@@ -102,6 +102,18 @@ export class CadWorkerManager {
    */
   _startTimers(entry) {
     entry.startTime = Date.now();
+    this._emitCadWorkerEvent("cad-worker-task-start", {
+      taskId: entry.taskId,
+      method: String(entry.method),
+      queuedAt: entry.queuedAt,
+      startedAt: entry.startTime,
+      queueWaitMs: entry.startTime - entry.queuedAt,
+      queueDepth: Math.max(this._pendingCalls.indexOf(entry), 0),
+      atomId: entry.taskMeta?.atomId || null,
+      atomType: entry.taskMeta?.atomType || null,
+      moleculeName: entry.taskMeta?.moleculeName || null,
+      displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
+    });
 
     // Log progress every 5 seconds so it's visible in the console.
     entry.progressIntervalId = setInterval(() => {
@@ -118,6 +130,21 @@ export class CadWorkerManager {
       const elapsed = Math.round((Date.now() - entry.startTime) / 1000);
 
       this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
+      this._emitCadWorkerEvent("cad-worker-task-error", {
+        taskId: entry.taskId,
+        method: String(entry.method),
+        queuedAt: entry.queuedAt,
+        startedAt: entry.startTime,
+        failedAt: Date.now(),
+        durationMs: entry.startTime ? Date.now() - entry.startTime : null,
+        queueWaitMs: entry.startTime ? entry.startTime - entry.queuedAt : null,
+        queueDepth: this._pendingCalls.length,
+        atomId: entry.taskMeta?.atomId || null,
+        atomType: entry.taskMeta?.atomType || null,
+        moleculeName: entry.taskMeta?.moleculeName || null,
+        displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
+        error: `CAD worker timed out on "${String(entry.method)}" after ${this._timeoutMs}ms`,
+      });
       entry.reject(
         new Error(
           `CAD worker timed out on "${String(entry.method)}" after ${this._timeoutMs}ms`,
@@ -166,7 +193,7 @@ export class CadWorkerManager {
       };
 
       this._pendingCalls.push(entry);
-      this._emitCadWorkerEvent("cad-worker-task-start", {
+      this._emitCadWorkerEvent("cad-worker-task-queued", {
         taskId,
         method: String(method),
         queuedAt,
@@ -194,33 +221,36 @@ export class CadWorkerManager {
         (result) => {
           cleanup();
           this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
-          this._activateNextCall();
           const finishedAt = Date.now();
           this._emitCadWorkerEvent("cad-worker-task-finish", {
             taskId: entry.taskId,
             method: String(entry.method),
             queuedAt: entry.queuedAt,
+            startedAt: entry.startTime,
             finishedAt,
-            durationMs: finishedAt - entry.queuedAt,
+            durationMs: entry.startTime ? finishedAt - entry.startTime : null,
+            queueWaitMs: entry.startTime ? entry.startTime - entry.queuedAt : null,
             queueDepth: this._pendingCalls.length,
             atomId: entry.taskMeta?.atomId || null,
             atomType: entry.taskMeta?.atomType || null,
             moleculeName: entry.taskMeta?.moleculeName || null,
             displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
           });
+          this._activateNextCall();
           resolve(result);
         },
         (err) => {
           cleanup();
           this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
-          this._activateNextCall();
           const failedAt = Date.now();
           this._emitCadWorkerEvent("cad-worker-task-error", {
             taskId: entry.taskId,
             method: String(entry.method),
             queuedAt: entry.queuedAt,
+            startedAt: entry.startTime,
             failedAt,
-            durationMs: failedAt - entry.queuedAt,
+            durationMs: entry.startTime ? failedAt - entry.startTime : null,
+            queueWaitMs: entry.startTime ? entry.startTime - entry.queuedAt : null,
             queueDepth: this._pendingCalls.length,
             atomId: entry.taskMeta?.atomId || null,
             atomType: entry.taskMeta?.atomType || null,
@@ -228,6 +258,7 @@ export class CadWorkerManager {
             displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
             error: err?.message || String(err),
           });
+          this._activateNextCall();
           reject(err);
         },
       );
