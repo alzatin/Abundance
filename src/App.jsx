@@ -70,8 +70,8 @@ const cad = new CadWorkerManager(cadWorker, 1_080_000);
 
 /**
  * Recursively search the molecule tree for an atom currently in "processing"
- * status. Returns a label like "moleculeName/atomType", or just "atomType" if
- * the immediate parent is the top-level molecule (no name).
+ * status. Returns a label like "moleculeName/atomLabel" when the parent molecule
+ * has a name, otherwise returns just "atomLabel".
  */
 function findProcessingAtom(molecule) {
   const nodes = molecule.nodesOnTheScreen || [];
