@@ -103,6 +103,52 @@ function findActiveComputationLabel(molecule) {
   );
 }
 
+function getLatestActiveWorkerTask(taskMap) {
+  let latestTask = null;
+  taskMap.forEach((task) => {
+    const taskTime = task?.startedAt || task?.queuedAt || 0;
+    const latestTime = latestTask?.startedAt || latestTask?.queuedAt || 0;
+    if (!latestTask || taskTime >= latestTime) {
+      latestTask = task;
+    }
+  });
+  return latestTask;
+}
+
+function applyWorkerTaskUi(
+  taskMap,
+  molecule,
+  processing,
+  setRenderProgress,
+  setRenderStage,
+  setRenderBarVisible,
+  setComputingLabel,
+) {
+  if (!taskMap || taskMap.size === 0) {
+    return false;
+  }
+
+  const activeTask = getLatestActiveWorkerTask(taskMap);
+  setRenderBarVisible(true);
+
+  if (processing) {
+    setRenderStage("Rendering");
+    setRenderProgress(80);
+  } else if (molecule) {
+    setRenderStage("Building");
+    const [ready, total] = molecule.getCompletionTuple();
+    const progress = total > 0 ? ready / total : 1;
+    const buildingProgress = 30 + progress * 50;
+    setRenderProgress(Math.round(buildingProgress));
+  } else {
+    setRenderStage("Building");
+    setRenderProgress(50);
+  }
+
+  setComputingLabel(activeTask?.displayLabel || activeTask?.method || "computing");
+  return true;
+}
+
 function updateRenderUiFromMolecule(
   molecule,
   setRenderProgress,
@@ -250,11 +296,27 @@ function AppContent() {
   }, []);
 
   const [processing, setProcessing] = useState(false);
+  const activeWorkerTasksRef = useRef(new Map());
 
   useEffect(() => {
     const refreshUi = () => {
+      const topLevelMolecule = GlobalVariables.topLevelMolecule;
+      if (
+        applyWorkerTaskUi(
+          activeWorkerTasksRef.current,
+          topLevelMolecule,
+          processing,
+          setRenderProgress,
+          setRenderStage,
+          setRenderBarVisible,
+          setComputingLabel,
+        )
+      ) {
+        return;
+      }
+
       updateRenderUiFromMolecule(
-        GlobalVariables.topLevelMolecule,
+        topLevelMolecule,
         setRenderProgress,
         setRenderStage,
         setRenderBarVisible,
@@ -265,9 +327,30 @@ function AppContent() {
 
     const handleTopLevelChanged = () => refreshUi();
     const handleObservableChanged = () => refreshUi();
+    const handleWorkerTaskStart = (event) => {
+      const detail = event?.detail || {};
+      if (!detail.taskId) return;
+      activeWorkerTasksRef.current.set(detail.taskId, detail);
+      refreshUi();
+    };
+    const handleWorkerTaskFinished = (event) => {
+      const detail = event?.detail || {};
+      if (!detail.taskId) return;
+      activeWorkerTasksRef.current.delete(detail.taskId);
+      refreshUi();
+    };
+    const handleWorkerRestarted = () => {
+      activeWorkerTasksRef.current.clear();
+      refreshUi();
+    };
 
     window.addEventListener("top-level-molecule-changed", handleTopLevelChanged);
     window.addEventListener("observable-entity-changed", handleObservableChanged);
+    window.addEventListener("cad-worker-task-start", handleWorkerTaskStart);
+    window.addEventListener("cad-worker-task-finish", handleWorkerTaskFinished);
+    window.addEventListener("cad-worker-task-error", handleWorkerTaskFinished);
+    window.addEventListener("cad-worker-task-cancelled", handleWorkerTaskFinished);
+    window.addEventListener("cad-worker-restarted", handleWorkerRestarted);
     refreshUi();
 
     return () => {
@@ -279,6 +362,11 @@ function AppContent() {
         "observable-entity-changed",
         handleObservableChanged,
       );
+      window.removeEventListener("cad-worker-task-start", handleWorkerTaskStart);
+      window.removeEventListener("cad-worker-task-finish", handleWorkerTaskFinished);
+      window.removeEventListener("cad-worker-task-error", handleWorkerTaskFinished);
+      window.removeEventListener("cad-worker-task-cancelled", handleWorkerTaskFinished);
+      window.removeEventListener("cad-worker-restarted", handleWorkerRestarted);
     };
   }, [processing, setRenderProgress, setRenderBarVisible, setRenderStage, setComputingLabel]);
 

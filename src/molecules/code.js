@@ -479,6 +479,16 @@ return assembly;
       this.interpreterVersion ?? 0,
       this.uniqueID,
       onLog,
+      {
+        __cadTaskMeta: {
+          atomId: this.uniqueID,
+          atomType: this.atomType || "Code",
+          moleculeName: this.parent?.name || null,
+          displayLabel: this.parent?.name
+            ? `${this.parent.name}/${this.atomType || "Code"}`
+            : this.atomType || "Code",
+        },
+      },
     );
     if (isTs) {
       // Mark end of an execution of this code atom in the console UI
