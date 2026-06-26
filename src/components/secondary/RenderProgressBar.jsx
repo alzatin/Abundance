@@ -16,11 +16,11 @@ export default function RenderProgressBar({
       <div className="progress">
         <p className="save-bar-label">
           {progress < 100
-            ? `${label} ${progress}%`
+            ? `${label}`
             : `${
                 label === "Rendering"
                   ? "Render"
-                  : label === "Building"
+                  : label.startsWith("Building")
                   ? "Build"
                   : label
               } Complete!`}

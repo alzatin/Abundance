@@ -136,6 +136,7 @@ function runMode({ processing, setProcessing }) {
     setWire,
     solidParam,
     setSolid,
+    computingLabel,
   } = useRendering();
   const { loadProject } = useProject();
   const { uploadFile, deleteFile } = useFileImport();
@@ -422,8 +423,26 @@ function runMode({ processing, setProcessing }) {
             style={{
               // width: windowSize.width*.6,
               height: windowSize.height,
+              position: "relative",
             }}
           >
+            {computingLabel && (
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "8px",
+                  right: "10px",
+                  zIndex: 10,
+                  fontSize: "11px",
+                  color: "#666",
+                  fontFamily: "monospace",
+                  pointerEvents: "none",
+                  userSelect: "none",
+                }}
+              >
+                {computingLabel}
+              </div>
+            )}
             {wireMesh ? (
               <ThreeContext
                 {...{ cameraZoom, gridParam, axesParam, outdatedMesh }}

@@ -43,6 +43,9 @@ export function RenderingProvider({ children }) {
   // Track if we're currently viewing the output mesh directly
   const [isViewingOutputMesh, setIsViewingOutputMesh] = useState(false);
 
+  // Currently computing atom label (e.g. "myMolecule/rotate")
+  const [computingLabel, setComputingLabel] = useState(null);
+
   const value = {
     // Mesh state
     mesh,
@@ -99,6 +102,10 @@ export function RenderingProvider({ children }) {
     // Output mesh viewing state
     isViewingOutputMesh,
     setIsViewingOutputMesh,
+
+    // Currently computing atom label
+    computingLabel,
+    setComputingLabel,
 
     // GCode group
     gcodeParts,

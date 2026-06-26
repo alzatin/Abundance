@@ -472,7 +472,7 @@ return assembly;
           this.appendConsoleEntry({ level, message, stack });
         })
       : undefined;
-    const promise = GlobalVariables.cad.code(
+    const promise = this.cad.code(
       codeToRun,
       argsDict,
       this.getContext(),
