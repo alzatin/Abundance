@@ -276,10 +276,13 @@ export default memo(function FlowCanvas({
       const canvas = GlobalVariables.canvas.current;
       const paddingRight = 10;
       const paddingBottom = 10;
+      const css = getComputedStyle(document.documentElement);
+      const labelColor =
+        css.getPropertyValue("--repo-name-path").trim() || "#666";
 
       GlobalVariables.c.save();
       GlobalVariables.c.font = "11px monospace";
-      GlobalVariables.c.fillStyle = "#666";
+      GlobalVariables.c.fillStyle = labelColor;
       GlobalVariables.c.textAlign = "right";
       GlobalVariables.c.textBaseline = "bottom";
       GlobalVariables.c.fillText(

@@ -138,6 +138,19 @@ class ObservableEntity {
         console.error(`Error notifying subscriber ${id}:`, error);
       }
     });
+
+    // Broadcast a global status-change event for cross-cutting UI concerns
+    // (e.g. render progress and active computation labels) without polling.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("observable-entity-changed", {
+          detail: {
+            status: this.status,
+            uniqueID: this.uniqueID,
+          },
+        }),
+      );
+    }
   }
 }
 

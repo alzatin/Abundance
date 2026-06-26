@@ -368,6 +368,13 @@ class GlobalVariables {
       this._topLevelMolecule.disable();
     }
     this._topLevelMolecule = molecule;
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("top-level-molecule-changed", {
+          detail: { molecule },
+        }),
+      );
+    }
   }
 
   /**

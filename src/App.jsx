@@ -68,26 +68,129 @@ const pool = workerpool.pool(RenderURL, {
 // never gets permanently stuck waiting for a computation that will never return.
 const cad = new CadWorkerManager(cadWorker, 1_080_000);
 
-/**
- * Recursively search the molecule tree for an atom currently in "processing"
- * status. Returns a label like "moleculeName/atomLabel" when the parent molecule
- * has a name, otherwise returns just "atomLabel".
- */
-function findProcessingAtom(molecule) {
+function formatAtomLabel(parentMolecule, atom) {
+  const atomLabel = atom.atomType || atom.name || "computing";
+  const parentName = parentMolecule?.name;
+  return parentName ? `${parentName}/${atomLabel}` : atomLabel;
+}
+
+function findAtomLabelByStatus(molecule, status) {
   const nodes = molecule.nodesOnTheScreen || [];
   for (const atom of nodes) {
-    if (atom.getState && atom.getState().status === "processing") {
-      const atomLabel = atom.atomType || atom.name || "computing";
-      const parentName = molecule.name;
-      return parentName ? `${parentName}/${atomLabel}` : atomLabel;
+    if (atom.getState && atom.getState().status === status) {
+      // Avoid surfacing input placeholders as active compute labels.
+      if (atom.atomType !== "Input") {
+        return formatAtomLabel(molecule, atom);
+      }
     }
     // Recurse into any nested molecule-like node that has child atoms.
     if (atom.nodesOnTheScreen && Array.isArray(atom.nodesOnTheScreen)) {
-      const result = findProcessingAtom(atom);
+      const result = findAtomLabelByStatus(atom, status);
       if (result) return result;
     }
   }
   return null;
+}
+
+/**
+ * Returns the best available active computation label without polling:
+ * prefer actively processing atoms, then waiting atoms.
+ */
+function findActiveComputationLabel(molecule) {
+  return (
+    findAtomLabelByStatus(molecule, "processing") ||
+    findAtomLabelByStatus(molecule, "waiting")
+  );
+}
+
+function updateRenderUiFromMolecule(
+  molecule,
+  setRenderProgress,
+  setRenderStage,
+  setRenderBarVisible,
+  setComputingLabel,
+  processing,
+) {
+  if (!molecule) {
+    setRenderBarVisible(false);
+    setComputingLabel(null);
+    return;
+  }
+
+  const moleculeStatus = molecule.getState().status;
+  const activeLabel = findActiveComputationLabel(molecule);
+
+  // Stage 1: waiting on top-level Input atoms.
+  const hasWaitingInputs = molecule.nodesOnTheScreen.some((atom) => {
+    if (atom.atomType === "Input") {
+      return (
+        atom.getState().status === "waiting" ||
+        atom.value === "__GEOMETRY_INPUT__"
+      );
+    }
+    return false;
+  });
+
+  // Any active atom work should show progress and label, regardless of
+  // whether top-level status has already flipped.
+  if (activeLabel) {
+    setRenderBarVisible(true);
+    if (hasWaitingInputs) {
+      setRenderStage("Waiting for input");
+      setRenderProgress(0);
+    } else {
+      setRenderStage("Building");
+      const [ready, total] = molecule.getCompletionTuple();
+      const progress = total > 0 ? ready / total : 1;
+      const buildingProgress = 30 + progress * 50;
+      setRenderProgress(Math.round(buildingProgress));
+    }
+    setComputingLabel(activeLabel);
+    return;
+  }
+
+  // Stage 3 complete: molecule is fully ready.
+  if (moleculeStatus === "ready") {
+    setRenderProgress(100);
+    setRenderStage("Rendering");
+    setComputingLabel(null);
+    return;
+  }
+
+  if (hasWaitingInputs) {
+    setRenderBarVisible(true);
+    setRenderStage("Waiting for input");
+    setRenderProgress(0);
+    setComputingLabel(null);
+    return;
+  }
+
+  // Stage 2: build in progress.
+  if (moleculeStatus === "waiting" || moleculeStatus === "processing") {
+    setRenderBarVisible(true);
+    setRenderStage("Building");
+    const [ready, total] = molecule.getCompletionTuple();
+    const progress = total > 0 ? ready / total : 1;
+    const buildingProgress = 30 + progress * 50;
+    setRenderProgress(Math.round(buildingProgress));
+    setComputingLabel(activeLabel || `${molecule.name || "project"}/building`);
+    return;
+  }
+
+  // Stage 3: mesh/render handoff only while foreground mesh render is active.
+  if (processing) {
+    setRenderBarVisible(true);
+    setRenderStage("Rendering");
+    setRenderProgress(80);
+    setComputingLabel(`${molecule.name || "project"}/rendering`);
+    return;
+  }
+
+  // Idle / non-active states: hide UI instead of showing a stuck rendering bar.
+  setRenderBarVisible(false);
+  setRenderProgress(0);
+  setRenderStage("");
+  setComputingLabel(null);
 }
 
 /**
@@ -149,67 +252,35 @@ function AppContent() {
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
-    setRenderProgress(0);
-    setRenderBarVisible(true);
-    setRenderStage("Waiting for input"); // Start with Building stage by default
+    const refreshUi = () => {
+      updateRenderUiFromMolecule(
+        GlobalVariables.topLevelMolecule,
+        setRenderProgress,
+        setRenderStage,
+        setRenderBarVisible,
+        setComputingLabel,
+        processing,
+      );
+    };
 
-    let interval = setInterval(() => {
-      const molecule = GlobalVariables.topLevelMolecule;
-      if (molecule) {
-        // Check if molecule is fully ready first
-        if (molecule.getState().status === "ready") {
-          setRenderProgress(100);
-          setRenderStage("Rendering");
-          setComputingLabel(null);
-          clearInterval(interval);
-          return;
-        }
+    const handleTopLevelChanged = () => refreshUi();
+    const handleObservableChanged = () => refreshUi();
 
-        // Determine which stage we're in based on the 3-stage system
-        const moleculeStatus = molecule.getState().status;
+    window.addEventListener("top-level-molecule-changed", handleTopLevelChanged);
+    window.addEventListener("observable-entity-changed", handleObservableChanged);
+    refreshUi();
 
-        // Stage 1: Check if any top-level Input atoms are in WAITING state
-        const hasWaitingInputs = molecule.nodesOnTheScreen.some((atom) => {
-          if (atom.atomType === "Input") {
-            return (
-              atom.getState().status === "waiting" ||
-              atom.value === "__GEOMETRY_INPUT__"
-            );
-          }
-          return false;
-        });
-
-        if (hasWaitingInputs) {
-          setRenderStage("Waiting for input");
-          setRenderProgress(0); // First third
-          setComputingLabel(null);
-          return;
-        }
-
-        // Stage 2: Check if top-level molecule is in WAITING or PROCESSING state
-        if (moleculeStatus === "waiting" || moleculeStatus === "processing") {
-          setRenderStage("Building");
-          // Calculate actual progress based on completion of atoms
-          const [ready, total] = molecule.getCompletionTuple();
-          // Guard against division by zero (though getCompletionTuple handles this)
-          const progress = total > 0 ? ready / total : 1;
-          // Map progress from 0-100% of atoms completed to 30-80% of overall progress
-          const buildingProgress = 30 + progress * 50;
-          setRenderProgress(Math.round(buildingProgress));
-          // Find and display the currently processing atom
-          setComputingLabel(findProcessingAtom(molecule));
-          return;
-        }
-
-        // Stage 3: Rendering - mesh is being made and sent to render
-        setRenderStage("Rendering");
-        setRenderProgress(80); // Almost complete, will go to 100 when ready
-        setComputingLabel(null);
-      }
-    }, 500); // Poll every 500ms
-
-    return () => clearInterval(interval);
-  }, [GlobalVariables.topLevelMolecule, processing]);
+    return () => {
+      window.removeEventListener(
+        "top-level-molecule-changed",
+        handleTopLevelChanged,
+      );
+      window.removeEventListener(
+        "observable-entity-changed",
+        handleObservableChanged,
+      );
+    };
+  }, [processing, setRenderProgress, setRenderBarVisible, setRenderStage, setComputingLabel]);
 
   useEffect(() => {
     if (renderProgress >= 100) {
