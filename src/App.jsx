@@ -68,41 +68,6 @@ const pool = workerpool.pool(RenderURL, {
 // never gets permanently stuck waiting for a computation that will never return.
 const cad = new CadWorkerManager(cadWorker, 1_080_000);
 
-function formatAtomLabel(parentMolecule, atom) {
-  const atomLabel = atom.atomType || atom.name || "computing";
-  const parentName = parentMolecule?.name;
-  return parentName ? `${parentName}/${atomLabel}` : atomLabel;
-}
-
-function findAtomLabelByStatus(molecule, status) {
-  const nodes = molecule.nodesOnTheScreen || [];
-  for (const atom of nodes) {
-    if (atom.getState && atom.getState().status === status) {
-      // Avoid surfacing input placeholders as active compute labels.
-      if (atom.atomType !== "Input") {
-        return formatAtomLabel(molecule, atom);
-      }
-    }
-    // Recurse into any nested molecule-like node that has child atoms.
-    if (atom.nodesOnTheScreen && Array.isArray(atom.nodesOnTheScreen)) {
-      const result = findAtomLabelByStatus(atom, status);
-      if (result) return result;
-    }
-  }
-  return null;
-}
-
-/**
- * Returns the best available active computation label without polling:
- * prefer actively processing atoms, then waiting atoms.
- */
-function findActiveComputationLabel(molecule) {
-  return (
-    findAtomLabelByStatus(molecule, "processing") ||
-    findAtomLabelByStatus(molecule, "waiting")
-  );
-}
-
 function getLatestActiveWorkerTask(taskMap) {
   let latestTask = null;
   taskMap.forEach((task) => {
@@ -119,6 +84,7 @@ function applyWorkerTaskUi(
   taskMap,
   molecule,
   processing,
+  shouldShowLoadingBar,
   setRenderProgress,
   setRenderStage,
   setRenderBarVisible,
@@ -129,6 +95,13 @@ function applyWorkerTaskUi(
   }
 
   const activeTask = getLatestActiveWorkerTask(taskMap);
+  setComputingLabel(activeTask?.displayLabel || activeTask?.method || "computing");
+
+  if (!shouldShowLoadingBar) {
+    setRenderBarVisible(false);
+    return true;
+  }
+
   setRenderBarVisible(true);
 
   if (processing) {
@@ -145,7 +118,6 @@ function applyWorkerTaskUi(
     setRenderProgress(50);
   }
 
-  setComputingLabel(activeTask?.displayLabel || activeTask?.method || "computing");
   return true;
 }
 
@@ -155,6 +127,7 @@ function updateRenderUiFromMolecule(
   setRenderStage,
   setRenderBarVisible,
   setComputingLabel,
+  shouldShowLoadingBar,
   processing,
 ) {
   if (!molecule) {
@@ -164,7 +137,6 @@ function updateRenderUiFromMolecule(
   }
 
   const moleculeStatus = molecule.getState().status;
-  const activeLabel = findActiveComputationLabel(molecule);
 
   // Stage 1: waiting on top-level Input atoms.
   const hasWaitingInputs = molecule.nodesOnTheScreen.some((atom) => {
@@ -177,24 +149,6 @@ function updateRenderUiFromMolecule(
     return false;
   });
 
-  // Any active atom work should show progress and label, regardless of
-  // whether top-level status has already flipped.
-  if (activeLabel) {
-    setRenderBarVisible(true);
-    if (hasWaitingInputs) {
-      setRenderStage("Waiting for input");
-      setRenderProgress(0);
-    } else {
-      const [ready, total] = molecule.getCompletionTuple();
-      const progress = total > 0 ? ready / total : 1;
-      const buildingProgress = 30 + progress * 50;
-      setRenderProgress(Math.round(buildingProgress));
-      setRenderStage(`Building ${ready}/${total}`);
-    }
-    setComputingLabel(activeLabel);
-    return;
-  }
-
   // Stage 3 complete: molecule is fully ready.
   if (moleculeStatus === "ready") {
     setRenderProgress(100);
@@ -204,7 +158,7 @@ function updateRenderUiFromMolecule(
   }
 
   if (hasWaitingInputs) {
-    setRenderBarVisible(true);
+    setRenderBarVisible(shouldShowLoadingBar);
     setRenderStage("Waiting for input");
     setRenderProgress(0);
     setComputingLabel(null);
@@ -213,22 +167,22 @@ function updateRenderUiFromMolecule(
 
   // Stage 2: build in progress.
   if (moleculeStatus === "waiting" || moleculeStatus === "processing") {
-    setRenderBarVisible(true);
+    setRenderBarVisible(shouldShowLoadingBar);
     const [ready, total] = molecule.getCompletionTuple();
     const progress = total > 0 ? ready / total : 1;
     const buildingProgress = 30 + progress * 50;
     setRenderProgress(Math.round(buildingProgress));
     setRenderStage(`Building ${ready}/${total}`);
-    setComputingLabel(activeLabel || `${molecule.name || "project"}/building`);
+    setComputingLabel(null);
     return;
   }
 
   // Stage 3: mesh/render handoff only while foreground mesh render is active.
   if (processing) {
-    setRenderBarVisible(true);
+    setRenderBarVisible(shouldShowLoadingBar);
     setRenderStage("Rendering");
     setRenderProgress(80);
-    setComputingLabel(`${molecule.name || "project"}/rendering`);
+    setComputingLabel(null);
     return;
   }
 
@@ -296,21 +250,46 @@ function AppContent() {
 
   const [processing, setProcessing] = useState(false);
   const activeWorkerTasksRef = useRef(new Map());
+  const initialProjectLoadRef = useRef(Boolean(GlobalVariables.topLevelMolecule));
+  const currentTopLevelMoleculeIdRef = useRef(
+    GlobalVariables.topLevelMolecule?.uniqueID || null,
+  );
 
   useEffect(() => {
     const refreshUi = () => {
       const topLevelMolecule = GlobalVariables.topLevelMolecule;
+      const topLevelMoleculeId = topLevelMolecule?.uniqueID || null;
+      if (topLevelMoleculeId !== currentTopLevelMoleculeIdRef.current) {
+        currentTopLevelMoleculeIdRef.current = topLevelMoleculeId;
+        initialProjectLoadRef.current = Boolean(topLevelMoleculeId);
+      }
+
+      if (!topLevelMolecule) {
+        initialProjectLoadRef.current = false;
+      }
+
+      const shouldShowLoadingBar =
+        GlobalVariables.projectIsLoading === true || initialProjectLoadRef.current;
       if (
         applyWorkerTaskUi(
           activeWorkerTasksRef.current,
           topLevelMolecule,
           processing,
+          shouldShowLoadingBar,
           setRenderProgress,
           setRenderStage,
           setRenderBarVisible,
           setComputingLabel,
         )
       ) {
+        if (
+          initialProjectLoadRef.current &&
+          !GlobalVariables.projectIsLoading &&
+          activeWorkerTasksRef.current.size === 0 &&
+          topLevelMolecule?.getState?.().status === "ready"
+        ) {
+          initialProjectLoadRef.current = false;
+        }
         return;
       }
 
@@ -320,8 +299,18 @@ function AppContent() {
         setRenderStage,
         setRenderBarVisible,
         setComputingLabel,
+        shouldShowLoadingBar,
         processing,
       );
+
+      if (
+        initialProjectLoadRef.current &&
+        !GlobalVariables.projectIsLoading &&
+        activeWorkerTasksRef.current.size === 0 &&
+        topLevelMolecule?.getState?.().status === "ready"
+      ) {
+        initialProjectLoadRef.current = false;
+      }
     };
 
     const handleTopLevelChanged = () => refreshUi();
