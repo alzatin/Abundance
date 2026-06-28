@@ -207,7 +207,7 @@ function EmptyMode({ processing, setProcessing }) {
     );
 
     // Create and place Color atoms BEFORE Tag atoms (inverted order for processing)
-    // Color Head (Green - index 7)
+    // Color Head (Green - index grey)
     await GlobalVariables.topLevelMolecule.placeAtom(
       {
         parentMolecule: GlobalVariables.topLevelMolecule,
@@ -222,7 +222,7 @@ function EmptyMode({ processing, setProcessing }) {
       true,
     );
 
-    // Color Base (Red - index 1)
+    // Color Base (Red - index keepout)
     await GlobalVariables.topLevelMolecule.placeAtom(
       {
         parentMolecule: GlobalVariables.topLevelMolecule,
@@ -232,7 +232,7 @@ function EmptyMode({ processing, setProcessing }) {
         name: "Color Base",
         atomType: "Color",
         uniqueID: GlobalVariables.generateUniqueID(),
-        selectedColorIndex: 1,
+        selectedColorIndex: 23,
       },
       true,
     );
@@ -281,7 +281,7 @@ function EmptyMode({ processing, setProcessing }) {
       true,
     );
 
-    // Create and place a Color atom for the Intersect output (index 5)
+    // Create and place a Color atom for the Intersect output (index grey)
     await GlobalVariables.topLevelMolecule.placeAtom(
       {
         parentMolecule: GlobalVariables.topLevelMolecule,
@@ -291,7 +291,7 @@ function EmptyMode({ processing, setProcessing }) {
         name: "Color Intersect",
         atomType: "Color",
         uniqueID: GlobalVariables.generateUniqueID(),
-        selectedColorIndex: 5,
+        selectedColorIndex: 19,
       },
       true,
     );

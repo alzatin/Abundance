@@ -47,7 +47,7 @@ export default class Color extends Atom {
       Olive: "#C7DF66",
       Teal: "#71D1C2",
       "Light Blue": "#75DBF2",
-      Green: "#A3CE5B",
+      Green: "#a5f915",
       "Lavender ": "#CCABED",
       Brown: "#CFAB7C",
       Pink: "#FFB09D",
