@@ -12,6 +12,11 @@ import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
 import ReadmePanel from "../secondary/ReadmePanel.jsx";
 import { useNavigate, useParams } from "react-router-dom";
+import {
+  addOrDeletePorts,
+  inputsReadyIgnoringFreeAP,
+  initializeInputsFromSaved,
+} from "../../js/alwaysOneFreeInput.js";
 
 // Import contexts
 import {
@@ -157,6 +162,7 @@ function EmptyMode({ processing, setProcessing }) {
     GlobalVariables.isMobile() ? "none" : "params",
   );
 
+  // Function to create and enable a new empty molecule with Output, Tags and Assembly atoms for Pull Comparison
   async function createandEnableEmptyMolecule() {
     // Create and set up a new empty molecule
     console.log("[EmptyMode] Creating new empty molecule");
@@ -202,39 +208,49 @@ function EmptyMode({ processing, setProcessing }) {
     );
 
     // Create and place a Tag atom in the new molecule (Head)
-    await GlobalVariables.topLevelMolecule.placeAtom(
-      {
-        parentMolecule: GlobalVariables.topLevelMolecule,
-        x: 0.98,
-        y: 0.5,
-        parent: GlobalVariables.topLevelMolecule,
-        name: "Head",
-        atomType: "Tag",
-        uniqueID: GlobalVariables.generateUniqueID(),
-      },
-      true,
-    );
+    await GlobalVariables.topLevelMolecule
+      .placeAtom(
+        {
+          parentMolecule: GlobalVariables.topLevelMolecule,
+          x: 0.98,
+          y: 0.5,
+          parent: GlobalVariables.topLevelMolecule,
+          name: "Head",
+          atomType: "Tag",
+          uniqueID: GlobalVariables.generateUniqueID(),
+        },
+        true,
+      )
+      .then((tagAtom) => {
+        // Set the tag value to "Head"
+        tagAtom.tags = ["Head"];
+      });
 
     // Create and place a Tag atom in the new molecule (Base)
-    await GlobalVariables.topLevelMolecule.placeAtom(
-      {
-        parentMolecule: GlobalVariables.topLevelMolecule,
-        x: 0.98,
-        y: 0.5,
-        parent: GlobalVariables.topLevelMolecule,
-        name: "Base",
-        atomType: "Tag",
-        uniqueID: GlobalVariables.generateUniqueID(),
-      },
-      true,
-    );
+    await GlobalVariables.topLevelMolecule
+      .placeAtom(
+        {
+          parentMolecule: GlobalVariables.topLevelMolecule,
+          x: 0.98,
+          y: 0.5,
+          parent: GlobalVariables.topLevelMolecule,
+          name: "Base",
+          atomType: "Tag",
+          uniqueID: GlobalVariables.generateUniqueID(),
+        },
+        true,
+      )
+      .then((tagAtom) => {
+        // Set the tag value to "Base"
+        tagAtom.tags = ["Base"];
+      });
 
-    console.log("[EmptyMode] All atoms placed successfully");
+    // Enable the new molecule and all its children
     GlobalVariables.currentMolecule.enable();
     GlobalVariables.currentMolecule.enableAllChildren();
-    setActiveAtom(GlobalVariables.currentMolecule);
   }
 
+  // Load Head and Base molecules from GitHub if owner and repo are provided in URL params
   function loadHeadAndBaseMoleculesFromGithub() {
     return GlobalVariables.currentMolecule
       .loadGithubMoleculeByName(
@@ -337,20 +353,6 @@ function EmptyMode({ processing, setProcessing }) {
             (atom) => atom.atomType === "Tag" && atom.name === "Base",
           );
 
-        console.log("[EmptyMode] Atom check results:");
-        console.log(
-          "[EmptyMode] baseRepoMolecule:",
-          baseRepoMolecule ? "✓" : "✗",
-        );
-        console.log(
-          "[EmptyMode] headRepoMolecule:",
-          headRepoMolecule ? "✓" : "✗",
-        );
-        console.log("[EmptyMode] outputAtom:", outputAtom ? "✓" : "✗");
-        console.log("[EmptyMode] assemblyAtom:", assemblyAtom ? "✓" : "✗");
-        console.log("[EmptyMode] headTagAtom:", headTagAtom ? "✓" : "✗");
-        console.log("[EmptyMode] baseTagAtom:", baseTagAtom ? "✓" : "✗");
-
         if (baseRepoMolecule && baseRepoMolecule.output) {
           if (
             outputAtom &&
@@ -384,27 +386,60 @@ function EmptyMode({ processing, setProcessing }) {
               "[EmptyMode] Created connector: baseRepoMolecule → baseTagAtom",
             );
 
-            // Create connector: headTagAtom output → assemblyAtom input[0]
-            new Connector({
-              atomType: "Connector",
-              attachmentPoint1: headTagAtom.output,
-              attachmentPoint2: assemblyAtom.inputs[0],
-              parentMolecule: GlobalVariables.topLevelMolecule,
-            });
+            // Create connector: headTagAtom output → assemblyAtom (first available input)
+            const headAssemblyInput =
+              GlobalVariables.topLevelMolecule.findFirstAvailableGeometryInput(
+                assemblyAtom,
+              );
             console.log(
-              "[EmptyMode] Created connector: headTagAtom → assemblyAtom[0]",
+              "[EmptyMode] Found headAssemblyInput:",
+              headAssemblyInput,
             );
+            if (headAssemblyInput) {
+              new Connector({
+                atomType: "Connector",
+                attachmentPoint1: headTagAtom.output,
+                attachmentPoint2: headAssemblyInput,
+                parentMolecule: GlobalVariables.topLevelMolecule,
+              });
+              console.log(
+                "[EmptyMode] Created connector: headTagAtom → assemblyAtom (input: " +
+                  headAssemblyInput.name +
+                  ")",
+              );
+            } else {
+              console.warn(
+                "[EmptyMode] No available geometry input found on assemblyAtom for head",
+              );
+            }
+            addOrDeletePorts(assemblyAtom); // Ensure ports are updated after adding connectors
 
-            // Create connector: baseTagAtom output → assemblyAtom input[1]
-            new Connector({
-              atomType: "Connector",
-              attachmentPoint1: baseTagAtom.output,
-              attachmentPoint2: assemblyAtom.inputs[1],
-              parentMolecule: GlobalVariables.topLevelMolecule,
-            });
+            // Create connector: baseTagAtom output → assemblyAtom (next available input)
+            const baseAssemblyInput =
+              GlobalVariables.topLevelMolecule.findFirstAvailableGeometryInput(
+                assemblyAtom,
+              );
             console.log(
-              "[EmptyMode] Created connector: baseTagAtom → assemblyAtom[1]",
+              "[EmptyMode] Found baseAssemblyInput:",
+              baseAssemblyInput,
             );
+            if (baseAssemblyInput) {
+              new Connector({
+                atomType: "Connector",
+                attachmentPoint1: baseTagAtom.output,
+                attachmentPoint2: baseAssemblyInput,
+                parentMolecule: GlobalVariables.topLevelMolecule,
+              });
+              console.log(
+                "[EmptyMode] Created connector: baseTagAtom → assemblyAtom (input: " +
+                  baseAssemblyInput.name +
+                  ")",
+              );
+            } else {
+              console.warn(
+                "[EmptyMode] No available geometry input found on assemblyAtom for base",
+              );
+            }
 
             // Create connector: assemblyAtom output → outputAtom input
             new Connector({
@@ -443,8 +478,7 @@ function EmptyMode({ processing, setProcessing }) {
         GlobalVariables.currentMolecule.onUpstreamChange();
         console.log(GlobalVariables.topLevelMolecule);
         setActiveAtom(GlobalVariables.currentMolecule);
-        //setProcessing(false);
-        console.log("[EmptyMode] Setup complete");
+        console.log(GlobalVariables.topLevelMolecule.availableTags);
       })
       .catch((err) => {
         console.error(`[EmptyMode] Error in setup: ${err.message}`);

@@ -96,7 +96,9 @@ function applyWorkerTaskUi(
   }
 
   const activeTask = getLatestActiveWorkerTask(taskMap);
-  setComputingLabel(activeTask?.displayLabel || activeTask?.method || "computing");
+  setComputingLabel(
+    activeTask?.displayLabel || activeTask?.method || "computing",
+  );
 
   if (!shouldShowLoadingBar) {
     setRenderBarVisible(false);
@@ -251,7 +253,9 @@ function AppContent() {
 
   const [processing, setProcessing] = useState(false);
   const activeWorkerTasksRef = useRef(new Map());
-  const initialProjectLoadRef = useRef(Boolean(GlobalVariables.topLevelMolecule));
+  const initialProjectLoadRef = useRef(
+    Boolean(GlobalVariables.topLevelMolecule),
+  );
   const currentTopLevelMoleculeIdRef = useRef(
     GlobalVariables.topLevelMolecule?.uniqueID || null,
   );
@@ -270,7 +274,8 @@ function AppContent() {
       }
 
       const shouldShowLoadingBar =
-        GlobalVariables.projectIsLoading === true || initialProjectLoadRef.current;
+        GlobalVariables.projectIsLoading === true ||
+        initialProjectLoadRef.current;
       if (
         applyWorkerTaskUi(
           activeWorkerTasksRef.current,
@@ -333,12 +338,21 @@ function AppContent() {
       refreshUi();
     };
 
-    window.addEventListener("top-level-molecule-changed", handleTopLevelChanged);
-    window.addEventListener("observable-entity-changed", handleObservableChanged);
+    window.addEventListener(
+      "top-level-molecule-changed",
+      handleTopLevelChanged,
+    );
+    window.addEventListener(
+      "observable-entity-changed",
+      handleObservableChanged,
+    );
     window.addEventListener("cad-worker-task-start", handleWorkerTaskStart);
     window.addEventListener("cad-worker-task-finish", handleWorkerTaskFinished);
     window.addEventListener("cad-worker-task-error", handleWorkerTaskFinished);
-    window.addEventListener("cad-worker-task-cancelled", handleWorkerTaskFinished);
+    window.addEventListener(
+      "cad-worker-task-cancelled",
+      handleWorkerTaskFinished,
+    );
     window.addEventListener("cad-worker-restarted", handleWorkerRestarted);
     refreshUi();
 
@@ -351,13 +365,31 @@ function AppContent() {
         "observable-entity-changed",
         handleObservableChanged,
       );
-      window.removeEventListener("cad-worker-task-start", handleWorkerTaskStart);
-      window.removeEventListener("cad-worker-task-finish", handleWorkerTaskFinished);
-      window.removeEventListener("cad-worker-task-error", handleWorkerTaskFinished);
-      window.removeEventListener("cad-worker-task-cancelled", handleWorkerTaskFinished);
+      window.removeEventListener(
+        "cad-worker-task-start",
+        handleWorkerTaskStart,
+      );
+      window.removeEventListener(
+        "cad-worker-task-finish",
+        handleWorkerTaskFinished,
+      );
+      window.removeEventListener(
+        "cad-worker-task-error",
+        handleWorkerTaskFinished,
+      );
+      window.removeEventListener(
+        "cad-worker-task-cancelled",
+        handleWorkerTaskFinished,
+      );
       window.removeEventListener("cad-worker-restarted", handleWorkerRestarted);
     };
-  }, [processing, setRenderProgress, setRenderBarVisible, setRenderStage, setComputingLabel]);
+  }, [
+    processing,
+    setRenderProgress,
+    setRenderBarVisible,
+    setRenderStage,
+    setComputingLabel,
+  ]);
 
   useEffect(() => {
     if (renderProgress >= 100) {
@@ -515,6 +547,7 @@ function AppContent() {
       backgroundMolecule = false,
       nonReplicadGeometryFromAtom = null,
     ) => {
+      console.log(moleculeValue);
       if (!moleculeValue) {
         console.warn(
           "Received null molecule value for display, using empty geometry",
