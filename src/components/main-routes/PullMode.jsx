@@ -46,7 +46,7 @@ function useWindowSize() {
   return windowSize;
 }
 
-function EmptyMode({ processing, setProcessing }) {
+function PullMode({ processing, setProcessing }) {
   // Get URL parameters
   const {
     baseOwner = "",
@@ -688,4 +688,4 @@ function EmptyMode({ processing, setProcessing }) {
   );
 }
 
-export default EmptyMode;
+export default PullMode;
