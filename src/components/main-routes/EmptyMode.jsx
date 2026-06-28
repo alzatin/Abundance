@@ -247,6 +247,20 @@ function EmptyMode({ processing, setProcessing }) {
     // Enable the new molecule and all its children
     GlobalVariables.currentMolecule.enable();
     GlobalVariables.currentMolecule.enableAllChildren();
+
+    // Subscribe the molecule to its Output atom's status changes
+    // This is critical: when Output transitions to READY, the molecule needs to be notified
+    // so it can call onUpstreamChange() and update its own status to READY
+    const outputAtom = GlobalVariables.topLevelMolecule.getOutputAtom();
+    if (outputAtom) {
+      outputAtom.subscribe(
+        () => {
+          GlobalVariables.topLevelMolecule.onUpstreamChange();
+        },
+        GlobalVariables.topLevelMolecule.uniqueID,
+        false,
+      );
+    }
   }
 
   // Load Head and Base molecules from GitHub if owner and repo are provided in URL params
@@ -350,12 +364,6 @@ function EmptyMode({ processing, setProcessing }) {
               parentMolecule: GlobalVariables.topLevelMolecule,
             });
 
-            // Trigger status update on headTagAtom
-            if (headTagAtom.status === "disabled") {
-              headTagAtom.enable();
-            }
-            headTagAtom.onUpstreamChange?.();
-
             // Create connector: baseRepoMolecule output → baseTagAtom input
             new Connector({
               atomType: "Connector",
@@ -363,12 +371,6 @@ function EmptyMode({ processing, setProcessing }) {
               attachmentPoint2: baseTagAtom.inputs[0],
               parentMolecule: GlobalVariables.topLevelMolecule,
             });
-
-            // Trigger status update on baseTagAtom
-            if (baseTagAtom.status === "disabled") {
-              baseTagAtom.enable();
-            }
-            baseTagAtom.onUpstreamChange?.();
 
             // Create connector: headTagAtom output → assemblyAtom (first available input)
             const headAssemblyInput =
@@ -406,26 +408,12 @@ function EmptyMode({ processing, setProcessing }) {
               attachmentPoint2: outputAtom.inputs[0],
               parentMolecule: GlobalVariables.topLevelMolecule,
             });
-
-            // After connectors are created, explicitly trigger status updates
-            // Creating connectors doesn't automatically call onUpstreamChange on receiving atoms
-            // Enable and update assembly atom
-            if (assemblyAtom.status === "disabled") {
-              assemblyAtom.enable();
-            }
-            assemblyAtom.onUpstreamChange?.();
-
-            // Enable and update output atom
-            if (outputAtom.status === "disabled") {
-              outputAtom.enable();
-            }
-            outputAtom.onUpstreamChange?.();
           } else {
             // All required atoms not found or missing inputs
           }
         }
         GlobalVariables.currentMolecule.enable();
-        GlobalVariables.currentMolecule.onUpstreamChange();
+        GlobalVariables.currentMolecule.enableAllChildren();
         setActiveAtom(GlobalVariables.currentMolecule);
       })
       .catch((err) => {
@@ -520,7 +508,7 @@ function EmptyMode({ processing, setProcessing }) {
         />
       </div>
       <canvas
-        //style={{ display: "none" }}
+        style={{ display: "none" }}
         ref={canvasRef}
         id="flow-canvas"
         tabIndex={0}
