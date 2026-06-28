@@ -697,10 +697,24 @@ function AppContent() {
         />
         <Route path="/user-guide" element={<UserGuidePage />} />
         <Route
+          path="/pull/:baseOwner/:baseRepo/:headOwner/:headRepo"
+          element={
+            <ProjectProvider cad={cad} loadProject={loadProject}>
+              <EmptyMode
+                processing={processing}
+                setProcessing={setProcessing}
+              />
+            </ProjectProvider>
+          }
+        />
+        <Route
           path="/pull"
           element={
             <ProjectProvider cad={cad} loadProject={loadProject}>
-              <EmptyMode processing={processing} setProcessing={setProcessing} />
+              <EmptyMode
+                processing={processing}
+                setProcessing={setProcessing}
+              />
             </ProjectProvider>
           }
         />

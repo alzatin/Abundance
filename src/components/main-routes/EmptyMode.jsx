@@ -7,22 +7,19 @@ import GlobalVariables from "../../js/globalvariables.js";
 
 import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
 import Molecule from "../../molecules/molecule.js";
-import RunParams from "../secondary/RunParams.jsx";
+import Connector from "../../prototypes/connector.js";
 import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
 import ReadmePanel from "../secondary/ReadmePanel.jsx";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 // Import contexts
 import {
   useAuth,
   useAppState,
   useRendering,
-  useProject,
   useFileImport,
 } from "../../contexts/index.js";
-import { useTutorial } from "../../tutorial/TutorialManager";
-import { TutorialOverlay } from "../../tutorial/TutorialOverlay";
 import { useProgressBar } from "../secondary/ProgressBarManager.jsx";
 
 function useWindowSize() {
@@ -45,8 +42,16 @@ function useWindowSize() {
 }
 
 function EmptyMode({ processing, setProcessing }) {
+  // Get URL parameters
+  const {
+    baseOwner = "",
+    baseRepo = "",
+    headOwner = "",
+    headRepo = "",
+  } = useParams();
+
   // Get context values
-  const { authorizedUserOcto, authRedirectHandler } = useAuth();
+  const { authorizedUserOcto, userScopes, authRedirectHandler } = useAuth();
   const {
     activeAtom,
     redirectType,
@@ -94,9 +99,7 @@ function EmptyMode({ processing, setProcessing }) {
     true,
   );
 
-  const { next, isActive } = useTutorial();
-
-  const canvasRef = useRef(500);
+  const canvasRef = useRef(1000);
   const windowSize = useWindowSize();
   const [cameraZoom, setCameraZoom] = useState(1);
 
@@ -154,10 +157,7 @@ function EmptyMode({ processing, setProcessing }) {
     GlobalVariables.isMobile() ? "none" : "params",
   );
 
-  useEffect(() => {
-    GlobalVariables.canvas = canvasRef;
-    GlobalVariables.c = canvasRef.current.getContext("2d");
-
+  async function createandEnableEmptyMolecule() {
     // Create and set up a new empty molecule
     console.log("[EmptyMode] Creating new empty molecule");
     GlobalVariables.topLevelMolecule = new Molecule({
@@ -166,6 +166,7 @@ function EmptyMode({ processing, setProcessing }) {
       topLevel: true,
       atomType: "Molecule",
       name: "New Project",
+      uniqueID: GlobalVariables.generateUniqueID(),
     });
 
     GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
@@ -173,15 +174,297 @@ function EmptyMode({ processing, setProcessing }) {
     GlobalVariables.currentAWSnode = null;
     GlobalVariables.currentRepo = null;
 
-    setActiveAtom(GlobalVariables.currentMolecule);
-    console.log("[EmptyMode] Empty molecule created and set as current");
-  }, []);
+    // Create and place an Output atom in the new molecule
+    await GlobalVariables.topLevelMolecule.placeAtom(
+      {
+        parentMolecule: GlobalVariables.topLevelMolecule,
+        x: 0.98,
+        y: 0.5,
+        parent: GlobalVariables.topLevelMolecule,
+        name: "Output",
+        atomType: "Output",
+        uniqueID: GlobalVariables.generateUniqueID(),
+      },
+      true,
+    );
+    // Create and place an Assembly atom in the new molecule
+    await GlobalVariables.topLevelMolecule.placeAtom(
+      {
+        parentMolecule: GlobalVariables.topLevelMolecule,
+        x: 0.98,
+        y: 0.5,
+        parent: GlobalVariables.topLevelMolecule,
+        name: "Assembly",
+        atomType: "Assembly",
+        uniqueID: GlobalVariables.generateUniqueID(),
+      },
+      true,
+    );
 
-  const screenHeight = window.innerHeight;
-  const screenWidth = window.innerWidth;
+    // Create and place a Tag atom in the new molecule (Head)
+    await GlobalVariables.topLevelMolecule.placeAtom(
+      {
+        parentMolecule: GlobalVariables.topLevelMolecule,
+        x: 0.98,
+        y: 0.5,
+        parent: GlobalVariables.topLevelMolecule,
+        name: "Head",
+        atomType: "Tag",
+        uniqueID: GlobalVariables.generateUniqueID(),
+      },
+      true,
+    );
+
+    // Create and place a Tag atom in the new molecule (Base)
+    await GlobalVariables.topLevelMolecule.placeAtom(
+      {
+        parentMolecule: GlobalVariables.topLevelMolecule,
+        x: 0.98,
+        y: 0.5,
+        parent: GlobalVariables.topLevelMolecule,
+        name: "Base",
+        atomType: "Tag",
+        uniqueID: GlobalVariables.generateUniqueID(),
+      },
+      true,
+    );
+
+    console.log("[EmptyMode] All atoms placed successfully");
+    GlobalVariables.currentMolecule.enable();
+    GlobalVariables.currentMolecule.enableAllChildren();
+    setActiveAtom(GlobalVariables.currentMolecule);
+  }
+
+  function loadHeadAndBaseMoleculesFromGithub() {
+    return GlobalVariables.currentMolecule
+      .loadGithubMoleculeByName(
+        {
+          owner: baseOwner,
+          repoName: baseRepo,
+          privateRepo: false,
+        },
+        {},
+        [],
+        { x: 0, y: 0 },
+        authorizedUserOcto,
+        userScopes || [],
+      )
+      .then((githubMolecule) => {
+        console.log(
+          `[EmptyMode] Successfully loaded Base GitHub molecule: ${baseOwner}/${baseRepo}`,
+        );
+
+        return GlobalVariables.currentMolecule.loadGithubMoleculeByName(
+          {
+            owner: headOwner,
+            repoName: headRepo,
+            privateRepo: false,
+          },
+          {},
+          [],
+          { x: 0, y: 0 },
+          authorizedUserOcto,
+          userScopes || [],
+        );
+      })
+      .then((headGithubMolecule) => {
+        console.log(
+          "[EmptyMode] Both GitHub molecules fully loaded - resolving",
+        );
+        return Promise.resolve();
+      })
+      .catch((err) => {
+        console.error(
+          `[EmptyMode] Error loading GitHub molecule: ${err.message}`,
+        );
+        setErrorNotification(
+          `Failed to load GitHub molecules: ${err.message}`,
+          "error",
+        );
+        throw err;
+      });
+  }
+
+  useEffect(() => {
+    GlobalVariables.canvas = canvasRef;
+    GlobalVariables.c = canvasRef.current.getContext("2d");
+
+    // Prepare empty molecule with Output atom and Assembly atom
+    createandEnableEmptyMolecule()
+      .then(() => {
+        console.log("[EmptyMode] Empty molecule creation complete");
+        // Load Head and Base as Github molecules if owner and repo are provided in URL params
+        return loadHeadAndBaseMoleculesFromGithub();
+      })
+      .then(() => {
+        // Find the GitHub molecule we just loaded
+        console.log(
+          "[EmptyMode] All atoms on screen:",
+          GlobalVariables.topLevelMolecule.nodesOnTheScreen.map(
+            (atom) => `${atom.atomType}:${atom.name}`,
+          ),
+        );
+
+        const baseRepoMolecule =
+          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
+            (atom) =>
+              atom.atomType === "GitHubMolecule" && atom.name === `${baseRepo}`,
+          );
+
+        const headRepoMolecule =
+          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
+            (atom) =>
+              atom.atomType === "GitHubMolecule" && atom.name === `${headRepo}`,
+          );
+
+        const outputAtom =
+          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
+            (atom) => atom.atomType === "Output",
+          );
+
+        const assemblyAtom =
+          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
+            (atom) => atom.atomType === "Assembly",
+          );
+
+        const headTagAtom =
+          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
+            (atom) => atom.atomType === "Tag" && atom.name === "Head",
+          );
+
+        const baseTagAtom =
+          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
+            (atom) => atom.atomType === "Tag" && atom.name === "Base",
+          );
+
+        console.log("[EmptyMode] Atom check results:");
+        console.log(
+          "[EmptyMode] baseRepoMolecule:",
+          baseRepoMolecule ? "✓" : "✗",
+        );
+        console.log(
+          "[EmptyMode] headRepoMolecule:",
+          headRepoMolecule ? "✓" : "✗",
+        );
+        console.log("[EmptyMode] outputAtom:", outputAtom ? "✓" : "✗");
+        console.log("[EmptyMode] assemblyAtom:", assemblyAtom ? "✓" : "✗");
+        console.log("[EmptyMode] headTagAtom:", headTagAtom ? "✓" : "✗");
+        console.log("[EmptyMode] baseTagAtom:", baseTagAtom ? "✓" : "✗");
+
+        if (baseRepoMolecule && baseRepoMolecule.output) {
+          if (
+            outputAtom &&
+            assemblyAtom &&
+            headRepoMolecule &&
+            headTagAtom &&
+            baseTagAtom
+          ) {
+            console.log(
+              "[EmptyMode] All required atoms found, creating connectors",
+            );
+            // Create connector: headRepoMolecule output → headTagAtom input
+            new Connector({
+              atomType: "Connector",
+              attachmentPoint1: headRepoMolecule.output,
+              attachmentPoint2: headTagAtom.inputs[0],
+              parentMolecule: GlobalVariables.topLevelMolecule,
+            });
+            console.log(
+              "[EmptyMode] Created connector: headRepoMolecule → headTagAtom",
+            );
+
+            // Create connector: baseRepoMolecule output → baseTagAtom input
+            new Connector({
+              atomType: "Connector",
+              attachmentPoint1: baseRepoMolecule.output,
+              attachmentPoint2: baseTagAtom.inputs[0],
+              parentMolecule: GlobalVariables.topLevelMolecule,
+            });
+            console.log(
+              "[EmptyMode] Created connector: baseRepoMolecule → baseTagAtom",
+            );
+
+            // Create connector: headTagAtom output → assemblyAtom input[0]
+            new Connector({
+              atomType: "Connector",
+              attachmentPoint1: headTagAtom.output,
+              attachmentPoint2: assemblyAtom.inputs[0],
+              parentMolecule: GlobalVariables.topLevelMolecule,
+            });
+            console.log(
+              "[EmptyMode] Created connector: headTagAtom → assemblyAtom[0]",
+            );
+
+            // Create connector: baseTagAtom output → assemblyAtom input[1]
+            new Connector({
+              atomType: "Connector",
+              attachmentPoint1: baseTagAtom.output,
+              attachmentPoint2: assemblyAtom.inputs[1],
+              parentMolecule: GlobalVariables.topLevelMolecule,
+            });
+            console.log(
+              "[EmptyMode] Created connector: baseTagAtom → assemblyAtom[1]",
+            );
+
+            // Create connector: assemblyAtom output → outputAtom input
+            new Connector({
+              atomType: "Connector",
+              attachmentPoint1: assemblyAtom.output,
+              attachmentPoint2: outputAtom.inputs[0],
+              parentMolecule: GlobalVariables.topLevelMolecule,
+            });
+            console.log(
+              "[EmptyMode] Created connector: assemblyAtom → outputAtom",
+            );
+
+            console.log("[EmptyMode] All connectors created successfully");
+          } else {
+            console.warn(
+              "[EmptyMode] Not all required atoms found or missing inputs:",
+            );
+            console.warn("[EmptyMode] outputAtom:", outputAtom || "MISSING");
+            console.warn(
+              "[EmptyMode] assemblyAtom:",
+              assemblyAtom || "MISSING",
+            );
+            console.warn(
+              "[EmptyMode] headRepoMolecule:",
+              headRepoMolecule || "MISSING",
+            );
+            console.warn("[EmptyMode] headTagAtom:", headTagAtom || "MISSING");
+            console.warn("[EmptyMode] baseTagAtom:", baseTagAtom || "MISSING");
+          }
+        } else {
+          console.warn(
+            "[EmptyMode] GitHub molecule not found or has no output",
+          );
+        }
+        GlobalVariables.currentMolecule.enable();
+        GlobalVariables.currentMolecule.onUpstreamChange();
+        console.log(GlobalVariables.topLevelMolecule);
+        setActiveAtom(GlobalVariables.currentMolecule);
+        //setProcessing(false);
+        console.log("[EmptyMode] Setup complete");
+      })
+      .catch((err) => {
+        console.error(`[EmptyMode] Error in setup: ${err.message}`);
+        setErrorNotification(
+          `Failed to set up molecules: ${err.message}`,
+          "error",
+        );
+      });
+  }, [
+    baseOwner,
+    baseRepo,
+    headOwner,
+    headRepo,
+    authorizedUserOcto,
+    userScopes,
+  ]);
 
   if (activeAtom) {
     activeAtom.onStatusChange = (status) => {
+      console.log(`[EmptyMode] Active atom status changed to: ${status}`);
       if (status === "waiting") {
         setOutdatedMesh(true);
         setProcessing(true);
@@ -219,7 +502,7 @@ function EmptyMode({ processing, setProcessing }) {
           contentCollapsed: expandedMenu !== "render",
           setContentCollapsed: () => setExpandedMenu("render"),
           closeMenu: () => setExpandedMenu("none"),
-          position: { top: 75, left: screenWidth - 50 },
+          position: { top: 75, left: windowSize.width - 50 },
           collapsedOffset: [-315, -45],
         }}
         id={"atom-empty-render-panel"}
@@ -231,14 +514,14 @@ function EmptyMode({ processing, setProcessing }) {
           contentCollapsed: expandedMenu !== "bom",
           setContentCollapsed: () => setExpandedMenu("bom"),
           closeMenu: () => setExpandedMenu("none"),
-          position: { top: 120, left: screenWidth - 50 },
+          position: { top: 120, left: windowSize.width - 50 },
           collapsedOffset: [-315, -90],
         }}
       />
       <ReadmePanel
         readme={GlobalVariables.currentRepo?.readme || ""}
         id="atom-empty-readme-panel"
-        position={{ top: 165, left: screenWidth - 50 }}
+        position={{ top: 165, left: windowSize.width - 50 }}
         initialCollapsed={true}
         contentCollapsed={expandedMenu !== "readme"}
         setContentCollapsed={() => setExpandedMenu("readme")}
@@ -257,7 +540,7 @@ function EmptyMode({ processing, setProcessing }) {
         />
       </div>
       <canvas
-        style={{ display: "none" }}
+        //style={{ display: "none" }}
         ref={canvasRef}
         id="flow-canvas"
         tabIndex={0}
