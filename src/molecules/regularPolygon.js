@@ -85,7 +85,7 @@ export default class RegularPolygon extends Atom {
    * @returns promise containing the ID of the created geometry
    */
   compute(argsDict) {
-    return GlobalVariables.cad.regularPolygon(
+    return this.cad.regularPolygon(
       argsDict.diameter / 2,
       argsDict["number of sides"],
       this.getContext()

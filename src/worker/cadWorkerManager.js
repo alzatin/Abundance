@@ -60,12 +60,60 @@ export class CadWorkerManager {
     this._proxy = wrap(this._rawWorker);
   }
 
+  _emitCadWorkerEvent(type, detail) {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.dispatchEvent(new CustomEvent(type, { detail }));
+  }
+
+  _stripTaskMeta(args) {
+    if (!Array.isArray(args) || args.length === 0) {
+      return { callArgs: args, taskMeta: null };
+    }
+
+    const lastArg = args[args.length - 1];
+    if (
+      lastArg &&
+      typeof lastArg === "object" &&
+      !Array.isArray(lastArg) &&
+      Object.prototype.hasOwnProperty.call(lastArg, "__cadTaskMeta")
+    ) {
+      const callArgs = args.slice(0, -1);
+      return { callArgs, taskMeta: lastArg.__cadTaskMeta || null };
+    }
+
+    return { callArgs: args, taskMeta: null };
+  }
+
+  _formatTaskLabel(method, taskMeta) {
+    if (taskMeta?.displayLabel) {
+      return taskMeta.displayLabel;
+    }
+
+    const atomType = taskMeta?.atomType || String(method);
+    const moleculeName = taskMeta?.moleculeName;
+    return moleculeName ? `${moleculeName}/${atomType}` : atomType;
+  }
+
   /**
    * Start timeout and progress-logging timers for an entry that is now
    * actively being processed by the worker.
    */
   _startTimers(entry) {
     entry.startTime = Date.now();
+    this._emitCadWorkerEvent("cad-worker-task-start", {
+      taskId: entry.taskId,
+      method: String(entry.method),
+      queuedAt: entry.queuedAt,
+      startedAt: entry.startTime,
+      queueWaitMs: entry.startTime - entry.queuedAt,
+      queueDepth: Math.max(this._pendingCalls.indexOf(entry), 0),
+      atomId: entry.taskMeta?.atomId || null,
+      atomType: entry.taskMeta?.atomType || null,
+      moleculeName: entry.taskMeta?.moleculeName || null,
+      displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
+    });
 
     // Log progress every 5 seconds so it's visible in the console.
     entry.progressIntervalId = setInterval(() => {
@@ -82,6 +130,21 @@ export class CadWorkerManager {
       const elapsed = Math.round((Date.now() - entry.startTime) / 1000);
 
       this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
+      this._emitCadWorkerEvent("cad-worker-task-error", {
+        taskId: entry.taskId,
+        method: String(entry.method),
+        queuedAt: entry.queuedAt,
+        startedAt: entry.startTime,
+        failedAt: Date.now(),
+        durationMs: entry.startTime ? Date.now() - entry.startTime : null,
+        queueWaitMs: entry.startTime ? entry.startTime - entry.queuedAt : null,
+        queueDepth: this._pendingCalls.length,
+        atomId: entry.taskMeta?.atomId || null,
+        atomType: entry.taskMeta?.atomType || null,
+        moleculeName: entry.taskMeta?.moleculeName || null,
+        displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
+        error: `CAD worker timed out on "${String(entry.method)}" after ${this._timeoutMs}ms`,
+      });
       entry.reject(
         new Error(
           `CAD worker timed out on "${String(entry.method)}" after ${this._timeoutMs}ms`,
@@ -114,15 +177,32 @@ export class CadWorkerManager {
    */
   _call(method, args) {
     return new Promise((resolve, reject) => {
+      const taskId = `cad-task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const queuedAt = Date.now();
+      const { callArgs, taskMeta } = this._stripTaskMeta(args);
+
       const entry = {
         reject,
         timeoutId: null,
         progressIntervalId: null,
         method,
         startTime: null,
+        taskId,
+        queuedAt,
+        taskMeta,
       };
 
       this._pendingCalls.push(entry);
+      this._emitCadWorkerEvent("cad-worker-task-queued", {
+        taskId,
+        method: String(method),
+        queuedAt,
+        queueDepth: Math.max(this._pendingCalls.length - 1, 0),
+        atomId: taskMeta?.atomId || null,
+        atomType: taskMeta?.atomType || null,
+        moleculeName: taskMeta?.moleculeName || null,
+        displayLabel: this._formatTaskLabel(method, taskMeta),
+      });
 
       // Only start timers if this is the currently processing call
       // (no other call ahead of it in the queue).
@@ -137,16 +217,47 @@ export class CadWorkerManager {
         entry.timeoutId = null;
       };
 
-      this._proxy[method](...args).then(
+      this._proxy[method](...callArgs).then(
         (result) => {
           cleanup();
           this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
+          const finishedAt = Date.now();
+          this._emitCadWorkerEvent("cad-worker-task-finish", {
+            taskId: entry.taskId,
+            method: String(entry.method),
+            queuedAt: entry.queuedAt,
+            startedAt: entry.startTime,
+            finishedAt,
+            durationMs: entry.startTime ? finishedAt - entry.startTime : null,
+            queueWaitMs: entry.startTime ? entry.startTime - entry.queuedAt : null,
+            queueDepth: this._pendingCalls.length,
+            atomId: entry.taskMeta?.atomId || null,
+            atomType: entry.taskMeta?.atomType || null,
+            moleculeName: entry.taskMeta?.moleculeName || null,
+            displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
+          });
           this._activateNextCall();
           resolve(result);
         },
         (err) => {
           cleanup();
           this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
+          const failedAt = Date.now();
+          this._emitCadWorkerEvent("cad-worker-task-error", {
+            taskId: entry.taskId,
+            method: String(entry.method),
+            queuedAt: entry.queuedAt,
+            startedAt: entry.startTime,
+            failedAt,
+            durationMs: entry.startTime ? failedAt - entry.startTime : null,
+            queueWaitMs: entry.startTime ? entry.startTime - entry.queuedAt : null,
+            queueDepth: this._pendingCalls.length,
+            atomId: entry.taskMeta?.atomId || null,
+            atomType: entry.taskMeta?.atomType || null,
+            moleculeName: entry.taskMeta?.moleculeName || null,
+            displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
+            error: err?.message || String(err),
+          });
           this._activateNextCall();
           reject(err);
         },
@@ -165,6 +276,16 @@ export class CadWorkerManager {
     pending.forEach((entry) => {
       clearInterval(entry.progressIntervalId);
       clearTimeout(entry.timeoutId);
+      this._emitCadWorkerEvent("cad-worker-task-cancelled", {
+        taskId: entry.taskId,
+        method: String(entry.method),
+        queuedAt: entry.queuedAt,
+        cancelledAt: Date.now(),
+        atomId: entry.taskMeta?.atomId || null,
+        atomType: entry.taskMeta?.atomType || null,
+        moleculeName: entry.taskMeta?.moleculeName || null,
+        displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
+      });
       // Suppress the rejection — callers are expected to add .catch() for this
       // case. Using Promise.resolve().then() to defer so any existing .then()
       // handlers have a chance to attach a .catch() before the rejection fires.
@@ -200,12 +321,27 @@ export class CadWorkerManager {
     pending.forEach((entry) => {
       clearInterval(entry.progressIntervalId);
       clearTimeout(entry.timeoutId);
+      this._emitCadWorkerEvent("cad-worker-task-error", {
+        taskId: entry.taskId,
+        method: String(entry.method),
+        queuedAt: entry.queuedAt,
+        failedAt: Date.now(),
+        atomId: entry.taskMeta?.atomId || null,
+        atomType: entry.taskMeta?.atomType || null,
+        moleculeName: entry.taskMeta?.moleculeName || null,
+        displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
+        error: "CAD worker restarted because another call timed out",
+      });
       entry.reject(
         new Error("CAD worker was restarted because another call timed out"),
       );
     });
 
     this._createWorker();
+    this._emitCadWorkerEvent("cad-worker-restarted", {
+      restartedAt: Date.now(),
+      reason: "timeout",
+    });
 
     if (this.onRestartCallback) {
       this.onRestartCallback(

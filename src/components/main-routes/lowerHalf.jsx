@@ -8,7 +8,7 @@ import { useRendering } from "../../contexts/index.js";
 import NonReplicadMesh from "../render/NonReplicadMesh.jsx";
 
 const LowerHalf = forwardRef(function LowerHalf({ windowSize }, ref) {
-  const { mesh, wireMesh, wireParam, solidParam, isViewingOutputMesh } =
+  const { mesh, wireMesh, wireParam, solidParam, isViewingOutputMesh, computingLabel } =
     useRendering();
 
   const [cameraZoom, setCameraZoom] = useState(1);
@@ -39,8 +39,26 @@ const LowerHalf = forwardRef(function LowerHalf({ windowSize }, ref) {
           style={{
             width: windowSize.width * 1,
             height: windowSize.height * 0.6,
+            position: "relative",
           }}
         >
+          {computingLabel && (
+            <div
+              style={{
+                position: "absolute",
+                bottom: "8px",
+                right: "10px",
+                zIndex: 10,
+                fontSize: "11px",
+                color: "#666",
+                fontFamily: "monospace",
+                pointerEvents: "none",
+                userSelect: "none",
+              }}
+            >
+              {computingLabel}
+            </div>
+          )}
           {wireMesh ? (
             <ThreeContext
               {...{

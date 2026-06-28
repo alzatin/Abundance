@@ -1259,6 +1259,42 @@ export default class Atom extends ObservableEntity {
     }
   }
 
+  getCadTaskMeta(method) {
+    const atomType = this.atomType || String(method);
+    const moleculeName = this.parent?.name || null;
+    return {
+      atomId: this.uniqueID,
+      atomType,
+      moleculeName,
+      displayLabel: moleculeName ? `${moleculeName}/${atomType}` : atomType,
+    };
+  }
+
+  get cad() {
+    if (!this._cadProxy || this._cadProxySource !== GlobalVariables.cad) {
+      this._cadProxySource = GlobalVariables.cad;
+      this._cadProxy = new Proxy(GlobalVariables.cad, {
+        get: (target, prop) => {
+          const value = target[prop];
+          if (typeof prop === "symbol" || typeof value !== "function") {
+            return value;
+          }
+
+          return (...args) =>
+            value(...args, {
+              __cadTaskMeta: this.getCadTaskMeta(prop),
+            });
+        },
+      });
+    }
+
+    return this._cadProxy;
+  }
+
+  cadCall(method, ...args) {
+    return this.cad[method](...args);
+  }
+
   /**  */
   createPredictedParams() {
     if (this.atomType == "Molecule") {

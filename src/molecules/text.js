@@ -106,12 +106,7 @@ export default class Text extends Atom {
     const fontSize = inputs["Font Size"];
     const text = inputs.Text;
     const fontFamily = inputs["Font Family"] || this.fontFamily;
-    return GlobalVariables.cad.text(
-      text,
-      fontSize,
-      fontFamily,
-      this.getContext(),
-    );
+    return this.cad.text(text, fontSize, fontFamily, this.getContext());
   }
 
   serialize(offset = { x: 0, y: 0 }) {

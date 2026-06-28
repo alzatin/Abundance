@@ -673,11 +673,17 @@ export default class Molecule extends Atom {
       atom.deleteNode();
     });
 
+    // Find the rightmost atom BEFORE moving (while positions are available)
+    const rightmostAtomID = this.findRightmostAtomID(
+      GlobalVariables.atomsSelected,
+    );
+
     // Create structured data for the target molecule
     const moleculeData = {
       allAtoms: GlobalVariables.atomsSelected,
       allConnectors: GlobalVariables.connectorsSelected || [],
       fileTypeVersion: 1,
+      rightmostAtomID, // Pass the rightmost atom ID to connect after moving
     };
 
     // Remap IDs to avoid conflicts
@@ -704,6 +710,9 @@ export default class Molecule extends Atom {
               targetMolecule.placeConnector(connectorData);
             });
           }
+
+          // Connect the rightmost atom (identified before moving) to the output
+          targetMolecule.connectAtomByIDToOutput(remappedData.rightmostAtomID);
         })
         .catch((error) => {
           console.warn("Error placing atoms or connectors:", error);
@@ -849,16 +858,33 @@ export default class Molecule extends Atom {
   createBom(setInputChanged) {
     this.setInputChanged = setInputChanged;
     let bomParams = {};
+    const normalizedBomSourceLink = (sourceLink) => {
+      if (typeof sourceLink !== "string") {
+        return "";
+      }
+      const trimmedSourceLink = sourceLink.trim();
+      if (trimmedSourceLink === "") {
+        return "";
+      }
+      if (
+        trimmedSourceLink.startsWith("http://") ||
+        trimmedSourceLink.startsWith("https://")
+      ) {
+        return trimmedSourceLink;
+      }
+      return `https://${trimmedSourceLink}`;
+    };
     // Show this molecule’s compiled BOM (top-level = full project; nested = local)
     const bomToShow = this.compiledBom;
     if (bomToShow) {
       if (bomToShow.length > 0) {
         bomToShow.map((item) => {
+          const sourceLink = normalizedBomSourceLink(item.source);
           bomParams[item.BOMitemName] = {
-            type: "number",
+            type: "label",
             value: item.numberNeeded,
-            label: item.BOMitemName + " x",
-            disabled: true,
+            label: item.BOMitemName,
+            sourceLink: sourceLink || undefined,
           };
         });
 
@@ -1643,6 +1669,11 @@ export default class Molecule extends Atom {
     // Handle all connectors recursively
     processConnectors(json);
 
+    // Remap rightmostAtomID if it exists
+    if (json.rightmostAtomID && idPairs[json.rightmostAtomID]) {
+      json.rightmostAtomID = idPairs[json.rightmostAtomID];
+    }
+
     return json;
   }
 
@@ -1711,6 +1742,116 @@ export default class Molecule extends Atom {
         return input.valueType === "geometry" && input.connectors.length === 0;
       }) || null
     );
+  }
+
+  /**
+   * Finds the output atom inside this molecule
+   * @returns {object|null} The output atom, if present
+   */
+  findOutputAtom() {
+    return (
+      this.nodesOnTheScreen.find((atom) => atom.atomType === "Output") || null
+    );
+  }
+
+  /**
+   * Finds the rightmost atom whose output is compatible with the provided input
+   * @param {Array} atoms - Candidate atoms to consider
+   * @param {object} targetInput - The input attachment point to connect to
+   * @returns {object|null} The rightmost compatible atom, if present
+   */
+  findRightmostCompatibleOutputAtom(atoms, targetInput) {
+    if (!Array.isArray(atoms) || !targetInput) {
+      return null;
+    }
+
+    return atoms.reduce((rightmostAtom, atom) => {
+      if (
+        !atom?.output ||
+        !AttachmentPoint.areTypesCompatible(atom.output, targetInput)
+      ) {
+        return rightmostAtom;
+      }
+
+      if (!rightmostAtom) {
+        return atom;
+      }
+
+      // During placement/loading an atom can exist before its output
+      // attachment point is present or before its x position is computed, so
+      // fall back to the atom position.
+      const atomX = atom.output?.x ?? atom.x;
+      const rightmostX = rightmostAtom.output?.x ?? rightmostAtom.x;
+
+      return atomX > rightmostX ? atom : rightmostAtom;
+    }, null);
+  }
+
+  /**
+   * Finds the rightmost atom by X position and returns its uniqueID
+   * @param {Array} atoms - Candidate atoms to search
+   * @returns {string|null} The uniqueID of the rightmost atom, or null if none found
+   */
+  findRightmostAtomID(atoms) {
+    if (!Array.isArray(atoms) || atoms.length === 0) {
+      return null;
+    }
+
+    const rightmostAtom = atoms.reduce((rightmost, atom) => {
+      if (!rightmost) {
+        return atom;
+      }
+
+      const atomX = atom.x ?? 0;
+      const rightmostX = rightmost.x ?? 0;
+
+      return atomX > rightmostX ? atom : rightmost;
+    });
+
+    return rightmostAtom?.uniqueID || null;
+  }
+
+  /**
+   * Connects a specific atom (by ID) to this molecule's output
+   * @param {string} atomID - The uniqueID of the atom to connect
+   */
+  connectAtomByIDToOutput(atomID) {
+    if (!atomID) {
+      return;
+    }
+
+    const outputAtom = this.findOutputAtom();
+    if (!outputAtom) {
+      return;
+    }
+
+    const outputInput = this.findFirstAvailableGeometryInput(outputAtom);
+    if (!outputInput) {
+      return;
+    }
+
+    // Find the atom by ID in the current molecule
+    const sourceAtom = this.nodesOnTheScreen.find(
+      (atom) => atom.uniqueID === atomID,
+    );
+    if (!sourceAtom) {
+      return;
+    }
+
+    if (!sourceAtom.output) {
+      return;
+    }
+
+    // Check type compatibility
+    if (!AttachmentPoint.areTypesCompatible(sourceAtom.output, outputInput)) {
+      return;
+    }
+
+    this.placeConnector({
+      ap1ID: sourceAtom.uniqueID,
+      ap2ID: outputAtom.uniqueID,
+      ap2Name: outputInput.name,
+    });
   }
 
   /**
