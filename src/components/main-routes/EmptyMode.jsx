@@ -165,7 +165,6 @@ function EmptyMode({ processing, setProcessing }) {
   // Function to create and enable a new empty molecule with Output, Tags and Assembly atoms for Pull Comparison
   async function createandEnableEmptyMolecule() {
     // Create and set up a new empty molecule
-    console.log("[EmptyMode] Creating new empty molecule");
     GlobalVariables.topLevelMolecule = new Molecule({
       x: 0,
       y: 0,
@@ -266,10 +265,6 @@ function EmptyMode({ processing, setProcessing }) {
         userScopes || [],
       )
       .then((githubMolecule) => {
-        console.log(
-          `[EmptyMode] Successfully loaded Base GitHub molecule: ${baseOwner}/${baseRepo}`,
-        );
-
         return GlobalVariables.currentMolecule.loadGithubMoleculeByName(
           {
             owner: headOwner,
@@ -284,15 +279,9 @@ function EmptyMode({ processing, setProcessing }) {
         );
       })
       .then((headGithubMolecule) => {
-        console.log(
-          "[EmptyMode] Both GitHub molecules fully loaded - resolving",
-        );
         return Promise.resolve();
       })
       .catch((err) => {
-        console.error(
-          `[EmptyMode] Error loading GitHub molecule: ${err.message}`,
-        );
         setErrorNotification(
           `Failed to load GitHub molecules: ${err.message}`,
           "error",
@@ -308,19 +297,11 @@ function EmptyMode({ processing, setProcessing }) {
     // Prepare empty molecule with Output atom and Assembly atom
     createandEnableEmptyMolecule()
       .then(() => {
-        console.log("[EmptyMode] Empty molecule creation complete");
         // Load Head and Base as Github molecules if owner and repo are provided in URL params
         return loadHeadAndBaseMoleculesFromGithub();
       })
       .then(() => {
         // Find the GitHub molecule we just loaded
-        console.log(
-          "[EmptyMode] All atoms on screen:",
-          GlobalVariables.topLevelMolecule.nodesOnTheScreen.map(
-            (atom) => `${atom.atomType}:${atom.name}`,
-          ),
-        );
-
         const baseRepoMolecule =
           GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
             (atom) =>
@@ -361,9 +342,6 @@ function EmptyMode({ processing, setProcessing }) {
             headTagAtom &&
             baseTagAtom
           ) {
-            console.log(
-              "[EmptyMode] All required atoms found, creating connectors",
-            );
             // Create connector: headRepoMolecule output → headTagAtom input
             new Connector({
               atomType: "Connector",
@@ -371,9 +349,12 @@ function EmptyMode({ processing, setProcessing }) {
               attachmentPoint2: headTagAtom.inputs[0],
               parentMolecule: GlobalVariables.topLevelMolecule,
             });
-            console.log(
-              "[EmptyMode] Created connector: headRepoMolecule → headTagAtom",
-            );
+
+            // Trigger status update on headTagAtom
+            if (headTagAtom.status === "disabled") {
+              headTagAtom.enable();
+            }
+            headTagAtom.onUpstreamChange?.();
 
             // Create connector: baseRepoMolecule output → baseTagAtom input
             new Connector({
@@ -382,19 +363,18 @@ function EmptyMode({ processing, setProcessing }) {
               attachmentPoint2: baseTagAtom.inputs[0],
               parentMolecule: GlobalVariables.topLevelMolecule,
             });
-            console.log(
-              "[EmptyMode] Created connector: baseRepoMolecule → baseTagAtom",
-            );
+
+            // Trigger status update on baseTagAtom
+            if (baseTagAtom.status === "disabled") {
+              baseTagAtom.enable();
+            }
+            baseTagAtom.onUpstreamChange?.();
 
             // Create connector: headTagAtom output → assemblyAtom (first available input)
             const headAssemblyInput =
               GlobalVariables.topLevelMolecule.findFirstAvailableGeometryInput(
                 assemblyAtom,
               );
-            console.log(
-              "[EmptyMode] Found headAssemblyInput:",
-              headAssemblyInput,
-            );
             if (headAssemblyInput) {
               new Connector({
                 atomType: "Connector",
@@ -402,15 +382,6 @@ function EmptyMode({ processing, setProcessing }) {
                 attachmentPoint2: headAssemblyInput,
                 parentMolecule: GlobalVariables.topLevelMolecule,
               });
-              console.log(
-                "[EmptyMode] Created connector: headTagAtom → assemblyAtom (input: " +
-                  headAssemblyInput.name +
-                  ")",
-              );
-            } else {
-              console.warn(
-                "[EmptyMode] No available geometry input found on assemblyAtom for head",
-              );
             }
             addOrDeletePorts(assemblyAtom); // Ensure ports are updated after adding connectors
 
@@ -419,10 +390,6 @@ function EmptyMode({ processing, setProcessing }) {
               GlobalVariables.topLevelMolecule.findFirstAvailableGeometryInput(
                 assemblyAtom,
               );
-            console.log(
-              "[EmptyMode] Found baseAssemblyInput:",
-              baseAssemblyInput,
-            );
             if (baseAssemblyInput) {
               new Connector({
                 atomType: "Connector",
@@ -430,15 +397,6 @@ function EmptyMode({ processing, setProcessing }) {
                 attachmentPoint2: baseAssemblyInput,
                 parentMolecule: GlobalVariables.topLevelMolecule,
               });
-              console.log(
-                "[EmptyMode] Created connector: baseTagAtom → assemblyAtom (input: " +
-                  baseAssemblyInput.name +
-                  ")",
-              );
-            } else {
-              console.warn(
-                "[EmptyMode] No available geometry input found on assemblyAtom for base",
-              );
             }
 
             // Create connector: assemblyAtom output → outputAtom input
@@ -448,40 +406,29 @@ function EmptyMode({ processing, setProcessing }) {
               attachmentPoint2: outputAtom.inputs[0],
               parentMolecule: GlobalVariables.topLevelMolecule,
             });
-            console.log(
-              "[EmptyMode] Created connector: assemblyAtom → outputAtom",
-            );
 
-            console.log("[EmptyMode] All connectors created successfully");
+            // After connectors are created, explicitly trigger status updates
+            // Creating connectors doesn't automatically call onUpstreamChange on receiving atoms
+            // Enable and update assembly atom
+            if (assemblyAtom.status === "disabled") {
+              assemblyAtom.enable();
+            }
+            assemblyAtom.onUpstreamChange?.();
+
+            // Enable and update output atom
+            if (outputAtom.status === "disabled") {
+              outputAtom.enable();
+            }
+            outputAtom.onUpstreamChange?.();
           } else {
-            console.warn(
-              "[EmptyMode] Not all required atoms found or missing inputs:",
-            );
-            console.warn("[EmptyMode] outputAtom:", outputAtom || "MISSING");
-            console.warn(
-              "[EmptyMode] assemblyAtom:",
-              assemblyAtom || "MISSING",
-            );
-            console.warn(
-              "[EmptyMode] headRepoMolecule:",
-              headRepoMolecule || "MISSING",
-            );
-            console.warn("[EmptyMode] headTagAtom:", headTagAtom || "MISSING");
-            console.warn("[EmptyMode] baseTagAtom:", baseTagAtom || "MISSING");
+            // All required atoms not found or missing inputs
           }
-        } else {
-          console.warn(
-            "[EmptyMode] GitHub molecule not found or has no output",
-          );
         }
         GlobalVariables.currentMolecule.enable();
         GlobalVariables.currentMolecule.onUpstreamChange();
-        console.log(GlobalVariables.topLevelMolecule);
         setActiveAtom(GlobalVariables.currentMolecule);
-        console.log(GlobalVariables.topLevelMolecule.availableTags);
       })
       .catch((err) => {
-        console.error(`[EmptyMode] Error in setup: ${err.message}`);
         setErrorNotification(
           `Failed to set up molecules: ${err.message}`,
           "error",
@@ -498,7 +445,6 @@ function EmptyMode({ processing, setProcessing }) {
 
   if (activeAtom) {
     activeAtom.onStatusChange = (status) => {
-      console.log(`[EmptyMode] Active atom status changed to: ${status}`);
       if (status === "waiting") {
         setOutdatedMesh(true);
         setProcessing(true);
