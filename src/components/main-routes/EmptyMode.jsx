@@ -206,43 +206,66 @@ function EmptyMode({ processing, setProcessing }) {
       true,
     );
 
+    // Create and place Color atoms BEFORE Tag atoms (inverted order for processing)
+    // Color Head (Green - index 7)
+    await GlobalVariables.topLevelMolecule.placeAtom(
+      {
+        parentMolecule: GlobalVariables.topLevelMolecule,
+        x: 0.98,
+        y: 0.5,
+        parent: GlobalVariables.topLevelMolecule,
+        name: "Color Head",
+        atomType: "Color",
+        uniqueID: GlobalVariables.generateUniqueID(),
+        selectedColorIndex: 7,
+      },
+      true,
+    );
+
+    // Color Base (Red - index 1)
+    await GlobalVariables.topLevelMolecule.placeAtom(
+      {
+        parentMolecule: GlobalVariables.topLevelMolecule,
+        x: 0.98,
+        y: 0.5,
+        parent: GlobalVariables.topLevelMolecule,
+        name: "Color Base",
+        atomType: "Color",
+        uniqueID: GlobalVariables.generateUniqueID(),
+        selectedColorIndex: 1,
+      },
+      true,
+    );
+
     // Create and place a Tag atom in the new molecule (Head)
-    await GlobalVariables.topLevelMolecule
-      .placeAtom(
-        {
-          parentMolecule: GlobalVariables.topLevelMolecule,
-          x: 0.98,
-          y: 0.5,
-          parent: GlobalVariables.topLevelMolecule,
-          name: "Head",
-          atomType: "Tag",
-          uniqueID: GlobalVariables.generateUniqueID(),
-        },
-        true,
-      )
-      .then((tagAtom) => {
-        // Set the tag value to "Head"
-        tagAtom.tags = ["Head"];
-      });
+    await GlobalVariables.topLevelMolecule.placeAtom(
+      {
+        parentMolecule: GlobalVariables.topLevelMolecule,
+        x: 0.98,
+        y: 0.5,
+        parent: GlobalVariables.topLevelMolecule,
+        name: "Head",
+        atomType: "Tag",
+        uniqueID: GlobalVariables.generateUniqueID(),
+        tags: ["Head"],
+      },
+      true,
+    );
 
     // Create and place a Tag atom in the new molecule (Base)
-    await GlobalVariables.topLevelMolecule
-      .placeAtom(
-        {
-          parentMolecule: GlobalVariables.topLevelMolecule,
-          x: 0.98,
-          y: 0.5,
-          parent: GlobalVariables.topLevelMolecule,
-          name: "Base",
-          atomType: "Tag",
-          uniqueID: GlobalVariables.generateUniqueID(),
-        },
-        true,
-      )
-      .then((tagAtom) => {
-        // Set the tag value to "Base"
-        tagAtom.tags = ["Base"];
-      });
+    await GlobalVariables.topLevelMolecule.placeAtom(
+      {
+        parentMolecule: GlobalVariables.topLevelMolecule,
+        x: 0.98,
+        y: 0.5,
+        parent: GlobalVariables.topLevelMolecule,
+        name: "Base",
+        atomType: "Tag",
+        uniqueID: GlobalVariables.generateUniqueID(),
+        tags: ["Base"],
+      },
+      true,
+    );
 
     // Enable the new molecule and all its children
     GlobalVariables.currentMolecule.enable();
@@ -348,26 +371,55 @@ function EmptyMode({ processing, setProcessing }) {
             (atom) => atom.atomType === "Tag" && atom.name === "Base",
           );
 
+        const headColorAtom =
+          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
+            (atom) => atom.atomType === "Color" && atom.name === "Color Head",
+          );
+
+        const baseColorAtom =
+          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
+            (atom) => atom.atomType === "Color" && atom.name === "Color Base",
+          );
+
         if (baseRepoMolecule && baseRepoMolecule.output) {
           if (
             outputAtom &&
             assemblyAtom &&
             headRepoMolecule &&
             headTagAtom &&
-            baseTagAtom
+            baseTagAtom &&
+            headColorAtom &&
+            baseColorAtom
           ) {
-            // Create connector: headRepoMolecule output → headTagAtom input
+            // Inverted order: GitHub → Color → Tag → Assembly
+            // Create connector: headRepoMolecule output → headColorAtom input
             new Connector({
               atomType: "Connector",
               attachmentPoint1: headRepoMolecule.output,
+              attachmentPoint2: headColorAtom.inputs[0],
+              parentMolecule: GlobalVariables.topLevelMolecule,
+            });
+
+            // Create connector: baseRepoMolecule output → baseColorAtom input
+            new Connector({
+              atomType: "Connector",
+              attachmentPoint1: baseRepoMolecule.output,
+              attachmentPoint2: baseColorAtom.inputs[0],
+              parentMolecule: GlobalVariables.topLevelMolecule,
+            });
+
+            // Create connector: headColorAtom output → headTagAtom input
+            new Connector({
+              atomType: "Connector",
+              attachmentPoint1: headColorAtom.output,
               attachmentPoint2: headTagAtom.inputs[0],
               parentMolecule: GlobalVariables.topLevelMolecule,
             });
 
-            // Create connector: baseRepoMolecule output → baseTagAtom input
+            // Create connector: baseColorAtom output → baseTagAtom input
             new Connector({
               atomType: "Connector",
-              attachmentPoint1: baseRepoMolecule.output,
+              attachmentPoint1: baseColorAtom.output,
               attachmentPoint2: baseTagAtom.inputs[0],
               parentMolecule: GlobalVariables.topLevelMolecule,
             });
