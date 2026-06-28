@@ -267,6 +267,35 @@ function EmptyMode({ processing, setProcessing }) {
       true,
     );
 
+    // Create and place an Intersect atom
+    await GlobalVariables.topLevelMolecule.placeAtom(
+      {
+        parentMolecule: GlobalVariables.topLevelMolecule,
+        x: 0.98,
+        y: 0.5,
+        parent: GlobalVariables.topLevelMolecule,
+        name: "Intersection",
+        atomType: "Intersection",
+        uniqueID: GlobalVariables.generateUniqueID(),
+      },
+      true,
+    );
+
+    // Create and place a Color atom for the Intersect output (index 5)
+    await GlobalVariables.topLevelMolecule.placeAtom(
+      {
+        parentMolecule: GlobalVariables.topLevelMolecule,
+        x: 0.98,
+        y: 0.5,
+        parent: GlobalVariables.topLevelMolecule,
+        name: "Color Intersect",
+        atomType: "Color",
+        uniqueID: GlobalVariables.generateUniqueID(),
+        selectedColorIndex: 5,
+      },
+      true,
+    );
+
     // Enable the new molecule and all its children
     GlobalVariables.currentMolecule.enable();
     GlobalVariables.currentMolecule.enableAllChildren();
@@ -381,6 +410,17 @@ function EmptyMode({ processing, setProcessing }) {
             (atom) => atom.atomType === "Color" && atom.name === "Color Base",
           );
 
+        const intersectAtom =
+          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
+            (atom) => atom.atomType === "Intersection",
+          );
+
+        const intersectColorAtom =
+          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
+            (atom) =>
+              atom.atomType === "Color" && atom.name === "Color Intersect",
+          );
+
         if (baseRepoMolecule && baseRepoMolecule.output) {
           if (
             outputAtom &&
@@ -389,7 +429,9 @@ function EmptyMode({ processing, setProcessing }) {
             headTagAtom &&
             baseTagAtom &&
             headColorAtom &&
-            baseColorAtom
+            baseColorAtom &&
+            intersectAtom &&
+            intersectColorAtom
           ) {
             // Inverted order: GitHub → Color → Tag → Assembly
             // Create connector: headRepoMolecule output → headColorAtom input
@@ -452,6 +494,51 @@ function EmptyMode({ processing, setProcessing }) {
                 parentMolecule: GlobalVariables.topLevelMolecule,
               });
             }
+            addOrDeletePorts(assemblyAtom);
+
+            // Connect tag atoms to intersect atom
+            // Create connector: headTagAtom output → intersectAtom input[0]
+            if (intersectAtom.inputs[0]) {
+              new Connector({
+                atomType: "Connector",
+                attachmentPoint1: headTagAtom.output,
+                attachmentPoint2: intersectAtom.inputs[0],
+                parentMolecule: GlobalVariables.topLevelMolecule,
+              });
+            }
+
+            // Create connector: baseTagAtom output → intersectAtom input[1]
+            if (intersectAtom.inputs[1]) {
+              new Connector({
+                atomType: "Connector",
+                attachmentPoint1: baseTagAtom.output,
+                attachmentPoint2: intersectAtom.inputs[1],
+                parentMolecule: GlobalVariables.topLevelMolecule,
+              });
+            }
+
+            // Create connector: intersectAtom output → intersectColorAtom input
+            new Connector({
+              atomType: "Connector",
+              attachmentPoint1: intersectAtom.output,
+              attachmentPoint2: intersectColorAtom.inputs[0],
+              parentMolecule: GlobalVariables.topLevelMolecule,
+            });
+
+            // Create connector: intersectColorAtom output → assemblyAtom (next available input)
+            const intersectAssemblyInput =
+              GlobalVariables.topLevelMolecule.findFirstAvailableGeometryInput(
+                assemblyAtom,
+              );
+            if (intersectAssemblyInput) {
+              new Connector({
+                atomType: "Connector",
+                attachmentPoint1: intersectColorAtom.output,
+                attachmentPoint2: intersectAssemblyInput,
+                parentMolecule: GlobalVariables.topLevelMolecule,
+              });
+            }
+            addOrDeletePorts(assemblyAtom);
 
             // Create connector: assemblyAtom output → outputAtom input
             new Connector({
