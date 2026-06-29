@@ -384,7 +384,7 @@ function CreateMode() {
         },
       },
       {
-        key: "D",
+        key: "Y",
         action: () => {
           setShowDevModal(true);
         },
