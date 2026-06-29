@@ -15,7 +15,7 @@ import { filterGeometryByTags } from "./utils/geometryFilterByTags.js";
 import { CadWorkerManager } from "./worker/cadWorkerManager.js";
 import LoginMode from "./components/main-routes/LoginMode.jsx";
 import RunMode from "./components/main-routes/RunMode.jsx";
-import EmptyMode from "./components/main-routes/EmptyMode.jsx";
+import PullMode from "./components/main-routes/PullMode.jsx";
 import CreateMode from "./components/main-routes/CreateMode.jsx";
 import PreviewCreateMode from "./components/main-routes/PreviewCreateMode.jsx";
 import UserGuidePage from "./components/main-routes/UserGuidePage.jsx";
@@ -908,10 +908,7 @@ function AppContent() {
           path="/pull/:baseOwner/:baseRepo/:headOwner/:headRepo"
           element={
             <ProjectProvider cad={cad} loadProject={loadProject}>
-              <EmptyMode
-                processing={processing}
-                setProcessing={setProcessing}
-              />
+              <PullMode processing={processing} setProcessing={setProcessing} />
             </ProjectProvider>
           }
         />
@@ -919,10 +916,7 @@ function AppContent() {
           path="/pull"
           element={
             <ProjectProvider cad={cad} loadProject={loadProject}>
-              <EmptyMode
-                processing={processing}
-                setProcessing={setProcessing}
-              />
+              <PullMode processing={processing} setProcessing={setProcessing} />
             </ProjectProvider>
           }
         />
