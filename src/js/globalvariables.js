@@ -305,6 +305,35 @@ class GlobalVariables {
     this.idCounter = 1;
 
     /**
+     * A ring buffer of recent console errors captured for debugging.
+     * Stores up to 50 entries, each with a timestamp and message string.
+     * @type {Array<{timestamp: string, message: string}>}
+     */
+    this.recentErrors = [];
+
+    // Intercept console.error to populate the ring buffer without suppressing output.
+    if (typeof console !== "undefined" && typeof console.error === "function") {
+      const self = this;
+      const _originalConsoleError = console.error.bind(console);
+      console.error = function (...args) {
+        const message = args
+          .map((a) => {
+            try {
+              return typeof a === "object" ? JSON.stringify(a) : String(a);
+            } catch {
+              return String(a);
+            }
+          })
+          .join(" ");
+        self.recentErrors.push({ timestamp: new Date().toISOString(), message });
+        if (self.recentErrors.length > 50) {
+          self.recentErrors.shift();
+        }
+        _originalConsoleError(...args);
+      };
+    }
+
+    /**
      * A string to indicate a stored user font for the canvas.
      * @type {string}
      */
@@ -697,6 +726,80 @@ class GlobalVariables {
     var dist = Math.sqrt(a2 + b2);
 
     return dist;
+  }
+
+  /**
+   * Generates a structured JSON snapshot of the current system state.
+   * Intended to be copied and shared with AI assistants or developers to
+   * diagnose loading failures and other reliability issues.
+   * @returns {string} A formatted JSON string describing the current state.
+   */
+  getSystemStateReport() {
+    const describeAtom = (atom) => {
+      const entry = {
+        name: atom.name,
+        atomType: atom.atomType,
+        uniqueID: atom.uniqueID,
+        status: atom.status,
+      };
+      if (atom.processing) entry.processing = true;
+      if (atom.alertMessage) entry.alertMessage = atom.alertMessage;
+      return entry;
+    };
+
+    const currentMol = this.currentMolecule;
+    const topMol = this._topLevelMolecule;
+
+    const report = {
+      generatedAt: new Date().toISOString(),
+      project: {
+        name: this.currentRepoName || null,
+        owner: this.currentAWSnode?.owner ?? null,
+        repoUrl: this.currentRepo?.html_url ?? null,
+        isLoading: this.projectIsLoading,
+        totalAtomCount: this.totalAtomCount,
+        pendingAtomCount: this.numberOfAtomsToLoad,
+        loadElapsedMs: this.startTime
+          ? Date.now() - this.startTime
+          : null,
+      },
+      currentMolecule: currentMol
+        ? {
+            name: currentMol.name,
+            atomType: currentMol.atomType,
+            uniqueID: currentMol.uniqueID,
+            isTopLevel: currentMol.topLevel ?? false,
+            atomCount: currentMol.nodesOnTheScreen?.length ?? 0,
+            atoms: (currentMol.nodesOnTheScreen ?? []).map(describeAtom),
+          }
+        : null,
+      topLevelMolecule:
+        topMol && topMol !== currentMol
+          ? {
+              name: topMol.name,
+              atomType: topMol.atomType,
+              uniqueID: topMol.uniqueID,
+              totalAtomCount: topMol.totalAtomCount ?? null,
+            }
+          : null,
+      recentErrors: this.recentErrors.slice(-20),
+    };
+
+    if (typeof navigator !== "undefined") {
+      report.browser = { userAgent: navigator.userAgent };
+      if (typeof performance !== "undefined" && performance.memory) {
+        report.browser.memoryMB = {
+          usedJSHeap: Math.round(
+            performance.memory.usedJSHeapSize / 1_048_576,
+          ),
+          totalJSHeap: Math.round(
+            performance.memory.totalJSHeapSize / 1_048_576,
+          ),
+        };
+      }
+    }
+
+    return JSON.stringify(report, null, 2);
   }
 }
 
