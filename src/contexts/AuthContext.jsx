@@ -131,7 +131,7 @@ export function AuthProvider({ children }) {
     privateRepo = false,
   } = {}) => {
     // Helper to build the GitHub OAuth URL
-    function buildOAuthUrl({ client_id, scope, csrfToken, stateObj }) {
+    function buildOAuthUrl({ client_id, scope, stateObj }) {
       const state = encodeURIComponent(JSON.stringify(stateObj));
       return `https://github.com/login/oauth/authorize?client_id=${client_id}&response_type=code&scope=${scope}&redirect_uri=${window.origin}/callback&state=${state}`;
     }
@@ -163,15 +163,14 @@ export function AuthProvider({ children }) {
         repo: GlobalVariables.currentRepo.name,
       };
     }
-    // Build state param
+    // Build state param (CSRF token is NOT included in URL - stored locally only)
     const stateObj = {
       authType: authType,
-      csrfToken: csrfToken,
       currentRepo: repoState,
     };
     if (returnTo) stateObj.returnTo = returnTo;
 
-    const link = buildOAuthUrl({ client_id, scope, csrfToken, stateObj });
+    const link = buildOAuthUrl({ client_id, scope, stateObj });
     window.location.assign(link);
   };
 
