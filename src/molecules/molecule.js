@@ -997,9 +997,6 @@ export default class Molecule extends Atom {
           } else if (outputAtom.inputs[0]?.connectors.length == 0) {
             this.setWaiting(); // No connectors to our internal output means we're in a freshly initialized state.;
           } else {
-            console.log(
-              "All inputs ready, output not ready, setting status to processing",
-            );
             this.setProcessing();
           }
         } else {

@@ -41,13 +41,13 @@ export default class Color extends Atom {
      */
     this.colorOptions = {
       Default: "#aad7f2",
-      Red: "#FF9065",
+      Red: "#fc1010",
       Orange: "#FFB458",
       Yellow: "#FFD600",
       Olive: "#C7DF66",
       Teal: "#71D1C2",
       "Light Blue": "#75DBF2",
-      Green: "#a5f915",
+      Green: "#a1f908",
       "Lavender ": "#CCABED",
       Brown: "#CFAB7C",
       Pink: "#FFB09D",
