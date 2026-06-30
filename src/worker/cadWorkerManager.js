@@ -33,6 +33,14 @@ export class CadWorkerManager {
     /** @type {Array<{reject: Function, timeoutId: ReturnType<typeof setTimeout>}>} */
     this._pendingCalls = [];
     /**
+     * Monotonic counter identifying the live worker. It is bumped every time a
+     * fresh worker is created (initial spawn and every restart). Each dispatched
+     * call records the epoch it was issued under; when its comlink promise
+     * settles we ignore the result if the epoch no longer matches, because that
+     * settlement came from a worker that has since been terminated.
+     */
+    this._workerEpoch = 0;
+    /**
      * Optional callback invoked when the worker is restarted due to a timeout.
      * Assign this from outside (e.g. from AppContent) to show a UI notification.
      * Signature: (message: string) => void
@@ -62,6 +70,7 @@ export class CadWorkerManager {
   // ---------------------------------------------------------------------------
 
   _createWorker() {
+    this._workerEpoch += 1;
     this._rawWorker = new this._WorkerFactory();
     this._proxy = wrap(this._rawWorker);
     // Listen for intra-operation progress messages posted by the worker
@@ -228,14 +237,17 @@ export class CadWorkerManager {
       const { callArgs, taskMeta } = this._stripTaskMeta(args);
 
       const entry = {
+        resolve,
         reject,
         timeoutId: null,
         progressIntervalId: null,
         method,
+        callArgs,
         startTime: null,
         taskId,
         queuedAt,
         taskMeta,
+        epoch: null,
       };
 
       this._pendingCalls.push(entry);
@@ -256,59 +268,84 @@ export class CadWorkerManager {
         this._startTimers(entry);
       }
 
-      const cleanup = () => {
-        clearInterval(entry.progressIntervalId);
-        entry.progressIntervalId = null;
-        clearTimeout(entry.timeoutId);
-        entry.timeoutId = null;
-      };
-
-      this._proxy[method](...callArgs).then(
-        (result) => {
-          cleanup();
-          this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
-          const finishedAt = Date.now();
-          this._emitCadWorkerEvent("cad-worker-task-finish", {
-            taskId: entry.taskId,
-            method: String(entry.method),
-            queuedAt: entry.queuedAt,
-            startedAt: entry.startTime,
-            finishedAt,
-            durationMs: entry.startTime ? finishedAt - entry.startTime : null,
-            queueWaitMs: entry.startTime ? entry.startTime - entry.queuedAt : null,
-            queueDepth: this._pendingCalls.length,
-            atomId: entry.taskMeta?.atomId || null,
-            atomType: entry.taskMeta?.atomType || null,
-            moleculeName: entry.taskMeta?.moleculeName || null,
-            displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
-          });
-          this._activateNextCall();
-          resolve(result);
-        },
-        (err) => {
-          cleanup();
-          this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
-          const failedAt = Date.now();
-          this._emitCadWorkerEvent("cad-worker-task-error", {
-            taskId: entry.taskId,
-            method: String(entry.method),
-            queuedAt: entry.queuedAt,
-            startedAt: entry.startTime,
-            failedAt,
-            durationMs: entry.startTime ? failedAt - entry.startTime : null,
-            queueWaitMs: entry.startTime ? entry.startTime - entry.queuedAt : null,
-            queueDepth: this._pendingCalls.length,
-            atomId: entry.taskMeta?.atomId || null,
-            atomType: entry.taskMeta?.atomType || null,
-            moleculeName: entry.taskMeta?.moleculeName || null,
-            displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
-            error: err?.message || String(err),
-          });
-          this._activateNextCall();
-          reject(err);
-        },
-      );
+      this._dispatch(entry);
     });
+  }
+
+  /**
+   * Issue (or re-issue) an entry's call to the current comlink proxy and wire up
+   * its success/error handling. Used both for the initial dispatch and when a
+   * surviving queued entry is replayed on a fresh worker after a restart.
+   *
+   * The entry is stamped with the live `_workerEpoch`; if its comlink promise
+   * settles after the worker has been replaced (epoch mismatch), the settlement
+   * is ignored because it originates from a terminated worker.
+   * @param {object} entry
+   */
+  _dispatch(entry) {
+    entry.epoch = this._workerEpoch;
+
+    const cleanup = () => {
+      clearInterval(entry.progressIntervalId);
+      entry.progressIntervalId = null;
+      clearTimeout(entry.timeoutId);
+      entry.timeoutId = null;
+    };
+
+    this._proxy[entry.method](...entry.callArgs).then(
+      (result) => {
+        // Stale settlement from a worker that was already replaced — the entry
+        // has since been re-dispatched (or rejected) on the new worker.
+        if (entry.epoch !== this._workerEpoch) {
+          return;
+        }
+        cleanup();
+        this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
+        const finishedAt = Date.now();
+        this._emitCadWorkerEvent("cad-worker-task-finish", {
+          taskId: entry.taskId,
+          method: String(entry.method),
+          queuedAt: entry.queuedAt,
+          startedAt: entry.startTime,
+          finishedAt,
+          durationMs: entry.startTime ? finishedAt - entry.startTime : null,
+          queueWaitMs: entry.startTime ? entry.startTime - entry.queuedAt : null,
+          queueDepth: this._pendingCalls.length,
+          atomId: entry.taskMeta?.atomId || null,
+          atomType: entry.taskMeta?.atomType || null,
+          moleculeName: entry.taskMeta?.moleculeName || null,
+          displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
+        });
+        this._activateNextCall();
+        entry.resolve(result);
+      },
+      (err) => {
+        // Stale settlement from a worker that was already replaced.
+        if (entry.epoch !== this._workerEpoch) {
+          return;
+        }
+        cleanup();
+        this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
+        const failedAt = Date.now();
+        this._emitCadWorkerEvent("cad-worker-task-error", {
+          taskId: entry.taskId,
+          method: String(entry.method),
+          queuedAt: entry.queuedAt,
+          startedAt: entry.startTime,
+          failedAt,
+          durationMs: entry.startTime ? failedAt - entry.startTime : null,
+          queueWaitMs: entry.startTime ? entry.startTime - entry.queuedAt : null,
+          queueDepth: this._pendingCalls.length,
+          atomId: entry.taskMeta?.atomId || null,
+          atomType: entry.taskMeta?.atomType || null,
+          moleculeName: entry.taskMeta?.moleculeName || null,
+          displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
+          error: err?.message || String(err),
+        });
+        this._activateNextCall();
+        entry.reject(err);
+      },
+    );
   }
 
   /**
@@ -346,8 +383,14 @@ export class CadWorkerManager {
   }
 
   /**
-   * Terminate the hung worker, reject all in-flight calls, and create a fresh
-   * worker so the app can continue without a page reload.
+   * Terminate the hung worker and create a fresh one so the app can continue
+   * without a page reload.
+   *
+   * The hung call has already been removed from `_pendingCalls` and rejected by
+   * the inactivity watchdog (`_armTimeout`) before this runs. The remaining
+   * entries are therefore innocent queued/in-flight calls: rather than rejecting
+   * them (which errored valid atoms as collateral damage), they are re-dispatched
+   * to the fresh worker so the rest of the queue resumes automatically.
    */
   _restartWorker() {
     console.warn(
@@ -361,30 +404,41 @@ export class CadWorkerManager {
       console.error("[CadWorkerManager] Error while terminating worker:", e);
     }
 
-    // Reject every other pending call so callers get a clear error instead of
-    // hanging forever.
-    const pending = [...this._pendingCalls];
-    this._pendingCalls = [];
-    pending.forEach((entry) => {
+    // Snapshot the survivors (everything still queued after the hung call was
+    // already removed) and clear their stale timers. Their old comlink promises
+    // belong to the now-terminated worker and will never settle; even if one
+    // somehow did, the epoch stamp applied below makes `_dispatch` ignore it.
+    const survivors = [...this._pendingCalls];
+    survivors.forEach((entry) => {
       clearInterval(entry.progressIntervalId);
+      entry.progressIntervalId = null;
       clearTimeout(entry.timeoutId);
-      this._emitCadWorkerEvent("cad-worker-task-error", {
+      entry.timeoutId = null;
+      entry.startTime = null;
+    });
+
+    // Spawn the fresh worker (bumps `_workerEpoch`).
+    this._createWorker();
+
+    // Re-issue every survivor onto the new worker. Re-emit `cad-worker-task-queued`
+    // so the UI's queue depth reflects the replayed work.
+    survivors.forEach((entry) => {
+      this._emitCadWorkerEvent("cad-worker-task-queued", {
         taskId: entry.taskId,
         method: String(entry.method),
         queuedAt: entry.queuedAt,
-        failedAt: Date.now(),
+        queueDepth: Math.max(this._pendingCalls.indexOf(entry), 0),
         atomId: entry.taskMeta?.atomId || null,
         atomType: entry.taskMeta?.atomType || null,
         moleculeName: entry.taskMeta?.moleculeName || null,
         displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
-        error: "CAD worker restarted because another call timed out",
       });
-      entry.reject(
-        new Error("CAD worker was restarted because another call timed out"),
-      );
+      this._dispatch(entry);
     });
 
-    this._createWorker();
+    // Start the inactivity watchdog for the new head of the queue.
+    this._activateNextCall();
+
     this._emitCadWorkerEvent("cad-worker-restarted", {
       restartedAt: Date.now(),
       reason: "timeout",
@@ -392,7 +446,7 @@ export class CadWorkerManager {
 
     if (this.onRestartCallback) {
       this.onRestartCallback(
-        "The geometry worker timed out and was restarted. Please re-run any affected atoms.",
+        "The geometry worker timed out. The offending operation was dropped and the remaining work resumed automatically.",
       );
     }
   }
