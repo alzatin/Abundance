@@ -1,4 +1,5 @@
 import { wrap } from "comlink";
+import { CAD_PROGRESS_MESSAGE_TYPE } from "./progress";
 
 /**
  * Wraps a comlink-based Web Worker with a per-call timeout watchdog.
@@ -67,7 +68,7 @@ export class CadWorkerManager {
 
   _onWorkerMessage = (event) => {
     const data = event?.data;
-    if (!data || data.type !== "cad-worker-progress") {
+    if (!data || data.type !== CAD_PROGRESS_MESSAGE_TYPE) {
       return;
     }
     // Attribute the progress to the task the worker is actively processing
