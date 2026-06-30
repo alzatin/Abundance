@@ -3,6 +3,7 @@ import * as util from "./util";
 import { AbundanceLeaf, AbundanceObject } from "./util";
 import { RequestContext } from "./geometryProvider";
 import { extractKeepOut } from "./tags";
+import { reportCadProgress } from "./progress";
 /**
  * All methods in this file take multiple geometries and combine them in some way.
  *
@@ -408,11 +409,13 @@ async function assembly(
     // TODO: test if this is faster working back-to-front or front-to-back.
     for (let i = 0; i < geometries.length - 1; i++) {
       const geometry = geometries[i];
+      reportCadProgress(`cutting part ${i + 1}/${geometries.length}`);
       assembly.push(
         await cutAssembly(geometry, geometries.slice(i + 1), context),
       );
     }
     assembly.push(geometries[geometries.length - 1]); // Final entry is always unmodified.
+    reportCadProgress(`finalizing ${geometries.length} parts`);
 
     // Build the initial assembly object with all children already having bounds
     const assemblyObject: AbundanceObject = util.assemblyOf(

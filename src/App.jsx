@@ -63,10 +63,10 @@ const pool = workerpool.pool(RenderURL, {
   },
 });
 
-// CadWorkerManager wraps the comlink worker with a 360-second per-call timeout.
+// CadWorkerManager wraps the comlink worker with a 90-second per-call timeout.
 // If the worker hangs it is automatically terminated and restarted, so the UI
 // never gets permanently stuck waiting for a computation that will never return.
-const cad = new CadWorkerManager(cadWorker, 1_080_000);
+const cad = new CadWorkerManager(cadWorker, 90_000);
 
 function getLatestActiveWorkerTask(taskMap) {
   let latestTask = null;
@@ -95,7 +95,10 @@ function applyWorkerTaskUi(
   }
 
   const activeTask = getLatestActiveWorkerTask(taskMap);
-  setComputingLabel(activeTask?.displayLabel || activeTask?.method || "computing");
+  const baseLabel = activeTask?.displayLabel || activeTask?.method || "computing";
+  setComputingLabel(
+    activeTask?.subLabel ? `${baseLabel} · ${activeTask.subLabel}` : baseLabel,
+  );
 
   if (!shouldShowLoadingBar) {
     setRenderBarVisible(false);
@@ -327,6 +330,14 @@ function AppContent() {
       activeWorkerTasksRef.current.delete(detail.taskId);
       refreshUi();
     };
+    const handleWorkerTaskProgress = (event) => {
+      const detail = event?.detail || {};
+      if (!detail.taskId) return;
+      const task = activeWorkerTasksRef.current.get(detail.taskId);
+      if (!task) return;
+      task.subLabel = detail.label || null;
+      refreshUi();
+    };
     const handleWorkerRestarted = () => {
       activeWorkerTasksRef.current.clear();
       refreshUi();
@@ -338,6 +349,7 @@ function AppContent() {
     window.addEventListener("cad-worker-task-finish", handleWorkerTaskFinished);
     window.addEventListener("cad-worker-task-error", handleWorkerTaskFinished);
     window.addEventListener("cad-worker-task-cancelled", handleWorkerTaskFinished);
+    window.addEventListener("cad-worker-task-progress", handleWorkerTaskProgress);
     window.addEventListener("cad-worker-restarted", handleWorkerRestarted);
     refreshUi();
 
@@ -354,6 +366,7 @@ function AppContent() {
       window.removeEventListener("cad-worker-task-finish", handleWorkerTaskFinished);
       window.removeEventListener("cad-worker-task-error", handleWorkerTaskFinished);
       window.removeEventListener("cad-worker-task-cancelled", handleWorkerTaskFinished);
+      window.removeEventListener("cad-worker-task-progress", handleWorkerTaskProgress);
       window.removeEventListener("cad-worker-restarted", handleWorkerRestarted);
     };
   }, [processing, setRenderProgress, setRenderBarVisible, setRenderStage, setComputingLabel]);

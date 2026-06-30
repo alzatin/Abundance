@@ -58,7 +58,31 @@ export class CadWorkerManager {
   _createWorker() {
     this._rawWorker = new this._WorkerFactory();
     this._proxy = wrap(this._rawWorker);
+    // Listen for intra-operation progress messages posted by the worker
+    // (see src/worker/progress.ts). These are forwarded to the UI as
+    // `cad-worker-task-progress` CustomEvents. Comlink ignores them because
+    // they do not match its request/response protocol.
+    this._rawWorker.addEventListener("message", this._onWorkerMessage);
   }
+
+  _onWorkerMessage = (event) => {
+    const data = event?.data;
+    if (!data || data.type !== "cad-worker-progress") {
+      return;
+    }
+    // Attribute the progress to the task the worker is actively processing
+    // (the first call in the queue, whose timers are running).
+    const activeEntry =
+      this._pendingCalls.find((entry) => entry.startTime) ||
+      this._pendingCalls[0];
+    if (!activeEntry) {
+      return;
+    }
+    this._emitCadWorkerEvent("cad-worker-task-progress", {
+      taskId: activeEntry.taskId,
+      label: data.label || null,
+    });
+  };
 
   _emitCadWorkerEvent(type, detail) {
     if (typeof window === "undefined") {
@@ -309,6 +333,7 @@ export class CadWorkerManager {
     );
 
     try {
+      this._rawWorker.removeEventListener("message", this._onWorkerMessage);
       this._rawWorker.terminate();
     } catch (e) {
       console.error("[CadWorkerManager] Error while terminating worker:", e);
