@@ -54,6 +54,10 @@ const LowerHalf = forwardRef(function LowerHalf({ windowSize }, ref) {
                 fontFamily: "monospace",
                 pointerEvents: "none",
                 userSelect: "none",
+                maxWidth: "calc(100% - 20px)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
               {computingLabel}

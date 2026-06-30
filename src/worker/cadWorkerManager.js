@@ -1,4 +1,5 @@
 import { wrap } from "comlink";
+import { CAD_PROGRESS_MESSAGE_TYPE } from "./progress";
 
 /**
  * Wraps a comlink-based Web Worker with a per-call timeout watchdog.
@@ -7,6 +8,11 @@ import { wrap } from "comlink";
  * considered hung: the call (and every other in-flight call) is rejected with a
  * descriptive error, the underlying Worker is terminated, and a fresh Worker is
  * spawned so subsequent calls continue to work.
+ *
+ * The timeout is an *inactivity* watchdog: it is reset every time the worker
+ * reports mid-computation progress (see src/worker/progress.ts), so a genuinely
+ * long-running operation that keeps emitting progress will not be killed — only
+ * one that goes silent for `timeoutMs` is treated as stalled.
  *
  * Usage:
  *   const cad = new CadWorkerManager(cadWorker, 120_000);
@@ -58,7 +64,35 @@ export class CadWorkerManager {
   _createWorker() {
     this._rawWorker = new this._WorkerFactory();
     this._proxy = wrap(this._rawWorker);
+    // Listen for intra-operation progress messages posted by the worker
+    // (see src/worker/progress.ts). These are forwarded to the UI as
+    // `cad-worker-task-progress` CustomEvents. Comlink ignores them because
+    // they do not match its request/response protocol.
+    this._rawWorker.addEventListener("message", this._onWorkerMessage);
   }
+
+  _onWorkerMessage = (event) => {
+    const data = event?.data;
+    if (!data || data.type !== CAD_PROGRESS_MESSAGE_TYPE) {
+      return;
+    }
+    // Attribute the progress to the task the worker is actively processing
+    // (the first call in the queue, whose timers are running).
+    const activeEntry =
+      this._pendingCalls.find((entry) => entry.startTime) ||
+      this._pendingCalls[0];
+    if (!activeEntry) {
+      return;
+    }    // The operation is demonstrably making progress, so reset the inactivity
+    // watchdog. A long-running operation only times out if it goes silent for
+    // `_timeoutMs` (truly stalled), not merely because it takes a long time.
+    if (activeEntry.timeoutId) {
+      this._armTimeout(activeEntry);
+    }    this._emitCadWorkerEvent("cad-worker-task-progress", {
+      taskId: activeEntry.taskId,
+      label: data.label || null,
+    });
+  };
 
   _emitCadWorkerEvent(type, detail) {
     if (typeof window === "undefined") {
@@ -124,12 +158,28 @@ export class CadWorkerManager {
 
     }, 5000);
 
+    // Arm the inactivity watchdog. It is reset every time the worker reports
+    // mid-computation progress (see `_onWorkerMessage`), so it only fires when
+    // the worker has been silent for `_timeoutMs`.
+    this._armTimeout(entry);
+  }
+
+  /**
+   * (Re)arm the inactivity watchdog for an actively-processing entry. Any
+   * previously-scheduled timeout is cleared first, so calling this on each
+   * progress report effectively keeps a making-progress operation alive.
+   */
+  _armTimeout(entry) {
+    if (entry.timeoutId) {
+      clearTimeout(entry.timeoutId);
+    }
+    entry.lastActivityAt = Date.now();
     entry.timeoutId = setTimeout(() => {
       clearInterval(entry.progressIntervalId);
       entry.progressIntervalId = null;
-      const elapsed = Math.round((Date.now() - entry.startTime) / 1000);
 
       this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
+      const message = `CAD worker stalled on "${String(entry.method)}" — no progress for ${this._timeoutMs}ms`;
       this._emitCadWorkerEvent("cad-worker-task-error", {
         taskId: entry.taskId,
         method: String(entry.method),
@@ -143,13 +193,9 @@ export class CadWorkerManager {
         atomType: entry.taskMeta?.atomType || null,
         moleculeName: entry.taskMeta?.moleculeName || null,
         displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
-        error: `CAD worker timed out on "${String(entry.method)}" after ${this._timeoutMs}ms`,
+        error: message,
       });
-      entry.reject(
-        new Error(
-          `CAD worker timed out on "${String(entry.method)}" after ${this._timeoutMs}ms`,
-        ),
-      );
+      entry.reject(new Error(message));
       this._restartWorker();
     }, this._timeoutMs);
   }
@@ -309,6 +355,7 @@ export class CadWorkerManager {
     );
 
     try {
+      this._rawWorker.removeEventListener("message", this._onWorkerMessage);
       this._rawWorker.terminate();
     } catch (e) {
       console.error("[CadWorkerManager] Error while terminating worker:", e);
