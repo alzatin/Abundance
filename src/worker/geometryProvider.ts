@@ -809,6 +809,10 @@ class GeometryProvider {
     // "already exists".
     const existing = this.inFlightBatches.get(batchId);
     if (existing) {
+      // Prevent self-deadlock if a batch tries to start itself again before settling.
+      if (context.operationId === batchId) {
+        throw new Error("Batch operation with id " + batchId + " is already in flight");
+      }
       await existing.promise;
       const afterWait = await this.getAssembly(batchId, context);
       if (afterWait) {
