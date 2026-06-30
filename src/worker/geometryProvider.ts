@@ -64,6 +64,13 @@ class GeometryProvider {
   private projectLRU: string[] = [];
   private cacheHitMetrics: Record<string, [number, number, number]>; // hits, misses, total-miss-duration-ms
   private warmCache: Map<string, Map<string, ReplicadObject>> = new Map();
+  // Tracks batch operations that are currently running so that concurrent
+  // requests for an identical batch (same content-hashed id) share the first
+  // one's result instead of racing and throwing "already exists".
+  private inFlightBatches: Map<
+    string,
+    { promise: Promise<void>; resolve: () => void }
+  > = new Map();
   private batchMetrics: [number, number] = [0, 0];
 
   constructor(logMetrics: boolean = true) {
@@ -795,15 +802,49 @@ class GeometryProvider {
       return preparedResult;
     }
 
+    // If an identical batch is already running, wait for it to finish and
+    // reuse its cached result rather than racing it. Many identical
+    // sub-assemblies (e.g. repeated bolts) hash to the same batch id and are
+    // dispatched concurrently; without this the second caller would throw
+    // "already exists".
+    const existing = this.inFlightBatches.get(batchId);
+    if (existing) {
+      await existing.promise;
+      const afterWait = await this.getAssembly(batchId, context);
+      if (afterWait) {
+        return afterWait;
+      }
+      // The in-flight batch failed and cached nothing. Fall through and run
+      // the batch ourselves.
+    }
+
     if (this.warmCache.has(batchId)) {
       throw new Error("Batch operation with id " + batchId + " already exists");
     }
     this.warmCache.set(batchId, new Map());
+    let resolveInFlight!: () => void;
+    const promise = new Promise<void>((resolve) => {
+      resolveInFlight = resolve;
+    });
+    this.inFlightBatches.set(batchId, { promise, resolve: resolveInFlight });
     return {
       ...context,
       operationId: batchId,
       persistIntermediates: persistIntermediates,
     };
+  }
+
+  /**
+   * Resolve and remove the in-flight tracking entry for a batch so any
+   * concurrent waiters can proceed (and pick up the cached result if the
+   * batch succeeded).
+   */
+  private settleInFlightBatch(batchId: string): void {
+    const inFlight = this.inFlightBatches.get(batchId);
+    if (inFlight) {
+      this.inFlightBatches.delete(batchId);
+      inFlight.resolve();
+    }
   }
 
   async endBatchOperation(
@@ -845,6 +886,7 @@ class GeometryProvider {
       // Always clear the warm-cache entry so retries cannot get stuck behind
       // stale "already exists" state after a failed end-batch path.
       this.warmCache.delete(context.operationId);
+      this.settleInFlightBatch(context.operationId);
     }
   }
 
@@ -859,6 +901,7 @@ class GeometryProvider {
     }
     this.batchMetrics = [0, 0];
     this.warmCache.delete(context.operationId);
+    this.settleInFlightBatch(context.operationId);
   }
 
   async shrinkWrapSketches(
