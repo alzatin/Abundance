@@ -283,7 +283,8 @@ export class CadWorkerManager {
    * @param {object} entry
    */
   _dispatch(entry) {
-    entry.epoch = this._workerEpoch;
+    const dispatchEpoch = this._workerEpoch;
+    entry.epoch = dispatchEpoch;
 
     const cleanup = () => {
       clearInterval(entry.progressIntervalId);
@@ -296,7 +297,7 @@ export class CadWorkerManager {
       (result) => {
         // Stale settlement from a worker that was already replaced — the entry
         // has since been re-dispatched (or rejected) on the new worker.
-        if (entry.epoch !== this._workerEpoch) {
+        if (dispatchEpoch !== this._workerEpoch) {
           return;
         }
         cleanup();
@@ -321,7 +322,7 @@ export class CadWorkerManager {
       },
       (err) => {
         // Stale settlement from a worker that was already replaced.
-        if (entry.epoch !== this._workerEpoch) {
+        if (dispatchEpoch !== this._workerEpoch) {
           return;
         }
         cleanup();

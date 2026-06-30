@@ -98,4 +98,37 @@ describe("CadWorkerManager timeout re-dispatch", () => {
     await expect(survivor).resolves.toBe("ok:keep");
     expect(survivorRejected).not.toHaveBeenCalled();
   });
+
+  it("ignores stale settlements from the terminated worker after re-dispatch", async () => {
+    const neverResolves = () => new Promise(() => {});
+    let resolveStaleKeep;
+    const staleKeep = new Promise((resolve) => {
+      resolveStaleKeep = resolve;
+    });
+    let resolveFreshKeep;
+    const freshKeep = new Promise((resolve) => {
+      resolveFreshKeep = resolve;
+    });
+
+    const { WorkerFactory } = makeFactory([
+      (method) => (method === "hang" ? neverResolves() : staleKeep),
+      (method) => (method === "keep" ? freshKeep : Promise.resolve(`ok:${method}`)),
+    ]);
+
+    const cad = new CadWorkerManager(WorkerFactory, 40);
+
+    const headPromise = cad.hang();
+    const survivor = cad.keep();
+    const survivorResolved = vi.fn();
+    survivor.then(survivorResolved);
+
+    await expect(headPromise).rejects.toThrow(/stalled/i);
+
+    resolveStaleKeep("stale:keep");
+    await Promise.resolve();
+    expect(survivorResolved).not.toHaveBeenCalled();
+
+    resolveFreshKeep("fresh:keep");
+    await expect(survivor).resolves.toBe("fresh:keep");
+  });
 });
