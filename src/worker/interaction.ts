@@ -505,7 +505,13 @@ async function cutAssembly(
   //If the partToCut is an assembly pass each part back into cutAssembly function to be cut separately
   if (util.isAssembly(partToCut)) {
     const partsAfterCut: AbundanceObject[] = [];
-    for (const part of partToCut.geometry) {
+    const subParts = partToCut.geometry;
+    let subIndex = 0;
+    for (const part of subParts) {
+      subIndex++;
+      // Heartbeat: keeps the worker inactivity watchdog from firing while a
+      // deeply-nested assembly is cut part-by-part.
+      reportCadProgress(`cutting subpart ${subIndex}/${subParts.length}`);
       // make new assembly from cut parts
       partsAfterCut.push(await cutAssembly(part, cuttingParts, context));
     }
@@ -565,6 +571,7 @@ async function recursiveCut(
   // checks since we could find an entire branch of the assembly which doesn't
   // intersect bounding box. This is simpler implemenation but may someday warrant
   // a change.
+  let cutsPerformed = 0;
   for (const cuttingPart of util.flattenAssembly(cuttingParts)) {
     // --- Coplanarity check for 2D shapes ---
     if (
@@ -584,6 +591,11 @@ async function recursiveCut(
       continue; // skip: bounding boxes don't overlap
     }
 
+    // Heartbeat before each real boolean cut — this is the expensive atomic
+    // operation, so reporting here resets the inactivity watchdog even when a
+    // single leaf is cut by many parts.
+    cutsPerformed++;
+    reportCadProgress(`boolean cut ${cutsPerformed}`);
     resultGeomId = await util.geometryProvider!.cut(
       resultGeomId,
       cuttingPart.geometry,

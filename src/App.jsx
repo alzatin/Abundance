@@ -63,9 +63,11 @@ const pool = workerpool.pool(RenderURL, {
   },
 });
 
-// CadWorkerManager wraps the comlink worker with a 90-second per-call timeout.
-// If the worker hangs it is automatically terminated and restarted, so the UI
-// never gets permanently stuck waiting for a computation that will never return.
+// CadWorkerManager wraps the comlink worker with a 90-second inactivity timeout.
+// The watchdog is reset whenever the worker reports mid-computation progress, so
+// a long-running operation only times out if it goes truly silent (stalled). If
+// the worker hangs it is automatically terminated and restarted, so the UI never
+// gets permanently stuck waiting for a computation that will never return.
 const cad = new CadWorkerManager(cadWorker, 90_000);
 
 function getLatestActiveWorkerTask(taskMap) {
