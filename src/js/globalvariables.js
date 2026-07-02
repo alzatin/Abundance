@@ -3,6 +3,7 @@ import Assembly from "../molecules/assembly.js";
 import Circle from "../molecules/circle.js";
 import Color from "../molecules/color.js";
 import CutLayout from "../molecules/cutlayout.js";
+import CutOrient from "../molecules/cutOrient.js";
 import ShrinkWrap from "../molecules/shrinkWrap.js";
 import Rectangle from "../molecules/rectangle.js";
 import Loft from "../molecules/loft.js";
@@ -102,11 +103,6 @@ class GlobalVariables {
         atomType: "ExtractTag",
         atomCategory: "Tags",
       },
-      cutLayout: {
-        creator: CutLayout,
-        atomType: "CutLayout",
-        atomCategory: "Tags",
-      },
       regularPolygon: {
         creator: RegularPolygon,
         atomType: "RegularPolygon",
@@ -145,7 +141,6 @@ class GlobalVariables {
         atomCategory: "Actions",
       },
       move: { creator: Move, atomType: "Move", atomCategory: "Actions" },
-      //nest:               {creator: Nest, atomType: 'Nest', atomCategory: 'Export'},
       gcode: {
         creator: Gcode,
         atomType: "Gcode",
@@ -159,6 +154,16 @@ class GlobalVariables {
       export: {
         creator: Export,
         atomType: "Export",
+        atomCategory: "ImportExport",
+      },
+      cutOrient: {
+        creator: CutOrient,
+        atomType: "CutOrient",
+        atomCategory: "ImportExport",
+      },
+      cutLayout: {
+        creator: CutLayout,
+        atomType: "CutLayout",
         atomCategory: "ImportExport",
       },
       githubmolecule: {
