@@ -1120,7 +1120,101 @@ export function ProjectProvider({ children, cad, loadProject }) {
           }
         };
 
-        await commitViaContentsApi();
+        // GitHub's Contents API cannot handle files whose base64-encoded payload
+        // exceeds ~1 MB (raw content ~750 KB).  For large projects we fall back to
+        // the Git Data API (blobs → tree → commit → ref) which supports files up
+        // to 100 MB and still produces standard, diff-able git commits.
+        const GIT_DATA_API_THRESHOLD_BYTES = 750_000;
+
+        const commitViaGitDataApi = async () => {
+          const files = Object.entries(changes.files);
+          let processed = 0;
+
+          // 1. Resolve the current HEAD commit on the branch.
+          const refResponse = await octokit.rest.git.getRef({
+            owner,
+            repo,
+            ref: `heads/${base}`,
+          });
+          const currentCommitSha = refResponse.data.object.sha;
+
+          // 2. Get the tree SHA from that commit.
+          const commitResponse = await octokit.rest.git.getCommit({
+            owner,
+            repo,
+            commit_sha: currentCommitSha,
+          });
+          const currentTreeSha = commitResponse.data.tree.sha;
+
+          // 3. Create blobs for each non-null file and build the tree entries.
+          const treeEntries = [];
+          for (const [path, fileContent] of files) {
+            if (fileContent == null) {
+              // Signal deletion by including the path with sha: null.
+              treeEntries.push({
+                path,
+                mode: "100644",
+                type: "blob",
+                sha: null,
+              });
+            } else {
+              const blobResponse = await octokit.rest.git.createBlob({
+                owner,
+                repo,
+                content: fileContent,
+                encoding: "utf-8",
+              });
+              treeEntries.push({
+                path,
+                mode: "100644",
+                type: "blob",
+                sha: blobResponse.data.sha,
+              });
+            }
+
+            processed += 1;
+            updateSaveProgress(
+              50 +
+                Math.floor((processed / Math.max(files.length, 1)) * 20),
+            );
+          }
+
+          // 4. Create a new tree that extends the current tree with our changes.
+          const newTreeResponse = await octokit.rest.git.createTree({
+            owner,
+            repo,
+            tree: treeEntries,
+            base_tree: currentTreeSha,
+          });
+
+          // 5. Create the commit.
+          const newCommitResponse = await octokit.rest.git.createCommit({
+            owner,
+            repo,
+            message: changes.commit,
+            tree: newTreeResponse.data.sha,
+            parents: [currentCommitSha],
+          });
+
+          // 6. Fast-forward the branch ref to the new commit.
+          await octokit.rest.git.updateRef({
+            owner,
+            repo,
+            ref: `heads/${base}`,
+            sha: newCommitResponse.data.sha,
+            force: false,
+          });
+        };
+
+        const hasLargeFile = Object.values(changes.files).some(
+          (content) =>
+            content != null && content.length > GIT_DATA_API_THRESHOLD_BYTES,
+        );
+        if (hasLargeFile) {
+          await commitViaGitDataApi();
+        } else {
+          await commitViaContentsApi();
+        }
 
         updateSaveProgress(80);
 
