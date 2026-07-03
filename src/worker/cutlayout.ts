@@ -1,13 +1,23 @@
 import { proxy } from "comlink";
 import { PlacementWrapper, PolygonPacker } from "polygon-packer";
 import type { DisplayCallback } from "polygon-packer/src/types";
-import { Face, Shape3D } from "replicad";
+import { Drawing, Face, Shape3D } from "replicad";
 import { extractKeepOut } from "./tags";
-import { ReplicadObject, RequestContext } from "./geometryProvider";
+import { RequestContext } from "./geometryProvider";
 import type { AbundanceLeaf, AbundanceObject } from "./util";
 import * as util from "./util";
+import shrinkWrap from "replicad-shrink-wrap";
+import * as replicad from "replicad";
 
 type SimpleXY = { x: number; y: number };
+
+type OrientationConfig = {
+  units: "MM" | "inches";
+};
+
+type Orientation = {
+  downwardFaceIndex: number;
+};
 
 type LayoutConfig = {
   width: number;
@@ -31,9 +41,9 @@ type ShapeForLayout = {
 type OrientationCandidate = {
   face: Face;
   offset: number;
-  geom: ReplicadObject;
   faceIndex: number;
   thickness: number;
+  innerWires: number;
 };
 
 const rotateMemoCache = new Map<
@@ -54,6 +64,89 @@ function clearRotateCache() {
   rotateMemoCache.clear();
 }
 
+async function orient(
+  assembly: AbundanceObject,
+  orientationConfig: OrientationConfig,
+  context: RequestContext,
+): Promise<[AbundanceObject, Orientation[]]> {
+  console.log("orient called.");
+  const orientations: Orientation[] = await rotateForLayout(assembly, context);
+  console.log("picked orientations: ", orientations);
+  const orientedAssembly = await displayOrientation(
+    assembly,
+    orientations,
+    orientationConfig,
+    context,
+  );
+  return [orientedAssembly, orientations];
+}
+
+async function displayOrientation(
+  assembly: AbundanceObject,
+  orientations: Orientation[],
+  orientationConfig: OrientationConfig,
+  context: RequestContext,
+): Promise<AbundanceObject> {
+  console.log("displayOrientation called.");
+  const getCacheId = (geom: string, index: number) => {
+    return "faceToXY-" + index + "-" + geom;
+  };
+  const padding = 1; //orientationConfig.units === "MM" ? 25 : 1;
+
+  const bottomLeftTarget = { x: 0, y: 0 };
+  let index = 0;
+  const result = util.actOnLeafs(assembly, async (leaf: AbundanceLeaf) => {
+    if (!util.is3D(leaf)) {
+      return leaf;
+    }
+    let targetFaceIndex = orientations[index].downwardFaceIndex;
+    index++;
+    const batchId = getCacheId(leaf.geometry, targetFaceIndex);
+
+    // Extra batching logic to ensure that we can get cache hits on the "addSingular" operation below.
+    const cachedResultOrContext: AbundanceObject | RequestContext =
+      await util.geometryProvider!.startBatchOperation(context, batchId);
+    if (util.isAbundanceObject(cachedResultOrContext)) {
+      bottomLeftTarget.x =
+        (cachedResultOrContext.boundingBox?.max[0] || 0) + padding; // Update bottomLeftTarget for next leaf
+      return cachedResultOrContext as AbundanceLeaf; // Return cached result if available
+    }
+    const geom = (await util.geometryProvider!.get(
+      leaf.geometry,
+      cachedResultOrContext,
+    )) as Shape3D;
+    targetFaceIndex = targetFaceIndex % geom.faces.length; // Ensure the index is within bounds
+
+    let result = moveFaceToCuttingPlane(geom, geom.faces[targetFaceIndex]);
+
+    // Translate and rotate so we accumulate a nonoverlapping stack
+    let bbox = result.boundingBox;
+    if (bbox.width > bbox.height) {
+      result = result.rotate(90, [0, 0, 0], [0, 0, 1]);
+    }
+    bbox = result.boundingBox;
+    result = result.translate(
+      bottomLeftTarget.x - bbox.bounds[0][0],
+      bottomLeftTarget.y - bbox.bounds[0][1],
+      0,
+    );
+    bbox = result.boundingBox;
+    bottomLeftTarget.x += bbox.width + padding;
+
+    leaf.boundingBox = { min: bbox.bounds[0], max: bbox.bounds[1] };
+    leaf.geometry = await util.geometryProvider!.addSingularToCache(
+      result,
+      cachedResultOrContext,
+      "faceToXY-",
+      [targetFaceIndex, leaf.geometry],
+    );
+    await util.geometryProvider!.endBatchOperation(cachedResultOrContext, leaf);
+
+    return leaf as AbundanceLeaf;
+  });
+  return result;
+}
+
 async function layout(
   assembly: AbundanceObject,
   progressCallback: (progress: number, cancelCallback: () => void) => void,
@@ -64,11 +157,8 @@ async function layout(
   previousPlacements: Placement[][] | undefined = undefined,
 ): Promise<[AbundanceObject, Placement[][]]> {
   checkConfig(layoutConfig);
-
-  const [rotatedAssembly, shapesForLayout] = await rotateForLayout(
+  const [assemblyWithMetadata, shapesForLayout] = await prepShapesForLayout(
     assembly,
-    layoutConfig,
-    warningCallback,
     context,
   );
 
@@ -82,7 +172,7 @@ async function layout(
   return positionsPromise.then(async (positions) => {
     //This does the actual layout of the parts.
     const layedOutAssembly = await applyLayout(
-      rotatedAssembly,
+      assemblyWithMetadata,
       positions,
       layoutConfig,
       context,
@@ -92,7 +182,7 @@ async function layout(
       // This should not happen anymore since we provide default placements,
       // but keep this as a safety check
       console.warn("Unexpected: received empty positions array");
-      return [rotatedAssembly, []];
+      return [assembly, []];
     } else {
       const unplacedParts = shapesForLayout.length - positions.flat().length;
       if (unplacedParts > 0) {
@@ -120,34 +210,9 @@ async function displayLayout(
   layoutConfig: LayoutConfig,
   context: RequestContext,
 ): Promise<AbundanceObject> {
-  const [rotatedAssembly, shapesForLayout] = await rotateForLayout(
-    assembly,
-    layoutConfig,
-    warningCallback,
-    context,
-  );
-  const result = await applyLayout(
-    rotatedAssembly,
-    positions,
-    layoutConfig,
-    context,
-  );
+  const result = await applyLayout(assembly, positions, layoutConfig, context);
+  console.log(result);
   return result;
-}
-
-/**
- * Apply the transformations to display already-rotated geometry.
- * This function is used when we already have a pre-rotated assembly
- * to avoid calling rotateForLayout again for performance.
- */
-async function displayLayoutWithRotatedAssembly(
-  rotatedAssembly: AbundanceObject,
-  positions: Placement[][],
-  warningCallback: (msg: string) => void,
-  layoutConfig: LayoutConfig,
-  context: RequestContext,
-): Promise<AbundanceObject> {
-  return applyLayout(rotatedAssembly, positions, layoutConfig, context);
 }
 
 /**
@@ -166,10 +231,8 @@ async function createAndDisplayDefaultLayout(
   layoutConfig: LayoutConfig,
   context: RequestContext,
 ): Promise<[AbundanceObject, Placement[][]]> {
-  const [rotatedAssembly, shapesForLayout] = await rotateForLayout(
+  const [assemblyWithMetadata, shapesForLayout] = await prepShapesForLayout(
     assembly,
-    layoutConfig,
-    warningCallback,
     context,
   );
   const defaultPlacements = createDefaultPlacements(
@@ -177,7 +240,7 @@ async function createAndDisplayDefaultLayout(
     layoutConfig,
   );
   const displayedLayout = await applyLayout(
-    rotatedAssembly,
+    assemblyWithMetadata,
     defaultPlacements,
     layoutConfig,
     context,
@@ -185,285 +248,233 @@ async function createAndDisplayDefaultLayout(
   return [displayedLayout, defaultPlacements];
 }
 
+function shrinkWrapForBoundary(drawing: Drawing): SimpleXY[] {
+  const wrapped = shrinkWrap(drawing, 50).sketchOnPlane();
+  if (wrapped instanceof replicad.Sketches) {
+    throw Error(
+      "Disjoint parts not always supported. Failed to shrinkwrap a disjoint input",
+    );
+  }
+  return faceToPolygon(wrapped.face());
+}
+
+function faceToPolygon(face: Face) {
+  const mesh = face
+    .clone()
+    .outerWire()
+    .meshEdges({ tolerance: 0.2, angularTolerance: 0.5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
+
+  return preparePoints(mesh, 0.2 / 100);
+}
+
+function projectAndWrapBoundary(shape: Shape3D): SimpleXY[] | undefined {
+  let projection;
+  try {
+    projection = replicad.drawProjection(shape, "XY");
+  } catch (err) {
+    console.error("Failed to generate projection", err);
+    return undefined;
+  }
+  try {
+    return shrinkWrapForBoundary(projection.visible);
+  } catch (err) {
+    console.error("Failed to shrinkwrap projection: ", err);
+    return undefined;
+  }
+}
+
+function boundingBoxAsBoundary(shape: Shape3D): SimpleXY[] {
+  const bounds = shape.boundingBox.bounds;
+  return [
+    { x: bounds[0][0], y: bounds[0][1] },
+    { x: bounds[0][0], y: bounds[1][1] },
+    { x: bounds[1][0], y: bounds[1][1] },
+    { x: bounds[1][0], y: bounds[0][1] },
+  ];
+}
+
+async function prepShapesForLayout(
+  assembly: AbundanceObject,
+  context: RequestContext,
+): Promise<[AbundanceObject, ShapeForLayout[]]> {
+  const facefinder = new replicad.FaceFinder().inPlane("XY");
+
+  const result = [] as ShapeForLayout[];
+  assembly = await util.actOnLeafs(assembly, async (leaf: AbundanceLeaf) => {
+    if (util.is2D(leaf)) {
+      const geom = (await util.geometryProvider!.get(
+        leaf.geometry,
+        context,
+      )) as Drawing;
+      const sketched = geom.sketchOnPlane();
+      const boundary =
+        sketched instanceof replicad.Sketches
+          ? shrinkWrapForBoundary(geom) // if disjoint shapes, shrinkwrap them all
+          : faceToPolygon(sketched.face());
+      result.push({ id: leaf.geometry, shape: boundary });
+      return leaf;
+    } else if (util.is3D(leaf)) {
+      const geom = (await util.geometryProvider!.get(
+        leaf.geometry,
+        context,
+      )) as Shape3D;
+      // query for face in XY plane.
+      const faces = facefinder.find(geom);
+      let boundary;
+      if (faces.length === 1) {
+        // Happy case, a single face on the XY plane. Use it's boundary.
+        boundary = faceToPolygon(faces[0]);
+      } else {
+        // Either too many faces or none at all. In either case fall back to the
+        // projected boundary of this part.
+        boundary = projectAndWrapBoundary(geom);
+        if (boundary === undefined) {
+          // Fall back further to a bounding box rectangle
+          boundary = boundingBoxAsBoundary(geom);
+        }
+      }
+      result.push({ id: leaf.geometry, shape: boundary }); // Just pick the first one for now.
+      return leaf;
+    }
+  });
+  return [assembly, result];
+}
+
 /**
- * Rotates and moves all leafs into an orientation which can be fed into
- * the nesting algorithm.
- *
- * Specific criteria of this pre-layout step are as follows:
- * 1) rotate the part such that the best possible face is aligned with the XY plane.
- *    Criteria for the best face are as follows (in order):
- *    a) face must be flat (eg: not the edge of a cylinder)
- *    b) face must have no protrusions below the XY plane
- *    c) face must be within the (inferred) thickness of the material
- *    d) face should have minimal number of interior voids and have the largest bounding box
+ * Pick orientations for each part in the assembly. Return the index of the face which should
+ * be down on the XY plane.
  */
 async function rotateForLayout(
   assembly: AbundanceObject,
-  layoutConfig: LayoutConfig,
-  warningCallback: (msg: string) => void,
   context: RequestContext,
-): Promise<[AbundanceObject, ShapeForLayout[]]> {
+): Promise<Orientation[]> {
   // Filter out keepout geometry before any processing
   const filteredAssembly = extractKeepOut(assembly);
   if (!filteredAssembly) {
     throw new Error("No geometry to layout after keepout geometry is excluded");
   }
 
-  const cacheID = JSON.stringify([filteredAssembly, layoutConfig]);
-  const cached = rotateMemoCache.get(cacheID);
-  if (cached) {
-    const [rotatedAssembly, shapesForLayout, warning] = cached;
-    try {
-      await util.geometryProvider!.get(
-        util.flattenAssembly(rotatedAssembly)[0].geometry,
-        context,
-      );
-      // If retrieving a geometry succeeds, then the cache hasn't been revoked on us
-      // and we can proceed.
-      if (warning) {
-        warningCallback(warning);
-      }
-
-      return Promise.resolve([rotatedAssembly, shapesForLayout]);
-    } catch (error) {
-      console.warn(
-        "Geom cache was evicted during the lifetime of rotateForLayout memoization",
-        error,
-      );
-    }
-  }
-
-  // Cache miss - only clear old entries to prevent memory leaks from long sessions
-  // but retain recent ones for chained cutlayouts
-  if (rotateMemoCache.size > 10) {
-    // Keep cache under control - if we have more than 10 entries, remove the oldest
-    const firstKey = rotateMemoCache.keys().next().value;
-    rotateMemoCache.delete(firstKey);
-  }
   // Compute rotated positions for this layout.
   const THICKNESS_TOLLERANCE = 0.001;
 
-  function equalThickness(a: number, b: number) {
-    return Math.abs(a - b) < THICKNESS_TOLLERANCE;
-  }
+  const orientations: Orientation[] = [];
+  await util.actOnLeafs(filteredAssembly, async (leaf: AbundanceLeaf) => {
+    let geom = await util.geometryProvider!.get(leaf.geometry, context);
+    if (util.is2D(leaf)) {
+      // drawings get stuck onto the XY plane. No other rotation needed.
+      leaf.plane = util.XYPlane;
+      return leaf;
+    }
+    if (!util.is3D(leaf)) {
+      leaf.tags.push("unorientable");
+      return leaf;
+    }
+    // Now just dealing with 3d shapes.
 
-  let localId = 0;
-  const shapesForLayout: ShapeForLayout[] = [];
-  const layoutWarnList: string[] = [];
+    geom = geom as Shape3D;
 
-  // Algo overview:
-  // collect all prospective orientations for all parts
-  // come up with a best-guess material thickness or n/a
-  // select among candidates for each part based on either good fit to the
-  //    estimated material thickness, or just take thinnest orientation.
+    // Go through largest faces first. They're usually going to be the best candidates.
+    const orderedFaces = geom.faces
+      .slice()
+      .map((face, index) => ({
+        f: face,
+        i: index,
+        area: areaApprox(face.clone().UVBounds),
+      }))
+      .sort((a, b) => b.area - a.area);
 
-  // get candidates as {leaf_id: "abc", [candidate 1, candidate 2 etc]}
-  const all_candidates: { [leaf_id: string]: OrientationCandidate[] } = {};
-  const intermediate = await util.actOnLeafs(
-    filteredAssembly,
-    async (leaf: AbundanceLeaf) => {
-      let geom = await util.geometryProvider!.get(leaf.geometry, context);
-      if (!("faces" in geom)) {
-        // geom is a 2D object.
-        return leaf;
-        // TODO: add a warning here
-      } else if (geom.faces.length == 0) {
-        // unexpectedly no faces on this geometry. TODO: add a warning here.
-        return leaf;
+    const filtered = orderedFaces.filter(
+      ({ f: face }) => face.geomType == "PLANE",
+    );
+    if (filtered.length == 0) {
+      // No planar faces... just take a wild guess using the largest face.
+      orientations.push({ downwardFaceIndex: orderedFaces[0].i });
+      return leaf;
+    }
+
+    let prefilter: ((otherFace: Face) => boolean) | undefined = undefined;
+    let bestCandidate: OrientationCandidate | undefined = undefined;
+
+    filtered.forEach(({ f: face, i: originalIndex }) => {
+      if (prefilter != undefined && !prefilter(face)) {
+        return;
       }
-      geom = geom as Shape3D; // Safe to cast b/c we checked for faces above.
 
-      // For each face, consider it as the underside of the shape on the CNC bed.
-      // In order to be considered, a face must be...
-      //  1) a flat PLANE, not a cylinder, or sphere or other curved face type.
-      //  2) there must be no parts of the shape which protrude "below" this face
-      const candidates: OrientationCandidate[] = [];
-      let faceIndex = 0;
-      geom.faces.forEach((face) => {
-        let prospectiveGoem = moveFaceToCuttingPlane(geom, face);
-        let offset = 0;
-        if (
-          prospectiveGoem.boundingBox.bounds[0][2] <
-          -1 * THICKNESS_TOLLERANCE
-        ) {
-          // this face causes protrusions below the XY plane, move the prospective geometry so that
-          // all points are above the XY plane. Record this movement, since it's a red flag for
-          // this candidate.
-          offset = -1 * prospectiveGoem.boundingBox.bounds[0][2];
-          prospectiveGoem = prospectiveGoem.translate(0, 0, offset);
-        }
-        candidates.push({
-          face: face,
-          offset: offset,
-          geom: prospectiveGoem,
-          faceIndex: faceIndex,
-          thickness: prospectiveGoem.boundingBox.depth,
-        });
-        faceIndex++;
-      });
+      const prospectiveGoem = moveFaceToCuttingPlane(geom, face);
 
-      all_candidates[localId] = candidates;
-      const newLeaf = {
-        ...leaf,
-        id: localId,
-      };
-      localId++;
-      return newLeaf;
-    },
-  );
-
-  // Heuristic here is... for each part get it's minimum thickness. If the largest of these is
-  // <= 1" then it's credibly the size of stock being used, so set that as our material
-  // thickness and select among candidates for each part.
-
-  let material_thickness = -1;
-  if (layoutConfig.units) {
-    const LARGEST_PLAUSIBLE_STOCK = layoutConfig.units == "MM" ? 25.4 : 1;
-    const min_thickness_per_part = Object.values(all_candidates).map((s) =>
-      Math.min(...s.map((c) => c.thickness)),
-    );
-    if (
-      Math.max(...min_thickness_per_part) <=
-      LARGEST_PLAUSIBLE_STOCK + THICKNESS_TOLLERANCE
-    ) {
-      material_thickness = Math.max(...min_thickness_per_part);
-    }
-  }
-
-  if (Object.keys(all_candidates).length == 0) {
-    // If no candidates were found, we can't proceed with the layout.
-    throw new Error(
-      "No placeable parts found for layout. 2D parts are not supported.",
-    );
-  }
-
-  const rotatedAssembly = await util.actOnLeafs(intermediate, async (leaf) => {
-    // @ts-ignore - we just added ID but it's not officially part of the type signature
-    const leafID: string = leaf.id;
-    const candidates = all_candidates[leafID];
-    if (candidates == undefined || candidates.length == 0) {
-      // This should be impossible.
-      throw new Error("Failed to filter unplacable part. id: " + leafID);
-    }
-    let selected: OrientationCandidate;
-    if (candidates.length == 1) {
-      selected = candidates[0];
-    } else {
-      // For each candidate generate a descriptive struct with the properties we care about.
-      // namely:
-      //  - is planar face
-      //  - offset (how much the of the object is below the face)
-      //  - thickness
-      //  - area (approx)
-      //  - number of interior wires (if any)
-      const scores = candidates.map((c, index) => {
-        return {
-          candidate_index: index,
-          is_planar: c.face.geomType == "PLANE",
-          offset: c.offset,
-          thickness: c.thickness,
-          area: areaApprox(c.face.UVBounds),
-          interiorWires: c.face.clone().innerWires().length,
+      // For first few largest faces we might generate a prefilter.
+      const thickness = prospectiveGoem.boundingBox.depth;
+      if (
+        prefilter == undefined &&
+        prospectiveGoem.boundingBox.width > thickness * 2 &&
+        prospectiveGoem.boundingBox.height > thickness * 2
+      ) {
+        console.log(
+          "creating prefilter for face " +
+            originalIndex +
+            " normal to: " +
+            face.normalAt().toString(),
+        );
+        const norm = face.normalAt();
+        prefilter = (otherFace: Face) => {
+          // Only consider faces that are nearly parallel to the current face
+          return Math.abs(otherFace.clone().normalAt().dot(norm)) > 0.99;
         };
-      });
+      }
 
-      // Sort in order of preference (scores[0] being best).
-      scores.sort((a, b) => {
-        // Planar faces are preferred because typical cnc machines won't be able to reach the
-        // underside face to make cuts.
-        if (a.is_planar != b.is_planar) {
-          return a.is_planar ? -1 : 1; // prefer planar faces
-        }
+      const faceProps: OrientationCandidate = {
+        face: face,
+        faceIndex: originalIndex,
+        offset: -1 * prospectiveGoem.boundingBox.bounds[0][2],
+        thickness: prospectiveGoem.boundingBox.depth,
+        innerWires: face.innerWires().length,
+      };
 
-        // offset == 0 is preferred since it means our face is flush with the xy plane.
-        if (a.offset != b.offset) {
-          return a.offset - b.offset; // prefer candidates with no offset
-        }
+      const inTollerance = (a: number, b: number) => {
+        return Math.abs(a - b) < THICKNESS_TOLLERANCE;
+      };
 
-        // Next, prefer thickness that matches material if possible, else pick thinnest
-        // orientation. Or defer if thickness is equal.
-        if (!equalThickness(a.thickness, b.thickness)) {
-          // Candidates with thickness exactly equal to material thickness always win.
-          if (equalThickness(a.thickness, material_thickness)) {
-            return -1;
-          } else if (equalThickness(b.thickness, material_thickness)) {
-            return 1;
-          } else {
-            // Neither candidate is equal to material thickness. Prefer thinnest
-            // candidate.
-            return a.thickness - b.thickness;
+      // compare faceProps to the best we've found so far
+      if (bestCandidate == undefined) {
+        bestCandidate = faceProps;
+        console.log("best candidate set to ", faceProps);
+      } else {
+        if (!inTollerance(bestCandidate.offset, faceProps.offset)) {
+          if (faceProps.offset < bestCandidate.offset) {
+            console.log("best candidate update due to offset ", faceProps);
+            bestCandidate = faceProps;
           }
+          return;
         }
 
-        // Tie brakes for candidates of equal thickness.
-
-        // First, look for interior wires, if unequal we prefer candidates with fewer since
-        // interior wires *might* indicate carve-outs which are unreachable on the underside of the sheet.
-        if (a.interiorWires != b.interiorWires) {
-          return a.interiorWires - b.interiorWires;
+        if (!inTollerance(bestCandidate.thickness, faceProps.thickness)) {
+          if (faceProps.thickness < bestCandidate.thickness) {
+            console.log("best candidate update due to thickness ", faceProps);
+            bestCandidate = faceProps;
+          }
+          return;
         }
 
-        // Second (finally), prefer candidates with larger area.
-        if (Math.abs(a.area - b.area) > THICKNESS_TOLLERANCE) {
-          return b.area - a.area;
+        if (faceProps.innerWires < bestCandidate.innerWires) {
+          console.log("best candidate update due to inner wires ", faceProps);
+          bestCandidate = faceProps;
+          return;
         }
 
-        return 0; // we can't decide.
-      });
-      selected = candidates[scores[0].candidate_index];
-    }
-    if (
-      selected.face.geomType != "PLANE" ||
-      selected.offset > THICKNESS_TOLLERANCE
-    ) {
-      layoutWarnList.push(leafID);
-    }
-    //move so center of bounding box is at (0, 0, 0)
-    const boundingBoxCenter = selected.geom.boundingBox.center;
-    const newGeom = selected.geom
-      .clone()
-      .translate(-1 * boundingBoxCenter[0], -1 * boundingBoxCenter[1], 0);
-
-    const newLeaf = {
-      ...leaf,
-      geometry: await util.geometryProvider!.addSingularToCache(
-        newGeom,
-        context,
-        // Next args are constituents of the cache ID for this new leaf, must amount to a
-        // UUID for this leaf among all other leafs in this layout or other layouts in this project.
-        "rotateForLayout",
-        [assembly, layoutConfig, leafID],
-      ),
-      id: leafID,
-      referencePoint: selected.face.center,
-    };
-    // Retrieve face from the re-positioned shape so that we get the shape of the face after
-    // it's been moved to the xy cutting plane. Otherwise we can get weird skewed projections
-    // of the face shape.
-    shapesForLayout.push({
-      id: leafID,
-      //@ts-ignore - TODO: make a 3DReplicadObject type so we can access faces
-      shape: newGeom.faces[selected.faceIndex],
+        // else no change.
+      }
     });
 
-    return newLeaf;
+    if (bestCandidate == undefined) {
+      // This should be impossible.
+      throw new Error("Failed to find a suitable face for layout");
+    }
+
+    orientations.push({ downwardFaceIndex: bestCandidate.faceIndex });
+    return leaf;
   });
 
-  // If we have a warning, pass it to the callback
-  let warningString = "";
-  if (layoutWarnList.length > 0 && warningCallback) {
-    warningString = `Part(s) ${layoutWarnList.join(
-      ", ",
-    )} have no orientation suitable for layout.`;
-    warningCallback(warningString);
-  }
-
-  rotateMemoCache.set(cacheID, [
-    rotatedAssembly,
-    shapesForLayout,
-    warningString,
-  ]);
-  return [rotatedAssembly, shapesForLayout];
+  return orientations;
 }
 
 /**
@@ -475,13 +486,14 @@ async function applyLayout(
   layoutConfig: LayoutConfig,
   context: RequestContext,
 ): Promise<AbundanceObject> {
+  let index = 0;
   const result = util.actOnLeafs(
     rotatedAssembly,
     async (leaf: AbundanceLeaf) => {
       let transform;
       let sheetNumber = 0;
-      // @ts-ignore TODO: some fancy subtyping to define an id-ed AbundanceLeaf variant
-      const leafID = leaf.id;
+      const leafID = index;
+      index++;
       for (let sheet = 0; sheet < positions.length; sheet++) {
         const candidates = positions[sheet].filter(
           (transform) => transform.id == leafID,
@@ -545,13 +557,13 @@ function checkConfig(layoutConfig: LayoutConfig) {
 }
 
 /**
- * Converts a shape array of {x, y} points to a Float64Array format for polygon packing.
+ * Converts a shape array of {x, y} points to a Float32Array format for polygon packing.
  * @param {Array} shape - Array of point objects with x and y properties
- * @returns {Float64Array} Float64Array containing points as [x1, y1, x2, y2, ...] with the polygon closed
+ * @returns {Float32Array} Float32Array containing points as [x1, y1, x2, y2, ...] with the polygon closed
  * @throws {Error} Throws an error if any points contain NaN values
  */
-function asFloat64(shape: SimpleXY[]): Float64Array {
-  const points = new Float64Array(shape.length * 2 + 2);
+function asFloat32(shape: SimpleXY[]): Float32Array {
+  const points = new Float32Array(shape.length * 2 + 2);
   let i = 0;
   shape.forEach((point) => {
     points[i] = point.x;
@@ -563,7 +575,7 @@ function asFloat64(shape: SimpleXY[]): Float64Array {
 
   if (points.filter((c) => !Number.isFinite(c)).length > 0) {
     throw new Error(
-      "NaN points in Float64Array from: " + JSON.stringify(shape),
+      "NaN points in Float32Array from: " + JSON.stringify(shape),
     );
   }
 
@@ -613,20 +625,13 @@ function computePositions(
   };
   // from the mesh format of [x1, y1, z1, x2, y2, z2, ...] to FloatPolygon friendly format of
   // [{x: x1, y: y1}, {x: x2, y: y2}...]
-  const polygons = shapesForLayout.map((shape, index) => {
-    const face = shape.shape;
-    const mesh = face
-      .clone()
-      .outerWire()
-      .meshEdges({ tolerance: tolerance, angularTolerance: 0.5 }); //The tolerance here is described in the conversation here https://github.com/BarbourSmith/Abundance/pull/173
-
-    const prepared = preparePoints(mesh, tolerance / 100);
-    const result = asFloat64(prepared);
-    return result;
+  console.trace("shapesForLayout: ", shapesForLayout);
+  const polygons = shapesForLayout.map((shape) => {
+    return asFloat32(shape.shape);
   });
 
   // Clockwise winding direction appears to matter here for the current packing algo.
-  const bin = asFloat64([
+  const bin = asFloat32([
     { x: 0, y: 0 },
     { x: 0, y: layoutConfig.height },
     { x: layoutConfig.width, y: layoutConfig.height },
@@ -854,13 +859,12 @@ function preparePoints(mesh: any, tolerance: number): SimpleXY[] {
   return result;
 }
 
-/**
- * Moves a face to the cutting plane by rotating and translating the geometry.
- * @param {Object} geom - The geometry to transform
- * @param {Object} face - The face to align with the cutting plane
- * @returns {Object} The transformed geometry with the face aligned to the XY cutting plane
- */
-function moveFaceToCuttingPlane(geom: Shape3D, face: Face): Shape3D {
+function faceToCuttingPlaneTransform(face: Face): {
+  degrees: number;
+  point: replicad.Vector;
+  axis: replicad.Vector;
+  offset: number;
+} {
   // There's a broken edge case in the clipper lib which gets triggered if one of the perimeter lines is
   // co-incident with the X or Y axis. Here use the center of the face to ensure the origin isn't aligned with
   // any perimeter edge of this face.
@@ -881,15 +885,12 @@ function moveFaceToCuttingPlane(geom: Shape3D, face: Face): Shape3D {
 
   const rotationAxis = faceNormal.cross(targetOrientation);
   if (rotationAxis.Length == 0) {
-    if (faceNormal.dot(targetOrientation) < 0) {
-      // Face points upward but is otherwise parallel to cut plane. flip 180 around x axis.
-      geom = geom
-        .clone()
-        .rotate(180, pointOnSurface, new util.replicad.Vector([1, 0, 0]));
-    }
-
-    // Face already parallel to cut plane and on underside of the shape.
-    return geom.clone().translate(0, 0, -1 * pointOnSurface.z);
+    return {
+      degrees: faceNormal.dot(targetOrientation) < 0 ? 180 : 0,
+      point: pointOnSurface,
+      axis: new util.replicad.Vector([1, 0, 0]),
+      offset: -1 * pointOnSurface.z,
+    };
   }
 
   const rotationDegrees =
@@ -900,10 +901,26 @@ function moveFaceToCuttingPlane(geom: Shape3D, face: Face): Shape3D {
       360) /
     (2 * Math.PI);
 
+  return {
+    degrees: rotationDegrees,
+    point: pointOnSurface,
+    axis: rotationAxis,
+    offset: -1 * pointOnSurface.z,
+  };
+}
+
+/**
+ * Moves a face to the cutting plane by rotating and translating the geometry.
+ * @param {Object} geom - The geometry to transform
+ * @param {Object} face - The face to align with the cutting plane
+ * @returns {Object} The transformed geometry with the face aligned to the XY cutting plane
+ */
+function moveFaceToCuttingPlane(geom: Shape3D, face: Face): Shape3D {
+  const transform = faceToCuttingPlaneTransform(face);
   return geom
     .clone()
-    .rotate(rotationDegrees, pointOnSurface, rotationAxis)
-    .translate(0, 0, -1 * pointOnSurface.z);
+    .rotate(transform.degrees, transform.point, transform.axis)
+    .translate(0, 0, transform.offset);
 }
 
 /**
@@ -925,8 +942,9 @@ export {
   createAndDisplayDefaultLayout,
   createDefaultPlacements,
   displayLayout,
-  displayLayoutWithRotatedAssembly,
   layout,
+  orient,
+  displayOrientation,
   LayoutConfig,
   Placement,
 };
