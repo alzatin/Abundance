@@ -752,8 +752,173 @@ class GlobalVariables {
       return entry;
     };
 
+    // Diagnose WHY an atom is stuck by capturing the state of the graph edges
+    // that should have moved it forward. A "waiting" atom whose inputs are all
+    // "ready", or a "processing" molecule whose output atom has already settled
+    // to "ready"/"error", indicates a dropped status-propagation notification
+    // (the atom never got the edge that should have re-run its onUpstreamChange).
+    //
+    // For each input attachment point we also capture the UPSTREAM source (the
+    // output AP feeding it, via connector.attachmentPoint1). If an input AP is
+    // "waiting"/"processing" while its source AP is "ready", the edge from that
+    // source into the input was dropped — that pinpoints exactly where in the
+    // graph the notification was lost.
+    const describeAP = (ap) => {
+      const connectors = Array.isArray(ap.connectors) ? ap.connectors : [];
+      const sources = connectors
+        .map((c) => c?.attachmentPoint1)
+        .filter(Boolean)
+        .map((src) => ({
+          sourceAtom: src.parentMolecule?.name ?? null,
+          sourceAtomType: src.parentMolecule?.atomType ?? null,
+          sourceAtomStatus: src.parentMolecule?.status ?? null,
+          sourceApStatus: src.status ?? null,
+        }));
+      return {
+        name: ap.name,
+        status: ap.status,
+        connectors: connectors.length,
+        sources,
+      };
+    };
+
+    // True when this AP is not ready but every upstream source feeding it is
+    // ready — i.e. the edge into this AP was dropped.
+    const apHasLostEdge = (apInfo) =>
+      apInfo.status !== "ready" &&
+      apInfo.sources.length > 0 &&
+      apInfo.sources.every((s) => s.sourceApStatus === "ready");
+
+    const diagnoseStuck = (atom) => {
+      const diag = {};
+      const inputs = Array.isArray(atom.inputs) ? atom.inputs : [];
+      if (inputs.length) {
+        const inputInfos = inputs.map(describeAP);
+        diag.inputs = inputInfos;
+        diag.allInputsReady = inputInfos.every((i) => i.status === "ready");
+        diag.anyInputError = inputInfos.some(
+          (i) => i.status === "error" || i.status === "upstream_error",
+        );
+        // Inputs whose upstream source is ready but the input AP itself is not:
+        // these are dropped edges INTO this atom.
+        const lostInputEdges = inputInfos.filter(apHasLostEdge);
+        if (lostInputEdges.length) diag.lostInputEdges = lostInputEdges;
+      }
+      // For molecules, the output atom drives the molecule's own status.
+      if (typeof atom.getOutputAtom === "function") {
+        try {
+          const out = atom.getOutputAtom();
+          if (out) {
+            const outInput = out.inputs?.[0];
+            const outInputInfo = outInput ? describeAP(outInput) : null;
+            diag.outputAtom = {
+              status: out.status,
+              subscribedByMolecule: Object.prototype.hasOwnProperty.call(
+                out.subscribers ?? {},
+                atom.uniqueID,
+              ),
+              subscriberCount: Object.keys(out.subscribers ?? {}).length,
+              input: outInputInfo,
+            };
+            // The decisive signals:
+            // - output "ready" but molecule still "processing"  => dropped
+            //   output->molecule edge (Root cause A/B on that subscription).
+            // - output not ready but its own input's source is ready => dropped
+            //   edge one hop upstream of the output atom.
+            if (out.status === "ready" && atom.status === "processing") {
+              diag.outputAtom.droppedOutputToMoleculeEdge = true;
+            }
+            if (outInputInfo && apHasLostEdge(outInputInfo)) {
+              diag.outputAtom.droppedEdgeIntoOutput = true;
+            }
+          }
+        } catch {
+          /* getOutputAtom may throw on a partially-initialized molecule */
+        }
+      }
+      return diag;
+    };
+
+    // Walk the whole tree collecting every atom in ERROR status with its actual
+    // error message (atom.alert.message, set by Atom.setError). This shows the
+    // real failure reason per failing instance — distinguishing genuine geometry
+    // errors (e.g. fillet "radiusConfigFun") from execution-environment failures
+    // (e.g. "No warm cache for operation batch-...", OCCT BindingError) that only
+    // appear at this project's scale. upstream_error atoms are excluded (they are
+    // just victims of a real error somewhere upstream).
+    const collectErroredAtoms = (topMolecule) => {
+      const results = [];
+      const visited = new Set();
+      const pathOf = (atom) => {
+        const parts = [];
+        let m = atom;
+        let guard = 0;
+        while (m && guard++ < 40) {
+          if (m.name) parts.unshift(m.name);
+          m = m.parent;
+        }
+        return parts.join(" / ");
+      };
+      const walk = (mol, depth) => {
+        if (!mol || depth > 25 || visited.has(mol.uniqueID)) return;
+        visited.add(mol.uniqueID);
+        (mol.nodesOnTheScreen ?? []).forEach((atom) => {
+          if (atom.status === "error") {
+            results.push({
+              path: pathOf(atom),
+              atomType: atom.atomType,
+              message: atom.alert?.message ?? atom.alertMessage ?? null,
+            });
+          }
+          if (
+            atom.atomType === "Molecule" ||
+            atom.atomType === "GitHubMolecule"
+          ) {
+            walk(atom, depth + 1);
+          }
+        });
+      };
+      walk(topMolecule, 0);
+      return results;
+    };
+
+    // Recursively collect every atom still "processing" or "waiting", descending
+    // into nested molecules. The top-level report only lists the current
+    // molecule's direct children, so a stall inside a sub-molecule (the common
+    // case) is otherwise invisible. Tracks visited IDs to guard against cycles.
+    const collectStuckAtoms = (molecule) => {
+      const stuck = [];
+      const visited = new Set();
+      const walk = (mol, path, depth) => {
+        if (!mol || depth > 25 || visited.has(mol.uniqueID)) return;
+        visited.add(mol.uniqueID);
+        const children = mol.nodesOnTheScreen ?? [];
+        children.forEach((atom) => {
+          if (atom.status === "processing" || atom.status === "waiting") {
+            stuck.push({
+              ...describeAtom(atom),
+              path: path ? `${path} / ${atom.name}` : atom.name,
+              ...diagnoseStuck(atom),
+            });
+          }
+          if (
+            (atom.atomType === "Molecule" ||
+              atom.atomType === "GitHubMolecule") &&
+            atom !== mol
+          ) {
+            walk(atom, path ? `${path} / ${atom.name}` : atom.name, depth + 1);
+          }
+        });
+      };
+      walk(molecule, "", 0);
+      return stuck;
+    };
+
     const currentMol = this.currentMolecule;
     const topMol = this._topLevelMolecule;
+
+    const stuckAtoms = collectStuckAtoms(topMol ?? currentMol);
+    const erroredAtoms = collectErroredAtoms(topMol ?? currentMol);
 
     const report = {
       generatedAt: new Date().toISOString(),
@@ -767,6 +932,19 @@ class GlobalVariables {
         loadElapsedMs: this.startTime
           ? Date.now() - this.startTime
           : null,
+        topLevelMoleculeStatus: (topMol ?? currentMol)?.status ?? null,
+        completion: (() => {
+          const mol = topMol ?? currentMol;
+          if (!mol || typeof mol.getCompletionTuple !== "function") {
+            return null;
+          }
+          try {
+            const [ready, total] = mol.getCompletionTuple();
+            return { ready, total, remaining: total - ready };
+          } catch {
+            return null;
+          }
+        })(),
       },
       currentMolecule: currentMol
         ? {
@@ -787,6 +965,41 @@ class GlobalVariables {
               totalAtomCount: topMol.totalAtomCount ?? null,
             }
           : null,
+      cadWorker:
+        this.cad && typeof this.cad.getQueueSnapshot === "function"
+          ? this.cad.getQueueSnapshot()
+          : null,
+      stuckAtoms: stuckAtoms,
+      stallDiagnosis: {
+        stuckCount: stuckAtoms.length,
+        processingCount: stuckAtoms.filter((a) => a.status === "processing")
+          .length,
+        waitingCount: stuckAtoms.filter((a) => a.status === "waiting").length,
+        // Molecules whose output atom is already ready but that are still
+        // "processing" — a dropped output->molecule notification edge.
+        droppedOutputToMoleculeEdges: stuckAtoms
+          .filter((a) => a.outputAtom?.droppedOutputToMoleculeEdge)
+          .map((a) => ({
+            path: a.path,
+            outputStatus: a.outputAtom.status,
+            subscribedByMolecule: a.outputAtom.subscribedByMolecule,
+          })),
+        // Atoms with an input whose upstream source is ready but the input AP
+        // itself is not — a dropped edge INTO the atom.
+        atomsWithLostInputEdges: stuckAtoms
+          .filter((a) => a.lostInputEdges?.length)
+          .map((a) => ({ path: a.path, status: a.status })),
+        // Molecules whose output atom is blocked by a dropped edge one hop
+        // upstream of the output.
+        droppedEdgesIntoOutput: stuckAtoms
+          .filter((a) => a.outputAtom?.droppedEdgeIntoOutput)
+          .map((a) => ({ path: a.path })),
+      },
+      erroredAtoms: erroredAtoms,
+      workerLogs:
+        this.cad && typeof this.cad.getRecentWorkerLogs === "function"
+          ? this.cad.getRecentWorkerLogs(50)
+          : [],
       recentErrors: this.recentErrors.slice(-20),
     };
 

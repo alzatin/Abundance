@@ -764,7 +764,63 @@ if (
   typeof self.addEventListener === "function" &&
   process.env.NODE_ENV !== "test"
 ) {
-  expose({
+  // Forward worker-thread logs to the main thread so they can be captured in a
+  // System State Report. The main-thread console interceptor cannot see logs
+  // that originate here (batch-operation leak warnings, OCCT failures), which
+  // makes stalled-worker bugs hard to diagnose. CadWorkerManager listens for
+  // `__abundanceWorkerLog` messages; comlink ignores them.
+  const forwardWorkerLog = (level: string, args: unknown[]): void => {
+    try {
+      const message = args
+        .map((a) => {
+          if (a instanceof Error) {
+            return a.stack || a.message;
+          }
+          if (typeof a === "object") {
+            try {
+              return JSON.stringify(a);
+            } catch {
+              return String(a);
+            }
+          }
+          return String(a);
+        })
+        .join(" ");
+      (self as unknown as Worker).postMessage({
+        __abundanceWorkerLog: {
+          level,
+          message,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch {
+      // Never let diagnostics forwarding break the worker.
+    }
+  };
+
+  const originalError = console.error.bind(console);
+  const originalWarn = console.warn.bind(console);
+  console.error = (...args: unknown[]) => {
+    forwardWorkerLog("error", args);
+    originalError(...args);
+  };
+  console.warn = (...args: unknown[]) => {
+    forwardWorkerLog("warn", args);
+    originalWarn(...args);
+  };
+  self.addEventListener("error", (event) => {
+    forwardWorkerLog("error", [
+      event.message || event.error || "uncaught worker error",
+    ]);
+  });
+  self.addEventListener("unhandledrejection", (event) => {
+    forwardWorkerLog("error", [
+      "unhandledrejection:",
+      (event as PromiseRejectionEvent).reason,
+    ]);
+  });
+
+  const handlers = {
     importingSTEP,
     importingSTL,
     importingSVG,
@@ -814,7 +870,28 @@ if (
     extractParts,
     sweepCache,
     getAsPoint3D,
-  });
+  };
+
+  // Gate EVERY exposed worker method on `started` (OCCT WASM init). Until
+  // util.init() resolves, `util.geometryProvider` is undefined and most methods
+  // access it directly (actions/interaction/shapes/code all do). On the initial
+  // worker init finishes before any real work, but on a worker RESTART (e.g. the
+  // 90s inactivity timeout firing on a large project), CadWorkerManager
+  // re-dispatches queued calls to the fresh worker immediately — those could run
+  // before init completed and fail with "util.geometryProvider is undefined"
+  // (observed as many Code atoms erroring only in large projects). Awaiting an
+  // already-resolved `started` is a no-op, so methods that also await it
+  // internally are unaffected. This is a single choke point instead of relying
+  // on each method to remember the guard (executeCode did not).
+  const guardedHandlers = Object.fromEntries(
+    Object.entries(handlers).map(([name, fn]) => [
+      name,
+      (...args: unknown[]) =>
+        started.then(() => (fn as (...a: unknown[]) => unknown)(...args)),
+    ]),
+  );
+
+  expose(guardedHandlers);
 }
 
 // Export functions for testing and ES module environments

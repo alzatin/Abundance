@@ -298,6 +298,15 @@ async function fusion(
     ? filteredShapes[0].bom.slice()
     : [];
   for (let i = 1; i < filteredShapes.length; i++) {
+    // Report progress before each pairwise fuse. Fusion is iterative: fusing
+    // many shapes (e.g. a multi-blade propeller) on a large/bloated OCCT heap
+    // can take a long time cumulatively. Without a progress signal the CAD
+    // worker's inactivity watchdog treats the whole loop as one silent op and
+    // kills it at 90s even though it is making steady progress (this is exactly
+    // why a molecule can fail only inside a large host project but load fine
+    // standalone). Emitting progress resets the watchdog per iteration, so it
+    // only fires on a genuine single-fuse hang. Mirrors `assembly` above.
+    reportCadProgress(`fusing part ${i + 1}/${filteredShapes.length}`);
     fusedGeometry = await util.geometryProvider!.fuse(
       fusedGeometry,
       (await fuseAssembly(filteredShapes[i], context)).geometry,

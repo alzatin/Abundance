@@ -48,6 +48,16 @@ export class CadWorkerManager {
      */
     this.onRestartCallback = null;
 
+    /**
+     * Ring buffer of the most recent log lines forwarded from the worker
+     * thread (console.error/warn + uncaught errors/rejections). Worker-thread
+     * logs are otherwise invisible to the main-thread console interceptor, so
+     * this is the only way batch-leak warnings and OCCT failures show up in a
+     * System State Report. Persists across worker restarts.
+     * @type {Array<{level: string, message: string, timestamp: string}>}
+     */
+    this._workerLogs = [];
+
     this._createWorker();
 
     // Return a Proxy so that `cad.anyMethod(args)` transparently goes through
@@ -82,7 +92,26 @@ export class CadWorkerManager {
 
   _onWorkerMessage = (event) => {
     const data = event?.data;
-    if (!data || data.type !== CAD_PROGRESS_MESSAGE_TYPE) {
+    if (!data) {
+      return;
+    }
+    // Worker-thread log forwarding (see src/worker/worker.ts). Captured into a
+    // ring buffer so it can be included in diagnostics. Comlink ignores these
+    // because they do not match its request/response protocol.
+    if (data.__abundanceWorkerLog) {
+      const log = data.__abundanceWorkerLog;
+      this._workerLogs.push({
+        level: log.level || "log",
+        message: String(log.message ?? ""),
+        timestamp: log.timestamp || new Date().toISOString(),
+      });
+      // Bound memory: keep only the most recent 100 lines.
+      if (this._workerLogs.length > 100) {
+        this._workerLogs.splice(0, this._workerLogs.length - 100);
+      }
+      return;
+    }
+    if (data.type !== CAD_PROGRESS_MESSAGE_TYPE) {
       return;
     }
     // Attribute the progress to the task the worker is actively processing
@@ -347,6 +376,63 @@ export class CadWorkerManager {
         entry.reject(err);
       },
     );
+  }
+
+  /**
+   * Snapshot of the current worker queue for diagnostics (System State Report).
+   * The worker processes calls serially, so the entry with a `startTime` is the
+   * one actively blocking everything behind it.
+   * @returns {{
+   *   timeoutMs: number,
+   *   workerEpoch: number,
+   *   pendingCount: number,
+   *   activeTask: object | null,
+   *   queue: object[]
+   * }}
+   */
+  getQueueSnapshot() {
+    const now = Date.now();
+    const describe = (entry, index) => ({
+      index,
+      taskId: entry.taskId,
+      method: String(entry.method),
+      displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
+      atomId: entry.taskMeta?.atomId || null,
+      atomType: entry.taskMeta?.atomType || null,
+      moleculeName: entry.taskMeta?.moleculeName || null,
+      isActive: entry.startTime !== null,
+      queuedAt: entry.queuedAt,
+      startedAt: entry.startTime,
+      queueWaitMs: entry.startTime ? entry.startTime - entry.queuedAt : null,
+      runningMs: entry.startTime ? now - entry.startTime : null,
+    });
+
+    const activeEntry =
+      this._pendingCalls.find((entry) => entry.startTime) || null;
+
+    return {
+      timeoutMs: this._timeoutMs,
+      workerEpoch: this._workerEpoch,
+      pendingCount: this._pendingCalls.length,
+      activeTask: activeEntry
+        ? describe(activeEntry, this._pendingCalls.indexOf(activeEntry))
+        : null,
+      queue: this._pendingCalls.map(describe),
+    };
+  }
+
+  /**
+   * The most recent log lines forwarded from the worker thread. Useful for
+   * spotting batch-operation leaks and OCCT failures that never reach the
+   * main-thread console.
+   * @param {number} [limit=100]
+   * @returns {Array<{level: string, message: string, timestamp: string}>}
+   */
+  getRecentWorkerLogs(limit = 100) {
+    if (limit >= this._workerLogs.length) {
+      return [...this._workerLogs];
+    }
+    return this._workerLogs.slice(-limit);
   }
 
   /**
