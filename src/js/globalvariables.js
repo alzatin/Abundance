@@ -839,144 +839,6 @@ class GlobalVariables {
       return diag;
     };
 
-    // Detect variable-name resolutions that cross a GitHubMolecule (imported
-    // project) boundary. A Code atom / equation inside an imported molecule that
-    // references a variable name resolves via findInputAtomByName, which walks UP
-    // the whole parent chain with no stop at the import boundary. So an unresolved
-    // internal variable can silently bind to a same-named Input/Constant in the
-    // HOST project — a context-dependent value that differs from standalone and
-    // can drive internal geometry (e.g. a fillet radius) into failure.
-    //
-    // This walk reports every active name subscription whose resolved atom lives
-    // OUTSIDE the nearest enclosing GitHubMolecule of the consumer — i.e. the
-    // binding leaked out of the imported project into the host.
-    const collectCrossBoundaryBindings = (topMolecule) => {
-      const results = [];
-      const visited = new Set();
-      const nearestGithubAncestor = (atom) => {
-        let m = atom?.parent;
-        while (m) {
-          if (m.atomType === "GitHubMolecule") return m;
-          m = m.parent;
-        }
-        return null;
-      };
-      const isDescendantOf = (atom, ancestor) => {
-        let m = atom;
-        while (m) {
-          if (m === ancestor) return true;
-          m = m.parent;
-        }
-        return false;
-      };
-      const pathOf = (atom) => {
-        const parts = [];
-        let m = atom;
-        let guard = 0;
-        while (m && guard++ < 40) {
-          if (m.name) parts.unshift(m.name);
-          m = m.parent;
-        }
-        return parts.join(" / ");
-      };
-      const walk = (mol, depth) => {
-        if (!mol || depth > 25 || visited.has(mol.uniqueID)) return;
-        visited.add(mol.uniqueID);
-        (mol.nodesOnTheScreen ?? []).forEach((atom) => {
-          (atom.inputs ?? []).forEach((ap) => {
-            const subs = ap._nameSubscribedAtoms;
-            if (!subs || subs.size === 0) return;
-            const boundary = nearestGithubAncestor(atom);
-            if (!boundary) return; // consumer not inside any imported molecule
-            subs.forEach((resolvedAtom, varName) => {
-              if (!resolvedAtom) return;
-              if (!isDescendantOf(resolvedAtom, boundary)) {
-                results.push({
-                  consumer: pathOf(atom),
-                  inputName: ap.name,
-                  variable: varName,
-                  resolvedTo: pathOf(resolvedAtom),
-                  resolvedType: resolvedAtom.atomType,
-                  resolvedStatus: resolvedAtom.status,
-                  leakedOutOfImport: boundary.name,
-                });
-              }
-            });
-          });
-          if (
-            atom.atomType === "Molecule" ||
-            atom.atomType === "GitHubMolecule"
-          ) {
-            walk(atom, depth + 1);
-          }
-        });
-      };
-      walk(topMolecule, 0);
-      return results;
-    };
-
-    // Capture every GitHubMolecule (imported project) with its identity and the
-    // exact input values/equations the HOST feeds into it. A GitHubMolecule that
-    // errors here but works standalone is most likely receiving different input
-    // values from the host than its standalone defaults. Identify by repo since
-    // the node may be renamed on placement.
-    const collectGithubMolecules = (topMolecule) => {
-      const results = [];
-      const visited = new Set();
-      const serializeValue = (v) => {
-        if (v === null || v === undefined) return v ?? null;
-        if (v && v.__NO_GEOMETRY__) return "[NO_GEOMETRY]";
-        const t = typeof v;
-        if (t === "number" || t === "string" || t === "boolean") return v;
-        if (t === "object") return `[${v.constructor?.name || "object"}]`;
-        return `[${t}]`;
-      };
-      const pathOf = (atom) => {
-        const parts = [];
-        let m = atom;
-        let guard = 0;
-        while (m && guard++ < 40) {
-          if (m.name) parts.unshift(m.name);
-          m = m.parent;
-        }
-        return parts.join(" / ");
-      };
-      const walk = (mol, depth) => {
-        if (!mol || depth > 25 || visited.has(mol.uniqueID)) return;
-        visited.add(mol.uniqueID);
-        (mol.nodesOnTheScreen ?? []).forEach((atom) => {
-          if (atom.atomType === "GitHubMolecule") {
-            results.push({
-              name: atom.name,
-              path: pathOf(atom),
-              status: atom.status,
-              repo: atom.parentRepo
-                ? `${atom.parentRepo.owner ?? "?"}/${atom.parentRepo.repoName ?? atom.parentRepo.repo ?? "?"}`
-                : null,
-              inputs: (atom.inputs ?? []).map((ap) => ({
-                name: ap.name,
-                status: ap.status,
-                valueType: ap.valueType,
-                connected: Array.isArray(ap.connectors)
-                  ? ap.connectors.length > 0
-                  : false,
-                equation: ap.currentEquation ?? ap._currentEquation ?? null,
-                value: serializeValue(ap.getState?.().value),
-              })),
-            });
-          }
-          if (
-            atom.atomType === "Molecule" ||
-            atom.atomType === "GitHubMolecule"
-          ) {
-            walk(atom, depth + 1);
-          }
-        });
-      };
-      walk(topMolecule, 0);
-      return results;
-    };
-
     // Walk the whole tree collecting every atom in ERROR status with its actual
     // error message (atom.alert.message, set by Atom.setError). This shows the
     // real failure reason per failing instance — distinguishing genuine geometry
@@ -1056,10 +918,6 @@ class GlobalVariables {
     const topMol = this._topLevelMolecule;
 
     const stuckAtoms = collectStuckAtoms(topMol ?? currentMol);
-    const crossBoundaryBindings = collectCrossBoundaryBindings(
-      topMol ?? currentMol,
-    );
-    const githubMolecules = collectGithubMolecules(topMol ?? currentMol);
     const erroredAtoms = collectErroredAtoms(topMol ?? currentMol);
 
     const report = {
@@ -1137,11 +995,6 @@ class GlobalVariables {
           .filter((a) => a.outputAtom?.droppedEdgeIntoOutput)
           .map((a) => ({ path: a.path })),
       },
-      crossBoundaryVariableBindings: {
-        count: crossBoundaryBindings.length,
-        bindings: crossBoundaryBindings.slice(0, 100),
-      },
-      githubMolecules: githubMolecules,
       erroredAtoms: erroredAtoms,
       workerLogs:
         this.cad && typeof this.cad.getRecentWorkerLogs === "function"
