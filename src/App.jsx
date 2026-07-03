@@ -70,6 +70,17 @@ const pool = workerpool.pool(RenderURL, {
 // gets permanently stuck waiting for a computation that will never return.
 const cad = new CadWorkerManager(cadWorker, 90_000);
 
+// Statuses that mean the initial project load has SETTLED. A project whose
+// top-level molecule contains user-authored code that legitimately errors will
+// settle to "error"/"upstream_error" rather than "ready"; those are terminal
+// too, so the loading overlay must clear for them. Requiring "ready" here made
+// any project with a broken atom spin the loading bar forever even after the
+// graph fully converged (worker idle, everything settled).
+const SETTLED_LOAD_STATUSES = new Set(["ready", "error", "upstream_error"]);
+function isProjectLoadSettled(topLevelMolecule) {
+  return SETTLED_LOAD_STATUSES.has(topLevelMolecule?.getState?.().status);
+}
+
 function getLatestActiveWorkerTask(taskMap) {
   let latestTask = null;
   taskMap.forEach((task) => {
@@ -291,7 +302,7 @@ function AppContent() {
           initialProjectLoadRef.current &&
           !GlobalVariables.projectIsLoading &&
           activeWorkerTasksRef.current.size === 0 &&
-          topLevelMolecule?.getState?.().status === "ready"
+          isProjectLoadSettled(topLevelMolecule)
         ) {
           initialProjectLoadRef.current = false;
         }
@@ -312,7 +323,7 @@ function AppContent() {
         initialProjectLoadRef.current &&
         !GlobalVariables.projectIsLoading &&
         activeWorkerTasksRef.current.size === 0 &&
-        topLevelMolecule?.getState?.().status === "ready"
+        isProjectLoadSettled(topLevelMolecule)
       ) {
         initialProjectLoadRef.current = false;
       }
