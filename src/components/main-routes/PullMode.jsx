@@ -46,6 +46,302 @@ function useWindowSize() {
   return windowSize;
 }
 
+/**
+ * Fetches a project's serialized data from GitHub
+ * Tries master branch first, falls back to main
+ */
+function fetchGithubProjectSerialzed(owner, repo) {
+  console.log(`[PullMode] Fetching GitHub project: ${owner}/${repo}`);
+  const fetchUrl = (branch) =>
+    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/project.abundance`;
+
+  return fetch(fetchUrl("master"))
+    .then((res) => {
+      if (!res.ok) throw new Error("Master branch not found");
+      return res.json();
+    })
+    .catch(() =>
+      fetch(fetchUrl("main")).then((res) => {
+        if (!res.ok) throw new Error("Main branch not found");
+        return res.json();
+      }),
+    )
+    .then((project) => {
+      console.log(`[PullMode] Successfully fetched ${owner}/${repo}`);
+      console.log(`[PullMode] Fetched project structure`, project);
+      console.log(`[PullMode] TopLevelMolecule ID:`, project?.uniqueID);
+      console.log(
+        `[PullMode] Full fetched project:`,
+        JSON.stringify(project, null, 2),
+      );
+      return project;
+    });
+}
+
+/**
+ * Creates a serialized template for pull request comparison
+ * Merges baseProject and headProject into a single 3-shape assembly
+ * - Shape 1: Base (red)
+ * - Shape 2: Head (green)
+ * - Shape 3: Intersection (neutral gray)
+ */
+function createPullModeTemplate(baseProject, headProject) {
+  console.log("[PullMode] Creating template with baseProject and headProject");
+
+  // Generate unique IDs for scaffolding atoms
+  const outputId = GlobalVariables.generateUniqueID();
+  const assemblyId = GlobalVariables.generateUniqueID();
+  const colorHeadId = GlobalVariables.generateUniqueID();
+  const colorBaseId = GlobalVariables.generateUniqueID();
+  const tagHeadId = GlobalVariables.generateUniqueID();
+  const tagBaseId = GlobalVariables.generateUniqueID();
+  const intersectId = GlobalVariables.generateUniqueID();
+  const colorIntersectId = GlobalVariables.generateUniqueID();
+
+  console.log("[PullMode] Scaffolding atom IDs generated");
+
+  // Extract GitHub molecules from their projects
+  // The fetched project IS the serialized molecule (not nested under topLevelMolecule)
+  const baseGithubMolecule = { ...baseProject } || {};
+  const headGithubMolecule = { ...headProject } || {};
+
+  // Generate NEW unique IDs for the GitHub molecules to avoid conflicts
+  const baseGithubId = GlobalVariables.generateUniqueID();
+  const headGithubId = GlobalVariables.generateUniqueID();
+
+  // Assign new IDs to the molecules
+  baseGithubMolecule.uniqueID = baseGithubId;
+  headGithubMolecule.uniqueID = headGithubId;
+
+  console.log(
+    `[PullMode] Reassigned Base GitHub molecule ID: ${baseGithubId}, Head GitHub molecule ID: ${headGithubId}`,
+  );
+  console.log(
+    "[PullMode] Base molecule structure:",
+    baseGithubMolecule.atomType,
+    baseGithubMolecule.allAtoms?.length || 0,
+    "atoms",
+  );
+  console.log(
+    "[PullMode] Head molecule structure:",
+    headGithubMolecule.atomType,
+    headGithubMolecule.allAtoms?.length || 0,
+    "atoms",
+  );
+
+  // SAFETY CHECK: Make sure both GitHub molecules exist
+  if (!baseGithubId || !headGithubId) {
+    console.error(
+      "[PullMode] ERROR: GitHub molecules not found!",
+      "baseProject:",
+      JSON.stringify(baseProject, null, 2),
+      "headProject:",
+      JSON.stringify(headProject, null, 2),
+    );
+    throw new Error(
+      `Failed to extract GitHub molecules. Base ID: ${baseGithubId}, Head ID: ${headGithubId}`,
+    );
+  }
+
+  // Build scaffolding atoms
+  const scaffoldingAtoms = [
+    {
+      atomType: "Output",
+      uniqueID: outputId,
+      name: "Output",
+      x: 0.98,
+      y: 0.5,
+      ioValues: [
+        {
+          name: "number or geometry",
+          ioValue: "__GEOMETRY_INPUT__",
+        },
+      ],
+    },
+    {
+      atomType: "Assembly",
+      uniqueID: assemblyId,
+      name: "Assembly",
+      x: 0.85,
+      y: 0.5,
+      selectedColorIndex: 0,
+      // Pre-populate inputs so connectors can reference them during deserialization
+      ioValues: [
+        {
+          name: "Shape 1",
+          ioValue: "__GEOMETRY_INPUT__",
+        },
+        {
+          name: "Shape 2",
+          ioValue: "__GEOMETRY_INPUT__",
+        },
+        {
+          name: "Shape 3",
+          ioValue: "__GEOMETRY_INPUT__",
+        },
+      ],
+    },
+    {
+      atomType: "Color",
+      uniqueID: colorHeadId,
+      name: "Color Head",
+      x: 0.7,
+      y: 0.6,
+      selectedColorIndex: 7, // Grey
+    },
+    {
+      atomType: "Color",
+      uniqueID: colorBaseId,
+      name: "Color Base",
+      x: 0.7,
+      y: 0.4,
+      selectedColorIndex: 23, // Red
+    },
+    {
+      atomType: "Tag",
+      uniqueID: tagHeadId,
+      name: "Head",
+      x: 0.55,
+      y: 0.6,
+      tags: ["Head"],
+    },
+    {
+      atomType: "Tag",
+      uniqueID: tagBaseId,
+      name: "Base",
+      x: 0.55,
+      y: 0.4,
+      tags: ["Base"],
+    },
+    {
+      atomType: "Intersection",
+      uniqueID: intersectId,
+      name: "Intersection",
+      x: 0.4,
+      y: 0.5,
+    },
+    {
+      atomType: "Color",
+      uniqueID: colorIntersectId,
+      name: "Color Intersect",
+      x: 0.25,
+      y: 0.5,
+      selectedColorIndex: 19, // Grey
+    },
+  ];
+
+  // Build connectors with explicit IDs (no dynamic finding)
+  const connectors = [
+    // Head: GitHub → Color Head
+    {
+      ap1ID: headGithubId,
+      ap2ID: colorHeadId,
+      ap2Name: "geometry",
+    },
+    // Head: Color Head → Tag Head
+    {
+      ap1ID: colorHeadId,
+      ap2ID: tagHeadId,
+      ap2Name: "geometry",
+    },
+    // Head: Tag Head → Assembly (Shape 2)
+    {
+      ap1ID: tagHeadId,
+      ap2ID: assemblyId,
+      ap2Name: "Shape 2",
+    },
+    // Head: Tag Head → Intersect (retain - geometry1)
+    {
+      ap1ID: tagHeadId,
+      ap2ID: intersectId,
+      ap2Name: "geometry1",
+    },
+
+    // Base: GitHub → Color Base
+    {
+      ap1ID: baseGithubId,
+      ap2ID: colorBaseId,
+      ap2Name: "geometry",
+    },
+    // Base: Color Base → Tag Base
+    {
+      ap1ID: colorBaseId,
+      ap2ID: tagBaseId,
+      ap2Name: "geometry",
+    },
+    // Base: Tag Base → Assembly (Shape 1)
+    {
+      ap1ID: tagBaseId,
+      ap2ID: assemblyId,
+      ap2Name: "Shape 1",
+    },
+    // Base: Tag Base → Intersect (remove - geometry2)
+    {
+      ap1ID: tagBaseId,
+      ap2ID: intersectId,
+      ap2Name: "geometry2",
+    },
+
+    // Intersect: Intersection → Color Intersect
+    {
+      ap1ID: intersectId,
+      ap2ID: colorIntersectId,
+      ap2Name: "geometry",
+    },
+    // Intersect: Color Intersect → Assembly (Shape 3)
+    {
+      ap1ID: colorIntersectId,
+      ap2ID: assemblyId,
+      ap2Name: "Shape 3",
+    },
+
+    // Output: Assembly → Output
+    {
+      ap1ID: assemblyId,
+      ap2ID: outputId,
+      ap2Name: "number or geometry",
+    },
+  ];
+
+  // Build complete molecule structure
+  const templateProject = {
+    fileTypeVersion: 1,
+    topLevelMolecule: {
+      atomType: "Molecule",
+      uniqueID: GlobalVariables.generateUniqueID(),
+      name: "Pull Request Comparison",
+      x: 0,
+      y: 0,
+      topLevel: true,
+      allAtoms: [...scaffoldingAtoms, baseGithubMolecule, headGithubMolecule],
+      allConnectors: connectors,
+    },
+  };
+
+  console.log(
+    "[PullMode] Template created with",
+    templateProject.topLevelMolecule.allAtoms.length,
+    "atoms and",
+    connectors.length,
+    "connectors",
+  );
+  console.log("[PullMode] Scaffolding atoms:", scaffoldingAtoms.length);
+  console.log(
+    "[PullMode] Base GitHub molecule present:",
+    !!baseGithubMolecule?.uniqueID,
+    "ID:",
+    baseGithubMolecule?.uniqueID,
+  );
+  console.log(
+    "[PullMode] Head GitHub molecule present:",
+    !!headGithubMolecule?.uniqueID,
+    "ID:",
+    headGithubMolecule?.uniqueID,
+  );
+
+  return templateProject;
+}
+
 function PullMode({ processing, setProcessing }) {
   // Get URL parameters
   const {
@@ -360,204 +656,119 @@ function PullMode({ processing, setProcessing }) {
     GlobalVariables.canvas = canvasRef;
     GlobalVariables.c = canvasRef.current.getContext("2d");
 
-    // Prepare empty molecule with Output atom and Assembly atom
-    createandEnableEmptyMolecule()
-      .then(() => {
-        // Load Head and Base as Github molecules if owner and repo are provided in URL params
-        return loadHeadAndBaseMoleculesFromGithub();
+    console.log(
+      "[PullMode] useEffect started for:",
+      baseOwner,
+      "/",
+      baseRepo,
+      "vs",
+      headOwner,
+      "/",
+      headRepo,
+    );
+
+    // Create blank molecule
+    GlobalVariables.topLevelMolecule = new Molecule({
+      x: 0,
+      y: 0,
+      topLevel: true,
+      atomType: "Molecule",
+      name: "Pull Request Comparison",
+      uniqueID: GlobalVariables.generateUniqueID(),
+    });
+    GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
+    GlobalVariables.currentMolecule.selected = true;
+    GlobalVariables.currentAWSnode = null;
+    GlobalVariables.currentRepo = null;
+    console.log("[PullMode] Blank molecule created");
+
+    // Fetch both GitHub projects and create template
+    console.log("[PullMode] Starting to fetch GitHub projects...");
+    Promise.all([
+      fetchGithubProjectSerialzed(baseOwner, baseRepo),
+      fetchGithubProjectSerialzed(headOwner, headRepo),
+    ])
+      .then(([baseProject, headProject]) => {
+        console.log("[PullMode] Both projects fetched successfully");
+        console.log("[PullMode] Base project:", baseProject?.uniqueID);
+        console.log("[PullMode] Head project:", headProject?.uniqueID);
+
+        // Create template with GitHub molecules embedded
+        const templateProject = createPullModeTemplate(
+          baseProject,
+          headProject,
+        );
+        console.log(
+          "[PullMode] Template created with allAtoms:",
+          templateProject.topLevelMolecule.allAtoms.length,
+        );
+        console.log(
+          "[PullMode] Template structure before deserialize:",
+          JSON.stringify(templateProject, null, 2),
+        );
+
+        // Deserialize entire template into the workspace
+        console.log("[PullMode] Starting deserialize...");
+        console.log(
+          "[PullMode] Deserialize input - passing molecule structure:",
+          JSON.stringify(templateProject.topLevelMolecule, null, 2),
+        );
+        const deserializeResult =
+          GlobalVariables.topLevelMolecule.deserialize(
+            templateProject.topLevelMolecule,
+          );
+        console.log("[PullMode] Deserialize returned:", deserializeResult);
+        return Promise.resolve(deserializeResult);
       })
       .then(() => {
-        // Find the GitHub molecule we just loaded
-        const baseRepoMolecule =
-          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
-            (atom) =>
-              atom.atomType === "GitHubMolecule" && atom.name === `${baseRepo}`,
-          );
-
-        const headRepoMolecule =
-          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
-            (atom) =>
-              atom.atomType === "GitHubMolecule" && atom.name === `${headRepo}`,
-          );
-
-        const outputAtom =
-          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
-            (atom) => atom.atomType === "Output",
-          );
-
-        const assemblyAtom =
-          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
-            (atom) => atom.atomType === "Assembly",
-          );
-
-        const headTagAtom =
-          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
-            (atom) => atom.atomType === "Tag" && atom.name === "Head",
-          );
-
-        const baseTagAtom =
-          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
-            (atom) => atom.atomType === "Tag" && atom.name === "Base",
-          );
-
-        const headColorAtom =
-          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
-            (atom) => atom.atomType === "Color" && atom.name === "Color Head",
-          );
-
-        const baseColorAtom =
-          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
-            (atom) => atom.atomType === "Color" && atom.name === "Color Base",
-          );
-
-        const intersectAtom =
-          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
-            (atom) => atom.atomType === "Intersection",
-          );
-
-        const intersectColorAtom =
-          GlobalVariables.topLevelMolecule.nodesOnTheScreen.find(
-            (atom) =>
-              atom.atomType === "Color" && atom.name === "Color Intersect",
-          );
-
-        if (baseRepoMolecule && baseRepoMolecule.output) {
-          if (
-            outputAtom &&
-            assemblyAtom &&
-            headRepoMolecule &&
-            headTagAtom &&
-            baseTagAtom &&
-            headColorAtom &&
-            baseColorAtom &&
-            intersectAtom &&
-            intersectColorAtom
-          ) {
-            // Inverted order: GitHub → Color → Tag → Assembly
-            // Create connector: headRepoMolecule output → headColorAtom input
-            new Connector({
-              atomType: "Connector",
-              attachmentPoint1: headRepoMolecule.output,
-              attachmentPoint2: headColorAtom.inputs[0],
-              parentMolecule: GlobalVariables.topLevelMolecule,
-            });
-
-            // Create connector: baseRepoMolecule output → baseColorAtom input
-            new Connector({
-              atomType: "Connector",
-              attachmentPoint1: baseRepoMolecule.output,
-              attachmentPoint2: baseColorAtom.inputs[0],
-              parentMolecule: GlobalVariables.topLevelMolecule,
-            });
-
-            // Create connector: headColorAtom output → headTagAtom input
-            new Connector({
-              atomType: "Connector",
-              attachmentPoint1: headColorAtom.output,
-              attachmentPoint2: headTagAtom.inputs[0],
-              parentMolecule: GlobalVariables.topLevelMolecule,
-            });
-
-            // Create connector: baseColorAtom output → baseTagAtom input
-            new Connector({
-              atomType: "Connector",
-              attachmentPoint1: baseColorAtom.output,
-              attachmentPoint2: baseTagAtom.inputs[0],
-              parentMolecule: GlobalVariables.topLevelMolecule,
-            });
-
-            // Create connector: headTagAtom output → assemblyAtom (first available input)
-            const headAssemblyInput =
-              GlobalVariables.topLevelMolecule.findFirstAvailableGeometryInput(
-                assemblyAtom,
+        console.log("[PullMode] Deserialization complete");
+        console.log(
+          "[PullMode] Atoms on screen after deserialize:",
+          GlobalVariables.topLevelMolecule.nodesOnTheScreen?.length || 0,
+        );
+        GlobalVariables.topLevelMolecule.nodesOnTheScreen?.forEach((atom) => {
+          console.log(`  - ${atom.atomType}: ${atom.name} (${atom.uniqueID})`);
+          if (atom.atomType === "Assembly") {
+            console.log(
+              `    Assembly inputs: ${atom.inputs?.length || 0}`,
+            );
+            atom.inputs?.forEach((inp, idx) => {
+              console.log(
+                `      [${idx}] ${inp.ioName} - connected: ${!!inp.connectors?.length}`,
               );
-            if (headAssemblyInput) {
-              new Connector({
-                atomType: "Connector",
-                attachmentPoint1: headTagAtom.output,
-                attachmentPoint2: headAssemblyInput,
-                parentMolecule: GlobalVariables.topLevelMolecule,
-              });
-            }
-            addOrDeletePorts(assemblyAtom); // Ensure ports are updated after adding connectors
-
-            // Create connector: baseTagAtom output → assemblyAtom (next available input)
-            const baseAssemblyInput =
-              GlobalVariables.topLevelMolecule.findFirstAvailableGeometryInput(
-                assemblyAtom,
-              );
-            if (baseAssemblyInput) {
-              new Connector({
-                atomType: "Connector",
-                attachmentPoint1: baseTagAtom.output,
-                attachmentPoint2: baseAssemblyInput,
-                parentMolecule: GlobalVariables.topLevelMolecule,
-              });
-            }
-            addOrDeletePorts(assemblyAtom);
-
-            // Connect tag atoms to intersect atom
-            // Create connector: headTagAtom output → intersectAtom input[0]
-            if (intersectAtom.inputs[0]) {
-              new Connector({
-                atomType: "Connector",
-                attachmentPoint1: headTagAtom.output,
-                attachmentPoint2: intersectAtom.inputs[0],
-                parentMolecule: GlobalVariables.topLevelMolecule,
-              });
-            }
-
-            // Create connector: baseTagAtom output → intersectAtom input[1]
-            if (intersectAtom.inputs[1]) {
-              new Connector({
-                atomType: "Connector",
-                attachmentPoint1: baseTagAtom.output,
-                attachmentPoint2: intersectAtom.inputs[1],
-                parentMolecule: GlobalVariables.topLevelMolecule,
-              });
-            }
-
-            // Create connector: intersectAtom output → intersectColorAtom input
-            new Connector({
-              atomType: "Connector",
-              attachmentPoint1: intersectAtom.output,
-              attachmentPoint2: intersectColorAtom.inputs[0],
-              parentMolecule: GlobalVariables.topLevelMolecule,
             });
-
-            // Create connector: intersectColorAtom output → assemblyAtom (next available input)
-            const intersectAssemblyInput =
-              GlobalVariables.topLevelMolecule.findFirstAvailableGeometryInput(
-                assemblyAtom,
-              );
-            if (intersectAssemblyInput) {
-              new Connector({
-                atomType: "Connector",
-                attachmentPoint1: intersectColorAtom.output,
-                attachmentPoint2: intersectAssemblyInput,
-                parentMolecule: GlobalVariables.topLevelMolecule,
-              });
-            }
-            addOrDeletePorts(assemblyAtom);
-
-            // Create connector: assemblyAtom output → outputAtom input
-            new Connector({
-              atomType: "Connector",
-              attachmentPoint1: assemblyAtom.output,
-              attachmentPoint2: outputAtom.inputs[0],
-              parentMolecule: GlobalVariables.topLevelMolecule,
-            });
-          } else {
-            // All required atoms not found or missing inputs
           }
-        }
+        });
+
+        console.log(
+          "[PullMode] Connectors in molecule:",
+          GlobalVariables.topLevelMolecule.allConnectors?.length || 0,
+        );
+        GlobalVariables.topLevelMolecule.allConnectors?.forEach((conn) => {
+          console.log(
+            `  - ${conn.attachmentPoint1?.parentAtom?.name || conn.attachmentPoint1?.parentAtom?.atomType} (${conn.attachmentPoint1ID}) → ${conn.attachmentPoint2Name}`,
+          );
+        });
+
+        // Enable all molecules
         GlobalVariables.currentMolecule.enable();
         GlobalVariables.currentMolecule.enableAllChildren();
         setActiveAtom(GlobalVariables.currentMolecule);
+        console.log("[PullMode] All molecules enabled");
+
+        // Log serialized output for verification
+        setTimeout(() => {
+          const serialized = GlobalVariables.topLevelMolecule.serialize();
+          console.log(
+            "[PullMode] SERIALIZED_OUTPUT:",
+            JSON.stringify(serialized, null, 2),
+          );
+        }, 2000);
       })
       .catch((err) => {
+        console.error("[PullMode] ERROR:", err);
         setErrorNotification(
-          `Failed to set up molecules: ${err.message}`,
+          `Failed to set up pull mode: ${err.message}`,
           "error",
         );
       });
