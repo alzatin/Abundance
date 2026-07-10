@@ -74,8 +74,8 @@ function fetchGithubProjectSerialzed(owner, repo) {
 /**
  * Creates a serialized template for pull request comparison
  * Merges baseProject and headProject into a single 3-shape assembly
- * - Shape 1: Base (red)
- * - Shape 2: Head (green)
+ * - Shape 1: Removing (red)
+ * - Shape 2: Adding (green)
  * - Shape 3: Intersection (neutral gray)
  */
 function createPullModeTemplate(baseProject, headProject) {
@@ -150,7 +150,7 @@ function createPullModeTemplate(baseProject, headProject) {
     {
       atomType: "Color",
       uniqueID: colorHeadId,
-      name: "Color Head",
+      name: "Color Adding",
       x: 0.7,
       y: 0.6,
       selectedColorIndex: 7, // Grey
@@ -158,7 +158,7 @@ function createPullModeTemplate(baseProject, headProject) {
     {
       atomType: "Color",
       uniqueID: colorBaseId,
-      name: "Color Base",
+      name: "Color Removing",
       x: 0.7,
       y: 0.4,
       selectedColorIndex: 23, // Red
@@ -166,18 +166,18 @@ function createPullModeTemplate(baseProject, headProject) {
     {
       atomType: "Tag",
       uniqueID: tagHeadId,
-      name: "Head",
+      name: "Adding",
       x: 0.55,
       y: 0.6,
-      tags: ["Head"],
+      tags: ["Adding"],
     },
     {
       atomType: "Tag",
       uniqueID: tagBaseId,
-      name: "Base",
+      name: "Removing",
       x: 0.55,
       y: 0.4,
-      tags: ["Base"],
+      tags: ["Removing"],
     },
     {
       atomType: "Intersection",
@@ -198,50 +198,50 @@ function createPullModeTemplate(baseProject, headProject) {
 
   // Build connectors with explicit IDs (no dynamic finding)
   const connectors = [
-    // Head: GitHub → Color Head
+    // Adding: GitHub → Color Adding
     {
       ap1ID: headGithubId,
       ap2ID: colorHeadId,
       ap2Name: "geometry",
     },
-    // Head: Color Head → Tag Head
+    // Adding: Color Adding → Tag Adding
     {
       ap1ID: colorHeadId,
       ap2ID: tagHeadId,
       ap2Name: "geometry",
     },
-    // Head: Tag Head → Assembly (Shape 2)
+    // Adding: Tag Adding → Assembly (Shape 2)
     {
       ap1ID: tagHeadId,
       ap2ID: assemblyId,
       ap2Name: "Shape 2",
     },
-    // Head: Tag Head → Intersect (retain - geometry1)
+    // Adding: Tag Adding → Intersect (retain - geometry1)
     {
       ap1ID: tagHeadId,
       ap2ID: intersectId,
       ap2Name: "geometry1",
     },
 
-    // Base: GitHub → Color Base
+    // Removing: GitHub → Color Removing
     {
       ap1ID: baseGithubId,
       ap2ID: colorBaseId,
       ap2Name: "geometry",
     },
-    // Base: Color Base → Tag Base
+    // Removing: Color Removing → Tag Removing
     {
       ap1ID: colorBaseId,
       ap2ID: tagBaseId,
       ap2Name: "geometry",
     },
-    // Base: Tag Base → Assembly (Shape 1)
+    // Removing: Tag Removing → Assembly (Shape 1)
     {
       ap1ID: tagBaseId,
       ap2ID: assemblyId,
       ap2Name: "Shape 1",
     },
-    // Base: Tag Base → Intersect (remove - geometry2)
+    // Removing: Tag Removing → Intersect (remove - geometry2)
     {
       ap1ID: tagBaseId,
       ap2ID: intersectId,

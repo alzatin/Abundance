@@ -73,7 +73,7 @@ export default function PullModeMenu({
 
   if (activeAtom?.topLevel) {
     availableTags
-      .filter((tag) => tag === "Head" || tag === "Base")
+      .filter((tag) => tag === "Adding" || tag === "Removing")
       .forEach((tag) => {
         tagControls[`tag-${tag}`] = {
           type: "boolean",
@@ -126,7 +126,7 @@ export default function PullModeMenu({
       type: "button",
       label: "Open Pull Request",
       title:
-        "Open a new pull request on GitHub to merge changes from the Head repository into the Base repository.",
+        "Open a new pull request on GitHub to merge changes from the Adding repository into the Removing repository.",
       onClick: () => {
         console.log("Open Pull Request button clicked");
       },
