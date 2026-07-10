@@ -11,6 +11,7 @@ import Connector from "../../prototypes/connector.js";
 import RenderMenu from "../secondary/RenderMenu.jsx";
 import BomMenu from "../secondary/BomMenu.jsx";
 import ReadmePanel from "../secondary/ReadmePanel.jsx";
+import PullModeMenu from "../secondary/PullModeMenu.jsx";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   addOrDeletePorts,
@@ -324,6 +325,7 @@ function PullMode({ processing, setProcessing }) {
   const { uploadFile, deleteFile } = useFileImport();
 
   const navigate = useNavigate();
+  setWire(false);
 
   // Make file import functions available globally for atoms
   useEffect(() => {
@@ -627,10 +629,9 @@ function PullMode({ processing, setProcessing }) {
         );
 
         // Deserialize entire template into the workspace
-        const deserializeResult =
-          GlobalVariables.topLevelMolecule.deserialize(
-            templateProject.topLevelMolecule,
-          );
+        const deserializeResult = GlobalVariables.topLevelMolecule.deserialize(
+          templateProject.topLevelMolecule,
+        );
         return Promise.resolve(deserializeResult);
       })
       .then(() => {
@@ -665,61 +666,18 @@ function PullMode({ processing, setProcessing }) {
 
   return (
     <>
-      {/*
-      <RunParams
+      <PullModeMenu
         activeAtom={activeAtom}
-        position={{ top: 30, left: screenWidth - 50 }}
-        id={"atom-empty-params-panel"}
-        contentCollapsed={expandedMenu !== "params"}
-        setContentCollapsed={() => setExpandedMenu("params")}
+        position={{ top: 30, left: windowSize.width - 50 }}
+        id={"pullmode-menu-panel"}
+        contentCollapsed={expandedMenu !== "pullmode"}
+        setContentCollapsed={() => setExpandedMenu("pullmode")}
         closeMenu={() => setExpandedMenu("none")}
-        initialCollapsed={true}
-        collapsedOffset={[-315, 0]}
-        setReadMe={() => setExpandedMenu("readme")}
-        setBillOfMaterials={() => setExpandedMenu("bom")}
+        collapsedOffset={[-280, 0]}
+        baseRepo={`${baseOwner}/${baseRepo}`}
+        headRepo={`${headOwner}/${headRepo}`}
       />
-      */}
-      <RenderMenu
-        {...{
-          activeAtom,
-          gridParam,
-          axesParam,
-          wireParam,
-          solidParam,
-          setGrid,
-          setAxes,
-          setWire,
-          setSolid,
-          contentCollapsed: expandedMenu !== "render",
-          setContentCollapsed: () => setExpandedMenu("render"),
-          closeMenu: () => setExpandedMenu("none"),
-          position: { top: 75, left: windowSize.width - 50 },
-          collapsedOffset: [-315, -45],
-        }}
-        id={"atom-empty-render-panel"}
-      />
-      <BomMenu
-        {...{
-          activeAtom,
-          id: "atom-empty-bom-panel",
-          contentCollapsed: expandedMenu !== "bom",
-          setContentCollapsed: () => setExpandedMenu("bom"),
-          closeMenu: () => setExpandedMenu("none"),
-          position: { top: 120, left: windowSize.width - 50 },
-          collapsedOffset: [-315, -90],
-        }}
-      />
-      <ReadmePanel
-        readme={GlobalVariables.currentRepo?.readme || ""}
-        id="atom-empty-readme-panel"
-        position={{ top: 165, left: windowSize.width - 50 }}
-        initialCollapsed={true}
-        contentCollapsed={expandedMenu !== "readme"}
-        setContentCollapsed={() => setExpandedMenu("readme")}
-        closeMenu={() => setExpandedMenu("none")}
-        collapsedOffset={[-315, -135]}
-        activeAtom={activeAtom}
-      />
+
       <div id="headerBarRun">
         <img
           className="thumnail-logo"
