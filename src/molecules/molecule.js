@@ -986,15 +986,31 @@ export default class Molecule extends Atom {
         // This is critical for deep nesting where variables depend on inputs that become ready at different times.
         this.enableAllChildrenInOrder();
 
-        if (this.inputs.every((input) => input.status == Status.READY)) {
+        if (
+          outputAtom.status == Status.UPSTREAM_ERROR ||
+          outputAtom.status == Status.ERROR
+        ) {
+          // An internal terminal error is DEFINITIVE and must be surfaced
+          // regardless of whether this molecule's own inputs have all settled.
+          //
+          // Checking this before the inputs-ready gate is essential: if the
+          // molecule's inputs were not all ready at the instant the internal
+          // error propagated to the output atom, the old code fell through to
+          // `setWaiting()` below and discarded the error. A later input-ready
+          // notification could then be missed/coalesced, leaving the molecule
+          // stuck "waiting" forever while its output atom stays terminally
+          // errored (worker idle, project never finishes loading).
+          //
+          // This is safe for healthy molecules: an errored output atom only
+          // arises from a genuine internal ERROR (an unready molecule input
+          // yields WAITING internally, not ERROR), and an errored molecule
+          // input is already handled by the hasErrorInputs check above.
+          this.onChildError();
+        } else if (
+          this.inputs.every((input) => input.status == Status.READY)
+        ) {
           // All inputs are ready but our output isn't yet.
-          // Check for an internal error, else we're in progress.
-          if (
-            outputAtom.status == Status.UPSTREAM_ERROR ||
-            outputAtom.status == Status.ERROR
-          ) {
-            this.onChildError();
-          } else if (outputAtom.inputs[0]?.connectors.length == 0) {
+          if (outputAtom.inputs[0]?.connectors.length == 0) {
             this.setWaiting(); // No connectors to our internal output means we're in a freshly initialized state.;
           } else {
             this.setProcessing();

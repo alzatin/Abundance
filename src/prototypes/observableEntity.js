@@ -44,6 +44,28 @@ class ObservableEntity {
       if (propagate) {
         this.propagateChange();
       }
+    } else if (
+      propagate &&
+      (status === Status.ERROR || status === Status.UPSTREAM_ERROR)
+    ) {
+      // Re-assertion of a terminal error state that is a no-op for THIS entity
+      // (same status and value) but must still be delivered to subscribers.
+      //
+      // Under concurrent load, a subscriber (e.g. a molecule deriving its own
+      // status from this output atom) can latch a transient non-terminal state:
+      // it runs its onUpstreamChange while this entity is momentarily PROCESSING
+      // mid-recompute, sets itself WAITING/PROCESSING, and then this entity
+      // re-settles to the SAME error it held before. The equality guard above
+      // would coalesce that re-settle, so the diverged subscriber would never be
+      // told to re-evaluate and would remain stuck forever (worker idle, atom
+      // stuck "processing"/"waiting").
+      //
+      // Re-propagating is bounded and safe here, unlike for READY: terminal
+      // error states never trigger asynchronous recomputation (so no worker
+      // recompute storm), and the atom graph is acyclic (Connector.attach throws
+      // on cycles), so a downstream error re-sync terminates. This is the
+      // error-path analog of the READY -> PROCESSING -> READY re-sync above.
+      this.propagateChange();
     }
   }
 

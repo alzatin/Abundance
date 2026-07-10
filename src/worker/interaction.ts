@@ -3,6 +3,7 @@ import * as util from "./util";
 import { AbundanceLeaf, AbundanceObject } from "./util";
 import { RequestContext } from "./geometryProvider";
 import { extractKeepOut } from "./tags";
+import { reportCadProgress } from "./progress";
 /**
  * All methods in this file take multiple geometries and combine them in some way.
  *
@@ -297,6 +298,15 @@ async function fusion(
     ? filteredShapes[0].bom.slice()
     : [];
   for (let i = 1; i < filteredShapes.length; i++) {
+    // Report progress before each pairwise fuse. Fusion is iterative: fusing
+    // many shapes (e.g. a multi-blade propeller) on a large/bloated OCCT heap
+    // can take a long time cumulatively. Without a progress signal the CAD
+    // worker's inactivity watchdog treats the whole loop as one silent op and
+    // kills it at 90s even though it is making steady progress (this is exactly
+    // why a molecule can fail only inside a large host project but load fine
+    // standalone). Emitting progress resets the watchdog per iteration, so it
+    // only fires on a genuine single-fuse hang. Mirrors `assembly` above.
+    reportCadProgress(`fusing part ${i + 1}/${filteredShapes.length}`);
     fusedGeometry = await util.geometryProvider!.fuse(
       fusedGeometry,
       (await fuseAssembly(filteredShapes[i], context)).geometry,
@@ -364,6 +374,7 @@ async function assembly(
     ),
   );
   const insideOtherBatch = !!context.operationId;
+  let startedOwnBatch = false;
   if (!insideOtherBatch) {
     const batchId = "assembly-" + util.hashString(JSON.stringify(geometries));
     const batch: RequestContext | AbundanceObject =
@@ -396,39 +407,56 @@ async function assembly(
 
     // cache miss on the batch operation.
     context = batch;
+    startedOwnBatch = true;
   }
 
-  // The general case of a cache miss assembly operation.
-  const assembly: AbundanceObject[] = [];
+  try {
+    // The general case of a cache miss assembly operation.
+    const assembly: AbundanceObject[] = [];
 
-  // Each geometry is cut by all following geometries.
-  // TODO: test if this is faster working back-to-front or front-to-back.
-  for (let i = 0; i < geometries.length - 1; i++) {
-    const geometry = geometries[i];
-    assembly.push(
-      await cutAssembly(geometry, geometries.slice(i + 1), context),
+    // Each geometry is cut by all following geometries.
+    // TODO: test if this is faster working back-to-front or front-to-back.
+    for (let i = 0; i < geometries.length - 1; i++) {
+      const geometry = geometries[i];
+      reportCadProgress(`cutting part ${i + 1}/${geometries.length}`);
+      assembly.push(
+        await cutAssembly(geometry, geometries.slice(i + 1), context),
+      );
+    }
+    assembly.push(geometries[geometries.length - 1]); // Final entry is always unmodified.
+    reportCadProgress(`finalizing ${geometries.length} parts`);
+
+    // Build the initial assembly object with all children already having bounds
+    const assemblyObject: AbundanceObject = util.assemblyOf(
+      await Promise.all(assembly),
     );
-  }
-  assembly.push(geometries[geometries.length - 1]); // Final entry is always unmodified.
 
-  // Build the initial assembly object with all children already having bounds
-  const assemblyObject: AbundanceObject = util.assemblyOf(
-    await Promise.all(assembly),
-  );
-
-  // Safety check with recursive validation disabled (forceRecompute=false)
-  // Since we've already computed bounds eagerly, this will detect our computed bounds
-  // and return immediately without recursive traversal
-  const result = await util.withAssemblyBoundingBoxes(
-    assemblyObject,
-    context,
-    false, // forceRecompute=false, so it skips unnecessary recursion
-  );
-  if (!insideOtherBatch) {
-    console.trace("Ending batch operation with id " + context.operationId);
-    await util.geometryProvider!.endBatchOperation(context, result);
+    // Safety check with recursive validation disabled (forceRecompute=false)
+    // Since we've already computed bounds eagerly, this will detect our computed bounds
+    // and return immediately without recursive traversal
+    const result = await util.withAssemblyBoundingBoxes(
+      assemblyObject,
+      context,
+      false, // forceRecompute=false, so it skips unnecessary recursion
+    );
+    if (!insideOtherBatch) {
+      console.trace("Ending batch operation with id " + context.operationId);
+      await util.geometryProvider!.endBatchOperation(context, result);
+    }
+    return result;
+  } catch (error) {
+    if (startedOwnBatch) {
+      try {
+        util.geometryProvider!.cleanupBatchWithoutCaching(context);
+      } catch (cleanupError) {
+        console.warn(
+          "Failed to cleanup assembly batch operation",
+          cleanupError,
+        );
+      }
+    }
+    throw error;
   }
-  return result;
 }
 
 //// Helper Functions ////
@@ -486,7 +514,13 @@ async function cutAssembly(
   //If the partToCut is an assembly pass each part back into cutAssembly function to be cut separately
   if (util.isAssembly(partToCut)) {
     const partsAfterCut: AbundanceObject[] = [];
-    for (const part of partToCut.geometry) {
+    const subParts = partToCut.geometry;
+    let subIndex = 0;
+    for (const part of subParts) {
+      subIndex++;
+      // Heartbeat: keeps the worker inactivity watchdog from firing while a
+      // deeply-nested assembly is cut part-by-part.
+      reportCadProgress(`cutting subpart ${subIndex}/${subParts.length}`);
       // make new assembly from cut parts
       partsAfterCut.push(await cutAssembly(part, cuttingParts, context));
     }
@@ -546,6 +580,7 @@ async function recursiveCut(
   // checks since we could find an entire branch of the assembly which doesn't
   // intersect bounding box. This is simpler implemenation but may someday warrant
   // a change.
+  let cutsPerformed = 0;
   for (const cuttingPart of util.flattenAssembly(cuttingParts)) {
     // --- Coplanarity check for 2D shapes ---
     if (
@@ -565,6 +600,11 @@ async function recursiveCut(
       continue; // skip: bounding boxes don't overlap
     }
 
+    // Heartbeat before each real boolean cut — this is the expensive atomic
+    // operation, so reporting here resets the inactivity watchdog even when a
+    // single leaf is cut by many parts.
+    cutsPerformed++;
+    reportCadProgress(`boolean cut ${cutsPerformed}`);
     resultGeomId = await util.geometryProvider!.cut(
       resultGeomId,
       cuttingPart.geometry,

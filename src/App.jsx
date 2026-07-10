@@ -64,10 +64,23 @@ const pool = workerpool.pool(RenderURL, {
   },
 });
 
-// CadWorkerManager wraps the comlink worker with a 360-second per-call timeout.
-// If the worker hangs it is automatically terminated and restarted, so the UI
-// never gets permanently stuck waiting for a computation that will never return.
-const cad = new CadWorkerManager(cadWorker, 1_080_000);
+// CadWorkerManager wraps the comlink worker with a 90-second inactivity timeout.
+// The watchdog is reset whenever the worker reports mid-computation progress, so
+// a long-running operation only times out if it goes truly silent (stalled). If
+// the worker hangs it is automatically terminated and restarted, so the UI never
+// gets permanently stuck waiting for a computation that will never return.
+const cad = new CadWorkerManager(cadWorker, 90_000);
+
+// Statuses that mean the initial project load has SETTLED. A project whose
+// top-level molecule contains user-authored code that legitimately errors will
+// settle to "error"/"upstream_error" rather than "ready"; those are terminal
+// too, so the loading overlay must clear for them. Requiring "ready" here made
+// any project with a broken atom spin the loading bar forever even after the
+// graph fully converged (worker idle, everything settled).
+const SETTLED_LOAD_STATUSES = new Set(["ready", "error", "upstream_error"]);
+function isProjectLoadSettled(topLevelMolecule) {
+  return SETTLED_LOAD_STATUSES.has(topLevelMolecule?.getState?.().status);
+}
 
 function getLatestActiveWorkerTask(taskMap) {
   let latestTask = null;
@@ -96,8 +109,10 @@ function applyWorkerTaskUi(
   }
 
   const activeTask = getLatestActiveWorkerTask(taskMap);
+  const baseLabel =
+    activeTask?.displayLabel || activeTask?.method || "computing";
   setComputingLabel(
-    activeTask?.displayLabel || activeTask?.method || "computing",
+    activeTask?.subLabel ? `${baseLabel} · ${activeTask.subLabel}` : baseLabel,
   );
 
   if (!shouldShowLoadingBar) {
@@ -292,7 +307,7 @@ function AppContent() {
           initialProjectLoadRef.current &&
           !GlobalVariables.projectIsLoading &&
           activeWorkerTasksRef.current.size === 0 &&
-          topLevelMolecule?.getState?.().status === "ready"
+          isProjectLoadSettled(topLevelMolecule)
         ) {
           initialProjectLoadRef.current = false;
         }
@@ -313,7 +328,7 @@ function AppContent() {
         initialProjectLoadRef.current &&
         !GlobalVariables.projectIsLoading &&
         activeWorkerTasksRef.current.size === 0 &&
-        topLevelMolecule?.getState?.().status === "ready"
+        isProjectLoadSettled(topLevelMolecule)
       ) {
         initialProjectLoadRef.current = false;
       }
@@ -331,6 +346,14 @@ function AppContent() {
       const detail = event?.detail || {};
       if (!detail.taskId) return;
       activeWorkerTasksRef.current.delete(detail.taskId);
+      refreshUi();
+    };
+    const handleWorkerTaskProgress = (event) => {
+      const detail = event?.detail || {};
+      if (!detail.taskId) return;
+      const task = activeWorkerTasksRef.current.get(detail.taskId);
+      if (!task) return;
+      task.subLabel = detail.label || null;
       refreshUi();
     };
     const handleWorkerRestarted = () => {
@@ -352,6 +375,10 @@ function AppContent() {
     window.addEventListener(
       "cad-worker-task-cancelled",
       handleWorkerTaskFinished,
+    );
+    window.addEventListener(
+      "cad-worker-task-progress",
+      handleWorkerTaskProgress,
     );
     window.addEventListener("cad-worker-restarted", handleWorkerRestarted);
     refreshUi();
@@ -380,6 +407,10 @@ function AppContent() {
       window.removeEventListener(
         "cad-worker-task-cancelled",
         handleWorkerTaskFinished,
+      );
+      window.removeEventListener(
+        "cad-worker-task-progress",
+        handleWorkerTaskProgress,
       );
       window.removeEventListener("cad-worker-restarted", handleWorkerRestarted);
     };

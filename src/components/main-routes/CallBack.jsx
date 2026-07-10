@@ -72,6 +72,19 @@ const Callback = ({ setRedirectType }) => {
     // Call the function to fetch the access token
     callSecureApi().then((authorizedUser) => {
       try {
+        // CSRF validation: verify that a CSRF token was stored during OAuth initiation
+        const storedCSRFToken = localStorage.getItem("latestCSRFToken");
+        if (!storedCSRFToken) {
+          console.error(
+            "CSRF token validation failed: No token found in localStorage",
+          );
+          setIsAuthorized(false);
+          navigate("/");
+          return;
+        }
+        // Clear the CSRF token after successful validation (one-time use)
+        localStorage.removeItem("latestCSRFToken");
+
         const stateParam = params.get("state");
         const state = stateParam ? JSON.parse(stateParam) : {};
 

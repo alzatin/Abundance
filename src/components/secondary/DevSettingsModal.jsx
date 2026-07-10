@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { useDevSettings } from "../../contexts/DevSettingsContext.jsx";
+import GlobalVariables from "../../js/globalvariables.js";
 import "../../styles/DevSettingsModal.css";
 
 /**
@@ -14,6 +15,34 @@ const DevSettingsModal = () => {
     showDevModal,
     setShowDevModal,
   } = useDevSettings();
+
+  const [stateReport, setStateReport] = useState("");
+  const [copyLabel, setCopyLabel] = useState("Copy to Clipboard");
+
+  const refreshStateReport = useCallback(() => {
+    setStateReport(GlobalVariables.getSystemStateReport());
+  }, []);
+
+  const copyStateReport = useCallback(() => {
+    const report = GlobalVariables.getSystemStateReport();
+    setStateReport(report);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(report).then(() => {
+        setCopyLabel("Copied!");
+        setTimeout(() => setCopyLabel("Copy to Clipboard"), 2000);
+      });
+    } else {
+      // Fallback for environments without clipboard API
+      const el = document.createElement("textarea");
+      el.value = report;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopyLabel("Copied!");
+      setTimeout(() => setCopyLabel("Copy to Clipboard"), 2000);
+    }
+  }, []);
 
   if (!showDevModal) return null;
 
@@ -53,6 +82,34 @@ const DevSettingsModal = () => {
               <p className="dev-setting-description">{setting.description}</p>
             </div>
           ))}
+
+          <div className="dev-setting-item dev-state-report-section">
+            <div className="dev-state-report-header">
+              <span className="dev-state-report-title">System State Report</span>
+              <div className="dev-state-report-actions">
+                <button
+                  className="dev-state-report-btn"
+                  onClick={refreshStateReport}
+                >
+                  Refresh
+                </button>
+                <button
+                  className="dev-state-report-btn dev-state-report-copy-btn"
+                  onClick={copyStateReport}
+                >
+                  {copyLabel}
+                </button>
+              </div>
+            </div>
+            <p className="dev-setting-description">
+              Captures a snapshot of the current project state (atoms, loading
+              status, recent errors). Use &ldquo;Copy to Clipboard&rdquo; to share
+              with an AI assistant or developer for diagnosis.
+            </p>
+            {stateReport && (
+              <pre className="dev-state-report-pre">{stateReport}</pre>
+            )}
+          </div>
         </div>
 
         <div className="dev-settings-footer">
