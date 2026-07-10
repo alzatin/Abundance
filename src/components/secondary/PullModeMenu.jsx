@@ -5,6 +5,7 @@ import { useRendering } from "../../contexts/RenderingContext.jsx";
 import { useAppState } from "../../contexts/index.js";
 
 import GlobalVariables from "../../js/globalvariables.js";
+import on from "../../js/circular-menu/src/on.js";
 
 // Pull Request icon for PullModeMenu
 const PullRequestIcon = ({ size = 22 }) => (
@@ -68,6 +69,11 @@ export default function PullModeMenu({
     }
   }, [GlobalVariables.topLevelMolecule?.projectAvailableTags]);
 
+  const baseBranch = "main";
+  const baseUser = baseRepo.split("/")[0];
+  const headUser = headRepo.split("/")[0];
+  const headBranch = "main";
+
   // Create tag toggle controls for menu
   const tagControls = {};
 
@@ -121,6 +127,11 @@ export default function PullModeMenu({
     gitcompare: {
       type: "button",
       label: "View GitHub Comparison",
+      onClick: () => {
+        window.open(
+          `https://github.com/${baseRepo}/compare/${baseBranch}...${headUser}:${headBranch}`,
+        );
+      },
     },
     prButton: {
       type: "button",
