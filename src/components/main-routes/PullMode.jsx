@@ -51,7 +51,6 @@ function useWindowSize() {
  * Tries master branch first, falls back to main
  */
 function fetchGithubProjectSerialzed(owner, repo) {
-  console.log(`[PullMode] Fetching GitHub project: ${owner}/${repo}`);
   const fetchUrl = (branch) =>
     `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/project.abundance`;
 
@@ -67,13 +66,6 @@ function fetchGithubProjectSerialzed(owner, repo) {
       }),
     )
     .then((project) => {
-      console.log(`[PullMode] Successfully fetched ${owner}/${repo}`);
-      console.log(`[PullMode] Fetched project structure`, project);
-      console.log(`[PullMode] TopLevelMolecule ID:`, project?.uniqueID);
-      console.log(
-        `[PullMode] Full fetched project:`,
-        JSON.stringify(project, null, 2),
-      );
       return project;
     });
 }
@@ -86,8 +78,6 @@ function fetchGithubProjectSerialzed(owner, repo) {
  * - Shape 3: Intersection (neutral gray)
  */
 function createPullModeTemplate(baseProject, headProject) {
-  console.log("[PullMode] Creating template with baseProject and headProject");
-
   // Generate unique IDs for scaffolding atoms
   const outputId = GlobalVariables.generateUniqueID();
   const assemblyId = GlobalVariables.generateUniqueID();
@@ -97,8 +87,6 @@ function createPullModeTemplate(baseProject, headProject) {
   const tagBaseId = GlobalVariables.generateUniqueID();
   const intersectId = GlobalVariables.generateUniqueID();
   const colorIntersectId = GlobalVariables.generateUniqueID();
-
-  console.log("[PullMode] Scaffolding atom IDs generated");
 
   // Extract GitHub molecules from their projects
   // The fetched project IS the serialized molecule (not nested under topLevelMolecule)
@@ -113,31 +101,8 @@ function createPullModeTemplate(baseProject, headProject) {
   baseGithubMolecule.uniqueID = baseGithubId;
   headGithubMolecule.uniqueID = headGithubId;
 
-  console.log(
-    `[PullMode] Reassigned Base GitHub molecule ID: ${baseGithubId}, Head GitHub molecule ID: ${headGithubId}`,
-  );
-  console.log(
-    "[PullMode] Base molecule structure:",
-    baseGithubMolecule.atomType,
-    baseGithubMolecule.allAtoms?.length || 0,
-    "atoms",
-  );
-  console.log(
-    "[PullMode] Head molecule structure:",
-    headGithubMolecule.atomType,
-    headGithubMolecule.allAtoms?.length || 0,
-    "atoms",
-  );
-
   // SAFETY CHECK: Make sure both GitHub molecules exist
   if (!baseGithubId || !headGithubId) {
-    console.error(
-      "[PullMode] ERROR: GitHub molecules not found!",
-      "baseProject:",
-      JSON.stringify(baseProject, null, 2),
-      "headProject:",
-      JSON.stringify(headProject, null, 2),
-    );
     throw new Error(
       `Failed to extract GitHub molecules. Base ID: ${baseGithubId}, Head ID: ${headGithubId}`,
     );
@@ -317,27 +282,6 @@ function createPullModeTemplate(baseProject, headProject) {
       allConnectors: connectors,
     },
   };
-
-  console.log(
-    "[PullMode] Template created with",
-    templateProject.topLevelMolecule.allAtoms.length,
-    "atoms and",
-    connectors.length,
-    "connectors",
-  );
-  console.log("[PullMode] Scaffolding atoms:", scaffoldingAtoms.length);
-  console.log(
-    "[PullMode] Base GitHub molecule present:",
-    !!baseGithubMolecule?.uniqueID,
-    "ID:",
-    baseGithubMolecule?.uniqueID,
-  );
-  console.log(
-    "[PullMode] Head GitHub molecule present:",
-    !!headGithubMolecule?.uniqueID,
-    "ID:",
-    headGithubMolecule?.uniqueID,
-  );
 
   return templateProject;
 }
@@ -656,17 +600,6 @@ function PullMode({ processing, setProcessing }) {
     GlobalVariables.canvas = canvasRef;
     GlobalVariables.c = canvasRef.current.getContext("2d");
 
-    console.log(
-      "[PullMode] useEffect started for:",
-      baseOwner,
-      "/",
-      baseRepo,
-      "vs",
-      headOwner,
-      "/",
-      headRepo,
-    );
-
     // Create blank molecule
     GlobalVariables.topLevelMolecule = new Molecule({
       x: 0,
@@ -680,93 +613,33 @@ function PullMode({ processing, setProcessing }) {
     GlobalVariables.currentMolecule.selected = true;
     GlobalVariables.currentAWSnode = null;
     GlobalVariables.currentRepo = null;
-    console.log("[PullMode] Blank molecule created");
 
     // Fetch both GitHub projects and create template
-    console.log("[PullMode] Starting to fetch GitHub projects...");
     Promise.all([
       fetchGithubProjectSerialzed(baseOwner, baseRepo),
       fetchGithubProjectSerialzed(headOwner, headRepo),
     ])
       .then(([baseProject, headProject]) => {
-        console.log("[PullMode] Both projects fetched successfully");
-        console.log("[PullMode] Base project:", baseProject?.uniqueID);
-        console.log("[PullMode] Head project:", headProject?.uniqueID);
-
         // Create template with GitHub molecules embedded
         const templateProject = createPullModeTemplate(
           baseProject,
           headProject,
         );
-        console.log(
-          "[PullMode] Template created with allAtoms:",
-          templateProject.topLevelMolecule.allAtoms.length,
-        );
-        console.log(
-          "[PullMode] Template structure before deserialize:",
-          JSON.stringify(templateProject, null, 2),
-        );
 
         // Deserialize entire template into the workspace
-        console.log("[PullMode] Starting deserialize...");
-        console.log(
-          "[PullMode] Deserialize input - passing molecule structure:",
-          JSON.stringify(templateProject.topLevelMolecule, null, 2),
-        );
         const deserializeResult =
           GlobalVariables.topLevelMolecule.deserialize(
             templateProject.topLevelMolecule,
           );
-        console.log("[PullMode] Deserialize returned:", deserializeResult);
         return Promise.resolve(deserializeResult);
       })
       .then(() => {
-        console.log("[PullMode] Deserialization complete");
-        console.log(
-          "[PullMode] Atoms on screen after deserialize:",
-          GlobalVariables.topLevelMolecule.nodesOnTheScreen?.length || 0,
-        );
-        GlobalVariables.topLevelMolecule.nodesOnTheScreen?.forEach((atom) => {
-          console.log(`  - ${atom.atomType}: ${atom.name} (${atom.uniqueID})`);
-          if (atom.atomType === "Assembly") {
-            console.log(
-              `    Assembly inputs: ${atom.inputs?.length || 0}`,
-            );
-            atom.inputs?.forEach((inp, idx) => {
-              console.log(
-                `      [${idx}] ${inp.ioName} - connected: ${!!inp.connectors?.length}`,
-              );
-            });
-          }
-        });
-
-        console.log(
-          "[PullMode] Connectors in molecule:",
-          GlobalVariables.topLevelMolecule.allConnectors?.length || 0,
-        );
-        GlobalVariables.topLevelMolecule.allConnectors?.forEach((conn) => {
-          console.log(
-            `  - ${conn.attachmentPoint1?.parentAtom?.name || conn.attachmentPoint1?.parentAtom?.atomType} (${conn.attachmentPoint1ID}) → ${conn.attachmentPoint2Name}`,
-          );
-        });
-
         // Enable all molecules
         GlobalVariables.currentMolecule.enable();
         GlobalVariables.currentMolecule.enableAllChildren();
         setActiveAtom(GlobalVariables.currentMolecule);
-        console.log("[PullMode] All molecules enabled");
-
-        // Log serialized output for verification
-        setTimeout(() => {
-          const serialized = GlobalVariables.topLevelMolecule.serialize();
-          console.log(
-            "[PullMode] SERIALIZED_OUTPUT:",
-            JSON.stringify(serialized, null, 2),
-          );
-        }, 2000);
       })
       .catch((err) => {
-        console.error("[PullMode] ERROR:", err);
         setErrorNotification(
           `Failed to set up pull mode: ${err.message}`,
           "error",
