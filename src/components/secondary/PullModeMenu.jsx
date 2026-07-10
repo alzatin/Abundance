@@ -113,8 +113,28 @@ export default function PullModeMenu({
     },
   };
 
+  const spacer = {
+    type: "spacer",
+  };
+
+  const prButton = {
+    gitcompare: {
+      type: "button",
+      label: "View GitHub Comparison",
+    },
+    prButton: {
+      type: "button",
+      label: "Open Pull Request",
+      title:
+        "Open a new pull request on GitHub to merge changes from the Head repository into the Base repository.",
+      onClick: () => {
+        console.log("Open Pull Request button clicked");
+      },
+    },
+  };
+
   const inputParamsConfig = useMemo(() => {
-    return { ...labelControls, ...tagControls };
+    return { ...labelControls, ...tagControls, spacer, ...prButton };
   }, [labelControls, tagControls]);
 
   const [values, setControlValue, { controls }] = useControls(
