@@ -33,6 +33,9 @@ function useWindowSize() {
     width: undefined,
     height: undefined,
   });
+
+  const { authorizedUserOcto } = useAuth();
+  console.log("Authorized User Octo:", authorizedUserOcto);
   useEffect(() => {
     function handleResize() {
       setWindowSize({
@@ -655,6 +658,26 @@ function PullMode({ processing, setProcessing }) {
     userScopes,
   ]);
 
+  const createPullRequest = async () => {
+    try {
+      const response = await authorizedUserOcto.request(
+        "POST /repos/{owner}/{repo}/pulls",
+        {
+          owner: baseOwner,
+          repo: baseRepo,
+          title: `Compare ${headRepo} changes`,
+          body: `This pull request compares changes from ${headOwner}/${headRepo} to ${baseOwner}/${baseRepo}.`,
+          head: `${headOwner}:main`,
+          base: "main",
+        },
+      );
+      alert(`Pull request created: ${response.data.html_url}`);
+    } catch (error) {
+      console.error("Error creating pull request:", error);
+      alert(`Error creating pull request: ${error.message}`);
+    }
+  };
+
   if (activeAtom) {
     activeAtom.onStatusChange = (status) => {
       if (status === "waiting") {
@@ -676,6 +699,7 @@ function PullMode({ processing, setProcessing }) {
         collapsedOffset={[-280, 0]}
         baseRepo={`${baseOwner}/${baseRepo}`}
         headRepo={`${headOwner}/${headRepo}`}
+        createPullRequest={createPullRequest}
       />
 
       <div id="headerBarRun">

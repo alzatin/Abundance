@@ -33,6 +33,7 @@ export default function PullModeMenu({
   closeMenu,
   baseRepo,
   headRepo,
+  createPullRequest,
 }) {
   const { activeAtom } = useAppState();
   const [inputChanged, setInputChanged] = useState("");
@@ -140,6 +141,7 @@ export default function PullModeMenu({
         "Open a new pull request on GitHub to merge changes from the Adding repository into the Removing repository.",
       onClick: () => {
         console.log("Open Pull Request button clicked");
+        createPullRequest(baseRepo, baseBranch, headUser, headBranch);
       },
     },
   };
