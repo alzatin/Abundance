@@ -659,6 +659,13 @@ function PullMode({ processing, setProcessing }) {
   ]);
 
   const createPullRequest = async () => {
+    if (!authorizedUserOcto) {
+      setErrorNotification(
+        "You must be logged in to create a pull request.",
+        "error",
+      );
+      return;
+    }
     try {
       const response = await authorizedUserOcto.request(
         "POST /repos/{owner}/{repo}/pulls",
@@ -691,7 +698,7 @@ function PullMode({ processing, setProcessing }) {
     <>
       <PullModeMenu
         activeAtom={activeAtom}
-        position={{ top: 30, left: windowSize.width - 50 }}
+        position={{ top: 30, left: 300 }}
         id={"pullmode-menu-panel"}
         contentCollapsed={expandedMenu !== "pullmode"}
         setContentCollapsed={() => setExpandedMenu("pullmode")}
