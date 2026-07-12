@@ -35,7 +35,7 @@ function useWindowSize() {
   });
 
   const { authorizedUserOcto } = useAuth();
-  console.log("Authorized User Octo:", authorizedUserOcto);
+
   useEffect(() => {
     function handleResize() {
       setWindowSize({
