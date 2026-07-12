@@ -666,6 +666,19 @@ function PullMode({ processing, setProcessing }) {
       );
       return;
     }
+
+    const baseSvgPath =
+      "https://raw.githubusercontent.com/" +
+      baseOwner +
+      "/" +
+      baseRepo +
+      "/master/project.svg?sanitize=true";
+    const headSvgPath =
+      "https://raw.githubusercontent.com/" +
+      headOwner +
+      "/" +
+      headRepo +
+      "/master/project.svg?sanitize=true";
     try {
       const response = await authorizedUserOcto.request(
         "POST /repos/{owner}/{repo}/pulls",
@@ -673,7 +686,14 @@ function PullMode({ processing, setProcessing }) {
           owner: baseOwner,
           repo: baseRepo,
           title: `Compare ${headRepo} changes`,
-          body: `This pull request compares changes from ${headOwner}/${headRepo} to ${baseOwner}/${baseRepo}.`,
+          body: `This pull request compares changes from ${headOwner}/${headRepo} to ${baseOwner}/${baseRepo}.
+
+## Comparison
+
+| Adding | Removing |
+|--------|----------|
+| ![Adding](${headSvgPath}) | ![Removing](${baseSvgPath}) |
+`,
           head: `${headOwner}:main`,
           base: "main",
         },
