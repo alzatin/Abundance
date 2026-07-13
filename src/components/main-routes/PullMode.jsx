@@ -7,17 +7,8 @@ import GlobalVariables from "../../js/globalvariables.js";
 
 import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
 import Molecule from "../../molecules/molecule.js";
-import Connector from "../../prototypes/connector.js";
-import RenderMenu from "../secondary/RenderMenu.jsx";
-import BomMenu from "../secondary/BomMenu.jsx";
-import ReadmePanel from "../secondary/ReadmePanel.jsx";
 import PullModeMenu from "../secondary/PullModeMenu.jsx";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  addOrDeletePorts,
-  inputsReadyIgnoringFreeAP,
-  initializeInputsFromSaved,
-} from "../../js/alwaysOneFreeInput.js";
 
 // Import contexts
 import {
@@ -33,8 +24,6 @@ function useWindowSize() {
     width: undefined,
     height: undefined,
   });
-
-  const { authorizedUserOcto } = useAuth();
 
   useEffect(() => {
     function handleResize() {
@@ -290,7 +279,7 @@ function createPullModeTemplate(baseProject, headProject) {
   return templateProject;
 }
 
-function PullMode({ processing, setProcessing }) {
+function PullMode({ setProcessing }) {
   // Get URL parameters
   const {
     baseOwner = "",
@@ -300,14 +289,8 @@ function PullMode({ processing, setProcessing }) {
   } = useParams();
 
   // Get context values
-  const { authorizedUserOcto, userScopes, authRedirectHandler } = useAuth();
-  const {
-    activeAtom,
-    redirectType,
-    setRedirectType,
-    setActiveAtom,
-    setErrorNotification,
-  } = useAppState();
+  const { authorizedUserOcto, userScopes } = useAuth();
+  const { activeAtom, setActiveAtom, setErrorNotification } = useAppState();
   const {
     mesh,
     wireMesh,
@@ -328,7 +311,15 @@ function PullMode({ processing, setProcessing }) {
   const { uploadFile, deleteFile } = useFileImport();
 
   const navigate = useNavigate();
-  setWire(false);
+
+  // Disable output wire and top level wireframe for pull mode
+  useEffect(() => {
+    setWire(false);
+  }, [setWire]);
+
+  const [expandedMenu, setExpandedMenu] = useState(
+    GlobalVariables.isMobile() ? "none" : "pullmode",
+  );
 
   // Make file import functions available globally for atoms
   useEffect(() => {
@@ -353,18 +344,6 @@ function PullMode({ processing, setProcessing }) {
   const windowSize = useWindowSize();
   const [cameraZoom, setCameraZoom] = useState(1);
 
-  const createPuppeteerDiv = () => {
-    const existingDiv = document.getElementById(
-      "molecule-fully-render-puppeteer",
-    );
-    if (!existingDiv) {
-      const invisibleDiv = document.createElement("div");
-      invisibleDiv.id = "molecule-fully-render-puppeteer";
-      invisibleDiv.style.display = "none";
-      document.body.appendChild(invisibleDiv);
-    }
-  };
-
   useEffect(() => {
     setCameraZoom(1);
   }, [GlobalVariables.currentAWSnode]);
@@ -377,24 +356,6 @@ function PullMode({ processing, setProcessing }) {
   }, [mesh]);
 
   useEffect(() => {
-    if (renderProgress >= 100 && !renderBarVisible) {
-      const timer = setTimeout(() => {
-        createPuppeteerDiv();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [renderProgress, renderBarVisible]);
-
-  useEffect(() => {
-    if (wireMesh && mesh) {
-      const timer = setTimeout(() => {
-        createPuppeteerDiv();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [wireMesh, mesh]);
-
-  useEffect(() => {
     const handler = (e) => {
       setErrorNotification(e.detail.message, e.detail.type || "error");
       setTimeout(() => setErrorNotification(null, "error"), 5000);
@@ -402,204 +363,6 @@ function PullMode({ processing, setProcessing }) {
     window.addEventListener("user-notification", handler);
     return () => window.removeEventListener("user-notification", handler);
   }, []);
-
-  const [expandedMenu, setExpandedMenu] = useState(
-    GlobalVariables.isMobile() ? "none" : "params",
-  );
-
-  // Function to create and enable a new empty molecule with Output, Tags and Assembly atoms for Pull Comparison
-  async function createandEnableEmptyMolecule() {
-    // Create and set up a new empty molecule
-    GlobalVariables.topLevelMolecule = new Molecule({
-      x: 0,
-      y: 0,
-      topLevel: true,
-      atomType: "Molecule",
-      name: "New Project",
-      uniqueID: GlobalVariables.generateUniqueID(),
-    });
-
-    GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
-    GlobalVariables.currentMolecule.selected = true;
-    GlobalVariables.currentAWSnode = null;
-    GlobalVariables.currentRepo = null;
-
-    // Create and place an Output atom in the new molecule
-    await GlobalVariables.topLevelMolecule.placeAtom(
-      {
-        parentMolecule: GlobalVariables.topLevelMolecule,
-        x: 0.98,
-        y: 0.5,
-        parent: GlobalVariables.topLevelMolecule,
-        name: "Output",
-        atomType: "Output",
-        uniqueID: GlobalVariables.generateUniqueID(),
-      },
-      true,
-    );
-    // Create and place an Assembly atom in the new molecule
-    await GlobalVariables.topLevelMolecule.placeAtom(
-      {
-        parentMolecule: GlobalVariables.topLevelMolecule,
-        x: 0.98,
-        y: 0.5,
-        parent: GlobalVariables.topLevelMolecule,
-        name: "Assembly",
-        atomType: "Assembly",
-        uniqueID: GlobalVariables.generateUniqueID(),
-      },
-      true,
-    );
-
-    // Create and place Color atoms BEFORE Tag atoms (inverted order for processing)
-    // Color Head (Green - index grey)
-    await GlobalVariables.topLevelMolecule.placeAtom(
-      {
-        parentMolecule: GlobalVariables.topLevelMolecule,
-        x: 0.98,
-        y: 0.5,
-        parent: GlobalVariables.topLevelMolecule,
-        name: "Color Head",
-        atomType: "Color",
-        uniqueID: GlobalVariables.generateUniqueID(),
-        selectedColorIndex: 7,
-      },
-      true,
-    );
-
-    // Color Base (Red - index keepout)
-    await GlobalVariables.topLevelMolecule.placeAtom(
-      {
-        parentMolecule: GlobalVariables.topLevelMolecule,
-        x: 0.98,
-        y: 0.5,
-        parent: GlobalVariables.topLevelMolecule,
-        name: "Color Base",
-        atomType: "Color",
-        uniqueID: GlobalVariables.generateUniqueID(),
-        selectedColorIndex: 23,
-      },
-      true,
-    );
-
-    // Create and place a Tag atom in the new molecule (Head)
-    await GlobalVariables.topLevelMolecule.placeAtom(
-      {
-        parentMolecule: GlobalVariables.topLevelMolecule,
-        x: 0.98,
-        y: 0.5,
-        parent: GlobalVariables.topLevelMolecule,
-        name: "Head",
-        atomType: "Tag",
-        uniqueID: GlobalVariables.generateUniqueID(),
-        tags: ["Head"],
-      },
-      true,
-    );
-
-    // Create and place a Tag atom in the new molecule (Base)
-    await GlobalVariables.topLevelMolecule.placeAtom(
-      {
-        parentMolecule: GlobalVariables.topLevelMolecule,
-        x: 0.98,
-        y: 0.5,
-        parent: GlobalVariables.topLevelMolecule,
-        name: "Base",
-        atomType: "Tag",
-        uniqueID: GlobalVariables.generateUniqueID(),
-        tags: ["Base"],
-      },
-      true,
-    );
-
-    // Create and place an Intersect atom
-    await GlobalVariables.topLevelMolecule.placeAtom(
-      {
-        parentMolecule: GlobalVariables.topLevelMolecule,
-        x: 0.98,
-        y: 0.5,
-        parent: GlobalVariables.topLevelMolecule,
-        name: "Intersection",
-        atomType: "Intersection",
-        uniqueID: GlobalVariables.generateUniqueID(),
-      },
-      true,
-    );
-
-    // Create and place a Color atom for the Intersect output (index grey)
-    await GlobalVariables.topLevelMolecule.placeAtom(
-      {
-        parentMolecule: GlobalVariables.topLevelMolecule,
-        x: 0.98,
-        y: 0.5,
-        parent: GlobalVariables.topLevelMolecule,
-        name: "Color Intersect",
-        atomType: "Color",
-        uniqueID: GlobalVariables.generateUniqueID(),
-        selectedColorIndex: 19,
-      },
-      true,
-    );
-
-    // Enable the new molecule and all its children
-    GlobalVariables.currentMolecule.enable();
-    GlobalVariables.currentMolecule.enableAllChildren();
-
-    // Subscribe the molecule to its Output atom's status changes
-    // This is critical: when Output transitions to READY, the molecule needs to be notified
-    // so it can call onUpstreamChange() and update its own status to READY
-    const outputAtom = GlobalVariables.topLevelMolecule.getOutputAtom();
-    if (outputAtom) {
-      outputAtom.subscribe(
-        () => {
-          GlobalVariables.topLevelMolecule.onUpstreamChange();
-        },
-        GlobalVariables.topLevelMolecule.uniqueID,
-        false,
-      );
-    }
-  }
-
-  // Load Head and Base molecules from GitHub if owner and repo are provided in URL params
-  function loadHeadAndBaseMoleculesFromGithub() {
-    return GlobalVariables.currentMolecule
-      .loadGithubMoleculeByName(
-        {
-          owner: baseOwner,
-          repoName: baseRepo,
-          privateRepo: false,
-        },
-        {},
-        [],
-        { x: 0, y: 0 },
-        authorizedUserOcto,
-        userScopes || [],
-      )
-      .then((githubMolecule) => {
-        return GlobalVariables.currentMolecule.loadGithubMoleculeByName(
-          {
-            owner: headOwner,
-            repoName: headRepo,
-            privateRepo: false,
-          },
-          {},
-          [],
-          { x: 0, y: 0 },
-          authorizedUserOcto,
-          userScopes || [],
-        );
-      })
-      .then((headGithubMolecule) => {
-        return Promise.resolve();
-      })
-      .catch((err) => {
-        setErrorNotification(
-          `Failed to load GitHub molecules: ${err.message}`,
-          "error",
-        );
-        throw err;
-      });
-  }
 
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;

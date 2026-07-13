@@ -5,7 +5,6 @@ import { useRendering } from "../../contexts/RenderingContext.jsx";
 import { useAppState } from "../../contexts/index.js";
 
 import GlobalVariables from "../../js/globalvariables.js";
-import on from "../../js/circular-menu/src/on.js";
 
 // Pull Request icon for PullModeMenu
 const PullRequestIcon = ({ size = 22 }) => (
@@ -19,7 +18,7 @@ const PullRequestIcon = ({ size = 22 }) => (
     <circle cx="6" cy="6" r="2" fill="#c4a3d5" />
     <circle cx="6" cy="18" r="2" fill="#c4a3d5" />
     <line x1="8" y1="6" x2="18" y2="6" stroke="#a18fcf" strokeWidth="2" />
-    <line x1="8" y1="18" x2="18" x2="18" stroke="#a18fcf" strokeWidth="2" />
+    <line x1="8" y1="18" x2="18" stroke="#a18fcf" strokeWidth="2" />
     <line x1="6" y1="8" x2="6" y2="16" stroke="#a18fcf" strokeWidth="2" />
   </svg>
 );
@@ -41,6 +40,11 @@ export default function PullModeMenu({
   const [availableTags, setAvailableTags] = useState([]);
 
   const { activeTags, setActiveTags } = useRendering();
+
+  // Ensure the menu is expanded when opened
+  useEffect(() => {
+    setContentCollapsed(false);
+  }, []);
 
   // Sync available tags from molecule and keep activeTags in sync
   useEffect(() => {
@@ -156,8 +160,6 @@ export default function PullModeMenu({
   );
 
   const screenHeight = window.innerHeight;
-
-  setContentCollapsed(false); // Ensure the menu is expanded when opened
 
   return (
     <div>
