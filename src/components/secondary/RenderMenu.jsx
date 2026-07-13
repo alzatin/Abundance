@@ -149,15 +149,15 @@ export default function RenderMenu({
     },
     wire: {
       value: wireParam,
-      label: "Output Wire",
+      label: "Output Context",
       type: "boolean",
       onChange: (value) => {
         setWire(value);
       },
     },
-    context: {
+    wireframe: {
       value: solidParam,
-      label: "Context",
+      label: "Wireframe",
       type: "boolean",
       onChange: (value) => {
         setSolid(value);
