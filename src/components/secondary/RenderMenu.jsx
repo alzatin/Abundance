@@ -155,9 +155,9 @@ export default function RenderMenu({
         setWire(value);
       },
     },
-    wireframe: {
+    context: {
       value: solidParam,
-      label: "Wireframe",
+      label: "Context",
       type: "boolean",
       onChange: (value) => {
         setSolid(value);
@@ -174,9 +174,9 @@ export default function RenderMenu({
         }
       },
     },
-    topLevelWireframe: {
+    topLevelContext: {
       value: showTopLevelWireframe,
-      label: "Top Level Wireframe",
+      label: "Top Level Context",
       type: "boolean",
       onChange: (value) => {
         setShowTopLevelWireframe(value);
