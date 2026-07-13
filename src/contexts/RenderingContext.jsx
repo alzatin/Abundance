@@ -33,7 +33,7 @@ export function RenderingProvider({ children }) {
   const [showBackgroundModel, setShowBackgroundModel] = useState(false);
   const [userUploadedFile, setUserUploadedFile] = useState(false);
 
-  // Top-level molecule wireframe state
+  // Top-level molecule context state
   const [showTopLevelWireframe, setShowTopLevelWireframe] = useState(false);
   const [topLevelWireMesh, setTopLevelWireMesh] = useState(null);
 
@@ -89,7 +89,7 @@ export function RenderingProvider({ children }) {
     userUploadedFile,
     setUserUploadedFile,
 
-    // Top-level molecule wireframe
+    // Top-level molecule context
     showTopLevelWireframe,
     setShowTopLevelWireframe,
     topLevelWireMesh,

@@ -149,7 +149,7 @@ export default function RenderMenu({
     },
     wire: {
       value: wireParam,
-      label: "Output Wire",
+      label: "Output Context",
       type: "boolean",
       onChange: (value) => {
         setWire(value);
@@ -174,9 +174,9 @@ export default function RenderMenu({
         }
       },
     },
-    topLevelWireframe: {
+    topLevelContext: {
       value: showTopLevelWireframe,
-      label: "Top Level Wireframe",
+      label: "Top Level Context",
       type: "boolean",
       onChange: (value) => {
         setShowTopLevelWireframe(value);
