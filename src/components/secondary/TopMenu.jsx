@@ -289,27 +289,32 @@ function TopMenu({
       },
       {
         /**
-         * Open pull request if it's a forked project.
+         * Navigate to pull request comparison mode.
          */
         id: "Pull Request",
         buttonFunc: () => {
-          // If the project has a parent, open PR against the parent repo's default branch
+          // Get repo information
           const repo = GlobalVariables.currentRepo;
           const parent = repo.parent;
-          let baseRepo, baseBranch, headUser, headBranch;
+
+          // Determine base (parent if fork, otherwise current)
+          let baseOwner, baseRepo;
           if (parent) {
-            baseRepo = parent.full_name;
-            baseBranch = parent.default_branch;
-            headUser = repo.owner.login;
-            headBranch = repo.default_branch;
+            // Parse parent.full_name (format: "owner/repo")
+            const [parentOwner, parentName] = parent.full_name.split("/");
+            baseOwner = parentOwner;
+            baseRepo = parentName;
           } else {
-            baseRepo = repo.full_name;
-            baseBranch = repo.default_branch;
-            headUser = repo.owner.login;
-            headBranch = repo.default_branch;
+            baseOwner = repo.owner.login;
+            baseRepo = repo.name;
           }
-          const prUrl = `https://github.com/${baseRepo}/compare/${baseBranch}...${headUser}:${headBranch}`;
-          window.open(prUrl);
+
+          // Head is always current repo
+          const headOwner = repo.owner.login;
+          const headRepo = repo.name;
+
+          // Navigate to pullMode with URL parameters
+          navigate(`/pull/${baseOwner}/${baseRepo}/${headOwner}/${headRepo}`);
         },
       },
       {

@@ -26,7 +26,7 @@ class ObservableEntity {
       value !== null
     ) {
       throw new Error(
-        "Only READY or DISABLED status can have a value. Was: " + status
+        "Only READY or DISABLED status can have a value. Was: " + status,
       );
     }
     if (this.status != status || this.value !== value) {
@@ -108,7 +108,7 @@ class ObservableEntity {
   subscribe(subscriber, id, immediateCallback = true) {
     if (typeof subscriber === "function") {
       if (id in this.subscribers) {
-        console.trace(`Subscriber with id ${id} already exists. replacing.`);
+        // console.log(`Subscriber with id ${id} already exists. replacing.`);
       }
       this.subscribers[id] = subscriber;
       if (immediateCallback) {
@@ -135,8 +135,8 @@ class ObservableEntity {
     } else {
       console.warn(
         `No subscriber found with id: ${id} in list: ${Object.keys(
-          this.subscribers
-        )}`
+          this.subscribers,
+        )}`,
       );
     }
   }
