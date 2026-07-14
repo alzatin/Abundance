@@ -481,7 +481,7 @@ function PullMode({ setProcessing }) {
     <>
       <PullModeMenu
         activeAtom={activeAtom}
-        position={{ top: 30, left: 300 }}
+        position={{ top: 100, left: 300 }}
         id={"pullmode-menu-panel"}
         contentCollapsed={expandedMenu !== "pullmode"}
         setContentCollapsed={() => setExpandedMenu("pullmode")}
@@ -508,7 +508,14 @@ function PullMode({ setProcessing }) {
         id="flow-canvas"
         tabIndex={0}
       ></canvas>
-      <ToggleRunCreate {...{ run: true, isItOwned: false }} />
+      <ToggleRunCreate
+        {...{
+          run: true,
+          isItOwned: true,
+          pullMode: true,
+          pullProject: { owner: headOwner, repoName: headRepo },
+        }}
+      />
       <div className="runContainer">
         <div
           className="jscad-container"

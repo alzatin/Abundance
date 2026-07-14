@@ -2,7 +2,14 @@ import React, { useState } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import { Link, useNavigate } from "react-router-dom";
 
-function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
+function ToggleRunCreate({
+  run,
+  isItOwned,
+  isPreview,
+  setActiveAtom,
+  pullMode,
+  pullProject,
+}) {
   const [runModeon, setRunMode] = useState(run);
   const [showTooltip, setShowTooltip] = useState(false);
   const navigate = useNavigate();
@@ -45,14 +52,20 @@ function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
       const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
       localStorage.setItem(projectKey, JSON.stringify(projectState));
     }
-    navigate("/", { state: { fromRunMode: true } });
+    // Delay navigation to allow current render to complete
+    setTimeout(() => {
+      navigate("/", { state: { fromRunMode: true } });
+    }, 0);
   };
   const handlePreviewCreateMode = (e) => {
     e.preventDefault();
     if (GlobalVariables.currentRepo) {
-      navigate(
-        `/preview/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`,
-      );
+      // Delay navigation to allow current render to complete
+      setTimeout(() => {
+        navigate(
+          `/preview/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`,
+        );
+      }, 0);
     }
   };
   const handleBackToRunMode = (e) => {
@@ -70,7 +83,10 @@ function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
         const { owner, repoName } = JSON.parse(originProject);
         GlobalVariables.currentAWSnode = { owner, repoName };
         sessionStorage.removeItem("previewOriginProject");
-        navigate(`/${owner}/${repoName}`);
+        // Delay navigation to allow current render to complete
+        setTimeout(() => {
+          navigate(`/${owner}/${repoName}`);
+        }, 0);
         return;
       } catch (e) {
         console.error("Error parsing origin project:", e);
@@ -79,9 +95,21 @@ function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
 
     // Default: navigate to preview project's run mode or current repo's run mode
     if (GlobalVariables.currentRepo) {
-      navigate(
-        `/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`,
-      );
+      // Delay navigation to allow current render to complete
+      setTimeout(() => {
+        navigate(
+          `/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`,
+        );
+      }, 0);
+    }
+  };
+  const handlePullToCreate = (e) => {
+    e.preventDefault();
+    if (pullProject) {
+      // Delay navigation to allow current render to complete
+      setTimeout(() => {
+        navigate(`/${pullProject.owner}/${pullProject.repoName}`);
+      }, 0);
     }
   };
   if (GlobalVariables.currentRepo) {
@@ -305,6 +333,53 @@ function ToggleRunCreate({ run, isItOwned, isPreview, setActiveAtom }) {
         </>
       );
     }
+  }
+  if (pullMode) {
+    return (
+      <>
+        <Link
+          key={11}
+          to={`/${pullProject.owner}/${pullProject.repoName}`}
+          onClick={handlePullToCreate}
+        >
+          <label title="Create/Run Mode" className="switch_run">
+            <button id="create-mode-btn">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 18 18"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{
+                  transform: "rotate(90deg)",
+                  alignSelf: "center",
+                  display: "block",
+                }}
+              >
+                <polyline
+                  points="5,7 9,13 13,7"
+                  fill="none"
+                  stroke="#c4a3d5"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <p
+                style={{
+                  fontSize: "12px",
+                  padding: "0 5px 0 5px",
+                  color: "#c4a3d5",
+                  fontFamily:
+                    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+                }}
+              >
+                Create Mode
+              </p>
+            </button>
+          </label>
+        </Link>
+      </>
+    );
   }
 }
 
