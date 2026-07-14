@@ -118,7 +118,7 @@ const canvasBasics: TutorialStep[] = [
   {
     id: " Other parameters menus",
     message:
-      "These buttons will open other menus where you can adjust additional settings like toggle the grid or your project wireframe, or search for github molecules.",
+      "These buttons will open other menus where you can adjust additional settings like toggle the grid or your project context, or search for github molecules.",
     overlay: "highlight",
     action: "click",
     target: "other-params-panels",
