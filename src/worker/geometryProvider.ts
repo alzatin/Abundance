@@ -17,6 +17,7 @@ import {
   filter,
 } from "./indexeddbUtils";
 import { GCWithScope } from "replicad";
+import { reportBooleanInflight } from "./progress";
 
 type ReplicadObject =
   | replicad.Shape3D
@@ -65,6 +66,11 @@ class GeometryProvider {
   // Keeps typical ids human-readable while bounding pathological nested-boolean
   // recipes (observed at 65-78KB) that otherwise dominate large assemblies.
   private static MAX_ID_LENGTH = 512;
+  // Set of `toCut\u0000cutter` keys for boolean cuts that previously hung the
+  // worker (>watchdog). `recursiveCut` consults `isBadCut` and, rather than
+  // re-running a cut that will hang again, surfaces the two failing parts in red.
+  // Seeded from the main thread via `setBadCuts` on every (re)start.
+  private badCuts: Set<string> = new Set();
   private MAX_PROJECTS = 4;
   private projectLRU: string[] = [];
   private cacheHitMetrics: Record<string, [number, number, number]>; // hits, misses, total-miss-duration-ms
@@ -102,6 +108,26 @@ class GeometryProvider {
     }
     this.cacheHitMetrics[type][1]++;
     this.cacheHitMetrics[type][2] += durationMs;
+  }
+
+  private _badCutKey(toCut: string, cutter: string): string {
+    return toCut + "\u0000" + cutter;
+  }
+
+  /**
+   * Replace the set of known-hanging boolean cuts. Called from the main thread
+   * (CadWorkerManager) on every worker (re)start with the cuts that previously
+   * timed out, so this fresh worker skips them instead of hanging again.
+   */
+  setBadCuts(pairs: Array<{ toCut: string; cutter: string }>): void {
+    this.badCuts = new Set(
+      (pairs || []).map((p) => this._badCutKey(p.toCut, p.cutter)),
+    );
+  }
+
+  /** True if cutting `toCut` by `cutter` previously hung the worker. */
+  isBadCut(toCut: string, cutter: string): boolean {
+    return this.badCuts.has(this._badCutKey(toCut, cutter));
   }
 
   private updateLRU(projectId: string) {
@@ -836,9 +862,12 @@ class GeometryProvider {
         const args = [toCutGeom, cutterGeom];
         if (this.areAllDrawings(args)) {
           phase("2D cut()");
+          reportBooleanInflight(toCut, cutter, true);
+          const drawingResult = args[0].cut(args[1]);
+          reportBooleanInflight(toCut, cutter, false);
           return {
             outcome: BooleanOutcome.NewShape,
-            result: args[0].cut(args[1]),
+            result: drawingResult,
           };
         } else if (this.areAll3DShapes(args)) {
           phase("measureVolume(initial)");
@@ -852,8 +881,14 @@ class GeometryProvider {
           }
 
           phase("3D cut()");
+          // Announce the exact cut about to run. If `.cut()` hangs, the worker
+          // thread freezes and the matching `false` beacon below never sends, so
+          // the main thread still sees this cut as in-flight and can record it as
+          // a known-hanging cut when the watchdog fires.
+          reportBooleanInflight(toCut, cutter, true);
           const cutStart = performance.now();
           const result = args[0].cut(args[1]);
+          reportBooleanInflight(toCut, cutter, false);
           const cutMs = Math.round(performance.now() - cutStart);
           if (cutMs > 1000) {
             console.warn(`[boolean] cut .cut() took ${cutMs}ms`);
