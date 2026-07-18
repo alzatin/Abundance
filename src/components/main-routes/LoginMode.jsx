@@ -1435,7 +1435,7 @@ const ShowProjects = ({
           setProjectsToShow("all");
         }}
       >
-        <p> Browse All Other Projects</p>
+        <p> Molecule Library</p>
       </div>
     </div>
   );
@@ -1470,7 +1470,7 @@ const ShowProjects = ({
           setProjectsToShow("all");
         }}
       >
-        <p> Browse All Other Projects</p>
+        <p> Molecule Library</p>
       </div>
     </div>
   );
@@ -1517,7 +1517,7 @@ const ShowProjects = ({
 
   const showDict = {
     all: {
-      label: "Browsing Projects",
+      label: "Molecule Library",
       data: allRepos,
       loading: isLoading,
       error: isError,
@@ -1814,7 +1814,8 @@ function LoginMode() {
     isRestoringSession,
   } = useAuth();
   const { exportPopUp, setExportPopUp } = useAppState();
-  const { projectTab, updateProjectTab, resetSettings } = useBrowseSettings();
+  const { projectTab, updateProjectTab, updateOrderType, resetSettings } =
+    useBrowseSettings();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -1828,6 +1829,9 @@ function LoginMode() {
   // Use persistent projectTab from context
   const projectToShow = projectTab;
   const setProjectsToShow = (tab) => {
+    if (tab === "all") {
+      updateOrderType("byStars");
+    }
     updateProjectTab(tab);
   };
 
@@ -2028,7 +2032,7 @@ function LoginMode() {
                   document.getElementById("menu-toggle").checked = false;
                 }}
               >
-                <p> Browse All Other Projects</p>
+                <p> Molecule Library</p>
               </div>
             </div>
           </section>
@@ -2074,7 +2078,7 @@ function LoginMode() {
                   document.getElementById("menu-toggle-guest").checked = false;
                 }}
               >
-                <p> Browse All Other Projects</p>
+                <p> Molecule Library</p>
               </div>
             </div>
           </section>
