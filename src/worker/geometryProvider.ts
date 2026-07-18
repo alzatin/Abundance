@@ -138,7 +138,10 @@ class GeometryProvider {
     resultId: string,
     inputs: string[],
     context: RequestContext,
-    operation: (inputs: string[]) => Promise<BooleanResult>,
+    operation: (
+      inputs: string[],
+      phase: (name: string) => void,
+    ) => Promise<BooleanResult>,
   ): Promise<string> {
     // Always use cache result if it's available
     if (
@@ -159,7 +162,35 @@ class GeometryProvider {
     // "done" line is gated to slow ops to bound the worker-log ring buffer.
     console.warn(`[boolean] ${resultId} starting`);
     const start = performance.now();
-    const opResult = await operation(inputs);
+    // Begin-marker for a sub-step. A single synchronous OCCT step (deserialize,
+    // .cut(), measureVolume, serialize) can block the worker for >90s, at which
+    // point the inactivity watchdog kills it before any "done" line is logged.
+    // The LAST phase marker before the log gap therefore pinpoints exactly which
+    // sub-step hung.
+    const phase = (name: string): void => {
+      console.warn(
+        `[boolean] ${resultId} phase:${name} @${Math.round(
+          performance.now() - start,
+        )}ms`,
+      );
+    };
+    let opResult: BooleanResult;
+    try {
+      opResult = await operation(inputs, phase);
+    } catch (err) {
+      // Surface the real error — comlink otherwise collapses a worker-thread
+      // throw to an opaque "{}" on the main thread.
+      const e = err as any;
+      const stackHead = e?.stack
+        ? " | " + String(e.stack).split("\n").slice(0, 3).join(" ")
+        : "";
+      console.warn(
+        `[boolean] ${resultId} threw: ${e?.name || "Error"}: ${
+          e?.message ?? String(e)
+        }${stackHead}`,
+      );
+      throw err;
+    }
     const durationMs = Math.round(performance.now() - start);
     if (durationMs > 2000) {
       console.warn(
@@ -182,11 +213,19 @@ class GeometryProvider {
       case BooleanOutcome.NewShape:
         this.cacheMiss(resultId, performance.now() - start);
         if (opResult.result) {
+          phase("serialize+persist");
+          const serializeStart = performance.now();
           await putShape(
             context.project,
             resultId,
             opResult.result.serialize(),
           );
+          const serializeMs = Math.round(performance.now() - serializeStart);
+          if (serializeMs > 1000) {
+            console.warn(
+              `[boolean] ${resultId} serialize+persist took ${serializeMs}ms`,
+            );
+          }
         }
         return resultId;
     }
@@ -207,10 +246,29 @@ class GeometryProvider {
       this.cacheHit(id);
     } else {
       const start = performance.now();
-      const geometry = await builder();
+      // Begin-marker for a single-shape op (rotate/move/fuse/extrude/fillet/
+      // shrinkWrap/...). Mirrors booleanOperation's markers so that a single
+      // synchronous OCCT primitive that blocks the worker >90s is identifiable
+      // as the last "[op] ... starting" line before the inactivity watchdog
+      // fires. `id` encodes the op type + input ids.
+      console.warn(`[op] ${id} starting`);
+      let geometry: ReplicadObject | undefined;
+      try {
+        geometry = await builder();
+      } catch (err) {
+        const e = err as any;
+        console.warn(
+          `[op] ${id} threw: ${e?.name || "Error"}: ${e?.message ?? String(e)}`,
+        );
+        throw err;
+      }
       if (geometry === undefined) {
         // builder produced nonexistent geometry (eg: intersect of nonoverlapping shapes)
         return undefined;
+      }
+      const builderMs = Math.round(performance.now() - start);
+      if (builderMs > 1000) {
+        console.warn(`[op] ${id} builder took ${builderMs}ms`);
       }
       if (context.operationId) {
         this.putInWarmCache(id, context.operationId, geometry);
@@ -218,7 +276,12 @@ class GeometryProvider {
           await putShape(context.project, id, geometry.serialize());
         }
       } else {
+        const serializeStart = performance.now();
         await putShape(context.project, id, geometry.serialize());
+        const serializeMs = Math.round(performance.now() - serializeStart);
+        if (serializeMs > 1000) {
+          console.warn(`[op] ${id} serialize+persist took ${serializeMs}ms`);
+        }
       }
       const duration = performance.now() - start;
       this.cacheMiss(id, duration);
@@ -739,7 +802,7 @@ class GeometryProvider {
       this._makeId("cut", toCut, cutter),
       [toCut, cutter],
       context,
-      async () => {
+      async (_inputs, phase) => {
         // Empty shape special cases
         if (toCut === this.EMPTY_SHAPE_SENTINEL) {
           return { outcome: BooleanOutcome.EmptyShape };
@@ -750,19 +813,62 @@ class GeometryProvider {
           };
         }
 
+        phase("deserialize toCut");
+        const getToCutStart = performance.now();
         const toCutGeom = await this.get(toCut, context);
+        const toCutMs = Math.round(performance.now() - getToCutStart);
+        if (toCutMs > 1000) {
+          console.warn(
+            `[boolean] cut deserialize toCut took ${toCutMs}ms (${toCut.length}-char id)`,
+          );
+        }
+
+        phase("deserialize cutter");
+        const getCutterStart = performance.now();
         const cutterGeom = await this.get(cutter, context);
+        const cutterMs = Math.round(performance.now() - getCutterStart);
+        if (cutterMs > 1000) {
+          console.warn(
+            `[boolean] cut deserialize cutter took ${cutterMs}ms (${cutter.length}-char id)`,
+          );
+        }
 
         const args = [toCutGeom, cutterGeom];
         if (this.areAllDrawings(args)) {
+          phase("2D cut()");
           return {
             outcome: BooleanOutcome.NewShape,
             result: args[0].cut(args[1]),
           };
         } else if (this.areAll3DShapes(args)) {
+          phase("measureVolume(initial)");
+          const mv1Start = performance.now();
           const initialVolume = replicad.measureVolume(args[0]);
+          const mv1Ms = Math.round(performance.now() - mv1Start);
+          if (mv1Ms > 1000) {
+            console.warn(
+              `[boolean] cut measureVolume(initial) took ${mv1Ms}ms`,
+            );
+          }
+
+          phase("3D cut()");
+          const cutStart = performance.now();
           const result = args[0].cut(args[1]);
+          const cutMs = Math.round(performance.now() - cutStart);
+          if (cutMs > 1000) {
+            console.warn(`[boolean] cut .cut() took ${cutMs}ms`);
+          }
+
+          phase("measureVolume(result)");
+          const mv2Start = performance.now();
           const resultVolume = replicad.measureVolume(result);
+          const mv2Ms = Math.round(performance.now() - mv2Start);
+          if (mv2Ms > 1000) {
+            console.warn(
+              `[boolean] cut measureVolume(result) took ${mv2Ms}ms`,
+            );
+          }
+
           const volumeDiff = Math.abs(initialVolume - resultVolume);
           const tolerance = 1e-5;
           if (volumeDiff < tolerance) {
