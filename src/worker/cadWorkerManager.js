@@ -58,6 +58,17 @@ export class CadWorkerManager {
      */
     this._workerLogs = [];
 
+    /**
+     * The most recent worker "activity" line (an operation begin- or
+     * phase-marker forwarded from the worker thread). Unlike the bounded ring
+     * buffer, this single value is never scrolled away by a burst of fast ops,
+     * so it still identifies the exact sub-operation that was in flight when the
+     * inactivity watchdog fires — the key to pinpointing a >90s synchronous
+     * OCCT stall.
+     * @type {{message: string, timestamp: string} | null}
+     */
+    this._lastWorkerActivity = null;
+
     this._createWorker();
 
     // Return a Proxy so that `cad.anyMethod(args)` transparently goes through
@@ -100,14 +111,22 @@ export class CadWorkerManager {
     // because they do not match its request/response protocol.
     if (data.__abundanceWorkerLog) {
       const log = data.__abundanceWorkerLog;
+      const message = String(log.message ?? "");
+      const timestamp = log.timestamp || new Date().toISOString();
       this._workerLogs.push({
         level: log.level || "log",
-        message: String(log.message ?? ""),
-        timestamp: log.timestamp || new Date().toISOString(),
+        message,
+        timestamp,
       });
-      // Bound memory: keep only the most recent 100 lines.
-      if (this._workerLogs.length > 100) {
-        this._workerLogs.splice(0, this._workerLogs.length - 100);
+      // Remember the most recent operation begin-/phase-marker so the stalled
+      // sub-operation is still known even after a burst of fast ops scrolls the
+      // ring buffer past it.
+      if (message.includes(" starting") || message.includes(" phase:")) {
+        this._lastWorkerActivity = { message, timestamp };
+      }
+      // Bound memory: keep only the most recent 1000 lines.
+      if (this._workerLogs.length > 1000) {
+        this._workerLogs.splice(0, this._workerLogs.length - 1000);
       }
       return;
     }
@@ -217,7 +236,14 @@ export class CadWorkerManager {
       entry.progressIntervalId = null;
 
       this._pendingCalls = this._pendingCalls.filter((c) => c !== entry);
-      const message = `CAD worker stalled on "${String(entry.method)}" — no progress for ${this._timeoutMs}ms`;
+      // Fold in the last known worker activity so the stall message pinpoints the
+      // exact sub-operation that hung (e.g. "[op] rotate#... starting"), which is
+      // otherwise invisible once the ring buffer scrolls.
+      const activity = this._lastWorkerActivity;
+      const activitySuffix = activity
+        ? ` — last worker activity: ${activity.message}`
+        : "";
+      const message = `CAD worker stalled on "${String(entry.method)}" — no progress for ${this._timeoutMs}ms${activitySuffix}`;
       this._emitCadWorkerEvent("cad-worker-task-error", {
         taskId: entry.taskId,
         method: String(entry.method),
@@ -231,6 +257,7 @@ export class CadWorkerManager {
         atomType: entry.taskMeta?.atomType || null,
         moleculeName: entry.taskMeta?.moleculeName || null,
         displayLabel: this._formatTaskLabel(entry.method, entry.taskMeta),
+        lastWorkerActivity: activity || null,
         error: message,
       });
       entry.reject(new Error(message));
@@ -414,6 +441,7 @@ export class CadWorkerManager {
       timeoutMs: this._timeoutMs,
       workerEpoch: this._workerEpoch,
       pendingCount: this._pendingCalls.length,
+      lastWorkerActivity: this._lastWorkerActivity,
       activeTask: activeEntry
         ? describe(activeEntry, this._pendingCalls.indexOf(activeEntry))
         : null,
