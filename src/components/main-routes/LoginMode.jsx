@@ -228,7 +228,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
               Forks
             </option>
             <option key={"stars_order"} value={"byStars"}>
-              Stars
+              Ranking
             </option>
             <option key={"owner_order"} value={"byOwnerName"}>
               Creator

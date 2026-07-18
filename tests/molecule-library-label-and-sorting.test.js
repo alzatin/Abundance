@@ -15,4 +15,11 @@ describe("Molecule Library browse tab", () => {
     expect(loginModeSource).toContain('if (tab === "all")');
     expect(loginModeSource).toContain('updateOrderType("byStars")');
   });
+
+  it('labels "byStars" sorting as "Ranking" in the UI', () => {
+    expect(loginModeSource).toContain(
+      '<option key={"stars_order"} value={"byStars"}>',
+    );
+    expect(loginModeSource).toContain("Ranking");
+  });
 });
