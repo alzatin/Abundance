@@ -458,6 +458,19 @@ function CreateMode() {
   }, []);
 
   /**
+   * Build the localStorage key used to persist the background model's
+   * show/hide preference for the currently loaded project.
+   * @returns {string|null} the storage key, or null if no project is loaded
+   */
+  const getBackgroundShowKey = () => {
+    const { owner, repoName } = GlobalVariables.currentAWSnode || {};
+    if (!owner || !repoName) {
+      return null;
+    }
+    return `background-show:${owner}/${repoName}`;
+  };
+
+  /**
    * Scan repository for background 3D model files when project loads
    */
   const scanForBackgroundModels = async () => {
@@ -496,8 +509,11 @@ function CreateMode() {
         if (!backgroundUsdzFile && !userUploadedFile) {
           setBackgroundUsdzFile(firstFile.name);
           setBackgroundUsdzSha(firstFile.sha);
-          // Don't auto-enable the display, let user choose
-          setShowBackgroundModel(false);
+          // Restore the user's saved show/hide preference for this project so
+          // a previously displayed background reappears after a reload.
+          const showKey = getBackgroundShowKey();
+          const persistedShow = showKey ? localStorage.getItem(showKey) : null;
+          setShowBackgroundModel(persistedShow === "true");
         } else {
           // If user uploaded a file, ensure it stays enabled
           if (userUploadedFile && backgroundUsdzFile) {
@@ -528,6 +544,17 @@ function CreateMode() {
     setShowBackgroundModel(false);
     setUserUploadedFile(false);
   }, [GlobalVariables.currentAWSnode]);
+
+  // Persist the user's background show/hide choice per project so it can be
+  // restored on the next load. Only write while a background file exists so the
+  // transient reset above (file cleared to null) can't overwrite the saved value.
+  useEffect(() => {
+    const showKey = getBackgroundShowKey();
+    if (!showKey || !backgroundUsdzFile) {
+      return;
+    }
+    localStorage.setItem(showKey, String(showBackgroundModel));
+  }, [showBackgroundModel, backgroundUsdzFile]);
 
   /**
    * Upload a 3D background file (GLB/GLTF) to GitHub
@@ -603,6 +630,12 @@ function CreateMode() {
       setBackgroundUsdzSha(null);
       setShowBackgroundModel(false);
       setUserUploadedFile(false); // Reset user upload flag
+
+      // Drop the saved show/hide preference for this project
+      const showKey = getBackgroundShowKey();
+      if (showKey) {
+        localStorage.removeItem(showKey);
+      }
 
       setNotification(`Background 3D model deleted`, "warning");
       setTimeout(() => setNotification(null, "warning"), 3000);
