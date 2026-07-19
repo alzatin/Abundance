@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import * as THREE from "three";
 import { Octokit } from "octokit";
 import GlobalVariables from "../../js/globalvariables.js";
 
@@ -12,11 +11,16 @@ export default function BackgroundModel({
   fileName,
   showModel,
   authorizedUserOcto,
+  unitsKey,
 }) {
   const [model, setModel] = useState(null);
 
   useEffect(() => {
-    if (!fileName || !showModel) {
+    // Wait until the project's units are known before positioning. The centering
+    // math below is derived from the *scaled* bounding box, so loading with an
+    // unknown unit (scaleFactor 1) would place the model in a different spot than
+    // once the units resolve. Deferring keeps the position stable across reloads.
+    if (!fileName || !showModel || !unitsKey) {
       setModel(null);
       return;
     }
@@ -61,29 +65,17 @@ export default function BackgroundModel({
 
             // Scale based on project units (assume model is in meters)
             let scaleFactor = 1;
-            if (GlobalVariables.topLevelMolecule?.unitsKey === "MM") {
+            if (unitsKey === "MM") {
               scaleFactor = 1000; // meters to millimeters
-            } else if (
-              GlobalVariables.topLevelMolecule?.unitsKey === "Inches"
-            ) {
+            } else if (unitsKey === "Inches") {
               scaleFactor = 39.3701; // meters to inches
             }
             clonedScene.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
-            // Center and position the model
-            const box = new THREE.Box3().setFromObject(clonedScene);
-            const center = box.getCenter(new THREE.Vector3());
-            clonedScene.position.set(-center.x, -center.y, -center.z);
-
-            // Rotate 90 degrees around X-axis
+            // Keep the model in its own internal coordinate system rather than
+            // recentering it. Only convert from the model's Y-up space to the
+            // scene's Z-up space so its authored position is preserved.
             clonedScene.rotation.x = Math.PI / 2;
-
-            // Position entirely in positive Z-axis, centered in Y
-            const rotatedBox = new THREE.Box3().setFromObject(clonedScene);
-            const minZ = rotatedBox.min.z;
-            const centerY = rotatedBox.getCenter(new THREE.Vector3()).y;
-            clonedScene.position.z -= minZ;
-            clonedScene.position.y -= centerY;
 
             // Ensure materials are visible
             clonedScene.traverse((child) => {
@@ -103,7 +95,7 @@ export default function BackgroundModel({
     };
 
     loadModel();
-  }, [fileName, showModel, authorizedUserOcto]);
+  }, [fileName, showModel, authorizedUserOcto, unitsKey]);
 
   if (!showModel || !model) {
     return null;
