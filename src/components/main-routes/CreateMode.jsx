@@ -463,7 +463,6 @@ function CreateMode() {
    * @returns {string|null} the storage key, or null if no project is loaded
    */
   const getBackgroundShowKey = () => {
-    const { owner, repoName } = GlobalVariables.currentAWSnode || {};
     if (!owner || !repoName) {
       return null;
     }
@@ -474,21 +473,14 @@ function CreateMode() {
    * Scan repository for background 3D model files when project loads
    */
   const scanForBackgroundModels = async () => {
-    if (!authorizedUserOcto) {
-      return;
-    }
-
-    if (
-      !GlobalVariables.currentAWSnode.owner ||
-      !GlobalVariables.currentAWSnode.repoName
-    ) {
+    if (!authorizedUserOcto || !owner || !repoName) {
       return;
     }
 
     try {
       const files = await authorizedUserOcto.rest.repos.getContent({
-        owner: GlobalVariables.currentAWSnode.owner,
-        repo: GlobalVariables.currentAWSnode.repoName,
+        owner,
+        repo: repoName,
         path: "",
       });
 
@@ -528,14 +520,10 @@ function CreateMode() {
 
   // Scan for background models when component mounts or project changes
   useEffect(() => {
-    if (
-      authorizedUserOcto &&
-      GlobalVariables.currentAWSnode?.owner &&
-      GlobalVariables.currentAWSnode?.repoName
-    ) {
+    if (authorizedUserOcto && owner && repoName) {
       scanForBackgroundModels();
     }
-  }, [authorizedUserOcto, GlobalVariables.currentAWSnode]);
+  }, [authorizedUserOcto, owner, repoName]);
 
   // Reset background model state when project changes to ensure clean state
   useEffect(() => {
@@ -543,7 +531,7 @@ function CreateMode() {
     setBackgroundUsdzSha(null);
     setShowBackgroundModel(false);
     setUserUploadedFile(false);
-  }, [GlobalVariables.currentAWSnode]);
+  }, [owner, repoName]);
 
   // Persist the user's background show/hide choice per project so it can be
   // restored on the next load. Only write while a background file exists so the

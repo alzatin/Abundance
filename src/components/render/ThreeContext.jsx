@@ -4,6 +4,7 @@ import { Wireframe, Grid, OrthographicCamera } from "@react-three/drei";
 import * as THREE from "three";
 import Controls from "./ThreeControls.jsx";
 import BackgroundModel from "./BackgroundModel.jsx";
+import GlobalVariables from "../../js/globalvariables.js";
 import { useRendering, useAuth } from "../../contexts/index.js";
 
 // We change the default orientation - threejs tends to use Y are the height,
@@ -20,6 +21,11 @@ export default function ext({ children, cameraZoom, ...otherProps }) {
     showBackgroundModel,
   } = useRendering();
   const { authorizedUserOcto } = useAuth();
+
+  // Read the project units on each render. Consumers of the rendering context
+  // re-render as the project loads, at which point the resolved unitsKey is
+  // forwarded to BackgroundModel so it scales/positions consistently.
+  const unitsKey = GlobalVariables.topLevelMolecule?.unitsKey;
 
   const dpr = Math.min(window.devicePixelRatio, 2);
   let backColor = outdatedMesh ? "#ababab" : "#f5f5f5";
@@ -105,6 +111,7 @@ export default function ext({ children, cameraZoom, ...otherProps }) {
             fileName={backgroundUsdzFile}
             showModel={showBackgroundModel}
             authorizedUserOcto={authorizedUserOcto}
+            unitsKey={unitsKey}
           />
         ) : null}
 

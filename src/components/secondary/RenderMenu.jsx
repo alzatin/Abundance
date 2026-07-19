@@ -126,7 +126,7 @@ export default function RenderMenu({
       tagsGroup: {
         type: "group",
         label: "Tags",
-        defaultCollapsed: false,
+        defaultCollapsed: true,
         children: tagChildrenKeys,
       },
     }),
