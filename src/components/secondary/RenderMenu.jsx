@@ -105,13 +105,15 @@ export default function RenderMenu({
         label: tag,
         value: activeTags.has(tag),
         onChange: (isActive) => {
-          const newActiveTags = new Set(activeTags);
-          if (isActive) {
-            newActiveTags.add(tag);
-          } else {
-            newActiveTags.delete(tag);
-          }
-          setActiveTags(newActiveTags);
+          setActiveTags((prevActiveTags) => {
+            const newActiveTags = new Set(prevActiveTags);
+            if (isActive) {
+              newActiveTags.add(tag);
+            } else {
+              newActiveTags.delete(tag);
+            }
+            return newActiveTags;
+          });
         },
       };
     });
@@ -194,7 +196,6 @@ export default function RenderMenu({
     showBackgroundModel,
     showTopLevelWireframe,
     availableTags,
-    activeTags,
     activeAtom,
   ]);
 

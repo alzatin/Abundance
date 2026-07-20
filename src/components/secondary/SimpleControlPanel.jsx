@@ -2240,7 +2240,7 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                     const toggleGroup = () => {
                       setGroupStates((prev) => ({
                         ...prev,
-                        [key]: !prev[key],
+                        [key]: !(prev?.[key] ?? config.defaultCollapsed ?? false),
                       }));
                     };
                     return (
