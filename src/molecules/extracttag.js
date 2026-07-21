@@ -40,13 +40,30 @@ export default class ExtractTag extends Atom {
 
     /** Index for initial tag dropdown
      * @type {number}
+     * @deprecated Superseded by `selectedTags`/`includeUntagged`/`notKeepOut`. Kept for backwards-compat serialization only.
      */
     this.tagIndex = 0;
 
     /** Selected Tag
      * @type {string}
+     * @deprecated Superseded by `selectedTags`/`includeUntagged`/`notKeepOut`. Kept for backwards-compat serialization only.
      */
     this.tag = undefined;
+
+    /** Tags currently checked for extraction
+     * @type {string[]}
+     */
+    this.selectedTags = [];
+
+    /** Whether untagged (leaf) geometry should be included
+     * @type {boolean}
+     */
+    this.includeUntagged = false;
+
+    /** Whether to remove "keepout"-tagged geometry from the result
+     * @type {boolean}
+     */
+    this.notKeepOut = false;
 
     /** Value stored in tagList Observable is a struct of {source: "geomID", tags: ["tag1", "tag2"...]} */
     this.tagList = { source: undefined, tags: [] };
@@ -57,6 +74,23 @@ export default class ExtractTag extends Atom {
     ]);
 
     this.setValues(values);
+
+    // Backwards compatibility: migrate old single-tag/dropdown state
+    // (`this.tag`) into the new checkbox-based fields if this atom was
+    // loaded from a project saved before checkboxes were introduced.
+    const hasNewFields =
+      values &&
+      (values.selectedTags !== undefined ||
+        values.includeUntagged !== undefined ||
+        values.notKeepOut !== undefined);
+
+    if (!hasNewFields && this.tag) {
+      if (this.tag === "Not Keep Out") {
+        this.notKeepOut = true;
+      } else if (this.tag !== "Select Tag") {
+        this.selectedTags = [this.tag];
+      }
+    }
   }
 
   /**
@@ -98,32 +132,78 @@ export default class ExtractTag extends Atom {
     // Forward to super so it can register `setInputChanged`. We discard
     // its returned controls because ExtractTag builds a fully custom panel.
     super.createInputParams(setInputChanged);
-    let tagList = this.tagList.tags || [];
+    // "Select Tag" is a placeholder value added by extractAllTags, not a real tag.
+    let tagList = (this.tagList.tags || []).filter(
+      (tag) => tag !== "Select Tag",
+    );
     let inputParams = {};
 
-    inputParams[this.uniqueID + "tag_ops"] = {
-      type: "select",
-      value: this.tag ? this.tag : "Select Tag",
-      options: [...tagList, "Not Keep Out"],
-      label: "Extract Tag",
-      onChange: (value) => {
-        if (this.tag != value && value != "Select Tag") {
-          this.tag = value;
-          this.name = `Extract ${value}`;
+    tagList.forEach((tag) => {
+      inputParams[this.uniqueID + "tag_" + tag] = {
+        type: "boolean",
+        value: this.selectedTags.includes(tag),
+        label: tag,
+        onChange: (checked) => {
+          if (checked) {
+            if (!this.selectedTags.includes(tag)) {
+              this.selectedTags = [...this.selectedTags, tag];
+            }
+          } else {
+            this.selectedTags = this.selectedTags.filter((t) => t !== tag);
+          }
+          this.updateName();
           this.onUpstreamChange();
-        }
+        },
+      };
+    });
+
+    inputParams[this.uniqueID + "untagged"] = {
+      type: "boolean",
+      value: this.includeUntagged,
+      label: "Untagged",
+      onChange: (checked) => {
+        this.includeUntagged = checked;
+        this.updateName();
+        this.onUpstreamChange();
+      },
+    };
+
+    inputParams[this.uniqueID + "not_keep_out"] = {
+      type: "boolean",
+      value: this.notKeepOut,
+      label: "Not Keep Out",
+      onChange: (checked) => {
+        this.notKeepOut = checked;
+        this.updateName();
+        this.onUpstreamChange();
       },
     };
 
     return inputParams;
   }
 
+  /**
+   * Updates this atom's displayed name to reflect the current selection.
+   */
+  updateName() {
+    const parts = [...this.selectedTags];
+    if (this.includeUntagged) {
+      parts.push("Untagged");
+    }
+    if (this.notKeepOut) {
+      parts.push("Not Keep Out");
+    }
+    this.name = parts.length > 0 ? `Extract ${parts.join(", ")}` : "Extract Tag";
+  }
+
   compute(inputs) {
     const input = inputs.input;
-    if (this.tag === "Not Keep Out") {
-      return GlobalVariables.cad.extractNotKeepOut(input);
-    }
-    return GlobalVariables.cad.extractTag(input, this.tag);
+    return GlobalVariables.cad.extractTags(
+      input,
+      this.selectedTags,
+      this.includeUntagged,
+      this.notKeepOut,
+    );
   }
 
   /**
@@ -151,8 +231,27 @@ export default class ExtractTag extends Atom {
         throw new Error("inputs ready but couldn't find geometry id");
       }
 
-      if (this.tag === "Not Keep Out") {
-        // Directly compute without needing tag selection
+      if (!this.tagList.source || this.tagList.source != geomId) {
+        this.setProcessing();
+        GlobalVariables.cad
+          .extractAllTags(geomId)
+          .then((result) => {
+            // Update tagList and trigger another onUpstreamChange to check if we can proceed
+            this.tagList = { source: geomId, tags: result };
+            if (typeof this.setInputChanged === "function") {
+              this.setInputChanged(this.tagList.tags); // Mark input as changed to trigger re-render of tag checkboxes
+            }
+            this.onUpstreamChange();
+          })
+          .catch(this.alertingErrorHandler());
+        return;
+      }
+
+      const hasCriteria =
+        this.selectedTags.length > 0 || this.includeUntagged || this.notKeepOut;
+
+      if (hasCriteria) {
+        // At least one criterion has been selected and we're ready to go!
         this.setProcessing();
         this.compute({ input: geomId })
           .then((value) => {
@@ -160,34 +259,7 @@ export default class ExtractTag extends Atom {
           })
           .catch(this.alertingErrorHandler());
       } else {
-        if (!this.tagList.source || this.tagList.source != geomId) {
-          this.setProcessing();
-          GlobalVariables.cad
-            .extractAllTags(geomId)
-            .then((result) => {
-              // Update tagList and trigger another onUpstreamChange to check if we can proceed
-              this.tagList = { source: geomId, tags: result };
-              if (typeof this.setInputChanged === "function") {
-                this.setInputChanged(this.tagList.tags); // Mark input as changed to trigger re-render of tag dropdown
-              }
-              this.onUpstreamChange();
-            })
-            .catch(this.alertingErrorHandler());
-        }
-
-        if (this.tag) {
-          if (this.tag != "Select Tag") {
-            // A legit tag has been selected and we're ready to go!
-            this.setProcessing();
-            this.compute({ input: geomId })
-              .then((value) => {
-                this.setReady(value);
-              })
-              .catch(this.alertingErrorHandler());
-          }
-        } else {
-          this.setWaiting();
-        }
+        this.setWaiting();
       }
     } else {
       // Input's aren't ready. Clear our current list
@@ -200,12 +272,16 @@ export default class ExtractTag extends Atom {
   }
 
   /**
-   * Keeps track of tag to be extracted
+   * Keeps track of tags to be extracted
    */
   serialize(offset = { x: 0, y: 0 }) {
     var superSerialObject = super.serialize(offset);
+    // Kept for backwards compatibility with older projects/tooling.
     superSerialObject.tag = this.tag;
     superSerialObject.tagIndex = this.tagIndex;
+    superSerialObject.selectedTags = this.selectedTags;
+    superSerialObject.includeUntagged = this.includeUntagged;
+    superSerialObject.notKeepOut = this.notKeepOut;
 
     return superSerialObject;
   }
