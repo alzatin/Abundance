@@ -248,13 +248,13 @@ describe("tags.js", () => {
       expect(result.geometry.map((g) => g.id)).toEqual(["a"]);
     });
 
-    it("throws when no geometry matches the selected criteria", () => {
-      expect(() => extractTags(assembly, ["nonexistent"], false, false)).toThrow(
-        "No geometry matches the selected criteria",
-      );
+    it("returns an empty assembly when no geometry matches the selected criteria", () => {
+      const result = extractTags(assembly, ["nonexistent"], false, false);
+
+      expect(result.geometry).toEqual([]);
     });
 
-    it("throws when notKeepOut removes everything", () => {
+    it("returns an empty assembly when notKeepOut removes everything", () => {
       const allKeepout = {
         ...assembly,
         geometry: assembly.geometry.map((g) => ({
@@ -263,9 +263,9 @@ describe("tags.js", () => {
         })),
       };
 
-      expect(() => extractTags(allKeepout, [], false, true)).toThrow(
-        "No geometry matches the selected criteria",
-      );
+      const result = extractTags(allKeepout, [], false, true);
+
+      expect(result.geometry).toEqual([]);
     });
   });
 });

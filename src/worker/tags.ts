@@ -178,7 +178,9 @@ function extractTags(
   }
 
   if (result === undefined) {
-    throw new Error("No geometry matches the selected criteria");
+    // Nothing matched the selected criteria. This is a valid result, so return
+    // an empty assembly (preserving the top-level metadata) rather than throwing.
+    return { ...geometry, geometry: [] };
   }
 
   return result;
