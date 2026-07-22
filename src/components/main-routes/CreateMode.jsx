@@ -106,9 +106,8 @@ function CreateMode() {
 
   // Update GlobalVariables when route params change and fetch full AWS node
   useEffect(() => {
-    console.log(`Route params changed: owner=${owner}, repoName=${repoName}`);
     if (owner && repoName) {
-      // Check if we already have this project loaded
+      // Check if we already have this project loaded prevent unnecessary fetches and re-renders
       const isAlreadyLoaded =
         GlobalVariables.currentAWSnode &&
         GlobalVariables.currentAWSnode.owner === owner &&
@@ -116,21 +115,18 @@ function CreateMode() {
         GlobalVariables.topLevelMolecule;
 
       if (isAlreadyLoaded) {
-        console.log(
-          `Project ${owner}/${repoName} already loaded, skipping fetch.`,
-        );
         setIsLoadingProject(false);
         return;
       }
 
       setIsLoadingProject(true);
 
-      // Clear the previous project before loading the new one
+      // Clear the previous project canvas before loading the new one
       // This prevents molecules from the previous mode (e.g., PullMode) from overlapping
       if (GlobalVariables.currentMolecule) {
         GlobalVariables.currentMolecule.nodesOnTheScreen = [];
+        GlobalVariables.currentAWSnode = null;
       }
-      GlobalVariables.currentAWSnode = null;
 
       // Fetch the full project metadata from AWS
       fetch(
@@ -138,7 +134,6 @@ function CreateMode() {
       )
         .then((res) => res.json())
         .then((data) => {
-          console.log("Fetched AWS node for project:", data);
           if (data && data.item) {
             GlobalVariables.currentAWSnode = data.item;
           } else {
@@ -697,7 +692,6 @@ function CreateMode() {
   }
 
   if (authorizedUserOcto) {
-    console.log("Authorized user octokit instance is available.");
     if (
       GlobalVariables.currentAWSnode &&
       GlobalVariables.currentAWSnode.owner === GlobalVariables.currentUser
