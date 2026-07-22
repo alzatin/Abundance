@@ -737,7 +737,20 @@ function CreateMode() {
               />
             </div>
           ) : null}
-          <ToggleRunCreate run={false} setActiveAtom={setActiveAtom} />
+          <ToggleRunCreate
+            setActiveAtom={setActiveAtom}
+            targetRepo={GlobalVariables.currentAWSnode}
+            buttons={[
+              {
+                action: "run",
+                id: "run-mode-btn",
+                title: "Switch to Run Mode",
+                wrapperClassName: "switch runmode-tooltip-container",
+                tooltipText: "RUN MODE",
+                iconRotation: -90,
+              },
+            ]}
+          />
           {shortCutsOn ? (
             <div id="shortcutDiv" className="noselect">
               <li style={{ fontSize: "14px" }}>(CTRL +)</li>

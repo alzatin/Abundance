@@ -315,9 +315,15 @@ function PreviewCreateMode() {
         />
       </div>
       <ToggleRunCreate
-        run={false}
-        isPreview={true}
         setActiveAtom={setActiveAtom}
+        buttons={[
+          {
+            action: "preview-back",
+            id: "back-to-run-mode-btn",
+            wrapperClassName: "back_to_runmode",
+            iconRotation: -90,
+          },
+        ]}
       />
       <CodeWindow {...{ activeAtom }} />
       {!GlobalVariables.currentMolecule.topLevel ? <GoUpLevelButton /> : null}

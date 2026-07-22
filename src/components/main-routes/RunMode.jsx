@@ -387,7 +387,34 @@ function runMode({ processing, setProcessing }) {
         tabIndex={0}
       ></canvas>
       {isActive ? <TutorialOverlay /> : null}
-      <ToggleRunCreate {...{ run: true, isItOwned }} />
+      <ToggleRunCreate
+        containerClassName={isItOwned ? undefined : "switch_run_stack"}
+        buttons={
+          isItOwned
+            ? [
+                {
+                  action: "create",
+                  id: "create-mode-btn",
+                  title: "Create/Run Mode",
+                  label: "Create Mode",
+                },
+              ]
+            : [
+                {
+                  action: "preview",
+                  id: "preview-create-mode-btn",
+                  title: "Preview Create Mode",
+                  label: "Preview Create Mode",
+                },
+                {
+                  action: "browse",
+                  id: "browse-projects-btn",
+                  title: "Browse Projects",
+                  label: "Browse Projects",
+                },
+              ]
+        }
+      />
 
       {GlobalVariables.currentRepo ? (
         <RunNavigation

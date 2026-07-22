@@ -508,14 +508,18 @@ function PullMode({ setProcessing }) {
         id="flow-canvas"
         tabIndex={0}
       ></canvas>
-      {/* <ToggleRunCreate
-        {...{
-          run: true,
-          isItOwned: true,
-          pullMode: true,
-          pullProject: { owner: headOwner, repoName: headRepo },
-        }}
-      /> */}
+      <ToggleRunCreate
+        setActiveAtom={setActiveAtom}
+        targetRepo={{ owner: headOwner, repoName: headRepo }}
+        buttons={[
+          {
+            action: "create",
+            id: "create-mode-btn",
+            title: "Create/Run Mode",
+            label: "Create Mode",
+          },
+        ]}
+      />
       <div className="runContainer">
         <div
           className="jscad-container"

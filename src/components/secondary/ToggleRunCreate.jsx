@@ -1,386 +1,191 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
+const buttonTextStyle = {
+  fontSize: "12px",
+  padding: "0 5px 0 5px",
+  color: "#c4a3d5",
+  fontFamily:
+    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+};
+
+const normalizeRepo = (repo) => {
+  if (!repo) return null;
+
+  const owner = repo.owner?.login ?? repo.owner ?? null;
+  const repoName = repo.name ?? repo.repoName ?? repo.repo ?? null;
+
+  if (!owner || !repoName) return null;
+  return { owner, repoName };
+};
 
 function ToggleRunCreate({
-  run,
-  isItOwned,
-  isPreview,
+  buttons = [],
+  containerClassName,
   setActiveAtom,
-  pullMode,
-  pullProject,
+  targetRepo,
 }) {
-  const [runModeon, setRunMode] = useState(run);
-  const [showTooltip, setShowTooltip] = useState(false);
+  const [hoveredButton, setHoveredButton] = useState(null);
   const navigate = useNavigate();
-  const handleChange = () => {
-    // set ActiveAtom to toplevel when switching modes
-    if (setActiveAtom) {
-      setActiveAtom(GlobalVariables.topLevelMolecule);
-    }
-    setRunMode(!runModeon);
-  };
 
-  const handleCreateToRun = (e) => {
-    // Save current project state to localStorage before switching to Run mode
-    // This preserves unsaved changes when toggling between Create and Run modes
-    // Note: owner and repoName come from GitHub's API and are validated by GitHub
-    if (
-      GlobalVariables.topLevelMolecule &&
-      GlobalVariables.currentAWSnode?.owner &&
-      GlobalVariables.currentAWSnode?.repoName
-    ) {
-      const projectState = GlobalVariables.topLevelMolecule.serialize();
-      projectState.filetypeVersion = 1;
-      const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
-      localStorage.setItem(projectKey, JSON.stringify(projectState));
+  const previewOriginProject = useMemo(() => {
+    const originProject = sessionStorage.getItem("previewOriginProject");
+    if (!originProject) return null;
+
+    try {
+      return JSON.parse(originProject);
+    } catch (error) {
+      console.error("Error parsing origin project:", error);
+      return null;
     }
-    handleChange();
-  };
-  const handleBrowseProjects = (e) => {
-    e.preventDefault();
-    handleChange();
-    // Save current project state to localStorage before navigating
-    // Note: owner and repoName come from GitHub's API and are validated by GitHub
-    if (
-      GlobalVariables.topLevelMolecule &&
-      GlobalVariables.currentAWSnode?.owner &&
-      GlobalVariables.currentAWSnode?.repoName
-    ) {
-      const projectState = GlobalVariables.topLevelMolecule.serialize();
-      projectState.filetypeVersion = 1;
-      const projectKey = `unsavedProject_${GlobalVariables.currentAWSnode.owner}_${GlobalVariables.currentAWSnode.repoName}`;
-      localStorage.setItem(projectKey, JSON.stringify(projectState));
-    }
-    // Delay navigation to allow current render to complete
-    setTimeout(() => {
-      navigate("/", { state: { fromRunMode: true } });
-    }, 0);
-  };
-  const handlePreviewCreateMode = (e) => {
-    e.preventDefault();
-    if (GlobalVariables.currentRepo) {
-      // Delay navigation to allow current render to complete
-      setTimeout(() => {
-        navigate(
-          `/preview/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`,
-        );
-      }, 0);
-    }
-  };
-  const handleBackToRunMode = (e) => {
-    e.preventDefault();
-    // Reset activeAtom to topLevelMolecule before navigating so RunMode's first
-    // render never sees a stale non-Molecule atom that lacks createExportMenuInputs.
+  }, []);
+
+  const resetActiveAtom = () => {
     if (setActiveAtom && GlobalVariables.topLevelMolecule) {
       setActiveAtom(GlobalVariables.topLevelMolecule);
     }
+  };
 
-    // If coming from preview of a project, return to the original project in create mode
-    const originProject = sessionStorage.getItem("previewOriginProject");
-    if (isPreview && originProject) {
-      try {
-        const { owner, repoName } = JSON.parse(originProject);
-        GlobalVariables.currentAWSnode = { owner, repoName };
-        sessionStorage.removeItem("previewOriginProject");
-        // Delay navigation to allow current render to complete
-        setTimeout(() => {
-          navigate(`/${owner}/${repoName}`);
-        }, 0);
-        return;
-      } catch (e) {
-        console.error("Error parsing origin project:", e);
-      }
+  const resolveTargetRepo = (buttonTargetRepo) =>
+    normalizeRepo(buttonTargetRepo) ??
+    normalizeRepo(targetRepo) ??
+    normalizeRepo(GlobalVariables.currentRepo) ??
+    normalizeRepo(GlobalVariables.currentAWSnode);
+
+  const saveCurrentProjectState = (repo) => {
+    if (!GlobalVariables.topLevelMolecule || !repo?.owner || !repo?.repoName) {
+      return;
     }
 
-    // Default: navigate to preview project's run mode or current repo's run mode
-    if (GlobalVariables.currentRepo) {
-      // Delay navigation to allow current render to complete
-      setTimeout(() => {
-        navigate(
-          `/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`,
-        );
-      }, 0);
+    const projectState = GlobalVariables.topLevelMolecule.serialize();
+    projectState.filetypeVersion = 1;
+    const projectKey = `unsavedProject_${repo.owner}_${repo.repoName}`;
+    localStorage.setItem(projectKey, JSON.stringify(projectState));
+  };
+
+  const navigateDeferred = (path, options) => {
+    setTimeout(() => {
+      navigate(path, options);
+    }, 0);
+  };
+
+  const handleButtonClick = (button) => (event) => {
+    event.preventDefault();
+
+    const repo = resolveTargetRepo(button.targetRepo);
+
+    if (typeof button.beforeNavigate === "function") {
+      button.beforeNavigate({ repo, resetActiveAtom, saveCurrentProjectState });
+    }
+
+    switch (button.action) {
+      case "run":
+        saveCurrentProjectState(repo);
+        resetActiveAtom();
+        if (repo) navigateDeferred(`/run/${repo.owner}/${repo.repoName}`);
+        break;
+      case "create":
+        resetActiveAtom();
+        if (repo) navigateDeferred(`/${repo.owner}/${repo.repoName}`);
+        break;
+      case "preview":
+        if (repo) navigateDeferred(`/preview/${repo.owner}/${repo.repoName}`);
+        break;
+      case "browse":
+        resetActiveAtom();
+        saveCurrentProjectState(repo);
+        navigateDeferred("/", { state: { fromRunMode: true } });
+        break;
+      case "preview-back":
+        resetActiveAtom();
+        if (previewOriginProject?.owner && previewOriginProject?.repoName) {
+          GlobalVariables.currentAWSnode = {
+            owner: previewOriginProject.owner,
+            repoName: previewOriginProject.repoName,
+          };
+          sessionStorage.removeItem("previewOriginProject");
+          navigateDeferred(
+            `/${previewOriginProject.owner}/${previewOriginProject.repoName}`,
+          );
+          break;
+        }
+
+        if (repo) navigateDeferred(`/run/${repo.owner}/${repo.repoName}`);
+        break;
+      default:
+        break;
     }
   };
-  const handlePullToCreate = (e) => {
-    e.preventDefault();
-    if (pullProject) {
-      // Delay navigation to allow current render to complete
-      setTimeout(() => {
-        navigate(`/${pullProject.owner}/${pullProject.repoName}`);
-      }, 0);
-    }
-  };
-  if (GlobalVariables.currentRepo) {
-    if (!runModeon) {
-      if (isPreview) {
-        const originProject = sessionStorage.getItem("previewOriginProject");
-        const backButtonTitle = originProject
+
+  const renderedButtons = buttons.map((button, index) => {
+    const key = button.key ?? `${button.action}-${index}`;
+    const label =
+      button.label ??
+      (button.action === "preview-back"
+        ? previewOriginProject
+          ? "Back to Project"
+          : "Back to Run Mode"
+        : null);
+    const title =
+      button.title ??
+      (button.action === "preview-back"
+        ? previewOriginProject
           ? "Back to Original Project"
-          : "Back to Run Mode";
-        return (
-          <label title={backButtonTitle} className="back_to_runmode">
-            <button id="back-to-run-mode-btn" onClick={handleBackToRunMode}>
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 18 18"
-                xmlns="http://www.w3.org/2000/svg"
-                style={{
-                  transform: "rotate(-90deg)",
-                  alignSelf: "center",
-                  display: "block",
-                }}
-              >
-                <polyline
-                  points="5,7 9,13 13,7"
-                  fill="none"
-                  stroke="#c4a3d5"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <p
-                style={{
-                  fontSize: "12px",
-                  padding: "0 5px 0 5px",
-                  color: "#c4a3d5",
-                  fontFamily:
-                    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-                }}
-              >
-                {originProject ? "Back to Project" : "Back to Run Mode"}
-              </p>
-            </button>
-          </label>
-        );
-      }
-      return (
-        <>
-          <Link
-            key={
-              GlobalVariables.currentRepo
-                ? GlobalVariables.currentRepo.id
-                : null
-            }
-            to={
-              GlobalVariables.currentRepo
-                ? `/run/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`
-                : "/run"
-            }
-            onClick={handleCreateToRun}
-            style={{ position: "absolute" }}
-          >
-            <label className="switch runmode-tooltip-container">
-              <button
-                id="run-mode-btn"
-                title="Switch to Run Mode"
-                onMouseEnter={() => setShowTooltip(true)}
-                onMouseLeave={() => setShowTooltip(false)}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 18 18"
-                  xmlns="http://www.w3.org/2000/svg"
-                  style={{
-                    transform: "rotate(-90deg)",
-                    alignSelf: "center",
-                    display: "block",
-                  }}
-                >
-                  <polyline
-                    points="5,7 9,13 13,7"
-                    fill="none"
-                    stroke="#c4a3d5"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {showTooltip && (
-                  <span className="runmode-tooltip">RUN MODE</span>
-                )}
-              </button>
-            </label>
-          </Link>
-        </>
-      );
-    } else {
-      return (
-        <>
-          {isItOwned ? (
-            <Link
-              key={GlobalVariables.currentRepo.id}
-              to={`/${GlobalVariables.currentRepo.owner.login}/${GlobalVariables.currentRepo.name}`}
-              onClick={handleChange}
-            >
-              <label title="Create/Run Mode" className="switch_run">
-                <button id="create-mode-btn">
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    xmlns="http://www.w3.org/2000/svg"
-                    style={{
-                      transform: "rotate(90deg)",
-                      alignSelf: "center",
-                      display: "block",
-                    }}
-                  >
-                    <polyline
-                      points="5,7 9,13 13,7"
-                      fill="none"
-                      stroke="#c4a3d5"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      padding: "0 5px 0 5px",
-                      color: "#c4a3d5",
-                      fontFamily:
-                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-                    }}
-                  >
-                    Create Mode
-                  </p>
-                </button>
-              </label>
-            </Link>
-          ) : (
-            <div className="switch_run_stack">
-              <label title="Preview Create Mode" className="switch_run">
-                <button
-                  id="preview-create-mode-btn"
-                  onClick={handlePreviewCreateMode}
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    xmlns="http://www.w3.org/2000/svg"
-                    style={{
-                      transform: "rotate(90deg)",
-                      alignSelf: "center",
-                      display: "block",
-                    }}
-                  >
-                    <polyline
-                      points="5,7 9,13 13,7"
-                      fill="none"
-                      stroke="#c4a3d5"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      padding: "0 5px 0 5px",
-                      color: "#c4a3d5",
-                      fontFamily:
-                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-                    }}
-                  >
-                    Preview Create Mode
-                  </p>
-                </button>
-              </label>
-              <label title="Browse Projects" className="switch_run">
-                <button id="create-mode-btn" onClick={handleBrowseProjects}>
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    xmlns="http://www.w3.org/2000/svg"
-                    style={{
-                      transform: "rotate(90deg)",
-                      alignSelf: "center",
-                      display: "block",
-                    }}
-                  >
-                    <polyline
-                      points="5,7 9,13 13,7"
-                      fill="none"
-                      stroke="#c4a3d5"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      padding: "0 5px 0 5px",
-                      color: "#c4a3d5",
-                      fontFamily:
-                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-                    }}
-                  >
-                    Browse Projects
-                  </p>
-                </button>
-              </label>
-            </div>
-          )}
-        </>
-      );
-    }
-  }
-  if (pullMode) {
+          : "Back to Run Mode"
+        : undefined);
+    const iconRotation = button.iconRotation ?? 90;
+
     return (
-      <>
-        <Link
-          key={11}
-          to={`/${pullProject.owner}/${pullProject.repoName}`}
-          onClick={handlePullToCreate}
+      <label
+        key={key}
+        title={button.tooltipText ? undefined : title}
+        className={button.wrapperClassName ?? "switch_run"}
+      >
+        <button
+          id={button.id}
+          onClick={handleButtonClick(button)}
+          onMouseEnter={() => setHoveredButton(key)}
+          onMouseLeave={() => setHoveredButton(null)}
         >
-          <label title="Create/Run Mode" className="switch_run">
-            <button id="create-mode-btn">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 18 18"
-                xmlns="http://www.w3.org/2000/svg"
-                style={{
-                  transform: "rotate(90deg)",
-                  alignSelf: "center",
-                  display: "block",
-                }}
-              >
-                <polyline
-                  points="5,7 9,13 13,7"
-                  fill="none"
-                  stroke="#c4a3d5"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <p
-                style={{
-                  fontSize: "12px",
-                  padding: "0 5px 0 5px",
-                  color: "#c4a3d5",
-                  fontFamily:
-                    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-                }}
-              >
-                Create Mode
-              </p>
-            </button>
-          </label>
-        </Link>
-      </>
+          {button.showIcon === false ? null : (
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 18 18"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{
+                transform: `rotate(${iconRotation}deg)`,
+                alignSelf: "center",
+                display: "block",
+              }}
+            >
+              <polyline
+                points="5,7 9,13 13,7"
+                fill="none"
+                stroke="#c4a3d5"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+          {label ? <p style={button.textStyle ?? buttonTextStyle}>{label}</p> : null}
+          {button.tooltipText && hoveredButton === key ? (
+            <span className="runmode-tooltip">{button.tooltipText}</span>
+          ) : null}
+        </button>
+      </label>
     );
+  });
+
+  if (!renderedButtons.length) return null;
+
+  if (containerClassName) {
+    return <div className={containerClassName}>{renderedButtons}</div>;
   }
+
+  return renderedButtons;
 }
 
 export default ToggleRunCreate;
