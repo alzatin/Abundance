@@ -408,7 +408,7 @@ function runMode({ processing, setProcessing }) {
                 },
                 {
                   action: "browse",
-                  id: "browse-projects-btn",
+                  id: "create-mode-btn",
                   title: "Browse Projects",
                   label: "Browse Projects",
                 },

@@ -47,11 +47,21 @@ function ToggleRunCreate({
     }
   };
 
-  const resolveTargetRepo = (buttonTargetRepo) =>
-    normalizeRepo(buttonTargetRepo) ??
-    normalizeRepo(targetRepo) ??
-    normalizeRepo(GlobalVariables.currentRepo) ??
-    normalizeRepo(GlobalVariables.currentAWSnode);
+  const resolveTargetRepo = (buttonTargetRepo) => {
+    const repoCandidates = [
+      buttonTargetRepo,
+      targetRepo,
+      GlobalVariables.currentRepo,
+      GlobalVariables.currentAWSnode,
+    ];
+
+    for (const repoCandidate of repoCandidates) {
+      const normalizedRepo = normalizeRepo(repoCandidate);
+      if (normalizedRepo) return normalizedRepo;
+    }
+
+    return null;
+  };
 
   // Preserve unsaved project edits when a transition leaves the editable view.
   const saveCurrentProjectState = (repo) => {
@@ -74,6 +84,9 @@ function ToggleRunCreate({
 
   const restorePreviewOriginProject = () => {
     if (!previewOriginProject?.owner || !previewOriginProject?.repoName) {
+      if (sessionStorage.getItem("previewOriginProject")) {
+        console.warn("Preview origin project is unavailable for restoration.");
+      }
       return false;
     }
 
@@ -129,7 +142,8 @@ function ToggleRunCreate({
   };
 
   const renderedButtons = buttons.map((button, index) => {
-    const key = button.key ?? `${button.action}-${index}`;
+    const key =
+      button.key ?? button.id ?? button.label ?? button.title ?? `button-${index}`;
     const label =
       button.label ??
       (button.action === "preview-back"
