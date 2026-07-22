@@ -517,6 +517,7 @@ function PullMode({ setProcessing }) {
             id: "create-mode-btn",
             title: "Create/Run Mode",
             label: "Create Mode",
+            iconRotation: 90,
           },
         ]}
       />

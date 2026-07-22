@@ -13,7 +13,8 @@ const buttonTextStyle = {
 const normalizeRepo = (repo) => {
   if (!repo) return null;
 
-  const owner = repo.owner?.login ?? repo.owner ?? null;
+  const owner =
+    typeof repo.owner === "string" ? repo.owner : repo.owner?.login ?? null;
   const repoName = repo.name ?? repo.repoName ?? repo.repo ?? null;
 
   if (!owner || !repoName) return null;
@@ -87,12 +88,10 @@ function ToggleRunCreate({
 
   const restorePreviewOriginProject = () => {
     if (!previewOriginProject?.owner || !previewOriginProject?.repoName) {
-      if (sessionStorage.getItem("previewOriginProject")) {
-        console.warn("Preview origin project missing required properties:", {
-          owner: previewOriginProject?.owner,
-          repoName: previewOriginProject?.repoName,
-        });
-      }
+      console.warn("Preview origin project missing required properties:", {
+        owner: previewOriginProject?.owner,
+        repoName: previewOriginProject?.repoName,
+      });
       return false;
     }
 
@@ -163,7 +162,7 @@ function ToggleRunCreate({
           ? "Back to Original Project"
           : "Back to Run Mode"
         : undefined);
-    const iconRotation = button.iconRotation ?? 90;
+    const iconRotation = button.iconRotation;
 
     return (
       <label
@@ -184,7 +183,10 @@ function ToggleRunCreate({
               viewBox="0 0 18 18"
               xmlns="http://www.w3.org/2000/svg"
               style={{
-                transform: `rotate(${iconRotation}deg)`,
+                transform:
+                  iconRotation == null
+                    ? undefined
+                    : `rotate(${iconRotation}deg)`,
                 alignSelf: "center",
                 display: "block",
               }}

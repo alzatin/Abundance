@@ -397,6 +397,7 @@ function runMode({ processing, setProcessing }) {
                   id: "create-mode-btn",
                   title: "Create/Run Mode",
                   label: "Create Mode",
+                  iconRotation: 90,
                 },
               ]
             : [
@@ -405,12 +406,14 @@ function runMode({ processing, setProcessing }) {
                   id: "preview-create-mode-btn",
                   title: "Preview Create Mode",
                   label: "Preview Create Mode",
+                  iconRotation: 90,
                 },
                 {
                   action: "browse",
-                  id: "create-mode-btn",
+                  id: "browse-projects-btn",
                   title: "Browse Projects",
                   label: "Browse Projects",
+                  iconRotation: 90,
                 },
               ]
         }
