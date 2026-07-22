@@ -47,9 +47,9 @@ function ToggleRunCreate({
     }
   };
 
-  const resolveTargetRepo = (buttonTargetRepo) => {
+  const findFirstValidRepo = (priorityRepo) => {
     const repoCandidates = [
-      buttonTargetRepo,
+      priorityRepo,
       targetRepo,
       GlobalVariables.currentRepo,
       GlobalVariables.currentAWSnode,
@@ -62,6 +62,9 @@ function ToggleRunCreate({
 
     return null;
   };
+
+  const generateButtonKey = (button, index) =>
+    button.key ?? button.id ?? button.label ?? button.title ?? `button-${index}`;
 
   // Preserve unsaved project edits when a transition leaves the editable view.
   const saveCurrentProjectState = (repo) => {
@@ -85,7 +88,10 @@ function ToggleRunCreate({
   const restorePreviewOriginProject = () => {
     if (!previewOriginProject?.owner || !previewOriginProject?.repoName) {
       if (sessionStorage.getItem("previewOriginProject")) {
-        console.warn("Preview origin project is unavailable for restoration.");
+        console.warn("Preview origin project missing required properties:", {
+          owner: previewOriginProject?.owner,
+          repoName: previewOriginProject?.repoName,
+        });
       }
       return false;
     }
@@ -104,7 +110,7 @@ function ToggleRunCreate({
   const handleButtonClick = (button) => (event) => {
     event.preventDefault();
 
-    const repo = resolveTargetRepo(button.targetRepo);
+    const repo = findFirstValidRepo(button.targetRepo);
 
     if (typeof button.beforeNavigate === "function") {
       button.beforeNavigate({ repo, resetActiveAtom, saveCurrentProjectState });
@@ -124,8 +130,8 @@ function ToggleRunCreate({
         if (repo) navigateDeferred(`/preview/${repo.owner}/${repo.repoName}`);
         break;
       case "browse":
-        resetActiveAtom();
         saveCurrentProjectState(repo);
+        resetActiveAtom();
         navigateDeferred("/", { state: { fromRunMode: true } });
         break;
       case "preview-back":
@@ -142,8 +148,7 @@ function ToggleRunCreate({
   };
 
   const renderedButtons = buttons.map((button, index) => {
-    const key =
-      button.key ?? button.id ?? button.label ?? button.title ?? `button-${index}`;
+    const key = generateButtonKey(button, index);
     const label =
       button.label ??
       (button.action === "preview-back"
