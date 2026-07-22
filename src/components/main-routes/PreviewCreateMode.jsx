@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import Molecule from "../../molecules/molecule.js";
-import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
+import ChangeMode from "../secondary/ChangeMode.jsx";
 import FlowCanvas from "./flowCanvas.jsx";
 import LowerHalf from "./lowerHalf.jsx";
 import CodeWindow from "../secondary/codeWindow.jsx";
@@ -314,10 +314,17 @@ function PreviewCreateMode() {
           style={{ cursor: "pointer" }}
         />
       </div>
-      <ToggleRunCreate
-        run={false}
-        isPreview={true}
+      <ChangeMode
         setActiveAtom={setActiveAtom}
+        buttons={[
+          {
+            key: "preview-to-run",
+            action: "preview-back",
+            id: "back-to-run-mode-btn",
+            wrapperClassName: "back_to_runmode",
+            iconRotation: -90,
+          },
+        ]}
       />
       <CodeWindow {...{ activeAtom }} />
       {!GlobalVariables.currentMolecule.topLevel ? <GoUpLevelButton /> : null}

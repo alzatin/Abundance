@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, use } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
-import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
+import ChangeMode from "../secondary/ChangeMode.jsx";
 import TopMenu from "../secondary/TopMenu.jsx";
 import FlowCanvas from "./flowCanvas.jsx";
 import LowerHalf from "./lowerHalf.jsx";
@@ -101,9 +101,33 @@ function CreateMode() {
   const navigate = useNavigate();
   const { owner, repoName } = useParams();
 
+  // Track if we're still loading the project from AWS
+  const [isLoadingProject, setIsLoadingProject] = useState(true);
+
   // Update GlobalVariables when route params change and fetch full AWS node
   useEffect(() => {
     if (owner && repoName) {
+      // Check if we already have this project loaded prevent unnecessary fetches and re-renders
+      const isAlreadyLoaded =
+        GlobalVariables.currentAWSnode &&
+        GlobalVariables.currentAWSnode.owner === owner &&
+        GlobalVariables.currentAWSnode.repoName === repoName &&
+        GlobalVariables.topLevelMolecule;
+
+      if (isAlreadyLoaded) {
+        setIsLoadingProject(false);
+        return;
+      }
+
+      setIsLoadingProject(true);
+
+      // Clear the previous project canvas before loading the new one
+      // This prevents molecules from the previous mode (e.g., PullMode) from overlapping
+      if (GlobalVariables.currentMolecule) {
+        GlobalVariables.currentMolecule.nodesOnTheScreen = [];
+        GlobalVariables.currentAWSnode = null;
+      }
+
       // Fetch the full project metadata from AWS
       fetch(
         `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`,
@@ -113,14 +137,23 @@ function CreateMode() {
           if (data && data.item) {
             GlobalVariables.currentAWSnode = data.item;
           } else {
+            console.error("Failed to fetch AWS node for project:", data);
             // Fallback if we can't fetch from AWS
             GlobalVariables.currentAWSnode = { owner, repoName };
           }
+          // Load the project after setting currentAWSnode
+          loadProject(GlobalVariables.currentAWSnode);
+          setActiveAtom(GlobalVariables.topLevelMolecule);
+          setIsLoadingProject(false);
         })
         .catch((err) => {
           console.warn("Error fetching AWS node for project:", err);
           // Fallback to partial node
           GlobalVariables.currentAWSnode = { owner, repoName };
+          // Still try to load project with fallback
+          loadProject(GlobalVariables.currentAWSnode);
+          setActiveAtom(GlobalVariables.topLevelMolecule);
+          setIsLoadingProject(false);
         });
     }
   }, [owner, repoName]);
@@ -637,6 +670,27 @@ function CreateMode() {
 
   const { start, isActive } = useTutorial();
   const screenHeight = window.innerHeight;
+
+  // Show loading screen while project is being fetched and loaded
+  if (isLoadingProject) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "#1e1e1e",
+          color: "#c4a3d5",
+          fontSize: "18px",
+        }}
+      >
+        Loading project...
+      </div>
+    );
+  }
+
   if (authorizedUserOcto) {
     if (
       GlobalVariables.currentAWSnode &&
@@ -737,7 +791,21 @@ function CreateMode() {
               />
             </div>
           ) : null}
-          <ToggleRunCreate run={false} setActiveAtom={setActiveAtom} />
+          <ChangeMode
+            setActiveAtom={setActiveAtom}
+            targetRepo={GlobalVariables.currentAWSnode}
+            buttons={[
+              {
+                key: "create-to-run",
+                action: "run",
+                id: "run-mode-btn",
+                title: "Switch to Run Mode",
+                wrapperClassName: "switch runmode-tooltip-container",
+                tooltipText: "RUN MODE",
+                iconRotation: -90,
+              },
+            ]}
+          />
           {shortCutsOn ? (
             <div id="shortcutDiv" className="noselect">
               <li style={{ fontSize: "14px" }}>(CTRL +)</li>
@@ -838,6 +906,9 @@ function CreateMode() {
         </>
       );
     } else {
+      console.warn(
+        "User is not authorized for this repository. Redirecting to run mode.",
+      );
       // Fallback: navigate to run mode if repo is still missing
       navigate(`/run/${owner}/${repoName}`);
     }

@@ -5,7 +5,7 @@ import NonReplicadMesh from "../render/NonReplicadMesh.jsx";
 import WireframeMesh from "../render/WireframeMesh.jsx";
 import GlobalVariables from "../../js/globalvariables.js";
 
-import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
+import ChangeMode from "../secondary/ChangeMode.jsx";
 import Molecule from "../../molecules/molecule.js";
 import PullModeMenu from "../secondary/PullModeMenu.jsx";
 import { useNavigate, useParams } from "react-router-dom";
@@ -508,14 +508,20 @@ function PullMode({ setProcessing }) {
         id="flow-canvas"
         tabIndex={0}
       ></canvas>
-      {/* <ToggleRunCreate
-        {...{
-          run: true,
-          isItOwned: true,
-          pullMode: true,
-          pullProject: { owner: headOwner, repoName: headRepo },
-        }}
-      /> */}
+      <ChangeMode
+        setActiveAtom={setActiveAtom}
+        targetRepo={{ owner: headOwner, repoName: headRepo }}
+        buttons={[
+          {
+            key: "pull-to-create",
+            action: "create",
+            id: "create-mode-btn",
+            title: "Create/Run Mode",
+            label: "Create Mode",
+            iconRotation: 90,
+          },
+        ]}
+      />
       <div className="runContainer">
         <div
           className="jscad-container"

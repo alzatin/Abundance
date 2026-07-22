@@ -6,7 +6,7 @@ import NonReplicadMesh from "../render/NonReplicadMesh.jsx";
 import WireframeMesh from "../render/WireframeMesh.jsx";
 import GlobalVariables from "../../js/globalvariables.js";
 
-import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
+import ChangeMode from "../secondary/ChangeMode.jsx";
 import RunNavigation from "../secondary/RunNavigation.jsx";
 import Molecule from "../../molecules/molecule.js";
 import RunParams from "../secondary/RunParams.jsx";
@@ -102,11 +102,19 @@ function resetMetaTags() {
 
   document.title = "Abundance - BETA";
   setMeta("property", "og:title", "Abundance - BETA");
-  setMeta("property", "og:description", "A web-based CAD platform for cooperative design.");
+  setMeta(
+    "property",
+    "og:description",
+    "A web-based CAD platform for cooperative design.",
+  );
   setMeta("property", "og:image", "/public/imgs/abundance_logo.png");
   setMeta("property", "og:url", "https://abundance.maslowcnc.com/");
   setMeta("name", "twitter:title", "Abundance - BETA");
-  setMeta("name", "twitter:description", "A web-based CAD platform for cooperative design.");
+  setMeta(
+    "name",
+    "twitter:description",
+    "A web-based CAD platform for cooperative design.",
+  );
   setMeta("name", "twitter:image", "/public/imgs/abundance_logo.png");
 }
 
@@ -387,7 +395,40 @@ function runMode({ processing, setProcessing }) {
         tabIndex={0}
       ></canvas>
       {isActive ? <TutorialOverlay /> : null}
-      <ToggleRunCreate {...{ run: true, isItOwned }} />
+      <ChangeMode
+        containerClassName={isItOwned ? undefined : "switch_run_stack"}
+        buttons={
+          isItOwned
+            ? [
+                {
+                  key: "run-to-create",
+                  action: "create",
+                  id: "create-mode-btn",
+                  title: "Create/Run Mode",
+                  label: "Create Mode",
+                  iconRotation: 90,
+                },
+              ]
+            : [
+                {
+                  key: "run-to-preview",
+                  action: "preview",
+                  id: "preview-create-mode-btn",
+                  title: "Preview Create Mode",
+                  label: "Preview Create Mode",
+                  iconRotation: 90,
+                },
+                {
+                  key: "run-to-browse",
+                  action: "browse",
+                  id: "browse-projects-btn",
+                  title: "Browse Projects",
+                  label: "Browse Projects",
+                  iconRotation: 90,
+                },
+              ]
+        }
+      />
 
       {GlobalVariables.currentRepo ? (
         <RunNavigation
