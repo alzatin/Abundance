@@ -64,6 +64,8 @@ export const handler = async (event, context) => {
 
   items = await scanExecute();
 
+  //const moleculeUsageCounts = computeMoleculeUsageCounts(items);
+
   console.log("Items to check:", items.length);
   await checkRateLimit();
 
@@ -85,9 +87,9 @@ export const handler = async (event, context) => {
           repo.repoName,
           repo.forks,
           repo.lastFoundGit,
-          repo.contentURL
-        )
-      )
+          repo.contentURL,
+        ),
+      ),
     );
     if (i + BATCH_SIZE < reposToCheck.length) {
       await sleep(BATCH_DELAY_MS);
@@ -99,7 +101,7 @@ export const handler = async (event, context) => {
     `Projects updated: ${updatedCount}`,
     deletedProjects.length > 0
       ? `Projects deleted: ${deletedProjects.length} (${deletedProjects.join(
-          ", "
+          ", ",
         )})`
       : "No projects deleted.",
     notFoundProjects.length > 0
@@ -131,22 +133,23 @@ export const handler = async (event, context) => {
     console.error("Failed to send SES report email:", err);
   }
 
-  const response = {
-    statusCode: 200,
-    body: JSON.stringify("Github has been checked"),
-  };
-  return response;
-
-  async function checkUpdate(owner, repoName, forks, githubForks) {
+  async function checkUpdate(
+    owner,
+    repoName,
+    forks,
+    githubForks,
+    pullRequests,
+  ) {
     const input = {
       ExpressionAttributeValues: {
         ":forks": githubForks,
         ":lastFoundGit": today,
+        ":pullRequests": pullRequests || [],
       },
       ReturnValues: "ALL_NEW",
       TableName: "abundance-projects",
       UpdateExpression:
-        "SET lastFoundGit = :lastFoundGit, forks = :forks REMOVE failureCount",
+        "SET lastFoundGit = :lastFoundGit, forks = :forks, pullRequests = :pullRequests REMOVE failureCount",
       Key: {
         owner: owner,
         repoName: repoName,
@@ -181,6 +184,37 @@ export const handler = async (event, context) => {
     return data;
   }
 
+  /* Fetches pull requests from a GitHub repository */
+  async function getPullRequests(owner, repoName) {
+    try {
+      const prsResponse = await octokit.rest.pulls.list({
+        owner: owner,
+        repo: repoName,
+        state: "open",
+        per_page: 100, // Fetch up to 100 open PRs
+      });
+
+      // Extract relevant PR data: owner, repo, branch, and link
+      const pullRequests = prsResponse.data.map((pr) => ({
+        owner: pr.head.repo?.owner?.login || owner,
+        repo: pr.head.repo?.name || repoName,
+        branch: pr.head.ref,
+        url: pr.html_url,
+      }));
+
+      console.log(
+        `Found ${pullRequests.length} open pull requests in ${owner}/${repoName}`,
+      );
+      return pullRequests;
+    } catch (error) {
+      console.error(
+        `Error fetching pull requests for ${owner}/${repoName}:`,
+        error,
+      );
+      return []; // Return empty array if PR fetch fails
+    }
+  }
+
   /* Makes request to github to check if repo exists, if it doesn't deletes from table, it it does updates in table*/
   async function checkGithub(owner, repoName, forks, lastFoundGit, contentURL) {
     const failureCountKey = "failureCount";
@@ -191,8 +225,20 @@ export const handler = async (event, context) => {
         owner: owner,
         repo: repoName,
       });
+
+      // Only fetch pull requests if the repo has open issues/PRs
+      let pullRequests = [];
+      if (repoResponse.data.open_issues_count > 0) {
+        pullRequests = await getPullRequests(owner, repoName);
+      }
       // Update repository details and reset failure count in one call
-      return checkUpdate(owner, repoName, forks, repoResponse.data.forks_count);
+      return checkUpdate(
+        owner,
+        repoName,
+        forks,
+        repoResponse.data.forks_count,
+        pullRequests,
+      );
     } catch (error) {
       if (error.status === 404) {
         console.log(`Project not found: ${owner}/${repoName}`);
@@ -215,7 +261,7 @@ export const handler = async (event, context) => {
         // Delete from table if failure count reaches 3
         if (newFailureCount >= 3) {
           console.log(
-            `Deleting project after 3 consecutive failures: ${owner}/${repoName}`
+            `Deleting project after 3 consecutive failures: ${owner}/${repoName}`,
           );
           deletedProjects.push(`${owner}/${repoName}`);
           await deleteFromTable(owner, repoName);
@@ -280,4 +326,10 @@ export const handler = async (event, context) => {
     const responsePut = await dynamo.send(commandPut);
     return responsePut;
   }
+
+  const response = {
+    statusCode: 200,
+    body: JSON.stringify("Github has been checked"),
+  };
+  return response;
 };
