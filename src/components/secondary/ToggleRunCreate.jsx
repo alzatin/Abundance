@@ -53,6 +53,7 @@ function ToggleRunCreate({
     normalizeRepo(GlobalVariables.currentRepo) ??
     normalizeRepo(GlobalVariables.currentAWSnode);
 
+  // Preserve unsaved project edits when a transition leaves the editable view.
   const saveCurrentProjectState = (repo) => {
     if (!GlobalVariables.topLevelMolecule || !repo?.owner || !repo?.repoName) {
       return;
@@ -64,10 +65,27 @@ function ToggleRunCreate({
     localStorage.setItem(projectKey, JSON.stringify(projectState));
   };
 
+  // Defer route changes until the current render cycle has completed.
   const navigateDeferred = (path, options) => {
     setTimeout(() => {
       navigate(path, options);
     }, 0);
+  };
+
+  const restorePreviewOriginProject = () => {
+    if (!previewOriginProject?.owner || !previewOriginProject?.repoName) {
+      return false;
+    }
+
+    GlobalVariables.currentAWSnode = {
+      owner: previewOriginProject.owner,
+      repoName: previewOriginProject.repoName,
+    };
+    sessionStorage.removeItem("previewOriginProject");
+    navigateDeferred(
+      `/${previewOriginProject.owner}/${previewOriginProject.repoName}`,
+    );
+    return true;
   };
 
   const handleButtonClick = (button) => (event) => {
@@ -99,15 +117,7 @@ function ToggleRunCreate({
         break;
       case "preview-back":
         resetActiveAtom();
-        if (previewOriginProject?.owner && previewOriginProject?.repoName) {
-          GlobalVariables.currentAWSnode = {
-            owner: previewOriginProject.owner,
-            repoName: previewOriginProject.repoName,
-          };
-          sessionStorage.removeItem("previewOriginProject");
-          navigateDeferred(
-            `/${previewOriginProject.owner}/${previewOriginProject.repoName}`,
-          );
+        if (restorePreviewOriginProject()) {
           break;
         }
 
