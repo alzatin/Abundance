@@ -5,7 +5,7 @@ import NonReplicadMesh from "../render/NonReplicadMesh.jsx";
 import WireframeMesh from "../render/WireframeMesh.jsx";
 import GlobalVariables from "../../js/globalvariables.js";
 
-import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
+import ChangeMode from "../secondary/ChangeMode.jsx";
 import Molecule from "../../molecules/molecule.js";
 import PullModeMenu from "../secondary/PullModeMenu.jsx";
 import { useNavigate, useParams } from "react-router-dom";
@@ -508,7 +508,7 @@ function PullMode({ setProcessing }) {
         id="flow-canvas"
         tabIndex={0}
       ></canvas>
-      <ToggleRunCreate
+      <ChangeMode
         setActiveAtom={setActiveAtom}
         targetRepo={{ owner: headOwner, repoName: headRepo }}
         buttons={[

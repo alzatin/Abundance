@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, use } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
-import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
+import ChangeMode from "../secondary/ChangeMode.jsx";
 import TopMenu from "../secondary/TopMenu.jsx";
 import FlowCanvas from "./flowCanvas.jsx";
 import LowerHalf from "./lowerHalf.jsx";
@@ -791,7 +791,7 @@ function CreateMode() {
               />
             </div>
           ) : null}
-          <ToggleRunCreate
+          <ChangeMode
             setActiveAtom={setActiveAtom}
             targetRepo={GlobalVariables.currentAWSnode}
             buttons={[

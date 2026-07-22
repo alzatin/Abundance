@@ -14,14 +14,14 @@ const normalizeRepo = (repo) => {
   if (!repo) return null;
 
   const owner =
-    typeof repo.owner === "string" ? repo.owner : repo.owner?.login ?? null;
+    typeof repo.owner === "string" ? repo.owner : (repo.owner?.login ?? null);
   const repoName = repo.name ?? repo.repoName ?? repo.repo ?? null;
 
   if (!owner || !repoName) return null;
   return { owner, repoName };
 };
 
-function ToggleRunCreate({
+function ChangeMode({
   buttons = [],
   containerClassName,
   setActiveAtom,
@@ -65,7 +65,11 @@ function ToggleRunCreate({
   };
 
   const generateButtonKey = (button, index) =>
-    button.key ?? button.id ?? button.label ?? button.title ?? `button-${index}`;
+    button.key ??
+    button.id ??
+    button.label ??
+    button.title ??
+    `button-${index}`;
 
   // Preserve unsaved project edits when a transition leaves the editable view.
   const saveCurrentProjectState = (repo) => {
@@ -201,7 +205,9 @@ function ToggleRunCreate({
               />
             </svg>
           )}
-          {label ? <p style={button.textStyle ?? buttonTextStyle}>{label}</p> : null}
+          {label ? (
+            <p style={button.textStyle ?? buttonTextStyle}>{label}</p>
+          ) : null}
           {button.tooltipText && hoveredButton === key ? (
             <span className="runmode-tooltip">{button.tooltipText}</span>
           ) : null}
@@ -219,4 +225,4 @@ function ToggleRunCreate({
   return renderedButtons;
 }
 
-export default ToggleRunCreate;
+export default ChangeMode;

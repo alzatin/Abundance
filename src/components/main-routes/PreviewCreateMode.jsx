@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import GlobalVariables from "../../js/globalvariables.js";
 import Molecule from "../../molecules/molecule.js";
-import ToggleRunCreate from "../secondary/ToggleRunCreate.jsx";
+import ChangeMode from "../secondary/ChangeMode.jsx";
 import FlowCanvas from "./flowCanvas.jsx";
 import LowerHalf from "./lowerHalf.jsx";
 import CodeWindow from "../secondary/codeWindow.jsx";
@@ -314,7 +314,7 @@ function PreviewCreateMode() {
           style={{ cursor: "pointer" }}
         />
       </div>
-      <ToggleRunCreate
+      <ChangeMode
         setActiveAtom={setActiveAtom}
         buttons={[
           {
