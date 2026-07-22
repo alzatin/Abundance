@@ -101,26 +101,42 @@ function CreateMode() {
   const navigate = useNavigate();
   const { owner, repoName } = useParams();
 
+  // Track if we're still loading the project from AWS
+  const [isLoadingProject, setIsLoadingProject] = useState(true);
+
   // Update GlobalVariables when route params change and fetch full AWS node
   useEffect(() => {
+    console.log(`Route params changed: owner=${owner}, repoName=${repoName}`);
     if (owner && repoName) {
+      setIsLoadingProject(true);
+
       // Fetch the full project metadata from AWS
       fetch(
         `https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/fetchSingleRepo?owner=${owner}&repoName=${repoName}`,
       )
         .then((res) => res.json())
         .then((data) => {
+          console.log("Fetched AWS node for project:", data);
           if (data && data.item) {
             GlobalVariables.currentAWSnode = data.item;
           } else {
+            console.error("Failed to fetch AWS node for project:", data);
             // Fallback if we can't fetch from AWS
             GlobalVariables.currentAWSnode = { owner, repoName };
           }
+          // Load the project after setting currentAWSnode
+          loadProject(GlobalVariables.currentAWSnode);
+          setActiveAtom(GlobalVariables.topLevelMolecule);
+          setIsLoadingProject(false);
         })
         .catch((err) => {
           console.warn("Error fetching AWS node for project:", err);
           // Fallback to partial node
           GlobalVariables.currentAWSnode = { owner, repoName };
+          // Still try to load project with fallback
+          loadProject(GlobalVariables.currentAWSnode);
+          setActiveAtom(GlobalVariables.topLevelMolecule);
+          setIsLoadingProject(false);
         });
     }
   }, [owner, repoName]);
@@ -637,7 +653,29 @@ function CreateMode() {
 
   const { start, isActive } = useTutorial();
   const screenHeight = window.innerHeight;
+
+  // Show loading screen while project is being fetched and loaded
+  if (isLoadingProject) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "#1e1e1e",
+          color: "#c4a3d5",
+          fontSize: "18px",
+        }}
+      >
+        Loading project...
+      </div>
+    );
+  }
+
   if (authorizedUserOcto) {
+    console.log("Authorized user octokit instance is available.");
     if (
       GlobalVariables.currentAWSnode &&
       GlobalVariables.currentAWSnode.owner === GlobalVariables.currentUser
@@ -852,6 +890,9 @@ function CreateMode() {
         </>
       );
     } else {
+      console.warn(
+        "User is not authorized for this repository. Redirecting to run mode.",
+      );
       // Fallback: navigate to run mode if repo is still missing
       navigate(`/run/${owner}/${repoName}`);
     }
