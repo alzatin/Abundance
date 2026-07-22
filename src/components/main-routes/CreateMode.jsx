@@ -108,7 +108,29 @@ function CreateMode() {
   useEffect(() => {
     console.log(`Route params changed: owner=${owner}, repoName=${repoName}`);
     if (owner && repoName) {
+      // Check if we already have this project loaded
+      const isAlreadyLoaded =
+        GlobalVariables.currentAWSnode &&
+        GlobalVariables.currentAWSnode.owner === owner &&
+        GlobalVariables.currentAWSnode.repoName === repoName &&
+        GlobalVariables.topLevelMolecule;
+
+      if (isAlreadyLoaded) {
+        console.log(
+          `Project ${owner}/${repoName} already loaded, skipping fetch.`,
+        );
+        setIsLoadingProject(false);
+        return;
+      }
+
       setIsLoadingProject(true);
+
+      // Clear the previous project before loading the new one
+      // This prevents molecules from the previous mode (e.g., PullMode) from overlapping
+      if (GlobalVariables.currentMolecule) {
+        GlobalVariables.currentMolecule.nodesOnTheScreen = [];
+      }
+      GlobalVariables.currentAWSnode = null;
 
       // Fetch the full project metadata from AWS
       fetch(
