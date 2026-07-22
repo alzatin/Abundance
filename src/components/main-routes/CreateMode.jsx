@@ -742,6 +742,7 @@ function CreateMode() {
             targetRepo={GlobalVariables.currentAWSnode}
             buttons={[
               {
+                key: "create-to-run",
                 action: "run",
                 id: "run-mode-btn",
                 title: "Switch to Run Mode",

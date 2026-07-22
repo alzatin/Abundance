@@ -513,6 +513,7 @@ function PullMode({ setProcessing }) {
         targetRepo={{ owner: headOwner, repoName: headRepo }}
         buttons={[
           {
+            key: "pull-to-create",
             action: "create",
             id: "create-mode-btn",
             title: "Create/Run Mode",

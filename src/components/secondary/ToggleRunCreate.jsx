@@ -184,7 +184,7 @@ function ToggleRunCreate({
               xmlns="http://www.w3.org/2000/svg"
               style={{
                 transform:
-                  iconRotation == null
+                  iconRotation === null || iconRotation === undefined
                     ? undefined
                     : `rotate(${iconRotation}deg)`,
                 alignSelf: "center",

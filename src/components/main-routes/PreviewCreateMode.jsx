@@ -318,6 +318,7 @@ function PreviewCreateMode() {
         setActiveAtom={setActiveAtom}
         buttons={[
           {
+            key: "preview-to-run",
             action: "preview-back",
             id: "back-to-run-mode-btn",
             wrapperClassName: "back_to_runmode",

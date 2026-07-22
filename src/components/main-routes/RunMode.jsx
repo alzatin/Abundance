@@ -393,6 +393,7 @@ function runMode({ processing, setProcessing }) {
           isItOwned
             ? [
                 {
+                  key: "run-to-create",
                   action: "create",
                   id: "create-mode-btn",
                   title: "Create/Run Mode",
@@ -402,6 +403,7 @@ function runMode({ processing, setProcessing }) {
               ]
             : [
                 {
+                  key: "run-to-preview",
                   action: "preview",
                   id: "preview-create-mode-btn",
                   title: "Preview Create Mode",
@@ -409,6 +411,7 @@ function runMode({ processing, setProcessing }) {
                   iconRotation: 90,
                 },
                 {
+                  key: "run-to-browse",
                   action: "browse",
                   id: "browse-projects-btn",
                   title: "Browse Projects",
