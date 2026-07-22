@@ -31,6 +31,7 @@ import {
   extractBomList,
   extractKeepOut,
   extractTag,
+  extractTags,
   tag,
 } from "./tags";
 import { AbundanceObject, AbundanceLeaf, geometryProvider } from "./util";
@@ -864,6 +865,7 @@ if (
     bom,
     addNonReplicadGeom,
     extractTag,
+    extractTags,
     extractNotKeepOut,
     intersect,
     assembly,
@@ -923,6 +925,7 @@ export {
   extractNotKeepOut,
   extractParts,
   extractTag,
+  extractTags,
   extrude,
   fillet,
   findFlatFaces,

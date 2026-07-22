@@ -1,5 +1,12 @@
 // Direct unit tests for tags.js
-import { tag, color, bom, extractAllTags, extractBomList } from "../src/worker/tags.ts";
+import {
+  tag,
+  color,
+  bom,
+  extractAllTags,
+  extractBomList,
+  extractTags,
+} from "../src/worker/tags.ts";
 
 describe("tags.js", () => {
   let geometry;
@@ -171,6 +178,94 @@ describe("tags.js", () => {
 
       expect(Array.isArray(allTags)).toBe(true);
       expect(allTags[0]).toBe("Select Tag");
+    });
+  });
+
+  describe("extractTags", () => {
+    let assembly;
+
+    beforeEach(() => {
+      assembly = {
+        id: "assembly1",
+        tags: [],
+        color: null,
+        geometry: [
+          { id: "a", geometry: "geomA", tags: ["red"], color: null },
+          { id: "b", geometry: "geomB", tags: ["blue"], color: null },
+          { id: "c", geometry: "geomC", tags: [], color: null },
+          {
+            id: "d",
+            geometry: "geomD",
+            tags: ["keepout"],
+            color: null,
+          },
+        ],
+      };
+    });
+
+    it("extracts a single selected tag", () => {
+      const result = extractTags(assembly, ["red"], false, false);
+
+      expect(result.geometry.map((g) => g.id)).toEqual(["a"]);
+    });
+
+    it("extracts multiple selected tags without merging leaves", () => {
+      const result = extractTags(assembly, ["red", "blue"], false, false);
+
+      expect(result.geometry.map((g) => g.id)).toEqual(["a", "b"]);
+    });
+
+    it("extracts untagged leaves when includeUntagged is true", () => {
+      const result = extractTags(assembly, [], true, false);
+
+      expect(result.geometry.map((g) => g.id)).toEqual(["c"]);
+    });
+
+    it("combines selected tags and untagged leaves", () => {
+      const result = extractTags(assembly, ["red"], true, false);
+
+      expect(result.geometry.map((g) => g.id)).toEqual(["a", "c"]);
+    });
+
+    it("removes keepout geometry when notKeepOut is true, even without other criteria", () => {
+      const result = extractTags(assembly, [], false, true);
+
+      expect(result.geometry.map((g) => g.id)).toEqual(["a", "b", "c"]);
+    });
+
+    it("combines notKeepOut with selected tags", () => {
+      const taggedAssembly = {
+        ...assembly,
+        geometry: [
+          ...assembly.geometry,
+          { id: "e", geometry: "geomE", tags: ["red", "keepout"], color: null },
+        ],
+      };
+
+      const result = extractTags(taggedAssembly, ["red"], false, true);
+
+      // "e" matches the tag but is also keepout, so it should be removed.
+      expect(result.geometry.map((g) => g.id)).toEqual(["a"]);
+    });
+
+    it("returns an empty assembly when no geometry matches the selected criteria", () => {
+      const result = extractTags(assembly, ["nonexistent"], false, false);
+
+      expect(result.geometry).toEqual([]);
+    });
+
+    it("returns an empty assembly when notKeepOut removes everything", () => {
+      const allKeepout = {
+        ...assembly,
+        geometry: assembly.geometry.map((g) => ({
+          ...g,
+          tags: ["keepout"],
+        })),
+      };
+
+      const result = extractTags(allKeepout, [], false, true);
+
+      expect(result.geometry).toEqual([]);
     });
   });
 });

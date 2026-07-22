@@ -137,6 +137,56 @@ function extractTag(geometry: AbundanceObject, TAG: string): AbundanceObject {
 }
 
 /**
+ * Extracts assembly components matching any of the given criteria:
+ *  - `selectedTags`: nodes tagged with any of these tags are included (branches
+ *    included wholesale, same as `extractTag`/`filterAssembly`).
+ *  - `includeUntagged`: leaf nodes with no tags at all are included.
+ *  - `notKeepOut`: after the above selection, geometry tagged "keepout" is
+ *    stripped from the result (or from the whole assembly if no tags/untagged
+ *    were selected).
+ * Unlike `extractTag`, multiple criteria are combined without merging leaves -
+ * the returned assembly keeps its original structure, only pruning what
+ * doesn't match.
+ */
+function extractTags(
+  geometry: AbundanceObject,
+  selectedTags: string[],
+  includeUntagged: boolean,
+  notKeepOut: boolean,
+): AbundanceObject {
+  const hasSelection = selectedTags.length > 0 || includeUntagged;
+
+  let result: AbundanceObject | undefined;
+  if (hasSelection) {
+    result = filterAssembly(geometry, (node) => {
+      const tags = node.tags || [];
+      if (selectedTags.some((tag) => tags.includes(tag))) {
+        return true;
+      }
+      if (includeUntagged && isLeaf(node) && tags.length === 0) {
+        return true;
+      }
+      return false;
+    });
+  } else {
+    result = geometry;
+  }
+
+  if (result !== undefined && notKeepOut) {
+    const filtered = extractKeepOut(result);
+    result = filtered === false ? undefined : filtered;
+  }
+
+  if (result === undefined) {
+    // Nothing matched the selected criteria. This is a valid result, so return
+    // an empty assembly (preserving the top-level metadata) rather than throwing.
+    return { ...geometry, geometry: [] };
+  }
+
+  return result;
+}
+
+/**
  * List all tags in the given assembly.
  */
 function extractAllTags(geom: AbundanceObject): string[] {
@@ -233,5 +283,6 @@ export {
   extractBomList,
   extractKeepOut,
   extractTag,
+  extractTags,
   tag,
 };
