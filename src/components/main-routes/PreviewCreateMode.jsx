@@ -126,7 +126,7 @@ function PreviewCreateMode() {
             });
             GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
             GlobalVariables.currentMolecule.selected = true;
-            loadProject(GlobalVariables.currentAWSnode);
+            loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto);
             setActiveAtom(GlobalVariables.currentMolecule);
           }
         })
