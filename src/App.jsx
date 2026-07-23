@@ -820,7 +820,14 @@ function AppContent() {
 
         const targetMolecule = GlobalVariables.topLevelMolecule;
         const projectKey = `${project.owner}/${project.repoName}`;
+        const currentProjectKey =
+          GlobalVariables.currentAWSnode?.owner && GlobalVariables.currentAWSnode?.repoName
+            ? `${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`
+            : null;
 
+        if (currentProjectKey && currentProjectKey !== projectKey) {
+          return;
+        }
         // Guard against duplicate deserialization: multiple components (e.g.
         // CreateMode and FlowCanvas) can independently call loadProject for
         // the same project during mount/navigation. Since deserialize() only
