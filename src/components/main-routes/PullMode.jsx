@@ -477,11 +477,14 @@ function PullMode({ setProcessing }) {
     };
   }
 
+  //  Define screen width to position menu
+  const screenWidth = window.innerWidth;
+
   return (
     <>
       <PullModeMenu
         activeAtom={activeAtom}
-        position={{ top: 30, left: 300 }}
+        position={{ top: 30, left: screenWidth - 50 }}
         id={"pullmode-menu-panel"}
         contentCollapsed={expandedMenu !== "pullmode"}
         setContentCollapsed={() => setExpandedMenu("pullmode")}
@@ -510,7 +513,7 @@ function PullMode({ setProcessing }) {
       ></canvas>
       <ChangeMode
         setActiveAtom={setActiveAtom}
-        targetRepo={{ owner: headOwner, repoName: headRepo }}
+        targetRepo={{ owner: GlobalVariables.currentUser, repoName: headRepo }}
         buttons={[
           {
             key: "pull-to-create",

@@ -23,6 +23,7 @@ import FilterPanel from "../secondary/FilterPanel.jsx";
 import DropdownSectionDisplay from "./DropdownSectionDisplay.jsx";
 import FAQDisplay from "./FAQDisplay.jsx";
 import on from "../../js/circular-menu/src/on.js";
+import PRNotificationIcon from "../secondary/PRNotificationIcon.jsx";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -241,6 +242,7 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
             </option>
           </select>
         </label>
+        <PRNotificationIcon allProjects={nodes} />
       </div>
       <div className="projects-and-filters-container">
         <div className="project-items-wrapper">
@@ -1313,6 +1315,11 @@ const ShowProjects = ({
     myRepos &&
     (!myRepos.repos || myRepos.repos.length === 0);
 
+  // Check if any user projects have pull requests
+  const hasProjectsWithPRs = myRepos?.repos?.some(
+    (repo) => repo.pullRequests && repo.pullRequests.length > 0,
+  );
+
   const navigate = useNavigate();
   const { start, isActive } = useTutorial();
   const { createProject } = useProject();
@@ -1402,7 +1409,22 @@ const ShowProjects = ({
           setProjectsToShow("owned");
         }}
       >
-        <p>My Projects</p>
+        <p>
+          My Projects
+          {hasProjectsWithPRs && (
+            <span
+              style={{
+                marginLeft: "8px",
+                display: "inline-block",
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                backgroundColor: "#ff4444",
+              }}
+              title="You have pull requests"
+            ></span>
+          )}
+        </p>
       </div>
       <div
         className={
