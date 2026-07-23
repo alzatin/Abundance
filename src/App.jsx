@@ -847,11 +847,16 @@ function AppContent() {
         // progress log intervals don't keep running after the switch.
         cad.cancelAll();
 
-        if (rawFile.filetypeVersion == 1) {
-          targetMolecule.deserialize(rawFile);
-        } else {
-          // For older file versions, try to deserialize directly for now
-          targetMolecule.deserialize(rawFile);
+        try {
+          if (rawFile.filetypeVersion == 1) {
+            await targetMolecule.deserialize(rawFile);
+          } else {
+            // For older file versions, try to deserialize directly for now
+            await targetMolecule.deserialize(rawFile);
+          }
+        } catch (deserializeError) {
+          targetMolecule.loadedProjectKey = undefined;
+          throw deserializeError;
         }
         GlobalVariables.currentMolecule = targetMolecule;
         GlobalVariables.currentMolecule.selected = true;
