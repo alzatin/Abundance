@@ -142,7 +142,7 @@ function CreateMode() {
             GlobalVariables.currentAWSnode = { owner, repoName };
           }
           // Load the project after setting currentAWSnode
-          loadProject(GlobalVariables.currentAWSnode);
+          loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto);
           setActiveAtom(GlobalVariables.topLevelMolecule);
           setIsLoadingProject(false);
         })
@@ -151,7 +151,7 @@ function CreateMode() {
           // Fallback to partial node
           GlobalVariables.currentAWSnode = { owner, repoName };
           // Still try to load project with fallback
-          loadProject(GlobalVariables.currentAWSnode);
+          loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto);
           setActiveAtom(GlobalVariables.topLevelMolecule);
           setIsLoadingProject(false);
         });
