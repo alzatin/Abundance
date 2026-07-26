@@ -8,7 +8,7 @@ import GlobalVariables from "../../js/globalvariables.js";
 import ChangeMode from "../secondary/ChangeMode.jsx";
 import Molecule from "../../molecules/molecule.js";
 import PullModeMenu from "../secondary/PullModeMenu.jsx";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 // Import contexts
 import {
@@ -288,6 +288,11 @@ function PullMode({ setProcessing }) {
     headRepo = "",
   } = useParams();
 
+  // Get query parameters
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const prOwner = queryParams.get("owner"); // Optional owner parameter for merge permissions
+
   // Get context values
   const { authorizedUserOcto, userScopes } = useAuth();
   const { activeAtom, setActiveAtom, setErrorNotification } = useAppState();
@@ -320,6 +325,8 @@ function PullMode({ setProcessing }) {
   const [expandedMenu, setExpandedMenu] = useState(
     GlobalVariables.isMobile() ? "none" : "pullmode",
   );
+
+  const [showMergeConfirm, setShowMergeConfirm] = useState(false);
 
   // Make file import functions available globally for atoms
   useEffect(() => {
@@ -477,6 +484,38 @@ function PullMode({ setProcessing }) {
     };
   }
 
+  const mergePullRequest = async () => {
+    setShowMergeConfirm(true);
+  };
+
+  const handleConfirmMerge = async () => {
+    if (!authorizedUserOcto) {
+      setErrorNotification(
+        "You must be logged in to merge a pull request.",
+        "error",
+      );
+      setShowMergeConfirm(false);
+      return;
+    }
+
+    try {
+      const response = await authorizedUserOcto.request(
+        "POST /repos/{owner}/{repo}/merges",
+        {
+          owner: baseOwner,
+          repo: baseRepo,
+          base: "main",
+          head: `${headOwner}:main`,
+        },
+      );
+      alert(`Pull request merged: ${response.data.sha}`);
+      setShowMergeConfirm(false);
+    } catch (error) {
+      console.error("Error merging pull request:", error);
+      alert(`Error merging pull request: ${error.message}`);
+    }
+  };
+
   //  Define screen width to position menu
   const screenWidth = window.innerWidth;
 
@@ -492,8 +531,92 @@ function PullMode({ setProcessing }) {
         collapsedOffset={[-280, 0]}
         baseRepo={`${baseOwner}/${baseRepo}`}
         headRepo={`${headOwner}/${headRepo}`}
+        prOwner={prOwner}
         createPullRequest={createPullRequest}
+        mergePullRequest={mergePullRequest}
       />
+
+      {/* Merge Confirmation Dialog */}
+      {showMergeConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 3000,
+          }}
+          onClick={() => setShowMergeConfirm(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "white",
+              borderRadius: "8px",
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
+              maxWidth: "400px",
+              padding: "24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600" }}>
+              Confirm Merge
+            </h3>
+            <p style={{ margin: 0, color: "#666", fontSize: "14px" }}>
+              Are you sure you want to merge the changes from{" "}
+              <strong>
+                {headOwner}/{headRepo}
+              </strong>{" "}
+              into{" "}
+              <strong>
+                {baseOwner}/{baseRepo}
+              </strong>
+              ?
+            </p>
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                onClick={() => setShowMergeConfirm(false)}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#f0f0f0",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmMerge}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#0066cc",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                Merge
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div id="headerBarRun">
         <img

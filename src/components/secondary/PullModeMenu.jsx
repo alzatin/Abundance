@@ -32,7 +32,9 @@ export default function PullModeMenu({
   closeMenu,
   baseRepo,
   headRepo,
+  prOwner,
   createPullRequest,
+  mergePullRequest,
 }) {
   const { activeAtom } = useAppState();
   const [inputChanged, setInputChanged] = useState("");
@@ -128,7 +130,7 @@ export default function PullModeMenu({
     type: "spacer",
   };
 
-  const prButton = {
+  const prHeadButtons = {
     gitcompare: {
       type: "button",
       label: "View GitHub Comparison",
@@ -149,10 +151,30 @@ export default function PullModeMenu({
       },
     },
   };
+  const prBaseButtons = {
+    prOpen: {
+      type: "button",
+      label: "Open on GitHub",
+      onClick: () => {
+        window.open(
+          `https://github.com/${baseRepo}/compare/${baseBranch}...${headUser}:${headBranch}`,
+        );
+      },
+    },
+    mergeButton: {
+      type: "button",
+      label: "Merge Changes",
+      onClick: () => {
+        mergePullRequest(baseRepo, baseBranch, headUser, headBranch);
+      },
+    },
+  };
 
   const inputParamsConfig = useMemo(() => {
-    return { ...labelControls, ...tagControls, spacer, ...prButton };
-  }, [labelControls, tagControls]);
+    // Show merge options only if prOwner is specified (indicating this is the base repo owner)
+    const prButtons = prOwner ? { ...prBaseButtons } : { ...prHeadButtons };
+    return { ...labelControls, ...tagControls, spacer, ...prButtons };
+  }, [labelControls, tagControls, prOwner]);
 
   const [values, setControlValue, { controls }] = useControls(
     inputParamsConfig,

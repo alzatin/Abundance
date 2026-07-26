@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/index.js";
 
 /**
  * PRNotificationIcon displays pull requests across user's projects
@@ -9,6 +10,7 @@ import { useNavigate } from "react-router-dom";
  */
 function PRNotificationIcon({ allProjects = [] }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const dropdownRef = useRef(null);
@@ -56,10 +58,11 @@ function PRNotificationIcon({ allProjects = [] }) {
 
   const handlePRClick = (pr) => {
     // Navigate to PR comparison page
-    // Format: /pull/{baseOwner}/{baseRepo}/{headOwner}/{headRepo}
+    // Format: /pull/{baseOwner}/{baseRepo}/{headOwner}/{headRepo}?owner={currentUser}
     // base = target project, head = source project with the PR
+    // owner param grants merge permissions if user is the base project owner
     navigate(
-      `/pull/${pr.projectOwner}/${pr.projectName}/${pr.owner}/${pr.repo}`,
+      `/pull/${pr.projectOwner}/${pr.projectName}/${pr.owner}/${pr.repo}?owner=${pr.projectOwner}`,
     );
     setShowDropdown(false);
   };
