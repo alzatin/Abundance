@@ -818,17 +818,47 @@ function AppContent() {
         // Reset ID counter to avoid collisions with existing IDs
         GlobalVariables.resetIdCounter(rawFile);
 
+        const targetMolecule = GlobalVariables.topLevelMolecule;
+        const projectKey = `${project.owner}/${project.repoName}`;
+        const currentProjectKey =
+          GlobalVariables.currentAWSnode?.owner && GlobalVariables.currentAWSnode?.repoName
+            ? `${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`
+            : null;
+
+        if (currentProjectKey && currentProjectKey !== projectKey) {
+          return;
+        }
+        // Guard against duplicate deserialization: multiple components (e.g.
+        // CreateMode and FlowCanvas) can independently call loadProject for
+        // the same project during mount/navigation. Since deserialize() only
+        // appends atoms, calling it twice on the same molecule instance would
+        // place every atom twice, stacked on top of each other. Tagging the
+        // molecule instance with the project it has already loaded (or
+        // started loading) makes repeat calls a no-op.
+        if (targetMolecule.loadedProjectKey === projectKey) {
+          GlobalVariables.currentMolecule = targetMolecule;
+          targetMolecule.selected = true;
+          setActiveAtom(targetMolecule);
+          return;
+        }
+        targetMolecule.loadedProjectKey = projectKey;
+
         // Cancel any in-flight CAD calls from the previous project so their
         // progress log intervals don't keep running after the switch.
         cad.cancelAll();
 
-        if (rawFile.filetypeVersion == 1) {
-          GlobalVariables.topLevelMolecule.deserialize(rawFile);
-        } else {
-          // For older file versions, try to deserialize directly for now
-          GlobalVariables.topLevelMolecule.deserialize(rawFile);
+        try {
+          if (rawFile.filetypeVersion == 1) {
+            await targetMolecule.deserialize(rawFile);
+          } else {
+            // For older file versions, try to deserialize directly for now
+            await targetMolecule.deserialize(rawFile);
+          }
+        } catch (deserializeError) {
+          targetMolecule.loadedProjectKey = undefined;
+          throw deserializeError;
         }
-        GlobalVariables.currentMolecule = GlobalVariables.topLevelMolecule;
+        GlobalVariables.currentMolecule = targetMolecule;
         GlobalVariables.currentMolecule.selected = true;
         setActiveAtom(GlobalVariables.currentMolecule);
       })
