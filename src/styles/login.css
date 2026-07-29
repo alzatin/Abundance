@@ -861,6 +861,8 @@
   width: 90%;
   height: 125px;
   display: inline-block;
+  border-radius: 8%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 10px;
   font-size: 13px;
   justify-content: flex-start;
