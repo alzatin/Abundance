@@ -296,7 +296,7 @@ function PullMode({ setProcessing }) {
 
   // Get context values
   const { authorizedUserOcto, userScopes } = useAuth();
-  const { activeAtom, setActiveAtom, setErrorNotification } = useAppState();
+  const { activeAtom, setActiveAtom, setNotification } = useAppState();
   const {
     mesh,
     wireMesh,
@@ -328,6 +328,7 @@ function PullMode({ setProcessing }) {
   );
 
   const [showMergeConfirm, setShowMergeConfirm] = useState(false);
+  const [isMergeSuccessful, setIsMergeSuccessful] = useState(false);
 
   // Handle keyboard events for merge confirmation dialog
   useEffect(() => {
@@ -386,15 +387,6 @@ function PullMode({ setProcessing }) {
   }, [mesh]);
 
   useEffect(() => {
-    const handler = (e) => {
-      setErrorNotification(e.detail.message, e.detail.type || "error");
-      setTimeout(() => setErrorNotification(null, "error"), 5000);
-    };
-    window.addEventListener("user-notification", handler);
-    return () => window.removeEventListener("user-notification", handler);
-  }, []);
-
-  useEffect(() => {
     GlobalVariables.canvas = canvasRef;
     GlobalVariables.c = canvasRef.current.getContext("2d");
 
@@ -437,10 +429,7 @@ function PullMode({ setProcessing }) {
         setActiveAtom(GlobalVariables.currentMolecule);
       })
       .catch((err) => {
-        setErrorNotification(
-          `Failed to set up pull mode: ${err.message}`,
-          "error",
-        );
+        setNotification(`Failed to set up pull mode: ${err.message}`, "error");
       });
   }, [
     baseOwner,
@@ -453,7 +442,7 @@ function PullMode({ setProcessing }) {
 
   const createPullRequest = async () => {
     if (!authorizedUserOcto) {
-      setErrorNotification(
+      setNotification(
         "You must be logged in to create a pull request.",
         "error",
       );
@@ -491,10 +480,15 @@ function PullMode({ setProcessing }) {
           base: "main",
         },
       );
-      alert(`Pull request created: ${response.data.html_url}`);
+
+      setNotification(
+        `Pull request created: ${response.data.html_url}`,
+        "notice",
+      );
+      setTimeout(() => setNotification(null), 5000);
     } catch (error) {
       console.error("Error creating pull request:", error);
-      alert(`Error creating pull request: ${error.message}`);
+      setNotification(`Error creating pull request: ${error.message}`, "error");
     }
   };
 
@@ -513,10 +507,11 @@ function PullMode({ setProcessing }) {
 
   const handleConfirmMerge = async () => {
     if (!authorizedUserOcto) {
-      setErrorNotification(
+      setNotification(
         "You must be logged in to merge a pull request.",
         "error",
       );
+      setTimeout(() => setNotification(null), 5000);
       setShowMergeConfirm(false);
       return;
     }
@@ -581,11 +576,13 @@ function PullMode({ setProcessing }) {
         // Don't fail the entire operation if updating fails
       }
 
-      alert(`Pull request merged: ${response.data.sha}`);
+      setNotification(`Pull request merged: ${response.data.sha}`, "notice");
+      setTimeout(() => setNotification(null), 5000);
       setShowMergeConfirm(false);
+      setIsMergeSuccessful(true);
     } catch (error) {
       console.error("Error merging pull request:", error);
-      alert(`Error merging pull request: ${error.message}`);
+      setNotification(`Error merging pull request: ${error.message}`, "error");
     }
   };
 
@@ -607,6 +604,7 @@ function PullMode({ setProcessing }) {
         prOwner={prOwner}
         createPullRequest={createPullRequest}
         mergePullRequest={mergePullRequest}
+        isMergeSuccessful={isMergeSuccessful}
       />
 
       {/* Merge Confirmation Dialog */}

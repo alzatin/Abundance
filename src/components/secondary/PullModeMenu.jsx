@@ -35,6 +35,7 @@ export default function PullModeMenu({
   prOwner,
   createPullRequest,
   mergePullRequest,
+  isMergeSuccessful,
 }) {
   const { activeAtom } = useAppState();
   const [inputChanged, setInputChanged] = useState("");
@@ -164,8 +165,9 @@ export default function PullModeMenu({
     mergeButton: {
       type: "button",
       label: "Merge Changes",
+      disabled: isMergeSuccessful,
       onClick: () => {
-        mergePullRequest(baseRepo, baseBranch, headUser, headBranch);
+        mergePullRequest();
       },
     },
   };
@@ -174,7 +176,7 @@ export default function PullModeMenu({
     // Show merge options only if prOwner is specified (indicating this is the base repo owner)
     const prButtons = prOwner ? { ...prBaseButtons } : { ...prHeadButtons };
     return { ...labelControls, ...tagControls, spacer, ...prButtons };
-  }, [labelControls, tagControls, prOwner]);
+  }, [labelControls, tagControls, prOwner, isMergeSuccessful, inputChanged]);
 
   const [values, setControlValue, { controls }] = useControls(
     inputParamsConfig,
