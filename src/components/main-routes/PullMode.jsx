@@ -153,7 +153,7 @@ function createPullModeTemplate(baseProject, headProject) {
       name: "Color Removing",
       x: 0.7,
       y: 0.4,
-      selectedColorIndex: 23, // Red
+      selectedColorIndex: 22, // Transparent (can't use keepout color, creates tag conflict)
     },
     {
       atomType: "Tag",
