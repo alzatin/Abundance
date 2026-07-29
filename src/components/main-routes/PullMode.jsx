@@ -530,7 +530,7 @@ function PullMode({ setProcessing }) {
         {
           owner: baseOwner,
           repo: baseRepo,
-          pull_number: pullNumber, // You need to define pullNumber based on your context
+          pull_number: pullNumber,
           commit_title: "Merge pull request from " + headOwner + "/" + headRepo,
           commit_message: "Add a new value to the merge_method enum",
           headers: {
@@ -538,6 +538,49 @@ function PullMode({ setProcessing }) {
           },
         },
       );
+
+      // Update AWS project item to remove the merged PR from open PRs list
+      try {
+        const apiUpdateUrl =
+          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
+        // In PullMode.jsx after successful merge:
+        const updatedPRs = await authorizedUserOcto.request(
+          "GET /repos/{owner}/{repo}/pulls",
+          {
+            owner: baseOwner,
+            repo: baseRepo,
+            state: "open",
+            per_page: 100,
+          },
+        );
+
+        // Filter and map to match your storage format
+        const pullRequests = updatedPRs.data
+          .map((pr) => ({
+            owner: pr.head.repo?.owner?.login,
+            repo: pr.head.repo?.name,
+            branch: pr.head.ref,
+            pullRequestNumber: pr.number,
+            url: pr.html_url,
+          }))
+          .filter((pr) => pr.pullRequestNumber !== parseInt(pullNumber));
+
+        // Then update with the fresh list
+        await fetch(apiUpdateUrl, {
+          method: "POST",
+          body: JSON.stringify({
+            owner: baseOwner,
+            repoName: baseRepo,
+            attributeUpdates: {
+              pullRequests: pullRequests,
+            },
+          }),
+        });
+      } catch (updateError) {
+        console.error("Error updating project PR list:", updateError);
+        // Don't fail the entire operation if updating fails
+      }
+
       alert(`Pull request merged: ${response.data.sha}`);
       setShowMergeConfirm(false);
     } catch (error) {
