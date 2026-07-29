@@ -199,6 +199,7 @@ export const handler = async (event, context) => {
         owner: pr.head.repo?.owner?.login || owner,
         repo: pr.head.repo?.name || repoName,
         branch: pr.head.ref,
+        pullRequestNumber: pr.number,
         url: pr.html_url,
       }));
 

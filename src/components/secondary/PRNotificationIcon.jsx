@@ -62,7 +62,7 @@ function PRNotificationIcon({ allProjects = [] }) {
     // base = target project, head = source project with the PR
     // owner param grants merge permissions if user is the base project owner
     navigate(
-      `/pull/${pr.projectOwner}/${pr.projectName}/${pr.owner}/${pr.repo}?owner=${pr.projectOwner}`,
+      `/pull/${pr.projectOwner}/${pr.projectName}/${pr.owner}/${pr.repo}?owner=${pr.projectOwner}&pull_number=${pr.pullRequestNumber}`,
     );
     setShowDropdown(false);
   };

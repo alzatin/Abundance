@@ -292,6 +292,7 @@ function PullMode({ setProcessing }) {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const prOwner = queryParams.get("owner"); // Optional owner parameter for merge permissions
+  const pullNumber = queryParams.get("pull_number"); // Optional pull request number for merging
 
   // Get context values
   const { authorizedUserOcto, userScopes } = useAuth();
@@ -327,6 +328,28 @@ function PullMode({ setProcessing }) {
   );
 
   const [showMergeConfirm, setShowMergeConfirm] = useState(false);
+
+  // Handle keyboard events for merge confirmation dialog
+  useEffect(() => {
+    if (!showMergeConfirm) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        handleConfirmMerge();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowMergeConfirm(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [showMergeConfirm]);
 
   // Make file import functions available globally for atoms
   useEffect(() => {
@@ -498,14 +521,21 @@ function PullMode({ setProcessing }) {
       return;
     }
 
+    console.log(
+      `Merging pull request from ${headOwner}/${headRepo} into ${baseOwner}/${baseRepo}`,
+    );
     try {
       const response = await authorizedUserOcto.request(
-        "POST /repos/{owner}/{repo}/merges",
+        "PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge",
         {
           owner: baseOwner,
           repo: baseRepo,
-          base: "main",
-          head: `${headOwner}:main`,
+          pull_number: pullNumber, // You need to define pullNumber based on your context
+          commit_title: "Merge pull request from " + headOwner + "/" + headRepo,
+          commit_message: "Add a new value to the merge_method enum",
+          headers: {
+            "X-GitHub-Api-Version": "2026-03-10",
+          },
         },
       );
       alert(`Pull request merged: ${response.data.sha}`);
@@ -538,84 +568,72 @@ function PullMode({ setProcessing }) {
 
       {/* Merge Confirmation Dialog */}
       {showMergeConfirm && (
-        <div
+        <dialog
+          open={showMergeConfirm}
           style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 3000,
+            flexDirection: "column",
+            alignItems: "stretch",
+            padding: "20px",
+            minWidth: "400px",
           }}
-          onClick={() => setShowMergeConfirm(false)}
+          className="share-dialog"
         >
+          <h3 style={{ margin: "0 0 15px 0" }}>Confirm Merge</h3>
+
+          <p style={{ margin: "0 0 20px 0" }}>
+            Are you sure you want to merge the changes from{" "}
+            <strong>
+              {headOwner}/{headRepo}
+            </strong>{" "}
+            into{" "}
+            <strong>
+              {baseOwner}/{baseRepo}
+            </strong>
+            ?
+          </p>
+
           <div
-            onClick={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: "white",
-              borderRadius: "8px",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.2)",
-              maxWidth: "400px",
-              padding: "24px",
               display: "flex",
-              flexDirection: "column",
-              gap: "16px",
+              justifyContent: "flex-end",
+              gap: "10px",
+              marginTop: "10px",
             }}
           >
-            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600" }}>
-              Confirm Merge
-            </h3>
-            <p style={{ margin: 0, color: "#666", fontSize: "14px" }}>
-              Are you sure you want to merge the changes from{" "}
-              <strong>
-                {headOwner}/{headRepo}
-              </strong>{" "}
-              into{" "}
-              <strong>
-                {baseOwner}/{baseRepo}
-              </strong>
-              ?
-            </p>
-            <div
+            <button
+              onClick={() => setShowMergeConfirm(false)}
+              autoFocus
               style={{
-                display: "flex",
-                gap: "8px",
-                justifyContent: "flex-end",
+                padding: "8px 16px",
+                cursor: "pointer",
               }}
             >
-              <button
-                onClick={() => setShowMergeConfirm(false)}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#f0f0f0",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmMerge}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#0066cc",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                Merge
-              </button>
-            </div>
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmMerge}
+              style={{
+                padding: "8px 16px",
+                cursor: "pointer",
+                backgroundColor: "var(--abundance-color-brightPurple)",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+              }}
+            >
+              Merge
+            </button>
           </div>
-        </div>
+
+          <a
+            className="closeButton"
+            onClick={() => setShowMergeConfirm(false)}
+            style={{ cursor: "pointer" }}
+          >
+            {"\u00D7"}
+          </a>
+        </dialog>
       )}
 
       <div id="headerBarRun">

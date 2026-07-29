@@ -1699,3 +1699,14 @@ Sidebar navigation
   background: var(--abundance-color-brightPurple, #be3fe5);
   color: var(--abundance-color-fontWhite, #f2f0f0);
 }
+
+/* Native dialog element styling */
+dialog {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+}
+
+dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
