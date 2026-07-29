@@ -695,20 +695,51 @@ function PullMode({ setProcessing }) {
         id="flow-canvas"
         tabIndex={0}
       ></canvas>
-      <ChangeMode
-        setActiveAtom={setActiveAtom}
-        targetRepo={{ owner: GlobalVariables.currentUser, repoName: headRepo }}
-        buttons={[
-          {
-            key: "pull-to-create",
-            action: "create",
-            id: "create-mode-btn",
-            title: "Create/Run Mode",
-            label: "Create Mode",
-            iconRotation: 90,
-          },
-        ]}
-      />
+      {prOwner ? (
+        <ChangeMode
+          setActiveAtom={setActiveAtom}
+          targetRepo={{
+            owner: GlobalVariables.currentUser,
+            repoName: headRepo,
+          }}
+          buttons={[
+            {
+              key: "pull-to-create",
+              action: "create",
+              id: "create-mode-btn",
+              title: "Create/Run Mode",
+              label: "Create Mode",
+              iconRotation: 90,
+            },
+            {
+              key: "run-to-browse",
+              action: "browse",
+              id: "browse-projects-btn",
+              title: "Browse Projects",
+              label: "Browse Projects",
+              iconRotation: 90,
+            },
+          ]}
+        />
+      ) : (
+        <ChangeMode
+          setActiveAtom={setActiveAtom}
+          targetRepo={{
+            owner: GlobalVariables.currentUser,
+            repoName: headRepo,
+          }}
+          buttons={[
+            {
+              key: "pull-to-create",
+              action: "create",
+              id: "create-mode-btn",
+              title: "Create/Run Mode",
+              label: "Create Mode",
+              iconRotation: 90,
+            },
+          ]}
+        />
+      )}
       <div className="runContainer">
         <div
           className="jscad-container"

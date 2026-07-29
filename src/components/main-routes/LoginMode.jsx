@@ -242,7 +242,9 @@ const AddProject = ({ projectsLoaded, authorizedUserOcto, projectToShow }) => {
             </option>
           </select>
         </label>
-        <PRNotificationIcon allProjects={nodes} />
+        {projectToShow === "owned" && (
+          <PRNotificationIcon allProjects={nodes} />
+        )}
       </div>
       <div className="projects-and-filters-container">
         <div className="project-items-wrapper">
