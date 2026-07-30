@@ -600,6 +600,7 @@ function PullMode({ setProcessing }) {
       setIsMergeSuccessful(true);
     } catch (error) {
       console.error("Error merging pull request:", error);
+      setTimeout(() => setNotification(null), 5000);
       setNotification(`Error merging pull request: ${error.message}`, "error");
     }
   };
