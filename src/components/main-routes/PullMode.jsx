@@ -431,6 +431,15 @@ function PullMode({ setProcessing }) {
       .catch((err) => {
         setNotification(`Failed to set up pull mode: ${err.message}`, "error");
       });
+
+    // Cleanup function: reset global state when leaving PullMode
+    // This prevents PullMode's template from being mistaken for a loaded project in CreateMode
+    return () => {
+      GlobalVariables.topLevelMolecule = null;
+      GlobalVariables.currentMolecule = null;
+      GlobalVariables.currentAWSnode = null;
+      GlobalVariables.currentRepo = null;
+    };
   }, [
     baseOwner,
     baseRepo,
@@ -696,19 +705,7 @@ function PullMode({ setProcessing }) {
       {prOwner ? (
         <ChangeMode
           setActiveAtom={setActiveAtom}
-          targetRepo={{
-            owner: GlobalVariables.currentUser,
-            repoName: headRepo,
-          }}
           buttons={[
-            {
-              key: "pull-to-create",
-              action: "create",
-              id: "create-mode-btn",
-              title: "Create/Run Mode",
-              label: "Create Mode",
-              iconRotation: 90,
-            },
             {
               key: "run-to-browse",
               action: "browse",
