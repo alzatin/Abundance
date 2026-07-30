@@ -118,15 +118,7 @@ function CreateMode() {
         setIsLoadingProject(false);
         return;
       }
-
       setIsLoadingProject(true);
-
-      // Clear the previous project canvas before loading the new one
-      // This prevents molecules from the previous mode (e.g., PullMode) from overlapping
-      if (GlobalVariables.currentMolecule) {
-        GlobalVariables.currentMolecule.nodesOnTheScreen = [];
-        GlobalVariables.currentAWSnode = null;
-      }
 
       // Fetch the full project metadata from AWS
       fetch(

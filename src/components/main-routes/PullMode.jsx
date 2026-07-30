@@ -439,6 +439,16 @@ function PullMode({ setProcessing }) {
       GlobalVariables.currentMolecule = null;
       GlobalVariables.currentAWSnode = null;
       GlobalVariables.currentRepo = null;
+      GlobalVariables.loadedRepo = null;
+
+      // Clear all unsaved project states from localStorage to prevent stale data
+      // when user navigates back to a project
+      const keys = Object.keys(localStorage);
+      keys.forEach((key) => {
+        if (key.startsWith("unsavedProject_")) {
+          localStorage.removeItem(key);
+        }
+      });
     };
   }, [
     baseOwner,
@@ -496,7 +506,6 @@ function PullMode({ setProcessing }) {
       );
       setTimeout(() => setNotification(null), 5000);
     } catch (error) {
-      console.error("Error creating pull request:", error);
       setNotification(`Error creating pull request: ${error.message}`, "error");
     }
   };
