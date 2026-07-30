@@ -72,6 +72,16 @@ export class Assembly<G = any> {
    * other atoms' payloads.
    */
   metadata?: Record<string, any>;
+  /**
+   * Selection state set by a `partselect`, `edgeselect`, or `faceselect` Input
+   * atom. Present on leaf nodes only; `undefined` on branches and on
+   * assemblies that have not passed through a selection input.
+   */
+  selection?: {
+    part?: boolean;
+    edges?: number[]; // selected edge indexes (0-based position in edgeGroups)
+    faces?: number[]; // selected face indexes (0-based position in faceGroups)
+  };
 
   constructor(other?: Partial<Assembly>) {
     if (other) {
@@ -80,6 +90,7 @@ export class Assembly<G = any> {
       this.bom = other.bom?.slice() ?? this.bom;
       this.plane = other.plane?.clone() ?? this.plane;
       if (other.metadata !== undefined) this.metadata = other.metadata;
+      if (other.selection !== undefined) this.selection = other.selection;
       // Deep clone
       if (other && other.isLeaf && other.isLeaf()) {
         this.geometry = other.geometry.clone();
@@ -105,30 +116,118 @@ export class Assembly<G = any> {
     return !Array.isArray(this.geometry);
   }
 
-  // Apply function to all leafs in this assembly. Modifies this Assembly
-  // in place. If fn returns null that leaf is dropped from the assembly.
+  /**
+   * Returns all leaf nodes in this assembly (depth-first) where a
+   * `partselect` input has marked the part as selected.
+   *
+   * Example:
+   * ```js
+   * const parts = myAssembly.getSelectedLeafs();
+   * parts.forEach(leaf => {
+   *   // leaf.geometry is the replicad shape
+   *   // leaf.color, leaf.tags, etc. are available
+   * });
+   * ```
+   */
+  getSelectedLeafs(): Assembly[] {
+    const result: Assembly[] = [];
+    const collect = (node: Assembly) => {
+      if (!Array.isArray(node.geometry)) {
+        if (node.selection?.part === true) {
+          result.push(node);
+        }
+      } else {
+        (node.geometry as Assembly[]).forEach(collect);
+      }
+    };
+    collect(this);
+    return result;
+  }
+
+  /**
+   * Returns all leaf nodes that have at least one selected edge, along with
+   * their selected edge IDs.
+   */
+  //@ts-ignore
+  getSelectedEdges(): replicad.Edge[] {
+    //@ts-ignore
+    const result: replicad.Edge[] = [];
+    const collect = (node: Assembly) => {
+      if (!Array.isArray(node.geometry)) {
+        const edges = node.selection?.edges;
+        if (edges) {
+          result.push(...edges.map((id) => node.geometry.edges[id]));
+        }
+      } else {
+        (node.geometry as Assembly[]).forEach(collect);
+      }
+    };
+    collect(this);
+    return result;
+  }
+
+  /**
+   * Returns all leaf nodes that have at least one selected face, along with
+   * their selected face IDs.
+   */
+  //@ts-ignore
+  getSelectedFaces(): replicad.Face[] {
+    //@ts-ignore
+    const result: replicad.Face[] = [];
+    const collect = (node: Assembly) => {
+      if (!Array.isArray(node.geometry)) {
+        const faces = node.selection?.faces;
+        if (faces && faces.length > 0) {
+          result.push(...faces.map((id) => node.geometry.faces[id]));
+        }
+      } else {
+        (node.geometry as Assembly[]).forEach(collect);
+      }
+    };
+    collect(this);
+    return result;
+  }
+
+  // Apply function to all leafs in this assembly. Returns a new assembly.
+  // Result is structurally identical to this except where fn returns null,
+  // in which case the corresponding leaf is dropped from the assembly.
   // Empty branches are recursively dropped as well.
   //
   // The callback's `leaf` parameter is typed `Assembly<LeafGeom>` in the
   // generated .d.ts, so users can read `leaf.geometry` as the proper
   // replicad union without having to handle the array branch.
-  onLeafs(fn: (leaf: Assembly<any>) => Assembly<any> | null): Assembly | null {
+  onLeafs(
+    //@ts-ignore
+    fn: (leaf: Assembly<LeafGeom>) => Assembly<LeafGeom> | null,
+  ): Assembly | null {
     if (Array.isArray(this.geometry)) {
-      this.geometry = this.geometry
-        .map((child: any) => {
-          child.onLeafs(fn);
-          return child;
+      const children = this.geometry
+        .map((child: Assembly) => {
+          return child.onLeafs(fn);
         })
-        .filter((child: any) => {
-          return child !== null;
+        .filter((child: Assembly | null) => {
+          return child !== null && child !== undefined;
         });
-      if (this.geometry.length === 0) {
+      if (children.length === 0) {
         return null;
       }
-      return this;
+      return new Assembly({ ...this, geometry: children });
     } else {
       return fn(this);
     }
+  }
+
+  //@ts-ignore
+  filterLeafs(filterFn: (leaf: Assembly<LeafGeom>) => boolean): Assembly[] {
+    const result: Assembly[] = [];
+    //@ts-ignore
+    this.onLeafs((leaf: Assembly<LeafGeom>) => {
+      if (filterFn(leaf)) {
+        result.push(leaf);
+      }
+      return leaf;
+    });
+    return result;
   }
 
   /**

@@ -77,6 +77,26 @@ export default class Input extends Atom {
     this.localFileContent = null;
 
     /**
+     * Leaf indexes selected in partselect mode.
+     * @type {number[]}
+     */
+    this.selectedLeafIndexes = [];
+
+    /**
+     * Per-leaf selected edge IDs for edgeselect mode.
+     * Maps flat leaf index -> array of edgeId values.
+     * @type {Object.<number, number[]>}
+     */
+    this.selectedEdgeData = {};
+
+    /**
+     * Per-leaf selected face IDs for faceselect mode.
+     * Maps flat leaf index -> array of faceId values.
+     * @type {Object.<number, number[]>}
+     */
+    this.selectedFaceData = {};
+
+    /**
      * Flag indicating if the name text is currently truncated
      * @type {boolean}
      */
@@ -101,8 +121,14 @@ export default class Input extends Atom {
       this.importIndex = this.importOptions.indexOf(this.fileType);
     }
 
-    // Determine the output valueType (import type outputs geometry)
-    const outputValueType = this.type === "import" ? "geometry" : this.type;
+    // Determine the output valueType (import, partselect, edgeselect, faceselect output geometry)
+    const outputValueType =
+      this.type === "import" ||
+      this.type === "partselect" ||
+      this.type === "edgeselect" ||
+      this.type === "faceselect"
+        ? "geometry"
+        : this.type;
     this.addIO("number or geometry", outputValueType, this.value, "output");
 
     /**
@@ -126,14 +152,25 @@ export default class Input extends Atom {
               fileName: this.fileName,
               fileType: this.fileType,
               SVGwidth: this.SVGwidth,
-              inputAtom: this, // Reference to the Input atom for file operations
+              inputAtom: this,
             }
-          : this.options;
+          : this.type === "partselect"
+            ? { ...this.options, partSelectType: true, inputAtom: this }
+            : this.type === "edgeselect"
+              ? { ...this.options, edgeSelectType: true, inputAtom: this }
+              : this.type === "faceselect"
+                ? { ...this.options, faceSelectType: true, inputAtom: this }
+                : this.options;
 
       // parent should subscribe so it can manage it's ready/processing/etc state
       this.parentAP = this.parent.addIO(
         this.name,
-        this.type === "import" ? "geometry" : this.type,
+        this.type === "import" ||
+          this.type === "partselect" ||
+          this.type === "edgeselect" ||
+          this.type === "faceselect"
+          ? "geometry"
+          : this.type,
         this.value,
         "input",
         inputOptions,
@@ -317,6 +354,52 @@ export default class Input extends Atom {
         return;
       }
 
+      // For partselect type, transform the incoming geometry with selection flags
+      if (this.type === "partselect") {
+        console.log(this.selectedLeafIndexes);
+        if (parentState.status === Status.READY && parentState.value != null) {
+          const transformed = this.applyPartSelection(
+            parentState.value,
+            this.selectedLeafIndexes,
+          );
+          this.setReady(transformed);
+          this.value = transformed;
+        } else {
+          this.setWaiting();
+        }
+        return;
+      }
+
+      // For edgeselect type
+      if (this.type === "edgeselect") {
+        if (parentState.status === Status.READY && parentState.value != null) {
+          const transformed = this.applyEdgeSelection(
+            parentState.value,
+            this.selectedEdgeData,
+          );
+          this.setReady(transformed);
+          this.value = transformed;
+        } else {
+          this.setWaiting();
+        }
+        return;
+      }
+
+      // For faceselect type
+      if (this.type === "faceselect") {
+        if (parentState.status === Status.READY && parentState.value != null) {
+          const transformed = this.applyFaceSelection(
+            parentState.value,
+            this.selectedFaceData,
+          );
+          this.setReady(transformed);
+          this.value = transformed;
+        } else {
+          this.setWaiting();
+        }
+        return;
+      }
+
       this.setStatus(parentState.status, parentState.value);
 
       // Update our internal value if status is READY
@@ -359,6 +442,153 @@ export default class Input extends Atom {
       typeof this.parent.propagateInputChange === "function"
     ) {
       this.parent.propagateInputChange(this.name);
+    }
+  }
+
+  /**
+   * Walk an AbundanceObject tree in the same order as flattenAssembly,
+   * stamping selection flags onto leaf nodes.
+   * @param {object} node - AbundanceObject (branch or leaf)
+   * @param {number[]} selectedIndexes - Leaf indexes that are selected
+   * @returns {{ node: object, counter: number }}
+   */
+  applyPartSelection(assembly, selectedIndexes) {
+    let leafCounter = 0;
+    const walk = (node) => {
+      if (!Array.isArray(node.geometry)) {
+        const selected = selectedIndexes.includes(leafCounter);
+        leafCounter++;
+        const existing = node.selection || {};
+        return { ...node, selection: { ...existing, part: selected } };
+      } else {
+        return { ...node, geometry: node.geometry.map((child) => walk(child)) };
+      }
+    };
+    return walk(assembly);
+  }
+
+  /**
+   * Walk the tree stamping edge selection onto leaf nodes.
+   * @param {object} assembly - AbundanceObject tree
+   * @param {Object.<number, number[]>} edgeData - leafIndex -> edgeId[]
+   */
+  applyEdgeSelection(assembly, edgeData) {
+    let leafCounter = 0;
+    const walk = (node) => {
+      if (!Array.isArray(node.geometry)) {
+        const leafIndex = leafCounter++;
+        const edges = edgeData[leafIndex] || [];
+        const existing = node.selection || {};
+        return { ...node, selection: { ...existing, edges } };
+      } else {
+        return { ...node, geometry: node.geometry.map((child) => walk(child)) };
+      }
+    };
+    return walk(assembly);
+  }
+
+  /**
+   * Walk the tree stamping face selection onto leaf nodes.
+   * @param {object} assembly - AbundanceObject tree
+   * @param {Object.<number, number[]>} faceData - leafIndex -> faceId[]
+   */
+  applyFaceSelection(assembly, faceData) {
+    let leafCounter = 0;
+    const walk = (node) => {
+      if (!Array.isArray(node.geometry)) {
+        const leafIndex = leafCounter++;
+        const faces = faceData[leafIndex] || [];
+        const existing = node.selection || {};
+        return { ...node, selection: { ...existing, faces } };
+      } else {
+        return { ...node, geometry: node.geometry.map((child) => walk(child)) };
+      }
+    };
+    return walk(assembly);
+  }
+
+  /**
+   * Reset all selection state for this input. Called whenever the upstream
+   * connection is established or removed, since previously selected leaf
+   * indexes / edge indexes / face indexes may no longer correspond to valid
+   * elements on the newly (dis)connected geometry.
+   */
+  resetSelectionState() {
+    this.selectedLeafIndexes = [];
+    this.selectedEdgeData = {};
+    this.selectedFaceData = {};
+    GlobalVariables.bumpSelectionVersion();
+    if (typeof this._panelSetInputChanged === "function") {
+      this._panelSetInputChanged(String(Date.now()));
+    }
+  }
+
+  /**
+   * Toggle a leaf index in the partselect selection, then recompute the output.
+   * @param {number} index - Leaf index from the flat render array
+   */
+  toggleLeafIndex(index) {
+    const idx = this.selectedLeafIndexes.indexOf(index);
+    if (idx === -1) {
+      this.selectedLeafIndexes = [...this.selectedLeafIndexes, index];
+    } else {
+      this.selectedLeafIndexes = this.selectedLeafIndexes.filter(
+        (i) => i !== index,
+      );
+    }
+    GlobalVariables.bumpSelectionVersion();
+    if (typeof this._panelSetInputChanged === "function") {
+      this._panelSetInputChanged(String(Date.now()));
+    }
+  }
+
+  /**
+   * Toggle an edge ID within a specific leaf for edgeselect mode.
+   * @param {number} leafIndex - Flat leaf index
+   * @param {number} edgeId - Edge ID from edgeGroups
+   */
+  toggleEdgeForLeaf(leafIndex, edgeId) {
+    const current = this.selectedEdgeData[leafIndex] || [];
+    const idx = current.indexOf(edgeId);
+    if (idx === -1) {
+      this.selectedEdgeData = {
+        ...this.selectedEdgeData,
+        [leafIndex]: [...current, edgeId],
+      };
+    } else {
+      this.selectedEdgeData = {
+        ...this.selectedEdgeData,
+        [leafIndex]: current.filter((id) => id !== edgeId),
+      };
+    }
+    GlobalVariables.bumpSelectionVersion();
+    if (typeof this._panelSetInputChanged === "function") {
+      this._panelSetInputChanged(String(Date.now()));
+    }
+  }
+
+  /**
+   * Toggle a face ID within a specific leaf for faceselect mode.
+   * @param {number} leafIndex - Flat leaf index
+   * @param {number} faceId - Face ID from faceGroups
+   */
+  toggleFaceForLeaf(leafIndex, faceId) {
+    const current = this.selectedFaceData[leafIndex] || [];
+    const idx = current.indexOf(faceId);
+    if (idx === -1) {
+      this.selectedFaceData = {
+        ...this.selectedFaceData,
+        [leafIndex]: [...current, faceId],
+      };
+    } else {
+      this.selectedFaceData = {
+        ...this.selectedFaceData,
+        [leafIndex]: current.filter((id) => id !== faceId),
+      };
+    }
+    GlobalVariables.bumpSelectionVersion();
+    if (typeof this._panelSetInputChanged === "function") {
+      this._panelSetInputChanged(String(Date.now()));
     }
   }
 
@@ -987,6 +1217,36 @@ export default class Input extends Atom {
   /**
    * Update the parent attachment point's options with current import metadata
    */
+  updateParentAPPartSelectOptions() {
+    if (this.parentAP && this.type === "partselect") {
+      this.parentAP.options = {
+        ...this.parentAP.options,
+        partSelectType: true,
+        inputAtom: this,
+      };
+    }
+  }
+
+  updateParentAPEdgeSelectOptions() {
+    if (this.parentAP && this.type === "edgeselect") {
+      this.parentAP.options = {
+        ...this.parentAP.options,
+        edgeSelectType: true,
+        inputAtom: this,
+      };
+    }
+  }
+
+  updateParentAPFaceSelectOptions() {
+    if (this.parentAP && this.type === "faceselect") {
+      this.parentAP.options = {
+        ...this.parentAP.options,
+        faceSelectType: true,
+        inputAtom: this,
+      };
+    }
+  }
+
   updateParentAPOptions() {
     if (this.parentAP && this.type === "import") {
       this.parentAP.options = {
@@ -1073,6 +1333,9 @@ export default class Input extends Atom {
         "range",
         "point3d",
         "import",
+        "partselect",
+        "edgeselect",
+        "faceselect",
       ],
       onChange: (newType) => {
         if (this.type !== newType) {
@@ -1106,21 +1369,39 @@ export default class Input extends Atom {
             );
           }
           this.type = newType;
-          // Import type should output geometry
-          const outputType = newType === "import" ? "geometry" : newType;
+          // Import and select types output geometry
+          const outputType =
+            newType === "import" ||
+            newType === "partselect" ||
+            newType === "edgeselect" ||
+            newType === "faceselect"
+              ? "geometry"
+              : newType;
           this.output.valueType = outputType;
 
-          //Add a new input to the current molecule
           if (this.parentAP) {
             this.parentAP.valueType = outputType;
-            // Update parent AP options if switching to/from import type
             if (newType === "import") {
               this.updateParentAPOptions();
-            } else if (this.parentAP.options?.importType) {
-              // Clear import metadata if switching away from import type
+            } else if (newType === "partselect") {
+              this.updateParentAPPartSelectOptions();
+            } else if (newType === "edgeselect") {
+              this.updateParentAPEdgeSelectOptions();
+            } else if (newType === "faceselect") {
+              this.updateParentAPFaceSelectOptions();
+            } else if (
+              this.parentAP.options?.importType ||
+              this.parentAP.options?.partSelectType ||
+              this.parentAP.options?.edgeSelectType ||
+              this.parentAP.options?.faceSelectType
+            ) {
               this.parentAP.options = {};
             }
           }
+          // Reset selection state when switching away from selection types
+          if (newType !== "partselect") this.selectedLeafIndexes = [];
+          if (newType !== "edgeselect") this.selectedEdgeData = {};
+          if (newType !== "faceselect") this.selectedFaceData = {};
         }
       },
     };
@@ -1307,6 +1588,7 @@ export default class Input extends Atom {
         },
       };
     }
+
     return inputParams;
   }
 
@@ -1346,6 +1628,21 @@ export default class Input extends Atom {
       superSerialObject.repoOwner = this.repoOwner;
       superSerialObject.repoName = this.repoName;
       superSerialObject.SVGwidth = this.SVGwidth;
+    }
+
+    // Save selected leaf indexes if type is partselect
+    if (this.type === "partselect") {
+      superSerialObject.selectedLeafIndexes = this.selectedLeafIndexes;
+    }
+
+    // Save edge selection data if type is edgeselect
+    if (this.type === "edgeselect") {
+      superSerialObject.selectedEdgeData = this.selectedEdgeData;
+    }
+
+    // Save face selection data if type is faceselect
+    if (this.type === "faceselect") {
+      superSerialObject.selectedFaceData = this.selectedFaceData;
     }
 
     return superSerialObject;

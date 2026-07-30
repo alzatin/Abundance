@@ -5,7 +5,7 @@ import React, {
   useState,
   forwardRef,
 } from "react";
-import { useThree } from "@react-three/fiber";
+import { useThree, useFrame } from "@react-three/fiber";
 import { BufferGeometry, BufferAttribute, DoubleSide } from "three";
 import {
   Scene,
@@ -24,10 +24,28 @@ import {
 import { Wireframe } from "@react-three/drei";
 import { useRendering } from "../../contexts/index.js";
 
+// Pixel-space tolerance for edge-select clicks (see edge onPointerDown below).
+// Kept as a module constant so the raycaster's Line.threshold (which must be
+// generous enough to generate an intersection in the first place) and the
+// precise per-click distance filter agree on the same target tolerance.
+const EDGE_SELECT_PX_TOLERANCE = 5;
+
 export default React.memo(
   forwardRef(function ShapeMeshes({ isSolid, cameraZoom, setProcessing }, ref) {
-    const { mesh, setOutdatedMesh, plane } = useRendering();
-    const { invalidate } = useThree();
+    const { mesh, setOutdatedMesh, plane, selectionModeAtom, selectionVersion } = useRendering();
+    const { invalidate, raycaster, camera } = useThree();
+
+    // Keep the raycaster's line-picking threshold in sync with the current
+    // orthographic zoom so a ~5px click tolerance is generated consistently
+    // regardless of zoom level. Without this, a fixed world-unit threshold
+    // would make edge-selection far too strict when zoomed out and/or overly
+    // loose when zoomed in.
+    useFrame(() => {
+      if (raycaster?.params?.Line && camera?.zoom) {
+        raycaster.params.Line.threshold =
+          EDGE_SELECT_PX_TOLERANCE / camera.zoom;
+      }
+    });
 
     const [fullMesh, setFullMesh] = useState([]);
 
@@ -88,6 +106,8 @@ export default React.memo(
             solid: false,
             isWire: isWireType,
             hasVertexColors: !!m.vertexColors,
+            rawFaces: m.faces || null,
+            rawEdges: m.edges || null,
           });
         } else {
           meshArray.push({
@@ -97,6 +117,8 @@ export default React.memo(
             solid: isSolid,
             isWire: isWireType,
             hasVertexColors: !!m.vertexColors,
+            rawFaces: m.faces || null,
+            rawEdges: m.edges || null,
           });
         }
       });
@@ -346,8 +368,56 @@ export default React.memo(
     return (
       <>
         {fullMesh.map((m, index) => {
+          const isInSelectionMode = selectionModeAtom != null;
+          const selectionType = selectionModeAtom?.type;
+
+          // Part selection: dim unselected, full opacity for selected
+          const isPartMode = isInSelectionMode && selectionType === "partselect";
+          const isPartSelected =
+            isPartMode &&
+            selectionVersion >= 0 &&
+            selectionModeAtom.selectedLeafIndexes.includes(index);
+          const partOpacity = isPartMode ? (isPartSelected ? 1.0 : 0.2) : 1.0;
+
+          // Edge/face modes read selected IDs for this leaf
+          const isEdgeMode = isInSelectionMode && selectionType === "edgeselect";
+          const isFaceMode = isInSelectionMode && selectionType === "faceselect";
+          const selectedEdgeIds =
+            isEdgeMode && selectionVersion >= 0
+              ? selectionModeAtom.selectedEdgeData?.[index] || []
+              : [];
+          const selectedFaceIds =
+            isFaceMode && selectionVersion >= 0
+              ? selectionModeAtom.selectedFaceData?.[index] || []
+              : [];
+
+          // Per-element meshes loaded asynchronously by enterSelectionMode.
+          // When ready, render one mesh per topological face / edge so
+          // clicks map directly to shape.faces[i] / shape.edges[i].
+          const perElement = selectionModeAtom?._perElementMeshes?.[index];
+
+          // Build per-face BufferGeometries when in face-select mode
+          const perFaceGeoms =
+            isFaceMode && Array.isArray(perElement)
+              ? perElement.map((entry) => {
+                  const g = new BufferGeometry();
+                  syncFaces(g, entry.faces);
+                  return { index: entry.index, geom: g };
+                })
+              : null;
+
+          // Build per-edge BufferGeometries when in edge-select mode
+          const perEdgeGeoms =
+            isEdgeMode && Array.isArray(perElement)
+              ? perElement.map((entry) => {
+                  const g = new BufferGeometry();
+                  syncLines(g, entry.edges);
+                  return { index: entry.index, geom: g };
+                })
+              : null;
+
           return (
-            <group key={"group" + m.color + index}>
+            <group key={index}>
               {m.pointPosition ? (
                 // Point3D — render as a fixed screen-space sprite point
                 <points key={"point" + JSON.stringify(m.pointPosition) + index}>
@@ -381,14 +451,110 @@ export default React.memo(
               ) : (
                 // Normal solid / 2D geometry
                 <>
-                  {!isSolid ? (
-                    <mesh geometry={m.body} key={"mesh" + m.color}>
+                  {isFaceMode && perFaceGeoms ? (
+                    // Face select mode with per-element meshes loaded:
+                    // Render one mesh per topological face. Selected → opaque,
+                    // unselected → translucent. Two-sided so back-faces are visible.
+                    <>
+                      {perFaceGeoms.map(({ index: faceIdx, geom }) => {
+                        const sel = selectedFaceIds.includes(faceIdx);
+                        return (
+                          <mesh
+                            key={"face" + index + "-" + faceIdx}
+                            geometry={geom}
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              selectionModeAtom.toggleFaceForLeaf(index, faceIdx);
+                            }}
+                          >
+                            <meshMatcapMaterial
+                              color={sel ? "#ffdd00" : m.color}
+                              side={DoubleSide}
+                              transparent={true}
+                              opacity={sel ? 1.0 : 0.25}
+                              polygonOffset
+                              polygonOffsetFactor={2.0}
+                              polygonOffsetUnits={1.0}
+                            />
+                          </mesh>
+                        );
+                      })}
+                      {/* Show edge wireframe for topology reference */}
+                      <lineSegments key={"lines-facemode" + index} geometry={m.lines}>
+                        <lineBasicMaterial color={"#3c5a6e"} />
+                      </lineSegments>
+                    </>
+                  ) : isEdgeMode && perEdgeGeoms ? (
+                    // Edge select mode: wireframe only, each edge is its own
+                    // <lineSegments>, selected → yellow, else black.
+                    // On click, toggle ALL edges within pointer tolerance so
+                    // overlapping edges (shared between adjacent leaves) both flip.
+                    <>
+                      {perEdgeGeoms.map(({ index: edgeIdx, geom }) => {
+                        const sel = selectedEdgeIds.includes(edgeIdx);
+                        return (
+                          <lineSegments
+                            key={"edge" + index + "-" + edgeIdx}
+                            geometry={geom}
+                            userData={{
+                              abundanceEdge: true,
+                              leafIndex: index,
+                              edgeIdx,
+                            }}
+                            onPointerDown={(e) => {
+                              // Three.js's Line raycast already rejects hits
+                              // farther than raycaster.params.Line.threshold
+                              // (perpendicular ray-to-segment distance), and
+                              // that threshold is kept in sync with a ~5px
+                              // screen tolerance every frame (see useFrame
+                              // above). So any lineSegments intersection that
+                              // shows up here already passed that check —
+                              // Line intersections don't expose a distance
+                              // field we could re-filter by anyway (unlike
+                              // Points, `distanceToRay` isn't populated for
+                              // Line/LineSegments raycasts).
+                              const hits = (e.intersections || []).filter(
+                                (i) => i.object?.userData?.abundanceEdge === true,
+                              );
+                              if (hits.length === 0) return;
+                              e.stopPropagation();
+                              const seen = new Set();
+                              hits.forEach((int) => {
+                                const meta = int.object.userData;
+                                const key = meta.leafIndex + ":" + meta.edgeIdx;
+                                if (seen.has(key)) return;
+                                seen.add(key);
+                                selectionModeAtom.toggleEdgeForLeaf(
+                                  meta.leafIndex,
+                                  meta.edgeIdx,
+                                );
+                              });
+                            }}
+                          >
+                            <lineBasicMaterial
+                              color={sel ? "#ffdd00" : "#000000"}
+                              linewidth={sel ? 3 : 1}
+                            />
+                          </lineSegments>
+                        );
+                      })}
+                    </>
+                  ) : !isSolid ? (
+                    <mesh geometry={m.body} key={"mesh" + index}
+                      onPointerDown={
+                        isPartMode
+                          ? (e) => { e.stopPropagation(); selectionModeAtom.toggleLeafIndex(index); }
+                          : undefined
+                      }
+                    >
                       {/*the offsets are here to avoid z fighting between the mesh and the lines*/}
                       {m.hasVertexColors ? (
                         <meshBasicMaterial
-                          key={"material-heatmap" + m.color}
+                          key={"material-heatmap" + index}
                           vertexColors
                           side={DoubleSide}
+                          transparent={true}
+                          opacity={isPartMode ? partOpacity : 1}
                           polygonOffset
                           polygonOffsetFactor={2.0}
                           polygonOffsetUnits={1.0}
@@ -396,7 +562,9 @@ export default React.memo(
                       ) : m.color != "#D9544D" && m.color != "#E6F3FF" ? (
                         <meshMatcapMaterial
                           color={m.color}
-                          key={"material" + m.color}
+                          key={"material" + index}
+                          transparent={true}
+                          opacity={isPartMode ? partOpacity : 1}
                           polygonOffset
                           polygonOffsetFactor={2.0}
                           polygonOffsetUnits={1.0}
@@ -405,7 +573,7 @@ export default React.memo(
                         <meshPhysicalMaterial
                           color={m.color}
                           transparent={true}
-                          opacity={0.5}
+                          opacity={isPartMode ? partOpacity * 0.5 : 0.5}
                           transmission={0.6}
                           roughness={0}
                           metalness={0}
@@ -417,7 +585,7 @@ export default React.memo(
                         <meshBasicMaterial
                           geometry={m.body}
                           transparent={true}
-                          opacity={0.3}
+                          opacity={isPartMode ? partOpacity * 0.3 : 0.3}
                           color={m.color}
                         >
                           <Wireframe geometry={m.body} {...wireframeProps} />
@@ -434,17 +602,15 @@ export default React.memo(
                       <Wireframe geometry={m.body} {...wireframeProps} />
                     </meshBasicMaterial>
                   )}
-                  <lineSegments
-                    key={"lines" + m.color}
-                    geometry={m.lines}
-                  ></lineSegments>
-                  <lineSegments key={"linesmesh" + m.color} geometry={m.lines}>
-                    <lineBasicMaterial
-                      color={"#3c5a6e"}
-                      opacity={"1"}
-                      linewidth={8}
-                    />
-                  </lineSegments>
+                  {/* Normal edge lines when not in face/edge select modes */}
+                  {!isFaceMode && !isEdgeMode && (
+                    <>
+                      <lineSegments key={"lines" + index} geometry={m.lines} />
+                      <lineSegments key={"linesmesh" + index} geometry={m.lines}>
+                        <lineBasicMaterial color={"#3c5a6e"} opacity={"1"} linewidth={8} />
+                      </lineSegments>
+                    </>
+                  )}
                 </>
               )}
             </group>

@@ -25,12 +25,19 @@ export function makeAbundanceFramework(replicad) {
        * other atoms' payloads.
        */
       __publicField(this, "metadata");
+      /**
+       * Selection state set by a `partselect`, `edgeselect`, or `faceselect` Input
+       * atom. Present on leaf nodes only; `undefined` on branches and on
+       * assemblies that have not passed through a selection input.
+       */
+      __publicField(this, "selection");
       if (other) {
         this.color = other.color ?? this.color;
         this.tags = other.tags?.slice() ?? this.tags;
         this.bom = other.bom?.slice() ?? this.bom;
         this.plane = other.plane?.clone() ?? this.plane;
         if (other.metadata !== void 0) this.metadata = other.metadata;
+        if (other.selection !== void 0) this.selection = other.selection;
         if (other && other.isLeaf && other.isLeaf()) {
           this.geometry = other.geometry.clone();
         } else if (other && Array.isArray(other.geometry)) {
@@ -50,8 +57,76 @@ export function makeAbundanceFramework(replicad) {
     isLeaf() {
       return !Array.isArray(this.geometry);
     }
-    // Apply function to all leafs in this assembly. Modifies this Assembly
-    // in place. If fn returns null that leaf is dropped from the assembly.
+    /**
+     * Returns all leaf nodes in this assembly (depth-first) where a
+     * `partselect` input has marked the part as selected.
+     *
+     * Example:
+     * ```js
+     * const parts = myAssembly.getSelectedLeafs();
+     * parts.forEach(leaf => {
+     *   // leaf.geometry is the replicad shape
+     *   // leaf.color, leaf.tags, etc. are available
+     * });
+     * ```
+     */
+    getSelectedLeafs() {
+      const result = [];
+      const collect = (node) => {
+        if (!Array.isArray(node.geometry)) {
+          if (node.selection?.part === true) {
+            result.push(node);
+          }
+        } else {
+          node.geometry.forEach(collect);
+        }
+      };
+      collect(this);
+      return result;
+    }
+    /**
+     * Returns all leaf nodes that have at least one selected edge, along with
+     * their selected edge IDs.
+     */
+    //@ts-ignore
+    getSelectedEdges() {
+      const result = [];
+      const collect = (node) => {
+        if (!Array.isArray(node.geometry)) {
+          const edges = node.selection?.edges;
+          if (edges) {
+            result.push(...edges.map((id) => node.geometry.edges[id]));
+          }
+        } else {
+          node.geometry.forEach(collect);
+        }
+      };
+      collect(this);
+      return result;
+    }
+    /**
+     * Returns all leaf nodes that have at least one selected face, along with
+     * their selected face IDs.
+     */
+    //@ts-ignore
+    getSelectedFaces() {
+      const result = [];
+      const collect = (node) => {
+        if (!Array.isArray(node.geometry)) {
+          const faces = node.selection?.faces;
+          if (faces && faces.length > 0) {
+            result.push(...faces.map((id) => node.geometry.faces[id]));
+          }
+        } else {
+          node.geometry.forEach(collect);
+        }
+      };
+      collect(this);
+      return result;
+    }
+    // Apply function to all leafs in this assembly. Returns a new assembly.
+    // Result is structurally identical to this except where fn returns null,
+    // in which case the corresponding leaf is dropped from the assembly.
     // Empty branches are recursively dropped as well.
     //
     // The callback's `leaf` parameter is typed `Assembly<LeafGeom>` in the
@@ -59,19 +134,29 @@ export function makeAbundanceFramework(replicad) {
     // replicad union without having to handle the array branch.
     onLeafs(fn) {
       if (Array.isArray(this.geometry)) {
-        this.geometry = this.geometry.map((child) => {
-          child.onLeafs(fn);
-          return child;
+        const children = this.geometry.map((child) => {
+          return child.onLeafs(fn);
         }).filter((child) => {
-          return child !== null;
+          return child !== null && child !== void 0;
         });
-        if (this.geometry.length === 0) {
+        if (children.length === 0) {
           return null;
         }
-        return this;
+        return new Assembly({ ...this, geometry: children });
       } else {
         return fn(this);
       }
+    }
+    //@ts-ignore
+    filterLeafs(filterFn) {
+      const result = [];
+      this.onLeafs((leaf) => {
+        if (filterFn(leaf)) {
+          result.push(leaf);
+        }
+        return leaf;
+      });
+      return result;
     }
     /**
      * True when this assembly is (or contains, for branches) 2D geometry —

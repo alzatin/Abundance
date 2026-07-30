@@ -73,6 +73,16 @@ declare global {
        * other atoms' payloads.
        */
       metadata?: Record<string, any>;
+      /**
+       * Selection state set by a `partselect`, `edgeselect`, or `faceselect` Input
+       * atom. Present on leaf nodes only; `undefined` on branches and on
+       * assemblies that have not passed through a selection input.
+       */
+      selection?: {
+          part?: boolean;
+          edges?: number[];
+          faces?: number[];
+      };
       constructor(other?: Partial<Assembly>);
       /**
        * User-defined type guard. Lets callers narrow an `Assembly` to a leaf
@@ -80,7 +90,32 @@ declare global {
        * `Assembly[]` branch) without manually checking `Array.isArray(...)`.
        */
       isLeaf(): this is Assembly<LeafGeom>;
+      /**
+       * Returns all leaf nodes in this assembly (depth-first) where a
+       * `partselect` input has marked the part as selected.
+       *
+       * Example:
+       * ```js
+       * const parts = myAssembly.getSelectedLeafs();
+       * parts.forEach(leaf => {
+       *   // leaf.geometry is the replicad shape
+       *   // leaf.color, leaf.tags, etc. are available
+       * });
+       * ```
+       */
+      getSelectedLeafs(): Assembly[];
+      /**
+       * Returns all leaf nodes that have at least one selected edge, along with
+       * their selected edge IDs.
+       */
+      getSelectedEdges(): replicad.Edge[];
+      /**
+       * Returns all leaf nodes that have at least one selected face, along with
+       * their selected face IDs.
+       */
+      getSelectedFaces(): replicad.Face[];
       onLeafs(fn: (leaf: Assembly<LeafGeom>) => Assembly<LeafGeom> | null): Assembly | null;
+      filterLeafs(filterFn: (leaf: Assembly<LeafGeom>) => boolean): Assembly[];
       /**
        * True when this assembly is (or contains, for branches) 2D geometry —
        * i.e. a replicad `Drawing`. For a branch node this defers to the first

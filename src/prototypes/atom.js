@@ -608,6 +608,10 @@ export default class Atom extends ObservableEntity {
     //Deselect this if it wasn't clicked on, unless control is held
     else if (!GlobalVariables.ctrlDown) {
       this.selected = false;
+      // If this atom hosts the active partselect input, exit selection mode
+      if (GlobalVariables.selectionModeAtom?.parent === this) {
+        GlobalVariables.exitSelectionMode();
+      }
     }
     //Returns true if something was done with the click
     this.inputs.forEach((child) => {
@@ -1437,6 +1441,91 @@ export default class Atom extends ObservableEntity {
                 }
               },
             };
+          }
+        } else if (input.options?.partSelectType) {
+          // Handle partselect type inputs — show selection count + button
+          const inputAtom = input.options.inputAtom;
+          if (inputAtom) {
+            inputAtom._panelSetInputChanged = setInputChanged;
+            const count = inputAtom.selectedLeafIndexes?.length ?? 0;
+            inputParams[this.uniqueID + input.name + "_partselect_count"] = {
+              type: "string",
+              value: `${count} part${count !== 1 ? "s" : ""} selected`,
+              label: input.name + " Selection",
+              disabled: true,
+            };
+            if (hasConnector) {
+              const isActiveSelection =
+                GlobalVariables.selectionModeAtom === inputAtom;
+              inputParams[this.uniqueID + input.name + "_select_parts_btn"] = {
+                type: "button",
+                label: isActiveSelection ? "Done" : "Select Parts",
+                onClick: () => {
+                  if (isActiveSelection) GlobalVariables.exitSelectionMode();
+                  else GlobalVariables.enterSelectionMode(inputAtom);
+                  if (typeof setInputChanged === "function")
+                    setInputChanged(String(Date.now()));
+                },
+              };
+            }
+          }
+        } else if (input.options?.edgeSelectType) {
+          // Handle edgeselect type inputs
+          const inputAtom = input.options.inputAtom;
+          if (inputAtom) {
+            inputAtom._panelSetInputChanged = setInputChanged;
+            const totalEdges = Object.values(
+              inputAtom.selectedEdgeData || {},
+            ).reduce((sum, ids) => sum + ids.length, 0);
+            inputParams[this.uniqueID + input.name + "_edgeselect_count"] = {
+              type: "string",
+              value: `${totalEdges} edge${totalEdges !== 1 ? "s" : ""} selected`,
+              label: input.name + " Selection",
+              disabled: true,
+            };
+            if (hasConnector) {
+              const isActiveSelection =
+                GlobalVariables.selectionModeAtom === inputAtom;
+              inputParams[this.uniqueID + input.name + "_select_edges_btn"] = {
+                type: "button",
+                label: isActiveSelection ? "Done" : "Select Edges",
+                onClick: () => {
+                  if (isActiveSelection) GlobalVariables.exitSelectionMode();
+                  else GlobalVariables.enterSelectionMode(inputAtom);
+                  if (typeof setInputChanged === "function")
+                    setInputChanged(String(Date.now()));
+                },
+              };
+            }
+          }
+        } else if (input.options?.faceSelectType) {
+          // Handle faceselect type inputs
+          const inputAtom = input.options.inputAtom;
+          if (inputAtom) {
+            inputAtom._panelSetInputChanged = setInputChanged;
+            const totalFaces = Object.values(
+              inputAtom.selectedFaceData || {},
+            ).reduce((sum, ids) => sum + ids.length, 0);
+            inputParams[this.uniqueID + input.name + "_faceselect_count"] = {
+              type: "string",
+              value: `${totalFaces} face${totalFaces !== 1 ? "s" : ""} selected`,
+              label: input.name + " Selection",
+              disabled: true,
+            };
+            if (hasConnector) {
+              const isActiveSelection =
+                GlobalVariables.selectionModeAtom === inputAtom;
+              inputParams[this.uniqueID + input.name + "_select_faces_btn"] = {
+                type: "button",
+                label: isActiveSelection ? "Done" : "Select Faces",
+                onClick: () => {
+                  if (isActiveSelection) GlobalVariables.exitSelectionMode();
+                  else GlobalVariables.enterSelectionMode(inputAtom);
+                  if (typeof setInputChanged === "function")
+                    setInputChanged(String(Date.now()));
+                },
+              };
+            }
           }
         } else if (input.valueType === "string") {
           /* Makes inputs for Io's other than geometry */
