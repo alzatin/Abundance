@@ -1861,7 +1861,6 @@ function LoginMode() {
   const location = useLocation();
 
   const pageDict = { 0: null };
-  console.log(GlobalVariables.currentAWSnode, "currentAWSnode in LoginMode");
 
   // Check if we're coming from run mode (Browse Projects was clicked)
   const fromRunMode = location.state?.fromRunMode;

@@ -328,7 +328,11 @@ function PullMode({ setProcessing }) {
   );
 
   const [showMergeConfirm, setShowMergeConfirm] = useState(false);
+  const [showPRConfirm, setShowPRConfirm] = useState(false);
+  const [prDescription, setPrDescription] = useState("");
   const [isMergeSuccessful, setIsMergeSuccessful] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
+  const [isCreatingPR, setIsCreatingPR] = useState(false);
 
   // Handle keyboard events for merge confirmation dialog
   useEffect(() => {
@@ -351,6 +355,25 @@ function PullMode({ setProcessing }) {
       document.removeEventListener("keydown", handleKeyDown, true);
     };
   }, [showMergeConfirm]);
+
+  // Handle keyboard events for PR confirmation dialog
+  useEffect(() => {
+    if (!showPRConfirm) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        setPrDescription("");
+        setShowPRConfirm(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [showPRConfirm]);
 
   // Make file import functions available globally for atoms
   useEffect(() => {
@@ -459,14 +482,17 @@ function PullMode({ setProcessing }) {
     userScopes,
   ]);
 
-  const createPullRequest = async () => {
+  const handleConfirmPullRequest = async (description) => {
     if (!authorizedUserOcto) {
       setNotification(
         "You must be logged in to create a pull request.",
         "error",
       );
+      setShowPRConfirm(false);
       return;
     }
+
+    setIsCreatingPR(true);
 
     const baseSvgPath =
       "https://raw.githubusercontent.com/" +
@@ -487,7 +513,7 @@ function PullMode({ setProcessing }) {
           owner: baseOwner,
           repo: baseRepo,
           title: `Compare ${headRepo} changes`,
-          body: `This pull request compares changes from ${headOwner}/${headRepo} to ${baseOwner}/${baseRepo}.
+          body: `This pull request compares changes from ${headOwner}/${headRepo} to ${baseOwner}/${baseRepo}.${description ? `\n\nDescription:\n${description}` : ""}
 
 ## Comparison
 
@@ -505,9 +531,19 @@ function PullMode({ setProcessing }) {
         "notice",
       );
       setTimeout(() => setNotification(null), 5000);
+      setShowPRConfirm(false);
     } catch (error) {
+      setTimeout(() => setNotification(null), 5000);
       setNotification(`Error creating pull request: ${error.message}`, "error");
+      setShowPRConfirm(false);
+    } finally {
+      setIsCreatingPR(false);
     }
+  };
+
+  const createPullRequest = () => {
+    setPrDescription("");
+    setShowPRConfirm(true);
   };
 
   if (activeAtom) {
@@ -533,6 +569,8 @@ function PullMode({ setProcessing }) {
       setShowMergeConfirm(false);
       return;
     }
+
+    setIsMerging(true);
 
     console.log(
       `Merging pull request from ${headOwner}/${headRepo} into ${baseOwner}/${baseRepo}`,
@@ -602,6 +640,8 @@ function PullMode({ setProcessing }) {
       console.error("Error merging pull request:", error);
       setTimeout(() => setNotification(null), 5000);
       setNotification(`Error merging pull request: ${error.message}`, "error");
+    } finally {
+      setIsMerging(false);
     }
   };
 
@@ -624,6 +664,7 @@ function PullMode({ setProcessing }) {
         createPullRequest={createPullRequest}
         mergePullRequest={mergePullRequest}
         isMergeSuccessful={isMergeSuccessful}
+        isCreatingPR={isCreatingPR}
       />
 
       {/* Merge Confirmation Dialog */}
@@ -673,22 +714,120 @@ function PullMode({ setProcessing }) {
             </button>
             <button
               onClick={handleConfirmMerge}
+              disabled={isMerging}
               style={{
                 padding: "8px 16px",
-                cursor: "pointer",
+                cursor: isMerging ? "not-allowed" : "pointer",
                 backgroundColor: "var(--abundance-color-brightPurple)",
                 color: "white",
                 border: "none",
                 borderRadius: "4px",
+                opacity: isMerging ? 0.6 : 1,
               }}
             >
-              Merge
+              {isMerging ? "Merging..." : "Merge"}
             </button>
           </div>
 
           <a
             className="closeButton"
             onClick={() => setShowMergeConfirm(false)}
+            style={{ cursor: "pointer" }}
+          >
+            {"\u00D7"}
+          </a>
+        </dialog>
+      )}
+
+      {/* Pull Request Confirmation Dialog */}
+      {showPRConfirm && (
+        <dialog
+          open={showPRConfirm}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            padding: "20px",
+            minWidth: "400px",
+          }}
+          className="share-dialog"
+        >
+          <h3 style={{ margin: "0 0 15px 0" }}>Confirm Pull Request</h3>
+
+          <p style={{ margin: "0 0 15px 0" }}>
+            Create a new pull request to merge changes from{" "}
+            <strong>
+              {headOwner}/{headRepo}
+            </strong>{" "}
+            into{" "}
+            <strong>
+              {baseOwner}/{baseRepo}
+            </strong>
+            ?
+          </p>
+
+          <label style={{ marginBottom: "10px", fontSize: "0.9em" }}>
+            Description (optional):
+          </label>
+          <textarea
+            value={prDescription}
+            onChange={(e) => setPrDescription(e.target.value)}
+            placeholder="Add a description for this pull request..."
+            style={{
+              padding: "10px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              fontFamily: "monospace",
+              fontSize: "0.85em",
+              minHeight: "100px",
+              marginBottom: "15px",
+              resize: "vertical",
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "10px",
+            }}
+          >
+            <button
+              onClick={() => {
+                setPrDescription("");
+                setShowPRConfirm(false);
+              }}
+              autoFocus
+              style={{
+                padding: "8px 16px",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleConfirmPullRequest(prDescription)}
+              disabled={isCreatingPR}
+              style={{
+                padding: "8px 16px",
+                cursor: isCreatingPR ? "not-allowed" : "pointer",
+                backgroundColor: "var(--abundance-color-brightPurple)",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                opacity: isCreatingPR ? 0.6 : 1,
+              }}
+            >
+              {isCreatingPR ? "Creating..." : "Create Pull Request"}
+            </button>
+          </div>
+
+          <a
+            className="closeButton"
+            onClick={() => {
+              setPrDescription("");
+              setShowPRConfirm(false);
+            }}
             style={{ cursor: "pointer" }}
           >
             {"\u00D7"}
