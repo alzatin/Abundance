@@ -71,7 +71,7 @@ const pool = workerpool.pool(RenderURL, {
 // the worker hangs it is automatically terminated and restarted, so the UI never
 // gets permanently stuck waiting for a computation that will never return.
 const cad = new CadWorkerManager(cadWorker, 90_000);
-
+window._debugWorkerHandle = cad;
 // Statuses that mean the initial project load has SETTLED. A project whose
 // top-level molecule contains user-authored code that legitimately errors will
 // settle to "error"/"upstream_error" rather than "ready"; those are terminal
@@ -234,7 +234,12 @@ function AppContent() {
     activeTags,
     setActiveTags,
     setComputingLabel,
+    selectionModeAtom,
+    setSelectionModeAtom,
+    setSelectionVersion,
   } = useRendering();
+
+  // selectionModeAtom is consumed by lowerHalf/ReplicadMesh via context
 
   const {
     isAuthorized,
@@ -573,6 +578,9 @@ function AppContent() {
       setNonReplicadGeometry(null);
       filteredMeshCache.current.clear(); // Clear mesh cache when resetting view
     };
+    GlobalVariables.setSelectionModeAtom = setSelectionModeAtom;
+    GlobalVariables.setOutdatedMesh = setOutdatedMesh;
+    GlobalVariables._bumpSelectionVersion = setSelectionVersion;
     GlobalVariables.writeToDisplay = (
       moleculeValue,
       context,
@@ -705,6 +713,8 @@ function AppContent() {
     setIsViewingOutputMesh,
     setErrorNotification,
     activeTags,
+    setSelectionModeAtom,
+    setSelectionVersion,
   ]);
 
   // TAG FILTERING - Apply tag filtering when tags change
