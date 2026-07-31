@@ -80,6 +80,7 @@ function createPullModeTemplate(baseProject, headProject) {
   const tagBaseId = GlobalVariables.generateUniqueID();
   const intersectId = GlobalVariables.generateUniqueID();
   const colorIntersectId = GlobalVariables.generateUniqueID();
+  const tagIntersectId = GlobalVariables.generateUniqueID();
 
   // Extract GitHub molecules from their projects
   // The fetched project IS the serialized molecule (not nested under topLevelMolecule)
@@ -186,6 +187,14 @@ function createPullModeTemplate(baseProject, headProject) {
       y: 0.5,
       selectedColorIndex: 19, // Grey
     },
+    {
+      atomType: "Tag",
+      uniqueID: tagIntersectId,
+      name: "Unchanged",
+      x: 0.1,
+      y: 0.5,
+      tags: ["Unchanged"],
+    },
   ];
 
   // Build connectors with explicit IDs (no dynamic finding)
@@ -208,9 +217,9 @@ function createPullModeTemplate(baseProject, headProject) {
       ap2ID: assemblyId,
       ap2Name: "Shape 2",
     },
-    // Adding: Tag Adding → Intersect (retain - geometry1)
+    // Adding: Color Adding (untagged) → Intersect (geometry1)
     {
-      ap1ID: tagHeadId,
+      ap1ID: colorHeadId,
       ap2ID: intersectId,
       ap2Name: "geometry1",
     },
@@ -233,9 +242,9 @@ function createPullModeTemplate(baseProject, headProject) {
       ap2ID: assemblyId,
       ap2Name: "Shape 1",
     },
-    // Removing: Tag Removing → Intersect (remove - geometry2)
+    // Removing: Color Removing (untagged) → Intersect (geometry2)
     {
-      ap1ID: tagBaseId,
+      ap1ID: colorBaseId,
       ap2ID: intersectId,
       ap2Name: "geometry2",
     },
@@ -246,9 +255,15 @@ function createPullModeTemplate(baseProject, headProject) {
       ap2ID: colorIntersectId,
       ap2Name: "geometry",
     },
-    // Intersect: Color Intersect → Assembly (Shape 3)
+    // Intersect: Color Intersect → Tag Unchanged
     {
       ap1ID: colorIntersectId,
+      ap2ID: tagIntersectId,
+      ap2Name: "geometry",
+    },
+    // Intersect: Tag Unchanged → Assembly (Shape 3)
+    {
+      ap1ID: tagIntersectId,
       ap2ID: assemblyId,
       ap2Name: "Shape 3",
     },

@@ -88,7 +88,9 @@ export default function PullModeMenu({
 
   if (activeAtom?.topLevel) {
     availableTags
-      .filter((tag) => tag === "Adding" || tag === "Removing")
+      .filter(
+        (tag) => tag === "Adding" || tag === "Removing" || tag === "Unchanged",
+      )
       .forEach((tag) => {
         tagControls[`tag-${tag}`] = {
           type: "boolean",
