@@ -45,21 +45,42 @@ export function useScreenshotCapture(onCaptureCallback) {
       tempRenderer.setPixelRatio(1); // Disable automatic scaling for consistent resolution
       tempRenderer.setClearColor(0xf5f5f5); // Match ThreeContext background
 
-      // Step 3: Render the scene with the temporary renderer
-      tempRenderer.render(scene, camera);
+      // Step 3: Create a perspective camera with the same position and rotation as the existing camera
+      const perspectiveCamera = new THREE.PerspectiveCamera(
+        75, // fov
+        width / height, // aspect ratio
+        0.1, // near
+        90000, // far - match the existing camera's far plane
+      );
+      perspectiveCamera.position.copy(camera.position);
+      perspectiveCamera.rotation.copy(camera.rotation);
+      perspectiveCamera.quaternion.copy(camera.quaternion);
+      perspectiveCamera.zoom = camera.zoom * 15; // Match zoom level
+      perspectiveCamera.updateProjectionMatrix();
 
-      // Step 4: Restore visibility state of all objects
+      // Step 4: Render the scene with the temporary renderer and perspective camera
+      tempRenderer.render(scene, perspectiveCamera);
+
+      // Step 5: Restore visibility state of all objects
       visibilityState.forEach((visible, obj) => {
         obj.visible = visible;
       });
 
-      // Step 5: Capture the temporary canvas
+      // Step 6: Capture the temporary canvas
       const canvas = tempRenderer.domElement;
-      const dataURL = canvas.toDataURL("image/png", 0.95); // High quality
+      const dataURL = canvas.toDataURL("image/png", 0.5); // Use 0.5 quality for PNG to reduce file size
 
-      // Step 6: Cleanup and trigger dialog via callback
+      //download the image automatically
+      const link = document.createElement("a");
+      link.href = dataURL;
+      link.download = "screenshot.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Step 7: Cleanup and trigger dialog via callback
       tempRenderer.dispose();
-      
+
       // Call the callback with the screenshot data
       if (onCaptureCallback) {
         onCaptureCallback(dataURL);
