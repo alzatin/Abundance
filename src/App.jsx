@@ -34,6 +34,7 @@ import {
   ProjectProvider,
   BrowseSettingsProvider,
   FileImportProvider,
+  ThumbnailDialogProvider,
   useRendering,
   useAuth,
   useAppState,
@@ -1014,21 +1015,23 @@ export default function ReplicadApp() {
   return (
     <QueryClientProvider client={queryClient}>
       <DevSettingsProvider>
-        <AuthProvider>
-          <AppStateProvider>
-            <BrowseSettingsProvider>
-              <FileImportProvider>
-                <TutorialProvider>
-                  <RenderingProvider>
-                    <ProgressBarProvider>
-                      <AppContent />
-                    </ProgressBarProvider>
-                  </RenderingProvider>
-                </TutorialProvider>
-              </FileImportProvider>
-            </BrowseSettingsProvider>
-          </AppStateProvider>
-        </AuthProvider>
+        <ThumbnailDialogProvider>
+          <AuthProvider>
+            <AppStateProvider>
+              <BrowseSettingsProvider>
+                <FileImportProvider>
+                  <TutorialProvider>
+                    <RenderingProvider>
+                      <ProgressBarProvider>
+                        <AppContent />
+                      </ProgressBarProvider>
+                    </RenderingProvider>
+                  </TutorialProvider>
+                </FileImportProvider>
+              </BrowseSettingsProvider>
+            </AppStateProvider>
+          </AuthProvider>
+        </ThumbnailDialogProvider>
       </DevSettingsProvider>
     </QueryClientProvider>
   );

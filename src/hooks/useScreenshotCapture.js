@@ -6,13 +6,14 @@ import * as THREE from "three";
  * Excludes grid, axes, background models, and other helper objects.
  * Must be used inside a Canvas component from @react-three/fiber.
  *
+ * @param {function} onCaptureCallback - Callback function called when screenshot is captured. Receives { dataUrl, projectName }
  * @returns {object} Object containing captureHighResScreenshot function
  *
  * Usage:
- *   const { captureHighResScreenshot } = useScreenshotCapture();
+ *   const { captureHighResScreenshot } = useScreenshotCapture(onScreenshotCallback);
  *   captureHighResScreenshot(3840, 2160); // captures at 4K resolution
  */
-export function useScreenshotCapture() {
+export function useScreenshotCapture(onCaptureCallback) {
   const { scene, camera } = useThree();
 
   const captureHighResScreenshot = (width = 3840, height = 2160) => {
@@ -56,28 +57,16 @@ export function useScreenshotCapture() {
       const canvas = tempRenderer.domElement;
       const dataURL = canvas.toDataURL("image/png", 0.95); // High quality
 
-      // Step 6: Download the screenshot
-      fetch(dataURL)
-        .then((res) => res.blob())
-        .then((blob) => {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `abundance-screenshot-${width}x${height}-${Date.now()}.jpg`;
-          document.body.appendChild(a);
-          a.click();
-          URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-        })
-        .catch((err) =>
-          console.error("Error capturing high-res screenshot:", err),
-        )
-        .finally(() => {
-          // Cleanup: Dispose of the temporary renderer to free GPU memory
-          tempRenderer.dispose();
-        });
+      // Step 6: Cleanup and trigger dialog via callback
+      tempRenderer.dispose();
+      
+      // Call the callback with the screenshot data
+      if (onCaptureCallback) {
+        onCaptureCallback(dataURL);
+      }
     } catch (error) {
       console.error("Error in captureHighResScreenshot:", error);
+      return null;
     }
   };
 
