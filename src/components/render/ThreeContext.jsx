@@ -6,6 +6,7 @@ import Controls from "./ThreeControls.jsx";
 import BackgroundModel from "./BackgroundModel.jsx";
 import GlobalVariables from "../../js/globalvariables.js";
 import { useRendering, useAuth } from "../../contexts/index.js";
+import ScreenshotCaptureComponent from "./ScreenshotCaptureComponent.jsx";
 
 // We change the default orientation - threejs tends to use Y are the height,
 // while replicad uses Z. This is mostly a representation default.
@@ -83,6 +84,7 @@ export default function ext({ children, cameraZoom, ...otherProps }) {
         />
         {gridParam ? (
           <Grid
+            name="grid"
             position={[0, 0, 0]}
             cellSize={cellSection}
             args={[10000, 10000]}
@@ -97,7 +99,11 @@ export default function ext({ children, cameraZoom, ...otherProps }) {
           />
         ) : null}
 
-        <Controls axesParam={axesParam} enableDamping={false}></Controls>
+        <Controls
+          name="controls"
+          axesParam={axesParam}
+          enableDamping={false}
+        ></Controls>
 
         {!outdatedMesh ? (
           <ambientLight intensity={0.9} />
@@ -114,6 +120,8 @@ export default function ext({ children, cameraZoom, ...otherProps }) {
             unitsKey={unitsKey}
           />
         ) : null}
+
+        <ScreenshotCaptureComponent />
 
         {children}
       </Canvas>

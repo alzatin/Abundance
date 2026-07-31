@@ -184,6 +184,15 @@ export default function RenderMenu({
         setShowTopLevelWireframe(value);
       },
     },
+    screenshot: {
+      type: "button",
+      label: "📸 Capture Screenshot (4K)",
+      onClick: () => {
+        if (GlobalVariables.captureHighResScreenshot) {
+          GlobalVariables.captureHighResScreenshot(3840, 2160);
+        }
+      },
+    },
   };
 
   const [
