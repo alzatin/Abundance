@@ -306,7 +306,7 @@ function runMode({ processing, setProcessing }) {
     return () => {
       resetMetaTags();
     };
-  }, []);
+  }, [owner, repoName]);
   const screenHeight = window.innerHeight;
   const screenWidth = window.innerWidth;
 

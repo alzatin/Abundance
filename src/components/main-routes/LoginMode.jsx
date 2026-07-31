@@ -1304,23 +1304,6 @@ const ShowProjects = ({
     setProjectsToShow(user ? "owned" : "featured");
   }, [GlobalVariables.currentUser]);
 
-  // Cleanup LoginMode state when leaving to prevent stale data in next component
-  useEffect(() => {
-    return () => {
-      GlobalVariables.currentAWSnode = null;
-      GlobalVariables.currentRepo = null;
-
-      // Clear all unsaved project states from localStorage to prevent stale data
-      // when user navigates back to a project
-      const keys = Object.keys(localStorage);
-      keys.forEach((key) => {
-        if (key.startsWith("unsavedProject_")) {
-          localStorage.removeItem(key);
-        }
-      });
-    };
-  }, []);
-
   const handleSearchChange = (e) => {
     setSearch(e.target.value.toLowerCase());
     setPageNumber(0);

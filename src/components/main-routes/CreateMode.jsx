@@ -107,17 +107,6 @@ function CreateMode() {
   // Update GlobalVariables when route params change and fetch full AWS node
   useEffect(() => {
     if (owner && repoName) {
-      // Check if we already have this project loaded prevent unnecessary fetches and re-renders
-      const isAlreadyLoaded =
-        GlobalVariables.currentAWSnode &&
-        GlobalVariables.currentAWSnode.owner === owner &&
-        GlobalVariables.currentAWSnode.repoName === repoName &&
-        GlobalVariables.topLevelMolecule;
-
-      if (isAlreadyLoaded) {
-        setIsLoadingProject(false);
-        return;
-      }
       setIsLoadingProject(true);
 
       // Fetch the full project metadata from AWS
