@@ -8,7 +8,7 @@ import GlobalVariables from "../../js/globalvariables.js";
 import ChangeMode from "../secondary/ChangeMode.jsx";
 import Molecule from "../../molecules/molecule.js";
 import PullModeMenu from "../secondary/PullModeMenu.jsx";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 // Import contexts
 import {
@@ -80,6 +80,7 @@ function createPullModeTemplate(baseProject, headProject) {
   const tagBaseId = GlobalVariables.generateUniqueID();
   const intersectId = GlobalVariables.generateUniqueID();
   const colorIntersectId = GlobalVariables.generateUniqueID();
+  const tagIntersectId = GlobalVariables.generateUniqueID();
 
   // Extract GitHub molecules from their projects
   // The fetched project IS the serialized molecule (not nested under topLevelMolecule)
@@ -153,7 +154,7 @@ function createPullModeTemplate(baseProject, headProject) {
       name: "Color Removing",
       x: 0.7,
       y: 0.4,
-      selectedColorIndex: 23, // Red
+      selectedColorIndex: 22, // Transparent (can't use keepout color, creates tag conflict)
     },
     {
       atomType: "Tag",
@@ -186,6 +187,14 @@ function createPullModeTemplate(baseProject, headProject) {
       y: 0.5,
       selectedColorIndex: 19, // Grey
     },
+    {
+      atomType: "Tag",
+      uniqueID: tagIntersectId,
+      name: "Unchanged",
+      x: 0.1,
+      y: 0.5,
+      tags: ["Unchanged"],
+    },
   ];
 
   // Build connectors with explicit IDs (no dynamic finding)
@@ -208,9 +217,9 @@ function createPullModeTemplate(baseProject, headProject) {
       ap2ID: assemblyId,
       ap2Name: "Shape 2",
     },
-    // Adding: Tag Adding → Intersect (retain - geometry1)
+    // Adding: Color Adding (untagged) → Intersect (geometry1)
     {
-      ap1ID: tagHeadId,
+      ap1ID: colorHeadId,
       ap2ID: intersectId,
       ap2Name: "geometry1",
     },
@@ -233,9 +242,9 @@ function createPullModeTemplate(baseProject, headProject) {
       ap2ID: assemblyId,
       ap2Name: "Shape 1",
     },
-    // Removing: Tag Removing → Intersect (remove - geometry2)
+    // Removing: Color Removing (untagged) → Intersect (geometry2)
     {
-      ap1ID: tagBaseId,
+      ap1ID: colorBaseId,
       ap2ID: intersectId,
       ap2Name: "geometry2",
     },
@@ -246,9 +255,15 @@ function createPullModeTemplate(baseProject, headProject) {
       ap2ID: colorIntersectId,
       ap2Name: "geometry",
     },
-    // Intersect: Color Intersect → Assembly (Shape 3)
+    // Intersect: Color Intersect → Tag Unchanged
     {
       ap1ID: colorIntersectId,
+      ap2ID: tagIntersectId,
+      ap2Name: "geometry",
+    },
+    // Intersect: Tag Unchanged → Assembly (Shape 3)
+    {
+      ap1ID: tagIntersectId,
       ap2ID: assemblyId,
       ap2Name: "Shape 3",
     },
@@ -288,9 +303,15 @@ function PullMode({ setProcessing }) {
     headRepo = "",
   } = useParams();
 
+  // Get query parameters
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const prOwner = queryParams.get("owner"); // Optional owner parameter for merge permissions
+  const pullNumber = queryParams.get("pull_number"); // Optional pull request number for merging
+
   // Get context values
   const { authorizedUserOcto, userScopes } = useAuth();
-  const { activeAtom, setActiveAtom, setErrorNotification } = useAppState();
+  const { activeAtom, setActiveAtom, setNotification } = useAppState();
   const {
     mesh,
     wireMesh,
@@ -320,6 +341,56 @@ function PullMode({ setProcessing }) {
   const [expandedMenu, setExpandedMenu] = useState(
     GlobalVariables.isMobile() ? "none" : "pullmode",
   );
+
+  const [showMergeConfirm, setShowMergeConfirm] = useState(false);
+  const [showPRConfirm, setShowPRConfirm] = useState(false);
+  const [showMergeErrorDialog, setShowMergeErrorDialog] = useState(false);
+  const [mergeErrorMessage, setMergeErrorMessage] = useState("");
+  const [prDescription, setPrDescription] = useState("");
+  const [isMergeSuccessful, setIsMergeSuccessful] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
+  const [isCreatingPR, setIsCreatingPR] = useState(false);
+
+  // Handle keyboard events for merge confirmation dialog
+  useEffect(() => {
+    if (!showMergeConfirm) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        handleConfirmMerge();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowMergeConfirm(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [showMergeConfirm]);
+
+  // Handle keyboard events for PR confirmation dialog
+  useEffect(() => {
+    if (!showPRConfirm) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        setPrDescription("");
+        setShowPRConfirm(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [showPRConfirm]);
 
   // Make file import functions available globally for atoms
   useEffect(() => {
@@ -354,15 +425,6 @@ function PullMode({ setProcessing }) {
       setCameraZoom(runModeZoom);
     }
   }, [mesh]);
-
-  useEffect(() => {
-    const handler = (e) => {
-      setErrorNotification(e.detail.message, e.detail.type || "error");
-      setTimeout(() => setErrorNotification(null, "error"), 5000);
-    };
-    window.addEventListener("user-notification", handler);
-    return () => window.removeEventListener("user-notification", handler);
-  }, []);
 
   useEffect(() => {
     GlobalVariables.canvas = canvasRef;
@@ -407,11 +469,27 @@ function PullMode({ setProcessing }) {
         setActiveAtom(GlobalVariables.currentMolecule);
       })
       .catch((err) => {
-        setErrorNotification(
-          `Failed to set up pull mode: ${err.message}`,
-          "error",
-        );
+        setNotification(`Failed to set up pull mode: ${err.message}`, "error");
       });
+
+    // Cleanup function: reset global state when leaving PullMode
+    // This prevents PullMode's template from being mistaken for a loaded project in CreateMode
+    return () => {
+      GlobalVariables.topLevelMolecule = null;
+      GlobalVariables.currentMolecule = null;
+      GlobalVariables.currentAWSnode = null;
+      GlobalVariables.currentRepo = null;
+      GlobalVariables.loadedRepo = null;
+
+      // Clear all unsaved project states from localStorage to prevent stale data
+      // when user navigates back to a project
+      const keys = Object.keys(localStorage);
+      keys.forEach((key) => {
+        if (key.startsWith("unsavedProject_")) {
+          localStorage.removeItem(key);
+        }
+      });
+    };
   }, [
     baseOwner,
     baseRepo,
@@ -421,14 +499,17 @@ function PullMode({ setProcessing }) {
     userScopes,
   ]);
 
-  const createPullRequest = async () => {
+  const handleConfirmPullRequest = async (description) => {
     if (!authorizedUserOcto) {
-      setErrorNotification(
+      setNotification(
         "You must be logged in to create a pull request.",
         "error",
       );
+      setShowPRConfirm(false);
       return;
     }
+
+    setIsCreatingPR(true);
 
     const baseSvgPath =
       "https://raw.githubusercontent.com/" +
@@ -449,7 +530,7 @@ function PullMode({ setProcessing }) {
           owner: baseOwner,
           repo: baseRepo,
           title: `Compare ${headRepo} changes`,
-          body: `This pull request compares changes from ${headOwner}/${headRepo} to ${baseOwner}/${baseRepo}.
+          body: `This pull request compares changes from ${headOwner}/${headRepo} to ${baseOwner}/${baseRepo}.${description ? `\n\nDescription:\n${description}` : ""}
 
 ## Comparison
 
@@ -461,11 +542,25 @@ function PullMode({ setProcessing }) {
           base: "main",
         },
       );
-      alert(`Pull request created: ${response.data.html_url}`);
+
+      setNotification(
+        `Pull request created: ${response.data.html_url}`,
+        "notice",
+      );
+      setTimeout(() => setNotification(null), 5000);
+      setShowPRConfirm(false);
     } catch (error) {
-      console.error("Error creating pull request:", error);
-      alert(`Error creating pull request: ${error.message}`);
+      setTimeout(() => setNotification(null), 5000);
+      setNotification(`Error creating pull request: ${error.message}`, "error");
+      setShowPRConfirm(false);
+    } finally {
+      setIsCreatingPR(false);
     }
+  };
+
+  const createPullRequest = () => {
+    setPrDescription("");
+    setShowPRConfirm(true);
   };
 
   if (activeAtom) {
@@ -477,11 +572,104 @@ function PullMode({ setProcessing }) {
     };
   }
 
+  const mergePullRequest = async () => {
+    setShowMergeConfirm(true);
+  };
+
+  const handleConfirmMerge = async () => {
+    if (!authorizedUserOcto) {
+      setNotification(
+        "You must be logged in to merge a pull request.",
+        "error",
+      );
+      setTimeout(() => setNotification(null), 5000);
+      setShowMergeConfirm(false);
+      return;
+    }
+
+    setIsMerging(true);
+
+    console.log(
+      `Merging pull request from ${headOwner}/${headRepo} into ${baseOwner}/${baseRepo}`,
+    );
+    try {
+      const response = await authorizedUserOcto.request(
+        "PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge",
+        {
+          owner: baseOwner,
+          repo: baseRepo,
+          pull_number: pullNumber,
+          commit_title: "Merge pull request from " + headOwner + "/" + headRepo,
+          commit_message: "Add a new value to the merge_method enum",
+          headers: {
+            "X-GitHub-Api-Version": "2026-03-10",
+          },
+        },
+      );
+
+      // Update AWS project item to remove the merged PR from open PRs list
+      try {
+        const apiUpdateUrl =
+          "https://hg5gsgv9te.execute-api.us-east-2.amazonaws.com/abundance-stage/update-item";
+        // In PullMode.jsx after successful merge:
+        const updatedPRs = await authorizedUserOcto.request(
+          "GET /repos/{owner}/{repo}/pulls",
+          {
+            owner: baseOwner,
+            repo: baseRepo,
+            state: "open",
+            per_page: 100,
+          },
+        );
+
+        // Filter and map to match your storage format
+        const pullRequests = updatedPRs.data
+          .map((pr) => ({
+            owner: pr.head.repo?.owner?.login,
+            repo: pr.head.repo?.name,
+            branch: pr.head.ref,
+            pullRequestNumber: pr.number,
+            url: pr.html_url,
+          }))
+          .filter((pr) => pr.pullRequestNumber !== parseInt(pullNumber));
+
+        // Then update with the fresh list
+        await fetch(apiUpdateUrl, {
+          method: "POST",
+          body: JSON.stringify({
+            owner: baseOwner,
+            repoName: baseRepo,
+            attributeUpdates: {
+              pullRequests: pullRequests,
+            },
+          }),
+        });
+      } catch (updateError) {
+        console.error("Error updating project PR list:", updateError);
+        // Don't fail the entire operation if updating fails
+      }
+
+      setNotification(`Pull request merged: ${response.data.sha}`, "notice");
+      setTimeout(() => setNotification(null), 5000);
+      setShowMergeConfirm(false);
+      setIsMergeSuccessful(true);
+    } catch (error) {
+      console.error("Error merging pull request:", error);
+      setMergeErrorMessage(error.message);
+      setShowMergeErrorDialog(true);
+    } finally {
+      setIsMerging(false);
+    }
+  };
+
+  //  Define screen width to position menu
+  const screenWidth = window.innerWidth;
+
   return (
     <>
       <PullModeMenu
         activeAtom={activeAtom}
-        position={{ top: 30, left: 300 }}
+        position={{ top: 30, left: screenWidth - 50 }}
         id={"pullmode-menu-panel"}
         contentCollapsed={expandedMenu !== "pullmode"}
         setContentCollapsed={() => setExpandedMenu("pullmode")}
@@ -489,8 +677,269 @@ function PullMode({ setProcessing }) {
         collapsedOffset={[-280, 0]}
         baseRepo={`${baseOwner}/${baseRepo}`}
         headRepo={`${headOwner}/${headRepo}`}
+        prOwner={prOwner}
         createPullRequest={createPullRequest}
+        mergePullRequest={mergePullRequest}
+        isMergeSuccessful={isMergeSuccessful}
+        isCreatingPR={isCreatingPR}
       />
+
+      {/* Merge Confirmation Dialog */}
+      {showMergeConfirm && (
+        <dialog
+          open={showMergeConfirm}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            padding: "20px",
+            minWidth: "400px",
+          }}
+          className="share-dialog"
+        >
+          <h3 style={{ margin: "0 0 15px 0" }}>Confirm Merge</h3>
+
+          <p style={{ margin: "0 0 20px 0" }}>
+            Are you sure you want to merge the changes from{" "}
+            <strong>
+              {headOwner}/{headRepo}
+            </strong>{" "}
+            into{" "}
+            <strong>
+              {baseOwner}/{baseRepo}
+            </strong>
+            ?
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "10px",
+              marginTop: "10px",
+            }}
+          >
+            <button
+              onClick={() => setShowMergeConfirm(false)}
+              autoFocus
+              style={{
+                padding: "8px 16px",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmMerge}
+              disabled={isMerging}
+              style={{
+                padding: "8px 16px",
+                cursor: isMerging ? "not-allowed" : "pointer",
+                backgroundColor: "var(--abundance-color-brightPurple)",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                opacity: isMerging ? 0.6 : 1,
+              }}
+            >
+              {isMerging ? "Merging..." : "Merge"}
+            </button>
+          </div>
+
+          <a
+            className="closeButton"
+            onClick={() => setShowMergeConfirm(false)}
+            style={{ cursor: "pointer" }}
+          >
+            {"\u00D7"}
+          </a>
+        </dialog>
+      )}
+
+      {/* Merge Error Dialog */}
+      {showMergeErrorDialog && (
+        <dialog
+          open={showMergeErrorDialog}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            padding: "20px",
+            minWidth: "400px",
+          }}
+          className="share-dialog"
+        >
+          <h3 style={{ margin: "0 0 15px 0", color: "#d32f2f" }}>
+            Merge Error
+          </h3>
+
+          <p style={{ margin: "0 0 15px 0" }}>
+            There was an error merging the pull request:
+          </p>
+
+          <div
+            style={{
+              padding: "12px",
+              backgroundColor: "#f5f5f5",
+              borderRadius: "4px",
+              marginBottom: "15px",
+              fontFamily: "monospace",
+              fontSize: "0.85em",
+              color: "#333",
+              wordBreak: "break-word",
+            }}
+          >
+            {mergeErrorMessage}
+          </div>
+
+          <p style={{ margin: "0 0 15px 0", fontSize: "0.9em" }}>
+            This usually happens when there are merge conflicts. Visit the
+            GitHub pull request page to resolve them.
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "10px",
+            }}
+          >
+            <button
+              onClick={() => setShowMergeErrorDialog(false)}
+              autoFocus
+              style={{
+                padding: "8px 16px",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                window.open(
+                  `https://github.com/${baseOwner}/${baseRepo}/pull/${pullNumber}`,
+                  "_blank",
+                );
+                setShowMergeErrorDialog(false);
+              }}
+              style={{
+                padding: "8px 16px",
+                cursor: "pointer",
+                backgroundColor: "var(--abundance-color-brightPurple)",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+              }}
+            >
+              Go to GitHub PR
+            </button>
+          </div>
+
+          <a
+            className="closeButton"
+            onClick={() => setShowMergeErrorDialog(false)}
+            style={{ cursor: "pointer" }}
+          >
+            {"\u00D7"}
+          </a>
+        </dialog>
+      )}
+
+      {/* Pull Request Confirmation Dialog */}
+      {showPRConfirm && (
+        <dialog
+          open={showPRConfirm}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            padding: "20px",
+            minWidth: "400px",
+          }}
+          className="share-dialog"
+        >
+          <h3 style={{ margin: "0 0 15px 0" }}>Confirm Pull Request</h3>
+
+          <p style={{ margin: "0 0 15px 0" }}>
+            Create a new pull request to merge changes from{" "}
+            <strong>
+              {headOwner}/{headRepo}
+            </strong>{" "}
+            into{" "}
+            <strong>
+              {baseOwner}/{baseRepo}
+            </strong>
+            ?
+          </p>
+
+          <label style={{ marginBottom: "10px", fontSize: "0.9em" }}>
+            Description (optional):
+          </label>
+          <textarea
+            value={prDescription}
+            onChange={(e) => setPrDescription(e.target.value)}
+            placeholder="Add a description for this pull request..."
+            style={{
+              padding: "10px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              fontFamily: "monospace",
+              fontSize: "0.85em",
+              minHeight: "100px",
+              marginBottom: "15px",
+              resize: "vertical",
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "10px",
+            }}
+          >
+            <button
+              onClick={() => {
+                setPrDescription("");
+                setShowPRConfirm(false);
+              }}
+              autoFocus
+              style={{
+                padding: "8px 16px",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleConfirmPullRequest(prDescription)}
+              disabled={isCreatingPR}
+              style={{
+                padding: "8px 16px",
+                cursor: isCreatingPR ? "not-allowed" : "pointer",
+                backgroundColor: "var(--abundance-color-brightPurple)",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                opacity: isCreatingPR ? 0.6 : 1,
+              }}
+            >
+              {isCreatingPR ? "Creating..." : "Create Pull Request"}
+            </button>
+          </div>
+
+          <a
+            className="closeButton"
+            onClick={() => {
+              setPrDescription("");
+              setShowPRConfirm(false);
+            }}
+            style={{ cursor: "pointer" }}
+          >
+            {"\u00D7"}
+          </a>
+        </dialog>
+      )}
 
       <div id="headerBarRun">
         <img
@@ -508,20 +957,39 @@ function PullMode({ setProcessing }) {
         id="flow-canvas"
         tabIndex={0}
       ></canvas>
-      <ChangeMode
-        setActiveAtom={setActiveAtom}
-        targetRepo={{ owner: headOwner, repoName: headRepo }}
-        buttons={[
-          {
-            key: "pull-to-create",
-            action: "create",
-            id: "create-mode-btn",
-            title: "Create/Run Mode",
-            label: "Create Mode",
-            iconRotation: 90,
-          },
-        ]}
-      />
+      {prOwner ? (
+        <ChangeMode
+          setActiveAtom={setActiveAtom}
+          buttons={[
+            {
+              key: "run-to-browse",
+              action: "browse",
+              id: "browse-projects-btn",
+              title: "Browse Projects",
+              label: "Browse Projects",
+              iconRotation: 90,
+            },
+          ]}
+        />
+      ) : (
+        <ChangeMode
+          setActiveAtom={setActiveAtom}
+          targetRepo={{
+            owner: GlobalVariables.currentUser,
+            repoName: headRepo,
+          }}
+          buttons={[
+            {
+              key: "pull-to-create",
+              action: "create",
+              id: "create-mode-btn",
+              title: "Create/Run Mode",
+              label: "Create Mode",
+              iconRotation: 90,
+            },
+          ]}
+        />
+      )}
       <div className="runContainer">
         <div
           className="jscad-container"

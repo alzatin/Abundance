@@ -32,7 +32,11 @@ export default function PullModeMenu({
   closeMenu,
   baseRepo,
   headRepo,
+  prOwner,
   createPullRequest,
+  mergePullRequest,
+  isMergeSuccessful,
+  isCreatingPR,
 }) {
   const { activeAtom } = useAppState();
   const [inputChanged, setInputChanged] = useState("");
@@ -84,7 +88,9 @@ export default function PullModeMenu({
 
   if (activeAtom?.topLevel) {
     availableTags
-      .filter((tag) => tag === "Adding" || tag === "Removing")
+      .filter(
+        (tag) => tag === "Adding" || tag === "Removing" || tag === "Unchanged",
+      )
       .forEach((tag) => {
         tagControls[`tag-${tag}`] = {
           type: "boolean",
@@ -128,7 +134,7 @@ export default function PullModeMenu({
     type: "spacer",
   };
 
-  const prButton = {
+  const prHeadButtons = {
     gitcompare: {
       type: "button",
       label: "View GitHub Comparison",
@@ -145,14 +151,35 @@ export default function PullModeMenu({
         "Open a new pull request on GitHub to merge changes from the Adding repository into the Removing repository.",
       onClick: () => {
         console.log("Open Pull Request button clicked");
-        createPullRequest(baseRepo, baseBranch, headUser, headBranch);
+        createPullRequest();
+      },
+    },
+  };
+  const prBaseButtons = {
+    prOpen: {
+      type: "button",
+      label: "Open on GitHub",
+      onClick: () => {
+        window.open(
+          `https://github.com/${baseRepo}/compare/${baseBranch}...${headUser}:${headBranch}`,
+        );
+      },
+    },
+    mergeButton: {
+      type: "button",
+      label: "Merge Changes",
+      disabled: isMergeSuccessful,
+      onClick: () => {
+        mergePullRequest();
       },
     },
   };
 
   const inputParamsConfig = useMemo(() => {
-    return { ...labelControls, ...tagControls, spacer, ...prButton };
-  }, [labelControls, tagControls]);
+    // Show merge options only if prOwner is specified (indicating this is the base repo owner)
+    const prButtons = prOwner ? { ...prBaseButtons } : { ...prHeadButtons };
+    return { ...labelControls, ...tagControls, spacer, ...prButtons };
+  }, [labelControls, tagControls, prOwner, isMergeSuccessful, inputChanged]);
 
   const [values, setControlValue, { controls }] = useControls(
     inputParamsConfig,

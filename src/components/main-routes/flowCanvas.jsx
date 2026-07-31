@@ -62,6 +62,11 @@ export default memo(function FlowCanvas({
     GlobalVariables.canvas = canvasRef;
     GlobalVariables.c = canvasRef.current.getContext("2d");
 
+    // Wait for CreateMode to set currentAWSnode before initializing
+    if (!GlobalVariables.currentAWSnode) {
+      return;
+    }
+
     // Check if we need to load a project (first load or different project)
     const needsProjectLoad =
       !GlobalVariables.loadedRepo ||
@@ -69,6 +74,10 @@ export default memo(function FlowCanvas({
         GlobalVariables.loadedRepo.name;
 
     if (needsProjectLoad) {
+      console.log(
+        "flowCanvas: Loading project:",
+        GlobalVariables.currentAWSnode,
+      );
       // Clean up any stale localStorage entries for the previously loaded project
       // This prevents accumulation of saved states when switching between projects
       // Only clean up if we're actually loading a DIFFERENT project
@@ -190,8 +199,7 @@ export default memo(function FlowCanvas({
             loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto);
             localStorage.removeItem(projectKey);
           }
-        } else {
-          loadProject(GlobalVariables.currentAWSnode, authorizedUserOcto);
+          // Normal case: no unsaved state, CreateMode will handle loading
         }
       }
     } else {
@@ -207,7 +215,7 @@ export default memo(function FlowCanvas({
       }
     }
 
-    GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((atom) => {
+    GlobalVariables.currentMolecule?.nodesOnTheScreen.forEach((atom) => {
       atom.update();
     });
   }, []);
@@ -258,7 +266,7 @@ export default memo(function FlowCanvas({
         handlePreviewRequest,
       );
     };
-  }, []);
+  }, [GlobalVariables.currentAWSnode]);
 
   const draw = () => {
     GlobalVariables.c.clearRect(
