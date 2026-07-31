@@ -329,6 +329,8 @@ function PullMode({ setProcessing }) {
 
   const [showMergeConfirm, setShowMergeConfirm] = useState(false);
   const [showPRConfirm, setShowPRConfirm] = useState(false);
+  const [showMergeErrorDialog, setShowMergeErrorDialog] = useState(false);
+  const [mergeErrorMessage, setMergeErrorMessage] = useState("");
   const [prDescription, setPrDescription] = useState("");
   const [isMergeSuccessful, setIsMergeSuccessful] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
@@ -638,8 +640,8 @@ function PullMode({ setProcessing }) {
       setIsMergeSuccessful(true);
     } catch (error) {
       console.error("Error merging pull request:", error);
-      setTimeout(() => setNotification(null), 5000);
-      setNotification(`Error merging pull request: ${error.message}`, "error");
+      setMergeErrorMessage(error.message);
+      setShowMergeErrorDialog(true);
     } finally {
       setIsMerging(false);
     }
@@ -732,6 +734,95 @@ function PullMode({ setProcessing }) {
           <a
             className="closeButton"
             onClick={() => setShowMergeConfirm(false)}
+            style={{ cursor: "pointer" }}
+          >
+            {"\u00D7"}
+          </a>
+        </dialog>
+      )}
+
+      {/* Merge Error Dialog */}
+      {showMergeErrorDialog && (
+        <dialog
+          open={showMergeErrorDialog}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            padding: "20px",
+            minWidth: "400px",
+          }}
+          className="share-dialog"
+        >
+          <h3 style={{ margin: "0 0 15px 0", color: "#d32f2f" }}>
+            Merge Error
+          </h3>
+
+          <p style={{ margin: "0 0 15px 0" }}>
+            There was an error merging the pull request:
+          </p>
+
+          <div
+            style={{
+              padding: "12px",
+              backgroundColor: "#f5f5f5",
+              borderRadius: "4px",
+              marginBottom: "15px",
+              fontFamily: "monospace",
+              fontSize: "0.85em",
+              color: "#333",
+              wordBreak: "break-word",
+            }}
+          >
+            {mergeErrorMessage}
+          </div>
+
+          <p style={{ margin: "0 0 15px 0", fontSize: "0.9em" }}>
+            This usually happens when there are merge conflicts. Visit the
+            GitHub pull request page to resolve them.
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "10px",
+            }}
+          >
+            <button
+              onClick={() => setShowMergeErrorDialog(false)}
+              autoFocus
+              style={{
+                padding: "8px 16px",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                window.open(
+                  `https://github.com/${baseOwner}/${baseRepo}/pull/${pullNumber}`,
+                  "_blank",
+                );
+                setShowMergeErrorDialog(false);
+              }}
+              style={{
+                padding: "8px 16px",
+                cursor: "pointer",
+                backgroundColor: "var(--abundance-color-brightPurple)",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+              }}
+            >
+              Go to GitHub PR
+            </button>
+          </div>
+
+          <a
+            className="closeButton"
+            onClick={() => setShowMergeErrorDialog(false)}
             style={{ cursor: "pointer" }}
           >
             {"\u00D7"}
