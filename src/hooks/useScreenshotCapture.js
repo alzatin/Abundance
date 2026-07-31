@@ -68,7 +68,7 @@ export function useScreenshotCapture(onCaptureCallback) {
 
       // Step 6: Capture the temporary canvas
       const canvas = tempRenderer.domElement;
-      const dataURL = canvas.toDataURL("image/png", 0.5); // Use 0.5 quality for PNG to reduce file size
+      const dataURL = canvas.toDataURL("image/png", 0.7); // Use 0.5 quality for PNG to reduce file size
 
       //download the image automatically
       const link = document.createElement("a");

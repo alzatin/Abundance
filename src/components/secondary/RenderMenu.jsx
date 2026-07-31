@@ -189,7 +189,7 @@ export default function RenderMenu({
       label: "📸 Capture Screenshot (4K)",
       onClick: () => {
         if (GlobalVariables.captureHighResScreenshot) {
-          GlobalVariables.captureHighResScreenshot(3840, 2160);
+          GlobalVariables.captureHighResScreenshot(1000, 1000); // Capture a 4K screenshot
         }
       },
     },
