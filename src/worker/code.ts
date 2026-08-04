@@ -406,6 +406,47 @@ async function executeTsCode(
         })()
       : console;
 
+    const passThroughKeys = [
+      "geometry",
+      "plane",
+      "tags",
+      "bom",
+      "color",
+      "selection",
+      "metadata",
+    ];
+    const helper = (obj: AbundanceObject): AbundanceObject => {
+      if (util.isLeaf(obj)) {
+        return Object.fromEntries(
+          Object.entries(obj).filter(([key]) => passThroughKeys.includes(key)),
+        ) as util.AbundanceLeaf;
+      } else {
+        // is branch
+        const children = obj.geometry.map(helper);
+        const filtered = Object.fromEntries(
+          Object.entries(obj).filter(([key]) => passThroughKeys.includes(key)),
+        );
+        return {
+          ...filtered,
+          geometry: children,
+        } as AbundanceObject;
+      }
+    };
+
+    // filter AbundanceObject arguments down to just the properties which are passed
+    // through to code atoms and exclude the rest since differences there are
+    // by definition nonimpactful to the result. In particular this is important
+    // for bounding boxes which can be in an initialized or uninitialized state.
+    argumentsArray = Object.fromEntries(
+      Object.entries(argumentsArray).map(([key, val]) => {
+        if (util.isAbundanceObject(val)) {
+          return [key, helper(val)];
+        } else {
+          return [key, val];
+        }
+      }),
+    );
+
     // Check cache for result of this code atom before doing any heavy work like
     // materializing arguments or launching the sandbox.
     const cacheId = composeCacheKey(code, argumentsArray);
