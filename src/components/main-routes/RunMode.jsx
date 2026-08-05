@@ -78,7 +78,8 @@ function updateProjectMetaTags(project) {
   const description =
     project.description ||
     `View ${project.repoName} in Abundance, a web-based CAD platform.`;
-  const imageUrl = project.svgURL || "/public/imgs/abundance_logo.png";
+  const imageUrl =
+    project.pngURL || project.svgURL || "/public/imgs/abundance_logo.png";
   const pageUrl = window.location.href;
 
   document.title = title;

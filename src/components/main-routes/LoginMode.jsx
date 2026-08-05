@@ -343,7 +343,7 @@ const FeaturedHighlight = ({ randomFeaturedNode }) => {
         <img
           className="project_image"
           style={{ left: "80%", top: "30%" }}
-          src={randomFeaturedNode.svgURL}
+          src={randomFeaturedNode.pngURL || randomFeaturedNode.svgURL}
           onError={({ currentTarget }) => {
             currentTarget.onerror = null; // prevents looping
             currentTarget.src =
@@ -440,7 +440,7 @@ const FeaturedHighlight = ({ randomFeaturedNode }) => {
             >
               <div className="GitInfoLeft">
                 <img
-                  src={randomFeaturedNode.svgURL}
+                  src={randomFeaturedNode.pngURL || randomFeaturedNode.svgURL}
                   onError={({ currentTarget }) => {
                     currentTarget.onerror = null;
                     currentTarget.src =
@@ -643,22 +643,29 @@ const ProjectDiv = ({
   const imageUrlMap = useMemo(() => {
     const map = new Map();
     nodes.forEach((node) => {
-      if (!node?.svgURL || failedImages.has(node.svgURL)) {
+      // Prefer pngURL if available, otherwise fall back to svgURL
+      const urlToUse = node.pngURL || node.svgURL;
+      const urlKey =
+        node.pngURL || node.svgURL || `${node.owner}/${node.repoName}`;
+
+      if (!urlToUse || failedImages.has(urlToUse)) {
         map.set(
-          node.svgURL || `${node.owner}/${node.repoName}`,
+          urlKey,
           import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/defaultThumbnail.svg",
         );
       } else {
-        const separator = node.svgURL.includes("?") ? "&" : "?";
-        map.set(node.svgURL, `${node.svgURL}${separator}cb=${svgCacheBuster}`);
+        const separator = urlToUse.includes("?") ? "&" : "?";
+        map.set(urlKey, `${urlToUse}${separator}cb=${svgCacheBuster}`);
       }
     });
     return map;
   }, [nodes, svgCacheBuster, failedImages]);
 
   const getImageSrc = (node) => {
+    const urlKey =
+      node.pngURL || node.svgURL || `${node.owner}/${node.repoName}`;
     return (
-      imageUrlMap.get(node.svgURL || `${node.owner}/${node.repoName}`) ||
+      imageUrlMap.get(urlKey) ||
       import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/defaultThumbnail.svg"
     );
   };
