@@ -747,17 +747,7 @@ const ProjectDiv = ({
               onError={() => handleImageError(node.svgURL)}
               alt={node.repoName}
             />
-            <div
-              className="symbol-div"
-              style={{
-                display: "flex",
-                height: "100%",
-                position: "absolute",
-                top: "-10px",
-                right: "2px",
-                flexDirection: "column",
-              }}
-            >
+            <div className="symbol-div">
               {/* Ranking */}
               <div
                 className="ranking-icon"

@@ -22,7 +22,7 @@ export function useScreenshotCapture(onCaptureCallback) {
       const visibilityState = new Map();
       const objectsToHide = ["grid"]; // Named objects to exclude from screenshot
       const typesToHide = ["AxesHelper", "GizmoHelper", "BackgroundModel"]; // Types of objects to exclude
-
+      scene.background = null; // Set background to transparent for screenshot
       scene.traverse((obj) => {
         visibilityState.set(obj, obj.visible);
         // Hide objects by name
@@ -40,10 +40,11 @@ export function useScreenshotCapture(onCaptureCallback) {
       const tempRenderer = new THREE.WebGLRenderer({
         preserveDrawingBuffer: true,
         antialias: true,
+        alpha: true,
       });
       tempRenderer.setSize(width, height);
       tempRenderer.setPixelRatio(1); // Disable automatic scaling for consistent resolution
-      tempRenderer.setClearColor(0xf5f5f5); // Match ThreeContext background
+      //tempRenderer.setClearColor(0xf5f5f5); // Match ThreeContext background
 
       // Step 3: Create a perspective camera with the same position and rotation as the existing camera
       const perspectiveCamera = new THREE.PerspectiveCamera(
@@ -55,7 +56,7 @@ export function useScreenshotCapture(onCaptureCallback) {
       perspectiveCamera.position.copy(camera.position);
       perspectiveCamera.rotation.copy(camera.rotation);
       perspectiveCamera.quaternion.copy(camera.quaternion);
-      perspectiveCamera.zoom = camera.zoom * 15; // Match zoom level
+      perspectiveCamera.zoom = camera.zoom * 20; // Match zoom level
       perspectiveCamera.updateProjectionMatrix();
 
       // Step 4: Render the scene with the temporary renderer and perspective camera
