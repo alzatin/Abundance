@@ -7,7 +7,7 @@ import { useRef, useEffect, useState } from "react";
 const Controls = React.memo(
   React.forwardRef(function Controls(
     { axesParam, enableDamping },
-    controlsRef
+    controlsRef,
   ) {
     const { plane, geometryType } = useRendering();
     const [extraPlane, setExtraPlane] = useState(false);
@@ -89,7 +89,11 @@ const Controls = React.memo(
 
         {axesParam && (
           <>
-            <GizmoHelper alignment="bottom-right" margin={[70, 100]}>
+            <GizmoHelper
+              name="gizmo"
+              alignment="bottom-right"
+              margin={[70, 100]}
+            >
               <GizmoViewport
                 axisColors={["#9d4b4b", "#2f7f4f", "#3b5b9d"]}
                 labelColor="white"
@@ -101,7 +105,7 @@ const Controls = React.memo(
         )}
       </>
     );
-  })
+  }),
 );
 
 export default Controls;

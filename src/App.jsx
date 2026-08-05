@@ -34,6 +34,7 @@ import {
   ProjectProvider,
   BrowseSettingsProvider,
   FileImportProvider,
+  ThumbnailDialogProvider,
   useRendering,
   useAuth,
   useAppState,
@@ -831,7 +832,8 @@ function AppContent() {
         const targetMolecule = GlobalVariables.topLevelMolecule;
         const projectKey = `${project.owner}/${project.repoName}`;
         const currentProjectKey =
-          GlobalVariables.currentAWSnode?.owner && GlobalVariables.currentAWSnode?.repoName
+          GlobalVariables.currentAWSnode?.owner &&
+          GlobalVariables.currentAWSnode?.repoName
             ? `${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`
             : null;
 
@@ -1025,19 +1027,21 @@ export default function ReplicadApp() {
     <QueryClientProvider client={queryClient}>
       <DevSettingsProvider>
         <AuthProvider>
-          <AppStateProvider>
-            <BrowseSettingsProvider>
-              <FileImportProvider>
-                <TutorialProvider>
-                  <RenderingProvider>
-                    <ProgressBarProvider>
-                      <AppContent />
-                    </ProgressBarProvider>
-                  </RenderingProvider>
-                </TutorialProvider>
-              </FileImportProvider>
-            </BrowseSettingsProvider>
-          </AppStateProvider>
+          <ThumbnailDialogProvider>
+            <AppStateProvider>
+              <BrowseSettingsProvider>
+                <FileImportProvider>
+                  <TutorialProvider>
+                    <RenderingProvider>
+                      <ProgressBarProvider>
+                        <AppContent />
+                      </ProgressBarProvider>
+                    </RenderingProvider>
+                  </TutorialProvider>
+                </FileImportProvider>
+              </BrowseSettingsProvider>
+            </AppStateProvider>
+          </ThumbnailDialogProvider>
         </AuthProvider>
       </DevSettingsProvider>
     </QueryClientProvider>

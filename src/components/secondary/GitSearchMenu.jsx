@@ -475,7 +475,11 @@ export default function GitSearchMenu({
         >
           <div className="GitInfoLeft">
             <img
-              src={panelItem.isLocal ? panelItem.iconPath : panelItem.svgURL}
+              src={
+                panelItem.isLocal
+                  ? panelItem.iconPath
+                  : panelItem.pngURL || panelItem.svgURL
+              }
               onError={({ currentTarget }) => {
                 currentTarget.onerror = null; // prevents looping
                 currentTarget.src = "/imgs/defaultThumbnail.svg";
