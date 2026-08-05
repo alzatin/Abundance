@@ -832,7 +832,8 @@ function AppContent() {
         const targetMolecule = GlobalVariables.topLevelMolecule;
         const projectKey = `${project.owner}/${project.repoName}`;
         const currentProjectKey =
-          GlobalVariables.currentAWSnode?.owner && GlobalVariables.currentAWSnode?.repoName
+          GlobalVariables.currentAWSnode?.owner &&
+          GlobalVariables.currentAWSnode?.repoName
             ? `${GlobalVariables.currentAWSnode.owner}/${GlobalVariables.currentAWSnode.repoName}`
             : null;
 
@@ -1025,8 +1026,8 @@ export default function ReplicadApp() {
   return (
     <QueryClientProvider client={queryClient}>
       <DevSettingsProvider>
-        <ThumbnailDialogProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <ThumbnailDialogProvider>
             <AppStateProvider>
               <BrowseSettingsProvider>
                 <FileImportProvider>
@@ -1040,8 +1041,8 @@ export default function ReplicadApp() {
                 </FileImportProvider>
               </BrowseSettingsProvider>
             </AppStateProvider>
-          </AuthProvider>
-        </ThumbnailDialogProvider>
+          </ThumbnailDialogProvider>
+        </AuthProvider>
       </DevSettingsProvider>
     </QueryClientProvider>
   );

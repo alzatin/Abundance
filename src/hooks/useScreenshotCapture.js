@@ -71,12 +71,12 @@ export function useScreenshotCapture(onCaptureCallback) {
       const dataURL = canvas.toDataURL("image/png", 0.7); // Use 0.5 quality for PNG to reduce file size
 
       //download the image automatically
-      const link = document.createElement("a");
-      link.href = dataURL;
-      link.download = "screenshot.png";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // const link = document.createElement("a");
+      // link.href = dataURL;
+      // link.download = "screenshot.png";
+      // document.body.appendChild(link);
+      // link.click();
+      // document.body.removeChild(link);
 
       // Step 7: Cleanup and trigger dialog via callback
       tempRenderer.dispose();
