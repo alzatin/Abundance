@@ -186,7 +186,7 @@ export default function RenderMenu({
     },
     screenshot: {
       type: "button",
-      label: "📸",
+      label: "📸 Set New Project Thumbnail",
       onClick: () => {
         if (GlobalVariables.captureHighResScreenshot) {
           GlobalVariables.captureHighResScreenshot(1000, 1000); // Capture a 4K screenshot

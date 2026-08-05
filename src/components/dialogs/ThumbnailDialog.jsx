@@ -56,6 +56,13 @@ export default function ThumbnailDialog({
               Use this screenshot as the default thumbnail for{" "}
               <strong>{projectName || "this project"}</strong>?
             </p>
+            <p
+              className="thumbnail-dialog-warning"
+              style={{ fontSize: "0.8rem", color: "#888888ce" }}
+            >
+              (Doesn't look like you expected? Try changing the camera angle and
+              taking another screenshot.)
+            </p>
           </div>
         </div>
 
