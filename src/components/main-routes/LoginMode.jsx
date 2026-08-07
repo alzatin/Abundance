@@ -24,6 +24,11 @@ import DropdownSectionDisplay from "./DropdownSectionDisplay.jsx";
 import FAQDisplay from "./FAQDisplay.jsx";
 import on from "../../js/circular-menu/src/on.js";
 import PRNotificationIcon from "../secondary/PRNotificationIcon.jsx";
+import {
+  getThumbnailUrl,
+  markImageFailed,
+  resolveThumbnailSrc,
+} from "./thumbnailUrls.js";
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
@@ -633,41 +638,34 @@ const ProjectDiv = ({
     }
   };
 
-  const handleImageError = (repoUrl) => {
-    if (repoUrl) {
-      setFailedImages((prev) => new Set(prev).add(repoUrl));
-    }
+  const defaultThumbnail =
+    import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/defaultThumbnail.svg";
+
+  const handleImageError = (imageUrl) => {
+    setFailedImages((prev) => markImageFailed(prev, imageUrl));
   };
 
   // Memoize image URLs to avoid rebuilding on every render
   const imageUrlMap = useMemo(() => {
     const map = new Map();
     nodes.forEach((node) => {
-      // Prefer pngURL if available, otherwise fall back to svgURL
-      const urlToUse = node.pngURL || node.svgURL;
-      const urlKey =
-        node.pngURL || node.svgURL || `${node.owner}/${node.repoName}`;
-
-      if (!urlToUse || failedImages.has(urlToUse)) {
-        map.set(
-          urlKey,
-          import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/defaultThumbnail.svg",
-        );
-      } else {
-        const separator = urlToUse.includes("?") ? "&" : "?";
-        map.set(urlKey, `${urlToUse}${separator}cb=${svgCacheBuster}`);
-      }
+      const urlKey = getThumbnailUrl(node) || `${node.owner}/${node.repoName}`;
+      map.set(
+        urlKey,
+        resolveThumbnailSrc(
+          node,
+          failedImages,
+          svgCacheBuster,
+          defaultThumbnail,
+        ),
+      );
     });
     return map;
   }, [nodes, svgCacheBuster, failedImages]);
 
   const getImageSrc = (node) => {
-    const urlKey =
-      node.pngURL || node.svgURL || `${node.owner}/${node.repoName}`;
-    return (
-      imageUrlMap.get(urlKey) ||
-      import.meta.env.VITE_APP_PATH_FOR_PICS + "/imgs/defaultThumbnail.svg"
-    );
+    const urlKey = getThumbnailUrl(node) || `${node.owner}/${node.repoName}`;
+    return imageUrlMap.get(urlKey) || defaultThumbnail;
   };
 
   const ThumbItem = React.memo(({ node, svgCacheBuster }) => {
@@ -744,7 +742,7 @@ const ProjectDiv = ({
             <img
               className="project_image"
               src={getImageSrc(node)}
-              onError={() => handleImageError(node.svgURL)}
+              onError={() => handleImageError(getThumbnailUrl(node))}
               alt={node.repoName}
             />
             <div className="symbol-div">
@@ -852,7 +850,7 @@ const ProjectDiv = ({
                   <div className="GitInfoLeft">
                     <img
                       src={getImageSrc(node)}
-                      onError={() => handleImageError(node.svgURL)}
+                      onError={() => handleImageError(getThumbnailUrl(node))}
                       alt={node.repoName}
                     />
                     <div style={{ display: "flex", alignItems: "center" }}>
