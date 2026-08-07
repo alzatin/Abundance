@@ -91,6 +91,7 @@ export function ThumbnailDialogProvider({ children }) {
             repoName: repo,
             attributeUpdates: {
               pngURL: downloadUrl,
+              userSetThumbnail: true,
             },
           }),
           headers: {

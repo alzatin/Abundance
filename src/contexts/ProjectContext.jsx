@@ -8,6 +8,10 @@ import { re } from "mathjs";
 import { useAuth } from "./AuthContext.jsx";
 import { useAppState } from "./AppStateContext.jsx";
 import { useNavigate } from "react-router-dom";
+import {
+  generateMeshPNG,
+  extractBase64FromDataURL,
+} from "../js/meshPNGGenerator.js";
 
 const ProjectContext = createContext();
 
@@ -53,6 +57,46 @@ export function ProjectProvider({ children, cad, loadProject }) {
    * @param {boolean} exporting - If exporting a molecule
    *
    */
+  /**
+   * Generate preview.html content for social media previews
+   * @param {string} projectName - Name of the project
+   * @param {string} projectDescription - Project description
+   * @param {string} owner - GitHub owner
+   * @param {string} repo - GitHub repo name
+   * @returns {string} Base64-encoded HTML string
+   */
+  const generatePreviewHtml = (
+    projectName,
+    projectDescription,
+    owner,
+    repo,
+  ) => {
+    const previewUrl = `https://abundance.maslowcnc.com/run/${owner}/${repo}`;
+    const projectImageUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/project.png`;
+
+    const previewHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta property="og:title" content="${projectName}" />
+  <meta property="og:description" content="${projectDescription.substring(0, 160)}" />
+  <meta property="og:image" content="${projectImageUrl}" />
+  <meta property="og:url" content="${previewUrl}" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${projectName}" />
+  <meta name="twitter:description" content="${projectDescription.substring(0, 160)}" />
+  <meta name="twitter:image" content="${projectImageUrl}" />
+  <title>${projectName}</title>
+</head>
+<body>
+  <p>Loading project...</p>
+</body>
+</html>`;
+
+    return window.btoa(previewHtml);
+  };
+
   const createProject = async (
     authorizedUserOcto,
     [name, topics, description, license, units],
@@ -270,6 +314,33 @@ export function ProjectProvider({ children, cad, loadProject }) {
       content: window.btoa(GlobalVariables.toBinaryStr(licenses[license])),
     });
     setNewProjectBar(90);
+
+    // Generate and commit preview.html for social media previews
+    try {
+      const projectName = currentRepoName;
+      const projectDescription =
+        description || `Check out ${currentRepoName} in Abundance`;
+      npm;
+      // Generate base64-encoded preview.html
+      const base64PreviewHtml = generatePreviewHtml(
+        projectName,
+        projectDescription,
+        currentUser,
+        currentRepoName,
+      );
+
+      await authorizedUserOcto.rest.repos.createOrUpdateFileContents({
+        owner: currentUser,
+        repo: currentRepoName,
+        path: "preview.html",
+        message: "Initialize project preview metadata",
+        content: base64PreviewHtml,
+      });
+      console.log("preview.html created successfully");
+    } catch (err) {
+      console.error("Error creating preview.html:", err);
+      // Non-critical failure - continue anyway
+    }
 
     // Set topics with error handling
     try {
@@ -983,10 +1054,10 @@ export function ProjectProvider({ children, cad, loadProject }) {
   };
 
   /**
-   * Generate a thumbnail for the project
+   * Generate a PNG thumbnail for the project from the mesh
    */
-  const generateProjectThumbnail = async (meshRef) => {
-    //Generate a thumbnail for the project
+  const generateProjectThumbnail = async () => {
+    // Generate a PNG thumbnail for the project
     if (GlobalVariables.topLevelMolecule.value == null) {
       console.warn(
         "No top level molecule value found for thumbnail generation.",
@@ -994,24 +1065,30 @@ export function ProjectProvider({ children, cad, loadProject }) {
       return null;
     }
 
-    // Check if meshRef and meshRef.current are available
-    if (!meshRef || !meshRef.current) {
-      console.warn("meshRef is not available for thumbnail generation.");
+    try {
+      const mesh = await GlobalVariables.pool
+        .proxy()
+        .then((worker) => {
+          return worker.generateDisplayMesh(
+            GlobalVariables.topLevelMolecule.value,
+            GlobalVariables.topLevelMolecule.getContext(),
+          );
+        })
+        .then((result) => result.mesh);
+
+      if (!mesh) {
+        console.warn("No mesh generated for thumbnail");
+        return null;
+      }
+
+      // Generate PNG from mesh
+      const pngDataUrl = await generateMeshPNG(mesh);
+      console.log("Generated project thumbnail PNG data URL:", pngDataUrl);
+      return pngDataUrl;
+    } catch (error) {
+      console.error("Error generating project thumbnail:", error);
       return null;
     }
-
-    return GlobalVariables.pool
-      .proxy()
-      .then((worker) => {
-        return worker.generateDisplayMesh(
-          GlobalVariables.topLevelMolecule.value,
-          GlobalVariables.topLevelMolecule.getContext(),
-        );
-      })
-      .then(async (m) => {
-        const svg = await meshRef.current.buildThumbnail(m.mesh);
-        return svg;
-      });
   };
 
   /**
@@ -1023,6 +1100,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
     updateSaveProgress,
     saveType = "Auto Save",
     setErrorNotification,
+    finalPNG,
   ) {
     try {
       updateSaveProgress(35);
@@ -1088,9 +1166,16 @@ export function ProjectProvider({ children, cad, loadProject }) {
                     });
                   }
                 } else {
-                  const encodedContent = window.btoa(
-                    GlobalVariables.toBinaryStr(fileContent),
-                  );
+                  // For PNG files, the content is already base64-encoded from the canvas
+                  // For other files, encode the text content
+                  let encodedContent;
+                  if (path === "project.png") {
+                    encodedContent = fileContent; // Already base64
+                  } else {
+                    encodedContent = window.btoa(
+                      GlobalVariables.toBinaryStr(fileContent),
+                    );
+                  }
 
                   await octokit.rest.repos.createOrUpdateFileContents({
                     owner,
@@ -1158,11 +1243,20 @@ export function ProjectProvider({ children, cad, loadProject }) {
                 sha: null,
               });
             } else {
+              // For PNG files, the content is already base64-encoded from the canvas
+              // For other files, encode the text content
+              let contentToBlob;
+              if (path === "project.png") {
+                contentToBlob = fileContent; // Already base64
+              } else {
+                contentToBlob = fileContent; // Text content
+              }
+
               const blobResponse = await octokit.rest.git.createBlob({
                 owner,
                 repo,
-                content: fileContent,
-                encoding: "utf-8",
+                content: contentToBlob,
+                encoding: path === "project.png" ? "base64" : "utf-8",
               });
               treeEntries.push({
                 path,
@@ -1174,8 +1268,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
             processed += 1;
             updateSaveProgress(
-              50 +
-                Math.floor((processed / Math.max(files.length, 1)) * 20),
+              50 + Math.floor((processed / Math.max(files.length, 1)) * 20),
             );
           }
 
@@ -1236,20 +1329,29 @@ export function ProjectProvider({ children, cad, loadProject }) {
           topicString
         ).toLowerCase();
 
+        const attributeUpdates = {
+          ranking: 0,
+          privateRepo: privateRepo,
+          html_url: htmlURL,
+          searchField: searchField,
+          githubMoleculesUsed: githubMoleculeUsedList,
+          description: GlobalVariables.currentAWSnode.description,
+          topics: GlobalVariables.currentAWSnode.topics,
+        };
+
+        // Only update pngURL if user hasn't manually set a thumbnail
+        if (finalPNG && !GlobalVariables.currentAWSnode.userSetAsThumbnail) {
+          const pngUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/project.png`;
+          attributeUpdates.pngURL = pngUrl;
+          attributeUpdates.userSetAsThumbnail = false; // Reset userSetAsThumbnail to false since we're updating the thumbnail
+        }
+
         await fetch(apiUpdateUrl, {
           method: "POST",
           body: JSON.stringify({
             owner: owner,
             repoName: repo,
-            attributeUpdates: {
-              ranking: 0,
-              privateRepo: privateRepo,
-              html_url: htmlURL,
-              searchField: searchField,
-              githubMoleculesUsed: githubMoleculeUsedList,
-              description: GlobalVariables.currentAWSnode.description,
-              topics: GlobalVariables.currentAWSnode.topics,
-            },
+            attributeUpdates: attributeUpdates,
           }),
           headers: {
             "Content-type": "application/json; charset=UTF-8",
@@ -1284,7 +1386,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
    * @param {Function} setSaveProgress - Function to update save progress
    * @param {string} typeSave - Type of save operation
    * @param {boolean} forceSave - If true, bypasses the "no changes" check
-   * @param {object} meshRef - Reference to the mesh for thumbnail generation (optional)
+   * @param {object} meshRef - Reference to the mesh (deprecated, kept for backwards compatibility)
    * @param {Function} setErrorNotification - Function to set error notifications (optional)
    * @param {Function} onSaveStart - Callback invoked only if changes are detected and save will proceed
    */
@@ -1323,7 +1425,8 @@ export function ProjectProvider({ children, cad, loadProject }) {
           return;
         }
 
-        const message = "Save already in progress. Please wait for it to finish.";
+        const message =
+          "Save already in progress. Please wait for it to finish.";
         setNotification(message, "warning");
         setTimeout(() => setNotification(null), 3000);
         return;
@@ -1381,13 +1484,17 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
       updateSaveProgress(5); //Set the state to 5% to show the progress bar
 
-      let finalSVG;
-      // Only generate thumbnail for user-triggered saves, not auto saves
-      if (typeSave !== "Auto Save" && meshRef) {
-        finalSVG = await generateProjectThumbnail(meshRef).catch((error) => {
-          console.error("Error generating final project thumbnail: ", error);
+      let finalPNG = null;
+      // Generate PNG thumbnail for all saves (except auto saves on first time)
+      if (typeSave !== "Auto Save") {
+        finalPNG = await generateProjectThumbnail().catch((error) => {
+          console.error(
+            "Error generating final project thumbnail PNG: ",
+            error,
+          );
         });
       }
+      console.log("Final PNG generated for save:", finalPNG);
 
       updateSaveProgress(10);
       // Reuse the already serialized project data instead of serializing again
@@ -1465,15 +1572,20 @@ export function ProjectProvider({ children, cad, loadProject }) {
         return hasContent;
       };
 
-      // Only update project thumbnail if a valid one has been generated
-      // Prioritize finalSVG from main output, but fall back to readme SVG if main output is empty
+      // Add auto-generated PNG thumbnail if available (unless user has manually set one)
+      if (finalPNG && !GlobalVariables.currentAWSnode.userSetAsThumbnail) {
+        const pngBase64 = extractBase64FromDataURL(finalPNG);
+        filesObject["project.png"] = pngBase64;
+      }
+      // Only update project SVG thumbnail if a valid one has been generated
+      // (keeping existing SVG logic for backwards compatibility)
       const thumbnailToUse =
-        finalSVG && isValidSVG(finalSVG)
-          ? finalSVG
+        finalPNG && !GlobalVariables.currentAWSnode.userSetAsThumbnail
+          ? finalPNG
           : backupProjectSVG && isValidSVG(backupProjectSVG)
             ? backupProjectSVG
             : null;
-      if (thumbnailToUse) {
+      if (thumbnailToUse && isValidSVG(thumbnailToUse)) {
         filesObject["project.svg"] = thumbnailToUse;
       }
       // If no valid thumbnail was generated, don't include project.svg in the commit
@@ -1494,6 +1606,7 @@ export function ProjectProvider({ children, cad, loadProject }) {
         updateSaveProgress,
         typeSave,
         setErrorNotification,
+        finalPNG,
       );
 
       // Save snapshot only after a successful remote commit.
