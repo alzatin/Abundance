@@ -11,12 +11,12 @@ import * as THREE from "three";
  *
  * Usage:
  *   const { captureHighResScreenshot } = useScreenshotCapture(onScreenshotCallback);
- *   captureHighResScreenshot(3840, 2160); // captures at 4K resolution
+ *   captureHighResScreenshot(1000, 1000); // captures at default resolution
  */
 export function useScreenshotCapture(onCaptureCallback) {
   const { scene, camera } = useThree();
 
-  const captureHighResScreenshot = (width = 3840, height = 2160) => {
+  const captureHighResScreenshot = (width = 1000, height = 1000) => {
     try {
       // Step 1: Save visibility state and hide UI helper objects by name
       const visibilityState = new Map();
