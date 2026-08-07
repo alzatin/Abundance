@@ -396,17 +396,20 @@ async function importingSTL(
 
 /**
  * Imports an SVG file and creates 2D geometry, then stores it in the library.
- * @param {string} svg - The SVG content as a string
+ * @param {string|Blob} svg - The SVG content, either as a string or as the
+ * uploaded File/Blob (fresh uploads hand us the File directly)
  * @param {number} width - The width to scale the SVG to
  * @throws {Error} Throws an error if the SVG import fails
  */
 async function importingSVG(
-  svg: string,
+  svg: string | Blob,
   context: RequestContext,
   width: number,
 ): Promise<AbundanceObject> {
   await started;
-  const svgString = svg;
+  // The SVG parser only accepts a string, but callers coming from a fresh
+  // upload pass the File through untouched, so read it here.
+  const svgString = typeof svg === "string" ? svg : await svg.text();
 
   try {
     const drawnSVG = await drawSVG(svgString, { width: width });
@@ -417,7 +420,7 @@ async function importingSVG(
         drawnSVG.clone().translate(-center[0], -center[1]),
         context,
         "import-svg",
-        [await util.hashString(svg), width],
+        [await util.hashString(svgString), width],
       ),
       tags: [],
       plane: util.XYPlane,
