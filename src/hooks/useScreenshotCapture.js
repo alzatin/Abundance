@@ -46,21 +46,23 @@ export function useScreenshotCapture(onCaptureCallback) {
       tempRenderer.setPixelRatio(1); // Disable automatic scaling for consistent resolution
       //tempRenderer.setClearColor(0xf5f5f5); // Match ThreeContext background
 
-      // Step 3: Create a perspective camera with the same position and rotation as the existing camera
-      const perspectiveCamera = new THREE.PerspectiveCamera(
-        75, // fov
-        width / height, // aspect ratio
-        0.1, // near
-        90000, // far - match the existing camera's far plane
+      // Step 3: Create an orthographic camera matching the normal renderer
+      const orthoCam = new THREE.OrthographicCamera(
+        width / -2,
+        width / 2,
+        height / 2,
+        height / -2,
+        camera.near,
+        camera.far,
       );
-      perspectiveCamera.position.copy(camera.position);
-      perspectiveCamera.rotation.copy(camera.rotation);
-      perspectiveCamera.quaternion.copy(camera.quaternion);
-      perspectiveCamera.zoom = camera.zoom * 20; // Match zoom level
-      perspectiveCamera.updateProjectionMatrix();
+      orthoCam.position.copy(camera.position);
+      orthoCam.rotation.copy(camera.rotation);
+      orthoCam.quaternion.copy(camera.quaternion);
+      orthoCam.zoom = camera.zoom;
+      orthoCam.updateProjectionMatrix();
 
-      // Step 4: Render the scene with the temporary renderer and perspective camera
-      tempRenderer.render(scene, perspectiveCamera);
+      // Step 4: Render the scene with the temporary renderer and orthographic camera
+      tempRenderer.render(scene, orthoCam);
 
       // Step 5: Restore visibility state of all objects
       visibilityState.forEach((visible, obj) => {
