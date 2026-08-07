@@ -41,28 +41,27 @@ export function useScreenshotCapture(onCaptureCallback) {
         preserveDrawingBuffer: true,
         antialias: true,
         alpha: true,
+        logarithmicDepthBuffer: true, // Enables accurate depth precision for perspective camera
       });
       tempRenderer.setSize(width, height);
       tempRenderer.setPixelRatio(1); // Disable automatic scaling for consistent resolution
       //tempRenderer.setClearColor(0xf5f5f5); // Match ThreeContext background
 
-      // Step 3: Create an orthographic camera matching the normal renderer
-      const orthoCam = new THREE.OrthographicCamera(
-        width / -2,
-        width / 2,
-        height / 2,
-        height / -2,
+      // Step 3: Create a perspective camera matching the normal view
+      const perspectiveCamera = new THREE.PerspectiveCamera(
+        camera.fov || 75,
+        width / height,
         camera.near,
         camera.far,
       );
-      orthoCam.position.copy(camera.position);
-      orthoCam.rotation.copy(camera.rotation);
-      orthoCam.quaternion.copy(camera.quaternion);
-      orthoCam.zoom = camera.zoom;
-      orthoCam.updateProjectionMatrix();
+      perspectiveCamera.position.copy(camera.position);
+      perspectiveCamera.rotation.copy(camera.rotation);
+      perspectiveCamera.quaternion.copy(camera.quaternion);
+      perspectiveCamera.zoom = camera.zoom * 10;
+      perspectiveCamera.updateProjectionMatrix();
 
-      // Step 4: Render the scene with the temporary renderer and orthographic camera
-      tempRenderer.render(scene, orthoCam);
+      // Step 4: Render the scene with the temporary renderer and perspective camera
+      tempRenderer.render(scene, perspectiveCamera);
 
       // Step 5: Restore visibility state of all objects
       visibilityState.forEach((visible, obj) => {
