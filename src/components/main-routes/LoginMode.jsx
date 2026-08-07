@@ -515,7 +515,7 @@ const FeaturedHighlight = ({ randomFeaturedNode }) => {
   );
 };
 
-const ProjectDiv = ({
+export const ProjectDiv = ({
   nodes,
   browseType,
   orderType,
@@ -742,7 +742,11 @@ const ProjectDiv = ({
             <img
               className="project_image"
               src={getImageSrc(node)}
-              onError={() => handleImageError(getThumbnailUrl(node))}
+              onError={({ currentTarget }) => {
+                currentTarget.onerror = null; // prevents looping
+                currentTarget.src = defaultThumbnail;
+                handleImageError(getThumbnailUrl(node));
+              }}
               alt={node.repoName}
             />
             <div className="symbol-div">
@@ -850,7 +854,11 @@ const ProjectDiv = ({
                   <div className="GitInfoLeft">
                     <img
                       src={getImageSrc(node)}
-                      onError={() => handleImageError(getThumbnailUrl(node))}
+                      onError={({ currentTarget }) => {
+                        currentTarget.onerror = null; // prevents looping
+                        currentTarget.src = defaultThumbnail;
+                        handleImageError(getThumbnailUrl(node));
+                      }}
                       alt={node.repoName}
                     />
                     <div style={{ display: "flex", alignItems: "center" }}>
