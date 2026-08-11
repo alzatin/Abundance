@@ -11,12 +11,12 @@ import * as THREE from "three";
  *
  * Usage:
  *   const { captureHighResScreenshot } = useScreenshotCapture(onScreenshotCallback);
- *   captureHighResScreenshot(3840, 2160); // captures at 4K resolution
+ *   captureHighResScreenshot(1000, 1000); // captures at default resolution
  */
 export function useScreenshotCapture(onCaptureCallback) {
   const { scene, camera } = useThree();
 
-  const captureHighResScreenshot = (width = 3840, height = 2160) => {
+  const captureHighResScreenshot = (width = 1000, height = 1000) => {
     try {
       // Step 1: Save visibility state and hide UI helper objects by name
       const visibilityState = new Map();
@@ -41,22 +41,23 @@ export function useScreenshotCapture(onCaptureCallback) {
         preserveDrawingBuffer: true,
         antialias: true,
         alpha: true,
+        logarithmicDepthBuffer: true, // Enables accurate depth precision for perspective camera
       });
       tempRenderer.setSize(width, height);
       tempRenderer.setPixelRatio(1); // Disable automatic scaling for consistent resolution
       //tempRenderer.setClearColor(0xf5f5f5); // Match ThreeContext background
 
-      // Step 3: Create a perspective camera with the same position and rotation as the existing camera
+      // Step 3: Create a perspective camera matching the normal view
       const perspectiveCamera = new THREE.PerspectiveCamera(
-        75, // fov
-        width / height, // aspect ratio
-        0.1, // near
-        90000, // far - match the existing camera's far plane
+        camera.fov || 75,
+        width / height,
+        camera.near,
+        camera.far,
       );
       perspectiveCamera.position.copy(camera.position);
       perspectiveCamera.rotation.copy(camera.rotation);
       perspectiveCamera.quaternion.copy(camera.quaternion);
-      perspectiveCamera.zoom = camera.zoom * 20; // Match zoom level
+      perspectiveCamera.zoom = camera.zoom * 10;
       perspectiveCamera.updateProjectionMatrix();
 
       // Step 4: Render the scene with the temporary renderer and perspective camera
