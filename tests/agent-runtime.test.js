@@ -1048,12 +1048,12 @@ describe("importing files from GitHub", () => {
   const realCad = GlobalVariables.cad;
   const realFetchFileContent = GlobalVariables.fetchFileContent;
   let fetched;
-  let deleteClicks;
-  let deleteInput;
+  let deleted;
+  let realDeleteFile;
 
   beforeEach(() => {
     fetched = [];
-    deleteClicks = 0;
+    deleted = [];
     __test__.fetchers.publicFile = async () => {};
     // Tests have no CAD worker or GitHub login; stub the Import atom's loaders.
     GlobalVariables.cad = { importingSTEP: async () => 0 };
@@ -1061,18 +1061,15 @@ describe("importing files from GitHub", () => {
       fetched.push([owner, repo, path, ref]);
       return { data: { sha: "abc123", content: btoa("ISO-10303-21;") } };
     };
-    deleteInput = document.createElement("input");
-    deleteInput.type = "button";
-    deleteInput.id = "fileDeleteInput";
-    deleteInput.addEventListener("click", () => deleteClicks++);
-    document.body.appendChild(deleteInput);
+    realDeleteFile = GlobalVariables.deleteFile;
+    GlobalVariables.deleteFile = (...args) => deleted.push(args);
   });
 
   afterEach(() => {
     Object.assign(__test__.fetchers, realFetchers);
     GlobalVariables.cad = realCad;
     GlobalVariables.fetchFileContent = realFetchFileContent;
-    deleteInput.remove();
+    GlobalVariables.deleteFile = realDeleteFile;
   });
 
   it("links an Import atom to the file as one undoable step", async () => {
@@ -1107,10 +1104,13 @@ describe("importing files from GitHub", () => {
     expect(history.steps.map((s) => s.description)).toEqual([
       "AI: import Belt End.step",
     ]);
-    // Removing the atom must not delete the linked file from this project.
+    // Neither the Delete key's file cleanup nor undoing the import may delete
+    // the linked file.
+    atom.deleteUploadedFile();
+    expect(deleted).toEqual([]);
     await runTool("undo", {}, EDIT);
     expect(top.nodesOnTheScreen.find((a) => a === atom)).toBeUndefined();
-    expect(deleteClicks).toBe(0);
+    expect(deleted).toEqual([]);
   });
 
   it("can import inside apply_edits and wire the result by ref", async () => {

@@ -301,12 +301,7 @@ export default class Import extends Atom {
       const file = event.target.files[0];
       if (file) {
         // If a previous file exists, delete it
-        if (this.fileName && this.sha) {
-          const deleteInput = document.getElementById("fileDeleteInput");
-          deleteInput.value = this.fileName;
-          deleteInput.setAttribute("data-sha", this.sha);
-          deleteInput.click();
-        }
+        this.deleteUploadedFile();
 
         this.type = type;
         this.fileName = file.name; // Set the new filename
@@ -320,14 +315,46 @@ export default class Import extends Atom {
   }
 
   /**
-   * Call super delete node and then grab input that calls function to delete the file from github
+   * The user deleted this atom, so delete its file from the project's
+   * repository too.
    */
-  deleteNode() {
-    super.deleteNode();
-    if (this.isLinkedFile()) return;
-    var f = document.getElementById("fileDeleteInput");
-    f.value = this.fileName;
-    f.click();
+  deleteByUser() {
+    super.deleteByUser();
+    this.deleteUploadedFile();
+  }
+
+  /**
+   * Delete this atom's file from the project's repository, unless another atom
+   * still loads it (copy and paste makes copies that share one file) or it
+   * is linked from another repository.
+   */
+  deleteUploadedFile() {
+    if (
+      !this.fileName ||
+      !this.sha ||
+      this.isLinkedFile() ||
+      this.fileIsShared()
+    ) {
+      return;
+    }
+    GlobalVariables.deleteFile?.(this.fileName, this.sha);
+  }
+
+  /**
+   * Whether another atom in the open project loads the same file as this one.
+   */
+  fileIsShared() {
+    const loadsSameFile = (atom) =>
+      atom !== this &&
+      atom.fileName === this.fileName &&
+      atom.repoOwner === this.repoOwner &&
+      atom.repoName === this.repoName;
+    const search = (molecule) =>
+      molecule.nodesOnTheScreen.some(
+        (atom) =>
+          loadsSameFile(atom) || (atom.nodesOnTheScreen && search(atom)),
+      );
+    return search(GlobalVariables.topLevelMolecule);
   }
 
   /**

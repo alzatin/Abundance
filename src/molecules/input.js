@@ -797,14 +797,20 @@ export default class Input extends Atom {
     this.clearTooltipTimer();
     this.hideTooltip();
 
-    this.deleteFile();
-
     //Remove this input from the parent molecule
     if (typeof this.parent !== "undefined") {
       this.parent.removeIO("input", this.name, this.parent, silent);
     }
 
     super.deleteNode(backgroundClickAfter, deletePath, silent);
+  }
+
+  /**
+   * The user deleted this input, so delete its uploaded file too.
+   */
+  deleteByUser() {
+    this.deleteFile();
+    super.deleteByUser();
   }
 
   deleteFile() {
@@ -823,7 +829,7 @@ export default class Input extends Atom {
       } else {
         console.warn("deleteFile not available in GlobalVariables");
       }
-      this.setInputChanged(this.name);
+      this.setInputChanged?.(this.name);
     }
   }
 
