@@ -1833,27 +1833,53 @@ export const SimpleControlPanel = forwardRef(function SimpleControlPanel(
                     return (
                       <div key={key} style={labelStyle}>
                         <span
-                          style={{
-                            width: inputFullWidth ? 0 : 70,
-                            color: "var(--control-text-muted)",
-                            overflow: "clip",
-                          }}
+                          style={
+                            config.bomItem
+                              ? {
+                                  // Bill of materials rows: the item name
+                                  // takes the free space, the quantity and
+                                  // link only what they need.
+                                  flex: "1 1 auto",
+                                  minWidth: 0,
+                                  overflowWrap: "anywhere",
+                                  color: "var(--control-text-muted)",
+                                }
+                              : {
+                                  width: inputFullWidth ? 0 : 70,
+                                  color: "var(--control-text-muted)",
+                                  overflow: "clip",
+                                }
+                          }
                         >
-                          {label}:
+                          {config.bomItem ? label : `${label}:`}
                         </span>
                         <span
                           style={{
                             fontSize: 14,
                             color: "var(--control-text-muted)",
-                            flex: "1 1 0",
+                            ...(config.bomItem
+                              ? {
+                                  flex: "0 0 auto",
+                                  minWidth: "3ch",
+                                  textAlign: "right",
+                                }
+                              : { flex: "1 1 0" }),
                           }}
                         >
                           {currentValue ?? config.value ?? ""}
                         </span>
-                        {config.sourceLink && (
+                        {(config.sourceLink || config.bomItem) && (
                           <button
                             type="button"
+                            disabled={!config.sourceLink}
+                            aria-hidden={!config.sourceLink || undefined}
+                            tabIndex={config.sourceLink ? undefined : -1}
                             style={{
+                              // A bill of materials row without a link keeps
+                              // the button's space so quantities line up.
+                              visibility: config.sourceLink
+                                ? "visible"
+                                : "hidden",
                               fontWeight: 600,
                               background: "#3e7aff",
                               color: "#fff",
