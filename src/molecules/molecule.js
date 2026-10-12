@@ -905,6 +905,7 @@ export default class Molecule extends Atom {
             value: item.numberNeeded,
             label: item.BOMitemName,
             sourceLink: sourceLink || undefined,
+            bomItem: true,
           };
         });
 
