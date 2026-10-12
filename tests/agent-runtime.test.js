@@ -16,6 +16,7 @@ import {
   AGENT_EDIT_EVENT,
   AGENT_SELECT_EVENT,
   __test__,
+  parseGitHubFileUrl,
   resolveAtom,
   runTool,
   summarizeValue,
@@ -1039,6 +1040,156 @@ describe("built-in catalog and molecule library", () => {
       /locked/,
     );
     expect(resolveAtom(id).name).toBe("Doubler");
+  });
+});
+
+describe("importing files from GitHub", () => {
+  const realFetchers = { ...__test__.fetchers };
+  const realCad = GlobalVariables.cad;
+  const realFetchFileContent = GlobalVariables.fetchFileContent;
+  let fetched;
+  let deleted;
+  let realDeleteFile;
+
+  beforeEach(() => {
+    fetched = [];
+    deleted = [];
+    __test__.fetchers.publicFile = async () => {};
+    // Tests have no CAD worker or GitHub login; stub the Import atom's loaders.
+    GlobalVariables.cad = { importingSTEP: async () => 0 };
+    GlobalVariables.fetchFileContent = async (owner, repo, path, ref) => {
+      fetched.push([owner, repo, path, ref]);
+      return { data: { sha: "abc123", content: btoa("ISO-10303-21;") } };
+    };
+    realDeleteFile = GlobalVariables.deleteFile;
+    GlobalVariables.deleteFile = (...args) => deleted.push(args);
+  });
+
+  afterEach(() => {
+    Object.assign(__test__.fetchers, realFetchers);
+    GlobalVariables.cad = realCad;
+    GlobalVariables.fetchFileContent = realFetchFileContent;
+    GlobalVariables.deleteFile = realDeleteFile;
+  });
+
+  it("links an Import atom to the file as one undoable step", async () => {
+    const result = await runTool(
+      "import_file",
+      { url: "https://github.com/MaslowCNC/Maslow4/blob/main/Belt%20End.step" },
+      EDIT,
+    );
+    expect(result).toMatchObject({
+      type: "Import",
+      file: "MaslowCNC/Maslow4/Belt End.step",
+      git_ref: "main",
+      file_type: "STEP",
+    });
+    const atom = resolveAtom(result.id);
+    expect(atom).toMatchObject({
+      fileName: "Belt End.step",
+      type: "STEP",
+      repoOwner: "MaslowCNC",
+      repoName: "Maslow4",
+      gitRef: "main",
+    });
+    await settle();
+    expect(fetched).toEqual([["MaslowCNC", "Maslow4", "Belt End.step", "main"]]);
+    expect(atom.serialize()).toMatchObject({
+      fileName: "Belt End.step",
+      repoOwner: "MaslowCNC",
+      gitRef: "main",
+    });
+
+    const history = await runTool("get_undo_history", {}, READ);
+    expect(history.steps.map((s) => s.description)).toEqual([
+      "AI: import Belt End.step",
+    ]);
+    // Neither the Delete key's file cleanup nor undoing the import may delete
+    // the linked file.
+    atom.deleteUploadedFile();
+    expect(deleted).toEqual([]);
+    await runTool("undo", {}, EDIT);
+    expect(top.nodesOnTheScreen.find((a) => a === atom)).toBeUndefined();
+    expect(deleted).toEqual([]);
+  });
+
+  it("can import inside apply_edits and wire the result by ref", async () => {
+    await runTool(
+      "apply_edits",
+      {
+        description: "import and place",
+        edits: [
+          {
+            tool: "import_file",
+            arguments: {
+              url: "https://raw.githubusercontent.com/o/r/refs/heads/dev/parts/Arm.STP",
+              ref: "arm",
+            },
+          },
+          { tool: "add_atom", arguments: { type: "Move", ref: "place" } },
+          {
+            tool: "connect",
+            arguments: { from: "arm", to: "place", input: "geometry" },
+          },
+        ],
+      },
+      EDIT,
+    );
+    const imported = top.nodesOnTheScreen.find((a) => a.atomType === "Import");
+    expect(imported).toMatchObject({
+      fileName: "parts/Arm.STP",
+      type: "STEP",
+      gitRef: "dev",
+    });
+    expect(GlobalVariables.undoCommandStack).toHaveLength(1);
+  });
+
+  it("explains addresses it can't import", async () => {
+    for (const [url, pattern] of [
+      ["not a url", /not a web address/],
+      ["https://example.com/a.step", /isn't on GitHub/],
+      ["https://github.com/o/r", /doesn't point to a file/],
+      ["https://github.com/o/r/tree/main/parts", /doesn't point to a file/],
+      ["https://github.com/o/r/blob/main/model.obj", /\.step, \.stp, \.stl/],
+    ]) {
+      await expectToolError(
+        runTool("import_file", { url }, EDIT),
+        ERROR_CODES.INVALID_PARAMS,
+        pattern,
+      );
+    }
+    __test__.fetchers.publicFile = async () => {
+      throw new Error("not found");
+    };
+    await expectToolError(
+      runTool(
+        "import_file",
+        { url: "https://github.com/me/Secret/blob/main/a.stl" },
+        EDIT,
+      ),
+      ERROR_CODES.NOT_FOUND,
+      /public repositories/,
+    );
+    expect(top.nodesOnTheScreen).toHaveLength(0);
+    expect(GlobalVariables.undoCommandStack).toHaveLength(0);
+  });
+
+  it("parses the ref and path of GitHub file addresses", () => {
+    expect(
+      parseGitHubFileUrl(
+        "https://github.com/o/r/raw/0a1b2c/dir/sub/Plate.svg?raw=true",
+      ),
+    ).toEqual({
+      owner: "o",
+      repo: "r",
+      ref: "0a1b2c",
+      path: "dir/sub/Plate.svg",
+      name: "Plate.svg",
+      type: "SVG",
+    });
+    expect(
+      parseGitHubFileUrl("https://raw.githubusercontent.com/o/r/main/a.stl"),
+    ).toMatchObject({ ref: "main", path: "a.stl", type: "STL" });
   });
 });
 
