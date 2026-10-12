@@ -112,6 +112,23 @@ const fetchers = {
     );
     return JSON.parse(await fetchGitHubFileContent(response.data, { octokit }));
   },
+  /**
+   * Check that a file exists in a public repository, without using the
+   * GitHub API's rate limit. raw.githubusercontent.com serves public files
+   * only, so a private repository's file is not found.
+   */
+  async publicFile({ owner, repo, ref, path }) {
+    const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+    const res = await fetch(
+      `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(ref || "HEAD")}/${encodedPath}`,
+      { method: "HEAD" },
+    );
+    if (!res.ok) {
+      throw new Error(
+        res.status === 404 ? "not found" : `GitHub returned ${res.status}`,
+      );
+    }
+  },
   /** Raw search results: [{ owner, repoName, description, ranking, ... }]. */
   async search(query) {
     const url =
@@ -195,6 +212,69 @@ function parseRepo(repo) {
     );
   }
   return { owner: match[1], repoName: match[2] };
+}
+
+/** Import atom file types by extension. */
+const IMPORT_FILE_TYPES = { step: "STEP", stp: "STEP", stl: "STL", svg: "SVG" };
+
+/**
+ * Split a GitHub file address into its repository, ref, and path. Accepts
+ * github.com/<owner>/<repo>/blob|raw/<ref>/<path> and
+ * raw.githubusercontent.com/<owner>/<repo>/[refs/heads/]<ref>/<path>.
+ * A ref containing "/" can't be told apart from the path, so the first
+ * segment after the repository is taken as the ref.
+ */
+export function parseGitHubFileUrl(url) {
+  const invalid = (why) =>
+    new ToolError(
+      ERROR_CODES.INVALID_PARAMS,
+      `${why} Give the file's GitHub address, such as "https://github.com/owner/repo/blob/main/part.step".`,
+    );
+  let parsed;
+  try {
+    parsed = new URL(String(url).trim());
+  } catch {
+    throw invalid(`"${url}" is not a web address.`);
+  }
+  let segments = parsed.pathname.split("/").filter(Boolean);
+  try {
+    segments = segments.map(decodeURIComponent);
+  } catch {
+    throw invalid(`"${url}" is not a valid address.`);
+  }
+  let owner, repo, rest;
+  if (parsed.hostname === "github.com") {
+    [owner, repo] = segments;
+    if (!["blob", "raw"].includes(segments[2])) {
+      throw invalid(`"${url}" doesn't point to a file.`);
+    }
+    rest = segments.slice(3);
+  } else if (parsed.hostname === "raw.githubusercontent.com") {
+    [owner, repo] = segments;
+    rest = segments.slice(2);
+  } else {
+    throw invalid(`"${url}" isn't on GitHub.`);
+  }
+  if (rest[0] === "refs" && ["heads", "tags"].includes(rest[1])) {
+    rest = rest.slice(2);
+  }
+  const [ref, ...pathParts] = rest;
+  if (!owner || !repo || !ref || pathParts.length === 0) {
+    throw invalid(`"${url}" doesn't point to a file.`);
+  }
+  const path = pathParts.join("/");
+  const name = pathParts[pathParts.length - 1];
+  const extension = name.includes(".")
+    ? name.slice(name.lastIndexOf(".") + 1).toLowerCase()
+    : "";
+  const type = IMPORT_FILE_TYPES[extension];
+  if (!type) {
+    throw new ToolError(
+      ERROR_CODES.INVALID_PARAMS,
+      `${name} can't be imported. Import atoms load .step, .stp, .stl, and .svg files.`,
+    );
+  }
+  return { owner, repo, ref, path, name, type };
 }
 
 /**
@@ -1863,6 +1943,59 @@ const handlers = {
     };
   },
 
+  async import_file({ url, molecule, x, y }) {
+    const file = parseGitHubFileUrl(url);
+    const mol = resolveMolecule(molecule);
+    assertEditableContainer(mol);
+    try {
+      await fetchers.publicFile(file);
+    } catch (err) {
+      throw new ToolError(
+        ERROR_CODES.NOT_FOUND,
+        `Couldn't load ${file.path} at ${file.ref} from ${file.owner}/${file.repo} (${err.message}). The agent can only import files from public repositories.`,
+      );
+    }
+
+    // The fields a saved Import atom keeps, pointed at the file where it
+    // lives instead of a copy uploaded to this project's repository.
+    const siblings = children(mol).filter((a) => a.atomType !== "Output");
+    const maxX = siblings.reduce((m, a) => Math.max(m, Number(a.x) || 0), 0.1);
+    const obj = {
+      atomType: "Import",
+      parent: mol,
+      parentMolecule: mol,
+      uniqueID: GlobalVariables.generateUniqueID(),
+      x: x ?? Math.min(0.85, maxX + 0.08),
+      y: y ?? 0.2 + (siblings.length % 6) * 0.12,
+      fileName: file.path,
+      type: file.type,
+      repoOwner: file.owner,
+      repoName: file.repo,
+      gitRef: file.ref,
+    };
+    const placed = await mol.placeAtom(obj, false);
+    const atom =
+      (placed && placed.uniqueID === obj.uniqueID && placed) ||
+      children(mol).find((a) => a.uniqueID === obj.uniqueID);
+    if (!atom) {
+      throw new ToolError(
+        ERROR_CODES.INTERNAL_ERROR,
+        `Could not place an Import atom for ${file.name}.`,
+      );
+    }
+    GlobalVariables.pushUndoCommand(
+      new AddAtomCommand(atom.uniqueID, mol, `Import ${file.name}`),
+    );
+    atom.enable?.();
+    return {
+      ...atomRef(atom),
+      type: atom.atomType,
+      file: `${file.owner}/${file.repo}/${file.path}`,
+      git_ref: file.ref,
+      file_type: file.type,
+    };
+  },
+
   async add_atom({ type, molecule, name, x, y, reason, ref }) {
     const mol = resolveMolecule(molecule);
     assertEditableContainer(mol);
@@ -2141,7 +2274,9 @@ async function runBatch(edits, ctx, results) {
     try {
       const result = await handlers[tool](args, ctx);
       if (
-        (tool === "add_atom" || tool === "add_github_molecule") &&
+        (tool === "add_atom" ||
+          tool === "add_github_molecule" ||
+          tool === "import_file") &&
         result?.id
       ) {
         for (const handle of [args.ref, args.name]) {
@@ -2299,6 +2434,14 @@ function describeEdit(name, args) {
     }
     case "add_github_molecule":
       return `import ${args.repo}`;
+    case "import_file": {
+      const name = String(args.url).split(/[?#]/)[0].split("/").pop();
+      try {
+        return `import ${decodeURIComponent(name)}`;
+      } catch {
+        return `import ${name}`;
+      }
+    }
     case "reset_atom_names":
       return "restore standard atom names";
     case "set_project_description":

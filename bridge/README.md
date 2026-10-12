@@ -49,7 +49,7 @@ npm publish
 | Always | `bridge_status`, `take_over_bridge`, `list_sessions`, `use_session` |
 | Read | `get_project`, `list_atoms`, `get_atom`, `list_atom_types`, `list_library_molecules`, `search_molecules`, `get_errors`, `wait_for_settle`, `get_state_report`, `get_worker_logs`, `get_bom`, `get_readme`, `check_geometry`, `check_interference`, `render_image`, `export_geometry`, `get_gcode`, `get_undo_history` |
 | View | `select_atom`, `open_molecule` |
-| Edit | `set_param`, `set_code`, `add_atom`, `add_github_molecule`, `connect`, `disconnect`, `delete_atoms`, `apply_edits`, `undo`, `save_project` |
+| Edit | `set_param`, `set_code`, `add_atom`, `add_github_molecule`, `import_file`, `connect`, `disconnect`, `delete_atoms`, `apply_edits`, `undo`, `save_project` |
 
 The tool list and schemas live in `src/agent/tools.js`, shared by the page and the bridge. The page-side implementations are in `src/agent/runtime.js`.
 
@@ -85,6 +85,7 @@ npm run agent:library
 - **No arbitrary code in the page.** There is no tool that runs JavaScript in the tab. Code atoms run in the CAD worker as they do for users.
 - **The GitHub token never leaves the page.**
 - **Imported GitHub molecules are read-only** to the agent, since they belong to another repository.
+- **Imported files stay where they are.** `import_file` links an Import atom to a STEP, STL, or SVG file in a public GitHub repository. Nothing is uploaded or committed, and deleting the atom never deletes the file.
 - **Project text is untrusted.** Names, READMEs, and code can come from other people's shared projects. Tool descriptions tell the model to treat them as data.
 
 ## Troubleshooting

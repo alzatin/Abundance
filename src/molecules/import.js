@@ -102,10 +102,16 @@ export default class Import extends Atom {
     const filePath = this.fileName;
     const repoOwner = this.repoOwner;
     const repoName = this.repoName;
+    const ref = this.gitRef || undefined;
 
     // Use authenticated fetch if available (required for private repos)
     if (GlobalVariables.fetchFileContent) {
-      return GlobalVariables.fetchFileContent(repoOwner, repoName, filePath);
+      return GlobalVariables.fetchFileContent(
+        repoOwner,
+        repoName,
+        filePath,
+        ref,
+      );
     }
 
     const octokit = new Octokit({
@@ -115,8 +121,24 @@ export default class Import extends Atom {
       owner: repoOwner,
       repo: repoName,
       path: filePath,
+      ...(ref ? { ref } : {}),
     });
   };
+
+  /**
+   * Whether the file lives in another repository than the open project's,
+   * as when the agent links an Import atom to a file on GitHub. Such a file
+   * isn't this project's to delete.
+   */
+  isLinkedFile() {
+    const node = GlobalVariables.currentAWSnode;
+    return Boolean(
+      this.repoOwner &&
+        this.repoName &&
+        node?.owner &&
+        (this.repoOwner !== node.owner || this.repoName !== node.repoName),
+    );
+  }
 
   loadAndPropagate() {
     this.setProcessing();
@@ -127,18 +149,19 @@ export default class Import extends Atom {
           this.sha = result.data.sha;
 
           // GitHub's getContent API returns empty content for files >1MB.
-          // In that case, fetch the raw file via the authenticated git blob API.
+          // In that case, fetch the raw file via the authenticated git blob API,
+          // or from its public download URL on pages without a GitHub login
+          // (run mode, signed-out viewers).
           let file;
           if (!result.data.content) {
-            if (!GlobalVariables.fetchRawFileContent) {
-              throw new Error("Authenticated file fetch is not available");
-            }
-            file = await GlobalVariables.fetchRawFileContent(
-              this.repoOwner,
-              this.repoName,
-              result.data.sha,
-              this.type,
-            );
+            file = GlobalVariables.fetchRawFileContent
+              ? await GlobalVariables.fetchRawFileContent(
+                  this.repoOwner,
+                  this.repoName,
+                  result.data.sha,
+                  this.type,
+                )
+              : await this.fetchFromDownloadUrl(result.data);
           } else {
             file = this.newBlobFromBase64(result);
           }
@@ -175,6 +198,21 @@ export default class Import extends Atom {
           );
         });
     }
+  }
+
+  /**
+   * Fetch a file too large for the contents API from its download URL. Only
+   * public repositories serve files this way without a login.
+   */
+  async fetchFromDownloadUrl(data) {
+    if (!data.download_url) {
+      throw new Error("Authenticated file fetch is not available");
+    }
+    const response = await fetch(data.download_url);
+    if (!response.ok) {
+      throw new Error(`download_url returned ${response.status}`);
+    }
+    return this.type == "SVG" ? response.text() : response.blob();
   }
 
   /** Make new Blob from Github repo content results */
@@ -242,7 +280,11 @@ export default class Import extends Atom {
     }
     inputParams[this.uniqueID + "Loaded File"] = {
       type: "string",
-      value: this.fileName ? this.fileName : "", //href to the file
+      value: !this.fileName
+        ? ""
+        : this.isLinkedFile()
+          ? `${this.repoOwner}/${this.repoName}/${this.fileName}`
+          : this.fileName, //href to the file
       label: "Loaded File",
       disabled: true,
     };
@@ -282,6 +324,7 @@ export default class Import extends Atom {
    */
   deleteNode() {
     super.deleteNode();
+    if (this.isLinkedFile()) return;
     var f = document.getElementById("fileDeleteInput");
     f.value = this.fileName;
     f.click();
@@ -354,6 +397,7 @@ export default class Import extends Atom {
     superSerialObject.type = this.type;
     superSerialObject.repoOwner = this.repoOwner;
     superSerialObject.repoName = this.repoName;
+    if (this.gitRef) superSerialObject.gitRef = this.gitRef;
     superSerialObject.SVGwidth = this.SVGwidth;
 
     return superSerialObject;
