@@ -337,7 +337,7 @@ export default memo(function FlowCanvas({
         }
       });
       atomsToDelete.forEach((item) => {
-        item.deleteNode();
+        item.deleteByUser();
       });
       //every time a key is pressed
       GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {

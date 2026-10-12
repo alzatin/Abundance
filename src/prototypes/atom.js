@@ -766,6 +766,15 @@ export default class Atom extends ObservableEntity {
   }
 
   /**
+   * Delete this atom because the user deleted it. Atoms that uploaded a file to
+   * the project's repository delete it here. deleteNode also removes atoms that
+   * are being moved, reloaded, or undone, so it must never delete files.
+   */
+  deleteByUser() {
+    this.deleteNode();
+  }
+
+  /**
    * UI rendering update. Runs with each frame to draw the atom.
    */
   update() {
