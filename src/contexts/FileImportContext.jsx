@@ -152,10 +152,16 @@ export function FileImportProvider({ children }) {
   };
 
   /**
-   * Fetch a file from the current GitHub repository using authenticated Octokit
+   * Fetch a file from a GitHub repository using authenticated Octokit.
+   * `ref` (a branch, tag, or commit) defaults to the repository's default branch.
    */
-  const fetchFileContent = async (owner, repo, path) => {
-    return authorizedUserOcto.rest.repos.getContent({ owner, repo, path });
+  const fetchFileContent = async (owner, repo, path, ref) => {
+    return authorizedUserOcto.rest.repos.getContent({
+      owner,
+      repo,
+      path,
+      ...(ref ? { ref } : {}),
+    });
   };
 
   /**

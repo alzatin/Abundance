@@ -864,14 +864,6 @@ function CreateMode() {
           }}
         />
         <input
-          type="button"
-          id="fileDeleteInput"
-          style={{ display: "none" }}
-          onClick={() => {
-            deleteFile(activeAtom.fileName, activeAtom.sha);
-          }}
-        />
-        <input
           type="file"
           id="backgroundUsdzInput"
           style={{ display: "none" }}

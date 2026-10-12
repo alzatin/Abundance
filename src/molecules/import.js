@@ -102,10 +102,16 @@ export default class Import extends Atom {
     const filePath = this.fileName;
     const repoOwner = this.repoOwner;
     const repoName = this.repoName;
+    const ref = this.gitRef || undefined;
 
     // Use authenticated fetch if available (required for private repos)
     if (GlobalVariables.fetchFileContent) {
-      return GlobalVariables.fetchFileContent(repoOwner, repoName, filePath);
+      return GlobalVariables.fetchFileContent(
+        repoOwner,
+        repoName,
+        filePath,
+        ref,
+      );
     }
 
     const octokit = new Octokit({
@@ -115,8 +121,24 @@ export default class Import extends Atom {
       owner: repoOwner,
       repo: repoName,
       path: filePath,
+      ...(ref ? { ref } : {}),
     });
   };
+
+  /**
+   * Whether the file lives in another repository than the open project's,
+   * as when the agent links an Import atom to a file on GitHub. Such a file
+   * isn't this project's to delete.
+   */
+  isLinkedFile() {
+    const node = GlobalVariables.currentAWSnode;
+    return Boolean(
+      this.repoOwner &&
+        this.repoName &&
+        node?.owner &&
+        (this.repoOwner !== node.owner || this.repoName !== node.repoName),
+    );
+  }
 
   loadAndPropagate() {
     this.setProcessing();
@@ -127,18 +149,19 @@ export default class Import extends Atom {
           this.sha = result.data.sha;
 
           // GitHub's getContent API returns empty content for files >1MB.
-          // In that case, fetch the raw file via the authenticated git blob API.
+          // In that case, fetch the raw file via the authenticated git blob API,
+          // or from its public download URL on pages without a GitHub login
+          // (run mode, signed-out viewers).
           let file;
           if (!result.data.content) {
-            if (!GlobalVariables.fetchRawFileContent) {
-              throw new Error("Authenticated file fetch is not available");
-            }
-            file = await GlobalVariables.fetchRawFileContent(
-              this.repoOwner,
-              this.repoName,
-              result.data.sha,
-              this.type,
-            );
+            file = GlobalVariables.fetchRawFileContent
+              ? await GlobalVariables.fetchRawFileContent(
+                  this.repoOwner,
+                  this.repoName,
+                  result.data.sha,
+                  this.type,
+                )
+              : await this.fetchFromDownloadUrl(result.data);
           } else {
             file = this.newBlobFromBase64(result);
           }
@@ -175,6 +198,21 @@ export default class Import extends Atom {
           );
         });
     }
+  }
+
+  /**
+   * Fetch a file too large for the contents API from its download URL. Only
+   * public repositories serve files this way without a login.
+   */
+  async fetchFromDownloadUrl(data) {
+    if (!data.download_url) {
+      throw new Error("Authenticated file fetch is not available");
+    }
+    const response = await fetch(data.download_url);
+    if (!response.ok) {
+      throw new Error(`download_url returned ${response.status}`);
+    }
+    return this.type == "SVG" ? response.text() : response.blob();
   }
 
   /** Make new Blob from Github repo content results */
@@ -242,7 +280,11 @@ export default class Import extends Atom {
     }
     inputParams[this.uniqueID + "Loaded File"] = {
       type: "string",
-      value: this.fileName ? this.fileName : "", //href to the file
+      value: !this.fileName
+        ? ""
+        : this.isLinkedFile()
+          ? `${this.repoOwner}/${this.repoName}/${this.fileName}`
+          : this.fileName, //href to the file
       label: "Loaded File",
       disabled: true,
     };
@@ -259,12 +301,7 @@ export default class Import extends Atom {
       const file = event.target.files[0];
       if (file) {
         // If a previous file exists, delete it
-        if (this.fileName && this.sha) {
-          const deleteInput = document.getElementById("fileDeleteInput");
-          deleteInput.value = this.fileName;
-          deleteInput.setAttribute("data-sha", this.sha);
-          deleteInput.click();
-        }
+        this.deleteUploadedFile();
 
         this.type = type;
         this.fileName = file.name; // Set the new filename
@@ -278,13 +315,46 @@ export default class Import extends Atom {
   }
 
   /**
-   * Call super delete node and then grab input that calls function to delete the file from github
+   * The user deleted this atom, so delete its file from the project's
+   * repository too.
    */
-  deleteNode() {
-    super.deleteNode();
-    var f = document.getElementById("fileDeleteInput");
-    f.value = this.fileName;
-    f.click();
+  deleteByUser() {
+    super.deleteByUser();
+    this.deleteUploadedFile();
+  }
+
+  /**
+   * Delete this atom's file from the project's repository, unless another atom
+   * still loads it (copy and paste makes copies that share one file) or it
+   * is linked from another repository.
+   */
+  deleteUploadedFile() {
+    if (
+      !this.fileName ||
+      !this.sha ||
+      this.isLinkedFile() ||
+      this.fileIsShared()
+    ) {
+      return;
+    }
+    GlobalVariables.deleteFile?.(this.fileName, this.sha);
+  }
+
+  /**
+   * Whether another atom in the open project loads the same file as this one.
+   */
+  fileIsShared() {
+    const loadsSameFile = (atom) =>
+      atom !== this &&
+      atom.fileName === this.fileName &&
+      atom.repoOwner === this.repoOwner &&
+      atom.repoName === this.repoName;
+    const search = (molecule) =>
+      molecule.nodesOnTheScreen.some(
+        (atom) =>
+          loadsSameFile(atom) || (atom.nodesOnTheScreen && search(atom)),
+      );
+    return search(GlobalVariables.topLevelMolecule);
   }
 
   /**
@@ -354,6 +424,7 @@ export default class Import extends Atom {
     superSerialObject.type = this.type;
     superSerialObject.repoOwner = this.repoOwner;
     superSerialObject.repoName = this.repoName;
+    if (this.gitRef) superSerialObject.gitRef = this.gitRef;
     superSerialObject.SVGwidth = this.SVGwidth;
 
     return superSerialObject;

@@ -1462,11 +1462,18 @@ export function ProjectProvider({ children, cad, loadProject }) {
 
           const maxAttempts = 3;
           for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-            // 2. Resolve the current HEAD commit and its tree.
+            // 2. Resolve the current HEAD commit and its tree. GitHub lets the
+            // browser cache this for 60 seconds, which would hand a save made
+            // within a minute of the last one the old head, and every retry
+            // would be rejected as not a fast forward.
             const refResponse = await octokit.rest.git.getRef({
               owner,
               repo,
               ref: `heads/${base}`,
+              request: {
+                fetch: (url, options) =>
+                  fetch(url, { ...options, cache: "no-store" }),
+              },
             });
             const currentCommitSha = refResponse.data.object.sha;
             const commitResponse = await octokit.rest.git.getCommit({

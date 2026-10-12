@@ -429,6 +429,31 @@ export const TOOLS = [
     },
   },
   {
+    name: "import_file",
+    permission: "edit",
+    description:
+      "Add an Import atom that loads a STEP, STL, or SVG file from a public GitHub repository, like the editor's Load File button. The atom links to the file where it lives, so nothing is uploaded or committed. The part keeps the position and orientation it has in the file: place it with Move and Rotate atoms. Returns the atom's ID and path; call wait_for_settle, then get_atom or render_image to see what loaded.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        url: {
+          type: "string",
+          description:
+            'The file\'s GitHub address, such as "https://github.com/owner/repo/blob/main/parts/Arm.step" or a raw.githubusercontent.com link. The extension (.step, .stp, .stl, .svg) sets the file type.',
+        },
+        molecule: OPTIONAL_ATOM_REF,
+        ref: {
+          type: "string",
+          description:
+            'A handle for this atom within the current apply_edits batch, e.g. "arm". It does not change the atom\'s name.',
+        },
+        x: { type: "number", minimum: 0, maximum: 1 },
+        y: { type: "number", minimum: 0, maximum: 1 },
+      },
+      required: ["url"],
+    },
+  },
+  {
     name: "add_atom",
     permission: "edit",
     description:
@@ -507,7 +532,7 @@ export const TOOLS = [
     name: "apply_edits",
     permission: "edit",
     description:
-      "Run several edit tools (set_param, set_code, add_atom, add_github_molecule, connect, disconnect, delete_atoms) as one change that the user can undo in a single step. Later edits may refer to atoms added earlier in the batch by their ref (or name).",
+      "Run several edit tools (set_param, set_code, add_atom, add_github_molecule, import_file, connect, disconnect, delete_atoms) as one change that the user can undo in a single step. Later edits may refer to atoms added earlier in the batch by their ref (or name).",
     inputSchema: {
       type: "object",
       properties: {
@@ -577,6 +602,7 @@ export const BATCHABLE_TOOLS = [
   "set_code",
   "add_atom",
   "add_github_molecule",
+  "import_file",
   "connect",
   "disconnect",
   "delete_atoms",

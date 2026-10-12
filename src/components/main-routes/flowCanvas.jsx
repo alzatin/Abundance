@@ -43,6 +43,8 @@ export default memo(function FlowCanvas({
     moleculeName: "",
   });
 
+  const [projectEmpty, setProjectEmpty] = useState(false);
+
   const canvasRef = useRef(null);
   const circleMenu = useRef(null);
   const navigate = useNavigate();
@@ -337,7 +339,7 @@ export default memo(function FlowCanvas({
         }
       });
       atomsToDelete.forEach((item) => {
-        item.deleteNode();
+        item.deleteByUser();
       });
       //every time a key is pressed
       GlobalVariables.currentMolecule.nodesOnTheScreen.forEach((molecule) => {
@@ -694,6 +696,11 @@ export default memo(function FlowCanvas({
         lastDrawAt = now;
         frameCount++;
         drawRef.current(context, frameCount);
+        const mol = GlobalVariables.currentMolecule;
+        setProjectEmpty(
+          !!mol?.topLevel &&
+            mol.nodesOnTheScreen.every((a) => a.atomType === "Output"),
+        );
       }
       animationFrameId = window.requestAnimationFrame(render);
     };
@@ -799,6 +806,13 @@ export default memo(function FlowCanvas({
           }}
         >
           PREVIEW
+        </div>
+      )}
+      {projectEmpty && !isPreview && (
+        <div className="getting-started-banner" role="status">
+          {GlobalVariables.isMobile()
+            ? "Press and hold to get started"
+            : "Right click to get started"}
         </div>
       )}
       <div>
