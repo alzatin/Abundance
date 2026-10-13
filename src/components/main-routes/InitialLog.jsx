@@ -1,53 +1,109 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/index.js";
-import { useRotatingFeaturedImage } from "../../hooks/useRotatingFeaturedImage.js";
+import FeaturedModelViewer, {
+  preloadFeaturedModel,
+} from "../render/FeaturedModelViewer.jsx";
+import {
+  FEATURED_MODELS,
+  featuredImageUrl,
+  featuredModelUrl,
+} from "../../js/featuredModels.js";
+
+/** How long each featured model is shown before moving to the next. */
+const FEATURED_ROTATION_MS = 12000;
+/** Below this width the featured column is hidden (see login.css). */
+const WIDE_SCREEN_QUERY = "(min-width: 768px)";
+
+/**
+ * A model chosen with ?featured=<owner>_<repoName>, for checking a model
+ * while curating. It needn't be in FEATURED_MODELS yet.
+ */
+function pinnedFeaturedModel() {
+  const name = new URLSearchParams(window.location.search).get("featured");
+  const split = name?.indexOf("_") ?? -1;
+  // GitHub usernames can't contain underscores, so the first one ends it
+  return split > 0
+    ? { owner: name.slice(0, split), repoName: name.slice(split + 1) }
+    : null;
+}
+
+/** A copy of items in random order (Fisher-Yates). */
+function shuffled(items) {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+/**
+ * Cycle through the featured models in a new random order on each visit.
+ * Pauses while paused is true, so a model the user is orbiting doesn't get
+ * swapped out.
+ */
+function useFeaturedModel(paused) {
+  const [pinned] = useState(pinnedFeaturedModel);
+  const [order] = useState(() => shuffled(FEATURED_MODELS));
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (pinned || paused || order.length < 2) return;
+    const timer = setInterval(
+      () => setIndex((i) => (i + 1) % order.length),
+      FEATURED_ROTATION_MS,
+    );
+    return () => clearInterval(timer);
+  }, [pinned, paused, order]);
+  const next = order[(index + 1) % order.length];
+  useEffect(() => {
+    preloadFeaturedModel(featuredModelUrl(next));
+  }, [next]);
+  return pinned || order[index];
+}
+
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(
+    () => window.matchMedia(query).matches,
+  );
+  useEffect(() => {
+    const list = window.matchMedia(query);
+    const onChange = () => setMatches(list.matches);
+    list.addEventListener("change", onChange);
+    return () => list.removeEventListener("change", onChange);
+  }, [query]);
+  return matches;
+}
 
 /**
  * Initial log component displays pop Up to either attempt Github login/browse projects
  */
 const InitialLog = ({ setNoUserBrowsing }) => {
   const { authRedirectHandler } = useAuth();
-  const { imageUrl, loading, project } = useRotatingFeaturedImage(5000);
+  const [interacting, setInteracting] = useState(false);
+  const project = useFeaturedModel(interacting);
+  const wideScreen = useMediaQuery(WIDE_SCREEN_QUERY);
+  const projectName = `${project.owner}/${project.repoName}`;
 
   return (
     <div className="login-page">
       <div id="rotate-feature">
         <div className="featured-frame">
-          {loading ? (
-            <div className="featured-loading">Loading...</div>
-          ) : imageUrl ? (
-            <img
-              className="featured-image"
-              src={imageUrl}
-              alt={
-                project
-                  ? `${project.owner}/${project.repoName}`
-                  : "featured project"
-              }
-              onError={(e) => {
-                e.currentTarget.src =
-                  import.meta.env.VITE_APP_PATH_FOR_PICS +
-                  "/imgs/rotate_feature.png";
-              }}
-            />
-          ) : (
-            <img
-              className="featured-image"
-              src={
-                import.meta.env.VITE_APP_PATH_FOR_PICS +
-                "/imgs/rotate_feature.png"
-              }
-              alt="rotate feature"
+          {wideScreen && (
+            <FeaturedModelViewer
+              url={featuredModelUrl(project)}
+              fallbackImage={featuredImageUrl(project)}
+              alt={projectName}
+              onInteractingChange={setInteracting}
             />
           )}
           <p className="message featured-caption">
             <a
-              href={`https://abundance.maslowcnc.com/run/${project ? `${project.owner}/${project.repoName}` : ""}`}
+              href={`https://abundance.maslowcnc.com/run/${projectName}`}
               target="_blank"
               style={{ color: "gray", textDecoration: "none" }}
             >
-              {project ? `${project.owner} / ${project.repoName}` : "unknown"}
+              {`${project.owner} / ${project.repoName}`}
             </a>
           </p>
         </div>
@@ -68,8 +124,7 @@ const InitialLog = ({ setNoUserBrowsing }) => {
           <p>
             Abundance is a free, browser-based 3D CAD program. You build parts
             by wiring together simple steps like shapes, cuts and joins, so
-            every design stays editable and can be reused inside other
-            designs.
+            every design stays editable and can be reused inside other designs.
           </p>
           <ul>
             <li>
@@ -90,8 +145,8 @@ const InitialLog = ({ setNoUserBrowsing }) => {
               collaborate on.
             </li>
             <li>
-              <strong>Works with AI:</strong> connect an AI agent like Claude
-              to build and edit designs with you.
+              <strong>Works with AI:</strong> connect an AI agent like Claude to
+              build and edit designs with you.
             </li>
           </ul>
         </div>
@@ -146,8 +201,7 @@ const InitialLog = ({ setNoUserBrowsing }) => {
             Explore our library
           </button>
           <p className="message" style={{ fontSize: "13px" }}>
-            New to Abundance?{" "}
-            <Link to="/user-guide">Read the user guide</Link>
+            New to Abundance? <Link to="/user-guide">Read the user guide</Link>
           </p>
         </div>
       </div>
