@@ -135,7 +135,7 @@
   box-sizing: border-box;
   width: 100%;
   max-width: 1280px;
-  margin: 0 auto;
+  margin: 3rem auto 0;
   padding: 4px 32px 0;
   display: grid;
   grid-template-columns: 380px 240px minmax(0, 1fr);

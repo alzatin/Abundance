@@ -240,9 +240,6 @@ const InitialLog = ({ setNoUserBrowsing }) => {
               >
                 Explore the library
               </button>
-              <Link to="/user-guide" className="landing-nav-link">
-                Read the user guide
-              </Link>
             </div>
           </div>
 
