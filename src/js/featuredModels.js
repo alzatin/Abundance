@@ -14,7 +14,27 @@ export const FEATURED_MODELS = [
   { owner: "BarbourSmith", repoName: "Van-Build" },
   { owner: "BarbourSmith", repoName: "Swimming_ladder" },
   { owner: "BarbourSmith", repoName: "Parametric_Plant_Stand" },
-  { owner: "BarbourSmith", repoName: "3D_Printed_T-Nut" },
+  { owner: "BarbourSmith", repoName: "Gas-Fire-Pit" },
+  { owner: "alzatin", repoName: "Coffee-table-pill-design" },
+  { owner: "alzatin", repoName: "Sofa-frame-velvet" },
+  { owner: "BarbourSmith", repoName: "Rolling-Barge-Platform" },
+  { owner: "CartoonHeroII", repoName: "Spaceship-Bed" },
+  { owner: "tristan-huber", repoName: "sitting_person_for_scale" },
+  { owner: "Moldudley", repoName: "real_boattail_mold_" },
+  {
+    owner: "wouldchuckit",
+    repoName: "Maslow4_Router_core_replacement_cylinder",
+  },
+  {
+    owner: "wouldchuckit",
+    repoName: "Table_With_Tapered_Legs_and_Rounded_Corners",
+  },
+  {
+    owner: "wouldchuckit",
+    repoName: "CurvedSupportBookshelfMultipleVerticals",
+  },
+  { owner: "wouldchuckit", repoName: "Maslow4_Crosshairs_for_centering" },
+  { owner: "IDAbbott", repoName: "Modified_Tri_Clamp-copy" },
 ];
 
 /** URL of a featured project's GLB. */
