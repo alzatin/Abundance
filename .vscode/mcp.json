@@ -1,9 +1,0 @@
-{
-  "servers": {
-    "abundance": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@maslowcnc/abundance-bridge@latest"]
-    }
-  }
-}
